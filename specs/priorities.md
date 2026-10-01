@@ -26,7 +26,11 @@ that works.")*
 | M7 | **Double opt-in connect** (ask first, then exchange emails) | Privacy-critical; "needed, not optional." |
 | M8 | Matches cockpit: incoming requests + Accept/Decline | Where opt-in is granted; the personal overview. |
 | M9 | Mobile-first UI | Launch mechanic is a phone + QR code at the summit. |
-| M10 | Seed content (8 trends + case studies, some seed challenges) | App must be non-empty and demoable on day one. |
+| M10 | Seed content, split per environment (8 trends + case studies everywhere; prototype fixtures in dev, real whitelist + collected challenges in production) | App must be non-empty and demoable on day one — without fictional people ever reaching the summit database. |
+| M11 | Role-based access (`member` / `admin`, permission-checked) | Replaces an `is_admin` flag so a `moderator` can be added later without touching the schema or the guards. |
+| M12 | URL navigation / deep links (screens, not modals) | Notification emails and the QR code must open the right screen; a modal has no address. |
+| M13 | Dev deployments send no email (admin outbox with copyable magic links) | Keeps real inboxes out of development and makes login testable without a mailbox. |
+| M14 | Unit tests + GitHub Actions pipeline | "Feature-complete and tested" by 2026-11-01 is a dated commitment; the privacy rules need regression cover. |
 
 ## Should have (strongly wanted; cut only under deadline pressure)
 
@@ -34,7 +38,7 @@ that works.")*
 |---|---------|-------|
 | S1 | Admin approval of new applicants + whitelist management | Can start as a seeded whitelist + manual DB/CLI; UI can follow. |
 | S2 | Follow a trend / "follow this topic" | Low effort; drives return visits. |
-| S3 | Usage analytics (PostHog, free tier) | See how the summit crowd uses it; privacy-scoped (no PII). |
+| S3 | Usage analytics (Mixpanel, free tier, EU residency) | See how the summit crowd uses it; privacy-scoped (no PII). |
 | S4 | Email notification on an incoming connection request | At the summit everyone is in the room, so in-app may suffice — but valuable right after. |
 | S5 | Feedback affordance (mailto) | Cheap; useful signal during the pilot. |
 | S6 | Use the ~15 real collected challenges as seed | Makes the summit demo authentic. |
@@ -43,8 +47,8 @@ that works.")*
 
 | # | Feature | Notes |
 |---|---------|-------|
-| C1 | Example-challenge inserts on the submit screen | Helps members phrase a good challenge. |
-| C2 | Richer admin dashboard (metrics, moderation) | Beyond a plain approvals list. |
+| C1 | Live character-count coaching / phrasing help on the submit screen | Beyond the plain counter the gate needs. |
+| C2 | Richer admin dashboard (metrics, moderation) + a `moderator` role | Beyond a plain approvals list; the role model already allows it (R-ROLE-6). |
 | C3 | "Peers working on this trend" counts shown live | Prototype shows static counts; live counts are a polish item. |
 | C4 | GDPR self-service deletion (vs. admin-only) | Admin-triggered deletion covers the Must; self-service is extra. |
 | C5 | LLM-based trend classification (replacing keywords) | "AI will be pretty good at matching" — a clean post-beta upgrade. |
@@ -59,16 +63,18 @@ that works.")*
 | W4 | Integration with the Corporate Rebels member platform | "Significant work… avoid if possible." |
 | W5 | Connect via phone number or LinkedIn | Email only for beta. |
 | W6 | LLM-based case-study matching | Beta uses curated per-trend case lists. |
+| W7 | One-tap "insert this example challenge" | Invites a deck of identical boilerplate challenges, which would make matching meaningless (R-ASK-2). Examples stay read-only hints. |
 
 ---
 
 ## Build order (dependency-first)
 
-1. **Foundation** — Node+MySQL skeleton, schema, config, seed trends/cases.
+1. **Foundation** — Node+MySQL skeleton, schema (incl. roles), config module,
+   client router, seed runner, test harness + CI pipeline.
 2. **Auth & onboarding** (M1, M2) — nothing else is reachable without it.
 3. **Ask journey** (M3 → M4 → M5) — challenges, then matching, then match view.
 4. **Offer journey** (M6) — swipe deck over existing challenges.
 5. **Connecting** (M7 → M8) — the privacy-critical double opt-in + cockpit.
 6. **Supporting** (S1–S6) — admin approvals, analytics, follow, notifications.
-7. **Hardening & pilot** — mobile polish, seed real challenges, test with a few
-   people before 2026-11-01.
+7. **Hardening & pilot** — mobile polish, production seed, deep-link pass, CI
+   green on `main`, test with a few people before 2026-11-01.

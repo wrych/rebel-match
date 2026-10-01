@@ -13,7 +13,7 @@ MySQL**, single-page mobile-first client served by the Node app.
 │  - screens: login, onboarding, submit, domain, matches,      │
 │    swipe, cockpit, admin                                      │
 │  - session cookie (http-only) sent with every /api call      │
-│  - PostHog JS (analytics, pseudonymous id)                   │
+│  - Mixpanel JS (analytics, pseudonymous id)                  │
 └───────────────┬─────────────────────────────────────────────┘
                 │ HTTPS (JSON)
 ┌───────────────▼─────────────────────────────────────────────┐
@@ -25,7 +25,7 @@ MySQL**, single-page mobile-first client served by the Node app.
 └───────────────┬───────────────────────┬─────────────────────┘
                 │ SQL (mysql2/pool)      │ SMTP
 ┌───────────────▼──────────┐   ┌─────────▼───────────┐
-│  MySQL                   │   │  Email provider     │
+│  MySQL                   │   │  Own SMTP server    │
 │  members, challenges,    │   │  (magic links +     │
 │  trends, cases,          │   │   notifications)    │
 │  connections, follows,   │   └─────────────────────┘
@@ -43,20 +43,55 @@ MySQL**, single-page mobile-first client served by the Node app.
   auth/                  magic link + sessions
   routes/                auth, challenges, matches, swipe, connections, admin
   services/
-    mailer.js            SMTP (nodemailer)
+    mailer.js            SMTP (nodemailer) — the team's own SMTP server, env-configured
     matcher.js           keyword trend detection (§5)
-    analytics.js         PostHog server-side capture
-  seed/                  trends.js, cases.js, challenges.js
+    analytics.js         Mixpanel server-side capture
+  seed/                  profile-based fixtures (§6): shared / dev / prod
 /migrations              SQL schema migrations
 /client                  SPA (or server-rendered templates)
 /specs                   this spec
 ```
 
+### Configuration (`config.js`)
+
+One module owns every tunable (R-CFG-1..4). Secrets come from env; product
+thresholds have sane defaults in the file and may be overridden by env.
+
+| Key | Default | Serves |
+|-----|---------|--------|
+| `limits.challengeMinChars` | `31` (i.e. "more than 30") | R-ASK-3 |
+| `limits.beenThereNoteMinChars` | `31` | R-OFF-4 |
+| `limits.magicLinkTtlMinutes` | `15` | R-AUTH-5 |
+| `consent.currentVersion` | e.g. `"2026-11-01"` | R-ONB-3, R-ONB-4 |
+| `mail.transport` | `smtp` \| `outbox` | R-DEV-1, R-DEV-4 |
+| `seed.profile` | `dev` \| `prod` | R-SEED-4 |
+| `analytics.apiHost` | `api-eu.mixpanel.com` | R-ANA-5 |
+| `permissions` | role → permission matrix (§2) | R-ROLE-3, R-ROLE-6 |
+
+- `GET /api/config` returns the **client-relevant subset** (`limits`,
+  `consent.currentVersion`) so the submit button, the note counter, and the
+  server validator share one source of truth (R-CFG-2). It exposes no secrets.
+- The server validates against `config.limits` on every write regardless of what
+  the client did (R-CFG-3).
+
+### Mail transport
+
+- `mail.transport=smtp` (production) → nodemailer against the team's own SMTP
+  server, `SMTP_*` from env.
+- `mail.transport=outbox` (development) → **nothing leaves the machine**. Every
+  message is written to an `outbox` table (`to`, `subject`, `body_text`,
+  `body_html`, `created_at`) and read back on the admin outbox screen, where the
+  magic link is clickable and copyable (R-DEV-1, R-DEV-2). The outbox routes are
+  registered only when this transport is active (R-DEV-3).
+
+---
+
 ### Key libraries
 
 - `express`, `mysql2` (promise pool), `nodemailer`, `cookie-session` or
   `express-session` (store in MySQL), `zod`/`joi` for request validation,
-  `posthog-node` (server events) + `posthog-js` (client events).
+  `mixpanel` (Node server events) + `mixpanel-browser` (client events), both
+  configured against the EU endpoints.
 
 ---
 
@@ -71,16 +106,15 @@ All tables InnoDB, `utf8mb4`. IDs are `BINARY(16)` UUIDs or `BIGINT AUTO_INCREME
 CREATE TABLE members (
   id             CHAR(36)     NOT NULL PRIMARY KEY,
   email          VARCHAR(255) NOT NULL,
-  name           VARCHAR(120) NULL,               -- set at onboarding
-  role           VARCHAR(120) NULL,
+  name           VARCHAR(120) NULL,               -- display name, set at onboarding
+  job_title      VARCHAR(120) NULL,               -- profile only (was `role`)
   org            VARCHAR(160) NULL,
   sector         VARCHAR(160) NULL,
   status         ENUM('applicant','active','rejected','deleted')
                               NOT NULL DEFAULT 'applicant',
-  is_admin       TINYINT(1)   NOT NULL DEFAULT 0,
   consent_version VARCHAR(20) NULL,
   consent_at     DATETIME     NULL,
-  analytics_id   CHAR(36)     NOT NULL,           -- pseudonymous id for PostHog
+  analytics_id   CHAR(36)     NOT NULL,           -- pseudonymous id for Mixpanel
   created_at     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY uq_members_email (email)
 );
@@ -89,6 +123,61 @@ CREATE TABLE members (
 A member on the **whitelist** is simply a `members` row with `status='active'`
 (or pre-seeded with `status='active'` and `name=NULL`). An **applicant** is
 `status='applicant'`. Onboarding is complete when `name` and `consent_at` are set.
+
+Two things deliberately **not** in this table:
+
+- **No `is_admin` flag.** Access is role-based (below), so adding a moderator
+  later is a data change, not a schema and code change (R-ROLE-1).
+- The profile field is `job_title`, not `role` — "role" in this spec always means
+  an **access role**. The onboarding API field is named `jobTitle` to match.
+
+### roles & member_roles (access control)
+
+```sql
+CREATE TABLE roles (
+  role_key    VARCHAR(40)  NOT NULL PRIMARY KEY,   -- 'member', 'admin', later 'moderator'
+  label       VARCHAR(80)  NOT NULL,
+  description VARCHAR(255) NULL
+);
+
+CREATE TABLE member_roles (
+  member_id  CHAR(36)    NOT NULL,
+  role_key   VARCHAR(40) NOT NULL,
+  granted_at DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  granted_by CHAR(36)    NULL,                     -- member who granted it, for audit
+  PRIMARY KEY (member_id, role_key),
+  FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE,
+  FOREIGN KEY (role_key)  REFERENCES roles(role_key)
+);
+```
+
+- A member can hold **several roles** at once; the effective permission set is
+  the union (R-ROLE-2).
+- Every active member gets `member` on creation. `admin` is granted on top of it,
+  not instead of it — an admin is still a member who posts challenges.
+- Seeded roles for the beta: `member`, `admin`. `moderator` and anything else is
+  added later as a row plus a permission-matrix entry — **no schema change, no new
+  column, no `is_*` flags** (R-ROLE-1, R-ROLE-6).
+
+**Permissions live in config, not in the database** (`config.permissions`), so the
+grants are reviewable in version control:
+
+| Permission | `member` | `admin` | (future) `moderator` |
+|------------|:--------:|:-------:|:--------------------:|
+| `challenge:create` / `swipe` / `connect` | ✅ | ✅ | ✅ |
+| `applicant:review` (approve / reject) | — | ✅ | ✅ |
+| `whitelist:manage` | — | ✅ | — |
+| `member:delete` (GDPR erasure) | — | ✅ | — |
+| `challenge:moderate` | — | ✅ | ✅ |
+| `outbox:read` (dev only) | — | ✅ | — |
+
+- Route guards SHALL check a **permission**, never a role name —
+  `requirePermission('applicant:review')`, not `if (member.isAdmin)`. Adding
+  `moderator` then means one row and one matrix column, with no guard rewritten
+  (R-ROLE-3).
+- `GET /auth/me` returns the member's `roles[]` and resolved `permissions[]` so
+  the client can hide what the member cannot do (R-ROLE-4). The server still
+  enforces every permission independently (R-ROLE-5).
 
 ### magic_tokens
 
@@ -215,6 +304,24 @@ CREATE TABLE swipes (
 );
 ```
 
+### outbox (development only — captured email, R-DEV-1/2)
+
+```sql
+CREATE TABLE outbox (
+  id          CHAR(36)     NOT NULL PRIMARY KEY,
+  to_email    VARCHAR(320) NOT NULL,
+  subject     VARCHAR(255) NOT NULL,
+  body_text   TEXT         NOT NULL,
+  body_html   TEXT         NULL,
+  created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX (created_at)
+);
+```
+
+Written only while `mail.transport=outbox`. Production runs with
+`mail.transport=smtp` and never writes or reads this table; the migration may
+still create it so the schema is identical across environments.
+
 ---
 
 ## 3. API
@@ -226,16 +333,17 @@ with `status='active'` and completed onboarding (except the onboarding routes).
 
 | Method | Path | Body | Behavior |
 |--------|------|------|----------|
-| POST | `/auth/request-link` | `{email}` | If whitelisted active member → create token, email link, return 200 (always 200 to avoid email enumeration). If unknown email → create `applicant`, notify admin. |
-| GET | `/auth/verify?token=…` | — | Validate token (unexpired, unused), consume it, create session, redirect to onboarding or app. |
+| POST | `/auth/request-link` | `{email, next?}` | If whitelisted active member → create token, send link (SMTP or outbox per `mail.transport`), return 200 (always 200 to avoid email enumeration). If unknown email → create `applicant`, notify admin. |
+| GET | `/auth/verify?token=…&next=…` | — | Validate token (unexpired, unused), consume it, create session, redirect to onboarding, or to the validated `next` path, else the app root (R-NAV-5, R-NAV-6). |
 | POST | `/auth/logout` | — | Destroy session. |
-| GET | `/auth/me` | — | Current member + onboarding/consent status. |
+| GET | `/auth/me` | — | Current member + onboarding/consent status + `roles[]` and resolved `permissions[]` (R-ROLE-4). |
+| GET | `/api/config` | — | Client-relevant limits + current consent version (R-CFG-2). No secrets. |
 
 ### Onboarding
 
 | Method | Path | Body | Behavior |
 |--------|------|------|----------|
-| POST | `/api/onboarding` | `{name, role?, org?, sector?, consentVersion}` | Set name/profile, record consent version + timestamp. Required before other `/api` routes. |
+| POST | `/api/onboarding` | `{name, jobTitle?, org?, sector?, consentVersion}` | Set name/profile, record consent version + timestamp. Required before other `/api` routes. |
 
 ### Ask journey
 
@@ -270,39 +378,83 @@ with `status='active'` and completed onboarding (except the onboarding routes).
 | DELETE | `/api/follows/:trendId` | Unfollow. |
 | GET | `/api/follows` | My followed trends. |
 
-### Admin
+### Admin (permission-guarded, not role-name-guarded — R-ROLE-3)
 
 | Method | Path | Behavior |
 |--------|------|----------|
-| GET | `/admin/applicants` | List pending applicants. |
-| POST | `/admin/applicants/:id/approve` | Set `status='active'`. |
-| POST | `/admin/applicants/:id/reject` | Set `status='rejected'`. |
-| POST | `/admin/whitelist` | Add email(s) as pre-approved active member(s). |
-| DELETE | `/admin/members/:id` | GDPR erasure: delete member + their challenges/requests. |
+| GET | `/admin/applicants` | List pending applicants. *Requires `applicant:review`.* |
+| POST | `/admin/applicants/:id/approve` | Set `status='active'` and grant the `member` role. *Requires `applicant:review`.* |
+| POST | `/admin/applicants/:id/reject` | Set `status='rejected'`. *Requires `applicant:review`.* |
+| POST | `/admin/whitelist` | Add email(s) as pre-approved active member(s) with the `member` role. *Requires `whitelist:manage`.* |
+| DELETE | `/admin/members/:id` | GDPR erasure: delete member + their challenges/requests. *Requires `member:delete`.* |
+| GET | `/admin/outbox` | Captured dev emails, newest first, magic links clickable. *Requires `outbox:read`.* **Dev only** — not registered in production (R-DEV-2,3). |
+| DELETE | `/admin/outbox` | Clear the dev outbox. **Dev only**. |
 
 ---
 
-## 4. Screens (≈10, matching the prototype)
+## 4. Screens and their URLs
 
-1. **Login** — email field → "check your email".
-2. **Magic-link landing** — token verify → routes onward.
-3. **Onboarding** — name + consent (first time only).
-4. **Welcome** — two doors: *Ask for help* / *Offer help*.
-5. **Submit challenge** — textarea + examples; disabled until ≥12 chars.
-6. **Domain / trend** — shows detected trend, "from → to", peer line, "see all 8
-   trends", confirm; sheet to pick another trend.
-7. **Matches (for my challenge)** — Same boat / Been there / Case studies;
-   follow; connect (opens request, not mailto).
-8. **Swipe deck** — card stack; Same boat / Been there (+ note) / Follow / arrows.
-9. **Matches cockpit** — my challenge(s) with counts, incoming requests to
-   Accept/Decline, followed trends.
-10. **Admin approvals** — applicant list with approve/reject.
+The screen count is **not fixed** — the ten in the prototype were a rough guess
+(R-NAV-3), and anything that deserves its own address gets its own screen.
 
-Plus modals: connection-request confirm, "accepted → here's their contact",
-case-studies sheet, trend-picker sheet, feedback (mailto).
+**Screens, not modals.** Every step that holds content, takes input, or is worth
+linking to is a full screen with a URL (R-NAV-1, R-NAV-2, R-NAV-4). Overlays are
+reserved for interactions too small to link to: a destructive-action confirm, a
+toast, an inline validation hint. Nothing that a member might want to send
+someone, bookmark, or reload lives in a modal.
+
+Each screen is addressable; the server serves the SPA for any unmatched GET so a
+deep link reloads cleanly.
+
+| # | Screen | URL |
+|---|--------|-----|
+| S1 | **Login** — email field → "check your email" | `/login` |
+| S2 | **Magic-link landing** — token verify → routes onward | `/auth/verify?token=…` |
+| S3 | **Onboarding** — name + consent (first time only) | `/onboarding` |
+| S4 | **Welcome** — two doors: *Ask for help* / *Offer help* | `/welcome` |
+| S5 | **Submit challenge** — textarea + read-only example hints; disabled until the text passes `limits.challengeMinChars` | `/ask` |
+| S6 | **Domain / trend** — detected trend, "from → to", peer line, confirm | `/challenges/:id` |
+| S7 | **Trend picker** — all 8 trends, pick a different one *(was a sheet)* | `/challenges/:id/trend` |
+| S8 | **Matches (for my challenge)** — Same boat / Been there / Case studies; follow; connect | `/challenges/:id/matches` |
+| S9 | **Trend detail & case studies** — the trend's "from → to", peers, curated cases *(was a sheet)* | `/trends/:trendId` |
+| S10 | **Swipe deck** — card stack; Same boat / Been there / Follow / skip | `/offer` |
+| S11 | **"Been there" note** — write the ≥`limits.beenThereNoteMinChars` note for one card *(was a sheet)* | `/offer/:challengeId/note` |
+| S12 | **Connection request** — who, which challenge, optional message, send *(was a confirm modal)* | `/challenges/:challengeId/connect/:memberId` |
+| S13 | **Request sent** — "waiting for them", no contact detail | `/matches/requests/:id` (pending state) |
+| S14 | **Matches cockpit** — my challenge(s) with counts, incoming requests, followed trends | `/matches` |
+| S15 | **Incoming request** — the request with Accept / Decline *(was a cockpit modal)* | `/matches/requests/:id` |
+| S16 | **Contact exchanged** — the other member's email + prefilled mailto, accepted requests only *(was a modal)* | `/matches/requests/:id/contact` |
+| S17 | **Empty deck** — session summary + "submit your own challenge"; hosts the R-OFF-6 easter egg | `/offer/done` |
+| S18 | **Not found / no access** — generic, reveals nothing (R-NAV-8) | any unresolved path |
+| S19 | **Admin approvals** — applicant list with approve/reject | `/admin/applicants` |
+| S20 | **Admin outbox** *(dev only)* — captured emails with copyable magic links | `/admin/outbox` |
+
+Remaining overlays, deliberately: the "really decline this request?" confirm, the
+"link sent" / "copied" toasts, and the feedback action (a `mailto:`, not a
+screen). Everything else above is linkable — which is exactly what makes the
+notification emails in R-NAV-9 useful.
 
 **Removed vs prototype:** standings/badges screen, milestone pop-ups, CR theme
 toggle, "nominate as frontier".
+
+### Routing rules
+
+- **Deep link while signed out** → remember the path, show `/login`, and after
+  `/auth/verify` continue to the remembered path (R-NAV-5). The path travels as a
+  `next` query parameter on `/auth/request-link` and on the emailed link.
+- **`next` validation** — accept only a path starting with a single `/` and
+  matching the known route table; anything else (absolute URL, `//host`,
+  unknown route) falls back to `/` (R-NAV-6).
+- **Onboarding wins** — if name/consent are missing, `/onboarding` is rendered
+  first and `next` is carried through it (R-NAV-7).
+- **Authorization before rendering** — `/challenges/:id*` and
+  `/matches/requests/:id` resolve through the same ownership checks as the API;
+  a non-party gets the generic not-found screen, never a "forbidden" that
+  confirms the row exists (R-NAV-8).
+- **Email links** point at `/matches/requests/:id` (incoming request) or
+  `/matches`; never at a contact detail (R-NAV-9).
+- The **QR code** encodes the app root, optionally `/?src=summit-qr` for the
+  analytics funnel (R-NAV-10, R-ANA-3 — no identifying data in the parameter).
 
 ---
 
@@ -333,7 +485,33 @@ trend id + confidence; keep the same interface so callers don't change.
 
 ---
 
-## 6. Seed data (extracted from the prototype)
+## 6. Seed data
+
+Seeding is split into **profiles** so a dev deployment and production never share
+fixtures. The profile is chosen by `SEED_PROFILE` (`dev` | `prod`), defaulting to
+`dev`; the seed runner **refuses to load `dev` fixtures when `NODE_ENV=production`**
+so fictional members can never reach the summit database.
+
+| Profile | Shared content (§6.1, §6.2) | Members / whitelist | Challenges |
+|---------|------------------------------|---------------------|------------|
+| `dev` | yes + roles | fictional roster from the prototype (§6.3), consent pre-accepted, one seeded `admin` | prototype example challenges (§6.3) |
+| `prod` | yes + roles | real invited-attendee whitelist, loaded from a private file (§6.4); named admins granted `admin` | the ~15 real collected challenges (§6.4) |
+
+Suggested layout under `/src/seed`:
+
+```
+seed/
+  index.js            runner: reads SEED_PROFILE, guards against dev-in-prod
+  shared/trends.js    the 8 trends (§6.1)      — both profiles
+  shared/cases.js     case studies (§6.2)      — both profiles
+  shared/roles.js     `member`, `admin` rows   — both profiles
+  dev/people.js       fictional roster (§6.3)  — dev only
+  dev/challenges.js   prototype examples       — dev only
+  prod/load.js        reads whitelist + real challenges from env-pointed files
+```
+
+Seeding is **idempotent**: re-running upserts by natural key (trend number, case
+URL, member email) rather than duplicating rows.
 
 ### 6.1 The 8 trends
 
@@ -387,32 +565,77 @@ match/swipe cards): 01 Shared, 02 Frontier, 03 Frontier, 04 Solved, 05 Shared,
   (`spotify-development`) — development without a career ladder · Job crafting
   (`job-crafting`).
 
-### 6.3 Seed people / challenges
+### 6.3 Dev fixtures (`SEED_PROFILE=dev`, never in production)
 
-The prototype ships a fictional roster (Marieke de Wit, Tobias Renner, Ana
-Ferreira, Jonas Brand, Priya Raman, Lars Petersen, Nadia Osei, Ruben Vos, Aline
-Dubois, plus challenge-authors Sanne Kuipers, Milan Horvat, Elena Marchetti, Ola
-Nyberg, Yusuf Kaya, Hanna Vogt, Diego Salas) with roles, orgs, sectors, trends,
-and either an experience note ("been there") or a challenge ("same boat"). These
-can seed the swipe deck for demos. **Preferred:** replace them with the ~15 real
-challenges already collected for the summit.
+Everything here comes from the prototype (`prototype/rebel-match-beta.html`) and
+exists so a developer gets a populated app on first run — a non-empty swipe deck,
+non-empty match lists, and a login that works without waiting for an email.
+
+- **Fictional roster:** Marieke de Wit, Tobias Renner, Ana Ferreira, Jonas Brand,
+  Priya Raman, Lars Petersen, Nadia Osei, Ruben Vos, Aline Dubois, plus
+  challenge-authors Sanne Kuipers, Milan Horvat, Elena Marchetti, Ola Nyberg,
+  Yusuf Kaya, Hanna Vogt, Diego Salas — with roles, orgs, sectors, trends, and
+  either an experience note ("been there") or a challenge ("same boat").
+- Fixture members are seeded **already onboarded** (name set, consent version +
+  timestamp filled) so **F2** can be skipped while testing deeper screens.
+- **Dev whitelist:** the team's own addresses plus the fixture members, so
+  magic-link login works against a dev mailbox.
+- **Example challenges** from the prototype double as the R-ASK-2 "insert an
+  example" content and as swipe-deck filler.
+- Fixture emails use a non-routable domain (e.g. `@example.invalid`) so a
+  misconfigured dev deployment cannot email a real person.
+
+### 6.4 Production seed (`SEED_PROFILE=prod`)
+
+Production starts with real content only — no fictional members, ever.
+
+- **Attendee whitelist:** the invited summit attendees (R-AUTH-1), loaded from a
+  private file pointed at by env (`SEED_WHITELIST_FILE`, e.g. a CSV of
+  `email,name?`). Real addresses are **not committed to this repository**; the
+  file is supplied at deploy time and the repo holds only a `.example` template
+  (R-NFR-5).
+- **The ~15 real collected challenges** (`SEED_CHALLENGES_FILE`), each with its
+  trend assignment, so the swipe deck and match lists are non-empty the moment
+  the first attendee scans the QR code. *(Meeting: "around 15 or so" real
+  challenges already came in.)*
+- Whitelisted attendees are seeded as **not yet onboarded**: they still go
+  through **F1** and **F2** themselves, which is what records their consent
+  (R-ONB-3, R-NFR-6). The seed never pre-accepts consent on someone's behalf.
+- Attribution of the collected challenges is an open point — see requirements
+  §11 open question 5.
 
 ---
 
-## 7. Analytics (free, Mixpanel-style)
+## 7. Analytics (Mixpanel, EU residency, free tier)
 
-**Chosen tool: PostHog.** Event-based product analytics (funnels, retention,
-paths) like Mixpanel, with a **free cloud tier** (generous monthly event
-allowance), an **EU-hosted cloud** option (good for the privacy posture), and a
-**self-host** fallback if cloud is undesirable.
+**Chosen tool: Mixpanel.** It is what the team already had in mind, and its free
+plan carries everything the beta needs:
 
-Alternatives considered:
+- **Free tier:** up to 1M events/month and unlimited seats — orders of magnitude
+  above summit scale (~350 members, thousands of events), so R-ANA-5 is met
+  without a paid plan.
+- **EU data residency:** selectable per project at **no extra cost and with no
+  plan gate**, which satisfies the privacy posture directly rather than as a
+  "SHOULD" (R-ANA-5, R-NFR-1).
+- Funnels and retention are the core product, so the F1 → F2 onboarding funnel
+  (`flows.md`) and the ask/offer split are first-class.
+
+**EU residency setup — get this right the first time:**
+
+- Choose **EU Data Residency** when *creating* the project. The residency of a
+  project cannot be changed afterwards; a wrong choice means creating a new
+  project and abandoning the old data.
+- Point every call at the EU endpoints, in both the client and server config —
+  ingestion `api-eu.mixpanel.com`, queries `eu.mixpanel.com/api`. Data sent to
+  the default US endpoints is stored in the US even for an EU project.
+
+Alternatives considered (kept only as fallbacks):
+- **PostHog** — comparable free tier with EU cloud and a self-host option. The
+  fallback if Mixpanel's free-tier terms change before launch.
 - **Umami / Plausible** — privacy-friendly and free (self-host) but oriented to
   pageview web analytics; weaker for event funnels/retention. Good fallback if
   only basic usage counts are needed.
 - **Matomo / Countly (community)** — self-host, heavier to operate.
-- **Mixpanel itself** — has a free tier, but the ask was a free alternative; kept
-  as a reference point.
 
 ### Instrumentation rules (enforce R-ANA-2/3)
 
@@ -433,22 +656,73 @@ Alternatives considered:
   | `feedback_opened` | `screen` |
 
 - **Never** send challenge `body`, member `name`, `email`, `org`.
-- Gate capture on analytics consent (R-ANA-4). Prefer server-side capture
-  (`posthog-node`) for connection/consent events so they can't be blocked by ad
-  blockers; client-side (`posthog-js`) for UI interactions.
+- Gate capture on analytics consent (R-ANA-4). Prefer server-side capture (the
+  `mixpanel` Node SDK) for connection/consent events so they can't be blocked by
+  ad blockers; client-side (`mixpanel-browser`) for UI interactions. Both must be
+  pointed at `api-eu.mixpanel.com`.
 
 ---
 
 ## 8. Security & privacy notes
 
 - Magic-link tokens: generate 32 bytes random, email the raw token, store only
-  its SHA-256. Single-use, 15-min expiry. Rate-limit `/auth/request-link` per
-  email/IP.
+  its SHA-256. Single-use, expiry from `limits.magicLinkTtlMinutes` (default
+  15). Rate-limit `/auth/request-link` per email/IP.
 - Sessions: http-only, `Secure`, `SameSite=Lax` cookie; server-side session store
   in MySQL.
 - Authorization: every challenge/connection/contact read must check the caller is
   a party or owner. Contact endpoint returns an email **only** for an accepted
   request where the caller is one of the two members.
-- No member directory endpoint; no bulk export outside admin GDPR deletion.
+- Authorization is **permission-based**: one `requirePermission('…')` middleware
+  resolves the caller's roles → permissions from `config.permissions`. No route
+  tests a role name, so a new role (e.g. `moderator`) cannot silently inherit or
+  miss access (R-ROLE-3, R-ROLE-5).
+- Role grants are recorded with `granted_at` / `granted_by` for audit (R-ROLE-7).
+- Deep links are not a capability: `next` is validated as a known in-app path
+  (R-NAV-6) and the target screen still runs the same ownership checks as its API
+  (R-NAV-8).
+- Dev-only surfaces (the outbox) are registered **only** when
+  `mail.transport=outbox`, so production has no route that lists magic links
+  (R-DEV-3).
 - All secrets via env (`DATABASE_URL`, `SESSION_SECRET`, `SMTP_*`,
-  `POSTHOG_KEY`, `POSTHOG_HOST`).
+  `MIXPANEL_TOKEN`, `MIXPANEL_API_HOST=api-eu.mixpanel.com`).
+
+---
+
+## 9. Testing & CI
+
+Tooling (R-QA-1..6):
+
+- **Unit tests:** `vitest` or `node:test` — whichever the team prefers; the
+  requirement is one `npm test` entry point. Pure modules (matcher, token
+  service, permission resolver, `next` validator, config validation) are tested
+  without a database.
+- **Integration tests:** `supertest` against the Express app with a disposable
+  MySQL (the CI service container below) and `mail.transport=outbox`, so the auth
+  flow is testable without sending mail — the outbox doubles as the test mailbox.
+- **Lint/format:** `eslint` + `prettier`, run in CI.
+
+`.github/workflows/ci.yml` — on `push` and `pull_request`:
+
+```yaml
+services:
+  mysql:
+    image: mysql:8
+    env: { MYSQL_ROOT_PASSWORD: test, MYSQL_DATABASE: rebel_match_test }
+    options: >-
+      --health-cmd="mysqladmin ping" --health-interval=5s --health-retries=10
+steps:
+  - npm ci
+  - npm run lint
+  - npm run migrate          # migrations from scratch (R-QA-4)
+  - npm test                 # unit (R-QA-1)
+  - npm run test:integration # API-level (R-QA-2)
+  - npm run build
+```
+
+- The workflow uses synthetic env only: a throwaway `SESSION_SECRET`,
+  `mail.transport=outbox`, `SEED_PROFILE=dev`, and **no** Mixpanel token. No
+  production secret and no real attendee list is exposed to CI (R-QA-5,
+  R-SEED-5).
+- `main` must be green as part of the 2026-11-01 "feature-complete and tested"
+  milestone (R-QA-6).
