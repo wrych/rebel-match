@@ -47,3 +47,4 @@ bump, or anything the requirements already settle (cite the `R-*` id instead).
 | [0012](0012-conventional-commits-one-change-per-pr.md) | Conventional Commits, one change per pull request | Accepted |
 | [0013](0013-tell-applicants-their-status.md) | Tell applicants their status, accepting email enumeration | Accepted |
 | [0014](0014-qr-invite-tokens.md) | Invite tokens in the QR code, auto-approving the scanner | Accepted |
+| [0015](0015-own-auth-behind-a-narrow-seam.md) | Build authentication in-app, behind a narrow seam | Accepted |

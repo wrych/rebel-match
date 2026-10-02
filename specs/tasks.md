@@ -43,6 +43,9 @@ User journeys are in `flows.md` (`F1`…`F14`).
 
 ## M1 — Auth & onboarding *(M1, M2 — gates everything, F1 + F2)*
 
+- [ ] `auth` module behind its seam: `issueLink` / `verifyToken` /
+      `createSession` / `currentMember` / `endSession`, injected everywhere, with
+      a fake for tests. No token or cookie knowledge outside it. *(ADR 0015)*
 - [ ] `POST /auth/request-link`: whitelist check, token create, send link,
       accepts `next`; unknown email → applicant + admin notice.
       *(R-AUTH-1,2,4, R-NAV-5)*

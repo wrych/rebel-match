@@ -40,7 +40,8 @@ MySQL**, single-page mobile-first client served by the Node app.
   app.js                 Express app + middleware
   db.js                  mysql2 connection pool
   config.js              env-driven config
-  auth/                  magic link + sessions
+  auth/                  THE AUTH SEAM (ADR 0015) — tokens, sessions, nothing else
+                         knows how a member proves who they are
   routes/                auth, challenges, matches, swipe, connections, admin
   services/
     mailer.js            SMTP (nodemailer) — the team's own SMTP server, env-configured
@@ -76,6 +77,26 @@ thresholds have sane defaults in the file and may be overridden by env.
   server validator share one source of truth (R-CFG-2). It exposes no secrets.
 - The server validates against `config.limits` on every write regardless of what
   the client did (R-CFG-3).
+
+
+### The auth seam
+
+`auth/` is the only module that knows how a member proves who they are: token
+generation and hashing, TTLs per link kind, cookie format, session storage. It
+exposes `issueLink`, `verifyToken`, `createSession`, `currentMember`, `endSession`
+and nothing else (ADR 0015).
+
+- Nothing outside `auth/` reads or writes `magic_tokens`, builds a cookie, or
+  knows a TTL. A route that touches a token hash is a defect.
+- Routes and services receive the interface, never import a concrete
+  implementation — which is what lets R-QA-1's token tests run against a fake,
+  with no database.
+- **Admission policy deliberately stays outside** the seam: the whitelist,
+  applicants, approvals, invite tokens and consent are ours in every scenario, so
+  putting them behind an auth interface would only mean pulling them back out if
+  we ever adopt a provider.
+- `currentMember` returns roles and permissions already resolved, so no handler
+  depends on the shape of a token or a provider's claims.
 
 ### Mail transport
 
