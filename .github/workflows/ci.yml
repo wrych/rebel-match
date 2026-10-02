@@ -15,7 +15,7 @@ jobs:
     services:
       mysql:
         # Same major as compose.yaml, which is the development database.
-        image: mysql:8
+        image: mysql:8.4
         env:
           MYSQL_ROOT_PASSWORD: test
           MYSQL_DATABASE: rebel_match_test
