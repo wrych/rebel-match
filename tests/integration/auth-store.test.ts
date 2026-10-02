@@ -127,7 +127,11 @@ describe('the auth seam over MySQL', () => {
     expect(await auth.currentMember(asRequest(cookie))).toEqual({
       id: active.id,
       roles: ['member'],
-      permissions: ['challenge:create', 'connect', 'swipe'],
+      permissions: [
+        'challenge:create',
+        'challenge:swipe',
+        'connection:request',
+      ],
     })
 
     await auth.endSession(asRequest(cookie))

@@ -127,7 +127,11 @@ describe('GET /auth/me', () => {
       id: 'm-ada',
       ...profile,
       roles: ['member'],
-      permissions: ['challenge:create', 'connect', 'swipe'],
+      permissions: [
+        'challenge:create',
+        'challenge:swipe',
+        'connection:request',
+      ],
     })
   })
 
