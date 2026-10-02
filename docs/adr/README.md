@@ -51,6 +51,7 @@ still holds except where the later ADR says otherwise.
 | [0012](0012-conventional-commits-one-change-per-pr.md) | Conventional Commits, one change per pull request           | Accepted                  |
 | [0013](0013-tell-applicants-their-status.md)           | Tell applicants their status, accepting email enumeration   | Accepted                  |
 | [0014](0014-qr-invite-tokens.md)                       | Invite tokens in the QR code, auto-approving the scanner    | Accepted                  |
-| [0015](0015-own-auth-behind-a-narrow-seam.md)          | Build authentication in-app, behind a narrow seam           | Accepted                  |
+| [0015](0015-own-auth-behind-a-narrow-seam.md)          | Build authentication in-app, behind a narrow seam           | Accepted, amended by 0018 |
 | [0016](0016-outbound-message-log.md)                   | Record every outbound message, in every environment         | Accepted                  |
 | [0017](0017-vue-spa-with-a-shared-route-table.md)      | A Vue SPA, with one route table shared by client and server | Accepted                  |
+| [0018](0018-the-auth-seam-owns-its-session-cookie.md)  | The auth seam owns its sessions and hands routes the cookie | Accepted                  |

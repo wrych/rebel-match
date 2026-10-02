@@ -30,6 +30,13 @@ describe('loadConfig', () => {
     expect(() => loadConfig({ ...valid, SESSION_SECRET: 'short' })).toThrow()
   })
 
+  it('keeps a session for 30 days unless told otherwise (R-AUTH-7)', () => {
+    expect(loadConfig(valid).sessionTtlDays).toBe(30)
+    expect(loadConfig({ ...valid, SESSION_TTL_DAYS: '7' }).sessionTtlDays).toBe(
+      7,
+    )
+  })
+
   it('rejects a missing database url rather than failing on first query', () => {
     expect(() => loadConfig({ SESSION_SECRET: 'x'.repeat(32) })).toThrow()
   })

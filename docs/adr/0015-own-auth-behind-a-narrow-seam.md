@@ -1,6 +1,6 @@
 # 0015. Build authentication in-app, behind a narrow seam
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by 0018
 - **Date:** 2026-10-02
 - **Deciders:** Andy Moesch
 
