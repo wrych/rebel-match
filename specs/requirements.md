@@ -643,7 +643,7 @@ fixtures. `design.md` §6 lists the exact records and the profile mechanism.
    send as, and are SPF/DKIM/DMARC set up for it? This is the open part of the
    email question: the magic link must reach a phone inbox within ~30 s to hold
    the R-NFR-3 budget, and an unauthenticated from-address is the most likely way
-   that fails (spam folder mid-break).
+   that fails (spam folder mid-break). The runbook is `docs/email-setup.md`.
 5. **Attribution of the collected challenges** — the ~15 real challenges were
    collected before the app existed. Are they seeded **attributed** to their
    authors (which means creating member rows and exposing their challenges for

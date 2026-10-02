@@ -50,6 +50,13 @@ User journeys are in `flows.md` (`F1`…`F14`).
 
 ## M1 — Auth & onboarding _(M1, M2 — gates everything, F1 + F2)_
 
+Order matters here, and one dependency is easy to miss: **in development nothing
+is emailed**, so the outbound message log is the only way to retrieve your own
+magic link (F14). It cannot be deferred past login.
+
+The path to a login you can time on a phone: the auth seam, then the mailer and
+log, then the routes and admission policy, then the screens and a dev seed.
+
 - [ ] `auth` module behind its seam: `issueLink` / `verifyToken` /
       `createSession` / `currentMember` / `endSession`, injected everywhere, with
       a fake for tests. No token or cookie knowledge outside it. _(ADR 0015)_
