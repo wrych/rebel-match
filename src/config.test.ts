@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { clientConfig, loadConfig, rolePermissions } from './config.js'
+import {
+  clientConfig,
+  isDevelopmentDeployment,
+  loadConfig,
+  rolePermissions,
+} from './config.js'
 
 const valid = {
   DATABASE_URL: 'mysql://user:pw@localhost:3306/rebel_match',
@@ -142,5 +147,24 @@ describe('outbound message log settings', () => {
     const config = loadConfig({ ...valid, OUTBOX_RETENTION_DAYS: '30' })
 
     expect(config.limits.outboxRetentionDays).toBe(30)
+  })
+})
+
+describe('isDevelopmentDeployment', () => {
+  it('is true only for development with delivery off (R-DEV-1)', () => {
+    const smtp = { MAIL_DELIVERY: 'smtp', SMTP_HOST: 'mail.example.org' }
+
+    expect(isDevelopmentDeployment(loadConfig(valid))).toBe(true)
+    expect(isDevelopmentDeployment(loadConfig({ ...valid, ...smtp }))).toBe(
+      false,
+    )
+    expect(
+      isDevelopmentDeployment(loadConfig({ ...valid, NODE_ENV: 'test' })),
+    ).toBe(false)
+    expect(
+      isDevelopmentDeployment(
+        loadConfig({ ...valid, ...smtp, NODE_ENV: 'production' }),
+      ),
+    ).toBe(false)
   })
 })

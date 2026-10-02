@@ -86,7 +86,7 @@ printed dev link (R-DEV-6).
 - [ ] `GET /auth/verify`: validate/consume token, issue session, redirect to the
       validated `next` or onward. _(R-AUTH-5,6, R-NAV-5,6)_
 - [ ] Persistent session cookie + `/auth/me` (incl. `roles[]` + `permissions[]`) + `/auth/logout`. _(R-AUTH-7,8, R-ROLE-4)_
-- [ ] Mailer that always records to the outbound log, then delivers per
+- [x] Mailer that always records to the outbound log, then delivers per
       `mail.delivery`; token redacted outside development.
       _(design §1, R-MSG-1,2,3,4, R-DEV-1,4)_
 - [ ] Outbound message log screen + `GET/DELETE /admin/outbox`, permission-gated
