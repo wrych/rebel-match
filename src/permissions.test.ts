@@ -5,15 +5,15 @@ describe('resolvePermissions', () => {
   it('grants a member what the member role carries', () => {
     expect(resolvePermissions(['member'])).toEqual([
       'challenge:create',
-      'connect',
-      'swipe',
+      'challenge:swipe',
+      'connection:request',
     ])
   })
 
   it('takes the union when a member holds several roles (R-ROLE-2)', () => {
     const permissions = resolvePermissions(['member', 'admin'])
 
-    expect(permissions).toContain('swipe')
+    expect(permissions).toContain('challenge:swipe')
     expect(permissions).toContain('outbox:read')
     expect(new Set(permissions).size).toBe(permissions.length)
   })

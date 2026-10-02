@@ -5,7 +5,7 @@ import { z } from 'zod'
  * (R-ROLE-2, R-ROLE-3). An admin also holds `member`, so admin need not
  * repeat its grants. */
 export const rolePermissions = {
-  member: ['challenge:create', 'swipe', 'connect'],
+  member: ['challenge:create', 'challenge:swipe', 'connection:request'],
   admin: [
     'applicant:review',
     'whitelist:manage',
