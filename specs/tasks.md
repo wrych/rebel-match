@@ -24,8 +24,11 @@ User journeys are in `flows.md` (`F1`…`F14`).
       roles, no role-name checks anywhere). _(R-ROLE-2,3,5)_
 - [ ] Seed runner with `SEED_PROFILE`, dev-in-prod guard, idempotent upserts;
       shared seed = roles + trends + cases. _(R-SEED-1,4,7)_
-- [ ] Client router with path-based URLs + SPA catch-all + not-found screen.
-      _(R-NAV-1,10)_
+- [ ] Vue 3 + Vite + vue-router scaffold; the shared route table in
+      `src/routes.ts` feeding both the client router and the server `next`
+      validator; SPA catch-all + not-found screen. _(R-NAV-1,6, ADR 0017)_
+- [ ] Client test setup: `@vue/test-utils` + jsdom, guards as pure functions.
+      _(R-QA-1, ADR 0017)_
 - [ ] Health check + boundary schemas (`zod`) + error handling middleware that
       leaks nothing. _(R-CFG-3, constitution §5)_
 - [ ] Vitest harness: `npm test` + `npm run test:integration` (supertest,

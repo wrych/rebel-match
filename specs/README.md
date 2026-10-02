@@ -36,15 +36,18 @@ detail is shared).
 
 - **Server:** Node.js (Express).
 - **Database:** MySQL.
-- **Client:** single-page web app served by the Node server; mobile-first (the
-  summit flow is "scan a QR code on your phone during the break"). Every screen
-  has its own URL, so emails and QR codes can link straight to a screen —
-  screens, not modals.
+- **Client:** a **Vue 3 SPA** (Vite, TypeScript, vue-router) served by the Node
+  server; mobile-first, since the summit flow is "scan a QR code on your phone
+  during the break". Every screen has its own URL, so emails and QR codes link
+  straight to a screen — screens, not modals. One route table is shared with the
+  server, so the two cannot disagree about what exists (ADR 0017).
 - **Auth:** passwordless email magic links over a whitelist, with admin approval
   for new applicants. Access is **role-based** (`member`, `admin`, more later),
   enforced by permission, never by a role name.
-- **Email:** the team's own SMTP server. A dev deployment sends **nothing** —
-  messages land in an admin outbox screen where the magic link is copyable.
+- **Email:** the team's own SMTP server. Every message is recorded in an
+  **outbound log** visible to admins in every environment — outbound mail is
+  otherwise a black box. A dev deployment records but sends **nothing**, and the
+  magic link stays clickable there only (ADR 0016).
 - **Analytics:** Mixpanel, free tier, **EU data residency**, pseudonymous ids
   only.
 - **Seeding:** per-environment — prototype fixtures for dev, the real whitelist
