@@ -1,6 +1,10 @@
 import { z } from 'zod'
 import { rolePermissions } from './access.js'
 
+// Node clamps a timer delay above 2^31-1 ms (about 24.8 days) to 1 ms, so a
+// longer purge interval would run the purge continuously.
+const MAX_TIMER_HOURS = Math.floor(0x7fffffff / 3_600_000)
+
 const envSchema = z
   .object({
     NODE_ENV: z
@@ -29,7 +33,14 @@ const envSchema = z
 
     CHALLENGE_MIN_CHARS: z.coerce.number().int().positive().default(31),
     BEEN_THERE_NOTE_MIN_CHARS: z.coerce.number().int().positive().default(31),
-    OUTBOX_RETENTION_DAYS: z.coerce.number().int().positive().default(90),
+    OUTBOX_PAGE_SIZE: z.coerce.number().int().positive().default(100),
+    OUTBOX_RETENTION_DAYS: z.coerce.number().int().positive().default(30),
+    OUTBOX_PURGE_INTERVAL_HOURS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .max(MAX_TIMER_HOURS)
+      .default(1),
     MAGIC_LINK_TTL_MINUTES: z.coerce.number().int().positive().default(15),
     APPROVAL_LINK_TTL_HOURS: z.coerce.number().int().positive().default(24),
     INVITE_DEFAULT_MAX_USES: z.coerce.number().int().positive().default(400),
@@ -64,6 +75,7 @@ export interface Limits {
   inviteDefaultMaxUses: number
   inviteDefaultHours: number
   outboxRetentionDays: number
+  outboxPageSize: number
 }
 
 /** Values the client is allowed to read, so a disabled button and a server
@@ -81,6 +93,7 @@ export interface Config {
   databaseUrl: string
   sessionSecret: string
   sessionTtlDays: number
+  outboxPurgeIntervalHours: number
   mail: {
     delivery: Env['MAIL_DELIVERY']
     from: string
@@ -106,6 +119,7 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): Config {
     databaseUrl: env.DATABASE_URL,
     sessionSecret: env.SESSION_SECRET,
     sessionTtlDays: env.SESSION_TTL_DAYS,
+    outboxPurgeIntervalHours: env.OUTBOX_PURGE_INTERVAL_HOURS,
     mail: {
       delivery: env.MAIL_DELIVERY,
       from: env.MAIL_FROM,
@@ -134,6 +148,7 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): Config {
       inviteDefaultMaxUses: env.INVITE_DEFAULT_MAX_USES,
       inviteDefaultHours: env.INVITE_DEFAULT_HOURS,
       outboxRetentionDays: env.OUTBOX_RETENTION_DAYS,
+      outboxPageSize: env.OUTBOX_PAGE_SIZE,
     },
     rolePermissions,
   }

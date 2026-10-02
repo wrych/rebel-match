@@ -401,8 +401,9 @@ box: you cannot look in someone else's inbox.
   it" from "the transport refused it" from "it went out and the inbox swallowed
   it". That third case is the one that sends you to the DMARC records rather than
   to the code (R-NFR-3).
-- _Entries age past retention_ → purged on the retention window, which is
-  configurable because the log holds email addresses (R-MSG-6).
+- _Entries age past retention_ → the server purges them automatically, at startup
+  and then hourly by default; the window is configurable because the log holds
+  email addresses (R-MSG-6). There is no manual purge.
 - _A member is erased_ → their log entries go with them, in the same transaction
   (R-NFR-7).
 - _Production started with delivery off_ → it does not start. Recording links

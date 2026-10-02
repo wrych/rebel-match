@@ -78,7 +78,9 @@ thresholds have sane defaults in the file and may be overridden by env.
 | `limits.inviteDefaultHours`    | `12`                          | R-INV-2                   |
 | `consent.currentVersion`       | e.g. `"2026-11-01"`           | R-ONB-3, R-ONB-4          |
 | `mail.delivery`                | `smtp` \| `none`              | R-DEV-1, R-DEV-4, R-DEV-5 |
-| `limits.outboxRetentionDays`   | `90`                          | R-MSG-6                   |
+| `limits.outboxRetentionDays`   | `30`                          | R-MSG-6                   |
+| `outboxPurgeIntervalHours`     | `1`                           | R-MSG-6                   |
+| `limits.outboxPageSize`        | `100`                         | R-MSG-5                   |
 | `seed.profile`                 | `dev` \| `prod`               | R-SEED-4                  |
 | `analytics.apiHost`            | `api-eu.mixpanel.com`         | R-ANA-5                   |
 | `rolePermissions`              | role → permission matrix (§2) | R-ROLE-3, R-ROLE-6        |
@@ -474,6 +476,11 @@ system: an admin could read any member's magic link and sign in as them.
 member — an admin notice about an unknown applicant, say — and those age out under
 retention rather than erasure.
 
+**Retention is a job, not an endpoint (R-MSG-6).** The server deletes entries
+older than `limits.outboxRetentionDays` once at startup and then every
+`outboxPurgeIntervalHours`. Nobody can purge the log by hand: a person able to
+read it should not also be able to erase the record of what was sent.
+
 ---
 
 ## 3. API
@@ -544,7 +551,6 @@ onboarding (except the onboarding routes).
 | DELETE | `/api/admin/members/:id/roles/:role` | Revoke a role. Refused with 409 if no active member would still hold `role:grant` (R-ROLE-9). _Requires `role:grant`._                                                             |
 | DELETE | `/api/admin/members/:id`             | GDPR erasure: delete member + their challenges/requests. _Requires `member:delete`._                                                                                               |
 | GET    | `/api/admin/outbox`                  | The outbound message log, newest first, filterable by recipient and status (R-MSG-5). Bodies have the credential redacted outside development (R-MSG-4). _Requires `outbox:read`._ |
-| DELETE | `/api/admin/outbox`                  | Purge entries past the retention window (R-MSG-6). _Requires `outbox:read`._                                                                                                       |
 | GET    | `/api/admin/invites`                 | List invites with label, window, uses/cap, state, creator (R-INV-9). _Requires `invite:manage`._                                                                                   |
 | POST   | `/api/admin/invites`                 | Create an invite: `{label, validFrom, validUntil, maxUses}`. Returns the join URL once, for the QR (R-INV-9,10). _Requires `invite:manage`._                                       |
 | POST   | `/api/admin/invites/:id/revoke`      | Set `revoked_at`; effective on next use (R-INV-3). _Requires `invite:manage`._                                                                                                     |

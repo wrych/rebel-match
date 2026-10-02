@@ -31,6 +31,24 @@ describe('loadConfig', () => {
     expect(() => loadConfig({ ...valid, SESSION_SECRET: 'short' })).toThrow()
   })
 
+  it('purges the outbound log hourly unless told otherwise (R-MSG-6)', () => {
+    expect(loadConfig(valid).outboxPurgeIntervalHours).toBe(1)
+    expect(
+      loadConfig({ ...valid, OUTBOX_PURGE_INTERVAL_HOURS: '6' })
+        .outboxPurgeIntervalHours,
+    ).toBe(6)
+  })
+
+  it('refuses a purge interval too long for a Node timer', () => {
+    expect(
+      loadConfig({ ...valid, OUTBOX_PURGE_INTERVAL_HOURS: '596' })
+        .outboxPurgeIntervalHours,
+    ).toBe(596)
+    expect(() =>
+      loadConfig({ ...valid, OUTBOX_PURGE_INTERVAL_HOURS: '720' }),
+    ).toThrow()
+  })
+
   it('keeps a session for 30 days unless told otherwise (R-AUTH-7)', () => {
     expect(loadConfig(valid).sessionTtlDays).toBe(30)
     expect(loadConfig({ ...valid, SESSION_TTL_DAYS: '7' }).sessionTtlDays).toBe(
@@ -135,14 +153,18 @@ describe('smtp configuration', () => {
 })
 
 describe('outbound message log settings', () => {
+  it('pages the log 100 entries at a time unless told otherwise (R-MSG-5)', () => {
+    expect(loadConfig(valid).limits.outboxPageSize).toBe(100)
+  })
+
   it('bounds how long message records are kept', () => {
-    expect(loadConfig(valid).limits.outboxRetentionDays).toBe(90)
+    expect(loadConfig(valid).limits.outboxRetentionDays).toBe(30)
   })
 
   it('lets retention be shortened without a code change', () => {
-    const config = loadConfig({ ...valid, OUTBOX_RETENTION_DAYS: '30' })
+    const config = loadConfig({ ...valid, OUTBOX_RETENTION_DAYS: '7' })
 
-    expect(config.limits.outboxRetentionDays).toBe(30)
+    expect(config.limits.outboxRetentionDays).toBe(7)
   })
 })
 
