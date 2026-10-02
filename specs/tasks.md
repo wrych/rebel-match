@@ -91,7 +91,7 @@ printed dev link (R-DEV-6).
 - [x] Mailer that always records to the outbound log, then delivers per
       `mail.delivery`; token redacted outside development.
       _(design §1, R-MSG-1,2,3,4, R-DEV-1,4)_
-- [ ] Outbound message log screen + `GET/DELETE /admin/outbox`, permission-gated
+- [ ] Outbound message log screen + `GET/DELETE /api/admin/outbox`, permission-gated
       in every environment; filter by recipient and status.
       _(R-MSG-5,6, F14)_
 - [ ] Verify magic-link deliverability to a phone inbox (<30 s, not spam);
