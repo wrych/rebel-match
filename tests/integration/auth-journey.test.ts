@@ -10,7 +10,10 @@ import { migrate } from '../../src/migrations/run.js'
 import { DEV_ADMIN_EMAIL } from '../../src/seed/dev/people.js'
 import { planSeed } from '../../src/seed/plan.js'
 import { applySeed } from '../../src/seed/run.js'
+import { configPolicy } from '../../src/permissions.js'
 import { createMysqlMemberProfiles } from '../../src/services/member-profiles.js'
+import { createMysqlRoleGrantStore } from '../../src/services/role-grant-store.js'
+import { createRoleService } from '../../src/services/roles.js'
 
 const databaseUrl = process.env['DATABASE_URL']
 
@@ -58,6 +61,10 @@ describe('signing in as the dev admin, end to end (R-QA-2)', () => {
       pool,
       auth,
       profiles: createMysqlMemberProfiles(pool),
+      roles: createRoleService({
+        store: createMysqlRoleGrantStore(pool),
+        policy: configPolicy,
+      }),
     })
     await auth.issueLink(DEV_ADMIN_EMAIL, {
       kind: 'self_service',

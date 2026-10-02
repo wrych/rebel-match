@@ -256,6 +256,7 @@ is one new implementation, with no guard touched:
 | `challenge:moderate`                         |    —     |   ✅    |          ✅          |
 | `invite:manage` (create / revoke QR invites) |    —     |   ✅    |          —           |
 | `outbox:read` (the outbound message log)     |    —     |   ✅    |          —           |
+| `role:grant` (grant / revoke roles)          |    —     |   ✅    |          —           |
 
 - Route guards SHALL check a **permission**, never a role name —
   `requirePermission('applicant:review')`, not `if (member.isAdmin)`. Adding
@@ -477,8 +478,9 @@ retention rather than erasure.
 
 ## 3. API
 
-All `/api/*` and `/admin/*` routes require an authenticated session and a member
-with `status='active'` and completed onboarding (except the onboarding routes).
+All `/api/*` routes, the admin API under `/api/admin/*` included, require an
+authenticated session and a member with `status='active'` and completed
+onboarding (except the onboarding routes).
 
 ### Auth
 
@@ -532,18 +534,20 @@ with `status='active'` and completed onboarding (except the onboarding routes).
 
 ### Admin (permission-guarded, not role-name-guarded — R-ROLE-3)
 
-| Method | Path                            | Behavior                                                                                                                                                                           |
-| ------ | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| GET    | `/admin/applicants`             | List pending applicants with email, request time, and any name/org given (R-AUTH-11). _Requires `applicant:review`._                                                               |
-| POST   | `/admin/applicants/:id/approve` | Set `status='active'`, grant the `member` role, **and email a magic link** with the approval TTL (R-AUTH-10). _Requires `applicant:review`._                                       |
-| POST   | `/admin/applicants/:id/reject`  | Set `status='rejected'`. _Requires `applicant:review`._                                                                                                                            |
-| POST   | `/admin/whitelist`              | Add email(s) as pre-approved active member(s) with the `member` role. _Requires `whitelist:manage`._                                                                               |
-| DELETE | `/admin/members/:id`            | GDPR erasure: delete member + their challenges/requests. _Requires `member:delete`._                                                                                               |
-| GET    | `/admin/outbox`                 | The outbound message log, newest first, filterable by recipient and status (R-MSG-5). Bodies have the credential redacted outside development (R-MSG-4). _Requires `outbox:read`._ |
-| DELETE | `/admin/outbox`                 | Purge entries past the retention window (R-MSG-6). _Requires `outbox:read`._                                                                                                       |
-| GET    | `/admin/invites`                | List invites with label, window, uses/cap, state, creator (R-INV-9). _Requires `invite:manage`._                                                                                   |
-| POST   | `/admin/invites`                | Create an invite: `{label, validFrom, validUntil, maxUses}`. Returns the join URL once, for the QR (R-INV-9,10). _Requires `invite:manage`._                                       |
-| POST   | `/admin/invites/:id/revoke`     | Set `revoked_at`; effective on next use (R-INV-3). _Requires `invite:manage`._                                                                                                     |
+| Method | Path                                 | Behavior                                                                                                                                                                           |
+| ------ | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/admin/applicants`              | List pending applicants with email, request time, and any name/org given (R-AUTH-11). _Requires `applicant:review`._                                                               |
+| POST   | `/api/admin/applicants/:id/approve`  | Set `status='active'`, grant the `member` role, **and email a magic link** with the approval TTL (R-AUTH-10). _Requires `applicant:review`._                                       |
+| POST   | `/api/admin/applicants/:id/reject`   | Set `status='rejected'`. _Requires `applicant:review`._                                                                                                                            |
+| POST   | `/api/admin/whitelist`               | Add email(s) as pre-approved active member(s) with the `member` role. _Requires `whitelist:manage`._                                                                               |
+| POST   | `/api/admin/members/:id/roles`       | Grant a role: `{role}`. Records `granted_by` (R-ROLE-7, R-ROLE-9). Unknown role → 400; inactive or unknown member → 404. _Requires `role:grant`._                                  |
+| DELETE | `/api/admin/members/:id/roles/:role` | Revoke a role. Refused with 409 if no active member would still hold `role:grant` (R-ROLE-9). _Requires `role:grant`._                                                             |
+| DELETE | `/api/admin/members/:id`             | GDPR erasure: delete member + their challenges/requests. _Requires `member:delete`._                                                                                               |
+| GET    | `/api/admin/outbox`                  | The outbound message log, newest first, filterable by recipient and status (R-MSG-5). Bodies have the credential redacted outside development (R-MSG-4). _Requires `outbox:read`._ |
+| DELETE | `/api/admin/outbox`                  | Purge entries past the retention window (R-MSG-6). _Requires `outbox:read`._                                                                                                       |
+| GET    | `/api/admin/invites`                 | List invites with label, window, uses/cap, state, creator (R-INV-9). _Requires `invite:manage`._                                                                                   |
+| POST   | `/api/admin/invites`                 | Create an invite: `{label, validFrom, validUntil, maxUses}`. Returns the join URL once, for the QR (R-INV-9,10). _Requires `invite:manage`._                                       |
+| POST   | `/api/admin/invites/:id/revoke`      | Set `revoked_at`; effective on next use (R-INV-3). _Requires `invite:manage`._                                                                                                     |
 
 ---
 

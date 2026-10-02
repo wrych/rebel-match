@@ -298,15 +298,15 @@ before both sides agree.**
 **Actor:** admin member — at the summit, usually the host with a phone in hand.
 **Screens:** S19 Admin approvals.
 
-1. Admin opens the approvals screen → `GET /admin/applicants`. Each row carries
-   the email, when they asked, and any name or organization they gave, so the
-   host can match a row to a person in the room (R-AUTH-11).
-2. Per applicant: **Approve** → `POST /admin/applicants/:id/approve` sets
+1. Admin opens the approvals screen → `GET /api/admin/applicants`. Each row
+   carries the email, when they asked, and any name or organization they gave,
+   so the host can match a row to a person in the room (R-AUTH-11).
+2. Per applicant: **Approve** → `POST /api/admin/applicants/:id/approve` sets
    `status='active'`, grants the `member` role, **and emails them a magic link
    straight away** — they do not have to come back to the login screen
-   (R-AUTH-3, R-AUTH-10). **Reject** → `POST /admin/applicants/:id/reject`
+   (R-AUTH-3, R-AUTH-10). **Reject** → `POST /api/admin/applicants/:id/reject`
    blocks login (R-AUTH-3).
-3. Admin may also pre-whitelist addresses in bulk → `POST /admin/whitelist`
+3. Admin may also pre-whitelist addresses in bulk → `POST /api/admin/whitelist`
    (R-AUTH-1) — the normal pre-summit path for invited attendees.
 
 **Branches**
@@ -321,8 +321,8 @@ before both sides agree.**
 ## F11 — Admin: GDPR deletion
 
 1. A member asks to be removed (by email; self-service is post-beta).
-2. Admin calls `DELETE /admin/members/:id`, which deletes the member together
-   with their challenges and connection requests (R-NFR-7).
+2. Admin calls `DELETE /api/admin/members/:id`, which deletes the member
+   together with their challenges and connection requests (R-NFR-7).
 
 ---
 
@@ -457,15 +457,15 @@ they wait for a human (**F4**).
 **Actor:** admin, usually the host setting up before a session.
 **Screens:** S22 Admin invites.
 
-1. Admin opens `/admin/invites` → `GET /admin/invites`: every invite with its
-   label, window, uses against cap, creator, and state — active, scheduled,
+1. Admin opens `/admin/invites` → `GET /api/admin/invites`: every invite with
+   its label, window, uses against cap, creator, and state — active, scheduled,
    expired, revoked, or exhausted (R-INV-9).
-2. **Create** → `POST /admin/invites` with a label, a validity window, and a use
-   cap. The response carries the join URL once, so the host can render the QR for
-   a badge, a slide, or a poster (R-INV-9, R-INV-10).
-3. **Revoke** → `POST /admin/invites/:id/revoke`. Effective on the next use, with
-   no cache in the way (R-INV-3). The printed code keeps existing; it simply stops
-   admitting anyone.
+2. **Create** → `POST /api/admin/invites` with a label, a validity window, and a
+   use cap. The response carries the join URL once, so the host can render the
+   QR for a badge, a slide, or a poster (R-INV-9, R-INV-10).
+3. **Revoke** → `POST /api/admin/invites/:id/revoke`. Effective on the next use,
+   with no cache in the way (R-INV-3). The printed code keeps existing; it
+   simply stops admitting anyone.
 4. Who joined through which invite is recorded, so a bad batch can be found and
    deleted afterwards (R-INV-8, **F11**).
 

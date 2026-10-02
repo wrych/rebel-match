@@ -28,6 +28,7 @@ export default defineConfig({
         'src/migrations/run.ts',
         'src/auth/mysql-store.ts',
         'src/services/outbox-store.ts',
+        'src/services/role-grant-store.ts',
         'src/services/smtp.ts',
         'client/main.ts',
         'client/router.ts',
