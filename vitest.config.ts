@@ -18,6 +18,7 @@ export default defineConfig({
         'src/db.ts',
         'src/migrate.ts',
         'src/migrations/run.ts',
+        'src/auth/mysql-store.ts',
         'client/main.ts',
         'client/router.ts',
       ],

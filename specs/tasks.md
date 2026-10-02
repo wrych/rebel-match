@@ -57,7 +57,7 @@ magic link (F14). It cannot be deferred past login.
 The path to a login you can time on a phone: the auth seam, then the mailer and
 log, then the routes and admission policy, then the screens and a dev seed.
 
-- [ ] `auth` module behind its seam: `issueLink` / `verifyToken` /
+- [x] `auth` module behind its seam: `issueLink` / `verifyToken` /
       `createSession` / `currentMember` / `endSession`, injected everywhere, with
       a fake for tests. No token or cookie knowledge outside it. _(ADR 0015)_
 - [ ] `POST /auth/request-link`: whitelist check, token create, send link,
