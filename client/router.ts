@@ -1,8 +1,12 @@
 import type { Component } from 'vue'
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
-import { routeTable } from '../src/routes'
+import { routeTable, type Access } from '../src/routes'
+import { decide } from './guards'
+import { loadMe } from './lib/session'
 import LoginScreen from './screens/LoginScreen.vue'
 import NotFoundScreen from './screens/NotFoundScreen.vue'
+import OutboxScreen from './screens/OutboxScreen.vue'
+import WelcomeScreen from './screens/WelcomeScreen.vue'
 
 /**
  * Builds a router record from the shared route table (ADR 0017), so the client
@@ -33,6 +37,34 @@ export const router = createRouter({
   routes: [
     screen('entry', LoginScreen),
     screen('login', LoginScreen),
+    screen('welcome', WelcomeScreen),
+    screen('admin-outbox', OutboxScreen),
     { path: '/:pathMatch(.*)*', name: 'not-found', component: NotFoundScreen },
   ],
+})
+
+router.beforeEach(async (to) => {
+  if (to.name === 'not-found') return true
+
+  const decision = decide(
+    {
+      path: to.path,
+      fullPath: to.fullPath,
+      access: (to.meta['access'] as Access | undefined) ?? 'public',
+      permission: to.meta['permission'] as string | undefined,
+    },
+    await loadMe(),
+  )
+
+  if (decision.kind === 'redirect') return decision.to
+  if (decision.kind === 'not-found') {
+    return {
+      name: 'not-found',
+      params: { pathMatch: to.path.slice(1).split('/') },
+      query: to.query,
+      hash: to.hash,
+      replace: true,
+    }
+  }
+  return true
 })
