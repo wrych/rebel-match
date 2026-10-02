@@ -4,6 +4,7 @@ import { createApp, handleErrors, type AppDeps } from './app.js'
 import { createAuth, createMemoryAuthStore } from './auth/index.js'
 import { loadConfig } from './config.js'
 import type { Pool } from './db.js'
+import { configPolicy } from './permissions.js'
 
 const config = loadConfig({
   DATABASE_URL: 'mysql://user:pw@localhost:3306/rebel_match',
@@ -18,6 +19,7 @@ function deps(
     config,
     pool: { query } as unknown as Pool,
     auth: createAuth({
+      policy: configPolicy,
       store: createMemoryAuthStore([]),
       deliver: () => Promise.resolve(),
       config,

@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import type { Config } from '../config.js'
-import { resolvePermissions } from '../permissions.js'
+import type { PermissionPolicy } from '../permissions.js'
 import { safeNextPath } from '../routes.js'
 import {
   readCookie,
@@ -28,6 +28,7 @@ const RENEWAL_STEP_MS = MS_PER_DAY
 
 export interface AuthDeps {
   store: AuthStore
+  policy: PermissionPolicy
   deliver: LinkDelivery
   config: Pick<
     Config,
@@ -140,7 +141,11 @@ async function currentMember(
   const roles = await ctx.store.activeMemberRoles(session.memberId)
   if (roles === null) return null
 
-  return { id: session.memberId, roles, permissions: resolvePermissions(roles) }
+  return {
+    id: session.memberId,
+    roles,
+    permissions: ctx.policy.permissionsOf(roles),
+  }
 }
 
 async function renewSession(

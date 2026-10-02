@@ -10,6 +10,7 @@ import {
 import { loadConfig } from '../config.js'
 import type { MemberProfile } from '../services/member-profiles.js'
 import { authRoutes, renewSessions } from './auth.js'
+import { configPolicy } from '../permissions.js'
 
 const DAY = 86_400_000
 const config = loadConfig({
@@ -34,6 +35,7 @@ function setup(): Harness {
   const clock = { now: new Date('2026-11-08T10:00:00Z') }
   const sent: OutgoingLink[] = []
   const auth = createAuth({
+    policy: configPolicy,
     store: createMemoryAuthStore([ada]),
     config,
     now: () => clock.now,

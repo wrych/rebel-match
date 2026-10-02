@@ -9,6 +9,7 @@ import {
 } from './memory-store.js'
 import { createAuth } from './provider.js'
 import type { AuthProvider, OutgoingLink, SessionCookie } from './types.js'
+import { configPolicy } from '../permissions.js'
 
 const config = loadConfig({
   DATABASE_URL: 'mysql://user:pw@localhost:3306/rebel_match',
@@ -44,6 +45,7 @@ function setup(start = new Date('2026-11-08T10:00:00Z')): Harness {
   const store = createMemoryAuthStore([ada, gone])
   const auth = createAuth({
     store,
+    policy: configPolicy,
     config,
     now: () => clock.now,
     deliver: (link) => {
