@@ -103,7 +103,10 @@ Requirements:
   SYSTEM SHALL show an error and offer to resend a new link.
 - **R-AUTH-7** — The system SHALL keep the user signed in via a session that
   survives closing and reopening the browser (so a phone user mid-break is not
-  logged out), until they explicitly log out.
+  logged out), until they explicitly log out **or have been inactive for the
+  configured idle period** (default 30 days, R-CFG-1). Every use of the app
+  restarts that period, so a member who keeps using it is never signed out by
+  it.
 - **R-AUTH-8** — The system SHALL NOT require a password at any point.
 - **R-AUTH-9 (Access-requested screen)** — The access-requested state SHALL be
   its own screen at its own URL, not a variant of the "check your email" state.

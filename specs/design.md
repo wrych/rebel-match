@@ -73,7 +73,7 @@ thresholds have sane defaults in the file and may be overridden by env.
 | `limits.beenThereNoteMinChars` | `31`                          | R-OFF-4                   |
 | `limits.magicLinkTtlMinutes`   | `15`                          | R-AUTH-5                  |
 | `limits.approvalLinkTtlHours`  | `24`                          | R-AUTH-10                 |
-| `sessionTtlDays`               | `30`                          | R-AUTH-7                  |
+| `sessionTtlDays` (idle)        | `30`                          | R-AUTH-7                  |
 | `limits.inviteDefaultMaxUses`  | `400`                         | R-INV-4                   |
 | `limits.inviteDefaultHours`    | `12`                          | R-INV-2                   |
 | `consent.currentVersion`       | e.g. `"2026-11-01"`           | R-ONB-3, R-ONB-4          |
