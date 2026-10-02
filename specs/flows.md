@@ -389,6 +389,11 @@ box: you cannot look in someone else's inbox.
    a developer signs in as any seeded member from this screen. Clicking completes
    **F1** from step 6, `next` path included, so deep links (**F13**) are testable
    the same way.
+7. **The first sign-in comes from the terminal.** This screen needs
+   `outbox:read`, so it cannot let anyone in the first time. `npm run dev` prints
+   a magic link for the seeded admin (`admin@rebel-match.invalid`); clicking it
+   is F1 from step 6. `npm run dev:login <email>` prints one for any other seeded
+   member (R-DEV-6).
 
 **Branches**
 
