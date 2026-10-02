@@ -73,12 +73,14 @@ Requirements:
 
 ### 3.1 Whitelist & access
 
-- **R-AUTH-1** — The system SHALL restrict login to email addresses on an
-  approved whitelist (seeded from invited summit attendees).
-- **R-AUTH-2** — WHEN a non-whitelisted email requests access THE SYSTEM SHALL
-  record it as a pending **applicant**, notify an admin, and show the
-  **access-requested screen** (R-AUTH-9) — rather than granting access or
-  showing the "check your email" state.
+- **R-AUTH-1** — The system SHALL restrict login to email addresses that are
+  either on the **approved whitelist** (seeded from invited summit attendees) or
+  are joining through a **valid invite link** (R-INV-1). No other address can
+  obtain a session.
+- **R-AUTH-2** — WHEN a non-whitelisted email requests access **without a valid
+  invite** THE SYSTEM SHALL record it as a pending **applicant**, notify an admin,
+  and show the **access-requested screen** (R-AUTH-9) — rather than granting
+  access or showing the "check your email" state.
 - **R-AUTH-3** — WHEN an admin approves an applicant THE SYSTEM SHALL move them
   to active, grant the `member` role, and immediately email them a working magic
   link (R-AUTH-10). WHEN an admin rejects an applicant THE SYSTEM SHALL prevent
@@ -149,8 +151,62 @@ Requirements:
   SYSTEM SHALL block access to the main app and re-present the consent.
 - **R-ONB-5** — The consent copy SHALL state plainly that **email addresses are
   shared with another member only when both sides accept a connection**, and that
-  the app is closed to whitelisted members only. *(Meeting: "we need to make it
-  very explicit that the emails will be shared when you connect.")*
+  the app is **closed: membership is by invitation**, whether from the whitelist
+  or an event invite link (R-INV-1). *(Meeting: "we need to make it very explicit
+  that the emails will be shared when you connect.")*
+
+---
+
+### 3.4 Invite links (QR auto-approval)
+
+At a summit the admin queue is the wrong shape: a host cannot approve people one
+by one during a ten-minute break. An invite link carries a token in the QR code
+and admits the scanner straight away, so R-NFR-3's two minutes apply to someone
+who was never on the whitelist.
+
+The token is printed on a badge, a slide, or a poster. It is therefore **a public
+capability, not a secret** — and every requirement below exists because of that.
+
+- **R-INV-1 (Auto-approval)** — The system SHALL support **invite links**: a token
+  carried in the QR URL. WHEN a non-whitelisted email requests a link WHILE a
+  valid invite token is present THE SYSTEM SHALL create the member as active,
+  grant the `member` role, and email a magic link immediately — skipping the
+  applicant queue (R-AUTH-2) and the admin approval step entirely.
+- **R-INV-2 (Time-scoped)** — Every invite SHALL carry a validity window (a start
+  and an end). Outside that window the token SHALL be inert.
+- **R-INV-3 (Revocable)** — An admin SHALL be able to revoke an invite in a single
+  action, and revocation SHALL take effect on the **next use** — never from a
+  cache. A printed QR code cannot be recalled, so revocation is the only way to
+  close a link that has escaped.
+- **R-INV-4 (Capped)** — Every invite SHALL carry a **maximum number of uses**,
+  defaulted sensibly and settable by the admin. At the cap the token SHALL be
+  inert. A link that leaks must not be able to admit an unbounded crowd.
+- **R-INV-5 (Graceful fallback)** — IF a token is unknown, not yet valid, expired,
+  revoked, or at its cap THEN THE SYSTEM SHALL fall back to the ordinary applicant
+  flow (R-AUTH-2) and say so plainly. It SHALL NOT show an error dead end: the
+  person is standing in the room holding a phone, and the QR cannot be reprinted.
+- **R-INV-6 (Consent is not skipped)** — Auto-approval SHALL skip **admin
+  approval only**. The member SHALL still complete onboarding, including explicit
+  acceptance of the current consent version (R-ONB-1, R-ONB-3).
+- **R-INV-7 (Member role only)** — An invite SHALL grant the `member` role and
+  nothing else. No invite can confer admin or any other role (R-ROLE-3).
+- **R-INV-8 (Audit)** — THE SYSTEM SHALL record, per member admitted this way,
+  **which invite** admitted them, and per invite, **which admin** created it and
+  when. A bad batch must be identifiable after the fact, and removable (R-NFR-7).
+- **R-INV-9 (Admin screen)** — The admin interface SHALL include an **invite
+  screen** of its own that lists every invite with its label, window, uses against
+  cap, and state (active / scheduled / expired / revoked / exhausted), and allows
+  creating and revoking. Each invite SHALL show its join URL so the host can
+  render or re-render the QR code; it MAY render the QR itself.
+- **R-INV-10 (Labelled)** — Every invite SHALL carry a human label (for example
+  "Summit 2026 — main stage"), because a host with three posters needs to know
+  which token to revoke.
+- **R-INV-11 (Rate limiting still applies)** — The presence of a valid invite SHALL
+  NOT relax rate limiting on link requests (R-NFR-5).
+- **R-INV-12 (Recognition)** — The login screen MAY confirm that an invite was
+  recognized (for example "joining via Summit 2026"), so a scanner knows the QR
+
+  worked before they type anything. It SHALL NOT reveal the token itself.
 
 ---
 
@@ -334,7 +390,7 @@ at a screen instead of at the front door.
 
   | URL | Screen |
   |-----|--------|
-  | `/` | entry: routes to login, onboarding, or welcome |
+  | `/`, `/?invite=…` | entry: routes to login, onboarding, or welcome |
   | `/login` | login / "check your email" |
   | `/access-requested` | applicant: what happens next (R-AUTH-9) |
   | `/auth/verify?token=…` | magic-link landing |
@@ -353,6 +409,7 @@ at a screen instead of at the front door.
   | `/matches/requests/:id` | one request (pending, or accept/decline) |
   | `/matches/requests/:id/contact` | contact detail, accepted requests only |
   | `/admin/applicants` | admin approvals |
+  | `/admin/invites` | invite links (R-INV-9) |
   | `/admin/outbox` | dev outbox (dev deployments only) |
 
 - **R-NAV-5** — WHEN an unauthenticated visitor opens any deep link THE SYSTEM
@@ -374,8 +431,10 @@ at a screen instead of at the front door.
   NOT contain challenge text, member names beyond the recipient's own, or contact
   details — the link leads to the app, where the normal privacy rules apply
   (R-CONN-2, R-NFR-1).
-- **R-NAV-10** — The summit QR code SHALL point at the app root (optionally with a
-  non-identifying campaign parameter for analytics) and follow the same routing.
+- **R-NAV-10** — The summit QR code SHALL point at the app root, optionally with a
+  non-identifying campaign parameter for analytics and an **invite token**
+  (R-INV-1), and follow the same routing. The invite token SHALL survive the trip
+  to the login screen.
 
 ---
 
@@ -463,6 +522,10 @@ at a screen instead of at the front door.
   conference wifi. The measured path is: scan QR → enter email → receive and open
   the magic link → submit name + consent. Magic-link email delivery is part of
   this budget and SHOULD reach the inbox within 30 seconds of the request.
+  - This applies both to a **whitelisted** attendee and to someone arriving
+    through an **invite link** (R-INV-1) — auto-approval exists precisely so the
+    second case fits the same budget. It does not apply when a human has to
+    approve (R-AUTH-2), which is outside our control.
 - **R-NFR-4 (Capacity)** — The beta SHALL comfortably handle the summit cohort:
   up to ~350 members and a few hundred challenges/connection requests. No
   horizontal scaling required.

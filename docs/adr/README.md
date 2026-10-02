@@ -46,3 +46,4 @@ bump, or anything the requirements already settle (cite the `R-*` id instead).
 | [0011](0011-typescript-strict.md) | TypeScript in strict mode | Accepted |
 | [0012](0012-conventional-commits-one-change-per-pr.md) | Conventional Commits, one change per pull request | Accepted |
 | [0013](0013-tell-applicants-their-status.md) | Tell applicants their status, accepting email enumeration | Accepted |
+| [0014](0014-qr-invite-tokens.md) | Invite tokens in the QR code, auto-approving the scanner | Accepted |

@@ -31,6 +31,7 @@ that works.")*
 | M12 | URL navigation / deep links (screens, not modals) | Notification emails and the QR code must open the right screen; a modal has no address. |
 | M13 | Dev deployments send no email (admin outbox with copyable magic links) | Keeps real inboxes out of development and makes login testable without a mailbox. |
 | M14 | Unit tests + GitHub Actions pipeline | "Feature-complete and tested" by 2026-11-01 is a dated commitment; the privacy rules need regression cover. |
+| M15 | QR invite links that auto-approve the scanner (time-scoped, capped, revocable) | Without them a non-whitelisted attendee waits for a human, so the two-minute onboarding does not apply to exactly the people a summit brings in. |
 
 ## Should have (strongly wanted; cut only under deadline pressure)
 

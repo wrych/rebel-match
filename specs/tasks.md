@@ -51,6 +51,11 @@ User journeys are in `flows.md` (`F1`…`F14`).
       *(R-AUTH-9,12)*
 - [ ] Approval sends a magic link immediately, with the 24 h approval TTL and the
       `kind` column on tokens. *(R-AUTH-3,10)*
+- [ ] Invite redemption: `/?invite=…` carried to login, usability check (window,
+      cap, revoked), auto-approve + `joined_via_invite_id` + `uses`, fallback to
+      the applicant flow. *(R-INV-1..8, F15)*
+- [ ] Admin invite screen (`/admin/invites`): list with state, create with label /
+      window / cap, revoke, show the join URL for the QR. *(R-INV-9,10, F16)*
 - [ ] `GET /auth/verify`: validate/consume token, issue session, redirect to the
       validated `next` or onward. *(R-AUTH-5,6, R-NAV-5,6)*
 - [ ] Persistent session cookie + `/auth/me` (incl. `roles[]` + `permissions[]`)
@@ -63,7 +68,8 @@ User journeys are in `flows.md` (`F1`…`F14`).
       confirm from-address + SPF/DKIM. *(R-NFR-3, open question 4)*
 - [ ] Onboarding screen + `POST /api/onboarding` (name, optional job title,
       consent version/ts). *(R-ONB-1..4, R-ROLE-8)*
-- [ ] Consent copy wired in, stating email-sharing + closed membership. *(R-ONB-5)*
+- [ ] Consent copy wired in: email-sharing on connect + membership by invitation.
+      *(R-ONB-5)*
 - [ ] Route guard: active + onboarded required for `/api/*`; deep links land on
       onboarding first. *(R-NAV-7)*
 
@@ -129,6 +135,8 @@ User journeys are in `flows.md` (`F1`…`F14`).
 - [ ] Deep-link pass: every email/QR target opens correctly signed out, signed
       in, and un-onboarded; `next` validation rejects external URLs.
       *(R-NAV-5,6,7, F13)*
+- [ ] Invite-link dry run: create one, scan it on a phone as an unknown address,
+      revoke it, confirm the next scan falls to the applicant flow. *(R-INV-3,5)*
 - [ ] QR-code entry flow validated end-to-end on a phone; time scan → onboarding
       complete (<2 min). *(R-NFR-3)*
 - [ ] CI green on `main`. *(R-QA-6)*

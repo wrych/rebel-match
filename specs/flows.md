@@ -8,7 +8,7 @@ touches, the endpoints it calls, and the requirements it satisfies.
 Conventions:
 
 - **Happy path** is the numbered list. **Branches** cover alternates and errors.
-- Screen numbers (`S1`…`S20`) refer to `design.md` §4.
+- Screen numbers (`S1`…`S22`) refer to `design.md` §4.
 - A flow is "done" only when its branches are implemented too — the error
   branches are where the privacy model lives.
 
@@ -22,10 +22,14 @@ Conventions:
               ▼                                   ▼
    F1 Entry & login  ◄──────────────  F13 Deep link (remembers the target)
        │      │
-       │      └──(unknown email)──►  F4 Request access ──►  F10 Admin approval
-       ▼
-   F2 First-time onboarding (name + consent)   ◄── R-NFR-3 budget ends here
-       │
+       │      ├──(unknown email + valid invite)──►  F15 Join by invite ──┐
+       │      └──(unknown email, no invite)─────►  F4 Request access     │
+       │                                               │                 │
+       │                                               ▼                 │
+       │                                        F10 Admin approval       │
+       ▼                                               │                 │
+   F2 First-time onboarding (name + consent)  ◄────────┴─────────────────┘
+       │                       ◄── R-NFR-3 budget ends here
        ▼
    F3 Welcome — two doors   (or straight on to the deep-linked screen)
        ├──►  F5 Ask for help  ──►  F7 Connect (double opt-in)
@@ -36,7 +40,8 @@ Conventions:
                    ├──►  F9 Follow a trend
                    └──►  F12 Feedback
 
-   Admin only: F10 Approvals · F11 GDPR deletion · F14 Dev outbox (dev only)
+   Admin only: F10 Approvals · F16 Invite links · F11 GDPR deletion
+               F14 Dev outbox (dev only)
 ```
 
 ---
@@ -68,8 +73,10 @@ Conventions:
 
 **Branches**
 
-- *Email not on the whitelist* → **F4**: they are recorded as an applicant, an
+- *Email not on the whitelist, no invite* → **F4**: recorded as an applicant, an
   admin is notified, and they land on the access-requested screen (R-AUTH-2).
+- *Email not on the whitelist, but the QR carried a valid invite* → **F15**: they
+  are admitted straight away and never see the queue (R-INV-1).
 - *Link expired, already used, or unknown* → error screen with a "send me a new
   link" action, returning to step 3 (R-AUTH-6).
 - *Email is slow to arrive* → the "check your email" state offers resend after a
@@ -124,11 +131,12 @@ Conventions:
 
 ## F4 — Request access (not yet whitelisted)
 
-**Actor:** someone who heard about the app but was not invited — often standing
-in the room, at the summit, right now.
+**Actor:** someone who heard about the app but was not invited, and whose QR code
+carried no usable invite — so a person has to let them in.
 **Screens:** S1 Login → S21 Access requested.
-**Outside the R-NFR-3 budget**, since a person has to approve. Everything after
-that approval is built to cost zero extra steps.
+**Outside the R-NFR-3 budget**, since a human approval sits in the middle. When
+that wait is unacceptable, the answer is an invite link (**F15**), not a faster
+queue. Everything after the approval is built to cost zero extra steps.
 
 1. They submit an email on **S1** that is not on the whitelist.
 2. Server records a pending **applicant** and notifies an admin — no token, no
@@ -370,7 +378,72 @@ has this screen (R-DEV-3).
 
 ---
 
-## Analytics touchpoints
+## F15 — Join through an invite link (QR auto-approval)
+
+**Actor:** someone in the room who is not on the whitelist, scanning the summit
+QR code. **This is the flow that makes R-NFR-3 reachable for them** — without it
+they wait for a human (**F4**).
+**Screens:** S1 Login → S3 Onboarding. No applicant queue, no admin step.
+
+1. The QR encodes the app root with an invite token, `/?invite=…` (R-NAV-10). The
+   client keeps the token while routing to **S1**.
+2. **S1** MAY confirm the invite was recognized — "joining via Summit 2026" — so
+   the scanner knows the code worked before typing anything. The token itself is
+   never shown (R-INV-12).
+3. They enter their email → `POST /auth/request-link` with `{email, invite}`.
+4. Server checks the token is **usable**: not revoked, inside its window, and
+   under its cap (R-INV-2,3,4).
+5. Usable → the member is created **active** with the `member` role,
+   `joined_via_invite_id` is recorded, `uses` increments, and the magic link is
+   emailed immediately (R-INV-1, R-INV-7, R-INV-8). From here it is **F1** from
+   step 6: open the link, then **F2**.
+6. **F2 still runs in full.** Auto-approval skips the admin, never the consent
+   (R-INV-6).
+
+**Branches**
+
+- *Token unknown, expired, not yet valid, revoked, or at its cap* → falls through
+  to **F4**: recorded as an applicant, admin notified, access-requested screen,
+  with a plain explanation. Never an error dead end — the QR is printed and the
+  person is holding a phone (R-INV-5).
+- *Scanner is already whitelisted* → ordinary **F1**; the invite is ignored and no
+  use is consumed.
+- *Scanner already has an account* → ordinary **F1** login. No new member, so
+  `uses` does not increment and a typo cannot burn a seat.
+- *Link escapes the room* (photographed, shared, posted) → this is expected, not a
+  breach: the window, the cap and revocation are the controls. A host who sees
+  unexpected signups revokes the invite in **F16**, and the next scan falls to
+  **F4**.
+
+---
+
+## F16 — Admin: invite links
+
+**Actor:** admin, usually the host setting up before a session.
+**Screens:** S22 Admin invites.
+
+1. Admin opens `/admin/invites` → `GET /admin/invites`: every invite with its
+   label, window, uses against cap, creator, and state — active, scheduled,
+   expired, revoked, or exhausted (R-INV-9).
+2. **Create** → `POST /admin/invites` with a label, a validity window, and a use
+   cap. The response carries the join URL once, so the host can render the QR for
+   a badge, a slide, or a poster (R-INV-9, R-INV-10).
+3. **Revoke** → `POST /admin/invites/:id/revoke`. Effective on the next use, with
+   no cache in the way (R-INV-3). The printed code keeps existing; it simply stops
+   admitting anyone.
+4. Who joined through which invite is recorded, so a bad batch can be found and
+   deleted afterwards (R-INV-8, **F11**).
+
+**Branches**
+
+- *Window ends mid-session* → the invite goes inert on its own; scans fall to
+  **F4**. Extending means creating a new invite, which is deliberate: an invite's
+  window is a promise, not a setting to nudge.
+- *Cap reached with people still queuing* → raise it by creating a second invite,
+  or approve the stragglers through **F10**.
+
+---
+
 
 Each flow emits events under a **pseudonymous** member id, and never carries
 challenge text, names, or email addresses (R-ANA-1, R-ANA-2, R-ANA-3). Capture is

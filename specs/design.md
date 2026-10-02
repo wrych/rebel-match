@@ -63,6 +63,8 @@ thresholds have sane defaults in the file and may be overridden by env.
 | `limits.beenThereNoteMinChars` | `31` | R-OFF-4 |
 | `limits.magicLinkTtlMinutes` | `15` | R-AUTH-5 |
 | `limits.approvalLinkTtlHours` | `24` | R-AUTH-10 |
+| `limits.inviteDefaultMaxUses` | `400` | R-INV-4 |
+| `limits.inviteDefaultHours` | `12` | R-INV-2 |
 | `consent.currentVersion` | e.g. `"2026-11-01"` | R-ONB-3, R-ONB-4 |
 | `mail.transport` | `smtp` \| `outbox` | R-DEV-1, R-DEV-4 |
 | `seed.profile` | `dev` \| `prod` | R-SEED-4 |
@@ -118,6 +120,7 @@ CREATE TABLE members (
   requested_org  VARCHAR(160) NULL,              -- applicant-supplied, for R-AUTH-11
   consent_version VARCHAR(20) NULL,
   consent_at     DATETIME     NULL,
+  joined_via_invite_id CHAR(36) NULL,            -- which invite admitted them (R-INV-8)
   analytics_id   CHAR(36)     NOT NULL,           -- pseudonymous id for Mixpanel
   created_at     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY uq_members_email (email)
@@ -175,6 +178,7 @@ grants are reviewable in version control:
 | `whitelist:manage` | — | ✅ | — |
 | `member:delete` (GDPR erasure) | — | ✅ | — |
 | `challenge:moderate` | — | ✅ | ✅ |
+| `invite:manage` (create / revoke QR invites) | — | ✅ | — |
 | `outbox:read` (dev only) | — | ✅ | — |
 
 - Route guards SHALL check a **permission**, never a role name —
@@ -214,6 +218,41 @@ CREATE TABLE trends (
   keywords   JSON         NOT NULL                 -- {"strong":[...], "weak":[...]}
 );
 ```
+
+### invites (QR auto-approval, R-INV-1..12)
+
+```sql
+CREATE TABLE invites (
+  id           CHAR(36)     NOT NULL PRIMARY KEY,
+  token        VARCHAR(64)  NOT NULL,              -- stored in clear: see note
+  label        VARCHAR(120) NOT NULL,              -- "Summit 2026 — main stage"
+  valid_from   DATETIME     NOT NULL,
+  valid_until  DATETIME     NOT NULL,
+  max_uses     INT          NOT NULL,
+  uses         INT          NOT NULL DEFAULT 0,
+  revoked_at   DATETIME     NULL,
+  created_by   CHAR(36)     NOT NULL,              -- admin, for audit
+  created_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE KEY uq_invites_token (token),
+  CONSTRAINT fk_invite_creator FOREIGN KEY (created_by) REFERENCES members(id)
+);
+```
+
+**Why the token is not hashed.** Magic-link tokens are per-person secrets and are
+stored hashed (R-NFR-5). An invite token is the opposite: it is printed on a
+poster in a room full of people. Hashing a value that is on display buys nothing,
+and it would stop the admin screen from re-rendering the QR code — which is an
+operational requirement (R-INV-9). Its security comes from the window, the cap,
+and revocation, not from secrecy (ADR 0014).
+
+A token is **usable** when: `revoked_at IS NULL`, `NOW()` is between `valid_from`
+and `valid_until`, and `uses < max_uses`. Any other state is inert and the visitor
+falls through to the ordinary applicant flow (R-INV-5). `uses` increments only when
+an invite actually admits a **new** member — not on a link request for an address
+that already exists, so a typo cannot burn a seat.
+
+Members admitted this way carry `joined_via_invite_id`, which is what makes a bad
+batch identifiable and removable afterwards (R-INV-8, R-NFR-7).
 
 ### cases (seed, static)
 
@@ -341,7 +380,7 @@ with `status='active'` and completed onboarding (except the onboarding routes).
 
 | Method | Path | Body | Behavior |
 |--------|------|------|----------|
-| POST | `/auth/request-link` | `{email, next?}` | If whitelisted active member → create token, send link (SMTP or outbox per `mail.transport`), return the "check your email" state. If unknown email → create `applicant`, notify admin, return the access-requested state (R-AUTH-2). The two states differ deliberately — see ADR 0013. |
+| POST | `/auth/request-link` | `{email, next?, invite?}` | If whitelisted active member → create token, send link (SMTP or outbox per `mail.transport`), return the "check your email" state. If unknown email **with a usable `invite`** → create the member active with the `member` role, record `joined_via_invite_id`, increment `uses`, send the link (R-INV-1). If unknown email without one → create `applicant`, notify admin, return the access-requested state (R-AUTH-2). The two states differ deliberately — see ADR 0013. |
 | GET | `/auth/verify?token=…&next=…` | — | Validate token (unexpired, unused), consume it, create session, redirect to onboarding, or to the validated `next` path, else the app root (R-NAV-5, R-NAV-6). |
 | POST | `/auth/logout` | — | Destroy session. |
 | GET | `/auth/me` | — | Current member + onboarding/consent status + `roles[]` and resolved `permissions[]` (R-ROLE-4). |
@@ -398,6 +437,9 @@ with `status='active'` and completed onboarding (except the onboarding routes).
 | DELETE | `/admin/members/:id` | GDPR erasure: delete member + their challenges/requests. *Requires `member:delete`.* |
 | GET | `/admin/outbox` | Captured dev emails, newest first, magic links clickable. *Requires `outbox:read`.* **Dev only** — not registered in production (R-DEV-2,3). |
 | DELETE | `/admin/outbox` | Clear the dev outbox. **Dev only**. |
+| GET | `/admin/invites` | List invites with label, window, uses/cap, state, creator (R-INV-9). *Requires `invite:manage`.* |
+| POST | `/admin/invites` | Create an invite: `{label, validFrom, validUntil, maxUses}`. Returns the join URL once, for the QR (R-INV-9,10). *Requires `invite:manage`.* |
+| POST | `/admin/invites/:id/revoke` | Set `revoked_at`; effective on next use (R-INV-3). *Requires `invite:manage`.* |
 
 ---
 
@@ -438,6 +480,7 @@ deep link reloads cleanly.
 | S19 | **Admin approvals** — applicant list with approve/reject | `/admin/applicants` |
 | S20 | **Admin outbox** *(dev only)* — captured emails with copyable magic links | `/admin/outbox` |
 | S21 | **Access requested** — what happens next, and an optional name/org so the host can find them (R-AUTH-9, R-AUTH-12) | `/access-requested` |
+| S22 | **Admin invites** — invite links with label, window, uses/cap, state; create, revoke, and the join URL / QR to display (R-INV-9) | `/admin/invites` |
 
 Remaining overlays, deliberately: the "really decline this request?" confirm, the
 "link sent" / "copied" toasts, and the feedback action (a `mailto:`, not a
@@ -695,6 +738,11 @@ Alternatives considered (kept only as fallbacks):
 - Deep links are not a capability: `next` is validated as a known in-app path
   (R-NAV-6) and the target screen still runs the same ownership checks as its API
   (R-NAV-8).
+- Invite tokens (R-INV-1) are **public capabilities**, not secrets: they are
+  printed on posters. Usability is re-checked server-side on every request —
+  window, cap, `revoked_at` — and the result is never cached, or a revoked invite
+  keeps admitting people. An unusable token degrades to the applicant flow, never
+  to an error (R-INV-5). An invite grants the `member` role and nothing more.
 - Dev-only surfaces (the outbox) are registered **only** when
   `mail.transport=outbox`, so production has no route that lists magic links
   (R-DEV-3).
