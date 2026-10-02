@@ -10,6 +10,7 @@ import { mailLinks } from './services/link-delivery.js'
 import { createMailer } from './services/mailer.js'
 import { createMysqlOutboxStore } from './services/outbox-store.js'
 import { createTransport } from './services/smtp.js'
+import { configPolicy } from './permissions.js'
 
 /** The auth seam wired to MySQL and the mailer, as every entry point uses it.
  * `onSent` sees each link after the mailer has recorded it. */
@@ -28,6 +29,7 @@ export function composeAuth(
   const deliver = mailLinks(mailer)
 
   return createAuth({
+    policy: configPolicy,
     store: createMysqlAuthStore(pool),
     deliver: async (link) => {
       await deliver(link)

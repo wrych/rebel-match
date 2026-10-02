@@ -11,6 +11,7 @@ import {
 import { loadConfig } from '../../src/config.js'
 import { createPool, type Pool } from '../../src/db.js'
 import { migrate } from '../../src/migrations/run.js'
+import { configPolicy } from '../../src/permissions.js'
 
 const databaseUrl = process.env['DATABASE_URL']
 
@@ -65,6 +66,7 @@ beforeAll(async () => {
   await insertMember(active, 'active', ['member'])
   await insertMember(rejected, 'rejected', ['member'])
   auth = createAuth({
+    policy: configPolicy,
     store: createMysqlAuthStore(pool),
     config,
     deliver: (link) => {
