@@ -37,7 +37,7 @@ Conventions:
                    └──►  F12 Feedback
 
    Admin only: F10 Approvals · F11 GDPR deletion · F14 Dev outbox (dev only)
-   Admin-only: F10 Approvals · F11 GDPR deletion · F14 Dev outbox (dev only)
+```
 
 ---
 
