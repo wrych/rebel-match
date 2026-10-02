@@ -34,7 +34,7 @@ const envSchema = z
 
     DATABASE_URL: z.string().min(1),
     SESSION_SECRET: z.string().min(32),
-    SESSION_TTL_DAYS: z.coerce.number().int().positive().default(90),
+    SESSION_TTL_DAYS: z.coerce.number().int().positive().default(30),
 
     MAIL_DELIVERY: z.enum(['smtp', 'none']).default('none'),
     MAIL_FROM: z.email().default('hello@rebel-match.invalid'),

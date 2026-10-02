@@ -73,7 +73,7 @@ thresholds have sane defaults in the file and may be overridden by env.
 | `limits.beenThereNoteMinChars` | `31`                          | R-OFF-4                   |
 | `limits.magicLinkTtlMinutes`   | `15`                          | R-AUTH-5                  |
 | `limits.approvalLinkTtlHours`  | `24`                          | R-AUTH-10                 |
-| `sessionTtlDays`               | `90`                          | R-AUTH-7                  |
+| `sessionTtlDays`               | `30`                          | R-AUTH-7                  |
 | `limits.inviteDefaultMaxUses`  | `400`                         | R-INV-4                   |
 | `limits.inviteDefaultHours`    | `12`                          | R-INV-2                   |
 | `consent.currentVersion`       | e.g. `"2026-11-01"`           | R-ONB-3, R-ONB-4          |
@@ -844,9 +844,7 @@ Alternatives considered (kept only as fallbacks):
 - Sessions: http-only, `Secure`, `SameSite=Lax` cookie; server-side session store
   in MySQL. The cookie carries a random id and its HMAC under `SESSION_SECRET`;
   the `sessions` table stores only the id's SHA-256, like `magic_tokens`. Both
-  live inside `auth/` rather than in `express-session`, because ADR 0015's
-  `createSession` returns the cookie for the route to set, and a middleware that
-  owns `req.session` would put session knowledge in every handler.
+  live inside `auth/` rather than in `express-session` (ADR 0018).
 - Authorization: every challenge/connection/contact read must check the caller is
   a party or owner. Contact endpoint returns an email **only** for an accepted
   request where the caller is one of the two members.

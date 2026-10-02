@@ -196,7 +196,7 @@ describe('sessions', () => {
     const cookie = await auth.createSession('m-ada')
 
     expect(cookie.options.secure).toBe(true)
-    expect(cookie.options.maxAge).toBe(90 * 86_400_000)
+    expect(cookie.options.maxAge).toBe(30 * 86_400_000)
   })
 
   it('is nobody without a cookie, or with a tampered one', async () => {
@@ -215,7 +215,7 @@ describe('sessions', () => {
     const { auth, advance } = setup()
     const cookie = await auth.createSession('m-ada')
 
-    advance(90 * 86_400_000)
+    advance(30 * 86_400_000)
 
     expect(await auth.currentMember(asRequest(cookie))).toBeNull()
   })
