@@ -20,6 +20,7 @@
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "review": "tsx scripts/review/run.ts",
     "migrate": "tsx --env-file-if-exists=.env src/migrate.ts",
+    "seed": "tsx --env-file-if-exists=.env src/seed.ts",
     "db:up": "docker compose up -d --wait mysql",
     "db:down": "docker compose down",
     "db:reset": "docker compose down -v && npm run db:up && npm run migrate",
