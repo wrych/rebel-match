@@ -15,6 +15,7 @@ import {
   createMysqlAdmissionStore,
   createMysqlReviewerDirectory,
 } from '../../src/services/admission-store.js'
+import { createApplicantHandles } from '../../src/services/applicant-handle.js'
 import { createAdmission } from '../../src/services/admission.js'
 import { createApplicantNotice } from '../../src/services/applicant-notice.js'
 import { createMysqlMemberProfiles } from '../../src/services/member-profiles.js'
@@ -40,6 +41,7 @@ const member = 'sanne.kuipers@example.invalid'
 
 let pool: Pool
 let app: ReturnType<typeof createApp>
+let strangerHandle: string
 
 async function outboxFor(to: string, kind: string): Promise<RowDataPacket[]> {
   const [rows] = await pool.query<RowDataPacket[]>(
@@ -72,6 +74,7 @@ beforeAll(async () => {
     outbox: createMysqlOutboxLog(pool),
     admission: createAdmission({
       store: createMysqlAdmissionStore(pool),
+      handles: createApplicantHandles(config.sessionSecret),
       auth,
       notifyReviewers: createApplicantNotice({
         mailer,
@@ -112,8 +115,10 @@ describe('POST /auth/request-link over MySQL', () => {
       [stranger],
     )
     const notices = await outboxFor(DEV_ADMIN_EMAIL, 'admin_notice')
+    strangerHandle = (response.body as { handle: string }).handle
 
-    expect(response.body).toEqual({ state: 'access-requested' })
+    expect(response.body).toMatchObject({ state: 'access-requested' })
+    expect(strangerHandle).toEqual(expect.any(String))
     expect(rows[0]?.['status']).toBe('applicant')
     expect(notices).toHaveLength(1)
     expect(String(notices[0]?.['body_text'])).toContain(stranger)
@@ -127,6 +132,37 @@ describe('POST /auth/request-link over MySQL', () => {
 
     expect(response.body).toEqual({ state: 'access-requested' })
     expect(await outboxFor(DEV_ADMIN_EMAIL, 'admin_notice')).toHaveLength(1)
+  })
+
+  it('lets the applicant add a name and org with their handle (R-AUTH-11,12)', async () => {
+    const handle = strangerHandle
+
+    await request(app)
+      .post('/auth/applicant')
+      .send({ handle, name: 'Ada Rebel' })
+      .expect(204)
+    await request(app)
+      .post('/auth/applicant')
+      .send({ handle, org: 'Rebels' })
+      .expect(204)
+
+    const [rows] = await pool.query<RowDataPacket[]>(
+      'SELECT requested_name, requested_org FROM members WHERE email = ?',
+      [stranger],
+    )
+    expect(rows[0]).toEqual({
+      requested_name: 'Ada Rebel',
+      requested_org: 'Rebels',
+    })
+  })
+
+  it('refuses to describe a member who is no longer pending', async () => {
+    const handle = createApplicantHandles(config.sessionSecret).issue(member)
+
+    await request(app)
+      .post('/auth/applicant')
+      .send({ handle, name: 'Someone else' })
+      .expect(404)
   })
 
   it('tells a rejected applicant plainly, sending and notifying nothing (R-AUTH-13)', async () => {

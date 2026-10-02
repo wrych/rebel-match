@@ -77,15 +77,16 @@ printed dev link (R-DEV-6).
 - [x] `POST /auth/request-link`: whitelist check, token create, send link,
       accepts `next`; unknown email → applicant + admin notice.
       _(R-AUTH-1,2,4, R-NAV-5)_
-- [ ] Access-requested screen (`/access-requested`) with the "we will email you a
-      login link once approved" copy, the invalid-invite notice variant, and
-      optional name/org → `POST /auth/applicant`.
-      _(R-AUTH-9,12, R-INV-5)_
+- [x] Live login form, and the access-requested screen (`/access-requested`)
+      with the "we will email you a login link once approved" copy and optional
+      name/org → `POST /auth/applicant`, keyed by a signed handle.
+      _(R-AUTH-9,11,12,13)_
 - [ ] Approval sends a magic link immediately, with the 24 h approval TTL and the
       `kind` column on tokens. _(R-AUTH-3,10)_
 - [ ] Invite redemption: `/?invite=…` carried to login, usability check (window,
       cap, revoked), auto-approve + `joined_via_invite_id` + `uses`, fallback to
-      the applicant flow. _(R-INV-1..8, F15)_
+      the applicant flow with the invalid-invite notice on the access-requested
+      screen. _(R-INV-1..8, F15)_
 - [ ] Admin invite screen (`/admin/invites`): list with state, create with label /
       window / cap, revoke, show the join URL for the QR. _(R-INV-9,10, F16)_
 - [x] `GET /auth/verify`: validate/consume token, issue session, redirect to the

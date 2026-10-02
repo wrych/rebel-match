@@ -5,6 +5,11 @@ import { rolePermissions } from './access.js'
 // longer purge interval would run the purge continuously.
 const MAX_TIMER_HOURS = Math.floor(0x7fffffff / 3_600_000)
 
+// The widths of members.requested_name and requested_org (migration 001): a
+// fact of the schema rather than a tunable, so no environment variable.
+const APPLICANT_NAME_MAX_CHARS = 120
+const APPLICANT_ORG_MAX_CHARS = 160
+
 function portOf(url: URL): number {
   if (url.port !== '') return Number(url.port)
   return url.protocol === 'https:' ? 443 : 80
@@ -102,6 +107,8 @@ export interface Limits {
   inviteDefaultHours: number
   outboxRetentionDays: number
   outboxPageSize: number
+  applicantNameMaxChars: number
+  applicantOrgMaxChars: number
 }
 
 /** Values the client is allowed to read, so a disabled button and a server
@@ -175,6 +182,8 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): Config {
       inviteDefaultHours: env.INVITE_DEFAULT_HOURS,
       outboxRetentionDays: env.OUTBOX_RETENTION_DAYS,
       outboxPageSize: env.OUTBOX_PAGE_SIZE,
+      applicantNameMaxChars: APPLICANT_NAME_MAX_CHARS,
+      applicantOrgMaxChars: APPLICANT_ORG_MAX_CHARS,
     },
     rolePermissions,
   }

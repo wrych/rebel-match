@@ -3,6 +3,7 @@ import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { routeTable, type Access } from '../src/routes'
 import { decide } from './guards'
 import { loadMe } from './lib/session'
+import AccessRequestedScreen from './screens/AccessRequestedScreen.vue'
 import LoginScreen from './screens/LoginScreen.vue'
 import NotFoundScreen from './screens/NotFoundScreen.vue'
 import OutboxScreen from './screens/OutboxScreen.vue'
@@ -37,6 +38,7 @@ export const router = createRouter({
   routes: [
     screen('entry', LoginScreen),
     screen('login', LoginScreen),
+    screen('access-requested', AccessRequestedScreen),
     screen('welcome', WelcomeScreen),
     screen('admin-outbox', OutboxScreen),
     { path: '/:pathMatch(.*)*', name: 'not-found', component: NotFoundScreen },
