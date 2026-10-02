@@ -7,8 +7,9 @@ const requestBody = z.object({
   next: z.string().optional(),
 })
 
-/** `POST /auth/request-link` (design §3): answers which screen comes next,
- * "check your email" or "access requested" — deliberately different (ADR 0013). */
+/** `POST /auth/request-link` (design §3): answers what the login screen says
+ * next — check your email, access requested, or not approved. Each is told
+ * truthfully and differently (ADR 0013, R-AUTH-13). */
 export function requestLinkRoutes(deps: {
   admission: AdmissionService
 }): Router {

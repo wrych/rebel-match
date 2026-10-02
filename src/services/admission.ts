@@ -2,14 +2,17 @@ import type { AuthProvider } from '../auth/index.js'
 
 export type MemberStatus = 'applicant' | 'active' | 'rejected' | 'deleted'
 
-export type Admission = 'send-link' | 'record-applicant' | 'already-asked'
+export type Admission =
+  'send-link' | 'record-applicant' | 'already-asked' | 'not-approved'
 
 /** What a request for a link does, by the address's status (R-AUTH-1,2,4):
- * an active member gets a link; an unknown address becomes an applicant; one
- * already asked, or refused, is told the same and nobody is notified again. */
+ * an active member gets a link; an unknown address becomes an applicant; a
+ * pending one is told the same again; a rejected one is told plainly that it
+ * was not approved (R-AUTH-13). Only a new applicant notifies anyone. */
 export function admissionFor(status: MemberStatus | null): Admission {
   if (status === 'active') return 'send-link'
   if (status === null) return 'record-applicant'
+  if (status === 'rejected') return 'not-approved'
   return 'already-asked'
 }
 
@@ -21,7 +24,8 @@ export interface AdmissionStore {
   removeApplicant(email: string): Promise<void>
 }
 
-export type LinkRequestState = 'check-email' | 'access-requested'
+export type LinkRequestState =
+  'check-email' | 'access-requested' | 'not-approved'
 
 export interface AdmissionService {
   requestLink(email: string, next?: string): Promise<LinkRequestState>
@@ -42,6 +46,7 @@ export function createAdmission(deps: {
         await deps.auth.issueLink(email, { kind: 'self_service', next })
         return 'check-email'
       }
+      if (admission === 'not-approved') return 'not-approved'
       if (admission === 'record-applicant') await recordApplicant(deps, email)
       return 'access-requested'
     },

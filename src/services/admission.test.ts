@@ -11,7 +11,7 @@ describe('admissionFor', () => {
     ['active', 'send-link'],
     [null, 'record-applicant'],
     ['applicant', 'already-asked'],
-    ['rejected', 'already-asked'],
+    ['rejected', 'not-approved'],
     ['deleted', 'already-asked'],
   ] as const)('treats %s as %s (R-AUTH-1,2,4)', (status, admission) => {
     expect(admissionFor(status)).toBe(admission)
@@ -101,12 +101,10 @@ describe('createAdmission', () => {
     expect(harness.notified).toHaveLength(1)
   })
 
-  it('gives a rejected address no link and notifies nobody (R-AUTH-3)', async () => {
+  it('tells a rejected address plainly, with no link and no notice (R-AUTH-13)', async () => {
     const harness = setup([['no@example.invalid', 'rejected']])
 
-    expect(await harness.requestLink('no@example.invalid')).toBe(
-      'access-requested',
-    )
+    expect(await harness.requestLink('no@example.invalid')).toBe('not-approved')
     expect(harness.links).toEqual([])
     expect(harness.notified).toEqual([])
   })
