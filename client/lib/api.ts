@@ -6,6 +6,8 @@ export interface ClientConfig {
     approvalLinkTtlHours: number
     inviteDefaultMaxUses: number
     inviteDefaultHours: number
+    applicantNameMaxChars: number
+    applicantOrgMaxChars: number
   }
   consentVersion: string
 }

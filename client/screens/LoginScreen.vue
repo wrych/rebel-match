@@ -29,7 +29,7 @@ async function send(): Promise<void> {
     const next = new URLSearchParams(window.location.search).get('next')
     const reply = await requestLink(email.value, next)
     if (reply.state === 'access-requested') {
-      if (reply.handle !== undefined) keepHandle(reply.handle)
+      keepHandle(reply.handle)
       await router.push('/access-requested')
       return
     }

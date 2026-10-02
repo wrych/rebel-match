@@ -160,4 +160,15 @@ describe('LoginScreen', () => {
     expect(screen.find('[role="alert"]').text()).toContain('did not go through')
     expect(screen.find('form').exists()).toBe(true)
   })
+
+  it('forgets an earlier handle when a repeat request brings none', async () => {
+    sessionStorage.setItem('rm_applicant_handle', 'someone-elses')
+    server({ state: 'access-requested' })
+    const screen = mount(LoginScreen)
+
+    await submit(screen, 'new@example.invalid')
+
+    expect(push).toHaveBeenCalledWith('/access-requested')
+    expect(sessionStorage.getItem('rm_applicant_handle')).toBeNull()
+  })
 })

@@ -1,12 +1,22 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { describeApplicant, keptHandle } from '../lib/admission'
+import { fetchConfig, type ClientConfig } from '../lib/api'
 
 const handle = keptHandle()
 const name = ref('')
 const org = ref('')
 const saving = ref(false)
 const outcome = ref<'saved' | 'gone' | 'failed' | null>(null)
+const limits = ref<ClientConfig['limits'] | null>(null)
+
+onMounted(async () => {
+  try {
+    limits.value = (await fetchConfig()).limits
+  } catch {
+    // Without the limits the server still refuses an overlong field.
+  }
+})
 
 async function save(): Promise<void> {
   if (handle === null) return
@@ -39,9 +49,19 @@ async function save(): Promise<void> {
     <form v-else @submit.prevent="save">
       <p>Optional: your name and organization, so the host can find you.</p>
       <label for="name">Name</label>
-      <input id="name" v-model="name" autocomplete="name" />
+      <input
+        id="name"
+        v-model="name"
+        autocomplete="name"
+        :maxlength="limits?.applicantNameMaxChars"
+      />
       <label for="org">Organization</label>
-      <input id="org" v-model="org" autocomplete="organization" />
+      <input
+        id="org"
+        v-model="org"
+        autocomplete="organization"
+        :maxlength="limits?.applicantOrgMaxChars"
+      />
       <button
         type="submit"
         :disabled="saving || (name.trim() === '' && org.trim() === '')"

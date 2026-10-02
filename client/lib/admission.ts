@@ -26,12 +26,15 @@ export async function requestLink(
 }
 
 /** Keeps the applicant's handle for the access-requested screen, for this tab
- * only. A browser that refuses storage just loses the optional form. */
-export function keepHandle(handle: string): void {
+ * only; a request that brought none forgets any earlier one, which may be
+ * someone else's on a shared phone. A browser refusing storage just loses the
+ * optional form (R-AUTH-12). */
+export function keepHandle(handle: string | undefined): void {
   try {
-    sessionStorage.setItem(HANDLE_KEY, handle)
+    if (handle === undefined) sessionStorage.removeItem(HANDLE_KEY)
+    else sessionStorage.setItem(HANDLE_KEY, handle)
   } catch {
-    // Storage refused: the request is recorded either way (R-AUTH-12).
+    // Storage refused: the request is recorded either way.
   }
 }
 
