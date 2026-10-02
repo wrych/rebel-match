@@ -55,18 +55,21 @@ Conventions:
 4. Server finds an active whitelisted member, creates a single-use token (stored
    hashed, 15-min expiry), emails the magic link (R-AUTH-1, R-AUTH-4, R-AUTH-5,
    R-NFR-5).
-5. S1 switches to a "check your email" state. Response is always 200, so the
-   screen never reveals whether the address is known (no email enumeration).
+5. S1 switches to a "check your email" state. An address that is **not** on the
+   whitelist goes to a different screen instead (**F4**) — the two states differ
+   on purpose, so email enumeration through this form is possible and accepted
+   (R-AUTH-4, ADR 0013). Rate-limiting is what keeps it expensive.
 6. Member opens the email on the same phone and taps the link →
    `GET /auth/verify?token=…`.
 7. Server validates and consumes the token, creates a signed http-only session
    cookie that survives closing the browser (R-AUTH-5, R-AUTH-7, R-NFR-5).
-8. **S2** routes onward: no profile name yet → **F2**; otherwise → **F3**.
+8. **S2** routes onward: onboarding not yet complete → **F2**; otherwise → **F3**
+   (R-ONB-1).
 
 **Branches**
 
-- *Email not on the whitelist* → **F4** (member still sees the same "check your
-  email" state; only the admin is notified).
+- *Email not on the whitelist* → **F4**: they are recorded as an applicant, an
+  admin is notified, and they land on the access-requested screen (R-AUTH-2).
 - *Link expired, already used, or unknown* → error screen with a "send me a new
   link" action, returning to step 3 (R-AUTH-6).
 - *Email is slow to arrive* → the "check your email" state offers resend after a
@@ -80,14 +83,16 @@ Conventions:
 
 ## F2 — First-time onboarding (name + consent)
 
-**Actor:** authenticated member with no profile yet.
+**Actor:** authenticated member who has not completed onboarding.
 **Screens:** S3 Onboarding.
 **Ends the R-NFR-3 measurement.**
 
-1. Any authenticated route detects a missing profile name and forces **S3**
-   before anything else (R-ONB-1).
-2. Member enters their **display name** (required); role / organization are
-   optional and only feed the match cards (R-ONB-2).
+1. Any authenticated route detects incomplete onboarding — a missing name, or an
+   unaccepted current consent version — and forces **S3** before anything else
+   (R-ONB-1).
+2. Member enters their **display name** (required), pre-filled from what they
+   gave at the door if they came through **F4** (R-AUTH-12). Job title and
+   organization are optional and only feed the match cards (R-ONB-2).
 3. Member reads the data-usage consent, which states plainly that **email
    addresses are shared only when both sides accept a connection**, and that the
    app is closed to whitelisted members (R-ONB-5).
@@ -119,15 +124,41 @@ Conventions:
 
 ## F4 — Request access (not yet whitelisted)
 
-**Actor:** someone who heard about the app but was not invited.
+**Actor:** someone who heard about the app but was not invited — often standing
+in the room, at the summit, right now.
+**Screens:** S1 Login → S21 Access requested.
+**Outside the R-NFR-3 budget**, since a person has to approve. Everything after
+that approval is built to cost zero extra steps.
 
 1. They submit an email on **S1** that is not on the whitelist.
 2. Server records a pending **applicant** and notifies an admin — no token, no
    session (R-AUTH-2).
-3. The screen shows the same neutral "check your email" state.
-4. An admin resolves it in **F10**. On approval the applicant can request a
-   working link via **F1**; on rejection they cannot log in and no challenge data
-   is kept for them (R-AUTH-3).
+3. They land on **S21** (`/access-requested`), a screen of its own, which says in
+   plain language: thanks for your interest in Rebel Match; access is approved by
+   a person; **we will email you as soon as it is approved, and that email will
+   contain your login link**. No false "check your email" — there is nothing in
+   their inbox yet, and saying so prevents the refresh-and-wait loop
+   (R-AUTH-9).
+4. **S21** also offers an optional name and organization — "so the host can find
+   you" — which is what makes R-AUTH-11 work in a crowded room. Skipping it
+   changes nothing; the request is already recorded (R-AUTH-12).
+5. An admin resolves it in **F10**. On approval the applicant gets a **working
+   magic link in the approval email itself**, not a notice telling them to go and
+   request one: one tap and they are in **F2** (R-AUTH-3, R-AUTH-10). On
+   rejection they cannot log in and no challenge data is kept for them.
+
+**Branches**
+
+- *Approval link expired* (issued without being asked for, so it lives 24 hours
+  rather than 15 minutes) → the normal expired-link screen with a resend, never a
+  dead end (R-AUTH-6, R-AUTH-10).
+- *Applicant requests access again while pending* → same screen, no duplicate
+  applicant, and the admin notification is not repeated.
+- *The host finds them first* → the pending list carries the email, request time,
+  and any name given, so a host can approve on the spot and the link arrives
+  while the two of them are standing there (R-AUTH-11, **F10**).
+- *Already-whitelisted address typed here* → that is **F1**, not this flow; the
+  two states are deliberately different screens (R-AUTH-4, ADR 0013).
 
 ---
 
@@ -251,15 +282,26 @@ before both sides agree.**
 
 ## F10 — Admin: approve applicants
 
-**Actor:** admin member.
+**Actor:** admin member — at the summit, usually the host with a phone in hand.
 **Screens:** S19 Admin approvals.
 
-1. Admin opens the approvals screen → `GET /admin/applicants`.
+1. Admin opens the approvals screen → `GET /admin/applicants`. Each row carries
+   the email, when they asked, and any name or organization they gave, so the
+   host can match a row to a person in the room (R-AUTH-11).
 2. Per applicant: **Approve** → `POST /admin/applicants/:id/approve` sets
-   `status='active'`, so **F1** now works for them; **Reject** →
-   `POST /admin/applicants/:id/reject` blocks login (R-AUTH-3).
+   `status='active'`, grants the `member` role, **and emails them a magic link
+   straight away** — they do not have to come back to the login screen
+   (R-AUTH-3, R-AUTH-10). **Reject** → `POST /admin/applicants/:id/reject`
+   blocks login (R-AUTH-3).
 3. Admin may also pre-whitelist addresses in bulk → `POST /admin/whitelist`
    (R-AUTH-1) — the normal pre-summit path for invited attendees.
+
+**Branches**
+
+- *Approving during a break* → the link is in their inbox before the
+  conversation ends, which is the whole point of R-AUTH-10.
+- *Rejected applicant tries again* → they are recorded as rejected and cannot
+  log in; re-admitting them is a deliberate admin action (R-AUTH-3).
 
 ---
 

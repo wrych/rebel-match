@@ -46,6 +46,11 @@ User journeys are in `flows.md` (`F1`…`F14`).
 - [ ] `POST /auth/request-link`: whitelist check, token create, send link,
       accepts `next`; unknown email → applicant + admin notice.
       *(R-AUTH-1,2,4, R-NAV-5)*
+- [ ] Access-requested screen (`/access-requested`) with the "we will email you a
+      login link once approved" copy + optional name/org → `POST /auth/applicant`.
+      *(R-AUTH-9,12)*
+- [ ] Approval sends a magic link immediately, with the 24 h approval TTL and the
+      `kind` column on tokens. *(R-AUTH-3,10)*
 - [ ] `GET /auth/verify`: validate/consume token, issue session, redirect to the
       validated `next` or onward. *(R-AUTH-5,6, R-NAV-5,6)*
 - [ ] Persistent session cookie + `/auth/me` (incl. `roles[]` + `permissions[]`)

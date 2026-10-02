@@ -62,6 +62,7 @@ thresholds have sane defaults in the file and may be overridden by env.
 | `limits.challengeMinChars` | `31` (i.e. "more than 30") | R-ASK-3 |
 | `limits.beenThereNoteMinChars` | `31` | R-OFF-4 |
 | `limits.magicLinkTtlMinutes` | `15` | R-AUTH-5 |
+| `limits.approvalLinkTtlHours` | `24` | R-AUTH-10 |
 | `consent.currentVersion` | e.g. `"2026-11-01"` | R-ONB-3, R-ONB-4 |
 | `mail.transport` | `smtp` \| `outbox` | R-DEV-1, R-DEV-4 |
 | `seed.profile` | `dev` \| `prod` | R-SEED-4 |
@@ -113,6 +114,8 @@ CREATE TABLE members (
   sector         VARCHAR(160) NULL,
   status         ENUM('applicant','active','rejected','deleted')
                               NOT NULL DEFAULT 'applicant',
+  requested_name VARCHAR(120) NULL,              -- applicant-supplied, for R-AUTH-11
+  requested_org  VARCHAR(160) NULL,              -- applicant-supplied, for R-AUTH-11
   consent_version VARCHAR(20) NULL,
   consent_at     DATETIME     NULL,
   analytics_id   CHAR(36)     NOT NULL,           -- pseudonymous id for Mixpanel
@@ -123,7 +126,9 @@ CREATE TABLE members (
 
 A member on the **whitelist** is simply a `members` row with `status='active'`
 (or pre-seeded with `status='active'` and `name=NULL`). An **applicant** is
-`status='applicant'`. Onboarding is complete when `name` and `consent_at` are set.
+`status='applicant'`. Onboarding is complete only when **both** `name` and
+`consent_at` are set — `requested_name` is what the applicant typed at the door
+(R-AUTH-12) and never satisfies the onboarding gate (R-ONB-1).
 
 Two things deliberately **not** in this table:
 
@@ -187,6 +192,8 @@ CREATE TABLE magic_tokens (
   id          CHAR(36)     NOT NULL PRIMARY KEY,
   member_id   CHAR(36)     NOT NULL,
   token_hash  CHAR(64)     NOT NULL,              -- sha-256 of the raw token
+  kind        ENUM('self_service','approval')
+                           NOT NULL DEFAULT 'self_service', -- drives the TTL (R-AUTH-10)
   expires_at  DATETIME     NOT NULL,
   used_at     DATETIME     NULL,
   created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -334,10 +341,11 @@ with `status='active'` and completed onboarding (except the onboarding routes).
 
 | Method | Path | Body | Behavior |
 |--------|------|------|----------|
-| POST | `/auth/request-link` | `{email, next?}` | If whitelisted active member → create token, send link (SMTP or outbox per `mail.transport`), return 200 (always 200 to avoid email enumeration). If unknown email → create `applicant`, notify admin. |
+| POST | `/auth/request-link` | `{email, next?}` | If whitelisted active member → create token, send link (SMTP or outbox per `mail.transport`), return the "check your email" state. If unknown email → create `applicant`, notify admin, return the access-requested state (R-AUTH-2). The two states differ deliberately — see ADR 0013. |
 | GET | `/auth/verify?token=…&next=…` | — | Validate token (unexpired, unused), consume it, create session, redirect to onboarding, or to the validated `next` path, else the app root (R-NAV-5, R-NAV-6). |
 | POST | `/auth/logout` | — | Destroy session. |
 | GET | `/auth/me` | — | Current member + onboarding/consent status + `roles[]` and resolved `permissions[]` (R-ROLE-4). |
+| POST | `/auth/applicant` | `{name?, org?}` | Attach applicant-supplied name/org to the pending request, for the host (R-AUTH-11,12). Pending applicants only; no session required, keyed by the request. |
 | GET | `/api/config` | — | Client-relevant limits + current consent version (R-CFG-2). No secrets. |
 
 ### Onboarding
@@ -383,8 +391,8 @@ with `status='active'` and completed onboarding (except the onboarding routes).
 
 | Method | Path | Behavior |
 |--------|------|----------|
-| GET | `/admin/applicants` | List pending applicants. *Requires `applicant:review`.* |
-| POST | `/admin/applicants/:id/approve` | Set `status='active'` and grant the `member` role. *Requires `applicant:review`.* |
+| GET | `/admin/applicants` | List pending applicants with email, request time, and any name/org given (R-AUTH-11). *Requires `applicant:review`.* |
+| POST | `/admin/applicants/:id/approve` | Set `status='active'`, grant the `member` role, **and email a magic link** with the approval TTL (R-AUTH-10). *Requires `applicant:review`.* |
 | POST | `/admin/applicants/:id/reject` | Set `status='rejected'`. *Requires `applicant:review`.* |
 | POST | `/admin/whitelist` | Add email(s) as pre-approved active member(s) with the `member` role. *Requires `whitelist:manage`.* |
 | DELETE | `/admin/members/:id` | GDPR erasure: delete member + their challenges/requests. *Requires `member:delete`.* |
@@ -429,6 +437,7 @@ deep link reloads cleanly.
 | S18 | **Not found / no access** — generic, reveals nothing (R-NAV-8) | any unresolved path |
 | S19 | **Admin approvals** — applicant list with approve/reject | `/admin/applicants` |
 | S20 | **Admin outbox** *(dev only)* — captured emails with copyable magic links | `/admin/outbox` |
+| S21 | **Access requested** — what happens next, and an optional name/org so the host can find them (R-AUTH-9, R-AUTH-12) | `/access-requested` |
 
 Remaining overlays, deliberately: the "really decline this request?" confirm, the
 "link sent" / "copied" toasts, and the feedback action (a `mailto:`, not a
@@ -669,6 +678,10 @@ Alternatives considered (kept only as fallbacks):
 - Magic-link tokens: generate 32 bytes random, email the raw token, store only
   its SHA-256. Single-use, expiry from `limits.magicLinkTtlMinutes` (default
   15). Rate-limit `/auth/request-link` per email/IP.
+- The login screen distinguishes a known address from an unknown one, so email
+  enumeration is possible by design (ADR 0013). Rate-limiting is what keeps it
+  from being cheap at scale; `/auth/request-link` is throttled per address and
+  per IP.
 - Sessions: http-only, `Secure`, `SameSite=Lax` cookie; server-side session store
   in MySQL.
 - Authorization: every challenge/connection/contact read must check the caller is

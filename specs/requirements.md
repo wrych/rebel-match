@@ -76,11 +76,13 @@ Requirements:
 - **R-AUTH-1** — The system SHALL restrict login to email addresses on an
   approved whitelist (seeded from invited summit attendees).
 - **R-AUTH-2** — WHEN a non-whitelisted email requests access THE SYSTEM SHALL
-  record it as a pending **applicant** and notify an admin, rather than granting
-  access.
+  record it as a pending **applicant**, notify an admin, and show the
+  **access-requested screen** (R-AUTH-9) — rather than granting access or
+  showing the "check your email" state.
 - **R-AUTH-3** — WHEN an admin approves an applicant THE SYSTEM SHALL move them
-  to active and allow magic-link login. WHEN an admin rejects an applicant THE
-  SYSTEM SHALL prevent login and retain no challenge data for them.
+  to active, grant the `member` role, and immediately email them a working magic
+  link (R-AUTH-10). WHEN an admin rejects an applicant THE SYSTEM SHALL prevent
+  login and retain no challenge data for them.
 
 ### 3.2 Magic-link login
 
@@ -88,6 +90,10 @@ Requirements:
   SYSTEM SHALL email them a single-use magic link and show a "check your email"
   state. *(Meeting: "something like a magic link that is then sent to your email…
   really simple user management.")*
+  - A whitelisted address and an unknown one therefore lead to **different
+    screens** (R-AUTH-2), which means the login screen reveals whether an address
+    is known. This is a deliberate trade: telling an applicant the truth is worth
+    more here than hiding membership of a 350-person invite list. See ADR 0013.
 - **R-AUTH-5** — The magic link SHALL be single-use and SHALL expire (default 15
   minutes). WHEN a user opens a valid, unexpired, unused link THE SYSTEM SHALL
   create an authenticated session and consume the token.
@@ -97,11 +103,41 @@ Requirements:
   survives closing and reopening the browser (so a phone user mid-break is not
   logged out), until they explicitly log out.
 - **R-AUTH-8** — The system SHALL NOT require a password at any point.
+- **R-AUTH-9 (Access-requested screen)** — The access-requested state SHALL be
+  its own screen at its own URL, not a variant of the "check your email" state.
+  It SHALL tell the applicant, in plain language: that their interest is
+  welcome, that access is approved by a person, that **they will be notified by
+  email once approved**, and that the email will contain a working login link —
+  so nobody waits on a second step they do not know about.
+- **R-AUTH-10 (Approval sends a link, not a notice)** — WHEN an admin approves an
+  applicant THE SYSTEM SHALL send a magic link in the approval email itself. THE
+  SYSTEM SHALL NOT send a "you have been approved, now go and request a link"
+  message: at an event, a round trip the member has to start again costs the
+  minutes R-NFR-3 exists to protect.
+  - Approval links are issued without the member asking, so they SHALL have
+    their own, longer lifetime (default **24 hours**, from config), independent
+    of the 15-minute self-service link (R-AUTH-5, R-CFG-1).
+  - An expired approval link SHALL fall back to the normal resend path
+    (R-AUTH-6), never to a dead end.
+- **R-AUTH-11 (The host can find them)** — The admin notification and the pending
+  applicant list SHALL carry what a host needs to recognize someone in the room:
+  the email address, the time of the request, and any name or organization the
+  applicant supplied. This is what lets the host of an event check in with the
+  people who cannot get in yet, and approve them on the spot.
+- **R-AUTH-12** — The access-requested screen MAY invite the applicant to add a
+  **name and organization** (both optional), for no purpose other than R-AUTH-11.
+  It SHALL NOT block or delay the request, which is already recorded. These are
+  applicant-supplied fields, stored separately from profile data, and they SHALL
+  NOT count towards onboarding completion (R-ONB-1). Onboarding MAY pre-fill its
+  name field from them — every second counts (R-NFR-3).
 
 ### 3.3 First-time onboarding
 
-- **R-ONB-1** — WHEN an authenticated user has no profile name yet THE SYSTEM
-  SHALL present a first-time onboarding screen before any other screen.
+- **R-ONB-1** — WHEN an authenticated member has **not completed onboarding** THE
+  SYSTEM SHALL present the first-time onboarding screen before any other screen.
+  Onboarding is complete only when a display name **and** an acceptance of the
+  current consent version are both recorded — a name alone SHALL NOT satisfy it
+  (R-ONB-4, R-NFR-6).
 - **R-ONB-2** — The onboarding screen SHALL collect the member's **display name**
   (required) and MAY collect **job title** and organization (optional, used in
   match cards). "Job title" is profile text and is unrelated to access roles
@@ -300,6 +336,7 @@ at a screen instead of at the front door.
   |-----|--------|
   | `/` | entry: routes to login, onboarding, or welcome |
   | `/login` | login / "check your email" |
+  | `/access-requested` | applicant: what happens next (R-AUTH-9) |
   | `/auth/verify?token=…` | magic-link landing |
   | `/onboarding` | name + consent |
   | `/welcome` | two doors |

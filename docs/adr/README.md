@@ -45,3 +45,4 @@ bump, or anything the requirements already settle (cite the `R-*` id instead).
 | [0010](0010-keyword-trend-matching-for-beta.md) | Keyword-based trend matching for the beta | Accepted |
 | [0011](0011-typescript-strict.md) | TypeScript in strict mode | Accepted |
 | [0012](0012-conventional-commits-one-change-per-pr.md) | Conventional Commits, one change per pull request | Accepted |
+| [0013](0013-tell-applicants-their-status.md) | Tell applicants their status, accepting email enumeration | Accepted |
