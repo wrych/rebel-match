@@ -17,14 +17,17 @@
     "test": "vitest run --coverage",
     "test:watch": "vitest",
     "test:integration": "vitest run --config vitest.integration.config.ts",
-    "prepare": "husky"
+    "prepare": "husky",
+    "migrate": "tsx src/migrate.ts"
   },
   "dependencies": {
+    "mysql2": "^3.24.5",
     "zod": "^4.1.12"
   },
   "devDependencies": {
     "@commitlint/cli": "^19.4.0",
     "@commitlint/config-conventional": "^19.4.0",
+    "@eslint/js": "^9.39.0",
     "@types/node": "^24.9.0",
     "@vitest/coverage-v8": "^5.0.3",
     "eslint": "^9.9.0",
@@ -36,8 +39,7 @@
     "tsx": "^4.19.0",
     "typescript": "^5.5.4",
     "typescript-eslint": "^8.1.0",
-    "vitest": "^5.0.3",
-    "@eslint/js": "^9.39.0"
+    "vitest": "^5.0.3"
   },
   "lint-staged": {
     "*.{ts,js,mjs}": [
