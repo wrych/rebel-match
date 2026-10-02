@@ -34,6 +34,7 @@ const envSchema = z
 
     DATABASE_URL: z.string().min(1),
     SESSION_SECRET: z.string().min(32),
+    SESSION_TTL_DAYS: z.coerce.number().int().positive().default(90),
 
     MAIL_DELIVERY: z.enum(['smtp', 'none']).default('none'),
     MAIL_FROM: z.email().default('hello@rebel-match.invalid'),
@@ -102,6 +103,7 @@ export interface Config {
   publicUrl: string
   databaseUrl: string
   sessionSecret: string
+  sessionTtlDays: number
   mail: {
     delivery: Env['MAIL_DELIVERY']
     from: string
@@ -126,6 +128,7 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): Config {
     publicUrl: env.PUBLIC_URL,
     databaseUrl: env.DATABASE_URL,
     sessionSecret: env.SESSION_SECRET,
+    sessionTtlDays: env.SESSION_TTL_DAYS,
     mail: {
       delivery: env.MAIL_DELIVERY,
       from: env.MAIL_FROM,
