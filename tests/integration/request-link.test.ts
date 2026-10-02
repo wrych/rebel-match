@@ -41,6 +41,7 @@ const member = 'sanne.kuipers@example.invalid'
 
 let pool: Pool
 let app: ReturnType<typeof createApp>
+let strangerHandle: string
 
 async function outboxFor(to: string, kind: string): Promise<RowDataPacket[]> {
   const [rows] = await pool.query<RowDataPacket[]>(
@@ -114,8 +115,10 @@ describe('POST /auth/request-link over MySQL', () => {
       [stranger],
     )
     const notices = await outboxFor(DEV_ADMIN_EMAIL, 'admin_notice')
+    strangerHandle = (response.body as { handle: string }).handle
 
     expect(response.body).toMatchObject({ state: 'access-requested' })
+    expect(strangerHandle).toEqual(expect.any(String))
     expect(rows[0]?.['status']).toBe('applicant')
     expect(notices).toHaveLength(1)
     expect(String(notices[0]?.['body_text'])).toContain(stranger)
@@ -127,15 +130,12 @@ describe('POST /auth/request-link over MySQL', () => {
       .post('/auth/request-link')
       .send({ email: stranger })
 
-    expect(response.body).toMatchObject({ state: 'access-requested' })
+    expect(response.body).toEqual({ state: 'access-requested' })
     expect(await outboxFor(DEV_ADMIN_EMAIL, 'admin_notice')).toHaveLength(1)
   })
 
   it('lets the applicant add a name and org with their handle (R-AUTH-11,12)', async () => {
-    const asked = await request(app)
-      .post('/auth/request-link')
-      .send({ email: stranger })
-    const handle = (asked.body as { handle: string }).handle
+    const handle = strangerHandle
 
     await request(app)
       .post('/auth/applicant')

@@ -144,6 +144,14 @@ describe('createAdmission', () => {
     expect(handles.read(String(answer.handle))).toBe('new@example.invalid')
   })
 
+  it('hands no handle to a repeat request, which anyone can make', async () => {
+    const harness = setup([['new@example.invalid', 'applicant']])
+
+    expect(await harness.admission.requestLink('new@example.invalid')).toEqual({
+      state: 'access-requested',
+    })
+  })
+
   it('hands no handle with a link or a refusal', async () => {
     const harness = setup([
       ['ada@example.invalid', 'active'],

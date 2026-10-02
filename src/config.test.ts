@@ -168,6 +168,15 @@ describe('outbound message log settings', () => {
   })
 })
 
+describe('applicant detail limits', () => {
+  it('match the requested_name and requested_org columns (R-AUTH-12)', () => {
+    const { limits } = loadConfig(valid)
+
+    expect(limits.applicantNameMaxChars).toBe(120)
+    expect(limits.applicantOrgMaxChars).toBe(160)
+  })
+})
+
 describe('PUBLIC_URL in development', () => {
   it('defaults to Vite, which serves the screens', () => {
     expect(loadConfig(valid).publicUrl).toBe('http://localhost:5173')

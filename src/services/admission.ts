@@ -36,8 +36,8 @@ export interface ApplicantDetails {
 export type LinkRequestState =
   'check-email' | 'access-requested' | 'not-approved'
 
-/** The login screen's next step; access-requested carries the handle that
- * lets the applicant describe their request (R-AUTH-11). */
+/** The login screen's next step. The request that records an applicant also
+ * carries the handle that lets them describe it (R-AUTH-11). */
 export interface LinkRequest {
   state: LinkRequestState
   handle?: string
@@ -70,8 +70,13 @@ export function createAdmission(deps: {
         return { state: 'check-email' }
       }
       if (admission === 'not-approved') return { state: 'not-approved' }
-      if (admission === 'record-applicant') await recordApplicant(deps, email)
-      return { state: 'access-requested', handle: deps.handles.issue(email) }
+      // Anyone can ask again for an address, so only the request that
+      // recorded the applicant gets the handle to describe it.
+      const created =
+        admission === 'record-applicant' && (await recordApplicant(deps, email))
+      return created
+        ? { state: 'access-requested', handle: deps.handles.issue(email) }
+        : { state: 'access-requested' }
     },
     describeApplicant: async (handle, details) => {
       const email = deps.handles.read(handle)
@@ -92,12 +97,13 @@ async function recordApplicant(
     notifyReviewers: (applicantEmail: string) => Promise<void>
   },
   email: string,
-): Promise<void> {
-  if (!(await deps.store.createApplicant(email))) return
+): Promise<boolean> {
+  if (!(await deps.store.createApplicant(email))) return false
   try {
     await deps.notifyReviewers(email)
   } catch (error) {
     await deps.store.removeApplicant(email)
     throw error
   }
+  return true
 }

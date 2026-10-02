@@ -5,6 +5,7 @@ import type {
   ApplicantDetails,
   LinkRequestState,
 } from '../services/admission.js'
+import { loadConfig } from '../config.js'
 import { requestLinkRoutes } from './request-link.js'
 
 function setup(state: LinkRequestState = 'check-email'): {
@@ -18,6 +19,10 @@ function setup(state: LinkRequestState = 'check-email'): {
   app.use(express.json())
   app.use(
     requestLinkRoutes({
+      config: loadConfig({
+        DATABASE_URL: 'mysql://u:p@localhost/db',
+        SESSION_SECRET: 'x'.repeat(32),
+      }),
       admission: {
         requestLink: (email, next) => {
           calls.push({ email, next })
