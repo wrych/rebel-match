@@ -867,6 +867,11 @@ branch rules are in ADR 0012 and `docs/constitution.md`.
   scoped to a few files; a commit-msg hook runs commitlint. The same checks run
   again in CI — the hook is speed, CI is the gate.
 - **Coverage:** 80% global floor, 90% branch coverage on the R-QA-1 modules.
+  Modules whose only job is I/O (`db.ts`, the migration runner, the server entry)
+  are excluded from the unit floor and covered by the integration suite instead.
+  The exclusion has a rule, not a list: if a module holds a decision worth
+  testing it does not belong on it — the decision belongs in a pure module
+  (constitution §4).
 
 `.github/workflows/ci.yml` — on `push` and `pull_request`:
 
@@ -882,8 +887,8 @@ steps:
   - npm run lint
   - npm run typecheck # tsc --noEmit, strict (R-QA-1)
   - npx commitlint --from origin/main --to HEAD
-  - npm run migrate # migrations from scratch (R-QA-4)
   - npm test # unit (R-QA-1)
+  - npm run migrate # from an empty database (R-QA-4)
   - npm run test:integration # API-level (R-QA-2)
   - npm run build # server (tsc) + client (vite) — ADR 0017
 ```

@@ -11,13 +11,28 @@ permissions:
 jobs:
   check:
     runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_ROOT_PASSWORD: test
+          MYSQL_DATABASE: rebel_match_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -ptest"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
     env:
       # Synthetic only. No production secret and no real attendee list ever
       # reaches CI (R-QA-5, R-SEED-5).
       NODE_ENV: test
       DATABASE_URL: mysql://root:test@127.0.0.1:3306/rebel_match_test
       SESSION_SECRET: ci-session-secret-at-least-32-characters
-      MAIL_TRANSPORT: outbox
+      MAIL_DELIVERY: none
       SEED_PROFILE: dev
 
     steps:
@@ -48,6 +63,12 @@ jobs:
 
       - name: Unit tests
         run: npm test
+
+      - name: Migrations, from an empty database
+        run: npm run migrate
+
+      - name: Integration tests
+        run: npm run test:integration
 
       - name: Build
         run: npm run build

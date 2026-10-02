@@ -13,13 +13,17 @@ User journeys are in `flows.md` (`F1`…`F14`).
 
 ## M0 — Foundation _(M10..M14 groundwork)_
 
-- [ ] `package.json` + **TypeScript strict** (`tsconfig.json`, `tsc --noEmit`).
+- [x] `package.json` + **TypeScript strict** (`tsconfig.json`, `tsc --noEmit`).
       _(ADR 0011)_
-- [ ] Node + Express skeleton, `mysql2` pool, env-driven `config.ts` with the
-      limits/permissions tables. _(design §1, R-CFG-1,4)_
+- [ ] Node + Express skeleton wired to the pool and config. _(design §1)_
 - [ ] `GET /api/config` exposing the client-relevant subset. _(R-CFG-2)_
-- [ ] Migrations for all tables in `design.md` §2, including `roles`,
-      `member_roles` and `outbox`. _(R-ROLE-1,6, R-DEV-1)_
+- [x] Migration runner: forward-only, ordered, idempotent, and it refuses to run
+      when a migration that already ran has been edited. _(R-QA-4, constitution §6)_
+- [x] Migrations for the login journey — `members`, `roles`, `member_roles`,
+      `magic_tokens`, `invites`, `outbox`, `sessions`. The remaining tables land
+      with the journeys that use them. _(R-ROLE-1,6, R-DEV-1, R-MSG-1, R-INV-8)_
+- [x] `mysql2` pool, and CI gains the MySQL service plus `migrate` and
+      integration steps. _(design §1, R-QA-2,4)_
 - [ ] Permission middleware `requirePermission(...)` + role resolver (union of
       roles, no role-name checks anywhere). _(R-ROLE-2,3,5)_
 - [ ] Seed runner with `SEED_PROFILE`, dev-in-prod guard, idempotent upserts;
@@ -31,15 +35,15 @@ User journeys are in `flows.md` (`F1`…`F14`).
       _(R-QA-1, ADR 0017)_
 - [ ] Health check + boundary schemas (`zod`) + error handling middleware that
       leaks nothing. _(R-CFG-3, constitution §5)_
-- [ ] Vitest harness: `npm test` + `npm run test:integration` (supertest,
-      disposable MySQL, `mail.delivery=none`). _(R-QA-1,2)_
-- [ ] ESLint + Prettier with the mechanical constitution rules
+- [x] Vitest harness: `npm test` + `npm run test:integration` (disposable
+      MySQL, `mail.delivery=none`). _(R-QA-1,2)_
+- [x] ESLint + Prettier with the mechanical constitution rules
       (`import/no-cycle`, `complexity`, `no-console`, `no-warning-comments`).
       _(constitution §9)_
-- [ ] commitlint + pre-commit/commit-msg hooks (format, lint, typecheck on staged
-      files). _(ADR 0012, constitution §9)_
-- [ ] GitHub Actions CI: install, lint, typecheck, commitlint, migrate from
-      scratch, unit, integration, build; synthetic env only, coverage floor
+- [x] commitlint + pre-commit/commit-msg hooks (format and lint on staged files,
+      full typecheck). _(ADR 0012, constitution §9)_
+- [x] GitHub Actions CI: install, lint, typecheck, commitlint, unit, migrate
+      from scratch, integration, build; synthetic env only, coverage floor
       enforced. _(R-QA-3,4,5)_
 - [ ] Branch protection on `main`: PR required, CI green required, squash-only.
       _(ADR 0012, R-QA-6)_
