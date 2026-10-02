@@ -1,4 +1,4 @@
-import type { RoleKey } from '../config.js'
+import type { RoleKey } from '../access.js'
 
 export interface SeedRole {
   key: RoleKey

@@ -1,4 +1,4 @@
-import { rolePermissions, type Permission, type RoleKey } from './config.js'
+import { rolePermissions, type Permission, type RoleKey } from './access.js'
 
 /** Where permissions come from (ADR 0021). Guards and the auth seam receive
  * this, never the matrix, so the matrix can move without touching them. */

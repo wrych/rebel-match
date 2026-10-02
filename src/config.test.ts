@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import {
-  clientConfig,
-  isDevelopmentDeployment,
-  loadConfig,
-  rolePermissions,
-} from './config.js'
+import { rolePermissions } from './access.js'
+import { clientConfig, isDevelopmentDeployment, loadConfig } from './config.js'
 
 const valid = {
   DATABASE_URL: 'mysql://user:pw@localhost:3306/rebel_match',
