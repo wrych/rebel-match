@@ -64,6 +64,24 @@ push with `--no-verify`. **Agents never use `--no-verify`**; they fix the
 finding or stop and ask. Without the `claude` CLI the review is skipped with a
 warning, and CI remains the gate for everything else.
 
+### Merging
+
+`main` takes squash merges of pull requests with CI's `check` green on an
+up-to-date branch. Who presses the button depends on the change (ADR 0022):
+
+| The change                                                                   | Merged by                         |
+| ---------------------------------------------------------------------------- | --------------------------------- |
+| Fix, refactor, test, CI or tooling, docs                                     | the agent, by enabling auto-merge |
+| A feature for a `specs/tasks.md` item the maintainer has discussed           | the agent, by enabling auto-merge |
+| A spec or ADR change recording a decision the maintainer already made        | the agent, by enabling auto-merge |
+| A decision not yet made: new requirement, ADR choosing options, constitution | the maintainer                    |
+| Anything weakening privacy or security, or loosening a check                 | the maintainer                    |
+| A change to this rule                                                        | the maintainer                    |
+
+An agent that merges says so, with the PR link. When unsure which row a change
+falls in, it is the maintainer's. Agents merge one PR before starting work that
+depends on it, rather than stacking.
+
 ## First run
 
 ```sh
