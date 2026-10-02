@@ -1,6 +1,6 @@
 # 0018. The auth seam owns its sessions and hands routes the cookie
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by 0020
 - **Date:** 2026-10-02
 - **Deciders:** Andy Moesch
 
