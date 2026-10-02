@@ -16,6 +16,8 @@ const config = loadConfig({
   PUBLIC_URL: 'https://match.example.org',
 })
 
+const DAY = 86_400_000
+
 const ada: MemoryMember = {
   id: 'm-ada',
   email: 'ada@example.invalid',
@@ -196,7 +198,7 @@ describe('sessions', () => {
     const cookie = await auth.createSession('m-ada')
 
     expect(cookie.options.secure).toBe(true)
-    expect(cookie.options.maxAge).toBe(30 * 86_400_000)
+    expect(cookie.options.maxAge).toBe(30 * DAY)
   })
 
   it('is nobody without a cookie, or with a tampered one', async () => {
@@ -215,9 +217,56 @@ describe('sessions', () => {
     const { auth, advance } = setup()
     const cookie = await auth.createSession('m-ada')
 
-    advance(30 * 86_400_000)
+    advance(30 * DAY)
 
     expect(await auth.currentMember(asRequest(cookie))).toBeNull()
+  })
+
+  it('keeps a member who keeps coming back signed in (R-AUTH-7)', async () => {
+    const { auth, advance } = setup()
+    const cookie = await auth.createSession('m-ada')
+
+    for (let day = 0; day < 3; day += 1) {
+      advance(20 * DAY)
+      const renewed = await auth.renewSession(asRequest(cookie))
+      expect(renewed).toMatchObject({ value: cookie.value })
+      expect(renewed?.options.maxAge).toBe(30 * DAY)
+    }
+
+    expect((await auth.currentMember(asRequest(cookie)))?.id).toBe('m-ada')
+  })
+
+  it('renews at most once a day, so a session is not rewritten per request', async () => {
+    const { auth, advance } = setup()
+    const cookie = await auth.createSession('m-ada')
+
+    advance(DAY - 1)
+    expect(await auth.renewSession(asRequest(cookie))).toBeNull()
+
+    advance(1)
+    expect(await auth.renewSession(asRequest(cookie))).not.toBeNull()
+  })
+
+  it('does not revive a session idle for the whole period', async () => {
+    const { auth, advance } = setup()
+    const cookie = await auth.createSession('m-ada')
+
+    advance(30 * DAY)
+
+    expect(await auth.renewSession(asRequest(cookie))).toBeNull()
+    expect(await auth.currentMember(asRequest(cookie))).toBeNull()
+  })
+
+  it('renews nothing without a valid session cookie', async () => {
+    const { auth } = setup()
+    const cookie = await auth.createSession('m-ada')
+
+    expect(await auth.renewSession({ headers: {} })).toBeNull()
+    expect(
+      await auth.renewSession(
+        asRequest({ ...cookie, value: `x${cookie.value}` }),
+      ),
+    ).toBeNull()
   })
 
   it('is nobody when the member is no longer active', async () => {

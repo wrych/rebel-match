@@ -14,6 +14,34 @@ export interface MemoryAuthStore extends AuthStore {
   readonly sessions: readonly SessionRecord[]
 }
 
+function sessionMethods(
+  sessions: SessionRecord[],
+): Pick<
+  AuthStore,
+  'insertSession' | 'findSession' | 'extendSession' | 'deleteSession'
+> {
+  return {
+    insertSession: (session) => {
+      sessions.push({ ...session })
+      return Promise.resolve()
+    },
+    findSession: (idHash) => {
+      const session = sessions.find((s) => s.idHash === idHash)
+      return Promise.resolve(session === undefined ? null : { ...session })
+    },
+    extendSession: (idHash, expiresAt) => {
+      const session = sessions.find((s) => s.idHash === idHash)
+      if (session !== undefined) session.expiresAt = expiresAt
+      return Promise.resolve()
+    },
+    deleteSession: (idHash) => {
+      const index = sessions.findIndex((s) => s.idHash === idHash)
+      if (index !== -1) sessions.splice(index, 1)
+      return Promise.resolve()
+    },
+  }
+}
+
 /** Builds a MemoryAuthStore holding these members. */
 export function createMemoryAuthStore(
   members: readonly MemoryMember[],
@@ -47,18 +75,6 @@ export function createMemoryAuthStore(
       if (token !== undefined) token.usedAt = at
       return Promise.resolve(token !== undefined)
     },
-    insertSession: (session) => {
-      sessions.push({ ...session })
-      return Promise.resolve()
-    },
-    findSession: (idHash) => {
-      const session = sessions.find((s) => s.idHash === idHash)
-      return Promise.resolve(session === undefined ? null : { ...session })
-    },
-    deleteSession: (idHash) => {
-      const index = sessions.findIndex((s) => s.idHash === idHash)
-      if (index !== -1) sessions.splice(index, 1)
-      return Promise.resolve()
-    },
+    ...sessionMethods(sessions),
   }
 }
