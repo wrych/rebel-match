@@ -1,4 +1,5 @@
 import type { AuthProvider } from '../auth/index.js'
+import type { ApplicantHandles } from './applicant-handle.js'
 
 export type MemberStatus = 'applicant' | 'active' | 'rejected' | 'deleted'
 
@@ -22,13 +23,34 @@ export interface AdmissionStore {
   createApplicant(email: string): Promise<boolean>
   /** Takes back an applicant this request created, while still pending. */
   removeApplicant(email: string): Promise<void>
+  /** Adds what the applicant said about themselves, keeping any part they
+   * leave out; false when the address is not a pending applicant. */
+  describeApplicant(email: string, details: ApplicantDetails): Promise<boolean>
+}
+
+export interface ApplicantDetails {
+  name?: string | undefined
+  org?: string | undefined
 }
 
 export type LinkRequestState =
   'check-email' | 'access-requested' | 'not-approved'
 
+/** The login screen's next step; access-requested carries the handle that
+ * lets the applicant describe their request (R-AUTH-11). */
+export interface LinkRequest {
+  state: LinkRequestState
+  handle?: string
+}
+
 export interface AdmissionService {
-  requestLink(email: string, next?: string): Promise<LinkRequestState>
+  requestLink(email: string, next?: string): Promise<LinkRequest>
+  /** `POST /auth/applicant`: not-found for a handle that does not hold or a
+   * request no longer pending. */
+  describeApplicant(
+    handle: string,
+    details: ApplicantDetails,
+  ): Promise<'saved' | 'not-found'>
 }
 
 /** `POST /auth/request-link`'s decision. Admission policy lives here, outside
@@ -36,6 +58,7 @@ export interface AdmissionService {
 export function createAdmission(deps: {
   store: AdmissionStore
   auth: Pick<AuthProvider, 'issueLink'>
+  handles: ApplicantHandles
   notifyReviewers: (applicantEmail: string) => Promise<void>
 }): AdmissionService {
   return {
@@ -44,11 +67,18 @@ export function createAdmission(deps: {
 
       if (admission === 'send-link') {
         await deps.auth.issueLink(email, { kind: 'self_service', next })
-        return 'check-email'
+        return { state: 'check-email' }
       }
-      if (admission === 'not-approved') return 'not-approved'
+      if (admission === 'not-approved') return { state: 'not-approved' }
       if (admission === 'record-applicant') await recordApplicant(deps, email)
-      return 'access-requested'
+      return { state: 'access-requested', handle: deps.handles.issue(email) }
+    },
+    describeApplicant: async (handle, details) => {
+      const email = deps.handles.read(handle)
+      if (email === null) return 'not-found'
+
+      const saved = await deps.store.describeApplicant(email, details)
+      return saved ? 'saved' : 'not-found'
     },
   }
 }

@@ -28,6 +28,15 @@ export function createMysqlAdmissionStore(pool: Pool): AdmissionStore {
         [email],
       )
     },
+    describeApplicant: async (email, details) => {
+      const [result] = await pool.query<ResultSetHeader>(
+        'UPDATE members SET requested_name = COALESCE(?, requested_name), ' +
+          'requested_org = COALESCE(?, requested_org) ' +
+          "WHERE email = ? AND status = 'applicant'",
+        [details.name ?? null, details.org ?? null, email],
+      )
+      return result.affectedRows === 1
+    },
   }
 }
 

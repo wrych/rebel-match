@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
+import { createApplicantHandles } from './applicant-handle.js'
 import {
   admissionFor,
+  type ApplicantDetails,
   createAdmission,
   type AdmissionStore,
   type MemberStatus,
@@ -18,11 +20,15 @@ describe('admissionFor', () => {
   })
 })
 
+const handles = createApplicantHandles('x'.repeat(32))
+
 interface Harness {
   requestLink: (email: string, next?: string) => Promise<string>
+  admission: ReturnType<typeof createAdmission>
   links: { email: string; next: string | undefined }[]
   notified: string[]
   members: Map<string, MemberStatus>
+  details: Map<string, ApplicantDetails>
 }
 
 function setup(
@@ -30,6 +36,7 @@ function setup(
   noticeFails = false,
 ): Harness {
   const members = new Map(initial)
+  const details = new Map<string, ApplicantDetails>()
   const links: Harness['links'] = []
   const notified: string[] = []
   const store: AdmissionStore = {
@@ -43,9 +50,15 @@ function setup(
       if (members.get(email) === 'applicant') members.delete(email)
       return Promise.resolve()
     },
+    describeApplicant: (email, given) => {
+      if (members.get(email) !== 'applicant') return Promise.resolve(false)
+      details.set(email, { ...details.get(email), ...given })
+      return Promise.resolve(true)
+    },
   }
   const admission = createAdmission({
     store,
+    handles,
     auth: {
       issueLink: (email, opts) => {
         links.push({ email, next: opts.next })
@@ -59,10 +72,13 @@ function setup(
     },
   })
   return {
-    requestLink: (email, next) => admission.requestLink(email, next),
+    requestLink: async (email, next) =>
+      (await admission.requestLink(email, next)).state,
+    admission,
     links,
     notified,
     members,
+    details,
   }
 }
 
@@ -117,5 +133,65 @@ describe('createAdmission', () => {
     )
 
     expect(harness.members.has('new@example.invalid')).toBe(false)
+  })
+
+  it('hands an applicant the handle for their own address (R-AUTH-11)', async () => {
+    const harness = setup()
+
+    const answer = await harness.admission.requestLink('new@example.invalid')
+
+    expect(answer.handle).toBeDefined()
+    expect(handles.read(String(answer.handle))).toBe('new@example.invalid')
+  })
+
+  it('hands no handle with a link or a refusal', async () => {
+    const harness = setup([
+      ['ada@example.invalid', 'active'],
+      ['no@example.invalid', 'rejected'],
+    ])
+
+    for (const email of ['ada@example.invalid', 'no@example.invalid']) {
+      expect(await harness.admission.requestLink(email)).not.toHaveProperty(
+        'handle',
+      )
+    }
+  })
+})
+
+describe('describeApplicant', () => {
+  it("saves a pending applicant's name and org (R-AUTH-11,12)", async () => {
+    const harness = setup([['new@example.invalid', 'applicant']])
+    const handle = handles.issue('new@example.invalid')
+
+    expect(
+      await harness.admission.describeApplicant(handle, {
+        name: 'Ada',
+        org: 'Rebels',
+      }),
+    ).toBe('saved')
+    expect(harness.details.get('new@example.invalid')).toEqual({
+      name: 'Ada',
+      org: 'Rebels',
+    })
+  })
+
+  it('does not find a forged handle', async () => {
+    const harness = setup([['new@example.invalid', 'applicant']])
+
+    expect(
+      await harness.admission.describeApplicant('bm9wZQ.forged', {
+        name: 'Mallory',
+      }),
+    ).toBe('not-found')
+    expect(harness.details.size).toBe(0)
+  })
+
+  it('does not find a request no longer pending', async () => {
+    const harness = setup([['ada@example.invalid', 'active']])
+    const handle = handles.issue('ada@example.invalid')
+
+    expect(
+      await harness.admission.describeApplicant(handle, { name: 'Ada' }),
+    ).toBe('not-found')
   })
 })

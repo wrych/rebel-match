@@ -9,6 +9,7 @@ import {
   createMysqlAdmissionStore,
   createMysqlReviewerDirectory,
 } from './services/admission-store.js'
+import { createApplicantHandles } from './services/applicant-handle.js'
 import { createAdmission } from './services/admission.js'
 import { createApplicantNotice } from './services/applicant-notice.js'
 import { createMysqlMemberProfiles } from './services/member-profiles.js'
@@ -29,6 +30,7 @@ const roles = createRoleService({
 const outbox = createMysqlOutboxLog(pool)
 const admission = createAdmission({
   store: createMysqlAdmissionStore(pool),
+  handles: createApplicantHandles(config.sessionSecret),
   auth,
   notifyReviewers: createApplicantNotice({
     mailer,
