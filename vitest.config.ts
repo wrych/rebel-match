@@ -25,6 +25,8 @@ export default defineConfig({
         'src/seed/run.ts',
         'src/migrations/run.ts',
         'src/auth/mysql-store.ts',
+        'src/services/outbox-store.ts',
+        'src/services/smtp.ts',
         'client/main.ts',
         'client/router.ts',
       ],
