@@ -72,6 +72,12 @@ export default tseslint.config(
   // and checks templates too, which ESLint never could.
   ...vue.configs['flat/recommended'],
   {
+    files: ['client/**/*.vue'],
+    // vue-eslint-parser hands <script lang="ts"> to espree unless told
+    // otherwise, which rejects TypeScript syntax such as `import { type X }`.
+    languageOptions: { parserOptions: { parser: tseslint.parser } },
+  },
+  {
     files: ['client/**/*.ts', 'client/**/*.vue'],
     ...tseslint.configs.disableTypeChecked,
     rules: {
