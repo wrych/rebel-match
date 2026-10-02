@@ -13,7 +13,9 @@ User journeys are in `flows.md` (`F1`…`F14`).
 
 ## M0 — Foundation *(M10..M14 groundwork)*
 
-- [ ] Node + Express skeleton, `mysql2` pool, env-driven `config.js` with the
+- [ ] `package.json` + **TypeScript strict** (`tsconfig.json`, `tsc --noEmit`).
+      *(ADR 0011)*
+- [ ] Node + Express skeleton, `mysql2` pool, env-driven `config.ts` with the
       limits/permissions tables. *(design §1, R-CFG-1,4)*
 - [ ] `GET /api/config` exposing the client-relevant subset. *(R-CFG-2)*
 - [ ] Migrations for all tables in `design.md` §2, including `roles`,
@@ -24,11 +26,20 @@ User journeys are in `flows.md` (`F1`…`F14`).
       shared seed = roles + trends + cases. *(R-SEED-1,4,7)*
 - [ ] Client router with path-based URLs + SPA catch-all + not-found screen.
       *(R-NAV-1,10)*
-- [ ] Health check + request validation + error handling middleware.
-- [ ] Unit + integration test harness (`npm test`, `npm run test:integration`).
-      *(R-QA-1,2)*
-- [ ] GitHub Actions CI: install, lint, migrate from scratch, unit, integration,
-      build; synthetic env only. *(R-QA-3,4,5)*
+- [ ] Health check + boundary schemas (`zod`) + error handling middleware that
+      leaks nothing. *(R-CFG-3, constitution §5)*
+- [ ] Vitest harness: `npm test` + `npm run test:integration` (supertest,
+      disposable MySQL, `mail.transport=outbox`). *(R-QA-1,2)*
+- [ ] ESLint + Prettier with the mechanical constitution rules
+      (`import/no-cycle`, `complexity`, `no-console`, `no-warning-comments`).
+      *(constitution §9)*
+- [ ] commitlint + pre-commit/commit-msg hooks (format, lint, typecheck on staged
+      files). *(ADR 0012, constitution §9)*
+- [ ] GitHub Actions CI: install, lint, typecheck, commitlint, migrate from
+      scratch, unit, integration, build; synthetic env only, coverage floor
+      enforced. *(R-QA-3,4,5)*
+- [ ] Branch protection on `main`: PR required, CI green required, squash-only.
+      *(ADR 0012, R-QA-6)*
 
 ## M1 — Auth & onboarding *(M1, M2 — gates everything, F1 + F2)*
 

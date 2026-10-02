@@ -88,8 +88,9 @@ thresholds have sane defaults in the file and may be overridden by env.
 
 ### Key libraries
 
-- `express`, `mysql2` (promise pool), `nodemailer`, `cookie-session` or
-  `express-session` (store in MySQL), `zod`/`joi` for request validation,
+- **TypeScript** (strict, ADR 0011). `express`, `mysql2` (promise pool),
+  `nodemailer`, `cookie-session` or
+  `express-session` (store in MySQL), `zod` for boundary validation,
   `mixpanel` (Node server events) + `mixpanel-browser` (client events), both
   configured against the EU endpoints.
 
@@ -691,16 +692,24 @@ Alternatives considered (kept only as fallbacks):
 
 ## 9. Testing & CI
 
-Tooling (R-QA-1..6):
+Tooling (R-QA-1..6). Language is **TypeScript, strict** (ADR 0011); commit and
+branch rules are in ADR 0012 and `docs/constitution.md`.
 
-- **Unit tests:** `vitest` or `node:test` — whichever the team prefers; the
-  requirement is one `npm test` entry point. Pure modules (matcher, token
-  service, permission resolver, `next` validator, config validation) are tested
-  without a database.
+- **Unit tests:** `vitest`, one `npm test` entry point. Pure modules (matcher,
+  token service, permission resolver, `next` validator, config validation) are
+  tested without a database — which is why services take their dependencies as
+  arguments (constitution §4).
 - **Integration tests:** `supertest` against the Express app with a disposable
   MySQL (the CI service container below) and `mail.transport=outbox`, so the auth
   flow is testable without sending mail — the outbox doubles as the test mailbox.
-- **Lint/format:** `eslint` + `prettier`, run in CI.
+- **Types:** `tsc --noEmit`, `strict: true`, no implicit `any`.
+- **Lint/format:** `eslint` + `prettier`, plus the mechanical constitution rules
+  (`import/no-cycle`, `complexity`, `no-console`, `no-warning-comments`).
+- **Commits:** `commitlint` with the Conventional Commits config.
+- **Hooks:** a pre-commit hook runs format, lint and typecheck on staged files; a
+  commit-msg hook runs commitlint. Same checks run again in CI — the hook is
+  speed, CI is the gate.
+- **Coverage:** 80% global floor, 90% branch coverage on the R-QA-1 modules.
 
 `.github/workflows/ci.yml` — on `push` and `pull_request`:
 
@@ -714,6 +723,8 @@ services:
 steps:
   - npm ci
   - npm run lint
+  - npm run typecheck        # tsc --noEmit, strict (R-QA-1)
+  - npx commitlint --from origin/main --to HEAD
   - npm run migrate          # migrations from scratch (R-QA-4)
   - npm test                 # unit (R-QA-1)
   - npm run test:integration # API-level (R-QA-2)
