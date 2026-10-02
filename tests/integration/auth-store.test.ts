@@ -135,6 +135,24 @@ describe('the auth seam over MySQL', () => {
     expect(await auth.currentMember(asRequest(cookie))).toBeNull()
   })
 
+  it('slides an idle session forward when it is used (R-AUTH-7)', async () => {
+    const cookie = await auth.createSession(active.id)
+    await pool.query(
+      'UPDATE sessions SET expires = UNIX_TIMESTAMP() + 3600 ' +
+        'WHERE JSON_EXTRACT(data, "$.memberId") = ?',
+      [active.id],
+    )
+
+    expect(await auth.renewSession(asRequest(cookie))).not.toBeNull()
+
+    const [rows] = await pool.query<RowDataPacket[]>(
+      'SELECT expires - UNIX_TIMESTAMP() AS remaining FROM sessions ' +
+        'WHERE JSON_EXTRACT(data, "$.memberId") = ?',
+      [active.id],
+    )
+    expect(Number(rows[0]!['remaining'])).toBeGreaterThan(29 * 86_400)
+  })
+
   it('does not resolve a member who is not active', async () => {
     const cookie = await auth.createSession(rejected.id)
 

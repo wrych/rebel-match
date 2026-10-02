@@ -71,7 +71,10 @@ async function selectOne(
 
 function sessionQueries(
   pool: Pool,
-): Pick<AuthStore, 'insertSession' | 'findSession' | 'deleteSession'> {
+): Pick<
+  AuthStore,
+  'insertSession' | 'findSession' | 'extendSession' | 'deleteSession'
+> {
   return {
     insertSession: async (session) => {
       await pool.query(
@@ -90,6 +93,12 @@ function sessionQueries(
         idHash,
       )
       return row === null ? null : toSession(row)
+    },
+    extendSession: async (idHash, expiresAt) => {
+      await pool.query('UPDATE sessions SET expires = ? WHERE session_id = ?', [
+        Math.floor(expiresAt.getTime() / MS_PER_SECOND),
+        idHash,
+      ])
     },
     deleteSession: async (idHash) => {
       await pool.query('DELETE FROM sessions WHERE session_id = ?', [idHash])

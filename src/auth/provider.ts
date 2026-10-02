@@ -9,7 +9,7 @@ import {
   signSessionId,
   unsignSessionId,
 } from './cookie.js'
-import type { AuthStore } from './store.js'
+import type { AuthStore, SessionRecord } from './store.js'
 import { hashSecret, judgeToken, linkLifetimeMs, newSecret } from './tokens.js'
 import type {
   AuthProvider,
@@ -22,6 +22,9 @@ import type {
 } from './types.js'
 
 const MS_PER_DAY = 86_400_000
+// A 30-day idle window loses nothing by sliding in day-sized steps, and a
+// session is then written once a day rather than on every request (ADR 0020).
+const RENEWAL_STEP_MS = MS_PER_DAY
 
 export interface AuthDeps {
   store: AuthStore
@@ -98,25 +101,41 @@ async function createSession(
   return sessionCookie(value, lifetime, ctx.secure)
 }
 
-function presentedSessionHash(
+interface Presented {
+  value: string
+  idHash: string
+}
+
+function presentedSession(
   ctx: Context,
   request: CallerRequest,
-): string | null {
+): Presented | null {
   const value = readCookie(request.headers.cookie, SESSION_COOKIE_NAME)
   const raw =
     value === null ? null : unsignSessionId(value, ctx.config.sessionSecret)
 
-  return raw === null ? null : hashSecret(raw)
+  return raw === null || value === null
+    ? null
+    : { value, idHash: hashSecret(raw) }
+}
+
+async function liveSession(
+  ctx: Context,
+  presented: Presented | null,
+): Promise<SessionRecord | null> {
+  if (presented === null) return null
+  const session = await ctx.store.findSession(presented.idHash)
+  if (session === null) return null
+
+  return session.expiresAt.getTime() > ctx.now().getTime() ? session : null
 }
 
 async function currentMember(
   ctx: Context,
   request: CallerRequest,
 ): Promise<MemberRef | null> {
-  const idHash = presentedSessionHash(ctx, request)
-  const session = idHash === null ? null : await ctx.store.findSession(idHash)
+  const session = await liveSession(ctx, presentedSession(ctx, request))
   if (session === null) return null
-  if (session.expiresAt.getTime() <= ctx.now().getTime()) return null
 
   const roles = await ctx.store.activeMemberRoles(session.memberId)
   if (roles === null) return null
@@ -124,12 +143,30 @@ async function currentMember(
   return { id: session.memberId, roles, permissions: resolvePermissions(roles) }
 }
 
+async function renewSession(
+  ctx: Context,
+  request: CallerRequest,
+): Promise<SessionCookie | null> {
+  const presented = presentedSession(ctx, request)
+  const session = await liveSession(ctx, presented)
+  if (presented === null || session === null) return null
+
+  const lifetime = ctx.config.sessionTtlDays * MS_PER_DAY
+  const expiresAt = new Date(ctx.now().getTime() + lifetime)
+  if (expiresAt.getTime() - session.expiresAt.getTime() < RENEWAL_STEP_MS) {
+    return null
+  }
+
+  await ctx.store.extendSession(presented.idHash, expiresAt)
+  return sessionCookie(presented.value, lifetime, ctx.secure)
+}
+
 async function endSession(
   ctx: Context,
   request: CallerRequest,
 ): Promise<SessionCookie> {
-  const idHash = presentedSessionHash(ctx, request)
-  if (idHash !== null) await ctx.store.deleteSession(idHash)
+  const presented = presentedSession(ctx, request)
+  if (presented !== null) await ctx.store.deleteSession(presented.idHash)
 
   return sessionCookie('', 0, ctx.secure)
 }
@@ -148,6 +185,7 @@ export function createAuth(deps: AuthDeps): AuthProvider {
     verifyToken: (raw) => verifyToken(ctx, raw),
     createSession: (memberId) => createSession(ctx, memberId),
     currentMember: (request) => currentMember(ctx, request),
+    renewSession: (request) => renewSession(ctx, request),
     endSession: (request) => endSession(ctx, request),
   }
 }

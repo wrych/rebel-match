@@ -56,5 +56,8 @@ export interface AuthProvider {
   verifyToken(raw: string): Promise<VerifyResult>
   createSession(memberId: string): Promise<SessionCookie>
   currentMember(request: CallerRequest): Promise<MemberRef | null>
+  /** Slides a live session's idle expiry (ADR 0020). Returns the cookie to set
+   * when it was extended, null when nothing changed. */
+  renewSession(request: CallerRequest): Promise<SessionCookie | null>
   endSession(request: CallerRequest): Promise<SessionCookie>
 }

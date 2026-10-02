@@ -16,7 +16,10 @@ export interface MemoryAuthStore extends AuthStore {
 
 function sessionMethods(
   sessions: SessionRecord[],
-): Pick<AuthStore, 'insertSession' | 'findSession' | 'deleteSession'> {
+): Pick<
+  AuthStore,
+  'insertSession' | 'findSession' | 'extendSession' | 'deleteSession'
+> {
   return {
     insertSession: (session) => {
       sessions.push({ ...session })
@@ -25,6 +28,11 @@ function sessionMethods(
     findSession: (idHash) => {
       const session = sessions.find((s) => s.idHash === idHash)
       return Promise.resolve(session === undefined ? null : { ...session })
+    },
+    extendSession: (idHash, expiresAt) => {
+      const session = sessions.find((s) => s.idHash === idHash)
+      if (session !== undefined) session.expiresAt = expiresAt
+      return Promise.resolve()
     },
     deleteSession: (idHash) => {
       const index = sessions.findIndex((s) => s.idHash === idHash)

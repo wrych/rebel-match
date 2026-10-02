@@ -29,5 +29,6 @@ export interface AuthStore {
   markTokenUsed(id: string, at: Date): Promise<boolean>
   insertSession(session: SessionRecord): Promise<void>
   findSession(idHash: string): Promise<SessionRecord | null>
+  extendSession(idHash: string, expiresAt: Date): Promise<void>
   deleteSession(idHash: string): Promise<void>
 }
