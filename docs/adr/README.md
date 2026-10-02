@@ -42,7 +42,7 @@ still holds except where the later ADR says otherwise.
 | [0003](0003-passwordless-magic-link-auth.md)              | Passwordless magic-link auth over a whitelist                | Accepted                  |
 | [0004](0004-double-opt-in-contact-exchange.md)            | Double opt-in before any contact detail is shared            | Accepted                  |
 | [0005](0005-mixpanel-eu-residency.md)                     | Mixpanel with EU data residency for analytics                | Accepted                  |
-| [0006](0006-role-based-access-control.md)                 | Role-based access control instead of an is_admin flag        | Accepted                  |
+| [0006](0006-role-based-access-control.md)                 | Role-based access control instead of an is_admin flag        | Accepted, amended by 0021 |
 | [0007](0007-addressable-screens-not-modals.md)            | Addressable screens instead of modals                        | Accepted                  |
 | [0008](0008-own-smtp-with-dev-outbox.md)                  | Own SMTP server, with a no-send outbox in development        | Accepted, amended by 0016 |
 | [0009](0009-per-environment-seed-profiles.md)             | Per-environment seed profiles                                | Accepted                  |
@@ -57,3 +57,4 @@ still holds except where the later ADR says otherwise.
 | [0018](0018-the-auth-seam-owns-its-session-cookie.md)     | The auth seam owns its sessions and hands routes the cookie  | Accepted, amended by 0020 |
 | [0019](0019-gate-pushes-on-tests-and-a-reviewer-agent.md) | Gate pushes on the test suites and a reviewer agent          | Accepted                  |
 | [0020](0020-slide-the-session-on-use.md)                  | Slide the session on use, and renew its cookie from the seam | Accepted                  |
+| [0021](0021-permission-policy-seam.md)                    | Read permissions through a policy seam                       | Accepted                  |

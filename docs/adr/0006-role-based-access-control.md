@@ -1,6 +1,6 @@
 # 0006. Role-based access control instead of an is_admin flag
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by 0021
 - **Date:** 2026-10-01
 - **Deciders:** Andy Moesch
 
