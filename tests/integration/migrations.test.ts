@@ -58,6 +58,7 @@ describe('migrations', () => {
       'member_roles',
       'members',
       'outbox',
+      'roles',
       'schema_migrations',
       'sessions',
     ])
