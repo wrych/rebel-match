@@ -4,7 +4,7 @@
 # Change one, change the other.
 services:
   mysql:
-    image: mysql:8
+    image: mysql:8.4
     environment:
       MYSQL_ROOT_PASSWORD: rebel
       MYSQL_DATABASE: rebel_match
