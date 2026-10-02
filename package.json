@@ -9,6 +9,7 @@
   },
   "scripts": {
     "dev": "concurrently -k -n server,client -c blue,green \"tsx watch --env-file-if-exists=.env src/server.ts\" \"vite\"",
+    "predev": "sh scripts/dev-prepare.sh",
     "build": "tsc -p tsconfig.build.json && vite build",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit && vue-tsc -p client/tsconfig.json --noEmit",
@@ -17,8 +18,11 @@
     "test": "vitest run --coverage",
     "test:watch": "vitest",
     "test:integration": "vitest run --config vitest.integration.config.ts",
-    "prepare": "husky",
-    "migrate": "tsx --env-file-if-exists=.env src/migrate.ts"
+    "migrate": "tsx --env-file-if-exists=.env src/migrate.ts",
+    "db:up": "docker compose up -d --wait mysql",
+    "db:down": "docker compose down",
+    "db:reset": "docker compose down -v && npm run db:up && npm run migrate",
+    "prepare": "husky"
   },
   "dependencies": {
     "express": "^5.2.1",

@@ -107,6 +107,20 @@ and nothing else (ADR 0015).
 - `currentMember` returns roles and permissions already resolved, so no handler
   depends on the shape of a token or a provider's claims.
 
+### The development database
+
+`compose.yaml` runs **the same MySQL 8** as the CI service and production, because
+the migrations are written in MySQL 8 DDL — `ENUM`, `utf8mb4_0900_ai_ci`, InnoDB
+specifics. Developing against a different engine would reintroduce exactly the
+drift that CI's run-from-scratch check (R-QA-4) exists to catch, in the week when
+it would hurt most. The version is pinned in both places; change one, change the
+other.
+
+`npm run dev` brings it up and migrates before starting. A missing Docker daemon
+is not a failure: the server starts anyway, `/api/health` reports the database as
+down, and everything that does not need it still works. `npm run db:reset` drops
+the volume and rebuilds from the migrations.
+
 ### Client bundle budget
 
 ADR 0017 put the bundle inside the R-NFR-3 measurement, so it needs a number. The
