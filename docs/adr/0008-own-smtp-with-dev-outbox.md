@@ -1,6 +1,6 @@
 # 0008. Own SMTP server, with a no-send outbox in development
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by ADR 0016
 - **Date:** 2026-10-01
 - **Deciders:** Andy Moesch
 

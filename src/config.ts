@@ -35,7 +35,7 @@ const envSchema = z
     DATABASE_URL: z.string().min(1),
     SESSION_SECRET: z.string().min(32),
 
-    MAIL_TRANSPORT: z.enum(['smtp', 'outbox']).default('outbox'),
+    MAIL_DELIVERY: z.enum(['smtp', 'none']).default('none'),
     MAIL_FROM: z.email().default('hello@rebel-match.invalid'),
     SMTP_HOST: z.string().min(1).optional(),
     SMTP_PORT: z.coerce.number().int().positive().default(587),
@@ -51,26 +51,27 @@ const envSchema = z
 
     CHALLENGE_MIN_CHARS: z.coerce.number().int().positive().default(31),
     BEEN_THERE_NOTE_MIN_CHARS: z.coerce.number().int().positive().default(31),
+    OUTBOX_RETENTION_DAYS: z.coerce.number().int().positive().default(90),
     MAGIC_LINK_TTL_MINUTES: z.coerce.number().int().positive().default(15),
     APPROVAL_LINK_TTL_HOURS: z.coerce.number().int().positive().default(24),
     INVITE_DEFAULT_MAX_USES: z.coerce.number().int().positive().default(400),
     INVITE_DEFAULT_HOURS: z.coerce.number().int().positive().default(12),
   })
   .superRefine((env, ctx) => {
-    if (env.MAIL_TRANSPORT === 'smtp' && env.SMTP_HOST === undefined) {
+    if (env.MAIL_DELIVERY === 'smtp' && env.SMTP_HOST === undefined) {
       ctx.addIssue({
         code: 'custom',
         path: ['SMTP_HOST'],
-        message: 'SMTP_HOST is required when MAIL_TRANSPORT=smtp',
+        message: 'SMTP_HOST is required when MAIL_DELIVERY=smtp',
       })
     }
-    if (env.NODE_ENV === 'production' && env.MAIL_TRANSPORT === 'outbox') {
+    if (env.NODE_ENV === 'production' && env.MAIL_DELIVERY === 'none') {
       ctx.addIssue({
         code: 'custom',
-        path: ['MAIL_TRANSPORT'],
+        path: ['MAIL_DELIVERY'],
         message:
-          'the outbox transport is development-only; production must send ' +
-          'over SMTP (R-DEV-3)',
+          'production must deliver over SMTP: recording magic links ' +
+          'without sending them means nobody can log in (R-DEV-5)',
       })
     }
   })
@@ -84,6 +85,7 @@ export interface Limits {
   approvalLinkTtlHours: number
   inviteDefaultMaxUses: number
   inviteDefaultHours: number
+  outboxRetentionDays: number
 }
 
 /** Values the client is allowed to read, so a disabled button and a server
@@ -101,7 +103,7 @@ export interface Config {
   databaseUrl: string
   sessionSecret: string
   mail: {
-    transport: Env['MAIL_TRANSPORT']
+    delivery: Env['MAIL_DELIVERY']
     from: string
     smtp: { host?: string; port: number; user?: string; password?: string }
   }
@@ -125,7 +127,7 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): Config {
     databaseUrl: env.DATABASE_URL,
     sessionSecret: env.SESSION_SECRET,
     mail: {
-      transport: env.MAIL_TRANSPORT,
+      delivery: env.MAIL_DELIVERY,
       from: env.MAIL_FROM,
       smtp: {
         ...(env.SMTP_HOST === undefined ? {} : { host: env.SMTP_HOST }),
@@ -151,6 +153,7 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): Config {
       approvalLinkTtlHours: env.APPROVAL_LINK_TTL_HOURS,
       inviteDefaultMaxUses: env.INVITE_DEFAULT_MAX_USES,
       inviteDefaultHours: env.INVITE_DEFAULT_HOURS,
+      outboxRetentionDays: env.OUTBOX_RETENTION_DAYS,
     },
     rolePermissions,
   }

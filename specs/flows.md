@@ -41,7 +41,7 @@ Conventions:
                    └──►  F12 Feedback
 
    Admin only: F10 Approvals · F16 Invite links · F11 GDPR deletion
-               F14 Dev outbox (dev only)
+               F14 Outbound message log
 ```
 
 ---
@@ -361,25 +361,47 @@ front door (R-NAV-1..10).
 
 ---
 
-## F14 — Dev: logging in without email (admin outbox)
+## F14 — Admin: the outbound message log
 
-**Only in a development deployment** (`mail.transport=outbox`). Production never
-has this screen (R-DEV-3).
+**Actor:** admin — the host asking "did that actually go out?", or a developer
+signing in without a mailbox.
+**Screens:** S20 Outbound message log.
+**Exists in every environment** (R-MSG-5). Outbound email is otherwise a black
+box: you cannot look in someone else's inbox.
 
-1. Developer requests a magic link as any seeded member on **S1**.
-2. The mailer writes the message to the `outbox` table instead of sending it —
-   **no email leaves the machine** (R-DEV-1).
-3. Developer opens **S20 `/admin/outbox`**: captured messages newest first with
-   recipient, subject, timestamp, body, and the magic link rendered clickable and
-   copyable (R-DEV-2).
-4. Clicking the link completes **F1** from step 6 onwards — including any `next`
-   path, so deep links (**F13**) can be tested the same way.
+1. Every message the system sends is recorded **before** it is handed to the
+   transport, with the recipient, type, subject and status (R-MSG-1, R-MSG-2).
+2. Admin opens **S20** `/admin/outbox` → the log newest first, filterable by
+   recipient and status, with timestamps and any transport error. Guarded by the
+   `outbox:read` permission, not by environment (R-MSG-5).
+3. Status answers the question that matters: `sent` (the transport took it),
+   `failed` (it refused, with the reason), `suppressed` (we deliberately did not
+   send), or `recorded` (written, not yet attempted) — R-MSG-3.
+4. **Production shows no credential.** The magic-link token is redacted from the
+   stored body before writing, so the log proves a link was sent without being a
+   way to use it (R-MSG-4).
+
+### In development
+
+5. **Mail never leaves the machine** (`mail.delivery=none`, R-DEV-1). Records are
+   written with status `suppressed`.
+6. Here — and only here — the stored body keeps the link intact and clickable, so
+   a developer signs in as any seeded member from this screen. Clicking completes
+   **F1** from step 6, `next` path included, so deep links (**F13**) are testable
+   the same way.
 
 **Branches**
 
-- _Outbox requested in production_ → not found, so live magic links are never
-  browsable (R-DEV-3).
-- _Outbox full of old messages_ → `DELETE /admin/outbox` clears it.
+- _A member says the link never arrived_ → the log distinguishes "we never sent
+  it" from "the transport refused it" from "it went out and the inbox swallowed
+  it". That third case is the one that sends you to the DMARC records rather than
+  to the code (R-NFR-3).
+- _Entries age past retention_ → purged on the retention window, which is
+  configurable because the log holds email addresses (R-MSG-6).
+- _A member is erased_ → their log entries go with them, in the same transaction
+  (R-NFR-7).
+- _Production started with delivery off_ → it does not start. Recording links
+  while sending none means nobody can log in, so it fails at boot (R-DEV-5).
 
 ---
 
