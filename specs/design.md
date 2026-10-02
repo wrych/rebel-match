@@ -893,8 +893,10 @@ branch rules are in ADR 0012 and `docs/constitution.md`.
 - **Commits:** `commitlint` with the Conventional Commits config.
 - **Hooks:** a pre-commit hook formats and lints **staged files** (lint-staged)
   and runs a **full** typecheck, since `tsc` is project-wide and cannot be
-  scoped to a few files; a commit-msg hook runs commitlint. The same checks run
-  again in CI — the hook is speed, CI is the gate.
+  scoped to a few files; a commit-msg hook runs commitlint. A pre-push hook
+  runs lint, the unit tests, the integration tests when a database answers, and
+  the reviewer agent (ADR 0019). The same checks run again in CI — the hooks
+  are speed, CI is the gate.
 - **Coverage:** 80% global floor, 90% branch coverage on the R-QA-1 modules.
   Modules whose only job is I/O (`db.ts`, the migration runner, the server entry)
   are excluded from the unit floor and covered by the integration suite instead.
