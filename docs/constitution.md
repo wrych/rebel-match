@@ -138,8 +138,8 @@ addresses. A change that weakens one is rejected regardless of what it enables.
 
 ## 9. What is mechanically enforced
 
-Rules that run beat rules people remember. CI is the gate; the pre-commit hook
-is the fast feedback.
+Rules that run beat rules people remember. CI is the gate; the pre-commit and
+pre-push hooks are the fast feedback (ADR 0019).
 
 | Rule                                    | Enforced by                                            |
 | --------------------------------------- | ------------------------------------------------------ |
@@ -150,7 +150,8 @@ is the fast feedback.
 | No circular imports                     | `eslint-plugin-import` (`import/no-cycle`)             |
 | No `console` in server code             | `eslint` (`no-console`)                                |
 | Type safety                             | `tsc --noEmit`, strict mode, no implicit `any`         |
-| Tests pass, coverage floor              | `vitest run --coverage` in CI                          |
+| Tests pass, coverage floor              | `vitest run --coverage` (pre-push hook + CI)           |
+| Review against these rules              | reviewer agent, blocking at score 4 (pre-push hook)    |
 | Migrations from scratch                 | CI job against a disposable MySQL                      |
 | Secrets absent                          | CI uses synthetic config only; secret scanning on push |
 
