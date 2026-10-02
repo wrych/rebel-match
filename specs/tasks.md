@@ -47,7 +47,7 @@ User journeys are in `flows.md` (`F1`…`F14`).
 - [x] GitHub Actions CI: install, lint, typecheck, commitlint, unit, migrate
       from scratch, integration, build; synthetic env only, coverage floor
       enforced. _(R-QA-3,4,5)_
-- [ ] Branch protection on `main`: PR required, CI green required, squash-only.
+- [x] Branch protection on `main`: PR required, CI green required, squash-only.
       _(ADR 0012, R-QA-6)_
 
 ## M1 — Auth & onboarding _(M1, M2 — gates everything, F1 + F2)_
