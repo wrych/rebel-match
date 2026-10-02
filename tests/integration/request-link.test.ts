@@ -35,6 +35,7 @@ const config = loadConfig({
   MAIL_DELIVERY: 'none',
 })
 const stranger = `${randomUUID()}@example.invalid`
+const refused = `${randomUUID()}@example.invalid`
 const member = 'sanne.kuipers@example.invalid'
 
 let pool: Pool
@@ -84,7 +85,10 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await pool.query("DELETE FROM outbox WHERE kind = 'admin_notice'")
-  await pool.query('DELETE FROM members WHERE email = ?', [stranger])
+  await pool.query('DELETE FROM members WHERE email IN (?, ?)', [
+    stranger,
+    refused,
+  ])
   await pool.end()
 })
 
@@ -123,5 +127,23 @@ describe('POST /auth/request-link over MySQL', () => {
 
     expect(response.body).toEqual({ state: 'access-requested' })
     expect(await outboxFor(DEV_ADMIN_EMAIL, 'admin_notice')).toHaveLength(1)
+  })
+
+  it('tells a rejected applicant plainly, sending and notifying nothing (R-AUTH-13)', async () => {
+    await pool.query(
+      "INSERT INTO members (id, email, status, analytics_id) VALUES (?, ?, 'rejected', ?)",
+      [randomUUID(), refused, randomUUID()],
+    )
+    const before = (await outboxFor(DEV_ADMIN_EMAIL, 'admin_notice')).length
+
+    const response = await request(app)
+      .post('/auth/request-link')
+      .send({ email: refused })
+
+    expect(response.body).toEqual({ state: 'not-approved' })
+    expect(await outboxFor(refused, 'magic_link')).toHaveLength(0)
+    expect(await outboxFor(DEV_ADMIN_EMAIL, 'admin_notice')).toHaveLength(
+      before,
+    )
   })
 })

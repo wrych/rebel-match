@@ -25,7 +25,7 @@ function setup(state: LinkRequestState = 'check-email'): {
 }
 
 describe('POST /auth/request-link', () => {
-  it.each(['check-email', 'access-requested'] as const)(
+  it.each(['check-email', 'access-requested', 'not-approved'] as const)(
     'answers with the next screen, %s (ADR 0013)',
     async (state) => {
       const { app } = setup(state)
