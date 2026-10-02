@@ -5,6 +5,12 @@ import { composeAuth, composeMailer } from './compose.js'
 import { loadConfig } from './config.js'
 import { createPool } from './db.js'
 import { configPolicy } from './permissions.js'
+import {
+  createMysqlAdmissionStore,
+  createMysqlReviewerDirectory,
+} from './services/admission-store.js'
+import { createAdmission } from './services/admission.js'
+import { createApplicantNotice } from './services/applicant-notice.js'
 import { createMysqlMemberProfiles } from './services/member-profiles.js'
 import { createMysqlOutboxLog } from './services/outbox-log-store.js'
 import { startOutboxRetention } from './services/outbox-retention.js'
@@ -21,6 +27,16 @@ const roles = createRoleService({
   policy: configPolicy,
 })
 const outbox = createMysqlOutboxLog(pool)
+const admission = createAdmission({
+  store: createMysqlAdmissionStore(pool),
+  auth,
+  notifyReviewers: createApplicantNotice({
+    mailer,
+    reviewers: createMysqlReviewerDirectory(pool),
+    reviewerRoles: configPolicy.rolesGranting('applicant:review'),
+    publicUrl: config.publicUrl,
+  }),
+})
 
 startOutboxRetention({
   log: outbox,
@@ -31,7 +47,7 @@ startOutboxRetention({
   },
 })
 
-createApp({ config, pool, auth, profiles, roles, outbox }).listen(
+createApp({ config, pool, auth, profiles, roles, outbox, admission }).listen(
   config.port,
   () => {
     console.log(`rebel-match server on http://localhost:${String(config.port)}`)

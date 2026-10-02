@@ -74,7 +74,7 @@ printed dev link (R-DEV-6).
 - [x] Printed dev sign-in link: `npm run dev` for the seeded admin,
       `npm run dev:login <email>` for any seeded member, refused outside a
       development deployment with delivery off and the dev seed. _(R-DEV-6)_
-- [ ] `POST /auth/request-link`: whitelist check, token create, send link,
+- [x] `POST /auth/request-link`: whitelist check, token create, send link,
       accepts `next`; unknown email → applicant + admin notice.
       _(R-AUTH-1,2,4, R-NAV-5)_
 - [ ] Access-requested screen (`/access-requested`) with the "we will email you a

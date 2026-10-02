@@ -33,6 +33,7 @@ function deps(
       list: () => Promise.resolve([]),
       purgeBefore: () => Promise.resolve(0),
     },
+    admission: { requestLink: () => Promise.resolve('access-requested') },
   }
 }
 

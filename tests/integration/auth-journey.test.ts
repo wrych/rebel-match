@@ -67,6 +67,7 @@ describe('signing in as the dev admin, end to end (R-QA-2)', () => {
         policy: configPolicy,
       }),
       outbox: createMysqlOutboxLog(pool),
+      admission: { requestLink: () => Promise.resolve('access-requested') },
     })
     await auth.issueLink(DEV_ADMIN_EMAIL, {
       kind: 'self_service',
