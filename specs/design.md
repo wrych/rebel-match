@@ -110,12 +110,12 @@ and nothing else (ADR 0015).
 
 ### The development database
 
-`compose.yaml` runs **the same MySQL 8** as the CI service and production, because
-the migrations are written in MySQL 8 DDL — `ENUM`, `utf8mb4_0900_ai_ci`, InnoDB
-specifics. Developing against a different engine would reintroduce exactly the
-drift that CI's run-from-scratch check (R-QA-4) exists to catch, in the week when
-it would hurt most. The version is pinned in both places; change one, change the
-other.
+`compose.yaml` runs **the same MySQL 8.4** (LTS) as the CI service and
+production, because the migrations are written in MySQL 8 DDL — `ENUM`,
+`utf8mb4_0900_ai_ci`, InnoDB specifics. Developing against a different engine
+would reintroduce exactly the drift that CI's run-from-scratch check (R-QA-4)
+exists to catch, in the week when it would hurt most. The version is pinned in
+both places; change one, change the other.
 
 `npm run dev` brings it up and migrates before starting. A missing Docker daemon
 is not a failure: the server starts anyway, `/api/health` reports the database as
@@ -916,7 +916,7 @@ branch rules are in ADR 0012 and `docs/constitution.md`.
 ```yaml
 services:
   mysql:
-    image: mysql:8
+    image: mysql:8.4
     env: { MYSQL_ROOT_PASSWORD: test, MYSQL_DATABASE: rebel_match_test }
     options: >-
       --health-cmd="mysqladmin ping" --health-interval=5s --health-retries=10
