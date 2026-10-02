@@ -380,7 +380,7 @@ with `status='active'` and completed onboarding (except the onboarding routes).
 
 | Method | Path | Body | Behavior |
 |--------|------|------|----------|
-| POST | `/auth/request-link` | `{email, next?, invite?}` | If whitelisted active member → create token, send link (SMTP or outbox per `mail.transport`), return the "check your email" state. If unknown email **with a usable `invite`** → create the member active with the `member` role, record `joined_via_invite_id`, increment `uses`, send the link (R-INV-1). If unknown email without one → create `applicant`, notify admin, return the access-requested state (R-AUTH-2). The two states differ deliberately — see ADR 0013. |
+| POST | `/auth/request-link` | `{email, next?, invite?}` | If whitelisted active member → create token, send link (SMTP or outbox per `mail.transport`), return the "check your email" state. If unknown email **with a usable `invite`** → create the member active with the `member` role, record `joined_via_invite_id`, increment `uses`, send the link (R-INV-1). If unknown email without a usable one → create `applicant`, notify admin, return the access-requested state, flagging whether an invite was refused so the client can show the notice (R-AUTH-2, R-INV-5). The two states differ deliberately — see ADR 0013. |
 | GET | `/auth/verify?token=…&next=…` | — | Validate token (unexpired, unused), consume it, create session, redirect to onboarding, or to the validated `next` path, else the app root (R-NAV-5, R-NAV-6). |
 | POST | `/auth/logout` | — | Destroy session. |
 | GET | `/auth/me` | — | Current member + onboarding/consent status + `roles[]` and resolved `permissions[]` (R-ROLE-4). |
@@ -479,7 +479,7 @@ deep link reloads cleanly.
 | S18 | **Not found / no access** — generic, reveals nothing (R-NAV-8) | any unresolved path |
 | S19 | **Admin approvals** — applicant list with approve/reject | `/admin/applicants` |
 | S20 | **Admin outbox** *(dev only)* — captured emails with copyable magic links | `/admin/outbox` |
-| S21 | **Access requested** — what happens next, and an optional name/org so the host can find them (R-AUTH-9, R-AUTH-12) | `/access-requested` |
+| S21 | **Access requested** — what happens next, an optional name/org so the host can find them, and the "invitation link is not valid" notice when one was refused (R-AUTH-9, R-AUTH-12, R-INV-5) | `/access-requested`, `/access-requested?invite=invalid` |
 | S22 | **Admin invites** — invite links with label, window, uses/cap, state; create, revoke, and the join URL / QR to display (R-INV-9) | `/admin/invites` |
 
 Remaining overlays, deliberately: the "really decline this request?" confirm, the
@@ -707,6 +707,7 @@ Alternatives considered (kept only as fallbacks):
   | `connection_requested` | `kind` |
   | `connection_responded` | `status: accepted\|declined` |
   | `feedback_opened` | `screen` |
+  | `invite_rejected` | `reason: unknown\|not_yet_valid\|expired\|revoked\|exhausted` |
 
 - **Never** send challenge `body`, member `name`, `email`, `org`.
 - Gate capture on analytics consent (R-ANA-4). Prefer server-side capture (the

@@ -31,8 +31,11 @@ treated as a public capability rather than a secret. Its controls are:
 - **instant revocation**, effective on the next use (R-INV-3),
 - an **audit trail**: which invite admitted whom, and which admin created it
   (R-INV-8),
-- and a **graceful fallback** to the ordinary applicant flow when a token is
-  unusable, because a printed QR code cannot be recalled (R-INV-5).
+- and a **graceful fallback**: an unusable token does not fail, it carries the
+  person into the ordinary applicant flow with a notice that the invitation link
+  is not valid, on the screen that explains they are waiting for approval. A
+  printed QR code cannot be recalled, so this path is the normal one, not the
+  exceptional one (R-INV-5).
 
 Invites are managed on their own admin screen (R-INV-9).
 

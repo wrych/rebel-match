@@ -138,19 +138,24 @@ carried no usable invite — so a person has to let them in.
 that wait is unacceptable, the answer is an invite link (**F15**), not a faster
 queue. Everything after the approval is built to cost zero extra steps.
 
-1. They submit an email on **S1** that is not on the whitelist.
+1. They submit an email on **S1** that is not on the whitelist, with no invite
+   token or an unusable one.
 2. Server records a pending **applicant** and notifies an admin — no token, no
    session (R-AUTH-2).
 3. They land on **S21** (`/access-requested`), a screen of its own, which says in
    plain language: thanks for your interest in Rebel Match; access is approved by
    a person; **we will email you as soon as it is approved, and that email will
    contain your login link**. No false "check your email" — there is nothing in
-   their inbox yet, and saying so prevents the refresh-and-wait loop
-   (R-AUTH-9).
-4. **S21** also offers an optional name and organization — "so the host can find
+   their inbox yet, and saying so prevents the refresh-and-wait loop (R-AUTH-9).
+4. IF they arrived with an invite that was refused, **S21** carries a notice above
+   that message — *"this invitation link isn't valid right now"* — and the URL
+   becomes `/access-requested?invite=invalid`, so a reload keeps it. The notice
+   never replaces the primary message, and it never says which control refused the
+   link (R-INV-5).
+5. **S21** also offers an optional name and organization — "so the host can find
    you" — which is what makes R-AUTH-11 work in a crowded room. Skipping it
    changes nothing; the request is already recorded (R-AUTH-12).
-5. An admin resolves it in **F10**. On approval the applicant gets a **working
+6. An admin resolves it in **F10**. On approval the applicant gets a **working
    magic link in the approval email itself**, not a notice telling them to go and
    request one: one tap and they are in **F2** (R-AUTH-3, R-AUTH-10). On
    rejection they cannot log in and no challenge data is kept for them.
@@ -402,10 +407,13 @@ they wait for a human (**F4**).
 
 **Branches**
 
-- *Token unknown, expired, not yet valid, revoked, or at its cap* → falls through
-  to **F4**: recorded as an applicant, admin notified, access-requested screen,
-  with a plain explanation. Never an error dead end — the QR is printed and the
-  person is holding a phone (R-INV-5).
+- *Token unknown, expired, not yet valid, revoked, or at its cap* → the request
+  continues as an ordinary one: recorded as an applicant, admin notified, and they
+  land on **S21** (`/access-requested?invite=invalid`) with a notice at the top —
+  *"this invitation link isn't valid right now"* — above the usual message that
+  someone will approve them and the email will carry their link. One wording for
+  every case, since the next step is the same; never an error dead end, because
+  the QR is printed and the person is holding a phone (R-INV-5, **F4**).
 - *Scanner is already whitelisted* → ordinary **F1**; the invite is ignored and no
   use is consumed.
 - *Scanner already has an account* → ordinary **F1** login. No new member, so

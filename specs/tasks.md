@@ -47,8 +47,9 @@ User journeys are in `flows.md` (`F1`…`F14`).
       accepts `next`; unknown email → applicant + admin notice.
       *(R-AUTH-1,2,4, R-NAV-5)*
 - [ ] Access-requested screen (`/access-requested`) with the "we will email you a
-      login link once approved" copy + optional name/org → `POST /auth/applicant`.
-      *(R-AUTH-9,12)*
+      login link once approved" copy, the invalid-invite notice variant, and
+      optional name/org → `POST /auth/applicant`.
+      *(R-AUTH-9,12, R-INV-5)*
 - [ ] Approval sends a magic link immediately, with the 24 h approval TTL and the
       `kind` column on tokens. *(R-AUTH-3,10)*
 - [ ] Invite redemption: `/?invite=…` carried to login, usability check (window,
@@ -136,7 +137,8 @@ User journeys are in `flows.md` (`F1`…`F14`).
       in, and un-onboarded; `next` validation rejects external URLs.
       *(R-NAV-5,6,7, F13)*
 - [ ] Invite-link dry run: create one, scan it on a phone as an unknown address,
-      revoke it, confirm the next scan falls to the applicant flow. *(R-INV-3,5)*
+      revoke it, confirm the next scan shows the invalid-invite notice and lands
+      on the access-requested screen. *(R-INV-3,5)*
 - [ ] QR-code entry flow validated end-to-end on a phone; time scan → onboarding
       complete (<2 min). *(R-NFR-3)*
 - [ ] CI green on `main`. *(R-QA-6)*

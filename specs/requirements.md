@@ -182,9 +182,25 @@ capability, not a secret** — and every requirement below exists because of tha
   defaulted sensibly and settable by the admin. At the cap the token SHALL be
   inert. A link that leaks must not be able to admit an unbounded crowd.
 - **R-INV-5 (Graceful fallback)** — IF a token is unknown, not yet valid, expired,
-  revoked, or at its cap THEN THE SYSTEM SHALL fall back to the ordinary applicant
-  flow (R-AUTH-2) and say so plainly. It SHALL NOT show an error dead end: the
-  person is standing in the room holding a phone, and the QR cannot be reprinted.
+  revoked, or at its cap THEN THE SYSTEM SHALL continue into the ordinary
+  applicant flow (R-AUTH-2) and present the **access-requested screen**
+  (R-AUTH-9) with a **notice that the invitation link is not valid**. It SHALL NOT
+  show an error dead end: the person is standing in the room holding a phone, and
+  the QR cannot be reprinted.
+  - The notice SHALL be **state-agnostic** — "this invitation link isn't valid
+    right now" — because the next step is identical whether the link expired, was
+    revoked, has not started yet, or is full. It SHALL NOT name which control
+    refused it, and SHALL NOT imply the person did something wrong.
+  - The notice SHALL NOT replace or obscure the screen's primary message: that
+    their request is recorded, a person approves it, and the approval email
+    carries their login link (R-AUTH-9).
+  - The notice SHALL be part of the screen's URL state, so a reload keeps it
+    (R-NAV-1), and SHALL NOT carry the token (R-INV-12).
+  - The notice SHALL be announced to assistive technology, not conveyed by colour
+    alone (R-NFR-2).
+  - THE SYSTEM SHALL emit a non-identifying analytics event carrying the reason,
+    so a host can see an invite failing during a session instead of hearing about
+    it afterwards (R-ANA-3).
 - **R-INV-6 (Consent is not skipped)** — Auto-approval SHALL skip **admin
   approval only**. The member SHALL still complete onboarding, including explicit
   acceptance of the current consent version (R-ONB-1, R-ONB-3).
@@ -393,6 +409,7 @@ at a screen instead of at the front door.
   | `/`, `/?invite=…` | entry: routes to login, onboarding, or welcome |
   | `/login` | login / "check your email" |
   | `/access-requested` | applicant: what happens next (R-AUTH-9) |
+  | `/access-requested?invite=invalid` | same, with the invalid-invite notice (R-INV-5) |
   | `/auth/verify?token=…` | magic-link landing |
   | `/onboarding` | name + consent |
   | `/welcome` | two doors |
