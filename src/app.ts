@@ -1,10 +1,15 @@
 import express, { type ErrorRequestHandler, type Express } from 'express'
+import type { AuthProvider } from './auth/index.js'
 import { clientConfig, type Config } from './config.js'
 import type { Pool } from './db.js'
+import { authRoutes, renewSessions } from './routes/auth.js'
+import type { MemberProfiles } from './services/member-profiles.js'
 
 export interface AppDeps {
   config: Config
   pool: Pool
+  auth: AuthProvider
+  profiles: MemberProfiles
 }
 
 /** True when the database answers. Reported rather than thrown, so a dev server
@@ -46,6 +51,8 @@ export function createApp(deps: AppDeps): Express {
 
   app.disable('x-powered-by')
   app.use(express.json({ limit: '64kb' }))
+  app.use(renewSessions(deps.auth))
+  app.use(authRoutes(deps))
 
   app.get('/api/health', async (_request, response) => {
     const database = (await databaseReachable(deps.pool)) ? 'up' : 'down'

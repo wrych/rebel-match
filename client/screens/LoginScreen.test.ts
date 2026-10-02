@@ -16,6 +16,7 @@ function respondWith(body: unknown, ok = true): void {
 
 afterEach(() => {
   vi.unstubAllGlobals()
+  window.history.replaceState(null, '', '/')
 })
 
 describe('LoginScreen', () => {
@@ -44,5 +45,20 @@ describe('LoginScreen', () => {
     await vi.waitFor(() => {
       expect(screen.text()).toContain('not reachable')
     })
+  })
+
+  it('explains a dead link and offers a new one (R-AUTH-6)', () => {
+    respondWith({ limits: {}, consentVersion: '2026-11-01' })
+    window.history.replaceState(null, '', '/login?link=expired')
+
+    const screen = mount(LoginScreen)
+
+    expect(screen.find('[role="alert"]').text()).toContain('has expired')
+  })
+
+  it('shows no alert on an ordinary visit', () => {
+    respondWith({ limits: {}, consentVersion: '2026-11-01' })
+
+    expect(mount(LoginScreen).find('[role="alert"]').exists()).toBe(false)
   })
 })
