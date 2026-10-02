@@ -40,7 +40,7 @@ The profile column is renamed `job_title`; "role" now means access role only.
 ## Consequences
 
 - Two extra tables and a resolver to unit-test (R-QA-1).
-- An admin is a member *plus* admin, never instead of one — they still post
+- An admin is a member _plus_ admin, never instead of one — they still post
   challenges.
 - Grants are auditable: `granted_at` and `granted_by` are recorded.
 - A role name in a conditional is now a reviewable defect, not a style opinion.

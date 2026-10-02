@@ -18,12 +18,12 @@ Acceptance criteria use EARS phrasing: **WHEN** <trigger> **THE SYSTEM SHALL**
 
 ### Non-goals (explicitly out of scope for beta)
 
-- Integration with the existing Corporate Rebels member platform. *(Meeting:
+- Integration with the existing Corporate Rebels member platform. _(Meeting:
   "let's make that explicit — we're not aiming for integration in the corporate
-  platform because that would be probably significant work.")*
-- Gamification: standings, badges, ranks, milestone pop-ups. *(Meeting: "I would
+  platform because that would be probably significant work.")_
+- Gamification: standings, badges, ranks, milestone pop-ups. _(Meeting: "I would
   also focus on sharing experience and sharing problems and not the
-  gamification.")*
+  gamification.")_
 - The corporate↔rebel theme toggle ("CR" button / happy mode). Prototype-only fun.
 - "Nominate as frontier" escalation flow.
 - Connecting by phone number or LinkedIn. Email only for beta.
@@ -43,7 +43,7 @@ Acceptance criteria use EARS phrasing: **WHEN** <trigger> **THE SYSTEM SHALL**
   and connect. Every active member holds this role.
 - **`admin`** — holds `member` **plus** the administrative permissions: review
   applicants, manage the whitelist, delete a member (GDPR).
-- *(later)* **`moderator`**, or anything else — added as a role with its own
+- _(later)_ **`moderator`**, or anything else — added as a role with its own
   permission set, not as another flag.
 
 Requirements:
@@ -90,8 +90,8 @@ Requirements:
 
 - **R-AUTH-4** — WHEN a user submits a whitelisted email on the login screen THE
   SYSTEM SHALL email them a single-use magic link and show a "check your email"
-  state. *(Meeting: "something like a magic link that is then sent to your email…
-  really simple user management.")*
+  state. _(Meeting: "something like a magic link that is then sent to your email…
+  really simple user management.")_
   - A whitelisted address and an unknown one therefore lead to **different
     screens** (R-AUTH-2), which means the login screen reveals whether an address
     is known. This is a deliberate trade: telling an applicant the truth is worth
@@ -152,8 +152,8 @@ Requirements:
 - **R-ONB-5** — The consent copy SHALL state plainly that **email addresses are
   shared with another member only when both sides accept a connection**, and that
   the app is **closed: membership is by invitation**, whether from the whitelist
-  or an event invite link (R-INV-1). *(Meeting: "we need to make it very explicit
-  that the emails will be shared when you connect.")*
+  or an event invite link (R-INV-1). _(Meeting: "we need to make it very explicit
+  that the emails will be shared when you connect.")_
 
 ---
 
@@ -236,9 +236,9 @@ capability, not a secret** — and every requirement below exists because of tha
 - **R-ASK-2** — The system SHALL show example challenges as **inspiration only**:
   short, read-only hints of the kind of thing that belongs here. THE SYSTEM SHALL
   NOT offer to insert or prefill an example into the member's text, so members
-  describe their own situation instead of submitting boilerplate. *(Rationale: a
+  describe their own situation instead of submitting boilerplate. _(Rationale: a
   one-tap "use this example" invites a deck full of identical stock challenges,
-  which would make matching meaningless.)*
+  which would make matching meaningless.)_
 - **R-ASK-3** — WHILE the challenge text is **30 characters or shorter** THE
   SYSTEM SHALL keep the submit/analyze action disabled, so the matcher has enough
   words to work with. The screen SHALL show a character counter.
@@ -249,9 +249,9 @@ capability, not a secret** — and every requirement below exists because of tha
 
 - **R-ASK-5** — WHEN a challenge is submitted THE SYSTEM SHALL auto-assign it to
   exactly one of the **8 Corporate Rebels trends** using keyword detection (see
-  `design.md` §matching). *(Meeting: Andy — "It works really nice… good enough for
-  the beta." Keep it, start simple.)*
-- **R-ASK-6** — The system SHALL show the assigned trend, what it moves *from*
+  `design.md` §matching). _(Meeting: Andy — "It works really nice… good enough for
+  the beta." Keep it, start simple.)_
+- **R-ASK-6** — The system SHALL show the assigned trend, what it moves _from_
   (e.g. "Secrecy → Radical Transparency"), and how many peers work on it, and
   SHALL let the member **override** it by picking any of the 8 trends.
 - **R-ASK-7** — WHEN the member confirms the trend THE SYSTEM SHALL store the
@@ -294,8 +294,8 @@ capability, not a secret** — and every requirement below exists because of tha
   summarizing the session and inviting the member to submit their own challenge.
 - **R-OFF-6 (Easter egg)** — WHILE the empty state is showing, IF the member
   swipes or taps once more on the empty card THEN THE SYSTEM SHALL reveal a
-  hidden **"Trend 0 — Trust"** card: *from Rules → to Trust · peers: everyone in
-  the room*, with a line crediting the Corporate Rebels bucket list. Rules:
+  hidden **"Trend 0 — Trust"** card: _from Rules → to Trust · peers: everyone in
+  the room_, with a line crediting the Corporate Rebels bucket list. Rules:
   - It is cosmetic only. Swiping it SHALL NOT create a swipe record, a connection
     request, or a follow, and SHALL NOT be reachable from the normal deck.
   - It SHALL be dismissible, SHALL NOT block the "submit your own challenge"
@@ -308,11 +308,11 @@ capability, not a secret** — and every requirement below exists because of tha
 
 ## 6. Connecting — double opt-in (privacy-critical)
 
-This replaces the prototype's direct `mailto:`. *(Meeting, Ivo: "probably this is
+This replaces the prototype's direct `mailto:`. _(Meeting, Ivo: "probably this is
 needed, not optional — that first the app asks the other person, hey do you want
 to get in touch with this person, and then you send an email." Andy: "if we do
 that we need to make it very explicit that the emails will be shared when you
-connect.")*
+connect.")_
 
 - **R-CONN-1** — WHEN a member initiates a connection (same boat or been there)
   THE SYSTEM SHALL create a **pending connection request** to the target member
@@ -378,8 +378,8 @@ fallback).
   consent is granular) THEN THE SYSTEM SHALL disable analytics capture for them.
 - **R-ANA-5** — The chosen tool SHALL have a usable free tier at summit scale
   (hundreds of users, thousands of events) and SHALL store event data in the EU.
-  *(Resolved: Mixpanel offers EU data residency on the free plan at no extra
-  cost — see `design.md` §7.)*
+  _(Resolved: Mixpanel offers EU data residency on the free plan at no extra
+  cost — see `design.md` §7.)_
 
 ---
 
@@ -404,30 +404,30 @@ at a screen instead of at the front door.
 - **R-NAV-4** — The system SHALL implement this URL scheme (see `design.md` §4
   for the full screen list):
 
-  | URL | Screen |
-  |-----|--------|
-  | `/`, `/?invite=…` | entry: routes to login, onboarding, or welcome |
-  | `/login` | login / "check your email" |
-  | `/access-requested` | applicant: what happens next (R-AUTH-9) |
-  | `/access-requested?invite=invalid` | same, with the invalid-invite notice (R-INV-5) |
-  | `/auth/verify?token=…` | magic-link landing |
-  | `/onboarding` | name + consent |
-  | `/welcome` | two doors |
-  | `/ask` | submit a challenge |
-  | `/challenges/:id` | detected trend for that challenge |
-  | `/challenges/:id/trend` | trend picker |
-  | `/challenges/:id/matches` | same boat / been there / cases |
-  | `/challenges/:cid/connect/:memberId` | connection request |
-  | `/trends/:trendId` | trend detail + case studies |
-  | `/offer` | swipe deck |
-  | `/offer/:challengeId/note` | write a "been there" note |
-  | `/offer/done` | empty deck / session summary |
-  | `/matches` | cockpit |
-  | `/matches/requests/:id` | one request (pending, or accept/decline) |
-  | `/matches/requests/:id/contact` | contact detail, accepted requests only |
-  | `/admin/applicants` | admin approvals |
-  | `/admin/invites` | invite links (R-INV-9) |
-  | `/admin/outbox` | dev outbox (dev deployments only) |
+  | URL                                  | Screen                                         |
+  | ------------------------------------ | ---------------------------------------------- |
+  | `/`, `/?invite=…`                    | entry: routes to login, onboarding, or welcome |
+  | `/login`                             | login / "check your email"                     |
+  | `/access-requested`                  | applicant: what happens next (R-AUTH-9)        |
+  | `/access-requested?invite=invalid`   | same, with the invalid-invite notice (R-INV-5) |
+  | `/auth/verify?token=…`               | magic-link landing                             |
+  | `/onboarding`                        | name + consent                                 |
+  | `/welcome`                           | two doors                                      |
+  | `/ask`                               | submit a challenge                             |
+  | `/challenges/:id`                    | detected trend for that challenge              |
+  | `/challenges/:id/trend`              | trend picker                                   |
+  | `/challenges/:id/matches`            | same boat / been there / cases                 |
+  | `/challenges/:cid/connect/:memberId` | connection request                             |
+  | `/trends/:trendId`                   | trend detail + case studies                    |
+  | `/offer`                             | swipe deck                                     |
+  | `/offer/:challengeId/note`           | write a "been there" note                      |
+  | `/offer/done`                        | empty deck / session summary                   |
+  | `/matches`                           | cockpit                                        |
+  | `/matches/requests/:id`              | one request (pending, or accept/decline)       |
+  | `/matches/requests/:id/contact`      | contact detail, accepted requests only         |
+  | `/admin/applicants`                  | admin approvals                                |
+  | `/admin/invites`                     | invite links (R-INV-9)                         |
+  | `/admin/outbox`                      | dev outbox (dev deployments only)              |
 
 - **R-NAV-5** — WHEN an unauthenticated visitor opens any deep link THE SYSTEM
   SHALL show the login screen and, after a successful magic-link verify, send
@@ -573,8 +573,8 @@ fixtures. `design.md` §6 lists the exact records and the profile mechanism.
   swipe deck and match lists on first run.
 - **R-SEED-3 (Production seed)** — Production SHALL be seeded with real content
   only: the **invited-attendee whitelist** and the **~15 real collected
-  challenges** with their trend assignments. *(Meeting: "around 15 or so" real
-  challenges already came in.)*
+  challenges** with their trend assignments. _(Meeting: "around 15 or so" real
+  challenges already came in.)_
 - **R-SEED-4 (No fictional data in production)** — THE SYSTEM SHALL NOT load dev
   fixtures into production. IF the seed runner is invoked with the dev profile
   WHILE the environment is production THEN THE SYSTEM SHALL abort without

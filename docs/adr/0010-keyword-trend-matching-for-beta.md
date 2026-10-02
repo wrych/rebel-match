@@ -8,8 +8,8 @@
 
 A submitted challenge has to land in one of the 8 Corporate Rebels trends,
 because the trend is what gathers peers and case studies around it. An LLM would
-classify free text well — the meeting agreed *"AI will be pretty good at
-matching"* — but it adds a vendor, a key, a per-request cost, latency inside the
+classify free text well — the meeting agreed _"AI will be pretty good at
+matching"_ — but it adds a vendor, a key, a per-request cost, latency inside the
 two-minute onboarding budget, and a new place for challenge text to travel. The
 prototype's weighted keyword scorer already worked well enough to demo.
 

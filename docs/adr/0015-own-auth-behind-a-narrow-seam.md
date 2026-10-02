@@ -46,7 +46,10 @@ type LinkKind = 'self_service' | 'approval'
 
 interface AuthProvider {
   /** Issue a way in for this address and deliver it. Owns the TTL per kind. */
-  issueLink(email: string, opts: { kind: LinkKind; next?: string }): Promise<void>
+  issueLink(
+    email: string,
+    opts: { kind: LinkKind; next?: string },
+  ): Promise<void>
 
   /** Consume a presented credential. Returns the member it belongs to, or why not. */
   verifyToken(raw: string): Promise<VerifyResult>
@@ -64,12 +67,12 @@ interface AuthProvider {
 
 ### What crosses the seam, and what must not
 
-| Inside `auth` only | Stays in the application |
-|---|---|
-| `magic_tokens`, token generation and hashing | the whitelist, applicants, approval |
-| TTLs per link kind (R-AUTH-5, R-AUTH-10) | invite tokens and their windows/caps (R-INV-*) |
-| Cookie format, signing, session storage | consent version and timestamp (R-ONB-3) |
-| Whether a presented credential is valid | what a valid member is *allowed* to do (R-ROLE-3) |
+| Inside `auth` only                           | Stays in the application                          |
+| -------------------------------------------- | ------------------------------------------------- |
+| `magic_tokens`, token generation and hashing | the whitelist, applicants, approval               |
+| TTLs per link kind (R-AUTH-5, R-AUTH-10)     | invite tokens and their windows/caps (R-INV-*)    |
+| Cookie format, signing, session storage      | consent version and timestamp (R-ONB-3)           |
+| Whether a presented credential is valid      | what a valid member is _allowed_ to do (R-ROLE-3) |
 
 Rules that make the seam real:
 

@@ -1,0 +1,163 @@
+import { z } from 'zod'
+
+/** Permissions granted by each role. Effective access is the union of a
+ * member's roles, resolved at request time — never a role-name comparison
+ * (R-ROLE-2, R-ROLE-3). An admin also holds `member`, so admin need not
+ * repeat its grants. */
+export const rolePermissions = {
+  member: ['challenge:create', 'swipe', 'connect'],
+  admin: [
+    'applicant:review',
+    'whitelist:manage',
+    'member:delete',
+    'challenge:moderate',
+    'invite:manage',
+    'outbox:read',
+  ],
+} as const satisfies Record<string, readonly string[]>
+
+export type RoleKey = keyof typeof rolePermissions
+export type Permission =
+  (typeof rolePermissions)[RoleKey][number] extends infer P
+    ? P extends string
+      ? P
+      : never
+    : never
+
+const envSchema = z
+  .object({
+    NODE_ENV: z
+      .enum(['development', 'test', 'production'])
+      .default('development'),
+    PORT: z.coerce.number().int().positive().default(3000),
+    PUBLIC_URL: z.url().default('http://localhost:3000'),
+
+    DATABASE_URL: z.string().min(1),
+    SESSION_SECRET: z.string().min(32),
+
+    MAIL_TRANSPORT: z.enum(['smtp', 'outbox']).default('outbox'),
+    MAIL_FROM: z.email().default('hello@rebel-match.invalid'),
+    SMTP_HOST: z.string().min(1).optional(),
+    SMTP_PORT: z.coerce.number().int().positive().default(587),
+    SMTP_USER: z.string().optional(),
+    SMTP_PASSWORD: z.string().optional(),
+
+    SEED_PROFILE: z.enum(['dev', 'prod']).default('dev'),
+
+    CONSENT_VERSION: z.string().min(1).default('2026-11-01'),
+
+    MIXPANEL_TOKEN: z.string().optional(),
+    MIXPANEL_API_HOST: z.string().min(1).default('api-eu.mixpanel.com'),
+
+    CHALLENGE_MIN_CHARS: z.coerce.number().int().positive().default(31),
+    BEEN_THERE_NOTE_MIN_CHARS: z.coerce.number().int().positive().default(31),
+    MAGIC_LINK_TTL_MINUTES: z.coerce.number().int().positive().default(15),
+    APPROVAL_LINK_TTL_HOURS: z.coerce.number().int().positive().default(24),
+    INVITE_DEFAULT_MAX_USES: z.coerce.number().int().positive().default(400),
+    INVITE_DEFAULT_HOURS: z.coerce.number().int().positive().default(12),
+  })
+  .superRefine((env, ctx) => {
+    if (env.MAIL_TRANSPORT === 'smtp' && env.SMTP_HOST === undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['SMTP_HOST'],
+        message: 'SMTP_HOST is required when MAIL_TRANSPORT=smtp',
+      })
+    }
+    if (env.NODE_ENV === 'production' && env.MAIL_TRANSPORT === 'outbox') {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['MAIL_TRANSPORT'],
+        message:
+          'the outbox transport is development-only; production must send ' +
+          'over SMTP (R-DEV-3)',
+      })
+    }
+  })
+
+export type Env = z.infer<typeof envSchema>
+
+export interface Limits {
+  challengeMinChars: number
+  beenThereNoteMinChars: number
+  magicLinkTtlMinutes: number
+  approvalLinkTtlHours: number
+  inviteDefaultMaxUses: number
+  inviteDefaultHours: number
+}
+
+/** Values the client is allowed to read, so a disabled button and a server
+ * check can never disagree (R-CFG-2). Secrets are structurally absent. */
+export interface ClientConfig {
+  limits: Limits
+  consentVersion: string
+}
+
+export interface Config {
+  env: Env['NODE_ENV']
+  isProduction: boolean
+  port: number
+  publicUrl: string
+  databaseUrl: string
+  sessionSecret: string
+  mail: {
+    transport: Env['MAIL_TRANSPORT']
+    from: string
+    smtp: { host?: string; port: number; user?: string; password?: string }
+  }
+  seedProfile: Env['SEED_PROFILE']
+  consentVersion: string
+  analytics: { token?: string; apiHost: string }
+  limits: Limits
+  rolePermissions: typeof rolePermissions
+}
+
+/** Reads and validates configuration, failing before the server accepts a
+ * request rather than on the first use of a bad value (R-CFG-1, R-CFG-4). */
+export function loadConfig(source: NodeJS.ProcessEnv = process.env): Config {
+  const env = envSchema.parse(source)
+
+  return {
+    env: env.NODE_ENV,
+    isProduction: env.NODE_ENV === 'production',
+    port: env.PORT,
+    publicUrl: env.PUBLIC_URL,
+    databaseUrl: env.DATABASE_URL,
+    sessionSecret: env.SESSION_SECRET,
+    mail: {
+      transport: env.MAIL_TRANSPORT,
+      from: env.MAIL_FROM,
+      smtp: {
+        ...(env.SMTP_HOST === undefined ? {} : { host: env.SMTP_HOST }),
+        port: env.SMTP_PORT,
+        ...(env.SMTP_USER === undefined ? {} : { user: env.SMTP_USER }),
+        ...(env.SMTP_PASSWORD === undefined
+          ? {}
+          : { password: env.SMTP_PASSWORD }),
+      },
+    },
+    seedProfile: env.SEED_PROFILE,
+    consentVersion: env.CONSENT_VERSION,
+    analytics: {
+      ...(env.MIXPANEL_TOKEN === undefined
+        ? {}
+        : { token: env.MIXPANEL_TOKEN }),
+      apiHost: env.MIXPANEL_API_HOST,
+    },
+    limits: {
+      challengeMinChars: env.CHALLENGE_MIN_CHARS,
+      beenThereNoteMinChars: env.BEEN_THERE_NOTE_MIN_CHARS,
+      magicLinkTtlMinutes: env.MAGIC_LINK_TTL_MINUTES,
+      approvalLinkTtlHours: env.APPROVAL_LINK_TTL_HOURS,
+      inviteDefaultMaxUses: env.INVITE_DEFAULT_MAX_USES,
+      inviteDefaultHours: env.INVITE_DEFAULT_HOURS,
+    },
+    rolePermissions,
+  }
+}
+
+/** The subset served by `GET /api/config`. Built by naming what goes in, so a
+ * new secret cannot reach the client by being added to Config (R-CFG-2). */
+export function clientConfig(config: Config): ClientConfig {
+  return { limits: config.limits, consentVersion: config.consentVersion }
+}

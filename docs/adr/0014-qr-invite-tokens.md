@@ -56,9 +56,9 @@ Invites are managed on their own admin screen (R-INV-9).
 
 ## Consequences
 
-- **The whitelist is no longer the sole gate.** R-AUTH-1 now reads "whitelist *or*
+- **The whitelist is no longer the sole gate.** R-AUTH-1 now reads "whitelist _or_
   a valid invite", and R-ONB-5's consent copy had to change: the app is closed by
-  *invitation*, not to "whitelisted members only". Saying "closed" while a QR on
+  _invitation_, not to "whitelisted members only". Saying "closed" while a QR on
   the wall admits anyone would have been false.
 - **A leaked link is expected, not a breach.** Someone photographs the poster and
   posts it; the window, the cap and revocation are what bound the damage. Plan for

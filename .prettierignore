@@ -1,0 +1,10 @@
+dist/
+coverage/
+node_modules/
+package-lock.json
+
+# The prototype is a historical artifact; it is never reformatted.
+specs/prototype/
+
+# Source artifacts: evidence of what was said, not ours to reformat.
+xigo - *Transcript.md

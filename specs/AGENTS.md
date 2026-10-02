@@ -36,7 +36,10 @@ independently, it is two requirements.
 
 ## House style
 
-- Wrap prose at **80 columns**. Tables may exceed it.
+- Wrap prose at **about 80 columns**, matching the file you are editing; tables
+  and code may exceed it. Prettier runs with `proseWrap: preserve`, so it never
+  reflows a paragraph for you: **do not reflow paragraphs you did not otherwise
+  change**, or a one-line edit arrives as a hundred-line diff.
 - Sections separated by `---`, blank line before every heading and list.
 - Preserve the meeting quotes — they record intent that outlives us, and they
   are why several rules exist. Format: `*(Meeting: "…")*`.
@@ -49,14 +52,14 @@ independently, it is two requirements.
 
 A change rarely touches one file. Before committing, check the set:
 
-| Changed | Also update |
-|---------|-------------|
+| Changed       | Also update                                                                  |
+| ------------- | ---------------------------------------------------------------------------- |
 | a requirement | `design.md` (how), `flows.md` (where it is felt), `tasks.md` (who builds it) |
-| a screen | `design.md` §4 table **and** the `S*` references in `flows.md` |
-| a URL | `design.md` §4, requirements R-NAV-4 table, `flows.md` F13 |
-| a threshold | the config table in `design.md`, not the prose that quotes it |
-| a decision | an ADR in `docs/adr/`, plus the index |
-| scope | `priorities.md` (MoSCoW) and `tasks.md` (milestone) |
+| a screen      | `design.md` §4 table **and** the `S*` references in `flows.md`               |
+| a URL         | `design.md` §4, requirements R-NAV-4 table, `flows.md` F13                   |
+| a threshold   | the config table in `design.md`, not the prose that quotes it                |
+| a decision    | an ADR in `docs/adr/`, plus the index                                        |
+| scope         | `priorities.md` (MoSCoW) and `tasks.md` (milestone)                          |
 
 **Open questions** in `requirements.md` §11 are never deleted. A resolved one
 moves to the `Resolved` list with its date and the decision — that list is how
@@ -84,4 +87,4 @@ awk 'length($0)>80 && !/^\|/ {print FILENAME" L"NR}' specs/*.md
 - Implementation detail that is not a constraint — that is `design.md` at most.
 - Vendor comparisons and the reasoning behind a choice — that is an ADR.
 - Task tracking — that is `tasks.md`.
-- Anything about *how we write code*; that is the constitution.
+- Anything about _how we write code_; that is the constitution.

@@ -24,13 +24,13 @@ detail is shared).
 
 ## Documents
 
-| File | Purpose |
-|------|---------|
-| [`requirements.md`](requirements.md) | What the system must do — user stories, acceptance criteria, scope boundaries. |
-| [`priorities.md`](priorities.md) | Prioritized feature list (MoSCoW) mapped to the Nov 1 beta deadline. |
-| [`flows.md`](flows.md) | Every user journey end to end — entry, onboarding, ask, offer, double opt-in connect, admin. |
-| [`design.md`](design.md) | How it is built — architecture, MySQL schema, Node.js API, screens, matching algorithm, seed data. |
-| [`tasks.md`](tasks.md) | Implementation plan broken into milestones with the summit deadline. |
+| File                                 | Purpose                                                                                            |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| [`requirements.md`](requirements.md) | What the system must do — user stories, acceptance criteria, scope boundaries.                     |
+| [`priorities.md`](priorities.md)     | Prioritized feature list (MoSCoW) mapped to the Nov 1 beta deadline.                               |
+| [`flows.md`](flows.md)               | Every user journey end to end — entry, onboarding, ask, offer, double opt-in connect, admin.       |
+| [`design.md`](design.md)             | How it is built — architecture, MySQL schema, Node.js API, screens, matching algorithm, seed data. |
+| [`tasks.md`](tasks.md)               | Implementation plan broken into milestones with the summit deadline.                               |
 
 ## Target stack
 

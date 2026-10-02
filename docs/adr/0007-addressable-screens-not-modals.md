@@ -10,7 +10,7 @@ The prototype put several steps in modals and bottom sheets: the connection
 confirm, the revealed contact detail, the trend picker, the case-study list.
 That works for a click-through demo, but the product needs to send people
 somewhere — a notification about an incoming connection request should open
-*that request*, not the front door. A modal has no address, so there is nothing
+_that request_, not the front door. A modal has no address, so there is nothing
 to link to.
 
 The prototype's "about ten screens" was a rough guess, not a budget.
