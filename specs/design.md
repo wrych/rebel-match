@@ -73,6 +73,7 @@ thresholds have sane defaults in the file and may be overridden by env.
 | `limits.beenThereNoteMinChars` | `31`                          | R-OFF-4                   |
 | `limits.magicLinkTtlMinutes`   | `15`                          | R-AUTH-5                  |
 | `limits.approvalLinkTtlHours`  | `24`                          | R-AUTH-10                 |
+| `sessionTtlDays`               | `90`                          | R-AUTH-7                  |
 | `limits.inviteDefaultMaxUses`  | `400`                         | R-INV-4                   |
 | `limits.inviteDefaultHours`    | `12`                          | R-INV-2                   |
 | `consent.currentVersion`       | e.g. `"2026-11-01"`           | R-ONB-3, R-ONB-4          |
@@ -154,8 +155,8 @@ whether it then leaves the machine (R-DEV-4).
 ### Key libraries
 
 **Server** — **TypeScript** (strict, ADR 0011), `express`, `mysql2` (promise
-pool), `nodemailer`, `express-session` with a MySQL store, `zod` for boundary
-validation, `mixpanel` for server-side capture against the EU endpoint.
+pool), `nodemailer`, `zod` for boundary validation, `mixpanel` for server-side
+capture against the EU endpoint. Sessions are the auth seam's own (§8).
 
 **Client** (ADR 0017) — **Vue 3** (Composition API) with `vue-router` in history
 mode, built by **Vite**, `mixpanel-browser` for UI events. Tests use
@@ -841,7 +842,11 @@ Alternatives considered (kept only as fallbacks):
   from being cheap at scale; `/auth/request-link` is throttled per address and
   per IP.
 - Sessions: http-only, `Secure`, `SameSite=Lax` cookie; server-side session store
-  in MySQL.
+  in MySQL. The cookie carries a random id and its HMAC under `SESSION_SECRET`;
+  the `sessions` table stores only the id's SHA-256, like `magic_tokens`. Both
+  live inside `auth/` rather than in `express-session`, because ADR 0015's
+  `createSession` returns the cookie for the route to set, and a middleware that
+  owns `req.session` would put session knowledge in every handler.
 - Authorization: every challenge/connection/contact read must check the caller is
   a party or owner. Contact endpoint returns an email **only** for an accepted
   request where the caller is one of the two members.
