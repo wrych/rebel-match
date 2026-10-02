@@ -1,6 +1,7 @@
 import request from 'supertest'
 import { describe, expect, it, vi } from 'vitest'
 import { createApp, handleErrors, type AppDeps } from './app.js'
+import { createAuth, createMemoryAuthStore } from './auth/index.js'
 import { loadConfig } from './config.js'
 import type { Pool } from './db.js'
 
@@ -13,7 +14,16 @@ const config = loadConfig({
 function deps(
   query: () => Promise<unknown> = () => Promise.resolve([[], []]),
 ): AppDeps {
-  return { config, pool: { query } as unknown as Pool }
+  return {
+    config,
+    pool: { query } as unknown as Pool,
+    auth: createAuth({
+      store: createMemoryAuthStore([]),
+      deliver: () => Promise.resolve(),
+      config,
+    }),
+    profiles: { profile: () => Promise.resolve(null) },
+  }
 }
 
 describe('GET /api/health', () => {

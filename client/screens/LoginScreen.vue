@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { fetchConfig } from '../lib/api'
+import { linkNotice } from '../lib/link-notice'
 
 const email = ref('')
+const deadLink = linkNotice(window.location.search)
 const consentVersion = ref<string | null>(null)
 const problem = ref<string | null>(null)
 
@@ -17,6 +19,7 @@ onMounted(async () => {
 
 <template>
   <h1>Rebel Match</h1>
+  <p v-if="deadLink" role="alert">{{ deadLink }}</p>
   <p>Enter your email and we will send you a link to sign in.</p>
 
   <form @submit.prevent>
