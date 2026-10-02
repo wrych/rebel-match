@@ -146,6 +146,11 @@ Requirements:
   applicant-supplied fields, stored separately from profile data, and they SHALL
   NOT count towards onboarding completion (R-ONB-1). Onboarding MAY pre-fill its
   name field from them — every second counts (R-NFR-3).
+- **R-AUTH-13 (Tell a rejected applicant)** — IF an address whose request was
+  rejected asks for a link again THEN THE SYSTEM SHALL tell them plainly that
+  their request was not approved — send no link, notify nobody, and not promise
+  an email that will never come (ADR 0013). Re-admitting them stays a deliberate
+  admin action (R-AUTH-3).
 
 ### 3.3 First-time onboarding
 

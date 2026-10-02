@@ -172,6 +172,8 @@ queue. Everything after the approval is built to cost zero extra steps.
   while the two of them are standing there (R-AUTH-11, **F10**).
 - _Already-whitelisted address typed here_ → that is **F1**, not this flow; the
   two states are deliberately different screens (R-AUTH-4, ADR 0013).
+- _Address was rejected earlier_ → not this screen: the login screen says the
+  request was not approved, rather than promising an email (R-AUTH-13).
 
 ---
 
@@ -313,8 +315,9 @@ before both sides agree.**
 
 - _Approving during a break_ → the link is in their inbox before the
   conversation ends, which is the whole point of R-AUTH-10.
-- _Rejected applicant tries again_ → they are recorded as rejected and cannot
-  log in; re-admitting them is a deliberate admin action (R-AUTH-3).
+- _Rejected applicant tries again_ → the login screen tells them plainly that
+  their request was not approved; no link is sent and nobody is notified
+  (R-AUTH-13). Re-admitting them is a deliberate admin action (R-AUTH-3).
 
 ---
 
