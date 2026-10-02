@@ -69,7 +69,8 @@ warning, and CI remains the gate for everything else.
 ```sh
 npm ci
 cp .env.example .env     # then set SESSION_SECRET to 32+ characters
-npm run dev              # starts MySQL if Docker is reachable, migrates, then both servers
+npm run dev              # starts MySQL if Docker is reachable, migrates, seeds,
+                         # prints a sign-in link for the dev admin, then both servers
 ```
 
 `npm run dev` fails loudly if configuration is missing, by design — it validates
@@ -91,6 +92,7 @@ the environment and names what is absent rather than failing later on first use
 | `npm run typecheck`         | `tsc --noEmit` and `vue-tsc` for the client                                                        |
 | `npm run migrate`           | migrations, forward-only                                                                           |
 | `npm run seed`              | seeds per `SEED_PROFILE` (`dev` \| `prod`)                                                         |
+| `npm run dev:login [email]` | prints a sign-in link for a seeded member (default: the dev admin) — development only              |
 
 ## The six that get a change rejected
 

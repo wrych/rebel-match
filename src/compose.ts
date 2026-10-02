@@ -2,6 +2,7 @@ import {
   createAuth,
   createMysqlAuthStore,
   type AuthProvider,
+  type OutgoingLink,
 } from './auth/index.js'
 import { isDevelopmentDeployment, type Config } from './config.js'
 import type { Pool } from './db.js'
@@ -10,8 +11,13 @@ import { createMailer } from './services/mailer.js'
 import { createMysqlOutboxStore } from './services/outbox-store.js'
 import { createTransport } from './services/smtp.js'
 
-/** The auth seam wired to MySQL and the mailer, as every entry point uses it. */
-export function composeAuth(config: Config, pool: Pool): AuthProvider {
+/** The auth seam wired to MySQL and the mailer, as every entry point uses it.
+ * `onSent` sees each link after the mailer has recorded it. */
+export function composeAuth(
+  config: Config,
+  pool: Pool,
+  onSent?: (link: OutgoingLink) => void,
+): AuthProvider {
   const mailer = createMailer({
     store: createMysqlOutboxStore(pool),
     transport: createTransport(config.mail),
@@ -19,9 +25,14 @@ export function composeAuth(config: Config, pool: Pool): AuthProvider {
     keepCredentials: isDevelopmentDeployment(config),
   })
 
+  const deliver = mailLinks(mailer)
+
   return createAuth({
     store: createMysqlAuthStore(pool),
-    deliver: mailLinks(mailer),
+    deliver: async (link) => {
+      await deliver(link)
+      onSent?.(link)
+    },
     config,
   })
 }

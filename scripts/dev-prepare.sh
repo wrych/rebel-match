@@ -1,16 +1,21 @@
 #!/usr/bin/env sh
-# Brings the development database up, migrates and seeds it before `npm run dev`.
+# Readies the development database before `npm run dev`: starts it in Docker
+# when Docker is reachable, then migrates, seeds, and prints a sign-in link for
+# the seeded admin (R-DEV-6).
 #
-# A missing Docker daemon is not a failure: the server still starts, /api/health
-# reports the database as down, and every screen that does not need it works. A
-# hard failure here would make `npm run dev` unusable on a machine where Docker
-# is simply not installed.
+# No database is not a failure: the server still starts, /api/health reports the
+# database as down, and every screen that does not need it works. A hard failure
+# here would make `npm run dev` unusable on a machine without Docker or MySQL.
 set -e
 
-if ! docker compose version >/dev/null 2>&1 || ! docker info >/dev/null 2>&1; then
+if docker compose version >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
+  docker compose up -d --wait mysql
+fi
+
+if ! npx tsx --env-file-if-exists=.env scripts/db-reachable.ts; then
   cat <<'MSG'
 
-  No reachable Docker daemon — starting without a database.
+  No reachable database — starting without one.
   /api/health will report "database": "down", which is expected.
 
   To get one:
@@ -18,12 +23,12 @@ if ! docker compose version >/dev/null 2>&1 || ! docker info >/dev/null 2>&1; th
     dockerd in WSL   sudo service docker start
     no Docker        install mysql-server and point DATABASE_URL at it
 
-  Then: npm run db:up && npm run migrate && npm run seed
+  Then run npm run dev again.
 
 MSG
   exit 0
 fi
 
-docker compose up -d --wait mysql
-npm run migrate
-npm run seed
+npm run migrate --silent
+npm run seed --silent
+npm run dev:login --silent || true
