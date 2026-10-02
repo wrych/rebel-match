@@ -29,6 +29,7 @@ const envSchema = z
 
     CHALLENGE_MIN_CHARS: z.coerce.number().int().positive().default(31),
     BEEN_THERE_NOTE_MIN_CHARS: z.coerce.number().int().positive().default(31),
+    OUTBOX_PAGE_SIZE: z.coerce.number().int().positive().default(100),
     OUTBOX_RETENTION_DAYS: z.coerce.number().int().positive().default(90),
     MAGIC_LINK_TTL_MINUTES: z.coerce.number().int().positive().default(15),
     APPROVAL_LINK_TTL_HOURS: z.coerce.number().int().positive().default(24),
@@ -64,6 +65,7 @@ export interface Limits {
   inviteDefaultMaxUses: number
   inviteDefaultHours: number
   outboxRetentionDays: number
+  outboxPageSize: number
 }
 
 /** Values the client is allowed to read, so a disabled button and a server
@@ -134,6 +136,7 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): Config {
       inviteDefaultMaxUses: env.INVITE_DEFAULT_MAX_USES,
       inviteDefaultHours: env.INVITE_DEFAULT_HOURS,
       outboxRetentionDays: env.OUTBOX_RETENTION_DAYS,
+      outboxPageSize: env.OUTBOX_PAGE_SIZE,
     },
     rolePermissions,
   }

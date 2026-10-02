@@ -29,6 +29,7 @@ function deps(
       grant: () => Promise.resolve('no_member'),
       revoke: () => Promise.resolve('not_held'),
     },
+    outbox: { list: () => Promise.resolve([]) },
   }
 }
 

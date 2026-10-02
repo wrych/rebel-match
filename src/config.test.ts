@@ -135,6 +135,10 @@ describe('smtp configuration', () => {
 })
 
 describe('outbound message log settings', () => {
+  it('pages the log 100 entries at a time unless told otherwise (R-MSG-5)', () => {
+    expect(loadConfig(valid).limits.outboxPageSize).toBe(100)
+  })
+
   it('bounds how long message records are kept', () => {
     expect(loadConfig(valid).limits.outboxRetentionDays).toBe(90)
   })

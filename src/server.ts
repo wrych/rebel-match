@@ -6,6 +6,7 @@ import { loadConfig } from './config.js'
 import { createPool } from './db.js'
 import { configPolicy } from './permissions.js'
 import { createMysqlMemberProfiles } from './services/member-profiles.js'
+import { createMysqlOutboxLog } from './services/outbox-log-store.js'
 import { createMysqlRoleGrantStore } from './services/role-grant-store.js'
 import { createRoleService } from './services/roles.js'
 
@@ -17,9 +18,13 @@ const roles = createRoleService({
   store: createMysqlRoleGrantStore(pool),
   policy: configPolicy,
 })
+const outbox = createMysqlOutboxLog(pool)
 
-createApp({ config, pool, auth, profiles, roles }).listen(config.port, () => {
-  console.log(`rebel-match server on http://localhost:${String(config.port)}`)
-  console.log(`  mail delivery: ${config.mail.delivery}`)
-  console.log(`  seed profile:  ${config.seedProfile}`)
-})
+createApp({ config, pool, auth, profiles, roles, outbox }).listen(
+  config.port,
+  () => {
+    console.log(`rebel-match server on http://localhost:${String(config.port)}`)
+    console.log(`  mail delivery: ${config.mail.delivery}`)
+    console.log(`  seed profile:  ${config.seedProfile}`)
+  },
+)

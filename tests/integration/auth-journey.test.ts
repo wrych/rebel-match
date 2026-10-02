@@ -12,6 +12,7 @@ import { planSeed } from '../../src/seed/plan.js'
 import { applySeed } from '../../src/seed/run.js'
 import { configPolicy } from '../../src/permissions.js'
 import { createMysqlMemberProfiles } from '../../src/services/member-profiles.js'
+import { createMysqlOutboxLog } from '../../src/services/outbox-log-store.js'
 import { createMysqlRoleGrantStore } from '../../src/services/role-grant-store.js'
 import { createRoleService } from '../../src/services/roles.js'
 
@@ -65,6 +66,7 @@ describe('signing in as the dev admin, end to end (R-QA-2)', () => {
         store: createMysqlRoleGrantStore(pool),
         policy: configPolicy,
       }),
+      outbox: createMysqlOutboxLog(pool),
     })
     await auth.issueLink(DEV_ADMIN_EMAIL, {
       kind: 'self_service',
