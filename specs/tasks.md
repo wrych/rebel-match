@@ -29,7 +29,7 @@ User journeys are in `flows.md` (`F1`…`F14`).
 - [ ] Health check + boundary schemas (`zod`) + error handling middleware that
       leaks nothing. _(R-CFG-3, constitution §5)_
 - [ ] Vitest harness: `npm test` + `npm run test:integration` (supertest,
-      disposable MySQL, `mail.transport=outbox`). _(R-QA-1,2)_
+      disposable MySQL, `mail.delivery=none`). _(R-QA-1,2)_
 - [ ] ESLint + Prettier with the mechanical constitution rules
       (`import/no-cycle`, `complexity`, `no-console`, `no-warning-comments`).
       _(constitution §9)_
@@ -63,12 +63,15 @@ User journeys are in `flows.md` (`F1`…`F14`).
 - [ ] `GET /auth/verify`: validate/consume token, issue session, redirect to the
       validated `next` or onward. _(R-AUTH-5,6, R-NAV-5,6)_
 - [ ] Persistent session cookie + `/auth/me` (incl. `roles[]` + `permissions[]`) + `/auth/logout`. _(R-AUTH-7,8, R-ROLE-4)_
-- [ ] Mailer with two transports: own SMTP server, and dev `outbox` that sends
-      nothing. _(design §1, R-DEV-1,4)_
-- [ ] Admin outbox screen + `GET/DELETE /admin/outbox`, registered only in dev.
-      _(R-DEV-2,3, F14)_
+- [ ] Mailer that always records to the outbound log, then delivers per
+      `mail.delivery`; token redacted outside development.
+      _(design §1, R-MSG-1,2,3,4, R-DEV-1,4)_
+- [ ] Outbound message log screen + `GET/DELETE /admin/outbox`, permission-gated
+      in every environment; filter by recipient and status.
+      _(R-MSG-5,6, F14)_
 - [ ] Verify magic-link deliverability to a phone inbox (<30 s, not spam);
-      confirm from-address + SPF/DKIM. _(R-NFR-3, open question 4)_
+      confirm from-address + SPF/DKIM; check the outbound log distinguishes sent
+      from failed. _(R-NFR-3, R-MSG-3, open question 4)_
 - [ ] Onboarding screen + `POST /api/onboarding` (name, optional job title,
       consent version/ts). _(R-ONB-1..4, R-ROLE-8)_
 - [ ] Consent copy wired in: email-sharing on connect + membership by invitation.
@@ -122,7 +125,8 @@ User journeys are in `flows.md` (`F1`…`F14`).
       `/matches/requests/:id` with no challenge text or contact detail.
       _(S4, R-CONN-2, R-NAV-9)_
 - [ ] Feedback mailto. _(S5, R-FB-1)_
-- [ ] Admin GDPR delete. _(R-NFR-7)_
+- [ ] Admin GDPR delete: member plus challenges, requests, swipes, follows, role
+      grants and outbound log entries, in one transaction. _(R-NFR-7, R-MSG-6)_
 
 ## M6 — Hardening & pilot _(by 2026-11-01)_
 

@@ -455,21 +455,61 @@ at a screen instead of at the front door.
 
 ---
 
-## 8c. Development deployment
+## 8c. Outbound message log and development deployment
+
+Every message the system sends is recorded, in **every** environment. Outbound
+email is otherwise a black box: there is no other place to look, and the first
+question at a summit will be "did it actually go out?".
+
+What differs by environment is only whether mail **leaves the machine**.
+
+- **R-MSG-1 (Record everything, everywhere)** — WHEN the system sends or attempts
+  to send a message THE SYSTEM SHALL record it in an **outbound message log**,
+  regardless of environment. The record SHALL carry the recipient address, the
+  message type (magic link, approval, connection request, admin notice), the
+  subject, the status, and the times it was recorded and sent.
+- **R-MSG-2 (Record before sending)** — THE SYSTEM SHALL write the record
+  **before** handing the message to the transport, then update its status. A
+  crash mid-send therefore leaves evidence that the attempt happened, rather than
+  a silent gap.
+- **R-MSG-3 (Statuses distinguish why nothing arrived)** — Status SHALL be one of:
+  `recorded` (written, not yet attempted), `sent` (the transport accepted it),
+  `suppressed` (deliberately not sent, because delivery is off — R-DEV-1), or
+  `failed` (the transport refused it, with the error retained). "We chose not to
+  send" and "we tried and could not" SHALL NOT look the same.
+- **R-MSG-4 (A log is not a key cupboard)** — Outside a development deployment THE
+  SYSTEM SHALL NOT store a usable credential in the log: a magic-link token SHALL
+  be redacted from the stored body before it is written. An admin can see **that**
+  a link was sent, to whom, and when — never the link itself. _(Without this, the
+  log is a route to signing in as any member, and `outbox:read` quietly becomes
+  the most powerful permission in the system.)_
+- **R-MSG-5 (Admin visibility)** — The admin interface SHALL present the log,
+  newest first, with recipient, type, subject, status, timestamps and any error,
+  filterable by recipient and status. It SHALL be guarded by a permission
+  (`outbox:read`), never by environment.
+- **R-MSG-6 (It holds personal data)** — Log entries contain email addresses and
+  message content, so they SHALL be included in erasure (R-NFR-7) and SHALL be
+  retained for a bounded, configurable period rather than forever.
+- **R-MSG-7 (Delivery failures are visible without reading bodies)** — A `failed`
+  entry SHALL retain enough of the transport's error to diagnose a deliverability
+  problem (R-NFR-3), and that error SHALL NOT contain the credential.
+
+### Development deployment
 
 - **R-DEV-1** — WHILE running as a development deployment THE SYSTEM SHALL NOT
-  send outbound email. Every message that would be sent SHALL be captured in a
-  local **outbox** instead.
-- **R-DEV-2** — The admin interface SHALL include an **outbox screen** listing
-  captured messages newest first with recipient, subject, timestamp, and body,
-  and SHALL render the magic link as a **clickable and copyable** link — so a
-  developer can log in as any seeded member without a mailbox.
-- **R-DEV-3** — The outbox SHALL exist only in a development deployment. IF the
-  outbox routes or screen are requested in production THEN THE SYSTEM SHALL
-  respond as not found, so live magic links are never browsable (R-NFR-5).
-- **R-DEV-4** — Switching mail behavior SHALL be configuration, not a code
-  change (a mail-transport setting), so the same build runs in both
-  environments.
+  send outbound email. Messages SHALL still be recorded (R-MSG-1) with status
+  `suppressed`, and in this environment **only**, the stored body SHALL keep the
+  magic link intact and clickable — so a developer can sign in as any seeded
+  member without a mailbox, while nothing can reach a real person.
+- **R-DEV-2** — _(Superseded by R-MSG-5.)_ The outbox screen is a permanent admin
+  feature, not a development affordance.
+- **R-DEV-3** — _(Superseded by R-MSG-4.)_ The log exists in every environment;
+  what production withholds is the credential, not the screen.
+- **R-DEV-4** — Whether mail is delivered SHALL be configuration, not a code
+  change, so the same build runs in both environments.
+- **R-DEV-5** — Production SHALL refuse to start with delivery switched off. A
+  deployment that records magic links and sends none is one where nobody can log
+  in, and it SHALL fail loudly at startup rather than quietly at the first scan.
 
 ---
 
@@ -552,8 +592,10 @@ at a screen instead of at the front door.
   source.
 - **R-NFR-6 (Auditability of consent)** — The system SHALL retain, per member,
   the consent version and acceptance timestamp.
-- **R-NFR-7 (Deletion)** — The system SHALL support deleting a member and their
-  challenges/requests on request (GDPR erasure), at minimum via an admin action.
+- **R-NFR-7 (Deletion)** — The system SHALL support deleting a member and the
+  personal data attached to them — challenges, connection requests, swipes,
+  follows, role grants, and their **outbound message log entries** (R-MSG-6) — on
+  request (GDPR erasure), at minimum via an admin action.
 
 ---
 

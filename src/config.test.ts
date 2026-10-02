@@ -35,23 +35,23 @@ describe('loadConfig', () => {
   })
 
   it('requires an smtp host when it is told to send over smtp', () => {
-    expect(() => loadConfig({ ...valid, MAIL_TRANSPORT: 'smtp' })).toThrow(
+    expect(() => loadConfig({ ...valid, MAIL_DELIVERY: 'smtp' })).toThrow(
       /SMTP_HOST/,
     )
   })
 
-  it('refuses the outbox transport in production', () => {
+  it('refuses to start in production with delivery switched off', () => {
     expect(() =>
       loadConfig({
         ...valid,
         NODE_ENV: 'production',
-        MAIL_TRANSPORT: 'outbox',
+        MAIL_DELIVERY: 'none',
       }),
-    ).toThrow(/development-only/)
+    ).toThrow(/nobody can log in/)
   })
 
-  it('defaults to the outbox so a dev run cannot email a real person', () => {
-    expect(loadConfig(valid).mail.transport).toBe('outbox')
+  it('defaults to delivering nothing, so a dev run cannot email a real person', () => {
+    expect(loadConfig(valid).mail.delivery).toBe('none')
   })
 })
 
@@ -106,7 +106,7 @@ describe('smtp configuration', () => {
   it('carries credentials through when they are supplied', () => {
     const config = loadConfig({
       ...valid,
-      MAIL_TRANSPORT: 'smtp',
+      MAIL_DELIVERY: 'smtp',
       SMTP_HOST: 'mail.example.com',
       SMTP_PORT: '465',
       SMTP_USER: 'rebel',
@@ -123,5 +123,17 @@ describe('smtp configuration', () => {
 
   it('omits credentials entirely rather than carrying undefined', () => {
     expect(loadConfig(valid).mail.smtp).toEqual({ port: 587 })
+  })
+})
+
+describe('outbound message log settings', () => {
+  it('bounds how long message records are kept', () => {
+    expect(loadConfig(valid).limits.outboxRetentionDays).toBe(90)
+  })
+
+  it('lets retention be shortened without a code change', () => {
+    const config = loadConfig({ ...valid, OUTBOX_RETENTION_DAYS: '30' })
+
+    expect(config.limits.outboxRetentionDays).toBe(30)
   })
 })

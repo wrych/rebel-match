@@ -58,19 +58,20 @@ MySQL**, single-page mobile-first client served by the Node app.
 One module owns every tunable (R-CFG-1..4). Secrets come from env; product
 thresholds have sane defaults in the file and may be overridden by env.
 
-| Key                            | Default                       | Serves             |
-| ------------------------------ | ----------------------------- | ------------------ |
-| `limits.challengeMinChars`     | `31` (i.e. "more than 30")    | R-ASK-3            |
-| `limits.beenThereNoteMinChars` | `31`                          | R-OFF-4            |
-| `limits.magicLinkTtlMinutes`   | `15`                          | R-AUTH-5           |
-| `limits.approvalLinkTtlHours`  | `24`                          | R-AUTH-10          |
-| `limits.inviteDefaultMaxUses`  | `400`                         | R-INV-4            |
-| `limits.inviteDefaultHours`    | `12`                          | R-INV-2            |
-| `consent.currentVersion`       | e.g. `"2026-11-01"`           | R-ONB-3, R-ONB-4   |
-| `mail.transport`               | `smtp` \| `outbox`            | R-DEV-1, R-DEV-4   |
-| `seed.profile`                 | `dev` \| `prod`               | R-SEED-4           |
-| `analytics.apiHost`            | `api-eu.mixpanel.com`         | R-ANA-5            |
-| `permissions`                  | role → permission matrix (§2) | R-ROLE-3, R-ROLE-6 |
+| Key                            | Default                       | Serves                    |
+| ------------------------------ | ----------------------------- | ------------------------- |
+| `limits.challengeMinChars`     | `31` (i.e. "more than 30")    | R-ASK-3                   |
+| `limits.beenThereNoteMinChars` | `31`                          | R-OFF-4                   |
+| `limits.magicLinkTtlMinutes`   | `15`                          | R-AUTH-5                  |
+| `limits.approvalLinkTtlHours`  | `24`                          | R-AUTH-10                 |
+| `limits.inviteDefaultMaxUses`  | `400`                         | R-INV-4                   |
+| `limits.inviteDefaultHours`    | `12`                          | R-INV-2                   |
+| `consent.currentVersion`       | e.g. `"2026-11-01"`           | R-ONB-3, R-ONB-4          |
+| `mail.delivery`                | `smtp` \| `none`              | R-DEV-1, R-DEV-4, R-DEV-5 |
+| `limits.outboxRetentionDays`   | `90`                          | R-MSG-6                   |
+| `seed.profile`                 | `dev` \| `prod`               | R-SEED-4                  |
+| `analytics.apiHost`            | `api-eu.mixpanel.com`         | R-ANA-5                   |
+| `permissions`                  | role → permission matrix (§2) | R-ROLE-3, R-ROLE-6        |
 
 - `GET /api/config` returns the **client-relevant subset** (`limits`,
   `consent.currentVersion`) so the submit button, the note counter, and the
@@ -97,15 +98,21 @@ and nothing else (ADR 0015).
 - `currentMember` returns roles and permissions already resolved, so no handler
   depends on the shape of a token or a provider's claims.
 
-### Mail transport
+### Mail delivery
 
-- `mail.transport=smtp` (production) → nodemailer against the team's own SMTP
-  server, `SMTP_*` from env.
-- `mail.transport=outbox` (development) → **nothing leaves the machine**. Every
-  message is written to an `outbox` table (`to`, `subject`, `body_text`,
-  `body_html`, `created_at`) and read back on the admin outbox screen, where the
-  magic link is clickable and copyable (R-DEV-1, R-DEV-2). The outbox routes are
-  registered only when this transport is active (R-DEV-3).
+Recording and delivering are **separate concerns**. Every message is recorded in
+the `outbox` table in every environment (R-MSG-1); configuration decides only
+whether it then leaves the machine (R-DEV-4).
+
+- `mail.delivery=smtp` (production) → nodemailer against the team's own SMTP
+  server, `SMTP_*` from env. The stored body has the magic-link token redacted
+  (R-MSG-4).
+- `mail.delivery=none` (development) → **nothing leaves the machine**. The record
+  is written with status `suppressed` and the body keeps the link intact, so a
+  developer signs in from the admin log without a mailbox (R-DEV-1).
+- **Production refuses to start with `delivery=none`** (R-DEV-5): a deployment that
+  records magic links and sends none is one where nobody can log in, and that
+  should fail at boot rather than at the first scan of the QR code.
 
 ---
 
@@ -199,7 +206,7 @@ grants are reviewable in version control:
 | `member:delete` (GDPR erasure)               |    —     |   ✅    |          —           |
 | `challenge:moderate`                         |    —     |   ✅    |          ✅          |
 | `invite:manage` (create / revoke QR invites) |    —     |   ✅    |          —           |
-| `outbox:read` (dev only)                     |    —     |   ✅    |          —           |
+| `outbox:read` (the outbound message log)     |    —     |   ✅    |          —           |
 
 - Route guards SHALL check a **permission**, never a role name —
   `requirePermission('applicant:review')`, not `if (member.isAdmin)`. Adding
@@ -371,23 +378,51 @@ CREATE TABLE swipes (
 );
 ```
 
-### outbox (development only — captured email, R-DEV-1/2)
+### outbox (every outbound message, every environment — R-MSG-1..7)
 
 ```sql
 CREATE TABLE outbox (
   id          CHAR(36)     NOT NULL PRIMARY KEY,
+  member_id   CHAR(36)     NULL,                 -- when known, for erasure (R-MSG-6)
   to_email    VARCHAR(320) NOT NULL,
+  kind        ENUM('magic_link','approval','connection_request',
+                   'admin_notice')
+                           NOT NULL,
   subject     VARCHAR(255) NOT NULL,
-  body_text   TEXT         NOT NULL,
+  body_text   TEXT         NOT NULL,             -- credential redacted outside dev
   body_html   TEXT         NULL,
+  status      ENUM('recorded','sent','suppressed','failed')
+                           NOT NULL DEFAULT 'recorded',
+  error       VARCHAR(500) NULL,                 -- transport's reason, no credential
   created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  INDEX (created_at)
+  sent_at     DATETIME     NULL,
+  INDEX ix_outbox_created (created_at),
+  INDEX ix_outbox_to (to_email),
+  INDEX ix_outbox_status (status),
+  CONSTRAINT fk_outbox_member FOREIGN KEY (member_id)
+    REFERENCES members(id) ON DELETE CASCADE
 );
 ```
 
-Written only while `mail.transport=outbox`. Production runs with
-`mail.transport=smtp` and never writes or reads this table; the migration may
-still create it so the schema is identical across environments.
+This is a permanent domain table, not a development artifact. Outbound email is
+otherwise unobservable: nobody can look in the recipient's inbox, and "did it
+actually go out?" is the first question anyone asks when a magic link does not
+arrive.
+
+**The write order matters.** Record first with `status='recorded'`, hand the
+message to the transport, then update to `sent`, `suppressed` or `failed`. A crash
+mid-send leaves evidence of the attempt instead of a silent gap (R-MSG-2).
+
+**Redaction (R-MSG-4).** The mailer knows the token it injected, so before storing
+it replaces that exact string with a placeholder — everywhere except a development
+deployment, where the link stays clickable because nothing leaves the machine
+(R-DEV-1). Without this, `outbox:read` would be the strongest permission in the
+system: an admin could read any member's magic link and sign in as them.
+
+`ON DELETE CASCADE` on `member_id` is what makes erasure one transaction
+(R-NFR-7). `member_id` is null for messages to an address that never became a
+member — an admin notice about an unknown applicant, say — and those age out under
+retention rather than erasure.
 
 ---
 
@@ -398,14 +433,14 @@ with `status='active'` and completed onboarding (except the onboarding routes).
 
 ### Auth
 
-| Method | Path                          | Body                      | Behavior                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| ------ | ----------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| POST   | `/auth/request-link`          | `{email, next?, invite?}` | If whitelisted active member → create token, send link (SMTP or outbox per `mail.transport`), return the "check your email" state. If unknown email **with a usable `invite`** → create the member active with the `member` role, record `joined_via_invite_id`, increment `uses`, send the link (R-INV-1). If unknown email without a usable one → create `applicant`, notify admin, return the access-requested state, flagging whether an invite was refused so the client can show the notice (R-AUTH-2, R-INV-5). The two states differ deliberately — see ADR 0013. |
-| GET    | `/auth/verify?token=…&next=…` | —                         | Validate token (unexpired, unused), consume it, create session, redirect to onboarding, or to the validated `next` path, else the app root (R-NAV-5, R-NAV-6).                                                                                                                                                                                                                                                                                                                                                                                                            |
-| POST   | `/auth/logout`                | —                         | Destroy session.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| GET    | `/auth/me`                    | —                         | Current member + onboarding/consent status + `roles[]` and resolved `permissions[]` (R-ROLE-4).                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| POST   | `/auth/applicant`             | `{name?, org?}`           | Attach applicant-supplied name/org to the pending request, for the host (R-AUTH-11,12). Pending applicants only; no session required, keyed by the request.                                                                                                                                                                                                                                                                                                                                                                                                               |
-| GET    | `/api/config`                 | —                         | Client-relevant limits + current consent version (R-CFG-2). No secrets.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| Method | Path                          | Body                      | Behavior                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| ------ | ----------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| POST   | `/auth/request-link`          | `{email, next?, invite?}` | If whitelisted active member → create token, send link (recorded always, delivered per `mail.delivery`), return the "check your email" state. If unknown email **with a usable `invite`** → create the member active with the `member` role, record `joined_via_invite_id`, increment `uses`, send the link (R-INV-1). If unknown email without a usable one → create `applicant`, notify admin, return the access-requested state, flagging whether an invite was refused so the client can show the notice (R-AUTH-2, R-INV-5). The two states differ deliberately — see ADR 0013. |
+| GET    | `/auth/verify?token=…&next=…` | —                         | Validate token (unexpired, unused), consume it, create session, redirect to onboarding, or to the validated `next` path, else the app root (R-NAV-5, R-NAV-6).                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| POST   | `/auth/logout`                | —                         | Destroy session.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| GET    | `/auth/me`                    | —                         | Current member + onboarding/consent status + `roles[]` and resolved `permissions[]` (R-ROLE-4).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| POST   | `/auth/applicant`             | `{name?, org?}`           | Attach applicant-supplied name/org to the pending request, for the host (R-AUTH-11,12). Pending applicants only; no session required, keyed by the request.                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| GET    | `/api/config`                 | —                         | Client-relevant limits + current consent version (R-CFG-2). No secrets.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 
 ### Onboarding
 
@@ -448,18 +483,18 @@ with `status='active'` and completed onboarding (except the onboarding routes).
 
 ### Admin (permission-guarded, not role-name-guarded — R-ROLE-3)
 
-| Method | Path                            | Behavior                                                                                                                                     |
-| ------ | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| GET    | `/admin/applicants`             | List pending applicants with email, request time, and any name/org given (R-AUTH-11). _Requires `applicant:review`._                         |
-| POST   | `/admin/applicants/:id/approve` | Set `status='active'`, grant the `member` role, **and email a magic link** with the approval TTL (R-AUTH-10). _Requires `applicant:review`._ |
-| POST   | `/admin/applicants/:id/reject`  | Set `status='rejected'`. _Requires `applicant:review`._                                                                                      |
-| POST   | `/admin/whitelist`              | Add email(s) as pre-approved active member(s) with the `member` role. _Requires `whitelist:manage`._                                         |
-| DELETE | `/admin/members/:id`            | GDPR erasure: delete member + their challenges/requests. _Requires `member:delete`._                                                         |
-| GET    | `/admin/outbox`                 | Captured dev emails, newest first, magic links clickable. _Requires `outbox:read`._ **Dev only** — not registered in production (R-DEV-2,3). |
-| DELETE | `/admin/outbox`                 | Clear the dev outbox. **Dev only**.                                                                                                          |
-| GET    | `/admin/invites`                | List invites with label, window, uses/cap, state, creator (R-INV-9). _Requires `invite:manage`._                                             |
-| POST   | `/admin/invites`                | Create an invite: `{label, validFrom, validUntil, maxUses}`. Returns the join URL once, for the QR (R-INV-9,10). _Requires `invite:manage`._ |
-| POST   | `/admin/invites/:id/revoke`     | Set `revoked_at`; effective on next use (R-INV-3). _Requires `invite:manage`._                                                               |
+| Method | Path                            | Behavior                                                                                                                                                                           |
+| ------ | ------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/admin/applicants`             | List pending applicants with email, request time, and any name/org given (R-AUTH-11). _Requires `applicant:review`._                                                               |
+| POST   | `/admin/applicants/:id/approve` | Set `status='active'`, grant the `member` role, **and email a magic link** with the approval TTL (R-AUTH-10). _Requires `applicant:review`._                                       |
+| POST   | `/admin/applicants/:id/reject`  | Set `status='rejected'`. _Requires `applicant:review`._                                                                                                                            |
+| POST   | `/admin/whitelist`              | Add email(s) as pre-approved active member(s) with the `member` role. _Requires `whitelist:manage`._                                                                               |
+| DELETE | `/admin/members/:id`            | GDPR erasure: delete member + their challenges/requests. _Requires `member:delete`._                                                                                               |
+| GET    | `/admin/outbox`                 | The outbound message log, newest first, filterable by recipient and status (R-MSG-5). Bodies have the credential redacted outside development (R-MSG-4). _Requires `outbox:read`._ |
+| DELETE | `/admin/outbox`                 | Purge entries past the retention window (R-MSG-6). _Requires `outbox:read`._                                                                                                       |
+| GET    | `/admin/invites`                | List invites with label, window, uses/cap, state, creator (R-INV-9). _Requires `invite:manage`._                                                                                   |
+| POST   | `/admin/invites`                | Create an invite: `{label, validFrom, validUntil, maxUses}`. Returns the join URL once, for the QR (R-INV-9,10). _Requires `invite:manage`._                                       |
+| POST   | `/admin/invites/:id/revoke`     | Set `revoked_at`; effective on next use (R-INV-3). _Requires `invite:manage`._                                                                                                     |
 
 ---
 
@@ -498,7 +533,7 @@ deep link reloads cleanly.
 | S17 | **Empty deck** — session summary + "submit your own challenge"; hosts the R-OFF-6 easter egg                                                                                                | `/offer/done`                                           |
 | S18 | **Not found / no access** — generic, reveals nothing (R-NAV-8)                                                                                                                              | any unresolved path                                     |
 | S19 | **Admin approvals** — applicant list with approve/reject                                                                                                                                    | `/admin/applicants`                                     |
-| S20 | **Admin outbox** _(dev only)_ — captured emails with copyable magic links                                                                                                                   | `/admin/outbox`                                         |
+| S20 | **Outbound message log** — every message sent, with type, status, times and errors; magic links clickable in development only                                                               | `/admin/outbox`                                         |
 | S21 | **Access requested** — what happens next, an optional name/org so the host can find them, and the "invitation link is not valid" notice when one was refused (R-AUTH-9, R-AUTH-12, R-INV-5) | `/access-requested`, `/access-requested?invite=invalid` |
 | S22 | **Admin invites** — invite links with label, window, uses/cap, state; create, revoke, and the join URL / QR to display (R-INV-9)                                                            | `/admin/invites`                                        |
 
@@ -769,9 +804,11 @@ Alternatives considered (kept only as fallbacks):
   window, cap, `revoked_at` — and the result is never cached, or a revoked invite
   keeps admitting people. An unusable token degrades to the applicant flow, never
   to an error (R-INV-5). An invite grants the `member` role and nothing more.
-- Dev-only surfaces (the outbox) are registered **only** when
-  `mail.transport=outbox`, so production has no route that lists magic links
-  (R-DEV-3).
+- The outbound message log is a permanent admin surface, not a dev-only one
+  (R-MSG-5). What production withholds is the **credential**, not the screen: the
+  magic-link token is redacted from the stored body before it is written, so
+  `outbox:read` cannot become a way to sign in as another member (R-MSG-4). The
+  body keeps the link intact only where mail never leaves the machine (R-DEV-1).
 - All secrets via env (`DATABASE_URL`, `SESSION_SECRET`, `SMTP_*`,
   `MIXPANEL_TOKEN`, `MIXPANEL_API_HOST=api-eu.mixpanel.com`).
 
@@ -787,8 +824,8 @@ branch rules are in ADR 0012 and `docs/constitution.md`.
   tested without a database — which is why services take their dependencies as
   arguments (constitution §4).
 - **Integration tests:** `supertest` against the Express app with a disposable
-  MySQL (the CI service container below) and `mail.transport=outbox`, so the auth
-  flow is testable without sending mail — the outbox doubles as the test mailbox.
+  MySQL (the CI service container below) and `mail.delivery=none`, so the auth flow
+  is testable without sending mail — the outbox doubles as the test mailbox.
 - **Types:** `tsc --noEmit`, `strict: true`, no implicit `any`.
 - **Lint/format:** `eslint` + `prettier`, plus the mechanical constitution rules
   (`import/no-cycle`, `complexity`, `no-console`, `no-warning-comments`).
@@ -820,7 +857,7 @@ steps:
 ```
 
 - The workflow uses synthetic env only: a throwaway `SESSION_SECRET`,
-  `mail.transport=outbox`, `SEED_PROFILE=dev`, and **no** Mixpanel token. No
+  `mail.delivery=none`, `SEED_PROFILE=dev`, and **no** Mixpanel token. No
   production secret and no real attendee list is exposed to CI (R-QA-5,
   R-SEED-5).
 - `main` must be green as part of the 2026-11-01 "feature-complete and tested"
