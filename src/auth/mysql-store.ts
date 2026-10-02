@@ -69,6 +69,34 @@ async function selectOne(
   return rows[0] ?? null
 }
 
+function sessionQueries(
+  pool: Pool,
+): Pick<AuthStore, 'insertSession' | 'findSession' | 'deleteSession'> {
+  return {
+    insertSession: async (session) => {
+      await pool.query(
+        'INSERT INTO sessions (session_id, expires, data) VALUES (?, ?, ?)',
+        [
+          session.idHash,
+          Math.floor(session.expiresAt.getTime() / MS_PER_SECOND),
+          JSON.stringify({ memberId: session.memberId }),
+        ],
+      )
+    },
+    findSession: async (idHash) => {
+      const row = await selectOne(
+        pool,
+        'SELECT * FROM sessions WHERE session_id = ?',
+        idHash,
+      )
+      return row === null ? null : toSession(row)
+    },
+    deleteSession: async (idHash) => {
+      await pool.query('DELETE FROM sessions WHERE session_id = ?', [idHash])
+    },
+  }
+}
+
 /** The AuthStore over MySQL: `magic_tokens` and `sessions`, plus the two reads
  * of `members` the seam needs to know who a credential belongs to. */
 export function createMysqlAuthStore(pool: Pool): AuthStore {
@@ -98,26 +126,6 @@ export function createMysqlAuthStore(pool: Pool): AuthStore {
       )
       return result.affectedRows === 1
     },
-    insertSession: async (session) => {
-      await pool.query(
-        'INSERT INTO sessions (session_id, expires, data) VALUES (?, ?, ?)',
-        [
-          session.idHash,
-          Math.floor(session.expiresAt.getTime() / MS_PER_SECOND),
-          JSON.stringify({ memberId: session.memberId }),
-        ],
-      )
-    },
-    findSession: async (idHash) => {
-      const row = await selectOne(
-        pool,
-        'SELECT * FROM sessions WHERE session_id = ?',
-        idHash,
-      )
-      return row === null ? null : toSession(row)
-    },
-    deleteSession: async (idHash) => {
-      await pool.query('DELETE FROM sessions WHERE session_id = ?', [idHash])
-    },
+    ...sessionQueries(pool),
   }
 }
