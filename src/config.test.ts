@@ -168,6 +168,34 @@ describe('outbound message log settings', () => {
   })
 })
 
+describe('PUBLIC_URL in development', () => {
+  it('defaults to Vite, which serves the screens', () => {
+    expect(loadConfig(valid).publicUrl).toBe('http://localhost:5173')
+  })
+
+  it("refuses the API server's own port, saying what to use", () => {
+    expect(() =>
+      loadConfig({ ...valid, PUBLIC_URL: 'http://localhost:3000' }),
+    ).toThrow(/use http:\/\/localhost:5173/)
+    expect(() =>
+      loadConfig({ ...valid, PORT: '80', PUBLIC_URL: 'http://localhost' }),
+    ).toThrow(/PUBLIC_URL/)
+  })
+
+  it("allows the server's own address outside development", () => {
+    const production = {
+      ...valid,
+      NODE_ENV: 'production',
+      MAIL_DELIVERY: 'smtp',
+      SMTP_HOST: 'mail.example.org',
+      PUBLIC_URL: 'https://match.example.org',
+      PORT: '443',
+    }
+
+    expect(loadConfig(production).publicUrl).toBe('https://match.example.org')
+  })
+})
+
 describe('isDevelopmentDeployment', () => {
   it('is true only for development with delivery off (R-DEV-1)', () => {
     const smtp = { MAIL_DELIVERY: 'smtp', SMTP_HOST: 'mail.example.org' }

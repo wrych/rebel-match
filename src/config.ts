@@ -5,13 +5,29 @@ import { rolePermissions } from './access.js'
 // longer purge interval would run the purge continuously.
 const MAX_TIMER_HOURS = Math.floor(0x7fffffff / 3_600_000)
 
+function portOf(url: URL): number {
+  if (url.port !== '') return Number(url.port)
+  return url.protocol === 'https:' ? 443 : 80
+}
+
+function linksMissTheApp(env: {
+  NODE_ENV: string
+  PUBLIC_URL: string
+  PORT: number
+}): boolean {
+  return (
+    env.NODE_ENV === 'development' &&
+    portOf(new URL(env.PUBLIC_URL)) === env.PORT
+  )
+}
+
 const envSchema = z
   .object({
     NODE_ENV: z
       .enum(['development', 'test', 'production'])
       .default('development'),
     PORT: z.coerce.number().int().positive().default(3000),
-    PUBLIC_URL: z.url().default('http://localhost:3000'),
+    PUBLIC_URL: z.url().default('http://localhost:5173'),
 
     DATABASE_URL: z.string().min(1),
     SESSION_SECRET: z.string().min(32),
@@ -61,6 +77,16 @@ const envSchema = z
         message:
           'production must deliver over SMTP: recording magic links ' +
           'without sending them means nobody can log in (R-DEV-5)',
+      })
+    }
+    if (linksMissTheApp(env)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['PUBLIC_URL'],
+        message:
+          `PUBLIC_URL points at the API server (port ${String(env.PORT)}); ` +
+          'in development links must go through Vite, which serves the ' +
+          'screens: use http://localhost:5173',
       })
     }
   })
