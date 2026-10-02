@@ -8,6 +8,8 @@ How to work in this repository. Read this first; it is short on purpose.
   and citable in review.
 - **What it must do** — [`specs/README.md`](specs/README.md) is the index.
 - **Why it is like this** — [`docs/adr/`](docs/adr/README.md).
+- **Getting magic links delivered** — [`docs/email-setup.md`](docs/email-setup.md),
+  which is on the critical path for R-NFR-3.
 
 ## Repo map
 
@@ -22,6 +24,7 @@ specs/              the product spec — what must be true (read before coding)
 docs/
   constitution.md   engineering rules
   adr/              architecture decision records
+  email-setup.md    DNS and deliverability runbook (R-NFR-3, open question 4)
 src/                server + client (not yet created; M0 in tasks.md)
 ```
 
@@ -39,6 +42,19 @@ src/                server + client (not yet created; M0 in tasks.md)
 Do not batch unrelated fixes. Do not land a refactor and a behavior change
 together. If a change grows past what a reviewer can hold in their head, split
 it.
+
+## First run
+
+```sh
+npm ci
+cp .env.example .env     # then set SESSION_SECRET to 32+ characters
+npm run dev              # starts MySQL if Docker is reachable, migrates, then both servers
+```
+
+`npm run dev` fails loudly if configuration is missing, by design — it validates
+the environment and names what is absent rather than failing later on first use
+(R-CFG-1). Without a Docker daemon it starts anyway and `/api/health` reports
+`"database": "down"`; everything not backed by the database still works.
 
 ## Commands
 
@@ -72,7 +88,9 @@ it.
   boundary. Both, not either (ADR 0011).
 - **Thin routes, decisions in services, dependencies passed in.** It is what
   makes the critical modules testable without a database (§4).
-- **Dev sends no email.** Magic links appear on `/admin/outbox` (ADR 0008).
+- **Every message is recorded** in the outbound log, in every environment; in
+  development nothing is sent, so `/admin/outbox` is where magic links live
+  (ADR 0016).
 - **Every screen has a URL.** No modals for anything linkable (ADR 0007).
 - **Not found, never forbidden**, for anything the caller may not see (§5).
 - Spec prose wraps at 80 columns. Match the file you are editing.
