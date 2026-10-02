@@ -1,28 +1,5 @@
 import { z } from 'zod'
-
-/** Permissions granted by each role. Effective access is the union of a
- * member's roles, resolved at request time — never a role-name comparison
- * (R-ROLE-2, R-ROLE-3). An admin also holds `member`, so admin need not
- * repeat its grants. */
-export const rolePermissions = {
-  member: ['challenge:create', 'challenge:swipe', 'connection:request'],
-  admin: [
-    'applicant:review',
-    'whitelist:manage',
-    'member:delete',
-    'challenge:moderate',
-    'invite:manage',
-    'outbox:read',
-  ],
-} as const satisfies Record<string, readonly string[]>
-
-export type RoleKey = keyof typeof rolePermissions
-export type Permission =
-  (typeof rolePermissions)[RoleKey][number] extends infer P
-    ? P extends string
-      ? P
-      : never
-    : never
+import { rolePermissions } from './access.js'
 
 const envSchema = z
   .object({

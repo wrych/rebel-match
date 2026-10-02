@@ -1,4 +1,4 @@
-import type { Permission } from '../config.js'
+import type { Permission } from '../access.js'
 
 export type LinkKind = 'self_service' | 'approval'
 
