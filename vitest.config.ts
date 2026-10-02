@@ -4,7 +4,11 @@ import { defineConfig } from 'vitest/config'
 export default defineConfig({
   plugins: [vue()],
   test: {
-    include: ['src/**/*.test.ts', 'client/**/*.test.ts'],
+    include: [
+      'src/**/*.test.ts',
+      'client/**/*.test.ts',
+      'scripts/**/*.test.ts',
+    ],
     coverage: {
       provider: 'v8',
       include: ['src/**/*.ts', 'client/**/*.ts', 'client/**/*.vue'],

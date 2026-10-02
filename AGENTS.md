@@ -46,6 +46,24 @@ Do not batch unrelated fixes. Do not land a refactor and a behavior change
 together. If a change grows past what a reviewer can hold in their head, split
 it.
 
+### Before you push
+
+The pre-push hook runs what CI would reject: lint, unit tests, the integration
+suite when a database is reachable, and then the **reviewer agent**
+(`.claude/agents/reviewer.md`) on everything the branch adds over `origin/main`.
+
+The reviewer files each finding under a category, and the category fixes the
+score (`scripts/review/config.json`): privacy or security 7, correctness 6, one
+of the six below 5, a spec or ADR contradiction 4, a design rule 3, style 1. A
+finding at **4 or above blocks the push**; lower ones are printed as advice. A
+finding without a file, line, rule and failure scenario is discarded. Verdicts
+are cached per diff, so pushing again without changes does not ask again.
+
+Fix a blocking finding, or — if the reviewer is wrong — say why in the PR and
+push with `--no-verify`. **Agents never use `--no-verify`**; they fix the
+finding or stop and ask. Without the `claude` CLI the review is skipped with a
+warning, and CI remains the gate for everything else.
+
 ## First run
 
 ```sh
@@ -68,6 +86,7 @@ the environment and names what is absent rather than failing later on first use
 | `npm run db:reset`          | drop the volume and rebuild from the migrations                                                    |
 | `npm test`                  | unit tests (Vitest)                                                                                |
 | `npm run test:integration`  | API tests — needs a database (`npm run db:up`)                                                     |
+| `npm run review`            | the reviewer agent on the branch's change, as the pre-push hook runs it                            |
 | `npm run lint`              | ESLint + Prettier check                                                                            |
 | `npm run typecheck`         | `tsc --noEmit` and `vue-tsc` for the client                                                        |
 | `npm run migrate`           | migrations, forward-only                                                                           |
