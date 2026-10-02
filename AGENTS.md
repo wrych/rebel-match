@@ -1,5 +1,3 @@
-# AGENTS.md
-
 How to work in this repository. Read this first; it is short on purpose.
 
 - **What this is** — Rebel Match: a peer-matching app for the Corporate Rebels
@@ -44,18 +42,17 @@ it.
 
 ## Commands
 
-Not wired yet — `src/` does not exist. M0 in `specs/tasks.md` creates them, and
-they land here in the same change:
-
-|                            |                                                  |
-| -------------------------- | ------------------------------------------------ |
-| `npm test`                 | unit tests (Vitest)                              |
-| `npm run test:integration` | API tests against a disposable MySQL             |
-| `npm run lint`             | ESLint + Prettier check                          |
-| `npm run typecheck`        | `tsc --noEmit`, strict                           |
-| `npm run migrate`          | migrations, forward-only                         |
-| `npm run seed`             | seeds per `SEED_PROFILE` (`dev` \| `prod`)       |
-| `npm run dev`              | local server; mail goes to the outbox, never out |
+|                             |                                                                                                    |
+| --------------------------- | -------------------------------------------------------------------------------------------------- |
+| `npm run dev`               | starts the database (if Docker is reachable), migrates, then the server on :3000 and Vite on :5173 |
+| `npm run db:up` / `db:down` | the development MySQL on its own                                                                   |
+| `npm run db:reset`          | drop the volume and rebuild from the migrations                                                    |
+| `npm test`                  | unit tests (Vitest)                                                                                |
+| `npm run test:integration`  | API tests — needs a database (`npm run db:up`)                                                     |
+| `npm run lint`              | ESLint + Prettier check                                                                            |
+| `npm run typecheck`         | `tsc --noEmit` and `vue-tsc` for the client                                                        |
+| `npm run migrate`           | migrations, forward-only                                                                           |
+| `npm run seed`              | seeds per `SEED_PROFILE` (`dev` \| `prod`)                                                         |
 
 ## The six that get a change rejected
 

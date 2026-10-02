@@ -1,0 +1,25 @@
+# The local development database. Pinned to the same major as the service in
+# .github/workflows/ci.yml, so dev, CI and production exercise one engine —
+# MySQL 8 DDL (ENUM, utf8mb4_0900_ai_ci) is what the migrations are written in.
+# Change one, change the other.
+services:
+  mysql:
+    image: mysql:8
+    environment:
+      MYSQL_ROOT_PASSWORD: rebel
+      MYSQL_DATABASE: rebel_match
+      MYSQL_USER: rebel
+      MYSQL_PASSWORD: rebel
+    ports:
+      - '${DB_PORT:-3306}:3306'
+    volumes:
+      # Named, so your dev data survives a restart. `npm run db:reset` drops it.
+      - rebel-match-db:/var/lib/mysql
+    healthcheck:
+      test: ['CMD', 'mysqladmin', 'ping', '-h', '127.0.0.1', '-prebel']
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  rebel-match-db:
