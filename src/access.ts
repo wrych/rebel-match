@@ -10,6 +10,7 @@ export const rolePermissions = {
     'challenge:moderate',
     'invite:manage',
     'outbox:read',
+    'role:grant',
   ],
 } as const satisfies Record<string, readonly string[]>
 

@@ -25,6 +25,10 @@ function deps(
       config,
     }),
     profiles: { profile: () => Promise.resolve(null) },
+    roles: {
+      grant: () => Promise.resolve('no_member'),
+      revoke: () => Promise.resolve('not_held'),
+    },
   }
 }
 
