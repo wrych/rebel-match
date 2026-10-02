@@ -143,9 +143,14 @@ whether it then leaves the machine (R-DEV-4).
 - `mail.delivery=smtp` (production) → nodemailer against the team's own SMTP
   server, `SMTP_*` from env. The stored body has the magic-link token redacted
   (R-MSG-4).
-- `mail.delivery=none` (development) → **nothing leaves the machine**. The record
-  is written with status `suppressed` and the body keeps the link intact, so a
-  developer signs in from the admin log without a mailbox (R-DEV-1).
+- `mail.delivery=none` → **nothing leaves the machine**. The record is written
+  with status `suppressed`.
+- **The stored body keeps the link only in a development deployment:**
+  `NODE_ENV=development` **and** `mail.delivery=none`, so mail cannot leave the
+  machine (R-DEV-1; the term is defined in requirements §8c). Anything else redacts it
+  (R-MSG-4): a staging server with delivery off holds no usable credential, and
+  neither does a development machine pointed at a real SMTP server. Both inputs
+  are configuration, so this is a config decision, not a code branch (R-DEV-4).
 - **Production refuses to start with `delivery=none`** (R-DEV-5): a deployment that
   records magic links and sends none is one where nobody can log in, and that
   should fail at boot rather than at the first scan of the QR code.
@@ -455,9 +460,9 @@ message to the transport, then update to `sent`, `suppressed` or `failed`. A cra
 mid-send leaves evidence of the attempt instead of a silent gap (R-MSG-2).
 
 **Redaction (R-MSG-4).** The mailer knows the token it injected, so before storing
-it replaces that exact string with a placeholder — everywhere except a development
-deployment, where the link stays clickable because nothing leaves the machine
-(R-DEV-1). Without this, `outbox:read` would be the strongest permission in the
+it replaces that exact string with a placeholder — everywhere except a
+development deployment with delivery off, where the link stays clickable because
+nothing leaves the machine (R-DEV-1). Without this, `outbox:read` would be the strongest permission in the
 system: an admin could read any member's magic link and sign in as them.
 
 `ON DELETE CASCADE` on `member_id` is what makes erasure one transaction
@@ -745,6 +750,8 @@ non-empty match lists, and a login that works without waiting for an email.
   either an experience note ("been there") or a challenge ("same boat").
 - Fixture members are seeded **already onboarded** (name set, consent version +
   timestamp filled) so **F2** can be skipped while testing deeper screens.
+- **Dev admin:** `admin@rebel-match.invalid`, onboarded, holding `member` and
+  `admin`. It is who `npm run dev` prints a sign-in link for (R-DEV-6).
 - **Dev whitelist:** the team's own addresses plus the fixture members, so
   magic-link login works against a dev mailbox.
 - **Example challenges** from the prototype double as the R-ASK-2 "insert an

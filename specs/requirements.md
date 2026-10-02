@@ -499,6 +499,11 @@ What differs by environment is only whether mail **leaves the machine**.
 
 ### Development deployment
 
+- **Development deployment** means `NODE_ENV=development` **and**
+  `MAIL_DELIVERY=none`: a machine from which mail cannot leave. It is the only
+  environment R-DEV-1 exempts from R-MSG-4. CI (`NODE_ENV=test`), every deployed
+  server, and a developer's machine pointed at a real SMTP server to test
+  deliverability are not development deployments, so they redact.
 - **R-DEV-1** — WHILE running as a development deployment THE SYSTEM SHALL NOT
   send outbound email. Messages SHALL still be recorded (R-MSG-1) with status
   `suppressed`, and in this environment **only**, the stored body SHALL keep the
@@ -513,6 +518,18 @@ What differs by environment is only whether mail **leaves the machine**.
 - **R-DEV-5** — Production SHALL refuse to start with delivery switched off. A
   deployment that records magic links and sends none is one where nobody can log
   in, and it SHALL fail loudly at startup rather than quietly at the first scan.
+- **R-DEV-6 (The first sign-in)** — The outbound message log needs `outbox:read`,
+  so it cannot be how a developer signs in the first time. WHILE running as a
+  development deployment with delivery off and the `dev` seed, `npm run dev`
+  SHALL print a fresh magic link for the seeded dev admin
+  (`admin@rebel-match.invalid`), and `npm run dev:login <email>` one for any
+  seeded member.
+  - The link SHALL be issued through the auth seam (ADR 0015) and recorded in the
+    log like any other (R-MSG-1); it is single-use and expires (R-AUTH-5). No
+    pre-made session SHALL exist.
+  - The output SHALL name the member's role, never an email address or name
+    (constitution §5).
+  - Outside those three conditions both commands SHALL refuse, saying why.
 
 ---
 
