@@ -58,3 +58,4 @@ still holds except where the later ADR says otherwise.
 | [0019](0019-gate-pushes-on-tests-and-a-reviewer-agent.md) | Gate pushes on the test suites and a reviewer agent          | Accepted                  |
 | [0020](0020-slide-the-session-on-use.md)                  | Slide the session on use, and renew its cookie from the seam | Accepted                  |
 | [0021](0021-permission-policy-seam.md)                    | Read permissions through a policy seam                       | Accepted                  |
+| [0022](0022-agents-merge-routine-prs.md)                  | Agents merge routine pull requests; people approve decisions | Accepted                  |
