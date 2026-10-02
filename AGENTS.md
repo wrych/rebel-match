@@ -34,7 +34,10 @@ src/                server + client (not yet created; M0 in tasks.md)
    the spec changes first — in its own commit.
 2. **Check for a decision.** Major and not yet decided? Write the ADR before the
    code (constitution §8). Already decided? Follow it, or supersede it properly.
-3. **Branch**, one change per branch.
+3. **Branch**, one change per branch, named `type/short-topic` with the
+   Conventional Commit type of the change: `feat/auth-seam`,
+   `docs/vue-spa-decision`, `chore/m0-toolchain`. A branch handed to you under
+   another name is renamed before it is pushed.
 4. **Write the test with the change**, same commit (§2).
 5. **Open a PR** citing the requirement, and the ADR if there is one.
    Squash-merge.
