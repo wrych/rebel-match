@@ -66,7 +66,7 @@ printed dev link (R-DEV-6).
 - [x] `auth` module behind its seam: `issueLink` / `verifyToken` /
       `createSession` / `currentMember` / `endSession`, injected everywhere, with
       a fake for tests. No token or cookie knowledge outside it. _(ADR 0015)_
-- [ ] Printed dev sign-in link: `npm run dev` for the seeded admin,
+- [x] Printed dev sign-in link: `npm run dev` for the seeded admin,
       `npm run dev:login <email>` for any seeded member, refused outside a
       development deployment with delivery off and the dev seed. _(R-DEV-6)_
 - [ ] `POST /auth/request-link`: whitelist check, token create, send link,

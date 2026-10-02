@@ -2,21 +2,15 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import type { RowDataPacket } from 'mysql2/promise'
 import request from 'supertest'
 import { createApp } from '../../src/app.js'
-import {
-  createAuth,
-  createMysqlAuthStore,
-  type AuthProvider,
-} from '../../src/auth/index.js'
-import { isDevelopmentDeployment, loadConfig } from '../../src/config.js'
+import type { AuthProvider } from '../../src/auth/index.js'
+import { composeAuth } from '../../src/compose.js'
+import { loadConfig } from '../../src/config.js'
 import { createPool, type Pool } from '../../src/db.js'
 import { migrate } from '../../src/migrations/run.js'
 import { DEV_ADMIN_EMAIL } from '../../src/seed/dev/people.js'
 import { planSeed } from '../../src/seed/plan.js'
 import { applySeed } from '../../src/seed/run.js'
-import { mailLinks } from '../../src/services/link-delivery.js'
-import { createMailer } from '../../src/services/mailer.js'
 import { createMysqlMemberProfiles } from '../../src/services/member-profiles.js'
-import { createMysqlOutboxStore } from '../../src/services/outbox-store.js'
 
 const databaseUrl = process.env['DATABASE_URL']
 
@@ -49,17 +43,7 @@ beforeAll(async () => {
   await migrate(databaseUrl, 'migrations')
   pool = createPool(config)
   await applySeed(pool, planSeed(config), config.consentVersion)
-  const mailer = createMailer({
-    store: createMysqlOutboxStore(pool),
-    transport: null,
-    from: config.mail.from,
-    keepCredentials: isDevelopmentDeployment(config),
-  })
-  auth = createAuth({
-    store: createMysqlAuthStore(pool),
-    deliver: mailLinks(mailer),
-    config,
-  })
+  auth = composeAuth(config, pool)
 })
 
 afterAll(async () => {

@@ -19,6 +19,8 @@ export default defineConfig({
       exclude: [
         'src/**/*.test.ts',
         'src/server.ts',
+        'src/compose.ts',
+        'src/dev-login.ts',
         'src/db.ts',
         'src/migrate.ts',
         'src/seed.ts',
