@@ -66,6 +66,14 @@ Requirements:
 - **R-ROLE-8** — The term "role" in the data model SHALL refer to access roles
   only. A member's **job title** is profile data and SHALL be named distinctly
   (`job_title`) to avoid the collision.
+- **R-ROLE-9 (Granting roles)** — A member holding `role:grant` SHALL be able to
+  grant a role to an active member and revoke one, without a deploy or direct
+  database access — so a host can be made an admin during the event.
+  - Each grant records when and by whom (R-ROLE-7). Revoking removes the grant.
+  - THE SYSTEM SHALL refuse a revocation that would leave no active member
+    holding `role:grant`, so the system can never lock itself out. The check is
+    on the permission, not on a role name (R-ROLE-3).
+  - Only roles the permission policy knows can be granted.
 - **R-ROLE-10 (Permission names)** — Permissions SHALL be named
   `resource:action` (`challenge:swipe`, `outbox:read`), so a name says what it
   guards.

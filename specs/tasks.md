@@ -29,6 +29,9 @@ User journeys are in `flows.md` (`F1`…`F14`).
       roles, no role-name checks anywhere). _(R-ROLE-2,3,5)_
 - [x] Permissions renamed `resource:action` and read through a
       `PermissionPolicy`. _(R-ROLE-10, ADR 0021)_
+- [ ] Grant and revoke roles: `POST /api/admin/members/:id/roles`,
+      `DELETE /api/admin/members/:id/roles/:role`, refusing to remove the last
+      holder of `role:grant`. _(R-ROLE-7,9)_
 - [x] Seed runner with `SEED_PROFILE`, dev-in-prod guard, idempotent upserts;
       roles, the dev roster and the dev admin. _(R-SEED-1,2,4,7, R-DEV-6)_
 - [ ] Seed trends, cases and the dev challenges and notes, with the tables
