@@ -107,6 +107,18 @@ and nothing else (ADR 0015).
 - `currentMember` returns roles and permissions already resolved, so no handler
   depends on the shape of a token or a provider's claims.
 
+### Client bundle budget
+
+ADR 0017 put the bundle inside the R-NFR-3 measurement, so it needs a number. The
+scaffold's baseline — Vue, vue-router, one screen — is **90 kB raw / 35 kB
+gzipped**. That is the floor, and it is already the largest single asset on the
+login path.
+
+Budget: **under 120 kB gzipped** for the whole client. If a dependency would
+breach it, the question is whether that screen needs the dependency or needs less
+of it. The M6 QR dry run on a phone over conference wifi is what proves the
+budget, not the number itself.
+
 ### Mail delivery
 
 Recording and delivering are **separate concerns**. Every message is recorded in
