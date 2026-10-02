@@ -25,9 +25,9 @@ User journeys are in `flows.md` (`F1`…`F14`).
       with the journeys that use them. _(R-ROLE-1,6, R-DEV-1, R-MSG-1, R-INV-8)_
 - [x] `mysql2` pool, and CI gains the MySQL service plus `migrate` and
       integration steps. _(design §1, R-QA-2,4)_
-- [ ] Permission middleware `requirePermission(...)` + role resolver (union of
+- [x] Permission middleware `requirePermission(...)` + role resolver (union of
       roles, no role-name checks anywhere). _(R-ROLE-2,3,5)_
-- [ ] Permissions renamed `resource:action` and read through a
+- [x] Permissions renamed `resource:action` and read through a
       `PermissionPolicy`. _(R-ROLE-10, ADR 0021)_
 - [x] Seed runner with `SEED_PROFILE`, dev-in-prod guard, idempotent upserts;
       roles, the dev roster and the dev admin. _(R-SEED-1,2,4,7, R-DEV-6)_

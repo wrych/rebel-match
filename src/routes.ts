@@ -4,6 +4,8 @@
  * opinion about which paths exist.
  */
 
+import type { Permission } from './access.js'
+
 export type Access = 'public' | 'session' | 'onboarded'
 
 export interface RouteDef {
@@ -12,7 +14,7 @@ export interface RouteDef {
   name: string
   access: Access
   /** Permission the member must hold, resolved from their roles (R-ROLE-3). */
-  permission?: string
+  permission?: Permission
 }
 
 export const routeTable: readonly RouteDef[] = [

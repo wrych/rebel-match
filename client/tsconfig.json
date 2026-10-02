@@ -7,5 +7,5 @@
     "types": ["vite/client"],
     "noEmit": true
   },
-  "include": ["**/*.ts", "**/*.vue", "../src/routes.ts"]
+  "include": ["**/*.ts", "**/*.vue", "../src/routes.ts", "../src/access.ts"]
 }
