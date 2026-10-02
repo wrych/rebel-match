@@ -15,8 +15,9 @@ User journeys are in `flows.md` (`F1`…`F14`).
 
 - [x] `package.json` + **TypeScript strict** (`tsconfig.json`, `tsc --noEmit`).
       _(ADR 0011)_
-- [ ] Node + Express skeleton wired to the pool and config. _(design §1)_
-- [ ] `GET /api/config` exposing the client-relevant subset. _(R-CFG-2)_
+- [x] Node + Express skeleton wired to the pool and config, with a health check
+      that reports the database rather than refusing to start. _(design §1)_
+- [x] `GET /api/config` exposing the client-relevant subset. _(R-CFG-2)_
 - [x] Migration runner: forward-only, ordered, idempotent, and it refuses to run
       when a migration that already ran has been edited. _(R-QA-4, constitution §6)_
 - [x] Migrations for the login journey — `members`, `roles`, `member_roles`,
@@ -28,13 +29,12 @@ User journeys are in `flows.md` (`F1`…`F14`).
       roles, no role-name checks anywhere). _(R-ROLE-2,3,5)_
 - [ ] Seed runner with `SEED_PROFILE`, dev-in-prod guard, idempotent upserts;
       shared seed = roles + trends + cases. _(R-SEED-1,4,7)_
-- [ ] Vue 3 + Vite + vue-router scaffold; the shared route table in
-      `src/routes.ts` feeding both the client router and the server `next`
-      validator; SPA catch-all + not-found screen. _(R-NAV-1,6, ADR 0017)_
-- [ ] Client test setup: `@vue/test-utils` + jsdom, guards as pure functions.
-      _(R-QA-1, ADR 0017)_
-- [ ] Health check + boundary schemas (`zod`) + error handling middleware that
-      leaks nothing. _(R-CFG-3, constitution §5)_
+- [x] Vue 3 + Vite + vue-router scaffold; the shared route table in
+      `src/routes.ts` with `safeNextPath` for the server validator; login and
+      not-found screens. _(R-NAV-1,6, ADR 0017)_
+- [x] Client test setup: `@vue/test-utils` + jsdom. _(R-QA-1, ADR 0017)_
+- [ ] Boundary schemas (`zod`) on every write route. The error handler that
+      leaks nothing is in place. _(R-CFG-3, constitution §5)_
 - [x] Vitest harness: `npm test` + `npm run test:integration` (disposable
       MySQL, `mail.delivery=none`). _(R-QA-1,2)_
 - [x] ESLint + Prettier with the mechanical constitution rules
