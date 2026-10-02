@@ -1,0 +1,11 @@
+{
+  "threshold": 4,
+  "categories": {
+    "privacy-security": 7,
+    "correctness": 6,
+    "rejection-rule": 5,
+    "spec-contradiction": 4,
+    "design-rule": 3,
+    "style": 1
+  }
+}
