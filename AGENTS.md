@@ -47,21 +47,20 @@ it.
 Not wired yet — `src/` does not exist. M0 in `specs/tasks.md` creates them, and
 they land here in the same change:
 
-| | |
-|---|---|
-| `npm test` | unit tests (Vitest) |
-| `npm run test:integration` | API tests against a disposable MySQL |
-| `npm run lint` | ESLint + Prettier check |
-| `npm run typecheck` | `tsc --noEmit`, strict |
-| `npm run migrate` | migrations, forward-only |
-| `npm run seed` | seeds per `SEED_PROFILE` (`dev` \| `prod`) |
-| `npm run dev` | local server; mail goes to the outbox, never out |
+|                            |                                                  |
+| -------------------------- | ------------------------------------------------ |
+| `npm test`                 | unit tests (Vitest)                              |
+| `npm run test:integration` | API tests against a disposable MySQL             |
+| `npm run lint`             | ESLint + Prettier check                          |
+| `npm run typecheck`        | `tsc --noEmit`, strict                           |
+| `npm run migrate`          | migrations, forward-only                         |
+| `npm run seed`             | seeds per `SEED_PROFILE` (`dev` \| `prod`)       |
+| `npm run dev`              | local server; mail goes to the outbox, never out |
 
 ## The six that get a change rejected
 
 1. **A behavior change without tests.** (§2)
-2. **A role name in a conditional** instead of a permission check. (§5, ADR
-   0006)
+2. **A role name in a conditional** instead of a permission check. (§5, ADR 0006)
 3. **PII in a log, an error, or an analytics event** — email, name, challenge
    text. (§5)
 4. **A contact detail readable** without an accepted connection and a party

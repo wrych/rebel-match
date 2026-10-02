@@ -44,7 +44,7 @@ own consent timestamp is recorded by their own acceptance.
 - Consent is never pre-filled on anyone's behalf, which keeps the audit trail
   honest (R-NFR-6).
 - Attribution of the collected challenges is still open: seeding them
-  *attributed* would expose real people to connection requests before they have
+  _attributed_ would expose real people to connection requests before they have
   accepted the consent, so unattributed is the safer default until the authors
   agree (open question 5).
 

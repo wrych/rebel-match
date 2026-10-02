@@ -11,8 +11,8 @@ conference break, on a phone, with minutes to spare (R-NFR-3). A password —
 choosing one, storing it, resetting it — is the slowest and riskiest part of
 that minute. The app is also closed: only invited attendees may enter.
 
-From the meeting: *"something like a magic link that is then sent to your email…
-really simple user management."*
+From the meeting: _"something like a magic link that is then sent to your email…
+really simple user management."_
 
 ## Decision
 

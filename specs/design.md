@@ -40,7 +40,8 @@ MySQL**, single-page mobile-first client served by the Node app.
   app.js                 Express app + middleware
   db.js                  mysql2 connection pool
   config.js              env-driven config
-  auth/                  magic link + sessions
+  auth/                  THE AUTH SEAM (ADR 0015) — tokens, sessions, nothing else
+                         knows how a member proves who they are
   routes/                auth, challenges, matches, swipe, connections, admin
   services/
     mailer.js            SMTP (nodemailer) — the team's own SMTP server, env-configured
@@ -57,25 +58,44 @@ MySQL**, single-page mobile-first client served by the Node app.
 One module owns every tunable (R-CFG-1..4). Secrets come from env; product
 thresholds have sane defaults in the file and may be overridden by env.
 
-| Key | Default | Serves |
-|-----|---------|--------|
-| `limits.challengeMinChars` | `31` (i.e. "more than 30") | R-ASK-3 |
-| `limits.beenThereNoteMinChars` | `31` | R-OFF-4 |
-| `limits.magicLinkTtlMinutes` | `15` | R-AUTH-5 |
-| `limits.approvalLinkTtlHours` | `24` | R-AUTH-10 |
-| `limits.inviteDefaultMaxUses` | `400` | R-INV-4 |
-| `limits.inviteDefaultHours` | `12` | R-INV-2 |
-| `consent.currentVersion` | e.g. `"2026-11-01"` | R-ONB-3, R-ONB-4 |
-| `mail.transport` | `smtp` \| `outbox` | R-DEV-1, R-DEV-4 |
-| `seed.profile` | `dev` \| `prod` | R-SEED-4 |
-| `analytics.apiHost` | `api-eu.mixpanel.com` | R-ANA-5 |
-| `permissions` | role → permission matrix (§2) | R-ROLE-3, R-ROLE-6 |
+| Key                            | Default                       | Serves             |
+| ------------------------------ | ----------------------------- | ------------------ |
+| `limits.challengeMinChars`     | `31` (i.e. "more than 30")    | R-ASK-3            |
+| `limits.beenThereNoteMinChars` | `31`                          | R-OFF-4            |
+| `limits.magicLinkTtlMinutes`   | `15`                          | R-AUTH-5           |
+| `limits.approvalLinkTtlHours`  | `24`                          | R-AUTH-10          |
+| `limits.inviteDefaultMaxUses`  | `400`                         | R-INV-4            |
+| `limits.inviteDefaultHours`    | `12`                          | R-INV-2            |
+| `consent.currentVersion`       | e.g. `"2026-11-01"`           | R-ONB-3, R-ONB-4   |
+| `mail.transport`               | `smtp` \| `outbox`            | R-DEV-1, R-DEV-4   |
+| `seed.profile`                 | `dev` \| `prod`               | R-SEED-4           |
+| `analytics.apiHost`            | `api-eu.mixpanel.com`         | R-ANA-5            |
+| `permissions`                  | role → permission matrix (§2) | R-ROLE-3, R-ROLE-6 |
 
 - `GET /api/config` returns the **client-relevant subset** (`limits`,
   `consent.currentVersion`) so the submit button, the note counter, and the
   server validator share one source of truth (R-CFG-2). It exposes no secrets.
 - The server validates against `config.limits` on every write regardless of what
   the client did (R-CFG-3).
+
+### The auth seam
+
+`auth/` is the only module that knows how a member proves who they are: token
+generation and hashing, TTLs per link kind, cookie format, session storage. It
+exposes `issueLink`, `verifyToken`, `createSession`, `currentMember`, `endSession`
+and nothing else (ADR 0015).
+
+- Nothing outside `auth/` reads or writes `magic_tokens`, builds a cookie, or
+  knows a TTL. A route that touches a token hash is a defect.
+- Routes and services receive the interface, never import a concrete
+  implementation — which is what lets R-QA-1's token tests run against a fake,
+  with no database.
+- **Admission policy deliberately stays outside** the seam: the whitelist,
+  applicants, approvals, invite tokens and consent are ours in every scenario, so
+  putting them behind an auth interface would only mean pulling them back out if
+  we ever adopt a provider.
+- `currentMember` returns roles and permissions already resolved, so no handler
+  depends on the shape of a token or a provider's claims.
 
 ### Mail transport
 
@@ -171,15 +191,15 @@ CREATE TABLE member_roles (
 **Permissions live in config, not in the database** (`config.permissions`), so the
 grants are reviewable in version control:
 
-| Permission | `member` | `admin` | (future) `moderator` |
-|------------|:--------:|:-------:|:--------------------:|
-| `challenge:create` / `swipe` / `connect` | ✅ | ✅ | ✅ |
-| `applicant:review` (approve / reject) | — | ✅ | ✅ |
-| `whitelist:manage` | — | ✅ | — |
-| `member:delete` (GDPR erasure) | — | ✅ | — |
-| `challenge:moderate` | — | ✅ | ✅ |
-| `invite:manage` (create / revoke QR invites) | — | ✅ | — |
-| `outbox:read` (dev only) | — | ✅ | — |
+| Permission                                   | `member` | `admin` | (future) `moderator` |
+| -------------------------------------------- | :------: | :-----: | :------------------: |
+| `challenge:create` / `swipe` / `connect`     |    ✅    |   ✅    |          ✅          |
+| `applicant:review` (approve / reject)        |    —     |   ✅    |          ✅          |
+| `whitelist:manage`                           |    —     |   ✅    |          —           |
+| `member:delete` (GDPR erasure)               |    —     |   ✅    |          —           |
+| `challenge:moderate`                         |    —     |   ✅    |          ✅          |
+| `invite:manage` (create / revoke QR invites) |    —     |   ✅    |          —           |
+| `outbox:read` (dev only)                     |    —     |   ✅    |          —           |
 
 - Route guards SHALL check a **permission**, never a role name —
   `requirePermission('applicant:review')`, not `if (member.isAdmin)`. Adding
@@ -378,68 +398,68 @@ with `status='active'` and completed onboarding (except the onboarding routes).
 
 ### Auth
 
-| Method | Path | Body | Behavior |
-|--------|------|------|----------|
-| POST | `/auth/request-link` | `{email, next?, invite?}` | If whitelisted active member → create token, send link (SMTP or outbox per `mail.transport`), return the "check your email" state. If unknown email **with a usable `invite`** → create the member active with the `member` role, record `joined_via_invite_id`, increment `uses`, send the link (R-INV-1). If unknown email without a usable one → create `applicant`, notify admin, return the access-requested state, flagging whether an invite was refused so the client can show the notice (R-AUTH-2, R-INV-5). The two states differ deliberately — see ADR 0013. |
-| GET | `/auth/verify?token=…&next=…` | — | Validate token (unexpired, unused), consume it, create session, redirect to onboarding, or to the validated `next` path, else the app root (R-NAV-5, R-NAV-6). |
-| POST | `/auth/logout` | — | Destroy session. |
-| GET | `/auth/me` | — | Current member + onboarding/consent status + `roles[]` and resolved `permissions[]` (R-ROLE-4). |
-| POST | `/auth/applicant` | `{name?, org?}` | Attach applicant-supplied name/org to the pending request, for the host (R-AUTH-11,12). Pending applicants only; no session required, keyed by the request. |
-| GET | `/api/config` | — | Client-relevant limits + current consent version (R-CFG-2). No secrets. |
+| Method | Path                          | Body                      | Behavior                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| ------ | ----------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| POST   | `/auth/request-link`          | `{email, next?, invite?}` | If whitelisted active member → create token, send link (SMTP or outbox per `mail.transport`), return the "check your email" state. If unknown email **with a usable `invite`** → create the member active with the `member` role, record `joined_via_invite_id`, increment `uses`, send the link (R-INV-1). If unknown email without a usable one → create `applicant`, notify admin, return the access-requested state, flagging whether an invite was refused so the client can show the notice (R-AUTH-2, R-INV-5). The two states differ deliberately — see ADR 0013. |
+| GET    | `/auth/verify?token=…&next=…` | —                         | Validate token (unexpired, unused), consume it, create session, redirect to onboarding, or to the validated `next` path, else the app root (R-NAV-5, R-NAV-6).                                                                                                                                                                                                                                                                                                                                                                                                            |
+| POST   | `/auth/logout`                | —                         | Destroy session.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| GET    | `/auth/me`                    | —                         | Current member + onboarding/consent status + `roles[]` and resolved `permissions[]` (R-ROLE-4).                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| POST   | `/auth/applicant`             | `{name?, org?}`           | Attach applicant-supplied name/org to the pending request, for the host (R-AUTH-11,12). Pending applicants only; no session required, keyed by the request.                                                                                                                                                                                                                                                                                                                                                                                                               |
+| GET    | `/api/config`                 | —                         | Client-relevant limits + current consent version (R-CFG-2). No secrets.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 
 ### Onboarding
 
-| Method | Path | Body | Behavior |
-|--------|------|------|----------|
-| POST | `/api/onboarding` | `{name, jobTitle?, org?, sector?, consentVersion}` | Set name/profile, record consent version + timestamp. Required before other `/api` routes. |
+| Method | Path              | Body                                               | Behavior                                                                                   |
+| ------ | ----------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| POST   | `/api/onboarding` | `{name, jobTitle?, org?, sector?, consentVersion}` | Set name/profile, record consent version + timestamp. Required before other `/api` routes. |
 
 ### Ask journey
 
-| Method | Path | Body | Behavior |
-|--------|------|------|----------|
-| POST | `/api/challenges` | `{body}` | Create challenge, run matcher, return challenge with `autoTrend`. |
-| PATCH | `/api/challenges/:id` | `{trendId}` | Confirm/override trend; set `overridden` if changed. |
-| GET | `/api/challenges/:id/matches` | — | `{sameBoat[], beenThere[], cases[]}` for the challenge's trend (no emails). |
+| Method | Path                          | Body        | Behavior                                                                    |
+| ------ | ----------------------------- | ----------- | --------------------------------------------------------------------------- |
+| POST   | `/api/challenges`             | `{body}`    | Create challenge, run matcher, return challenge with `autoTrend`.           |
+| PATCH  | `/api/challenges/:id`         | `{trendId}` | Confirm/override trend; set `overridden` if changed.                        |
+| GET    | `/api/challenges/:id/matches` | —           | `{sameBoat[], beenThere[], cases[]}` for the challenge's trend (no emails). |
 
 ### Offer journey
 
-| Method | Path | Body | Behavior |
-|--------|------|------|----------|
-| GET | `/api/deck` | — | Next challenges to swipe (exclude own, exclude already-swiped). |
-| POST | `/api/swipe` | `{challengeId, action, note?}` | Record swipe; for `same_boat`/`been_there` also create a connection request (§connect). |
+| Method | Path         | Body                           | Behavior                                                                                |
+| ------ | ------------ | ------------------------------ | --------------------------------------------------------------------------------------- |
+| GET    | `/api/deck`  | —                              | Next challenges to swipe (exclude own, exclude already-swiped).                         |
+| POST   | `/api/swipe` | `{challengeId, action, note?}` | Record swipe; for `same_boat`/`been_there` also create a connection request (§connect). |
 
 ### Connections (double opt-in)
 
-| Method | Path | Body | Behavior |
-|--------|------|------|----------|
-| POST | `/api/connections` | `{targetId, challengeId?, kind, message?}` | Create pending request; notify target; **no email revealed**. |
-| GET | `/api/connections/incoming` | — | Pending requests addressed to me (for the cockpit). |
-| POST | `/api/connections/:id/accept` | — | Mark accepted; now both parties' emails are returned to each other. |
-| POST | `/api/connections/:id/decline` | — | Mark declined; emails stay private. |
-| GET | `/api/connections/:id/contact` | — | If accepted and I'm a party → the other member's email + prefilled mailto. Else 403. |
+| Method | Path                           | Body                                       | Behavior                                                                             |
+| ------ | ------------------------------ | ------------------------------------------ | ------------------------------------------------------------------------------------ |
+| POST   | `/api/connections`             | `{targetId, challengeId?, kind, message?}` | Create pending request; notify target; **no email revealed**.                        |
+| GET    | `/api/connections/incoming`    | —                                          | Pending requests addressed to me (for the cockpit).                                  |
+| POST   | `/api/connections/:id/accept`  | —                                          | Mark accepted; now both parties' emails are returned to each other.                  |
+| POST   | `/api/connections/:id/decline` | —                                          | Mark declined; emails stay private.                                                  |
+| GET    | `/api/connections/:id/contact` | —                                          | If accepted and I'm a party → the other member's email + prefilled mailto. Else 403. |
 
 ### Follow
 
-| Method | Path | Behavior |
-|--------|------|----------|
-| POST | `/api/follows/:trendId` | Follow a trend. |
-| DELETE | `/api/follows/:trendId` | Unfollow. |
-| GET | `/api/follows` | My followed trends. |
+| Method | Path                    | Behavior            |
+| ------ | ----------------------- | ------------------- |
+| POST   | `/api/follows/:trendId` | Follow a trend.     |
+| DELETE | `/api/follows/:trendId` | Unfollow.           |
+| GET    | `/api/follows`          | My followed trends. |
 
 ### Admin (permission-guarded, not role-name-guarded — R-ROLE-3)
 
-| Method | Path | Behavior |
-|--------|------|----------|
-| GET | `/admin/applicants` | List pending applicants with email, request time, and any name/org given (R-AUTH-11). *Requires `applicant:review`.* |
-| POST | `/admin/applicants/:id/approve` | Set `status='active'`, grant the `member` role, **and email a magic link** with the approval TTL (R-AUTH-10). *Requires `applicant:review`.* |
-| POST | `/admin/applicants/:id/reject` | Set `status='rejected'`. *Requires `applicant:review`.* |
-| POST | `/admin/whitelist` | Add email(s) as pre-approved active member(s) with the `member` role. *Requires `whitelist:manage`.* |
-| DELETE | `/admin/members/:id` | GDPR erasure: delete member + their challenges/requests. *Requires `member:delete`.* |
-| GET | `/admin/outbox` | Captured dev emails, newest first, magic links clickable. *Requires `outbox:read`.* **Dev only** — not registered in production (R-DEV-2,3). |
-| DELETE | `/admin/outbox` | Clear the dev outbox. **Dev only**. |
-| GET | `/admin/invites` | List invites with label, window, uses/cap, state, creator (R-INV-9). *Requires `invite:manage`.* |
-| POST | `/admin/invites` | Create an invite: `{label, validFrom, validUntil, maxUses}`. Returns the join URL once, for the QR (R-INV-9,10). *Requires `invite:manage`.* |
-| POST | `/admin/invites/:id/revoke` | Set `revoked_at`; effective on next use (R-INV-3). *Requires `invite:manage`.* |
+| Method | Path                            | Behavior                                                                                                                                     |
+| ------ | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/admin/applicants`             | List pending applicants with email, request time, and any name/org given (R-AUTH-11). _Requires `applicant:review`._                         |
+| POST   | `/admin/applicants/:id/approve` | Set `status='active'`, grant the `member` role, **and email a magic link** with the approval TTL (R-AUTH-10). _Requires `applicant:review`._ |
+| POST   | `/admin/applicants/:id/reject`  | Set `status='rejected'`. _Requires `applicant:review`._                                                                                      |
+| POST   | `/admin/whitelist`              | Add email(s) as pre-approved active member(s) with the `member` role. _Requires `whitelist:manage`._                                         |
+| DELETE | `/admin/members/:id`            | GDPR erasure: delete member + their challenges/requests. _Requires `member:delete`._                                                         |
+| GET    | `/admin/outbox`                 | Captured dev emails, newest first, magic links clickable. _Requires `outbox:read`._ **Dev only** — not registered in production (R-DEV-2,3). |
+| DELETE | `/admin/outbox`                 | Clear the dev outbox. **Dev only**.                                                                                                          |
+| GET    | `/admin/invites`                | List invites with label, window, uses/cap, state, creator (R-INV-9). _Requires `invite:manage`._                                             |
+| POST   | `/admin/invites`                | Create an invite: `{label, validFrom, validUntil, maxUses}`. Returns the join URL once, for the QR (R-INV-9,10). _Requires `invite:manage`._ |
+| POST   | `/admin/invites/:id/revoke`     | Set `revoked_at`; effective on next use (R-INV-3). _Requires `invite:manage`._                                                               |
 
 ---
 
@@ -457,30 +477,30 @@ someone, bookmark, or reload lives in a modal.
 Each screen is addressable; the server serves the SPA for any unmatched GET so a
 deep link reloads cleanly.
 
-| # | Screen | URL |
-|---|--------|-----|
-| S1 | **Login** — email field → "check your email" | `/login` |
-| S2 | **Magic-link landing** — token verify → routes onward | `/auth/verify?token=…` |
-| S3 | **Onboarding** — name + consent (first time only) | `/onboarding` |
-| S4 | **Welcome** — two doors: *Ask for help* / *Offer help* | `/welcome` |
-| S5 | **Submit challenge** — textarea + read-only example hints; disabled until the text passes `limits.challengeMinChars` | `/ask` |
-| S6 | **Domain / trend** — detected trend, "from → to", peer line, confirm | `/challenges/:id` |
-| S7 | **Trend picker** — all 8 trends, pick a different one *(was a sheet)* | `/challenges/:id/trend` |
-| S8 | **Matches (for my challenge)** — Same boat / Been there / Case studies; follow; connect | `/challenges/:id/matches` |
-| S9 | **Trend detail & case studies** — the trend's "from → to", peers, curated cases *(was a sheet)* | `/trends/:trendId` |
-| S10 | **Swipe deck** — card stack; Same boat / Been there / Follow / skip | `/offer` |
-| S11 | **"Been there" note** — write the ≥`limits.beenThereNoteMinChars` note for one card *(was a sheet)* | `/offer/:challengeId/note` |
-| S12 | **Connection request** — who, which challenge, optional message, send *(was a confirm modal)* | `/challenges/:challengeId/connect/:memberId` |
-| S13 | **Request sent** — "waiting for them", no contact detail | `/matches/requests/:id` (pending state) |
-| S14 | **Matches cockpit** — my challenge(s) with counts, incoming requests, followed trends | `/matches` |
-| S15 | **Incoming request** — the request with Accept / Decline *(was a cockpit modal)* | `/matches/requests/:id` |
-| S16 | **Contact exchanged** — the other member's email + prefilled mailto, accepted requests only *(was a modal)* | `/matches/requests/:id/contact` |
-| S17 | **Empty deck** — session summary + "submit your own challenge"; hosts the R-OFF-6 easter egg | `/offer/done` |
-| S18 | **Not found / no access** — generic, reveals nothing (R-NAV-8) | any unresolved path |
-| S19 | **Admin approvals** — applicant list with approve/reject | `/admin/applicants` |
-| S20 | **Admin outbox** *(dev only)* — captured emails with copyable magic links | `/admin/outbox` |
+| #   | Screen                                                                                                                                                                                      | URL                                                     |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| S1  | **Login** — email field → "check your email"                                                                                                                                                | `/login`                                                |
+| S2  | **Magic-link landing** — token verify → routes onward                                                                                                                                       | `/auth/verify?token=…`                                  |
+| S3  | **Onboarding** — name + consent (first time only)                                                                                                                                           | `/onboarding`                                           |
+| S4  | **Welcome** — two doors: _Ask for help_ / _Offer help_                                                                                                                                      | `/welcome`                                              |
+| S5  | **Submit challenge** — textarea + read-only example hints; disabled until the text passes `limits.challengeMinChars`                                                                        | `/ask`                                                  |
+| S6  | **Domain / trend** — detected trend, "from → to", peer line, confirm                                                                                                                        | `/challenges/:id`                                       |
+| S7  | **Trend picker** — all 8 trends, pick a different one _(was a sheet)_                                                                                                                       | `/challenges/:id/trend`                                 |
+| S8  | **Matches (for my challenge)** — Same boat / Been there / Case studies; follow; connect                                                                                                     | `/challenges/:id/matches`                               |
+| S9  | **Trend detail & case studies** — the trend's "from → to", peers, curated cases _(was a sheet)_                                                                                             | `/trends/:trendId`                                      |
+| S10 | **Swipe deck** — card stack; Same boat / Been there / Follow / skip                                                                                                                         | `/offer`                                                |
+| S11 | **"Been there" note** — write the ≥`limits.beenThereNoteMinChars` note for one card _(was a sheet)_                                                                                         | `/offer/:challengeId/note`                              |
+| S12 | **Connection request** — who, which challenge, optional message, send _(was a confirm modal)_                                                                                               | `/challenges/:challengeId/connect/:memberId`            |
+| S13 | **Request sent** — "waiting for them", no contact detail                                                                                                                                    | `/matches/requests/:id` (pending state)                 |
+| S14 | **Matches cockpit** — my challenge(s) with counts, incoming requests, followed trends                                                                                                       | `/matches`                                              |
+| S15 | **Incoming request** — the request with Accept / Decline _(was a cockpit modal)_                                                                                                            | `/matches/requests/:id`                                 |
+| S16 | **Contact exchanged** — the other member's email + prefilled mailto, accepted requests only _(was a modal)_                                                                                 | `/matches/requests/:id/contact`                         |
+| S17 | **Empty deck** — session summary + "submit your own challenge"; hosts the R-OFF-6 easter egg                                                                                                | `/offer/done`                                           |
+| S18 | **Not found / no access** — generic, reveals nothing (R-NAV-8)                                                                                                                              | any unresolved path                                     |
+| S19 | **Admin approvals** — applicant list with approve/reject                                                                                                                                    | `/admin/applicants`                                     |
+| S20 | **Admin outbox** _(dev only)_ — captured emails with copyable magic links                                                                                                                   | `/admin/outbox`                                         |
 | S21 | **Access requested** — what happens next, an optional name/org so the host can find them, and the "invitation link is not valid" notice when one was refused (R-AUTH-9, R-AUTH-12, R-INV-5) | `/access-requested`, `/access-requested?invite=invalid` |
-| S22 | **Admin invites** — invite links with label, window, uses/cap, state; create, revoke, and the join URL / QR to display (R-INV-9) | `/admin/invites` |
+| S22 | **Admin invites** — invite links with label, window, uses/cap, state; create, revoke, and the join URL / QR to display (R-INV-9)                                                            | `/admin/invites`                                        |
 
 Remaining overlays, deliberately: the "really decline this request?" confirm, the
 "link sent" / "copied" toasts, and the feedback action (a `mailto:`, not a
@@ -521,15 +541,19 @@ match fall back to a default trend. The member can always override.
 ```js
 // services/matcher.js
 function detectTrend(text, trends) {
-  const s = (text || '').toLowerCase();
-  let best = null, bestScore = 0;
+  const s = (text || '').toLowerCase()
+  let best = null,
+    bestScore = 0
   for (const t of trends) {
-    let score = 0;
-    for (const k of t.keywords.strong) if (s.includes(k)) score += 6;
-    for (const k of t.keywords.weak)   if (s.includes(k)) score += 1;
-    if (score > bestScore) { bestScore = score; best = t; }
+    let score = 0
+    for (const k of t.keywords.strong) if (s.includes(k)) score += 6
+    for (const k of t.keywords.weak) if (s.includes(k)) score += 1
+    if (score > bestScore) {
+      bestScore = score
+      best = t
+    }
   }
-  return best || trends.find(t => t.id === '06'); // default: Distributed Decision Making
+  return best || trends.find((t) => t.id === '06') // default: Distributed Decision Making
 }
 ```
 
@@ -545,10 +569,10 @@ fixtures. The profile is chosen by `SEED_PROFILE` (`dev` | `prod`), defaulting t
 `dev`; the seed runner **refuses to load `dev` fixtures when `NODE_ENV=production`**
 so fictional members can never reach the summit database.
 
-| Profile | Shared content (§6.1, §6.2) | Members / whitelist | Challenges |
-|---------|------------------------------|---------------------|------------|
-| `dev` | yes + roles | fictional roster from the prototype (§6.3), consent pre-accepted, one seeded `admin` | prototype example challenges (§6.3) |
-| `prod` | yes + roles | real invited-attendee whitelist, loaded from a private file (§6.4); named admins granted `admin` | the ~15 real collected challenges (§6.4) |
+| Profile | Shared content (§6.1, §6.2) | Members / whitelist                                                                              | Challenges                               |
+| ------- | --------------------------- | ------------------------------------------------------------------------------------------------ | ---------------------------------------- |
+| `dev`   | yes + roles                 | fictional roster from the prototype (§6.3), consent pre-accepted, one seeded `admin`             | prototype example challenges (§6.3)      |
+| `prod`  | yes + roles                 | real invited-attendee whitelist, loaded from a private file (§6.4); named admins granted `admin` | the ~15 real collected challenges (§6.4) |
 
 Suggested layout under `/src/seed`:
 
@@ -568,16 +592,16 @@ URL, member email) rather than duplicating rows.
 
 ### 6.1 The 8 trends
 
-| id | short | from | peers | strong keywords (weight 6) | weak keywords (weight 1) |
-|----|-------|------|------:|----------------------------|--------------------------|
-| 01 | Purpose & Values | Profit | 12 | purpose, values, mission statement, meaning | purpose, values, mission, meaning, culture fit, recruit, brand |
-| 02 | Network of Teams | Hierarchical Pyramid | 34 | org chart, shadow organi, shadow organis, middle management, network of teams, silo, reorg | structure, hierarch, circle, team, silo, reorg, pyramid, shadow, department |
-| 03 | Supportive Leadership | Directive Leadership | 27 | micromanag, leadership means, management position, coach, directive | leader, manager, boss, command, let go, supervisor |
-| 04 | Experiment & Adapt | Plan & Predict | 15 | budget cycle, annual budget, forecast, experiment, pilot, okr | budget, plan, forecast, experiment, pilot, agile, roadmap |
-| 05 | Freedom & Trust | Rules & Control | 21 | remote, hybrid, office days, vacation, working hours, four-day, approval | trust, freedom, rule, policy, autonom, control, hours |
-| 06 | Distributed Decision Making | Centralized Authority | 29 | who decides, who can decide, who actually can decide, decision-making, decision making, decision rights, mandate, advice process, consent | decision, decide, authority, mandate, consent, power, empower, escalat |
-| 07 | Radical Transparency | Secrecy | 18 | salary, salaries, pay model, compensation, remuneration, bonus, open book, transparen, wage | transparen, salary, pay, compensation, financial, secret, reward, bonus |
-| 08 | Talents & Mastery | Job Descriptions | 23 | performance review, peer feedback, job description, job title, appraisal, promotion, career path, talent | talent, job, review, feedback, career, promotion, development, mastery |
+| id  | short                       | from                  | peers | strong keywords (weight 6)                                                                                                                | weak keywords (weight 1)                                                    |
+| --- | --------------------------- | --------------------- | ----: | ----------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| 01  | Purpose & Values            | Profit                |    12 | purpose, values, mission statement, meaning                                                                                               | purpose, values, mission, meaning, culture fit, recruit, brand              |
+| 02  | Network of Teams            | Hierarchical Pyramid  |    34 | org chart, shadow organi, shadow organis, middle management, network of teams, silo, reorg                                                | structure, hierarch, circle, team, silo, reorg, pyramid, shadow, department |
+| 03  | Supportive Leadership       | Directive Leadership  |    27 | micromanag, leadership means, management position, coach, directive                                                                       | leader, manager, boss, command, let go, supervisor                          |
+| 04  | Experiment & Adapt          | Plan & Predict        |    15 | budget cycle, annual budget, forecast, experiment, pilot, okr                                                                             | budget, plan, forecast, experiment, pilot, agile, roadmap                   |
+| 05  | Freedom & Trust             | Rules & Control       |    21 | remote, hybrid, office days, vacation, working hours, four-day, approval                                                                  | trust, freedom, rule, policy, autonom, control, hours                       |
+| 06  | Distributed Decision Making | Centralized Authority |    29 | who decides, who can decide, who actually can decide, decision-making, decision making, decision rights, mandate, advice process, consent | decision, decide, authority, mandate, consent, power, empower, escalat      |
+| 07  | Radical Transparency        | Secrecy               |    18 | salary, salaries, pay model, compensation, remuneration, bonus, open book, transparen, wage                                               | transparen, salary, pay, compensation, financial, secret, reward, bonus     |
+| 08  | Talents & Mastery           | Job Descriptions      |    23 | performance review, peer feedback, job description, job title, appraisal, promotion, career path, talent                                  | talent, job, review, feedback, career, promotion, development, mastery      |
 
 Default/fallback trend when nothing scores: **06 — Distributed Decision Making**.
 
@@ -605,13 +629,13 @@ match/swipe cards): 01 Shared, 02 Frontier, 03 Frontier, 04 Solved, 05 Shared,
   (`matt-black-systems`) — every person a business unit.
 - **05 Freedom & Trust**: FOD Social Security (`frank-van-massenhove`) — nobody
   checks where you work · Happy Ltd (`here-are-4-ways-to-effectively-build-more-
-  trust-and-freedom-in-your-team`) · Ryzon (`ryzon-s-journey-to-a-4-day-work-
-  week`) — the four-day week.
+trust-and-freedom-in-your-team`) · Ryzon (`ryzon-s-journey-to-a-4-day-work-
+week`) — the four-day week.
 - **06 Distributed Decision Making**: Advice process (`advice-process`) · Morning
   Star (`morning-star`) — colleague letters of understanding · Decision mapping
   (`distribute-decision-making`) · Smarkets (`smarkets`) — decisions in the open.
 - **07 Radical Transparency**: Freitag (`freitag-we-have-radically-simplified-our-
-  salary-scales`) · Flat-org pay (`remuneration-method-for-flat-organizations`) ·
+salary-scales`) · Flat-org pay (`remuneration-method-for-flat-organizations`) ·
   Self-set salaries (`self-set-salaries`) · Semco (`semco`) — open books.
 - **08 Talents & Mastery**: Netflix (`annual-performance-reviews`) — killed the
   annual review · NextJump (`next-jump`) — continuous peer coaching · Spotify
@@ -649,8 +673,8 @@ Production starts with real content only — no fictional members, ever.
   (R-NFR-5).
 - **The ~15 real collected challenges** (`SEED_CHALLENGES_FILE`), each with its
   trend assignment, so the swipe deck and match lists are non-empty the moment
-  the first attendee scans the QR code. *(Meeting: "around 15 or so" real
-  challenges already came in.)*
+  the first attendee scans the QR code. _(Meeting: "around 15 or so" real
+  challenges already came in.)_
 - Whitelisted attendees are seeded as **not yet onboarded**: they still go
   through **F1** and **F2** themselves, which is what records their consent
   (R-ONB-3, R-NFR-6). The seed never pre-accepts consent on someone's behalf.
@@ -675,7 +699,7 @@ plan carries everything the beta needs:
 
 **EU residency setup — get this right the first time:**
 
-- Choose **EU Data Residency** when *creating* the project. The residency of a
+- Choose **EU Data Residency** when _creating_ the project. The residency of a
   project cannot be changed afterwards; a wrong choice means creating a new
   project and abandoning the old data.
 - Point every call at the EU endpoints, in both the client and server config —
@@ -683,6 +707,7 @@ plan carries everything the beta needs:
   the default US endpoints is stored in the US even for an EU project.
 
 Alternatives considered (kept only as fallbacks):
+
 - **PostHog** — comparable free tier with EU cloud and a self-host option. The
   fallback if Mixpanel's free-tier terms change before launch.
 - **Umami / Plausible** — privacy-friendly and free (self-host) but oriented to
@@ -696,18 +721,18 @@ Alternatives considered (kept only as fallbacks):
   or name.
 - Capture these events with non-identifying properties only:
 
-  | event | properties |
-  |-------|-----------|
-  | `login_completed` | — |
-  | `onboarding_completed` | `consent_version` |
-  | `journey_chosen` | `journey: ask\|offer` |
-  | `challenge_submitted` | `char_count` |
-  | `trend_assigned` | `trend_id`, `overridden: bool` |
-  | `swipe` | `action`, `trend_id` |
-  | `connection_requested` | `kind` |
-  | `connection_responded` | `status: accepted\|declined` |
-  | `feedback_opened` | `screen` |
-  | `invite_rejected` | `reason: unknown\|not_yet_valid\|expired\|revoked\|exhausted` |
+  | event                  | properties                                                    |
+  | ---------------------- | ------------------------------------------------------------- |
+  | `login_completed`      | —                                                             |
+  | `onboarding_completed` | `consent_version`                                             |
+  | `journey_chosen`       | `journey: ask\|offer`                                         |
+  | `challenge_submitted`  | `char_count`                                                  |
+  | `trend_assigned`       | `trend_id`, `overridden: bool`                                |
+  | `swipe`                | `action`, `trend_id`                                          |
+  | `connection_requested` | `kind`                                                        |
+  | `connection_responded` | `status: accepted\|declined`                                  |
+  | `feedback_opened`      | `screen`                                                      |
+  | `invite_rejected`      | `reason: unknown\|not_yet_valid\|expired\|revoked\|exhausted` |
 
 - **Never** send challenge `body`, member `name`, `email`, `org`.
 - Gate capture on analytics consent (R-ANA-4). Prefer server-side capture (the
@@ -768,9 +793,10 @@ branch rules are in ADR 0012 and `docs/constitution.md`.
 - **Lint/format:** `eslint` + `prettier`, plus the mechanical constitution rules
   (`import/no-cycle`, `complexity`, `no-console`, `no-warning-comments`).
 - **Commits:** `commitlint` with the Conventional Commits config.
-- **Hooks:** a pre-commit hook runs format, lint and typecheck on staged files; a
-  commit-msg hook runs commitlint. Same checks run again in CI — the hook is
-  speed, CI is the gate.
+- **Hooks:** a pre-commit hook formats and lints **staged files** (lint-staged)
+  and runs a **full** typecheck, since `tsc` is project-wide and cannot be
+  scoped to a few files; a commit-msg hook runs commitlint. The same checks run
+  again in CI — the hook is speed, CI is the gate.
 - **Coverage:** 80% global floor, 90% branch coverage on the R-QA-1 modules.
 
 `.github/workflows/ci.yml` — on `push` and `pull_request`:
@@ -785,10 +811,10 @@ services:
 steps:
   - npm ci
   - npm run lint
-  - npm run typecheck        # tsc --noEmit, strict (R-QA-1)
+  - npm run typecheck # tsc --noEmit, strict (R-QA-1)
   - npx commitlint --from origin/main --to HEAD
-  - npm run migrate          # migrations from scratch (R-QA-4)
-  - npm test                 # unit (R-QA-1)
+  - npm run migrate # migrations from scratch (R-QA-4)
+  - npm test # unit (R-QA-1)
   - npm run test:integration # API-level (R-QA-2)
   - npm run build
 ```

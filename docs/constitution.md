@@ -16,7 +16,7 @@ review as grounds to reject a change.
   their head is too big — aim for something reviewable in ten minutes.
 - **Conventional Commits**: `type(scope): subject`, imperative mood, ≤72 chars.
   Types: `feat`, `fix`, `refactor`, `test`, `docs`, `chore`, `perf`, `build`,
-  `ci`. The body explains *why*, not what the diff already shows.
+  `ci`. The body explains _why_, not what the diff already shows.
 - Every PR cites the requirement it serves (`R-ASK-3`, `R-CONN-6`, …) and, for a
   major decision, the ADR that authorized it.
 - **Never commit a change you have not run.** Tests pass locally before the
@@ -45,7 +45,7 @@ review as grounds to reject a change.
 ## 3. Comments and documentation
 
 - **No comments unless strictly necessary.** Necessary means: a non-obvious
-  *why*, a workaround with a link, a deliberate deviation from this document.
+  _why_, a workaround with a link, a deliberate deviation from this document.
 - **Never comment what the code says.** If a comment is needed to explain what a
   block does, extract it into a named function instead.
 - **One doc comment per exported function, class, or type — at most 300
@@ -141,18 +141,18 @@ addresses. A change that weakens one is rejected regardless of what it enables.
 Rules that run beat rules people remember. CI is the gate; the pre-commit hook
 is the fast feedback.
 
-| Rule | Enforced by |
-|------|-------------|
-| Commit message format | `commitlint` (hook + CI) |
-| Formatting | `prettier --check` (hook + CI) |
-| No commented-out code, no unlinked TODO | `eslint` (`no-warning-comments`, custom) |
-| Complexity and function length caps | `eslint` (`complexity`, `max-lines-per-function`) |
-| No circular imports | `eslint-plugin-import` (`import/no-cycle`) |
-| No `console` in server code | `eslint` (`no-console`) |
-| Type safety | `tsc --noEmit`, strict mode, no implicit `any` |
-| Tests pass, coverage floor | `vitest run --coverage` in CI |
-| Migrations from scratch | CI job against a disposable MySQL |
-| Secrets absent | CI uses synthetic config only; secret scanning on push |
+| Rule                                    | Enforced by                                            |
+| --------------------------------------- | ------------------------------------------------------ |
+| Commit message format                   | `commitlint` (hook + CI)                               |
+| Formatting                              | `prettier --check` (hook + CI)                         |
+| No commented-out code, no unlinked TODO | `eslint` (`no-warning-comments`, custom)               |
+| Complexity and function length caps     | `eslint` (`complexity`, `max-lines-per-function`)      |
+| No circular imports                     | `eslint-plugin-import` (`import/no-cycle`)             |
+| No `console` in server code             | `eslint` (`no-console`)                                |
+| Type safety                             | `tsc --noEmit`, strict mode, no implicit `any`         |
+| Tests pass, coverage floor              | `vitest run --coverage` in CI                          |
+| Migrations from scratch                 | CI job against a disposable MySQL                      |
+| Secrets absent                          | CI uses synthetic config only; secret scanning on push |
 
 Enforced by **review**, because no linter can judge them: change size, comment
 necessity, the 300-character limit, naming, the privacy rules in §5, and whether
@@ -160,4 +160,4 @@ an abstraction earned its place.
 
 ---
 
-*Last reviewed 2026-10-02. Amendments require an ADR.*
+_Last reviewed 2026-10-02. Amendments require an ADR._

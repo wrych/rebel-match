@@ -30,7 +30,7 @@ onboarding says so in those words.
 ## Consequences
 
 - The privacy cornerstone of the product, and the hardest rule in the codebase:
-  the contact endpoint checks accepted-status *and* party membership on every
+  the contact endpoint checks accepted-status _and_ party membership on every
   read, and an unauthorized read returns not-found rather than forbidden.
 - Connections are slower than a `mailto:`, which is the intended trade.
 - Needs its own notification path, which is what makes deep links worth having

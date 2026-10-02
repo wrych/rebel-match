@@ -73,17 +73,17 @@ Conventions:
 
 **Branches**
 
-- *Email not on the whitelist, no invite* → **F4**: recorded as an applicant, an
+- _Email not on the whitelist, no invite_ → **F4**: recorded as an applicant, an
   admin is notified, and they land on the access-requested screen (R-AUTH-2).
-- *Email not on the whitelist, but the QR carried a valid invite* → **F15**: they
+- _Email not on the whitelist, but the QR carried a valid invite_ → **F15**: they
   are admitted straight away and never see the queue (R-INV-1).
-- *Link expired, already used, or unknown* → error screen with a "send me a new
+- _Link expired, already used, or unknown_ → error screen with a "send me a new
   link" action, returning to step 3 (R-AUTH-6).
-- *Email is slow to arrive* → the "check your email" state offers resend after a
+- _Email is slow to arrive_ → the "check your email" state offers resend after a
   short delay. Delivery is inside the R-NFR-3 budget and should land within 30 s.
-- *Member already has a valid session* (returning during the same summit) → skip
+- _Member already has a valid session_ (returning during the same summit) → skip
   to **F3**; this is the common case after the first break (R-AUTH-7).
-- *Rate limiting* — repeated link requests for the same address are throttled
+- _Rate limiting_ — repeated link requests for the same address are throttled
   (design §8) without changing the on-screen state.
 
 ---
@@ -111,10 +111,10 @@ Conventions:
 
 **Branches**
 
-- *Name empty* → submit stays disabled.
-- *Consent not accepted* → submit stays disabled; the app remains blocked
+- _Name empty_ → submit stays disabled.
+- _Consent not accepted_ → submit stays disabled; the app remains blocked
   (R-ONB-4).
-- *Consent version has since changed* → on a later visit the consent is
+- _Consent version has since changed_ → on a later visit the consent is
   re-presented and must be re-accepted before the app opens again (R-ONB-4).
 
 ---
@@ -148,7 +148,7 @@ queue. Everything after the approval is built to cost zero extra steps.
    contain your login link**. No false "check your email" — there is nothing in
    their inbox yet, and saying so prevents the refresh-and-wait loop (R-AUTH-9).
 4. IF they arrived with an invite that was refused, **S21** carries a notice above
-   that message — *"this invitation link isn't valid right now"* — and the URL
+   that message — _"this invitation link isn't valid right now"_ — and the URL
    becomes `/access-requested?invite=invalid`, so a reload keeps it. The notice
    never replaces the primary message, and it never says which control refused the
    link (R-INV-5).
@@ -162,15 +162,15 @@ queue. Everything after the approval is built to cost zero extra steps.
 
 **Branches**
 
-- *Approval link expired* (issued without being asked for, so it lives 24 hours
+- _Approval link expired_ (issued without being asked for, so it lives 24 hours
   rather than 15 minutes) → the normal expired-link screen with a resend, never a
   dead end (R-AUTH-6, R-AUTH-10).
-- *Applicant requests access again while pending* → same screen, no duplicate
+- _Applicant requests access again while pending_ → same screen, no duplicate
   applicant, and the admin notification is not repeated.
-- *The host finds them first* → the pending list carries the email, request time,
+- _The host finds them first_ → the pending list carries the email, request time,
   and any name given, so a host can approve on the spot and the link arrives
   while the two of them are standing there (R-AUTH-11, **F10**).
-- *Already-whitelisted address typed here* → that is **F1**, not this flow; the
+- _Already-whitelisted address typed here_ → that is **F1**, not this flow; the
   two states are deliberately different screens (R-AUTH-4, ADR 0013).
 
 ---
@@ -201,9 +201,9 @@ my challenge.
 
 **Branches**
 
-- *No peers yet* (early at the summit) → the case studies still render, so the
+- _No peers yet_ (early at the summit) → the case studies still render, so the
   screen is never empty.
-- *Matcher finds no keyword hit* → fall back to the lowest-confidence trend and
+- _Matcher finds no keyword hit_ → fall back to the lowest-confidence trend and
   rely on the member's override in step 6 (design §5).
 
 ---
@@ -226,12 +226,12 @@ my challenge.
 
 **Branches**
 
-- *Deck empty / exhausted* → **S17** (`/offer/done`) summarizes the session and
+- _Deck empty / exhausted_ → **S17** (`/offer/done`) summarizes the session and
   points at Ask for help (R-OFF-5).
-- *One more swipe on the empty state* → the **"Trend 0 — Trust"** easter egg card
-  appears (*from Rules → to Trust · peers: everyone in the room*). It records
+- _One more swipe on the empty state_ → the **"Trend 0 — Trust"** easter egg card
+  appears (_from Rules → to Trust · peers: everyone in the room_). It records
   nothing, connects to no one, and dismisses back to the empty state (R-OFF-6).
-- *Already swiped that challenge* → it never reappears in the deck (R-OFF-2).
+- _Already swiped that challenge_ → it never reappears in the deck (R-OFF-2).
 
 ---
 
@@ -255,7 +255,7 @@ before both sides agree.**
    That email carries no challenge text and no address (R-NAV-9).
 5. Target chooses:
    - **Accept** → `POST /api/connections/:id/accept`. The request becomes
-     accepted and *both* parties may now read the other's email via
+     accepted and _both_ parties may now read the other's email via
      **S16** (`/matches/requests/:id/contact`), which also offers a prefilled
      `mailto:` (R-CONN-3, R-CONN-6).
    - **Decline** → `POST /api/connections/:id/decline`. Emails stay private on
@@ -264,11 +264,11 @@ before both sides agree.**
 
 **Branches**
 
-- *Duplicate request* to the same person for the same challenge → blocked, the
+- _Duplicate request_ to the same person for the same challenge → blocked, the
   existing request is surfaced instead (R-CONN-5).
-- *Contact read while still pending or declined, or by a third party* → `403`.
+- _Contact read while still pending or declined, or by a third party_ → `403`.
   Authorization is checked on every contact read (R-CONN-6, R-NFR-1, design §8).
-- *Target never responds* → the request simply stays pending; nothing is
+- _Target never responds_ → the request simply stays pending; nothing is
   revealed.
 
 ---
@@ -311,9 +311,9 @@ before both sides agree.**
 
 **Branches**
 
-- *Approving during a break* → the link is in their inbox before the
+- _Approving during a break_ → the link is in their inbox before the
   conversation ends, which is the whole point of R-AUTH-10.
-- *Rejected applicant tries again* → they are recorded as rejected and cannot
+- _Rejected applicant tries again_ → they are recorded as rejected and cannot
   log in; re-admitting them is a deliberate admin action (R-AUTH-3).
 
 ---
@@ -351,11 +351,11 @@ front door (R-NAV-1..10).
 
 **Branches**
 
-- *`next` is an absolute or external URL, or an unknown route* → ignored, member
+- _`next` is an absolute or external URL, or an unknown route_ → ignored, member
   goes to `/` (R-NAV-6). No open redirect.
-- *Member is not a party to the linked challenge or request* → generic
+- _Member is not a party to the linked challenge or request_ → generic
   not-found; the app does not confirm the row exists (R-NAV-8).
-- *Link forwarded to someone else* → it is just a URL; it grants nothing. The
+- _Link forwarded to someone else_ → it is just a URL; it grants nothing. The
   recipient still needs their own session, and the authorization check in the
   branch above applies.
 
@@ -377,9 +377,9 @@ has this screen (R-DEV-3).
 
 **Branches**
 
-- *Outbox requested in production* → not found, so live magic links are never
+- _Outbox requested in production_ → not found, so live magic links are never
   browsable (R-DEV-3).
-- *Outbox full of old messages* → `DELETE /admin/outbox` clears it.
+- _Outbox full of old messages_ → `DELETE /admin/outbox` clears it.
 
 ---
 
@@ -407,18 +407,18 @@ they wait for a human (**F4**).
 
 **Branches**
 
-- *Token unknown, expired, not yet valid, revoked, or at its cap* → the request
+- _Token unknown, expired, not yet valid, revoked, or at its cap_ → the request
   continues as an ordinary one: recorded as an applicant, admin notified, and they
   land on **S21** (`/access-requested?invite=invalid`) with a notice at the top —
-  *"this invitation link isn't valid right now"* — above the usual message that
+  _"this invitation link isn't valid right now"_ — above the usual message that
   someone will approve them and the email will carry their link. One wording for
   every case, since the next step is the same; never an error dead end, because
   the QR is printed and the person is holding a phone (R-INV-5, **F4**).
-- *Scanner is already whitelisted* → ordinary **F1**; the invite is ignored and no
+- _Scanner is already whitelisted_ → ordinary **F1**; the invite is ignored and no
   use is consumed.
-- *Scanner already has an account* → ordinary **F1** login. No new member, so
+- _Scanner already has an account_ → ordinary **F1** login. No new member, so
   `uses` does not increment and a typo cannot burn a seat.
-- *Link escapes the room* (photographed, shared, posted) → this is expected, not a
+- _Link escapes the room_ (photographed, shared, posted) → this is expected, not a
   breach: the window, the cap and revocation are the controls. A host who sees
   unexpected signups revokes the invite in **F16**, and the next scan falls to
   **F4**.
@@ -444,17 +444,16 @@ they wait for a human (**F4**).
 
 **Branches**
 
-- *Window ends mid-session* → the invite goes inert on its own; scans fall to
+- _Window ends mid-session_ → the invite goes inert on its own; scans fall to
   **F4**. Extending means creating a new invite, which is deliberate: an invite's
   window is a promise, not a setting to nudge.
-- *Cap reached with people still queuing* → raise it by creating a second invite,
+- _Cap reached with people still queuing_ → raise it by creating a second invite,
   or approve the stragglers through **F10**.
 
 ---
 
-
 Each flow emits events under a **pseudonymous** member id, and never carries
 challenge text, names, or email addresses (R-ANA-1, R-ANA-2, R-ANA-3). Capture is
 gated on the consent recorded in **F2** (R-ANA-4). The funnel that matters for
-R-NFR-3 is F1 → F2: *link requested → link opened → onboarding submitted*, with
+R-NFR-3 is F1 → F2: _link requested → link opened → onboarding submitted_, with
 timestamps to confirm the 2-minute budget holds on real conference wifi.
