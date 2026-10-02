@@ -36,21 +36,30 @@ MySQL**, single-page mobile-first client served by the Node app.
 ### Suggested layout
 
 ```
-/server
-  app.js                 Express app + middleware
-  db.js                  mysql2 connection pool
-  config.js              env-driven config
-  auth/                  THE AUTH SEAM (ADR 0015) — tokens, sessions, nothing else
-                         knows how a member proves who they are
+/src                     server (TypeScript, ESM)
+  app.ts                 Express app + middleware
+  db.ts                  mysql2 connection pool
+  config.ts              env-driven config (§Configuration)
+  routes.ts              THE SHARED ROUTE TABLE (ADR 0017) — imported by the
+                         client router and by the server's `next` validator
+  auth/                  THE AUTH SEAM (ADR 0015) — tokens, sessions, nothing
+                         else knows how a member proves who they are
   routes/                auth, challenges, matches, swipe, connections, admin
   services/
-    mailer.js            SMTP (nodemailer) — the team's own SMTP server, env-configured
-    matcher.js           keyword trend detection (§5)
-    analytics.js         Mixpanel server-side capture
+    mailer.ts            records to the outbound log, then delivers per
+                         `mail.delivery` (§Mail delivery)
+    matcher.ts           keyword trend detection (§5)
+    analytics.ts         Mixpanel server-side capture
   seed/                  profile-based fixtures (§6): shared / dev / prod
-/migrations              SQL schema migrations
-/client                  SPA (or server-rendered templates)
+/migrations              SQL schema migrations, forward-only
+/client                  Vue 3 SPA (Vite, TypeScript, vue-router) — ADR 0017
+  main.ts                app + router mount
+  router.ts              routes built from /src/routes.ts
+  guards.ts              session / onboarding / permission guards, pure where
+                         possible so R-QA-1 can test them without a browser
+  screens/               one component per screen in §4
 /specs                   this spec
+/docs                    constitution + ADRs
 ```
 
 ### Configuration (`config.js`)
@@ -118,11 +127,16 @@ whether it then leaves the machine (R-DEV-4).
 
 ### Key libraries
 
-- **TypeScript** (strict, ADR 0011). `express`, `mysql2` (promise pool),
-  `nodemailer`, `cookie-session` or
-  `express-session` (store in MySQL), `zod` for boundary validation,
-  `mixpanel` (Node server events) + `mixpanel-browser` (client events), both
-  configured against the EU endpoints.
+**Server** — **TypeScript** (strict, ADR 0011), `express`, `mysql2` (promise
+pool), `nodemailer`, `express-session` with a MySQL store, `zod` for boundary
+validation, `mixpanel` for server-side capture against the EU endpoint.
+
+**Client** (ADR 0017) — **Vue 3** (Composition API) with `vue-router` in history
+mode, built by **Vite**, `mixpanel-browser` for UI events. Tests use
+`@vue/test-utils` with jsdom.
+
+Two builds: `tsc` for the server, Vite for the client. The Vite dev server
+proxies `/api` and `/auth` to Node.
 
 ---
 
@@ -547,22 +561,36 @@ toggle, "nominate as frontier".
 
 ### Routing rules
 
-- **Deep link while signed out** → remember the path, show `/login`, and after
-  `/auth/verify` continue to the remembered path (R-NAV-5). The path travels as a
-  `next` query parameter on `/auth/request-link` and on the emailed link.
-- **`next` validation** — accept only a path starting with a single `/` and
-  matching the known route table; anything else (absolute URL, `//host`,
-  unknown route) falls back to `/` (R-NAV-6).
-- **Onboarding wins** — if name/consent are missing, `/onboarding` is rendered
-  first and `next` is carried through it (R-NAV-7).
-- **Authorization before rendering** — `/challenges/:id*` and
-  `/matches/requests/:id` resolve through the same ownership checks as the API;
-  a non-party gets the generic not-found screen, never a "forbidden" that
-  confirms the row exists (R-NAV-8).
+The app is a Vue SPA (ADR 0017), so these rules exist on **both** sides: as
+`vue-router` guards, and as server checks that hold regardless. **One route table**
+(`src/routes.ts`) is imported by the client router and by the server's `next`
+validator, so neither side can develop a private opinion about which paths exist.
+
+- **The server is the authority.** Guards are a courtesy — they stop a flash of the
+  wrong screen. Every `/api/*` request re-checks session, onboarding and permission
+  on its own (R-ROLE-5). A guard that is the only thing protecting data is a defect.
+- **Deep link while signed out** → the client remembers the path, routes to
+  `/login`, and sends it as `next` on `POST /auth/request-link`. It travels on the
+  emailed link, and `GET /auth/verify` redirects there after the session exists
+  (R-NAV-5).
+- **`next` validation happens on the server**, because it arrives in an email:
+  accept only a path starting with a single `/` and present in the route table;
+  anything else (absolute URL, `//host`, unknown path) falls back to `/`
+  (R-NAV-6). The client refuses to navigate anywhere not in the table either.
+- **Onboarding wins** — a guard sends an un-onboarded member to `/onboarding` and
+  carries `next` through it; the server independently refuses every other `/api/*`
+  route until onboarding is complete (R-NAV-7, R-ONB-1).
+- **Authorization before rendering** — a screen for a challenge or request fetches
+  it first. The API answers `404` for anything the caller may not see, never `403`,
+  so the client renders the not-found screen without ever learning the row exists
+  (R-NAV-8).
+- **The shell** is served `200` for any in-table path; unknown paths render the
+  client's not-found screen.
 - **Email links** point at `/matches/requests/:id` (incoming request) or
   `/matches`; never at a contact detail (R-NAV-9).
-- The **QR code** encodes the app root, optionally `/?src=summit-qr` for the
-  analytics funnel (R-NAV-10, R-ANA-3 — no identifying data in the parameter).
+- The **QR code** encodes the app root, optionally with `?src=summit-qr` for the
+  analytics funnel and `?invite=…` for auto-approval (R-NAV-10, R-INV-1; R-ANA-3 —
+  no identifying data in either parameter).
 
 ---
 
@@ -826,7 +854,11 @@ branch rules are in ADR 0012 and `docs/constitution.md`.
 - **Integration tests:** `supertest` against the Express app with a disposable
   MySQL (the CI service container below) and `mail.delivery=none`, so the auth flow
   is testable without sending mail — the outbox doubles as the test mailbox.
-- **Types:** `tsc --noEmit`, `strict: true`, no implicit `any`.
+- **Types:** `tsc --noEmit`, `strict: true`, no implicit `any`, across server and
+  client.
+- **Component tests:** `@vue/test-utils` with jsdom for screens; the routing
+  guards are written as pure functions so the deep-link rules (R-NAV-5..8) are
+  unit-tested without a browser (ADR 0017).
 - **Lint/format:** `eslint` + `prettier`, plus the mechanical constitution rules
   (`import/no-cycle`, `complexity`, `no-console`, `no-warning-comments`).
 - **Commits:** `commitlint` with the Conventional Commits config.
@@ -853,7 +885,7 @@ steps:
   - npm run migrate # migrations from scratch (R-QA-4)
   - npm test # unit (R-QA-1)
   - npm run test:integration # API-level (R-QA-2)
-  - npm run build
+  - npm run build # server (tsc) + client (vite) — ADR 0017
 ```
 
 - The workflow uses synthetic env only: a throwaway `SESSION_SECRET`,

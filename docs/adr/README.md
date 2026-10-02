@@ -35,21 +35,22 @@ still holds except where the later ADR says otherwise.
 
 ## Index
 
-| #                                                      | Decision                                                  | Status                    |
-| ------------------------------------------------------ | --------------------------------------------------------- | ------------------------- |
-| [0001](0001-record-architecture-decisions.md)          | Record architecture decisions                             | Accepted                  |
-| [0002](0002-node-express-mysql.md)                     | Node.js, Express and MySQL                                | Accepted                  |
-| [0003](0003-passwordless-magic-link-auth.md)           | Passwordless magic-link auth over a whitelist             | Accepted                  |
-| [0004](0004-double-opt-in-contact-exchange.md)         | Double opt-in before any contact detail is shared         | Accepted                  |
-| [0005](0005-mixpanel-eu-residency.md)                  | Mixpanel with EU data residency for analytics             | Accepted                  |
-| [0006](0006-role-based-access-control.md)              | Role-based access control instead of an is_admin flag     | Accepted                  |
-| [0007](0007-addressable-screens-not-modals.md)         | Addressable screens instead of modals                     | Accepted                  |
-| [0008](0008-own-smtp-with-dev-outbox.md)               | Own SMTP server, with a no-send outbox in development     | Accepted, amended by 0016 |
-| [0009](0009-per-environment-seed-profiles.md)          | Per-environment seed profiles                             | Accepted                  |
-| [0010](0010-keyword-trend-matching-for-beta.md)        | Keyword-based trend matching for the beta                 | Accepted                  |
-| [0011](0011-typescript-strict.md)                      | TypeScript in strict mode                                 | Accepted                  |
-| [0012](0012-conventional-commits-one-change-per-pr.md) | Conventional Commits, one change per pull request         | Accepted                  |
-| [0013](0013-tell-applicants-their-status.md)           | Tell applicants their status, accepting email enumeration | Accepted                  |
-| [0014](0014-qr-invite-tokens.md)                       | Invite tokens in the QR code, auto-approving the scanner  | Accepted                  |
-| [0015](0015-own-auth-behind-a-narrow-seam.md)          | Build authentication in-app, behind a narrow seam         | Accepted                  |
-| [0016](0016-outbound-message-log.md)                   | Record every outbound message, in every environment       | Accepted                  |
+| #                                                      | Decision                                                    | Status                    |
+| ------------------------------------------------------ | ----------------------------------------------------------- | ------------------------- |
+| [0001](0001-record-architecture-decisions.md)          | Record architecture decisions                               | Accepted                  |
+| [0002](0002-node-express-mysql.md)                     | Node.js, Express and MySQL                                  | Accepted                  |
+| [0003](0003-passwordless-magic-link-auth.md)           | Passwordless magic-link auth over a whitelist               | Accepted                  |
+| [0004](0004-double-opt-in-contact-exchange.md)         | Double opt-in before any contact detail is shared           | Accepted                  |
+| [0005](0005-mixpanel-eu-residency.md)                  | Mixpanel with EU data residency for analytics               | Accepted                  |
+| [0006](0006-role-based-access-control.md)              | Role-based access control instead of an is_admin flag       | Accepted                  |
+| [0007](0007-addressable-screens-not-modals.md)         | Addressable screens instead of modals                       | Accepted                  |
+| [0008](0008-own-smtp-with-dev-outbox.md)               | Own SMTP server, with a no-send outbox in development       | Accepted, amended by 0016 |
+| [0009](0009-per-environment-seed-profiles.md)          | Per-environment seed profiles                               | Accepted                  |
+| [0010](0010-keyword-trend-matching-for-beta.md)        | Keyword-based trend matching for the beta                   | Accepted                  |
+| [0011](0011-typescript-strict.md)                      | TypeScript in strict mode                                   | Accepted                  |
+| [0012](0012-conventional-commits-one-change-per-pr.md) | Conventional Commits, one change per pull request           | Accepted                  |
+| [0013](0013-tell-applicants-their-status.md)           | Tell applicants their status, accepting email enumeration   | Accepted                  |
+| [0014](0014-qr-invite-tokens.md)                       | Invite tokens in the QR code, auto-approving the scanner    | Accepted                  |
+| [0015](0015-own-auth-behind-a-narrow-seam.md)          | Build authentication in-app, behind a narrow seam           | Accepted                  |
+| [0016](0016-outbound-message-log.md)                   | Record every outbound message, in every environment         | Accepted                  |
+| [0017](0017-vue-spa-with-a-shared-route-table.md)      | A Vue SPA, with one route table shared by client and server | Accepted                  |
