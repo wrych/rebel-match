@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { fetchConfig } from '../api'
+import { fetchConfig } from '../lib/api'
 
 const email = ref('')
 const consentVersion = ref<string | null>(null)
