@@ -81,7 +81,7 @@ thresholds have sane defaults in the file and may be overridden by env.
 | `limits.outboxRetentionDays`   | `90`                          | R-MSG-6                   |
 | `seed.profile`                 | `dev` \| `prod`               | R-SEED-4                  |
 | `analytics.apiHost`            | `api-eu.mixpanel.com`         | R-ANA-5                   |
-| `permissions`                  | role → permission matrix (§2) | R-ROLE-3, R-ROLE-6        |
+| `rolePermissions`              | role → permission matrix (§2) | R-ROLE-3, R-ROLE-6        |
 
 - `GET /api/config` returns the **client-relevant subset** (`limits`,
   `consent.currentVersion`) so the submit button, the note counter, and the
@@ -241,12 +241,15 @@ CREATE TABLE member_roles (
   added later as a row plus a permission-matrix entry — **no schema change, no new
   column, no `is_*` flags** (R-ROLE-1, R-ROLE-6).
 
-**Permissions live in config, not in the database** (`config.permissions`), so the
-grants are reviewable in version control:
+**Permissions live in config, not in the database** (`config.rolePermissions`),
+so the grants are reviewable in version control. They are read through a
+**`PermissionPolicy`** (ADR 0021), so moving the matrix into the database later
+is one new implementation, with no guard touched:
 
 | Permission                                   | `member` | `admin` | (future) `moderator` |
 | -------------------------------------------- | :------: | :-----: | :------------------: |
-| `challenge:create` / `swipe` / `connect`     |    ✅    |   ✅    |          ✅          |
+| `challenge:create` / `challenge:swipe`       |    ✅    |   ✅    |          ✅          |
+| `connection:request`                         |    ✅    |   ✅    |          ✅          |
 | `applicant:review` (approve / reject)        |    —     |   ✅    |          ✅          |
 | `whitelist:manage`                           |    —     |   ✅    |          —           |
 | `member:delete` (GDPR erasure)               |    —     |   ✅    |          —           |
@@ -856,9 +859,11 @@ Alternatives considered (kept only as fallbacks):
   a party or owner. Contact endpoint returns an email **only** for an accepted
   request where the caller is one of the two members.
 - Authorization is **permission-based**: one `requirePermission('…')` middleware
-  resolves the caller's roles → permissions from `config.permissions`. No route
-  tests a role name, so a new role (e.g. `moderator`) cannot silently inherit or
-  miss access (R-ROLE-3, R-ROLE-5).
+  checks the caller's permissions, resolved from their roles through the
+  `PermissionPolicy` (ADR 0021). No route tests a role name, so a new role (e.g.
+  `moderator`) cannot silently inherit or miss access (R-ROLE-3, R-ROLE-5).
+  Nobody signed in gets `401`; a member without the permission gets `404`, as if
+  the route did not exist — not found, never forbidden (R-NAV-8).
 - Role grants are recorded with `granted_at` / `granted_by` for audit (R-ROLE-7).
 - Deep links are not a capability: `next` is validated as a known in-app path
   (R-NAV-6) and the target screen still runs the same ownership checks as its API

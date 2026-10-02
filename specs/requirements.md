@@ -66,6 +66,9 @@ Requirements:
 - **R-ROLE-8** — The term "role" in the data model SHALL refer to access roles
   only. A member's **job title** is profile data and SHALL be named distinctly
   (`job_title`) to avoid the collision.
+- **R-ROLE-10 (Permission names)** — Permissions SHALL be named
+  `resource:action` (`challenge:swipe`, `outbox:read`), so a name says what it
+  guards.
 
 ---
 
