@@ -23,7 +23,16 @@ export interface OutboxFilter {
   limit: number
 }
 
-/** Reading the outbound message log. */
+/** Reading and ageing out the outbound message log. */
 export interface OutboxLog {
   list(filter: OutboxFilter): Promise<OutboxRow[]>
+  /** Deletes entries created before `cutoff`; returns how many went. */
+  purgeBefore(cutoff: Date): Promise<number>
+}
+
+const MS_PER_DAY = 86_400_000
+
+/** The oldest moment an entry may have been created and still be kept. */
+export function retentionCutoff(now: Date, retentionDays: number): Date {
+  return new Date(now.getTime() - retentionDays * MS_PER_DAY)
 }

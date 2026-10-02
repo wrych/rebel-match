@@ -1,4 +1,4 @@
-import type { RowDataPacket } from 'mysql2/promise'
+import type { ResultSetHeader, RowDataPacket } from 'mysql2/promise'
 import type { Pool } from '../db.js'
 import type { OutboxKind } from './mailer.js'
 import type { OutboxLog, OutboxRow, OutboxStatus } from './outbox-log.js'
@@ -34,6 +34,13 @@ export function createMysqlOutboxLog(pool: Pool): OutboxLog {
         ],
       )
       return rows.map(toRow)
+    },
+    purgeBefore: async (cutoff) => {
+      const [result] = await pool.query<ResultSetHeader>(
+        'DELETE FROM outbox WHERE created_at < ?',
+        [cutoff],
+      )
+      return result.affectedRows
     },
   }
 }

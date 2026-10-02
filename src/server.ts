@@ -7,6 +7,7 @@ import { createPool } from './db.js'
 import { configPolicy } from './permissions.js'
 import { createMysqlMemberProfiles } from './services/member-profiles.js'
 import { createMysqlOutboxLog } from './services/outbox-log-store.js'
+import { startOutboxRetention } from './services/outbox-retention.js'
 import { createMysqlRoleGrantStore } from './services/role-grant-store.js'
 import { createRoleService } from './services/roles.js'
 
@@ -19,6 +20,15 @@ const roles = createRoleService({
   policy: configPolicy,
 })
 const outbox = createMysqlOutboxLog(pool)
+
+startOutboxRetention({
+  log: outbox,
+  retentionDays: config.limits.outboxRetentionDays,
+  intervalHours: config.outboxPurgeIntervalHours,
+  onError: () => {
+    console.warn('outbox retention: purge failed, will retry next interval')
+  },
+})
 
 createApp({ config, pool, auth, profiles, roles, outbox }).listen(
   config.port,
