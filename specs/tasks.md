@@ -27,8 +27,10 @@ User journeys are in `flows.md` (`F1`…`F14`).
       integration steps. _(design §1, R-QA-2,4)_
 - [ ] Permission middleware `requirePermission(...)` + role resolver (union of
       roles, no role-name checks anywhere). _(R-ROLE-2,3,5)_
-- [ ] Seed runner with `SEED_PROFILE`, dev-in-prod guard, idempotent upserts;
-      shared seed = roles + trends + cases. _(R-SEED-1,4,7)_
+- [x] Seed runner with `SEED_PROFILE`, dev-in-prod guard, idempotent upserts;
+      roles, the dev roster and the dev admin. _(R-SEED-1,2,4,7, R-DEV-6)_
+- [ ] Seed trends, cases and the dev challenges and notes, with the tables
+      they need (M2). _(R-SEED-1,2)_
 - [x] Vue 3 + Vite + vue-router scaffold; the shared route table in
       `src/routes.ts` with `safeNextPath` for the server validator; login and
       not-found screens. _(R-NAV-1,6, ADR 0017)_

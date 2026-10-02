@@ -21,6 +21,8 @@ export default defineConfig({
         'src/server.ts',
         'src/db.ts',
         'src/migrate.ts',
+        'src/seed.ts',
+        'src/seed/run.ts',
         'src/migrations/run.ts',
         'src/auth/mysql-store.ts',
         'client/main.ts',

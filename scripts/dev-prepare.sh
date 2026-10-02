@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-# Brings the development database up and migrates it before `npm run dev`.
+# Brings the development database up, migrates and seeds it before `npm run dev`.
 #
 # A missing Docker daemon is not a failure: the server still starts, /api/health
 # reports the database as down, and every screen that does not need it works. A
@@ -18,7 +18,7 @@ if ! docker compose version >/dev/null 2>&1 || ! docker info >/dev/null 2>&1; th
     dockerd in WSL   sudo service docker start
     no Docker        install mysql-server and point DATABASE_URL at it
 
-  Then: npm run db:up && npm run migrate
+  Then: npm run db:up && npm run migrate && npm run seed
 
 MSG
   exit 0
@@ -26,3 +26,4 @@ fi
 
 docker compose up -d --wait mysql
 npm run migrate
+npm run seed
