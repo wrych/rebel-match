@@ -3,7 +3,7 @@ import type { RowDataPacket } from 'mysql2/promise'
 import request from 'supertest'
 import { createApp } from '../../src/app.js'
 import type { AuthProvider } from '../../src/auth/index.js'
-import { composeAuth } from '../../src/compose.js'
+import { composeAuth, composeMailer } from '../../src/compose.js'
 import { loadConfig } from '../../src/config.js'
 import { createPool, type Pool } from '../../src/db.js'
 import { migrate } from '../../src/migrations/run.js'
@@ -47,7 +47,7 @@ beforeAll(async () => {
   await migrate(databaseUrl, 'migrations')
   pool = createPool(config)
   await applySeed(pool, planSeed(config), config.consentVersion)
-  auth = composeAuth(config, pool)
+  auth = composeAuth(config, pool, composeMailer(config, pool))
 })
 
 afterAll(async () => {
@@ -67,6 +67,7 @@ describe('signing in as the dev admin, end to end (R-QA-2)', () => {
         policy: configPolicy,
       }),
       outbox: createMysqlOutboxLog(pool),
+      admission: { requestLink: () => Promise.resolve('access-requested') },
     })
     await auth.issueLink(DEV_ADMIN_EMAIL, {
       kind: 'self_service',

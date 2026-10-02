@@ -5,6 +5,8 @@ import type { Pool } from './db.js'
 import { adminOutboxRoutes } from './routes/admin-outbox.js'
 import { adminRoleRoutes } from './routes/admin-roles.js'
 import { authRoutes, renewSessions } from './routes/auth.js'
+import { requestLinkRoutes } from './routes/request-link.js'
+import type { AdmissionService } from './services/admission.js'
 import type { MemberProfiles } from './services/member-profiles.js'
 import type { OutboxLog } from './services/outbox-log.js'
 import type { RoleService } from './services/roles.js'
@@ -16,6 +18,7 @@ export interface AppDeps {
   profiles: MemberProfiles
   roles: RoleService
   outbox: OutboxLog
+  admission: AdmissionService
 }
 
 /** True when the database answers. Reported rather than thrown, so a dev server
@@ -59,6 +62,7 @@ export function createApp(deps: AppDeps): Express {
   app.use(express.json({ limit: '64kb' }))
   app.use(renewSessions(deps.auth))
   app.use(authRoutes(deps))
+  app.use(requestLinkRoutes(deps))
   app.use(adminRoleRoutes(deps))
   app.use(adminOutboxRoutes(deps))
 

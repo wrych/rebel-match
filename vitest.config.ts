@@ -30,6 +30,7 @@ export default defineConfig({
         'src/services/outbox-store.ts',
         'src/services/role-grant-store.ts',
         'src/services/outbox-log-store.ts',
+        'src/services/admission-store.ts',
         'src/services/smtp.ts',
         'client/main.ts',
         'client/router.ts',

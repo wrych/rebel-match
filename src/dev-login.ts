@@ -1,5 +1,5 @@
 import type { OutgoingLink } from './auth/index.js'
-import { composeAuth } from './compose.js'
+import { composeAuth, composeMailer } from './compose.js'
 import { loadConfig } from './config.js'
 import { createPool } from './db.js'
 import {
@@ -25,9 +25,14 @@ const pool = createPool(config)
 let issued: OutgoingLink | undefined
 
 try {
-  const auth = composeAuth(config, pool, (link) => {
-    issued = link
-  })
+  const auth = composeAuth(
+    config,
+    pool,
+    composeMailer(config, pool),
+    (link) => {
+      issued = link
+    },
+  )
   await auth.issueLink(member.email, { kind: 'self_service' })
   if (issued !== undefined) {
     process.stdout.write(`${signInBanner(issued.url, member.roles)}\n`)
