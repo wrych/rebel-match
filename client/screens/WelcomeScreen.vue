@@ -52,15 +52,13 @@ async function leave(): Promise<void> {
     </div>
 
     <div class="stack">
-      <div class="door door-ask">
-        <span class="door-title"
-          >Ask for help <span class="soon">Soon</span></span
-        >
+      <RouterLink to="/ask" class="door door-ask">
+        <span class="door-title">Ask for help</span>
         <span class="door-body">
           Bring your challenge and we find the members living it, the ones who
           solved it, and the case studies that apply.
         </span>
-      </div>
+      </RouterLink>
       <div class="door door-offer">
         <span class="door-title"
           >Offer help <span class="soon">Soon</span></span

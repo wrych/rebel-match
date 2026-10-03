@@ -522,6 +522,10 @@ textarea.input {
   transform: var(--tilt-a);
 }
 
+.door-ask:hover {
+  background: var(--accent-hover);
+}
+
 .door-offer {
   background: var(--door);
   color: var(--door-fg);
