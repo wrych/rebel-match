@@ -107,7 +107,7 @@ printed dev link (R-DEV-6).
 - [x] Consent copy wired in: email-sharing on connect + membership by invitation.
       Draft wording in `src/consent.ts` until open question 1 names its owner.
       _(R-ONB-5)_
-- [ ] Route guard: active + onboarded required for `/api/*`; deep links land on
+- [x] Route guard: active + onboarded required for `/api/*`; deep links land on
       onboarding first. _(R-NAV-7)_
 
 ## M2 — Ask journey _(M3 → M4 → M5, F5)_

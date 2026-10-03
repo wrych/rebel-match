@@ -2,6 +2,7 @@ import express, { type ErrorRequestHandler, type Express } from 'express'
 import type { AuthProvider } from './auth/index.js'
 import { clientConfig, type Config } from './config.js'
 import type { Pool } from './db.js'
+import { guardApi } from './routes/api-guard.js'
 import { adminApplicantRoutes } from './routes/admin-applicants.js'
 import { adminOutboxRoutes } from './routes/admin-outbox.js'
 import { adminRoleRoutes } from './routes/admin-roles.js'
@@ -69,6 +70,7 @@ export function createApp(deps: AppDeps): Express {
   app.use(renewSessions(deps.auth))
   app.use(authRoutes(deps))
   app.use(requestLinkRoutes(deps))
+  app.use('/api', guardApi(deps))
   app.use(onboardingRoutes(deps))
   app.use(adminRoleRoutes(deps))
   app.use(adminApplicantRoutes(deps))
