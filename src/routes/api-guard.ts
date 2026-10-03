@@ -8,11 +8,9 @@ import type { MemberProfiles } from '../services/member-profiles.js'
 const OPEN = new Set(['/health', '/config'])
 const BEFORE_ONBOARDING = new Set(['/onboarding'])
 
-/** The server's own check on every `/api/*` request, whatever the client's
- * guards did (design §3, R-NAV-7, R-ROLE-5): a signed-in active member, and
- * onboarded unless the route is onboarding itself. Nobody signed in is 401;
- * not yet onboarded is 403 with `onboarding_required`. Permission checks
- * still run per route after this. */
+/** The server's own check before every `/api/*` route, whatever the client
+ * did (design §3, R-NAV-7): a signed-in active member, onboarded unless the
+ * route is onboarding. Permissions are still checked per route. */
 export function guardApi(deps: {
   auth: AuthProvider
   profiles: MemberProfiles
