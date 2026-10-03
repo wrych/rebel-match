@@ -32,11 +32,8 @@ export interface WhitelistService {
   add(emails: readonly string[], actorId: string): Promise<WhitelistResult[]>
 }
 
-/** Pre-approves addresses, the pre-summit path for invited attendees (F10).
- * A pending applicant on the list is admitted exactly as an approval would
- * admit them, sign-in email included (R-AUTH-3, R-AUTH-10); a failed email
- * leaves them admitted, since they can ask for a link at the login screen.
- * Everyone else is not emailed: they sign in when they arrive (F1). */
+/** Pre-approves addresses (F10). An admitted applicant is emailed as an
+ * approval would email them; nobody else is. */
 export function createWhitelist(deps: {
   store: WhitelistStore
   auth: Pick<AuthProvider, 'issueLink'>

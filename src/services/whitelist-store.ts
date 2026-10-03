@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import type { Database } from '../db/connect.js'
 import { memberRoles, members } from '../db/schema.js'
 import type {
@@ -20,13 +20,14 @@ async function grant(
     .onConflictDoNothing()
 }
 
-async function addOne(
+/** Creates the address as a new active member, or locks the member who has
+ * it: one statement, so no erasure can slip between finding and settling. A
+ * no-op update is what makes Postgres return and lock an existing row. */
+async function claim(
   db: Database,
   email: string,
-  role: string,
-  grantedBy: string,
-): Promise<StoredOutcome> {
-  const [created] = await db
+): Promise<{ id: string; status: string; created: boolean }> {
+  const [row] = await db
     .insert(members)
     .values({
       id: randomUUID(),
@@ -34,27 +35,37 @@ async function addOne(
       status: 'active',
       analyticsId: randomUUID(),
     })
-    .onConflictDoNothing()
-    .returning({ id: members.id })
-  if (created !== undefined) {
-    await grant(db, created.id, role, grantedBy)
+    .onConflictDoUpdate({
+      target: members.email,
+      set: { email: sql`excluded.email` },
+    })
+    .returning({
+      id: members.id,
+      status: members.status,
+      created: sql<boolean>`xmax = 0`,
+    })
+  if (row === undefined) throw new Error('whitelist: insert returned no row')
+  return row
+}
+
+async function addOne(
+  db: Database,
+  email: string,
+  role: string,
+  grantedBy: string,
+): Promise<StoredOutcome> {
+  const member = await claim(db, email)
+  if (member.created) {
+    await grant(db, member.id, role, grantedBy)
     return 'added'
   }
-
-  const [existing] = await db
-    .select({ id: members.id, status: members.status })
-    .from(members)
-    .where(eq(members.email, email))
-    .for('update')
-  if (existing === undefined || existing.status === 'active')
-    return 'already_active'
-  if (existing.status !== 'applicant') return 'kept_out'
-
+  if (member.status === 'active') return 'already_active'
+  if (member.status !== 'applicant') return 'kept_out'
   await db
     .update(members)
     .set({ status: 'active' })
-    .where(eq(members.id, existing.id))
-  await grant(db, existing.id, role, grantedBy)
+    .where(eq(members.id, member.id))
+  await grant(db, member.id, role, grantedBy)
   return 'admitted'
 }
 
