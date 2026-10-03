@@ -59,3 +59,4 @@ still holds except where the later ADR says otherwise.
 | [0020](0020-slide-the-session-on-use.md)                  | Slide the session on use, and renew its cookie from the seam | Accepted                  |
 | [0021](0021-permission-policy-seam.md)                    | Read permissions through a policy seam                       | Accepted                  |
 | [0022](0022-agents-merge-routine-prs.md)                  | Agents merge routine pull requests; people approve decisions | Accepted                  |
+| [0023](0023-prototype-look-and-colour-modes.md)           | Wear the prototype's look, with happy mode as a colour mode  | Accepted                  |

@@ -160,6 +160,16 @@ whether it then leaves the machine (R-DEV-4).
 
 ---
 
+### Look and colour modes
+
+The look lives in `client/styles/theme.css` (R-LOOK-1): colour, type and spacing
+tokens on `:root`, and the components (buttons, fields, cards, chips, notices) as
+classes that read only those tokens. A colour mode is one more token block,
+`:root[data-mood='…']`, switched by setting `data-mood` on the page; the client
+remembers the choice per browser (`client/lib/mood.ts`, R-LOOK-2). Calm is the
+default and happy the one alternative for the beta; a dark mode is another block
+of the same shape (R-LOOK-3). Fonts are self-hosted through `@fontsource`.
+
 ### Key libraries
 
 **Server** — **TypeScript** (strict, ADR 0011), `express`, `mysql2` (promise

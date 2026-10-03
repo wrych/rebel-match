@@ -195,8 +195,10 @@ printed dev link (R-DEV-6).
       column, no schema change. _(C2, R-ROLE-6)_
 - [ ] Live peer counts per trend. _(C3)_
 - [ ] Self-service GDPR deletion. _(C4)_
-- [ ] (Deferred) gamification, theme toggle, frontier nomination, platform
-      integration, phone/LinkedIn connect. _(W1–W6)_
+- [ ] Dark mode as a further colour mode: a third token block, possibly
+      following the phone's own setting. _(C7, R-LOOK-3, ADR 0023)_
+- [ ] (Deferred) gamification, frontier nomination, platform integration,
+      phone/LinkedIn connect. _(W1, W3–W7)_
 
 ---
 

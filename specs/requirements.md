@@ -24,7 +24,6 @@ Acceptance criteria use EARS phrasing: **WHEN** <trigger> **THE SYSTEM SHALL**
 - Gamification: standings, badges, ranks, milestone pop-ups. _(Meeting: "I would
   also focus on sharing experience and sharing problems and not the
   gamification.")_
-- The corporate↔rebel theme toggle ("CR" button / happy mode). Prototype-only fun.
 - "Nominate as frontier" escalation flow.
 - Connecting by phone number or LinkedIn. Email only for beta.
 - AI/LLM-based matching of challenges to case studies. Beta uses the curated,
@@ -565,6 +564,30 @@ What differs by environment is only whether mail **leaves the machine**.
   not remove the server check.
 - **R-CFG-4** — Changing a threshold SHALL NOT require code changes beyond that
   file, so the values can be tuned during the pilot without a redeploy of logic.
+
+---
+
+## 8f. Look and colour modes
+
+The beta wears the prototype's look, and keeps its "CR" happy mode as an
+optional extra: it costs one set of colour tokens and changes nothing else.
+_(Decided by the maintainer after trying the redesign: ADR 0023.)_
+
+- **R-LOOK-1 (Prototype look)** — The client SHALL follow the prototype's design
+  language (`specs/prototype/`): Anton headlines, Archivo text, JetBrains Mono
+  labels, cream paper, near-black ink and an ember accent. Fonts SHALL be served
+  by the app itself, never from a third-party font host, so no visitor's address
+  reaches one.
+- **R-LOOK-2 (Happy mode)** — The header SHALL offer the prototype's "CR" button
+  to switch between the calm default and happy mode, announced as a toggle to
+  assistive technology. The choice SHALL be remembered per browser and SHALL
+  change colours and decoration only, never content, behaviour or anything
+  recorded. IF the browser refuses storage THEN the app SHALL still switch, and
+  start calm next time.
+- **R-LOOK-3 (Modes are tokens)** — Colour modes SHALL be sets of colour tokens
+  over one set of components, so a further mode (a dark mode, priorities C7) is a
+  new token set rather than new screens. Every mode SHALL keep text readable
+  against its background.
 
 ---
 
