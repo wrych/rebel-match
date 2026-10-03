@@ -25,7 +25,13 @@ export type InviteState =
 
 /** An invite's state at `now` (R-INV-9). Only `active` admits anyone
  * (R-INV-2,3,4); a revoked or full invite reads as such whatever its window. */
-export function inviteState(invite: Invite, now: Date): InviteState {
+export function inviteState(
+  invite: Pick<
+    Invite,
+    'validFrom' | 'validUntil' | 'maxUses' | 'uses' | 'revokedAt'
+  >,
+  now: Date,
+): InviteState {
   if (invite.revokedAt !== null) return 'revoked'
   if (invite.uses >= invite.maxUses) return 'exhausted'
   if (now < invite.validFrom) return 'scheduled'

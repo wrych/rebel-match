@@ -6,6 +6,7 @@ import type { AdmissionService } from '../services/admission.js'
 const requestBody = z.object({
   email: z.string().trim().toLowerCase().pipe(z.email()),
   next: z.string().optional(),
+  invite: z.string().min(1).optional(),
 })
 
 function applicantBody(
@@ -46,6 +47,7 @@ export function requestLinkRoutes(deps: {
     response.json(
       await deps.admission.requestLink(body.data.email, {
         next: body.data.next,
+        invite: body.data.invite,
       }),
     )
   })
