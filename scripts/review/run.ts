@@ -38,6 +38,7 @@ function git(...args: string[]): string {
 function cachePath(base: string, diff: string): string {
   const key = cacheKey({
     diff,
+    commits: git('log', '--format=%H%n%B', `${base}..HEAD`),
     agent: readFileSync(AGENT_FILE, 'utf8'),
     config,
   })
