@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import {
   createAuth,
   createMysqlAuthStore,
@@ -18,6 +19,8 @@ import { createApplicantNotice } from './services/applicant-notice.js'
 import { createMysqlApprovalStore } from './services/approval-store.js'
 import { createApprovals } from './services/approvals.js'
 import { mailLinks } from './services/link-delivery.js'
+import { createMysqlInviteStore } from './services/invite-store.js'
+import { createInvites } from './services/invites.js'
 import { createMailer, type Mailer } from './services/mailer.js'
 import { createMysqlMemberProfiles } from './services/member-profiles.js'
 import { createMysqlOnboardingStore } from './services/onboarding-store.js'
@@ -97,6 +100,12 @@ export function composeApp(config: Config, pool: Pool): AppDeps {
     onboarding: createOnboarding({
       store: createMysqlOnboardingStore(pool),
       currentConsentVersion: config.consentVersion,
+    }),
+    invites: createInvites({
+      store: createMysqlInviteStore(pool),
+      publicUrl: config.publicUrl,
+      defaults: config.limits,
+      newId: randomUUID,
     }),
   }
 }

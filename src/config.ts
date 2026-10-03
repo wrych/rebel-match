@@ -13,6 +13,8 @@ const NAME_MAX_CHARS = 120
 const JOB_TITLE_MAX_CHARS = 120
 const ORG_MAX_CHARS = 160
 const SECTOR_MAX_CHARS = 160
+// invites.label (migration 004).
+const INVITE_LABEL_MAX_CHARS = 120
 
 function portOf(url: URL): number {
   if (url.port !== '') return Number(url.port)
@@ -122,6 +124,7 @@ export interface Limits {
   jobTitleMaxChars: number
   orgMaxChars: number
   sectorMaxChars: number
+  inviteLabelMaxChars: number
 }
 
 /** Values the client is allowed to read, so a disabled button and a server
@@ -199,6 +202,7 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): Config {
       jobTitleMaxChars: JOB_TITLE_MAX_CHARS,
       orgMaxChars: ORG_MAX_CHARS,
       sectorMaxChars: SECTOR_MAX_CHARS,
+      inviteLabelMaxChars: INVITE_LABEL_MAX_CHARS,
     },
     rolePermissions,
   }

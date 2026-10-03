@@ -47,6 +47,11 @@ function deps(
       draft: () => Promise.resolve(null),
       complete: () => Promise.resolve('stale_consent'),
     },
+    invites: {
+      list: () => Promise.resolve([]),
+      create: () => Promise.resolve({ result: 'bad_window' }),
+      revoke: () => Promise.resolve('not_found'),
+    },
   }
 }
 
