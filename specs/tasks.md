@@ -168,7 +168,7 @@ printed dev link (R-DEV-6).
 
 - [x] Admin approvals screen + `/admin/applicants/*`, permission-guarded.
       _(S19, R-AUTH-3,11, R-ROLE-3)_
-- [ ] Whitelist add (`POST /api/admin/whitelist`), permission-guarded.
+- [x] Whitelist add (`POST /api/admin/whitelist`), permission-guarded.
       _(R-AUTH-1, R-ROLE-3)_
 - [x] Follow endpoints + UI. _(S2, R-ASK-9)_ The endpoints are in, and the
       matches and trend screens follow and unfollow.
