@@ -34,13 +34,13 @@ User journeys are in `flows.md` (`F1`…`F14`).
       holder of `role:grant`. _(R-ROLE-7,9)_
 - [x] Seed runner with `SEED_PROFILE`, dev-in-prod guard, idempotent upserts;
       roles, the dev roster and the dev admin. _(R-SEED-1,2,4,7, R-DEV-6)_
-- [ ] Seed trends, cases and the dev challenges and notes, with the tables
+- [x] Seed trends, cases and the dev challenges and notes, with the tables
       they need (M2). _(R-SEED-1,2)_
 - [x] Vue 3 + Vite + vue-router scaffold; the shared route table in
       `src/routes.ts` with `safeNextPath` for the server validator; login and
       not-found screens. _(R-NAV-1,6, ADR 0017)_
 - [x] Client test setup: `@vue/test-utils` + jsdom. _(R-QA-1, ADR 0017)_
-- [ ] Boundary schemas (`zod`) on every write route. The error handler that
+- [x] Boundary schemas (`zod`) on every write route. The error handler that
       leaks nothing is in place. _(R-CFG-3, constitution §5)_
 - [x] Vitest harness: `npm test` + `npm run test:integration` (disposable
       Postgres or PGlite, `mail.delivery=none`). _(R-QA-1,2)_
@@ -170,8 +170,8 @@ printed dev link (R-DEV-6).
       _(S19, R-AUTH-3,11, R-ROLE-3)_
 - [ ] Whitelist add (`POST /api/admin/whitelist`), permission-guarded.
       _(R-AUTH-1, R-ROLE-3)_
-- [ ] Follow endpoints + UI. _(S2, R-ASK-9)_ The endpoints are in, and the
-      matches screen follows and unfollows.
+- [x] Follow endpoints + UI. _(S2, R-ASK-9)_ The endpoints are in, and the
+      matches and trend screens follow and unfollow.
 - [ ] Mixpanel wired in (client + server, **EU endpoints**, project created with
       EU residency), pseudonymous id, event set from design §7, consent-gated.
       _(S3, R-ANA-1..5)_
