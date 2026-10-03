@@ -1,22 +1,24 @@
+import { join } from 'node:path'
 import { z } from 'zod'
 import { rolePermissions } from './access.js'
 import { consentWordsOf, latestConsentVersion } from './consent.js'
+import type { DatabaseTarget } from './db/connect.js'
 
 // Node clamps a timer delay above 2^31-1 ms (about 24.8 days) to 1 ms, so a
 // longer purge interval would run the purge continuously.
 const MAX_TIMER_HOURS = Math.floor(0x7fffffff / 3_600_000)
 
 // The widths of members.name and requested_name, job_title, org and
-// requested_org, and sector (migration 001): a fact of the schema rather than a
-// tunable, so no environment variable.
+// requested_org, and sector (src/db/schema.ts): a fact of the schema rather
+// than a tunable, so no environment variable.
 const NAME_MAX_CHARS = 120
 const JOB_TITLE_MAX_CHARS = 120
 const ORG_MAX_CHARS = 160
 const SECTOR_MAX_CHARS = 160
-// invites.label, and invites.max_uses as INT UNSIGNED (migration 004).
+// invites.label, and a cap on invites.max_uses (src/db/schema.ts).
 const INVITE_LABEL_MAX_CHARS = 120
 const INVITE_MAX_USES_CEILING = 0xffffffff
-// connection_requests.message (migration 009).
+// connection_requests.message (src/db/schema.ts).
 const CONNECTION_MESSAGE_MAX_CHARS = 600
 
 function portOf(url: URL): number {
@@ -43,7 +45,12 @@ const envSchema = z
     PORT: z.coerce.number().int().positive().default(3000),
     PUBLIC_URL: z.url().default('http://localhost:5173'),
 
-    DATABASE_URL: z.string().min(1),
+    // Unset or empty means a local run on PGlite in LOCAL_DATA_DIR (ADR 0024).
+    DATABASE_URL: z
+      .string()
+      .optional()
+      .transform((url) => (url === '' ? undefined : url)),
+    LOCAL_DATA_DIR: z.string().min(1).default('.data'),
     SESSION_SECRET: z.string().min(32),
     SESSION_TTL_DAYS: z.coerce.number().int().positive().default(30),
 
@@ -90,6 +97,15 @@ const envSchema = z
         code: 'custom',
         path: ['SMTP_HOST'],
         message: 'SMTP_HOST is required when MAIL_DELIVERY=smtp',
+      })
+    }
+    if (env.NODE_ENV === 'production' && env.DATABASE_URL === undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['DATABASE_URL'],
+        message:
+          'production needs DATABASE_URL: it never falls back to a local ' +
+          'PGlite folder (ADR 0024)',
       })
     }
     if (env.NODE_ENV === 'production' && env.MAIL_DELIVERY === 'none') {
@@ -146,7 +162,7 @@ export interface Config {
   isProduction: boolean
   port: number
   publicUrl: string
-  databaseUrl: string
+  database: DatabaseTarget
   sessionSecret: string
   sessionTtlDays: number
   outboxPurgeIntervalHours: number
@@ -193,7 +209,10 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): Config {
     isProduction: env.NODE_ENV === 'production',
     port: env.PORT,
     publicUrl: env.PUBLIC_URL,
-    databaseUrl: env.DATABASE_URL,
+    database:
+      env.DATABASE_URL === undefined
+        ? { kind: 'pglite', dataDir: join(env.LOCAL_DATA_DIR, 'pglite') }
+        : { kind: 'postgres', url: env.DATABASE_URL },
     sessionSecret: env.SESSION_SECRET,
     sessionTtlDays: env.SESSION_TTL_DAYS,
     outboxPurgeIntervalHours: env.OUTBOX_PURGE_INTERVAL_HOURS,
