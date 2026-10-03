@@ -5,6 +5,7 @@ import type { Pool } from './db.js'
 import { challengeRoutes } from './routes/challenges.js'
 import { connectionRoutes } from './routes/connections.js'
 import { deckRoutes } from './routes/deck.js'
+import { swipeRoutes } from './routes/swipes.js'
 import { guardApi } from './routes/api-guard.js'
 import { adminApplicantRoutes } from './routes/admin-applicants.js'
 import { adminInviteRoutes } from './routes/admin-invites.js'
@@ -18,6 +19,7 @@ import type { ApprovalService } from './services/approvals.js'
 import type { ChallengeService } from './services/challenges.js'
 import type { ConnectionService } from './services/connections.js'
 import type { DeckService } from './services/deck.js'
+import type { SwipeService } from './services/swipes.js'
 import type { InviteService } from './services/invites.js'
 import type { OnboardingService } from './services/onboarding.js'
 import type { MemberProfiles } from './services/member-profiles.js'
@@ -38,6 +40,7 @@ export interface AppDeps {
   challenges: ChallengeService
   deck: DeckService
   connections: ConnectionService
+  swipes: SwipeService
 }
 
 /** True when the database answers. Reported rather than thrown, so a dev server
@@ -87,6 +90,7 @@ export function createApp(deps: AppDeps): Express {
   app.use(challengeRoutes(deps))
   app.use(deckRoutes(deps))
   app.use(connectionRoutes(deps))
+  app.use(swipeRoutes(deps))
   app.use(adminRoleRoutes(deps))
   app.use(adminApplicantRoutes(deps))
   app.use(adminInviteRoutes(deps))
