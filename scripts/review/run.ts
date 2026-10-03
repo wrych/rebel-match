@@ -1,7 +1,7 @@
 import { spawnSync } from 'node:child_process'
-import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { cacheKey } from './cache-key.js'
 import config from './config.json' with { type: 'json' }
 import {
   findingsSchema,
@@ -36,11 +36,11 @@ function git(...args: string[]): string {
 }
 
 function cachePath(base: string, diff: string): string {
-  const key = createHash('sha256')
-    .update(diff)
-    .update(readFileSync(AGENT_FILE))
-    .update(JSON.stringify(config))
-    .digest('hex')
+  const key = cacheKey({
+    diff,
+    agent: readFileSync(AGENT_FILE, 'utf8'),
+    config,
+  })
   const dir = git('rev-parse', '--git-path', 'review-cache')
   mkdirSync(dir, { recursive: true })
   const name = `${base.slice(0, CACHE_BASE_CHARS)}-${key.slice(0, CACHE_KEY_CHARS)}`
