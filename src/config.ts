@@ -159,8 +159,6 @@ export interface Config {
   rolePermissions: typeof rolePermissions
 }
 
-/** The tunable thresholds from the environment, beside the schema's fixed
- * widths (R-CFG-1). */
 function limitsFrom(env: Env): Limits {
   return {
     challengeMinChars: env.CHALLENGE_MIN_CHARS,
