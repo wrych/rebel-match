@@ -115,6 +115,7 @@ describe('admin invite routes', () => {
     { label: 'x'.repeat(121) },
     { label: 'A', maxUses: 0 },
     { label: 'A', maxUses: 1.5 },
+    { label: 'A', maxUses: 4_294_967_296 },
     { label: 'A', validFrom: 'not a date' },
   ])('refuses %j without creating', async (body) => {
     const { app, created } = setup()

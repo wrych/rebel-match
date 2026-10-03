@@ -103,6 +103,7 @@ onMounted(async () => {
       type="number"
       min="1"
       step="1"
+      :max="limits?.inviteMaxUsesCeiling"
     />
     <button type="submit" :disabled="busy || draft.label.trim() === ''">
       Create invite

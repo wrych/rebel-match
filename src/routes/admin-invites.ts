@@ -5,17 +5,19 @@ import type { Limits } from '../config.js'
 import type { InviteService, NewInvite } from '../services/invites.js'
 import { requirePermission, type GuardedLocals } from './require-permission.js'
 
-// invites.max_uses is INT UNSIGNED (migration 004).
-const MAX_USES_CEILING = 0xffffffff
+type InviteLimits = Pick<Limits, 'inviteLabelMaxChars' | 'inviteMaxUsesCeiling'>
 
-function createBody(
-  limits: Pick<Limits, 'inviteLabelMaxChars'>,
-): z.ZodType<NewInvite> {
+function createBody(limits: InviteLimits): z.ZodType<NewInvite> {
   return z.object({
     label: z.string().trim().min(1).max(limits.inviteLabelMaxChars),
     validFrom: z.coerce.date().optional(),
     validUntil: z.coerce.date().optional(),
-    maxUses: z.number().int().positive().max(MAX_USES_CEILING).optional(),
+    maxUses: z
+      .number()
+      .int()
+      .positive()
+      .max(limits.inviteMaxUsesCeiling)
+      .optional(),
   })
 }
 
@@ -26,7 +28,7 @@ const inviteParams = z.object({ id: z.string().min(1) })
 export function adminInviteRoutes(deps: {
   auth: AuthProvider
   invites: InviteService
-  config: { limits: Pick<Limits, 'inviteLabelMaxChars'> }
+  config: { limits: InviteLimits }
 }): Router {
   const router = Router()
   const guard = requirePermission(deps.auth, 'invite:manage')
