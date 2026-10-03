@@ -1,6 +1,7 @@
 export interface ClientConfig {
   limits: {
     challengeMinChars: number
+    connectionMessageMaxChars: number
     beenThereNoteMinChars: number
     magicLinkTtlMinutes: number
     approvalLinkTtlHours: number
