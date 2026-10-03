@@ -34,8 +34,10 @@ const person = (): Person => ({
 let db: TestDatabase
 let erasure: ErasureService
 const guard = `erasure-${randomUUID().slice(0, 8)}`
+const created: string[] = []
 
 async function addMember(member: Person): Promise<void> {
+  created.push(member.id)
   await db.query(
     "INSERT INTO members (id, email, status, analytics_id) VALUES (?, ?, 'active', ?)",
     [member.id, member.email, randomUUID()],
@@ -152,6 +154,10 @@ beforeEach(async () => {
 })
 
 afterAll(async () => {
+  // Leave nothing behind: later suites on a shared database pick the oldest
+  // challenges, and these members never finished onboarding.
+  await db.query('DELETE FROM invites WHERE created_by IN (?)', [created])
+  await db.query('DELETE FROM members WHERE id IN (?)', [created])
   await db.query('DELETE FROM member_roles WHERE role_key = ?', [guard])
   await db.query('DELETE FROM roles WHERE role_key = ?', [guard])
   await db.close()
