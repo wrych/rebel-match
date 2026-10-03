@@ -22,6 +22,8 @@ export default defineConfig({
         'src/compose.ts',
         'src/dev-login.ts',
         'src/db.ts',
+        'src/db/schema.ts',
+        'src/db/connect.ts',
         'src/migrate.ts',
         'src/seed.ts',
         'src/seed/run.ts',
