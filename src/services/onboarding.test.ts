@@ -58,4 +58,27 @@ describe('createOnboarding', () => {
       name: 'Ada',
     })
   })
+
+  it('stamps the acceptance with the current time by default (R-ONB-3)', async () => {
+    const stamped: Date[] = []
+    const onboarding = createOnboarding({
+      currentConsentVersion: '2026-11-01',
+      store: {
+        draft: () => Promise.resolve(null),
+        save: (_m, _input, acceptedAt) => {
+          stamped.push(acceptedAt)
+          return Promise.resolve()
+        },
+      },
+    })
+    const before = Date.now()
+
+    await onboarding.complete('m-ada', {
+      name: 'Ada',
+      consentVersion: '2026-11-01',
+    })
+
+    expect(stamped[0]?.getTime()).toBeGreaterThanOrEqual(before)
+    expect(stamped[0]?.getTime()).toBeLessThanOrEqual(Date.now())
+  })
 })
