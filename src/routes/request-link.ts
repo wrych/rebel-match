@@ -44,7 +44,9 @@ export function requestLinkRoutes(deps: {
       return
     }
     response.json(
-      await deps.admission.requestLink(body.data.email, body.data.next),
+      await deps.admission.requestLink(body.data.email, {
+        next: body.data.next,
+      }),
     )
   })
 

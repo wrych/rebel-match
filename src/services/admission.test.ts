@@ -73,7 +73,7 @@ function setup(
   })
   return {
     requestLink: async (email, next) =>
-      (await admission.requestLink(email, next)).state,
+      (await admission.requestLink(email, { next })).state,
     admission,
     links,
     notified,

@@ -24,7 +24,8 @@ function setup(state: LinkRequestState = 'check-email'): {
         SESSION_SECRET: 'x'.repeat(32),
       }),
       admission: {
-        requestLink: (email, next) => {
+        requestLink: (email, opts) => {
+          const next = opts?.next
           calls.push({ email, next })
           return Promise.resolve(
             state === 'access-requested' ? { state, handle: 'h.s' } : { state },

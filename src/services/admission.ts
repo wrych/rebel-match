@@ -43,8 +43,13 @@ export interface LinkRequest {
   handle?: string
 }
 
+/** What came with the address: the deep link to return to (R-NAV-5). */
+export interface LinkRequestOptions {
+  next?: string | undefined
+}
+
 export interface AdmissionService {
-  requestLink(email: string, next?: string): Promise<LinkRequest>
+  requestLink(email: string, opts?: LinkRequestOptions): Promise<LinkRequest>
   /** `POST /auth/applicant`: not-found for a handle that does not hold or a
    * request no longer pending. */
   describeApplicant(
@@ -62,11 +67,14 @@ export function createAdmission(deps: {
   notifyReviewers: (applicantEmail: string) => Promise<void>
 }): AdmissionService {
   return {
-    requestLink: async (email, next) => {
+    requestLink: async (email, opts = {}) => {
       const admission = admissionFor(await deps.store.statusByEmail(email))
 
       if (admission === 'send-link') {
-        await deps.auth.issueLink(email, { kind: 'self_service', next })
+        await deps.auth.issueLink(email, {
+          kind: 'self_service',
+          next: opts.next,
+        })
         return { state: 'check-email' }
       }
       if (admission === 'not-approved') return { state: 'not-approved' }
