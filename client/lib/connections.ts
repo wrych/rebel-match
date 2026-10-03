@@ -1,9 +1,10 @@
 import type {
+  Contact,
   ConnectionView,
   NewConnection,
 } from '../../src/services/connections'
 
-export type { ConnectionView }
+export type { Contact, ConnectionView }
 
 export type ConnectionKind = NewConnection['kind']
 
@@ -55,4 +56,14 @@ export async function answerRequest(
   if (!response.ok)
     throw new Error(`answer not saved (${String(response.status)})`)
   return 'done'
+}
+
+/** The other party's contact, which the server gives only for an accepted
+ * request to one of its parties; null otherwise (R-CONN-3,6). */
+export async function fetchContact(id: string): Promise<Contact | null> {
+  const response = await fetch(`${requestPath(id)}/contact`)
+  if (response.status === 404) return null
+  if (!response.ok)
+    throw new Error(`contact unavailable (${String(response.status)})`)
+  return ((await response.json()) as { contact: Contact }).contact
 }

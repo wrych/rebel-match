@@ -145,8 +145,8 @@ printed dev link (R-DEV-6).
 - [ ] Cockpit incoming list + incoming-request screen with accept/decline.
       _(R-MINE-2, R-CONN-3,4, R-NAV-2)_ The request screen
       (`/matches/requests/:id`) is in.
-- [ ] Contact screen + `GET /api/connections/:id/contact`: email + mailto only
-      when accepted and caller is a party. _(R-CONN-3,6)_ The API is in.
+- [x] Contact screen + `GET /api/connections/:id/contact`: email + mailto only
+      when accepted and caller is a party. _(R-CONN-3,6)_
 - [x] Duplicate-request guard. _(R-CONN-5)_
 - [ ] Cockpit: my challenge(s) + counts, followed trends, nav badge. _(R-MINE-1,3,4)_
       `GET /api/cockpit` is in.

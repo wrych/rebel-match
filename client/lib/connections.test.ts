@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   answerRequest,
+  fetchContact,
   fetchRequest,
   kindOf,
   requestConnection,
@@ -106,9 +107,23 @@ describe('request reads and answers', () => {
     expect(await answerRequest('r1', 'accept')).toBe('gone')
   })
 
+  it('reads the contact of an accepted request (R-CONN-3)', async () => {
+    const contact = { name: 'Sam', email: 's@x.invalid', mailto: 'mailto:s' }
+    serve(200, { contact })
+
+    expect(await fetchContact('r1')).toEqual(contact)
+  })
+
+  it('reads no contact before acceptance as null (R-CONN-6)', async () => {
+    serve(404)
+
+    expect(await fetchContact('r1')).toBeNull()
+  })
+
   it.each([
     ['fetchRequest', (): Promise<unknown> => fetchRequest('r1')],
     ['answerRequest', (): Promise<unknown> => answerRequest('r1', 'accept')],
+    ['fetchContact', (): Promise<unknown> => fetchContact('r1')],
   ])('%s throws on a server error', async (_name, call) => {
     serve(500)
 
