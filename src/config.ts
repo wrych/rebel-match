@@ -13,6 +13,9 @@ const NAME_MAX_CHARS = 120
 const JOB_TITLE_MAX_CHARS = 120
 const ORG_MAX_CHARS = 160
 const SECTOR_MAX_CHARS = 160
+// invites.label, and invites.max_uses as INT UNSIGNED (migration 004).
+const INVITE_LABEL_MAX_CHARS = 120
+const INVITE_MAX_USES_CEILING = 0xffffffff
 
 function portOf(url: URL): number {
   if (url.port !== '') return Number(url.port)
@@ -122,6 +125,8 @@ export interface Limits {
   jobTitleMaxChars: number
   orgMaxChars: number
   sectorMaxChars: number
+  inviteLabelMaxChars: number
+  inviteMaxUsesCeiling: number
 }
 
 /** Values the client is allowed to read, so a disabled button and a server
@@ -199,6 +204,8 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): Config {
       jobTitleMaxChars: JOB_TITLE_MAX_CHARS,
       orgMaxChars: ORG_MAX_CHARS,
       sectorMaxChars: SECTOR_MAX_CHARS,
+      inviteLabelMaxChars: INVITE_LABEL_MAX_CHARS,
+      inviteMaxUsesCeiling: INVITE_MAX_USES_CEILING,
     },
     rolePermissions,
   }

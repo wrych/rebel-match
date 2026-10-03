@@ -87,7 +87,7 @@ printed dev link (R-DEV-6).
       cap, revoked), auto-approve + `joined_via_invite_id` + `uses`, fallback to
       the applicant flow with the invalid-invite notice on the access-requested
       screen. _(R-INV-1..8, F15)_
-- [ ] Admin invite screen (`/admin/invites`): list with state, create with label /
+- [x] Admin invite screen (`/admin/invites`): list with state, create with label /
       window / cap, revoke, show the join URL for the QR. _(R-INV-9,10, F16)_
 - [x] `GET /auth/verify`: validate/consume token, issue session, redirect to the
       validated `next` or onward. _(R-AUTH-5,6, R-NAV-5,6)_
