@@ -12,9 +12,11 @@ function setup(state: LinkRequestState = 'check-email'): {
   app: Express
   calls: { email: string; next: string | undefined }[]
   described: { handle: string; details: ApplicantDetails }[]
+  invites: (string | undefined)[]
 } {
   const calls: { email: string; next: string | undefined }[] = []
   const described: { handle: string; details: ApplicantDetails }[] = []
+  const invites: (string | undefined)[] = []
   const app = express()
   app.use(express.json())
   app.use(
@@ -24,7 +26,9 @@ function setup(state: LinkRequestState = 'check-email'): {
         SESSION_SECRET: 'x'.repeat(32),
       }),
       admission: {
-        requestLink: (email, next) => {
+        requestLink: (email, opts) => {
+          const next = opts?.next
+          invites.push(opts?.invite)
           calls.push({ email, next })
           return Promise.resolve(
             state === 'access-requested' ? { state, handle: 'h.s' } : { state },
@@ -37,7 +41,7 @@ function setup(state: LinkRequestState = 'check-email'): {
       },
     }),
   )
-  return { app, calls, described }
+  return { app, calls, described, invites }
 }
 
 describe('POST /auth/request-link', () => {
@@ -63,6 +67,16 @@ describe('POST /auth/request-link', () => {
       .send({ email: 'ada@example.invalid' })
 
     expect(response.body).toEqual({ state: 'access-requested', handle: 'h.s' })
+  })
+
+  it('passes the invite token from the QR to admission (R-INV-1)', async () => {
+    const { app, invites } = setup()
+
+    await request(app)
+      .post('/auth/request-link')
+      .send({ email: 'ada@example.invalid', invite: 'tok' })
+
+    expect(invites).toEqual(['tok'])
   })
 
   it('normalises the address and passes next through', async () => {

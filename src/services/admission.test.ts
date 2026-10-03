@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createApplicantHandles } from './applicant-handle.js'
+import type { Redemption } from './invite-redemption.js'
 import {
   admissionFor,
   type ApplicantDetails,
@@ -34,6 +35,10 @@ interface Harness {
 function setup(
   initial: [string, MemberStatus][] = [],
   noticeFails = false,
+  redeem: (email: string, token: string) => Redemption = () => ({
+    result: 'refused',
+    refusal: 'unknown',
+  }),
 ): Harness {
   const members = new Map(initial)
   const details = new Map<string, ApplicantDetails>()
@@ -59,6 +64,11 @@ function setup(
   const admission = createAdmission({
     store,
     handles,
+    redeemInvite: (email, token) => {
+      const redemption = redeem(email, token)
+      if (redemption.result === 'admitted') members.set(email, 'active')
+      return Promise.resolve(redemption)
+    },
     auth: {
       issueLink: (email, opts) => {
         links.push({ email, next: opts.next })
@@ -73,7 +83,7 @@ function setup(
   })
   return {
     requestLink: async (email, next) =>
-      (await admission.requestLink(email, next)).state,
+      (await admission.requestLink(email, { next })).state,
     admission,
     links,
     notified,
@@ -201,5 +211,97 @@ describe('describeApplicant', () => {
     expect(
       await harness.admission.describeApplicant(handle, { name: 'Ada' }),
     ).toBe('not-found')
+  })
+})
+
+describe('requestLink with an invite (F15)', () => {
+  const admit = (): Redemption => ({ result: 'admitted' })
+
+  it('admits an unknown address through a usable invite and sends the link (R-INV-1)', async () => {
+    const harness = setup([], false, admit)
+
+    expect(
+      await harness.admission.requestLink('new@example.invalid', {
+        invite: 'tok',
+        next: '/matches',
+      }),
+    ).toEqual({ state: 'check-email' })
+    expect(harness.members.get('new@example.invalid')).toBe('active')
+    expect(harness.links).toEqual([
+      { email: 'new@example.invalid', next: '/matches' },
+    ])
+    expect(harness.notified).toEqual([])
+  })
+
+  it('queues the address with the notice when the invite is refused (R-INV-5)', async () => {
+    const harness = setup([], false, () => ({
+      result: 'refused',
+      refusal: 'revoked',
+    }))
+
+    const answer = await harness.admission.requestLink('new@example.invalid', {
+      invite: 'tok',
+    })
+
+    expect(answer).toMatchObject({
+      state: 'access-requested',
+      inviteRefused: true,
+    })
+    expect(answer.handle).toBeDefined()
+    expect(harness.members.get('new@example.invalid')).toBe('applicant')
+    expect(harness.notified).toEqual(['new@example.invalid'])
+  })
+
+  it('ignores the invite for a member, using no seat (F15)', async () => {
+    const redeemed: string[] = []
+    const harness = setup(
+      [['ada@example.invalid', 'active']],
+      false,
+      (email) => {
+        redeemed.push(email)
+        return { result: 'admitted' }
+      },
+    )
+
+    expect(
+      await harness.admission.requestLink('ada@example.invalid', {
+        invite: 'tok',
+      }),
+    ).toEqual({ state: 'check-email' })
+    expect(redeemed).toEqual([])
+  })
+
+  it.each([
+    ['applicant', 'access-requested'],
+    ['rejected', 'not-approved'],
+  ] as const)(
+    'leaves an existing %s as it is, using no seat',
+    async (status, state) => {
+      const redeemed: string[] = []
+      const harness = setup([['x@example.invalid', status]], false, (email) => {
+        redeemed.push(email)
+        return { result: 'admitted' }
+      })
+
+      expect(
+        await harness.admission.requestLink('x@example.invalid', {
+          invite: 'tok',
+        }),
+      ).toEqual({ state })
+      expect(redeemed).toEqual([])
+    },
+  )
+
+  it('treats an address that appeared meanwhile as that address', async () => {
+    const harness = setup([], false, (email) => {
+      harness.members.set(email, 'active')
+      return { result: 'address_taken' }
+    })
+
+    expect(
+      await harness.admission.requestLink('race@example.invalid', {
+        invite: 'tok',
+      }),
+    ).toEqual({ state: 'check-email' })
   })
 })

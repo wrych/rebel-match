@@ -171,4 +171,31 @@ describe('LoginScreen', () => {
     expect(push).toHaveBeenCalledWith('/access-requested')
     expect(sessionStorage.getItem('rm_applicant_handle')).toBeNull()
   })
+
+  it('carries the invite from the QR with the address (F15)', async () => {
+    const fetchMock = server({ state: 'check-email' })
+    window.history.replaceState(null, '', '/?invite=tok')
+    const screen = mount(LoginScreen)
+
+    await submit(screen, 'new@example.invalid')
+
+    const [, init] = fetchMock.mock.calls.find(
+      ([url]) => url === '/auth/request-link',
+    ) as [string, RequestInit]
+    expect(JSON.parse(String(init.body))).toEqual({
+      email: 'new@example.invalid',
+      invite: 'tok',
+    })
+    expect(screen.text()).toContain('Check your email')
+  })
+
+  it('shows the invalid-invite notice when the invite was refused (R-INV-5)', async () => {
+    server({ state: 'access-requested', handle: 'h.s', inviteRefused: true })
+    window.history.replaceState(null, '', '/?invite=tok')
+    const screen = mount(LoginScreen)
+
+    await submit(screen, 'new@example.invalid')
+
+    expect(push).toHaveBeenCalledWith('/access-requested?invite=invalid')
+  })
 })

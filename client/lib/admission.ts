@@ -4,20 +4,25 @@ export type LinkRequestState =
 export interface LinkRequest {
   state: LinkRequestState
   handle?: string
+  inviteRefused?: true
 }
 
 const HANDLE_KEY = 'rm_applicant_handle'
 
-/** Asks for a sign-in link; the answer says which screen comes next (F1, F4,
- * R-AUTH-13). */
+/** Asks for a sign-in link, carrying the deep link and the QR's invite token;
+ * the answer says which screen comes next (F1, F4, F15, R-AUTH-13). */
 export async function requestLink(
   email: string,
-  next: string | null,
+  carried: { next: string | null; invite: string | null },
 ): Promise<LinkRequest> {
   const response = await fetch('/auth/request-link', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(next === null ? { email } : { email, next }),
+    body: JSON.stringify({
+      email,
+      ...(carried.next === null ? {} : { next: carried.next }),
+      ...(carried.invite === null ? {} : { invite: carried.invite }),
+    }),
   })
   if (!response.ok) {
     throw new Error(`link request failed (${String(response.status)})`)

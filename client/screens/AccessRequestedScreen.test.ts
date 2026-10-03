@@ -28,6 +28,7 @@ async function fillAndSave(screen: ReturnType<typeof mount>): Promise<void> {
 afterEach(() => {
   vi.unstubAllGlobals()
   sessionStorage.clear()
+  window.history.replaceState(null, '', '/')
 })
 
 describe('AccessRequestedScreen', () => {
@@ -102,5 +103,28 @@ describe('AccessRequestedScreen', () => {
 
     expect(screen.find('#name').attributes('maxlength')).toBe('120')
     expect(screen.find('#org').attributes('maxlength')).toBe('160')
+  })
+
+  it('shows the invalid-invite notice above the usual message (R-INV-5)', () => {
+    server()
+    window.history.replaceState(null, '', '/access-requested?invite=invalid')
+
+    const screen = mount(AccessRequestedScreen)
+    const notice = screen.find('.invite-notice')
+
+    expect(notice.attributes('role')).toBe('status')
+    expect(notice.text()).toBe('This invitation link isn’t valid right now.')
+    expect(screen.html().indexOf('invite-notice')).toBeLessThan(
+      screen.html().indexOf('approved by a person'),
+    )
+    expect(screen.text()).toContain('that email will contain your login link')
+  })
+
+  it('shows no notice without one in the URL', () => {
+    server()
+
+    expect(mount(AccessRequestedScreen).find('.invite-notice').exists()).toBe(
+      false,
+    )
   })
 })

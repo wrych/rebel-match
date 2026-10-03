@@ -19,6 +19,7 @@ import { createApplicantNotice } from './services/applicant-notice.js'
 import { createMysqlApprovalStore } from './services/approval-store.js'
 import { createApprovals } from './services/approvals.js'
 import { mailLinks } from './services/link-delivery.js'
+import { createMysqlInviteRedemption } from './services/invite-redemption-store.js'
 import { createMysqlInviteStore } from './services/invite-store.js'
 import { createInvites } from './services/invites.js'
 import { createMailer, type Mailer } from './services/mailer.js'
@@ -85,6 +86,7 @@ export function composeApp(config: Config, pool: Pool): AppDeps {
       store: createMysqlAdmissionStore(pool),
       auth,
       handles: createApplicantHandles(config.sessionSecret),
+      redeemInvite: createMysqlInviteRedemption(pool, admittedRole),
       notifyReviewers: createApplicantNotice({
         mailer,
         reviewers: createMysqlReviewerDirectory(pool),
