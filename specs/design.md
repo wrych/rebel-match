@@ -403,9 +403,12 @@ CREATE TABLE connection_requests (
   status        ENUM('pending','accepted','declined') NOT NULL DEFAULT 'pending',
   created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   responded_at  DATETIME NULL,
+  pending_key   VARCHAR(110) AS (IF(status = 'pending',
+                  CONCAT(requester_id, ':', target_id, ':',
+                         COALESCE(challenge_id, '-')), NULL)) VIRTUAL,
   KEY ix_req_target (target_id, status),
   KEY ix_req_requester (requester_id),
-  UNIQUE KEY uq_pending (requester_id, target_id, challenge_id, kind),
+  UNIQUE KEY uq_pending (pending_key),     -- one pending request per pair and challenge (R-CONN-5)
   CONSTRAINT fk_req_requester FOREIGN KEY (requester_id) REFERENCES members(id),
   CONSTRAINT fk_req_target    FOREIGN KEY (target_id)    REFERENCES members(id)
 );
@@ -413,6 +416,12 @@ CREATE TABLE connection_requests (
 
 Emails are **never stored on the request**. They are resolved by joining to
 `members` only when `status='accepted'` and the viewer is one of the two parties.
+
+`pending_key` holds a value only while a request is pending, so its unique index
+makes the database refuse a second pending request between the same two members
+about the same challenge, or about none, however close the race. An answered
+request clears it and does not block a later one: R-CONN-5 forbids duplicate
+_pending_ requests only.
 
 ### follows
 
@@ -546,13 +555,14 @@ onboarded → `403 {error: 'onboarding_required'}`. Only `/api/health` and
 
 ### Connections (double opt-in)
 
-| Method | Path                           | Body                                       | Behavior                                                                             |
-| ------ | ------------------------------ | ------------------------------------------ | ------------------------------------------------------------------------------------ |
-| POST   | `/api/connections`             | `{targetId, challengeId?, kind, message?}` | Create pending request; notify target; **no email revealed**.                        |
-| GET    | `/api/connections/incoming`    | —                                          | Pending requests addressed to me (for the cockpit).                                  |
-| POST   | `/api/connections/:id/accept`  | —                                          | Mark accepted; now both parties' emails are returned to each other.                  |
-| POST   | `/api/connections/:id/decline` | —                                          | Mark declined; emails stay private.                                                  |
-| GET    | `/api/connections/:id/contact` | —                                          | If accepted and I'm a party → the other member's email + prefilled mailto. Else 403. |
+| Method | Path                           | Body                                       | Behavior                                                                                                                                                                                                                                                                              |
+| ------ | ------------------------------ | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| POST   | `/api/connections`             | `{targetId, challengeId?, kind, message?}` | Create a pending request to an active, onboarded member other than oneself; a `challengeId` must belong to one of the two. **No email revealed.** A request already made from this requester to this target about this challenge → `409 {result: 'exists', id}` (R-CONN-1, R-CONN-5). |
+| GET    | `/api/connections/incoming`    | —                                          | Pending requests addressed to me, with the requester's card, note and challenge, no email (R-MINE-2, R-CONN-2).                                                                                                                                                                       |
+| GET    | `/api/connections/:id`         | —                                          | The request as one of its two parties sees it: direction, status, the other member's card, note and challenge, no email. Anyone else → `404`.                                                                                                                                         |
+| POST   | `/api/connections/:id/accept`  | —                                          | Target only, pending only: mark accepted (R-CONN-3). Anyone else, or a request already answered → `404`.                                                                                                                                                                              |
+| POST   | `/api/connections/:id/decline` | —                                          | Target only, pending only: mark declined; emails stay private for good (R-CONN-4).                                                                                                                                                                                                    |
+| GET    | `/api/connections/:id/contact` | —                                          | If accepted and I'm a party → the other member's name, email and a prefilled mailto. Anything else → `404`, never `403` (ADR 0004, R-NAV-8).                                                                                                                                          |
 
 ### Follow
 
