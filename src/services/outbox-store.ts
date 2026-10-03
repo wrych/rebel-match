@@ -1,39 +1,38 @@
-import type { Pool } from '../db.js'
+import { eq } from 'drizzle-orm'
+import type { Database } from '../db/connect.js'
+import { outbox } from '../db/schema.js'
 import type { OutboxStore } from './mailer.js'
 
-/** The outbound message log over MySQL (design §2 `outbox`). */
-export function createMysqlOutboxStore(pool: Pool): OutboxStore {
+/** The outbound message log over Postgres (design §2 `outbox`). */
+export function createOutboxStore(db: Database): OutboxStore {
   return {
     record: async (entry) => {
-      await pool.query(
-        'INSERT INTO outbox (id, member_id, to_email, kind, subject, body_text) ' +
-          'VALUES (?, ?, ?, ?, ?, ?)',
-        [
-          entry.id,
-          entry.memberId,
-          entry.to,
-          entry.kind,
-          entry.subject,
-          entry.bodyText,
-        ],
-      )
+      await db.insert(outbox).values({
+        id: entry.id,
+        memberId: entry.memberId,
+        toEmail: entry.to,
+        kind: entry.kind,
+        subject: entry.subject,
+        bodyText: entry.bodyText,
+      })
     },
     markSent: async (id, at) => {
-      await pool.query(
-        "UPDATE outbox SET status = 'sent', sent_at = ? WHERE id = ?",
-        [at, id],
-      )
+      await db
+        .update(outbox)
+        .set({ status: 'sent', sentAt: at })
+        .where(eq(outbox.id, id))
     },
     markSuppressed: async (id) => {
-      await pool.query("UPDATE outbox SET status = 'suppressed' WHERE id = ?", [
-        id,
-      ])
+      await db
+        .update(outbox)
+        .set({ status: 'suppressed' })
+        .where(eq(outbox.id, id))
     },
     markFailed: async (id, error) => {
-      await pool.query(
-        "UPDATE outbox SET status = 'failed', error = ? WHERE id = ?",
-        [error, id],
-      )
+      await db
+        .update(outbox)
+        .set({ status: 'failed', error })
+        .where(eq(outbox.id, id))
     },
   }
 }

@@ -1,22 +1,20 @@
-# The local development database. Pinned to the same major as the service in
-# .github/workflows/ci.yml, so dev, CI and production exercise one engine —
-# MySQL 8 DDL (ENUM, utf8mb4_0900_ai_ci) is what the migrations are written in.
-# Change one, change the other.
+# An optional local Postgres. Pinned to the same major as the service in
+# .github/workflows/ci.yml and production, so checks against a real server
+# exercise the engine that ships (ADR 0024). Change one, change the other.
 services:
-  mysql:
-    image: mysql:8.4
+  postgres:
+    image: postgres:17
     environment:
-      MYSQL_ROOT_PASSWORD: rebel
-      MYSQL_DATABASE: rebel_match
-      MYSQL_USER: rebel
-      MYSQL_PASSWORD: rebel
+      POSTGRES_USER: rebel
+      POSTGRES_PASSWORD: rebel
+      POSTGRES_DB: rebel_match
     ports:
-      - '${DB_PORT:-3306}:3306'
+      - '${DB_PORT:-5432}:5432'
     volumes:
       # Named, so your dev data survives a restart. `npm run db:reset` drops it.
-      - rebel-match-db:/var/lib/mysql
+      - rebel-match-db:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD', 'mysqladmin', 'ping', '-h', '127.0.0.1', '-prebel']
+      test: ['CMD', 'pg_isready', '-U', 'rebel', '-d', 'rebel_match']
       interval: 5s
       timeout: 5s
       retries: 20

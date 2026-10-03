@@ -1,58 +1,52 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import type { RowDataPacket } from 'mysql2/promise'
 import request from 'supertest'
 import { createApp } from '../../src/app.js'
 import { composeApp } from '../../src/compose.js'
 import { loadConfig } from '../../src/config.js'
-import { createPool, type Pool } from '../../src/db.js'
-import { migrate } from '../../src/migrations/run.js'
+import {
+  openTestDatabase,
+  testDatabaseUrl,
+  type TestDatabase,
+} from './support/database.js'
 import { DEV_ADMIN_EMAIL } from '../../src/seed/dev/people.js'
 import { planSeed } from '../../src/seed/plan.js'
 import { applySeed } from '../../src/seed/run.js'
 import type { InviteView } from '../../src/services/invites.js'
 
-const databaseUrl = process.env['DATABASE_URL']
-
-if (databaseUrl === undefined) {
-  throw new Error('integration tests need DATABASE_URL')
-}
-
 const config = loadConfig({
-  DATABASE_URL: databaseUrl,
+  DATABASE_URL: testDatabaseUrl,
   SESSION_SECRET: 'integration-session-secret-of-32-chars',
   NODE_ENV: 'development',
   MAIL_DELIVERY: 'none',
 })
 const label = `Integration ${String(Date.now())}`
 
-let pool: Pool
+let db: TestDatabase
 let app: ReturnType<typeof createApp>
 let cookie: string
 let created: InviteView
 
 beforeAll(async () => {
-  await migrate(databaseUrl, 'migrations')
-  pool = createPool(config)
-  await applySeed(pool, planSeed(config), config.consentVersion)
-  await pool.query("UPDATE members SET status = 'active' WHERE email = ?", [
+  db = await openTestDatabase()
+  await applySeed(db.drizzle, planSeed(config), config.consentVersion)
+  await db.query("UPDATE members SET status = 'active' WHERE email = ?", [
     DEV_ADMIN_EMAIL,
   ])
-  const deps = composeApp(config, pool)
+  const deps = composeApp(config, db.drizzle)
   app = createApp(deps)
-  const [admin] = await pool.query<RowDataPacket[]>(
-    'SELECT id FROM members WHERE email = ?',
-    [DEV_ADMIN_EMAIL],
-  )
+  const admin = await db.query('SELECT id FROM members WHERE email = ?', [
+    DEV_ADMIN_EMAIL,
+  ])
   const session = await deps.auth.createSession(String(admin[0]?.['id']))
   cookie = `${session.name}=${session.value}`
 })
 
 afterAll(async () => {
-  await pool.query('DELETE FROM invites WHERE label = ?', [label])
-  await pool.end()
+  await db.query('DELETE FROM invites WHERE label = ?', [label])
+  await db.close()
 })
 
-describe('invite links over MySQL (F16)', () => {
+describe('invite links over Postgres (F16)', () => {
   it('creates an invite with defaults, recording its creator (R-INV-8,10)', async () => {
     const response = await request(app)
       .post('/api/admin/invites')

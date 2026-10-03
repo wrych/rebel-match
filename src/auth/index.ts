@@ -1,5 +1,5 @@
 export { createAuth, type AuthDeps } from './provider.js'
-export { createMysqlAuthStore } from './mysql-store.js'
+export { createAuthStore } from './db-store.js'
 export {
   createMemoryAuthStore,
   type MemoryAuthStore,

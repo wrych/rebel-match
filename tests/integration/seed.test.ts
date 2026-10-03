@@ -1,20 +1,16 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import type { RowDataPacket } from 'mysql2/promise'
 import { loadConfig } from '../../src/config.js'
-import { createPool, type Pool } from '../../src/db.js'
-import { migrate } from '../../src/migrations/run.js'
+import {
+  openTestDatabase,
+  testDatabaseUrl,
+  type TestDatabase,
+} from './support/database.js'
 import { DEV_ADMIN_EMAIL } from '../../src/seed/dev/people.js'
 import { planSeed } from '../../src/seed/plan.js'
 import { applySeed } from '../../src/seed/run.js'
 
-const databaseUrl = process.env['DATABASE_URL']
-
-if (databaseUrl === undefined) {
-  throw new Error('integration tests need DATABASE_URL')
-}
-
 const config = loadConfig({
-  DATABASE_URL: databaseUrl,
+  DATABASE_URL: testDatabaseUrl,
   SESSION_SECRET: 'integration-session-secret-of-32-chars',
   NODE_ENV: 'test',
   SEED_PROFILE: 'dev',
@@ -22,27 +18,27 @@ const config = loadConfig({
 const plan = planSeed(config)
 const emails = plan.members.map((member) => member.email)
 
-let pool: Pool
+let db: TestDatabase
 
+// Counts across the seeded members when the query asks for them with `?`.
 async function count(sql: string): Promise<number> {
-  const [rows] = await pool.query<RowDataPacket[]>(sql, [emails])
+  const rows = await db.query(sql, sql.includes('?') ? [emails] : [])
   return Number(rows[0]?.['n'])
 }
 
 beforeAll(async () => {
-  await migrate(databaseUrl, 'migrations')
-  pool = createPool(config)
+  db = await openTestDatabase()
 })
 
 afterAll(async () => {
-  await pool.query('DELETE FROM members WHERE email IN (?)', [emails])
-  await pool.end()
+  await db.query('DELETE FROM members WHERE email IN (?)', [emails])
+  await db.close()
 })
 
 describe('the dev seed', () => {
   it('can be run twice without duplicating anything (R-SEED-7)', async () => {
-    await applySeed(pool, plan, config.consentVersion)
-    await applySeed(pool, plan, config.consentVersion)
+    await applySeed(db.drizzle, plan, config.consentVersion)
+    await applySeed(db.drizzle, plan, config.consentVersion)
 
     expect(
       await count('SELECT COUNT(*) AS n FROM members WHERE email IN (?)'),
@@ -56,11 +52,11 @@ describe('the dev seed', () => {
   })
 
   it('makes the dev admin an active, onboarded admin (R-DEV-6)', async () => {
-    const [rows] = await pool.query<RowDataPacket[]>(
+    const rows = await db.query(
       'SELECT m.status, m.name, m.consent_at, ' +
-        'GROUP_CONCAT(mr.role_key ORDER BY mr.role_key) AS roles ' +
+        "string_agg(mr.role_key, ',' ORDER BY mr.role_key) AS roles " +
         'FROM members m JOIN member_roles mr ON mr.member_id = m.id ' +
-        'WHERE m.email = ? GROUP BY m.id',
+        'WHERE m.email = ? GROUP BY m.id, m.status, m.name, m.consent_at',
       [DEV_ADMIN_EMAIL],
     )
 
@@ -69,7 +65,7 @@ describe('the dev seed', () => {
   })
 
   it('seeds trends, cases, challenges and offers once, however often it runs (R-SEED-7)', async () => {
-    await applySeed(pool, plan, config.consentVersion)
+    await applySeed(db.drizzle, plan, config.consentVersion)
 
     expect(await count('SELECT COUNT(*) AS n FROM trends')).toBe(8)
     expect(await count('SELECT COUNT(*) AS n FROM cases')).toBe(

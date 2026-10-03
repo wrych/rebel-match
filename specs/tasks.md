@@ -43,7 +43,7 @@ User journeys are in `flows.md` (`F1`…`F14`).
 - [ ] Boundary schemas (`zod`) on every write route. The error handler that
       leaks nothing is in place. _(R-CFG-3, constitution §5)_
 - [x] Vitest harness: `npm test` + `npm run test:integration` (disposable
-      MySQL, `mail.delivery=none`). _(R-QA-1,2)_
+      Postgres or PGlite, `mail.delivery=none`). _(R-QA-1,2)_
 - [x] ESLint + Prettier with the mechanical constitution rules
       (`import/no-cycle`, `complexity`, `no-console`, `no-warning-comments`).
       _(constitution §9)_
@@ -114,17 +114,18 @@ printed dev link (R-DEV-6).
 
 ## DB — Postgres through Drizzle _(ADR 0024)_
 
-- [ ] Drizzle schema for every table and a Postgres baseline migration that
+- [x] Drizzle schema for every table and a Postgres baseline migration that
       replaces the MySQL ones; the runner keeps its forward-only rules.
-      _(R-QA-4, constitution §6)_ The schema, the baseline and a Postgres
-      runner tested on PGlite are in; the app still runs on MySQL.
-- [ ] Every store on Drizzle, with the integration suite green on PGlite; the
+      _(R-QA-4, constitution §6)_
+- [x] Every store on Drizzle, with the integration suite green on PGlite; the
       duplicate-request guard becomes a partial unique index. _(R-QA-2, R-CONN-5)_
 - [ ] With `DATABASE_URL` unset, the server opens PGlite in `.data/pglite` and
       generates a `SESSION_SECRET` kept there; production refuses to start
       without both. _(R-CFG-1, R-NFR-5)_
-- [ ] CI: a Postgres 17 service for `migrate` and the integration suite, and the
-      MySQL service, `compose.yaml` and `mysql2` removed. _(R-QA-2,4)_
+- [x] CI: a Postgres 17 service for `migrate` and the integration suite, and the
+      MySQL service, `compose.yaml` and `mysql2` removed. _(R-QA-2,4)_ The
+      suite also runs on PGlite in CI and on every push; `compose.yaml` now
+      offers Postgres 17 until local runs move to PGlite.
 
 ## M2 — Ask journey _(M3 → M4 → M5, F5)_
 

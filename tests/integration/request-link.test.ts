@@ -1,25 +1,22 @@
 import { randomUUID } from 'node:crypto'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import type { RowDataPacket } from 'mysql2/promise'
 import request from 'supertest'
 import { createApp } from '../../src/app.js'
 import { composeApp } from '../../src/compose.js'
 import { loadConfig } from '../../src/config.js'
-import { createPool, type Pool } from '../../src/db.js'
-import { migrate } from '../../src/migrations/run.js'
+import {
+  openTestDatabase,
+  testDatabaseUrl,
+  type Row,
+  type TestDatabase,
+} from './support/database.js'
 import { DEV_ADMIN_EMAIL } from '../../src/seed/dev/people.js'
 import { planSeed } from '../../src/seed/plan.js'
 import { applySeed } from '../../src/seed/run.js'
 import { createApplicantHandles } from '../../src/services/applicant-handle.js'
 
-const databaseUrl = process.env['DATABASE_URL']
-
-if (databaseUrl === undefined) {
-  throw new Error('integration tests need DATABASE_URL')
-}
-
 const config = loadConfig({
-  DATABASE_URL: databaseUrl,
+  DATABASE_URL: testDatabaseUrl,
   SESSION_SECRET: 'integration-session-secret-of-32-chars',
   NODE_ENV: 'development',
   MAIL_DELIVERY: 'none',
@@ -28,12 +25,12 @@ const stranger = `${randomUUID()}@example.invalid`
 const refused = `${randomUUID()}@example.invalid`
 const member = 'sanne.kuipers@example.invalid'
 
-let pool: Pool
+let db: TestDatabase
 let app: ReturnType<typeof createApp>
 let strangerHandle: string
 
-async function outboxFor(to: string, kind: string): Promise<RowDataPacket[]> {
-  const [rows] = await pool.query<RowDataPacket[]>(
+async function outboxFor(to: string, kind: string): Promise<Row[]> {
+  const rows = await db.query(
     'SELECT * FROM outbox WHERE to_email = ? AND kind = ?',
     [to, kind],
   )
@@ -41,27 +38,26 @@ async function outboxFor(to: string, kind: string): Promise<RowDataPacket[]> {
 }
 
 beforeAll(async () => {
-  await migrate(databaseUrl, 'migrations')
-  pool = createPool(config)
-  await applySeed(pool, planSeed(config), config.consentVersion)
-  await pool.query(
-    "UPDATE members SET status = 'active' WHERE email IN (?, ?)",
-    [DEV_ADMIN_EMAIL, member],
-  )
-  await pool.query("DELETE FROM outbox WHERE kind = 'admin_notice'")
-  app = createApp(composeApp(config, pool))
+  db = await openTestDatabase()
+  await applySeed(db.drizzle, planSeed(config), config.consentVersion)
+  await db.query("UPDATE members SET status = 'active' WHERE email IN (?, ?)", [
+    DEV_ADMIN_EMAIL,
+    member,
+  ])
+  await db.query("DELETE FROM outbox WHERE kind = 'admin_notice'")
+  app = createApp(composeApp(config, db.drizzle))
 })
 
 afterAll(async () => {
-  await pool.query("DELETE FROM outbox WHERE kind = 'admin_notice'")
-  await pool.query('DELETE FROM members WHERE email IN (?, ?)', [
+  await db.query("DELETE FROM outbox WHERE kind = 'admin_notice'")
+  await db.query('DELETE FROM members WHERE email IN (?, ?)', [
     stranger,
     refused,
   ])
-  await pool.end()
+  await db.close()
 })
 
-describe('POST /auth/request-link over MySQL', () => {
+describe('POST /auth/request-link over Postgres', () => {
   it('emails a whitelisted member a link (R-AUTH-4)', async () => {
     const response = await request(app)
       .post('/auth/request-link')
@@ -76,10 +72,9 @@ describe('POST /auth/request-link over MySQL', () => {
       .post('/auth/request-link')
       .send({ email: stranger })
 
-    const [rows] = await pool.query<RowDataPacket[]>(
-      'SELECT status FROM members WHERE email = ?',
-      [stranger],
-    )
+    const rows = await db.query('SELECT status FROM members WHERE email = ?', [
+      stranger,
+    ])
     const notices = await outboxFor(DEV_ADMIN_EMAIL, 'admin_notice')
     strangerHandle = (response.body as { handle: string }).handle
 
@@ -112,7 +107,7 @@ describe('POST /auth/request-link over MySQL', () => {
       .send({ handle, org: 'Rebels' })
       .expect(204)
 
-    const [rows] = await pool.query<RowDataPacket[]>(
+    const rows = await db.query(
       'SELECT requested_name, requested_org FROM members WHERE email = ?',
       [stranger],
     )
@@ -132,7 +127,7 @@ describe('POST /auth/request-link over MySQL', () => {
   })
 
   it('tells a rejected applicant plainly, sending and notifying nothing (R-AUTH-13)', async () => {
-    await pool.query(
+    await db.query(
       "INSERT INTO members (id, email, status, analytics_id) VALUES (?, ?, 'rejected', ?)",
       [randomUUID(), refused, randomUUID()],
     )

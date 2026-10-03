@@ -1,7 +1,16 @@
+import { readdir, readFile } from 'node:fs/promises'
+import { join } from 'node:path'
 import { sql } from 'drizzle-orm'
-import { readMigrations } from '../migrations/run.js'
-import { checksumOf, planMigrations } from '../migrations/plan.js'
+import {
+  checksumOf,
+  orderMigrationNames,
+  planMigrations,
+  type Migration,
+} from '../migrations/plan.js'
 import type { Connection } from './connect.js'
+
+/** Where the migrations drizzle-kit generates live (ADR 0024). */
+export const MIGRATIONS_DIR = 'db/migrations'
 
 const LEDGER = sql`
   CREATE TABLE IF NOT EXISTS schema_migrations (
@@ -10,12 +19,23 @@ const LEDGER = sql`
     applied_at timestamptz  NOT NULL DEFAULT now()
   )`
 
-/** Applies every pending Postgres migration in order, each in a transaction
- * with its ledger row, and returns the names that ran; a second call on an
- * unchanged tree returns nothing (R-QA-4, constitution §6). */
+/** Reads the migration directory in the order the files will run. */
+export async function readMigrations(dir: string): Promise<Migration[]> {
+  const names = orderMigrationNames(await readdir(dir))
+  return Promise.all(
+    names.map(async (name) => ({
+      name,
+      sql: await readFile(join(dir, name), 'utf8'),
+    })),
+  )
+}
+
+/** Applies every pending migration in order, each in a transaction with its
+ * ledger row, and returns the names that ran; a second call on an unchanged
+ * tree returns nothing (R-QA-4, constitution §6). */
 export async function applyMigrations(
   connection: Connection,
-  dir: string,
+  dir: string = MIGRATIONS_DIR,
 ): Promise<string[]> {
   const available = await readMigrations(dir)
   await connection.db.execute(LEDGER)

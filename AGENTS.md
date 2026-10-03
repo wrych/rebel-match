@@ -87,7 +87,7 @@ depends on it, rather than stacking.
 ```sh
 npm ci
 cp .env.example .env     # then set SESSION_SECRET to 32+ characters
-npm run dev              # starts MySQL if Docker is reachable, migrates, seeds,
+npm run dev              # starts Postgres if Docker is reachable, migrates, seeds,
                          # prints a sign-in link for the dev admin, then both servers
 ```
 
@@ -101,10 +101,10 @@ the environment and names what is absent rather than failing later on first use
 |                             |                                                                                                    |
 | --------------------------- | -------------------------------------------------------------------------------------------------- |
 | `npm run dev`               | starts the database (if Docker is reachable), migrates, then the server on :3000 and Vite on :5173 |
-| `npm run db:up` / `db:down` | the development MySQL on its own                                                                   |
+| `npm run db:up` / `db:down` | the development Postgres on its own                                                                |
 | `npm run db:reset`          | drop the volume and rebuild from the migrations                                                    |
 | `npm test`                  | unit tests (Vitest)                                                                                |
-| `npm run test:integration`  | API tests — needs a database (`npm run db:up`)                                                     |
+| `npm run test:integration`  | API tests — on the Postgres `DATABASE_URL` names, or in-memory PGlite when it is empty or unset    |
 | `npm run review`            | the reviewer agent on the branch's change, as the pre-push hook runs it                            |
 | `npm run lint`              | ESLint + Prettier check                                                                            |
 | `npm run typecheck`         | `tsc --noEmit` and `vue-tsc` for the client                                                        |

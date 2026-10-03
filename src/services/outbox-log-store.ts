@@ -1,46 +1,41 @@
-import type { ResultSetHeader, RowDataPacket } from 'mysql2/promise'
-import type { Pool } from '../db.js'
-import type { OutboxKind } from './mailer.js'
-import type { OutboxLog, OutboxRow, OutboxStatus } from './outbox-log.js'
+import { and, desc, eq, lt, type SQL } from 'drizzle-orm'
+import type { Database } from '../db/connect.js'
+import { outbox } from '../db/schema.js'
+import type { OutboxLog } from './outbox-log.js'
 
-function toRow(row: RowDataPacket): OutboxRow {
-  return {
-    id: String(row['id']),
-    to: String(row['to_email']),
-    kind: row['kind'] as OutboxKind,
-    subject: String(row['subject']),
-    bodyText: String(row['body_text']),
-    status: row['status'] as OutboxStatus,
-    error: (row['error'] as string | null) ?? null,
-    createdAt: row['created_at'] as Date,
-    sentAt: (row['sent_at'] as Date | null) ?? null,
-  }
-}
-
-/** The outbound message log over MySQL, newest first. */
-export function createMysqlOutboxLog(pool: Pool): OutboxLog {
+/** The outbound message log over Postgres, newest first. */
+export function createOutboxLog(db: Database): OutboxLog {
   return {
     list: async (filter) => {
-      const [rows] = await pool.query<RowDataPacket[]>(
-        'SELECT * FROM outbox WHERE (? IS NULL OR to_email = ?) ' +
-          'AND (? IS NULL OR status = ?) ' +
-          'ORDER BY created_at DESC, id DESC LIMIT ?',
-        [
-          filter.to ?? null,
-          filter.to ?? null,
-          filter.status ?? null,
-          filter.status ?? null,
-          filter.limit,
-        ],
-      )
-      return rows.map(toRow)
+      const conditions: SQL[] = []
+      if (filter.to !== undefined)
+        conditions.push(eq(outbox.toEmail, filter.to))
+      if (filter.status !== undefined)
+        conditions.push(eq(outbox.status, filter.status))
+      const rows = await db
+        .select()
+        .from(outbox)
+        .where(and(...conditions))
+        .orderBy(desc(outbox.createdAt), desc(outbox.id))
+        .limit(filter.limit)
+      return rows.map((row) => ({
+        id: row.id,
+        to: row.toEmail,
+        kind: row.kind,
+        subject: row.subject,
+        bodyText: row.bodyText,
+        status: row.status,
+        error: row.error,
+        createdAt: row.createdAt,
+        sentAt: row.sentAt,
+      }))
     },
     purgeBefore: async (cutoff) => {
-      const [result] = await pool.query<ResultSetHeader>(
-        'DELETE FROM outbox WHERE created_at < ?',
-        [cutoff],
-      )
-      return result.affectedRows
+      const purged = await db
+        .delete(outbox)
+        .where(lt(outbox.createdAt, cutoff))
+        .returning({ id: outbox.id })
+      return purged.length
     },
   }
 }

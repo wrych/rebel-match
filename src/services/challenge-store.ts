@@ -1,5 +1,12 @@
-import type { RowDataPacket } from 'mysql2/promise'
-import type { Pool } from '../db.js'
+import { and, asc, desc, eq, isNotNull, ne, sql, type SQL } from 'drizzle-orm'
+import type { Database } from '../db/connect.js'
+import {
+  cases,
+  challenges,
+  memberExpertise,
+  members,
+  trends,
+} from '../db/schema.js'
 import type {
   Challenge,
   ChallengeStore,
@@ -7,108 +14,112 @@ import type {
   StoredTrend,
 } from './challenges.js'
 
-function text(value: unknown): string | null {
-  return typeof value === 'string' ? value : null
-}
-
-function challengeOf(row: RowDataPacket): Challenge {
-  return {
-    id: String(row['id']),
-    memberId: String(row['member_id']),
-    body: String(row['body']),
-    trendId: text(row['trend_id']),
-    autoTrend: text(row['auto_trend']),
-    overridden: Number(row['overridden']) === 1,
-    createdAt: (row['created_at'] as Date).toISOString(),
-  }
-}
-
-function peerOf(row: RowDataPacket): PeerCard {
-  return {
-    memberId: String(row['member_id']),
-    name: String(row['name']),
-    jobTitle: text(row['job_title']),
-    org: text(row['org']),
-    sector: text(row['sector']),
-    note: String(row['note'] ?? ''),
-  }
-}
+/** The trend a challenge sits in: the confirmed one, else the matcher's. */
+export const challengeTrend = sql<
+  string | null
+>`coalesce(${challenges.trendId}, ${challenges.autoTrend})`
 
 // Peers are active, onboarded members: a name is what makes a card a person.
-const PEER_COLUMNS = 'm.id AS member_id, m.name, m.job_title, m.org, m.sector'
-const PEER_FILTER = "m.status = 'active' AND m.name IS NOT NULL AND m.id <> ?"
+// No email column is ever selected for a card (R-CONN-6).
+const peerColumns = {
+  memberId: members.id,
+  name: members.name,
+  jobTitle: members.jobTitle,
+  org: members.org,
+  sector: members.sector,
+}
 
-async function trendsOf(pool: Pool): Promise<StoredTrend[]> {
-  const [rows] = await pool.query<RowDataPacket[]>(
-    'SELECT id, short, from_label, peers, keywords FROM trends ORDER BY id',
+const peerFilter = (viewerId: string): SQL | undefined =>
+  and(
+    eq(members.status, 'active'),
+    isNotNull(members.name),
+    ne(members.id, viewerId),
   )
+
+function peerOf(
+  row: Omit<PeerCard, 'name' | 'note'> & {
+    name: string | null
+    note: string | null
+  },
+): PeerCard {
+  return { ...row, name: row.name ?? '', note: row.note ?? '' }
+}
+
+async function trendsOf(db: Database): Promise<StoredTrend[]> {
+  const rows = await db.select().from(trends).orderBy(trends.id)
   return rows.map((row) => ({
-    id: String(row['id']),
-    short: String(row['short']),
-    from: String(row['from_label']),
-    peers: Number(row['peers']),
-    keywords: row['keywords'] as StoredTrend['keywords'],
+    id: row.id,
+    short: row.short,
+    from: row.fromLabel,
+    peers: row.peers,
+    keywords: row.keywords as StoredTrend['keywords'],
   }))
 }
 
 async function peersOf(
-  pool: Pool,
+  db: Database,
   trendId: string,
   viewerId: string,
 ): Promise<{ sameBoat: PeerCard[]; beenThere: PeerCard[] }> {
-  const [same] = await pool.query<RowDataPacket[]>(
-    `SELECT ${PEER_COLUMNS}, c.body AS note FROM challenges c ` +
-      'JOIN members m ON m.id = c.member_id ' +
-      "WHERE c.status = 'active' AND COALESCE(c.trend_id, c.auto_trend) = ? " +
-      `AND ${PEER_FILTER} ORDER BY c.created_at DESC`,
-    [trendId, viewerId],
-  )
-  const [been] = await pool.query<RowDataPacket[]>(
-    `SELECT ${PEER_COLUMNS}, e.note FROM member_expertise e ` +
-      'JOIN members m ON m.id = e.member_id ' +
-      `WHERE e.trend_id = ? AND ${PEER_FILTER} ORDER BY m.name`,
-    [trendId, viewerId],
-  )
+  const same = await db
+    .select({ ...peerColumns, note: challenges.body })
+    .from(challenges)
+    .innerJoin(members, eq(members.id, challenges.memberId))
+    .where(
+      and(
+        eq(challenges.status, 'active'),
+        eq(challengeTrend, trendId),
+        peerFilter(viewerId),
+      ),
+    )
+    .orderBy(desc(challenges.createdAt))
+  const been = await db
+    .select({ ...peerColumns, note: memberExpertise.note })
+    .from(memberExpertise)
+    .innerJoin(members, eq(members.id, memberExpertise.memberId))
+    .where(and(eq(memberExpertise.trendId, trendId), peerFilter(viewerId)))
+    .orderBy(asc(members.name))
   return { sameBoat: same.map(peerOf), beenThere: been.map(peerOf) }
 }
 
-/** Challenges, trends and matches over MySQL (design §2). Peer cards select
- * no email column at all (R-CONN-6). */
-export function createMysqlChallengeStore(pool: Pool): ChallengeStore {
+function challengeOf(row: typeof challenges.$inferSelect): Challenge {
   return {
-    trends: () => trendsOf(pool),
+    id: row.id,
+    memberId: row.memberId,
+    body: row.body,
+    trendId: row.trendId,
+    autoTrend: row.autoTrend,
+    overridden: row.overridden,
+    createdAt: row.createdAt.toISOString(),
+  }
+}
+
+/** Challenges, trends and matches over Postgres (design §2). */
+export function createChallengeStore(db: Database): ChallengeStore {
+  return {
+    trends: () => trendsOf(db),
     insert: async (challenge) => {
-      await pool.query(
-        'INSERT INTO challenges (id, member_id, body, auto_trend) ' +
-          'VALUES (?, ?, ?, ?)',
-        [challenge.id, challenge.memberId, challenge.body, challenge.autoTrend],
-      )
+      await db.insert(challenges).values(challenge)
     },
     find: async (id) => {
-      const [rows] = await pool.query<RowDataPacket[]>(
-        "SELECT * FROM challenges WHERE id = ? AND status = 'active'",
-        [id],
-      )
-      const row = rows[0]
+      const [row] = await db
+        .select()
+        .from(challenges)
+        .where(and(eq(challenges.id, id), eq(challenges.status, 'active')))
       return row === undefined ? null : challengeOf(row)
     },
     setTrend: async (id, trendId, overridden) => {
-      await pool.query(
-        'UPDATE challenges SET trend_id = ?, overridden = ? WHERE id = ?',
-        [trendId, overridden ? 1 : 0, id],
-      )
+      await db
+        .update(challenges)
+        .set({ trendId, overridden })
+        .where(eq(challenges.id, id))
     },
-    peers: (trendId, viewerId) => peersOf(pool, trendId, viewerId),
-    cases: async (trendId) => {
-      const [rows] = await pool.query<RowDataPacket[]>(
-        'SELECT org, url, takeaway FROM cases WHERE trend_id = ? ORDER BY id',
-        [trendId],
-      )
-      return rows.map((row) => ({
-        org: String(row['org']),
-        url: String(row['url']),
-        takeaway: String(row['takeaway']),
-      }))
-    },
+    peers: (trendId, viewerId) => peersOf(db, trendId, viewerId),
+    cases: (trendId) =>
+      db
+        .select({ org: cases.org, url: cases.url, takeaway: cases.takeaway })
+        .from(cases)
+        .where(eq(cases.trendId, trendId))
+        .orderBy(cases.id),
   }
 }

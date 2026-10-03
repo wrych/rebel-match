@@ -1,52 +1,42 @@
+import { sql } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import mysql from 'mysql2/promise'
-import { migrate } from '../../src/migrations/run.js'
-import { readMigrations } from '../../src/migrations/run.js'
+import { connect, type Connection } from '../../src/db/connect.js'
+import { applyMigrations, readMigrations } from '../../src/db/migrate.js'
+import { serverUrl } from './support/database.js'
 
-const databaseUrl = process.env['DATABASE_URL']
-
-if (databaseUrl === undefined) {
-  throw new Error('integration tests need DATABASE_URL')
-}
-
-const url = databaseUrl
+const url = serverUrl()
+let connection: Connection
 
 async function tableNames(): Promise<string[]> {
-  const connection = await mysql.createConnection({ uri: url })
-  try {
-    const [rows] = await connection.query<mysql.RowDataPacket[]>(
-      'SELECT table_name AS t FROM information_schema.tables ' +
-        'WHERE table_schema = DATABASE()',
-    )
-    return rows.map((row) => String(row['t'])).sort()
-  } finally {
-    await connection.end()
-  }
+  const rows = await connection.rows<{ t: string }>(
+    sql`SELECT table_name AS t FROM information_schema.tables
+        WHERE table_schema = 'public' ORDER BY table_name`,
+  )
+  return rows.map((row) => row.t)
 }
 
+// Every file shares CI's database, so this one leaves it empty for the next.
 async function dropEverything(): Promise<void> {
-  const connection = await mysql.createConnection({
-    uri: url,
-    multipleStatements: true,
-  })
-  try {
-    await connection.query('SET FOREIGN_KEY_CHECKS = 0')
-    for (const name of await tableNames()) {
-      await connection.query(`DROP TABLE IF EXISTS \`${name}\``)
-    }
-    await connection.query('SET FOREIGN_KEY_CHECKS = 1')
-  } finally {
-    await connection.end()
-  }
+  await connection.runScript(
+    'DROP SCHEMA public CASCADE; CREATE SCHEMA public;',
+  )
 }
 
 describe('migrations', () => {
-  beforeAll(dropEverything)
-  afterAll(dropEverything)
+  beforeAll(async () => {
+    connection = await connect(
+      url === undefined ? { kind: 'pglite' } : { kind: 'postgres', url },
+    )
+    await dropEverything()
+  })
+  afterAll(async () => {
+    await dropEverything()
+    await connection.close()
+  })
 
   it('runs from an empty database (R-QA-4)', async () => {
-    const applied = await migrate(url, 'migrations')
-    const expected = (await readMigrations('migrations')).map((m) => m.name)
+    const applied = await applyMigrations(connection)
+    const expected = (await readMigrations('db/migrations')).map((m) => m.name)
 
     expect(applied).toEqual(expected)
   })
@@ -72,21 +62,16 @@ describe('migrations', () => {
   })
 
   it('is a no-op when run again, so deploys are idempotent', async () => {
-    expect(await migrate(url, 'migrations')).toEqual([])
+    expect(await applyMigrations(connection)).toEqual([])
   })
 
   it('refuses to run when an applied migration has been edited', async () => {
-    const connection = await mysql.createConnection({ uri: url })
-    try {
-      await connection.query(
-        "UPDATE schema_migrations SET checksum = 'tampered' WHERE name = ?",
-        ['001_members.sql'],
-      )
-    } finally {
-      await connection.end()
-    }
+    await connection.db.execute(
+      sql`UPDATE schema_migrations SET checksum = 'tampered'
+          WHERE name = '0000_baseline.sql'`,
+    )
 
-    await expect(migrate(url, 'migrations')).rejects.toThrow(
+    await expect(applyMigrations(connection)).rejects.toThrow(
       /already ran and have since been edited/,
     )
   })

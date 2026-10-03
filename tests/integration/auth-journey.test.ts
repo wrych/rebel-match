@@ -1,34 +1,30 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import type { RowDataPacket } from 'mysql2/promise'
 import request from 'supertest'
 import { createApp } from '../../src/app.js'
 import type { AuthProvider } from '../../src/auth/index.js'
 import { composeApp, composeAuth, composeMailer } from '../../src/compose.js'
 import { loadConfig } from '../../src/config.js'
-import { createPool, type Pool } from '../../src/db.js'
-import { migrate } from '../../src/migrations/run.js'
+import {
+  openTestDatabase,
+  testDatabaseUrl,
+  type TestDatabase,
+} from './support/database.js'
 import { DEV_ADMIN_EMAIL } from '../../src/seed/dev/people.js'
 import { planSeed } from '../../src/seed/plan.js'
 import { applySeed } from '../../src/seed/run.js'
 
-const databaseUrl = process.env['DATABASE_URL']
-
-if (databaseUrl === undefined) {
-  throw new Error('integration tests need DATABASE_URL')
-}
-
 const config = loadConfig({
-  DATABASE_URL: databaseUrl,
+  DATABASE_URL: testDatabaseUrl,
   SESSION_SECRET: 'integration-session-secret-of-32-chars',
   NODE_ENV: 'development',
   MAIL_DELIVERY: 'none',
 })
 
-let pool: Pool
+let db: TestDatabase
 let auth: AuthProvider
 
 async function linkFromOutbox(): Promise<string> {
-  const [rows] = await pool.query<RowDataPacket[]>(
+  const rows = await db.query(
     'SELECT body_text FROM outbox WHERE to_email = ? ' +
       'ORDER BY created_at DESC LIMIT 1',
     [DEV_ADMIN_EMAIL],
@@ -39,20 +35,19 @@ async function linkFromOutbox(): Promise<string> {
 }
 
 beforeAll(async () => {
-  await migrate(databaseUrl, 'migrations')
-  pool = createPool(config)
-  await applySeed(pool, planSeed(config), config.consentVersion)
-  auth = composeAuth(config, pool, composeMailer(config, pool))
+  db = await openTestDatabase()
+  await applySeed(db.drizzle, planSeed(config), config.consentVersion)
+  auth = composeAuth(config, db.drizzle, composeMailer(config, db.drizzle))
 })
 
 afterAll(async () => {
-  await pool.query('DELETE FROM outbox WHERE to_email = ?', [DEV_ADMIN_EMAIL])
-  await pool.end()
+  await db.query('DELETE FROM outbox WHERE to_email = ?', [DEV_ADMIN_EMAIL])
+  await db.close()
 })
 
 describe('signing in as the dev admin, end to end (R-QA-2)', () => {
   it('goes from a logged link to an admin session', async () => {
-    const app = createApp({ ...composeApp(config, pool), auth })
+    const app = createApp({ ...composeApp(config, db.drizzle), auth })
     await auth.issueLink(DEV_ADMIN_EMAIL, {
       kind: 'self_service',
       next: '/admin/outbox',

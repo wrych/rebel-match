@@ -22,7 +22,7 @@ function setup(state: LinkRequestState = 'check-email'): {
   app.use(
     requestLinkRoutes({
       config: loadConfig({
-        DATABASE_URL: 'mysql://u:p@localhost/db',
+        DATABASE_URL: 'postgres://u:p@localhost/db',
         SESSION_SECRET: 'x'.repeat(32),
       }),
       admission: {

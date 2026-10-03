@@ -1,23 +1,19 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import type { RowDataPacket } from 'mysql2/promise'
 import request from 'supertest'
 import { createApp } from '../../src/app.js'
 import { composeApp } from '../../src/compose.js'
 import { loadConfig } from '../../src/config.js'
-import { createPool, type Pool } from '../../src/db.js'
-import { migrate } from '../../src/migrations/run.js'
+import {
+  openTestDatabase,
+  testDatabaseUrl,
+  type TestDatabase,
+} from './support/database.js'
 import { planSeed } from '../../src/seed/plan.js'
 import { applySeed } from '../../src/seed/run.js'
 import type { Matches } from '../../src/services/challenges.js'
 
-const databaseUrl = process.env['DATABASE_URL']
-
-if (databaseUrl === undefined) {
-  throw new Error('integration tests need DATABASE_URL')
-}
-
 const config = loadConfig({
-  DATABASE_URL: databaseUrl,
+  DATABASE_URL: testDatabaseUrl,
   SESSION_SECRET: 'integration-session-secret-of-32-chars',
   NODE_ENV: 'test',
   SEED_PROFILE: 'dev',
@@ -27,7 +23,7 @@ const stranger = 'milan.horvat@example.invalid'
 const body =
   'Since we flattened, nobody knows who can decide what about budgets.'
 
-let pool: Pool
+let db: TestDatabase
 let app: ReturnType<typeof createApp>
 let cookies: Record<string, string>
 let challengeId: string
@@ -36,19 +32,15 @@ async function cookieFor(
   deps: ReturnType<typeof composeApp>,
   email: string,
 ): Promise<string> {
-  const [rows] = await pool.query<RowDataPacket[]>(
-    'SELECT id FROM members WHERE email = ?',
-    [email],
-  )
+  const rows = await db.query('SELECT id FROM members WHERE email = ?', [email])
   const session = await deps.auth.createSession(String(rows[0]?.['id']))
   return `${session.name}=${session.value}`
 }
 
 beforeAll(async () => {
-  await migrate(databaseUrl, 'migrations')
-  pool = createPool(config)
-  await applySeed(pool, planSeed(config), config.consentVersion)
-  const deps = composeApp(config, pool)
+  db = await openTestDatabase()
+  await applySeed(db.drizzle, planSeed(config), config.consentVersion)
+  const deps = composeApp(config, db.drizzle)
   app = createApp(deps)
   cookies = {
     author: await cookieFor(deps, author),
@@ -57,11 +49,11 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
-  await pool.query('DELETE FROM challenges WHERE body = ?', [body])
-  await pool.end()
+  await db.query('DELETE FROM challenges WHERE body = ?', [body])
+  await db.close()
 })
 
-describe('the ask journey over MySQL (F5)', () => {
+describe('the ask journey over Postgres (F5)', () => {
   it('saves a challenge and picks its trend (R-ASK-4,5)', async () => {
     const response = await request(app)
       .post('/api/challenges')
@@ -94,11 +86,15 @@ describe('the ask journey over MySQL (F5)', () => {
       .send({ trendId: '04' })
       .expect(204)
 
-    const [rows] = await pool.query<RowDataPacket[]>(
+    const rows = await db.query(
       'SELECT trend_id, auto_trend, overridden FROM challenges WHERE id = ?',
       [challengeId],
     )
-    expect(rows[0]).toEqual({ trend_id: '04', auto_trend: '06', overridden: 1 })
+    expect(rows[0]).toEqual({
+      trend_id: '04',
+      auto_trend: '06',
+      overridden: true,
+    })
   })
 
   it('matches peers, offers and cases for the trend, never an email (R-ASK-8)', async () => {

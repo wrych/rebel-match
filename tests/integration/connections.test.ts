@@ -1,23 +1,19 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import type { RowDataPacket } from 'mysql2/promise'
 import request from 'supertest'
 import { createApp } from '../../src/app.js'
 import { composeApp } from '../../src/compose.js'
 import { loadConfig } from '../../src/config.js'
-import { createPool, type Pool } from '../../src/db.js'
-import { migrate } from '../../src/migrations/run.js'
+import {
+  openTestDatabase,
+  testDatabaseUrl,
+  type TestDatabase,
+} from './support/database.js'
 import { planSeed } from '../../src/seed/plan.js'
 import { applySeed } from '../../src/seed/run.js'
 import type { ConnectionView } from '../../src/services/connections.js'
 
-const databaseUrl = process.env['DATABASE_URL']
-
-if (databaseUrl === undefined) {
-  throw new Error('integration tests need DATABASE_URL')
-}
-
 const config = loadConfig({
-  DATABASE_URL: databaseUrl,
+  DATABASE_URL: testDatabaseUrl,
   SESSION_SECRET: 'integration-session-secret-of-32-chars',
   NODE_ENV: 'test',
   SEED_PROFILE: 'dev',
@@ -29,32 +25,30 @@ const people = {
   dee: 'jonas.brand@example.invalid',
 }
 
-let pool: Pool
+let db: TestDatabase
 let app: ReturnType<typeof createApp>
 const ids: Record<string, string> = {}
 const cookies: Record<string, string> = {}
 let bobChallenge: string
 
 beforeAll(async () => {
-  await migrate(databaseUrl, 'migrations')
-  pool = createPool(config)
-  await applySeed(pool, planSeed(config), config.consentVersion)
-  const deps = composeApp(config, pool)
+  db = await openTestDatabase()
+  await applySeed(db.drizzle, planSeed(config), config.consentVersion)
+  const deps = composeApp(config, db.drizzle)
   app = createApp(deps)
   for (const [who, email] of Object.entries(people)) {
-    const [rows] = await pool.query<RowDataPacket[]>(
-      'SELECT id FROM members WHERE email = ?',
-      [email],
-    )
+    const rows = await db.query('SELECT id FROM members WHERE email = ?', [
+      email,
+    ])
     ids[who] = String(rows[0]?.['id'])
     const session = await deps.auth.createSession(ids[who])
     cookies[who] = `${session.name}=${session.value}`
   }
-  await pool.query(
+  await db.query(
     'DELETE FROM connection_requests WHERE requester_id IN (?) OR target_id IN (?)',
     [Object.values(ids), Object.values(ids)],
   )
-  const [challenge] = await pool.query<RowDataPacket[]>(
+  const challenge = await db.query(
     'SELECT id FROM challenges WHERE member_id = ? LIMIT 1',
     [ids['bob']],
   )
@@ -62,11 +56,11 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
-  await pool.query(
+  await db.query(
     'DELETE FROM connection_requests WHERE requester_id IN (?) OR target_id IN (?)',
     [Object.values(ids), Object.values(ids)],
   )
-  await pool.end()
+  await db.close()
 })
 
 function as(who: string): (r: request.Test) => request.Test {
@@ -86,7 +80,7 @@ async function connect(
   })
 }
 
-describe('connecting over MySQL: the double opt-in (F7, ADR 0004)', () => {
+describe('connecting over Postgres: the double opt-in (F7, ADR 0004)', () => {
   let accepted: string
   let declined: string
 
@@ -182,7 +176,7 @@ describe('connecting over MySQL: the double opt-in (F7, ADR 0004)', () => {
     ])
 
     expect([first.status, second.status].sort()).toEqual([201, 409])
-    const [rows] = await pool.query<RowDataPacket[]>(
+    const rows = await db.query(
       "SELECT COUNT(*) AS n FROM connection_requests WHERE requester_id = ? AND target_id = ? AND status = 'pending'",
       [ids['ada'], ids['dee']],
     )

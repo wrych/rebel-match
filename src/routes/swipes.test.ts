@@ -8,7 +8,7 @@ import type { SwipeInput } from '../services/swipes.js'
 import { swipeRoutes } from './swipes.js'
 
 const config = loadConfig({
-  DATABASE_URL: 'mysql://user:pw@localhost:3306/rebel_match',
+  DATABASE_URL: 'postgres://user:pw@localhost:5432/rebel_match',
   SESSION_SECRET: 'x'.repeat(32),
 })
 const auth = createAuth({

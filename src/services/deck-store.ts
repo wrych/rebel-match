@@ -1,43 +1,61 @@
-import type { RowDataPacket } from 'mysql2/promise'
-import type { Pool } from '../db.js'
-import type { DeckCard, DeckStore } from './deck.js'
+import { and, desc, eq, isNotNull, ne, notExists } from 'drizzle-orm'
+import type { Database } from '../db/connect.js'
+import { challenges, members, swipes, trends } from '../db/schema.js'
+import { challengeTrend } from './challenge-store.js'
+import type { DeckStore } from './deck.js'
 
-function text(value: unknown): string | null {
-  return typeof value === 'string' ? value : null
+const cardColumns = {
+  challengeId: challenges.id,
+  body: challenges.body,
+  trendId: trends.id,
+  short: trends.short,
+  name: members.name,
+  jobTitle: members.jobTitle,
+  org: members.org,
+  sector: members.sector,
 }
 
-function cardOf(row: RowDataPacket): DeckCard {
-  return {
-    challengeId: String(row['id']),
-    body: String(row['body']),
-    trend: { id: String(row['trend_id']), short: String(row['short']) },
-    author: {
-      name: String(row['name']),
-      jobTitle: text(row['job_title']),
-      org: text(row['org']),
-      sector: text(row['sector']),
-    },
-  }
-}
-
-/** The deck over MySQL. Selects no email column (R-CONN-6); the swipe check
- * runs in the query, so a swiped card cannot reappear (R-OFF-2). */
-export function createMysqlDeckStore(pool: Pool): DeckStore {
+/** The deck over Postgres. Selects no email column (R-CONN-6); the swipe
+ * check runs in the query, so a swiped card cannot reappear (R-OFF-2). */
+export function createDeckStore(db: Database): DeckStore {
   return {
     nextFor: async (viewerId, limit) => {
-      const [rows] = await pool.query<RowDataPacket[]>(
-        'SELECT c.id, c.body, t.id AS trend_id, t.short, ' +
-          'm.name, m.job_title, m.org, m.sector FROM challenges c ' +
-          'JOIN members m ON m.id = c.member_id ' +
-          'JOIN trends t ON t.id = COALESCE(c.trend_id, c.auto_trend) ' +
-          "WHERE c.status = 'active' AND m.status = 'active' " +
-          'AND m.name IS NOT NULL AND c.member_id <> ? ' +
-          'AND NOT EXISTS (SELECT 1 FROM swipes s ' +
-          'WHERE s.member_id = ? AND s.challenge_id = c.id) ' +
-          'ORDER BY c.created_at DESC, c.id LIMIT ?',
-        [viewerId, viewerId, limit],
-      )
-      return rows.map(cardOf)
+      const swiped = db
+        .select({ challengeId: swipes.challengeId })
+        .from(swipes)
+        .where(
+          and(
+            eq(swipes.memberId, viewerId),
+            eq(swipes.challengeId, challenges.id),
+          ),
+        )
+      const rows = await db
+        .select(cardColumns)
+        .from(challenges)
+        .innerJoin(members, eq(members.id, challenges.memberId))
+        .innerJoin(trends, eq(trends.id, challengeTrend))
+        .where(
+          and(
+            eq(challenges.status, 'active'),
+            eq(members.status, 'active'),
+            isNotNull(members.name),
+            ne(challenges.memberId, viewerId),
+            notExists(swiped),
+          ),
+        )
+        .orderBy(desc(challenges.createdAt), challenges.id)
+        .limit(limit)
+      return rows.map((row) => ({
+        challengeId: row.challengeId,
+        body: row.body,
+        trend: { id: row.trendId, short: row.short },
+        author: {
+          name: row.name ?? '',
+          jobTitle: row.jobTitle,
+          org: row.org,
+          sector: row.sector,
+        },
+      }))
     },
   }
 }

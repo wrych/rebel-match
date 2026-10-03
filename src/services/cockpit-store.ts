@@ -1,87 +1,121 @@
-import type { RowDataPacket } from 'mysql2/promise'
-import type { Pool } from '../db.js'
-import type { Trend } from './challenges.js'
-import type { CockpitChallenge, CockpitStore } from './cockpit.js'
+import { and, count, desc, eq, sql } from 'drizzle-orm'
+import { alias } from 'drizzle-orm/pg-core'
+import type { Database } from '../db/connect.js'
+import {
+  cases,
+  challenges,
+  connectionRequests,
+  follows,
+  memberExpertise,
+  members,
+  trends,
+} from '../db/schema.js'
+import { challengeTrend } from './challenge-store.js'
+import type { CockpitStore } from './cockpit.js'
 import type { FollowStore } from './follows.js'
+
+// Interpolated into SQL an alias prints only its name, so each FROM below
+// names the table before it.
+const other = alias(challenges, 'other')
+const peer = alias(members, 'peer')
 
 // Counted the way the matches view lists them (R-ASK-8): other active,
 // onboarded members, never the member themselves.
-const COUNTS =
-  '(SELECT COUNT(*) FROM challenges o JOIN members m ON m.id = o.member_id ' +
-  "WHERE o.status = 'active' AND COALESCE(o.trend_id, o.auto_trend) = t.id " +
-  "AND m.status = 'active' AND m.name IS NOT NULL AND m.id <> c.member_id) AS same_boat, " +
-  '(SELECT COUNT(*) FROM member_expertise e JOIN members m ON m.id = e.member_id ' +
-  "WHERE e.trend_id = t.id AND m.status = 'active' AND m.name IS NOT NULL " +
-  'AND m.id <> c.member_id) AS been_there, ' +
-  '(SELECT COUNT(*) FROM cases k WHERE k.trend_id = t.id) AS cases'
+const isPeer = sql`${peer.status} = 'active' AND ${peer.name} IS NOT NULL
+  AND ${peer.id} <> ${challenges.memberId}`
 
-function cockpitChallengeOf(row: RowDataPacket): CockpitChallenge {
-  const trendId = row['trend_id'] as string | null
-  return {
-    id: String(row['id']),
-    body: String(row['body']),
-    trend:
-      trendId === null ? null : { id: trendId, short: String(row['short']) },
-    counts: {
-      sameBoat: Number(row['same_boat'] ?? 0),
-      beenThere: Number(row['been_there'] ?? 0),
-      cases: Number(row['cases'] ?? 0),
-    },
-  }
-}
+const sameBoat = sql<number>`(SELECT count(*)::int FROM ${challenges} ${other}
+  JOIN ${members} ${peer} ON ${peer.id} = ${other.memberId}
+  WHERE ${other.status} = 'active'
+    AND coalesce(${other.trendId}, ${other.autoTrend}) = ${trends.id}
+    AND ${isPeer})`
 
-/** The cockpit over MySQL (design §2). */
-export function createMysqlCockpitStore(pool: Pool): CockpitStore {
+const beenThere = sql<number>`(SELECT count(*)::int FROM ${memberExpertise}
+  JOIN ${members} ${peer} ON ${peer.id} = ${memberExpertise.memberId}
+  WHERE ${memberExpertise.trendId} = ${trends.id} AND ${isPeer})`
+
+const caseCount = sql<number>`(SELECT count(*)::int FROM ${cases}
+  WHERE ${cases.trendId} = ${trends.id})`
+
+/** The cockpit over Postgres (design §2). */
+export function createCockpitStore(db: Database): CockpitStore {
   return {
     challenges: async (memberId) => {
-      const [rows] = await pool.query<RowDataPacket[]>(
-        `SELECT c.id, c.body, t.id AS trend_id, t.short, ${COUNTS} ` +
-          'FROM challenges c ' +
-          'LEFT JOIN trends t ON t.id = COALESCE(c.trend_id, c.auto_trend) ' +
-          "WHERE c.member_id = ? AND c.status = 'active' " +
-          'ORDER BY c.created_at DESC, c.id',
-        [memberId],
-      )
-      return rows.map(cockpitChallengeOf)
+      const rows = await db
+        .select({
+          id: challenges.id,
+          body: challenges.body,
+          trendId: trends.id,
+          short: trends.short,
+          sameBoat,
+          beenThere,
+          cases: caseCount,
+        })
+        .from(challenges)
+        .leftJoin(trends, eq(trends.id, challengeTrend))
+        .where(
+          and(
+            eq(challenges.memberId, memberId),
+            eq(challenges.status, 'active'),
+          ),
+        )
+        .orderBy(desc(challenges.createdAt), challenges.id)
+      return rows.map((row) => ({
+        id: row.id,
+        body: row.body,
+        trend:
+          row.trendId === null
+            ? null
+            : { id: row.trendId, short: row.short ?? '' },
+        counts: {
+          sameBoat: row.sameBoat,
+          beenThere: row.beenThere,
+          cases: row.cases,
+        },
+      }))
     },
     pendingIncoming: async (memberId) => {
-      const [rows] = await pool.query<RowDataPacket[]>(
-        'SELECT COUNT(*) AS n FROM connection_requests ' +
-          "WHERE target_id = ? AND status = 'pending'",
-        [memberId],
-      )
-      return Number(rows[0]?.['n'] ?? 0)
+      const [row] = await db
+        .select({ n: count() })
+        .from(connectionRequests)
+        .where(
+          and(
+            eq(connectionRequests.targetId, memberId),
+            eq(connectionRequests.status, 'pending'),
+          ),
+        )
+      return row?.n ?? 0
     },
   }
 }
 
-/** Follows over MySQL (design §2). */
-export function createMysqlFollowStore(pool: Pool): FollowStore {
+/** Follows over Postgres (design §2). */
+export function createFollowStore(db: Database): FollowStore {
   return {
     follow: async (memberId, trendId) => {
-      await pool.query(
-        'INSERT IGNORE INTO follows (member_id, trend_id) VALUES (?, ?)',
-        [memberId, trendId],
-      )
+      await db
+        .insert(follows)
+        .values({ memberId, trendId })
+        .onConflictDoNothing()
     },
     unfollow: async (memberId, trendId) => {
-      await pool.query(
-        'DELETE FROM follows WHERE member_id = ? AND trend_id = ?',
-        [memberId, trendId],
-      )
+      await db
+        .delete(follows)
+        .where(
+          and(eq(follows.memberId, memberId), eq(follows.trendId, trendId)),
+        )
     },
-    followed: async (memberId) => {
-      const [rows] = await pool.query<RowDataPacket[]>(
-        'SELECT t.id, t.short, t.from_label, t.peers FROM follows f ' +
-          'JOIN trends t ON t.id = f.trend_id WHERE f.member_id = ? ORDER BY t.id',
-        [memberId],
-      )
-      return rows.map((row): Trend => ({
-        id: String(row['id']),
-        short: String(row['short']),
-        from: String(row['from_label']),
-        peers: Number(row['peers']),
-      }))
-    },
+    followed: (memberId) =>
+      db
+        .select({
+          id: trends.id,
+          short: trends.short,
+          from: trends.fromLabel,
+          peers: trends.peers,
+        })
+        .from(follows)
+        .innerJoin(trends, eq(trends.id, follows.trendId))
+        .where(eq(follows.memberId, memberId))
+        .orderBy(trends.id),
   }
 }
