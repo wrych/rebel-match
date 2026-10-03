@@ -502,9 +502,10 @@ onboarding (except the onboarding routes).
 
 ### Onboarding
 
-| Method | Path              | Body                                               | Behavior                                                                                   |
-| ------ | ----------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| POST   | `/api/onboarding` | `{name, jobTitle?, org?, sector?, consentVersion}` | Set name/profile, record consent version + timestamp. Required before other `/api` routes. |
+| Method | Path              | Body                                               | Behavior                                                                                                                                                                                                         |
+| ------ | ----------------- | -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/onboarding` | —                                                  | The form pre-filled: the member's profile so far, with `requested_name`/`requested_org` filling a missing name or organization (F2, R-AUTH-12), and the consent version in force. Pre-filling never stores them. |
+| POST   | `/api/onboarding` | `{name, jobTitle?, org?, sector?, consentVersion}` | Set name/profile, record consent version + timestamp. Required before other `/api` routes. A `consentVersion` other than the current one → `409` (R-ONB-4).                                                      |
 
 ### Ask journey
 

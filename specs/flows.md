@@ -104,7 +104,7 @@ Conventions:
    addresses are shared only when both sides accept a connection**, and that the
    app is closed to whitelisted members (R-ONB-5).
 4. Member ticks explicit acceptance and submits → `POST /api/onboarding` with
-   `{name, role?, org?, consentVersion}`.
+   `{name, jobTitle?, org?, consentVersion}`.
 5. Server stores the profile plus the consent version and timestamp (R-ONB-3,
    R-NFR-6). **Stopwatch for R-NFR-3 stops here.**
 6. Member lands on **F3**.
