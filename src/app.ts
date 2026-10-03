@@ -30,6 +30,7 @@ import type { OnboardingService } from './services/onboarding.js'
 import type { MemberProfiles } from './services/member-profiles.js'
 import type { OutboxLog } from './services/outbox-log.js'
 import type { ErasureService } from './services/erasure.js'
+import type { MemberRoster } from './services/member-roster.js'
 import type { RoleService } from './services/roles.js'
 
 export interface AppDeps {
@@ -39,6 +40,7 @@ export interface AppDeps {
   profiles: MemberProfiles
   roles: RoleService
   erasure: ErasureService
+  roster: MemberRoster
   outbox: OutboxLog
   admission: AdmissionService
   approvals: ApprovalService
