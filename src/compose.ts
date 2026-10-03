@@ -69,6 +69,20 @@ export function composeAuth(
   })
 }
 
+// The member journeys: asking, offering and connecting (F5, F6, F7).
+function composeJourneys(
+  config: Config,
+  pool: Pool,
+): Pick<AppDeps, 'challenges' | 'deck'> {
+  return {
+    challenges: createChallenges({ store: createMysqlChallengeStore(pool) }),
+    deck: createDeck({
+      store: createMysqlDeckStore(pool),
+      pageSize: config.limits.deckPageSize,
+    }),
+  }
+}
+
 /** Every service the app serves, wired to MySQL: the server and the
  * integration tests build the same thing, so a test cannot pass on wiring the
  * server lacks. */
@@ -113,10 +127,6 @@ export function composeApp(config: Config, pool: Pool): AppDeps {
       defaults: config.limits,
       newId: randomUUID,
     }),
-    challenges: createChallenges({ store: createMysqlChallengeStore(pool) }),
-    deck: createDeck({
-      store: createMysqlDeckStore(pool),
-      pageSize: config.limits.deckPageSize,
-    }),
+    ...composeJourneys(config, pool),
   }
 }
