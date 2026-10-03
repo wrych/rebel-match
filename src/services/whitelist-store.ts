@@ -20,10 +20,7 @@ async function grant(
     .onConflictDoNothing()
 }
 
-/** Creates the address as a new active member, or locks the member who has
- * it: one statement, so no erasure can slip between finding and settling. A
- * no-op update is what makes Postgres return and lock an existing row. */
-async function claim(
+async function insertOrLockMember(
   db: Database,
   email: string,
 ): Promise<{ id: string; status: string; created: boolean }> {
@@ -54,7 +51,7 @@ async function addOne(
   role: string,
   grantedBy: string,
 ): Promise<StoredOutcome> {
-  const member = await claim(db, email)
+  const member = await insertOrLockMember(db, email)
   if (member.created) {
     await grant(db, member.id, role, grantedBy)
     return 'added'
