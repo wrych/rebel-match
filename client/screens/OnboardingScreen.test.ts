@@ -11,7 +11,7 @@ const draft = {
   name: 'Door Name',
   jobTitle: null,
   org: 'Door Org',
-  sector: null,
+  sector: 'Health',
   consentVersion: latestConsentVersion,
 }
 const limits = {
@@ -102,17 +102,22 @@ describe('OnboardingScreen', () => {
       name: 'Door Name',
       jobTitle: 'Coach',
       org: 'Door Org',
+      sector: 'Health',
       consentVersion: latestConsentVersion,
     })
     expect(push).toHaveBeenCalledWith('/matches')
   })
 
-  it('asks them to read again when the terms changed meanwhile (R-ONB-4)', async () => {
+  it('asks them to read again when the terms changed meanwhile, keeping their edits (R-ONB-4)', async () => {
     server(409)
     const screen = await mountScreen()
+    await screen.find('#name').setValue('Ada Rebel')
 
     await acceptAndSubmit(screen)
 
+    expect((screen.find('#name').element as HTMLInputElement).value).toBe(
+      'Ada Rebel',
+    )
     expect(screen.find('[role="alert"]').text()).toContain('read them again')
     expect(
       (screen.find('input[type="checkbox"]').element as HTMLInputElement)

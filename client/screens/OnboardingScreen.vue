@@ -14,6 +14,8 @@ const router = useRouter()
 const name = ref('')
 const jobTitle = ref('')
 const org = ref('')
+// Not asked here, but sent back as given so saving never erases it.
+const sector = ref('')
 const accepted = ref(false)
 const consentVersion = ref<string | null>(null)
 const limits = ref<ClientConfig['limits'] | null>(null)
@@ -39,10 +41,20 @@ async function load(): Promise<void> {
     name.value = draft.name ?? ''
     jobTitle.value = draft.jobTitle ?? ''
     org.value = draft.org ?? ''
+    sector.value = draft.sector ?? ''
     consentVersion.value = draft.consentVersion
     limits.value = config.limits
   } catch {
     problem.value = 'The form could not be loaded. Reload to try again.'
+  }
+}
+
+// After a consent change only the words are new; what they typed stays.
+async function reloadConsent(): Promise<void> {
+  try {
+    consentVersion.value = (await fetchDraft()).consentVersion
+  } catch {
+    problem.value = 'The new terms could not be loaded. Reload to try again.'
   }
 }
 
@@ -55,12 +67,13 @@ async function submit(): Promise<void> {
       name: name.value,
       jobTitle: jobTitle.value,
       org: org.value,
+      sector: sector.value,
       consentVersion: consentVersion.value,
     })
     if (outcome === 'stale') {
       accepted.value = false
       problem.value = 'The terms have just changed. Please read them again.'
-      await load()
+      await reloadConsent()
       return
     }
     forgetMe()

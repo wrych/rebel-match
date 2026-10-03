@@ -13,6 +13,7 @@ export interface OnboardingAnswers {
   name: string
   jobTitle: string
   org: string
+  sector: string
   consentVersion: string
 }
 

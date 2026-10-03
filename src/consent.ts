@@ -1,13 +1,6 @@
-/**
- * The data-usage consent, one entry per version (R-ONB-3, R-ONB-5). A version
- * is what a member accepts and what `consent_version` records, so its words
- * never change once members have accepted it: new words get a new version,
- * and members accept again (R-ONB-4). Shared with the client, like the route
- * table, so the screen shows exactly the words the server records.
- *
- * The wording below is a draft that states what R-ONB-5 requires; who owns
- * the final legal copy is still open (requirements, open question 1).
- */
+/** Each consent version's words (R-ONB-3, R-ONB-5). Accepted words never
+ * change: new words get a new version, accepted again (R-ONB-4). Shared with
+ * the client so the screen shows what `consent_version` records. */
 export const consentTexts: Readonly<Record<string, readonly string[]>> = {
   '2026-11-01': [
     'Rebel Match is closed: membership is by invitation, from the host’s list or an event invite link.',
