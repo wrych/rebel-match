@@ -113,4 +113,9 @@ function toggleMood(): void {
 .page > * {
   flex: 1 1 auto;
 }
+
+/* Exempt from the stretch above, which is for screens, not chrome. */
+.page > .steps {
+  flex: 0 0 auto;
+}
 </style>
