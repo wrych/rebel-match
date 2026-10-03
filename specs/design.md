@@ -572,6 +572,15 @@ onboarded → `403 {error: 'onboarding_required'}`. Only `/api/health` and
 | DELETE | `/api/follows/:trendId` | Unfollow.           |
 | GET    | `/api/follows`          | My followed trends. |
 
+Follow returns `204`, or `404` for a trend that does not exist; following twice
+or unfollowing what is not followed changes nothing.
+
+### Cockpit
+
+| Method | Path           | Behavior                                                                                                                                                                                                                                                                                                                |
+| ------ | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/cockpit` | `{challenges[], following[], pendingIncoming}`: my active challenges with same-boat / been-there / case-study counts counted as the matches view lists them, my followed trends, and how many requests wait for me, which badges the nav (R-MINE-1,3,4). The requests themselves come from `/api/connections/incoming`. |
+
 ### Admin (permission-guarded, not role-name-guarded — R-ROLE-3)
 
 | Method | Path                                 | Behavior                                                                                                                                                                                                                                                                                                |
