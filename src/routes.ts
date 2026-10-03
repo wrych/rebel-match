@@ -56,6 +56,12 @@ export const routeTable: readonly RouteDef[] = [
     permission: 'invite:manage',
   },
   {
+    path: '/admin/members',
+    name: 'admin-members',
+    access: 'onboarded',
+    permission: 'member:delete',
+  },
+  {
     path: '/admin/outbox',
     name: 'admin-outbox',
     access: 'onboarded',

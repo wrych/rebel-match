@@ -11,6 +11,7 @@ const problem = ref<string | null>(null)
 const adminScreens = [
   { name: 'admin-applicants', label: 'Applicants' },
   { name: 'admin-invites', label: 'Invite links' },
+  { name: 'admin-members', label: 'Members' },
   { name: 'admin-outbox', label: 'Outbound message log' },
 ].flatMap(({ name, label }) => {
   const route = routeTable.find((candidate) => candidate.name === name)
