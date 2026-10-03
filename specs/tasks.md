@@ -83,10 +83,12 @@ printed dev link (R-DEV-6).
       _(R-AUTH-9,11,12,13)_
 - [x] Approval sends a magic link immediately, with the 24 h approval TTL and the
       `kind` column on tokens. _(R-AUTH-3,10)_
-- [ ] Invite redemption: `/?invite=…` carried to login, usability check (window,
+- [x] Invite redemption: `/?invite=…` carried to login, usability check (window,
       cap, revoked), auto-approve + `joined_via_invite_id` + `uses`, fallback to
       the applicant flow with the invalid-invite notice on the access-requested
-      screen. _(R-INV-1..8, F15)_
+      screen. _(R-INV-1..8, F15)_ The `invite_rejected` analytics event waits for
+      Mixpanel (M5); the optional "joining via …" recognition (R-INV-12) is not
+      built.
 - [x] Admin invite screen (`/admin/invites`): list with state, create with label /
       window / cap, revoke, show the join URL for the QR. _(R-INV-9,10, F16)_
 - [x] `GET /auth/verify`: validate/consume token, issue session, redirect to the

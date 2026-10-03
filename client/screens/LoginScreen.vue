@@ -26,11 +26,18 @@ async function send(): Promise<void> {
   sending.value = true
   failed.value = false
   try {
-    const next = new URLSearchParams(window.location.search).get('next')
-    const reply = await requestLink(email.value, next)
+    const query = new URLSearchParams(window.location.search)
+    const reply = await requestLink(email.value, {
+      next: query.get('next'),
+      invite: query.get('invite'),
+    })
     if (reply.state === 'access-requested') {
       keepHandle(reply.handle)
-      await router.push('/access-requested')
+      await router.push(
+        reply.inviteRefused === true
+          ? '/access-requested?invite=invalid'
+          : '/access-requested',
+      )
       return
     }
     answer.value = reply.state

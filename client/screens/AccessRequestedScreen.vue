@@ -4,6 +4,9 @@ import { describeApplicant, keptHandle } from '../lib/admission'
 import { fetchConfig, type ClientConfig } from '../lib/api'
 
 const handle = keptHandle()
+// In the URL so a reload keeps it, and never the token itself (R-INV-5).
+const inviteRefused =
+  new URLSearchParams(window.location.search).get('invite') === 'invalid'
 const name = ref('')
 const org = ref('')
 const saving = ref(false)
@@ -35,6 +38,9 @@ async function save(): Promise<void> {
 </script>
 
 <template>
+  <p v-if="inviteRefused" role="status" class="invite-notice">
+    This invitation link isn’t valid right now.
+  </p>
   <h1>Thanks for your interest in Rebel Match</h1>
   <p>
     Access is approved by a person. We will email you as soon as it is approved,
