@@ -3,7 +3,9 @@ import type { Database } from '../db/connect.js'
 import { memberRoles, members } from '../db/schema.js'
 import type { Holding, RevokeCheck, RoleGrantStore } from './roles.js'
 
-async function lockedHoldings(
+/** The active holdings of these roles, locked until the transaction ends, in
+ * one order so that two lockers queue rather than deadlock. */
+export async function lockedHoldings(
   db: Database,
   roles: readonly string[],
 ): Promise<Holding[]> {
@@ -16,6 +18,7 @@ async function lockedHoldings(
       and(eq(members.id, memberRoles.memberId), eq(members.status, 'active')),
     )
     .where(inArray(memberRoles.roleKey, [...roles]))
+    .orderBy(memberRoles.memberId, memberRoles.roleKey)
     .for('update')
   return rows
 }

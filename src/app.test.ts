@@ -30,6 +30,7 @@ function deps(
       grant: () => Promise.resolve('no_member'),
       revoke: () => Promise.resolve('not_held'),
     },
+    erasure: { erase: () => Promise.resolve('not_found') },
     outbox: {
       list: () => Promise.resolve([]),
       purgeBefore: () => Promise.resolve(0),

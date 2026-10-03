@@ -327,7 +327,14 @@ before both sides agree.**
 
 1. A member asks to be removed (by email; self-service is post-beta).
 2. Admin calls `DELETE /api/admin/members/:id`, which deletes the member
-   together with their challenges and connection requests (R-NFR-7).
+   together with their challenges, connection requests, swipes, follows, role
+   grants, sessions and outbound log entries, in one transaction (R-NFR-7,
+   R-MSG-6).
+
+- _The member created invites_ → refused with 409 `created_invites`; a poster
+  batch outlives its admin, so the invites are dealt with first (R-INV-8).
+- _The member is the only admin_ → refused with 409 `last_admin`, as for
+  revoking the role (R-ROLE-9).
 
 ---
 

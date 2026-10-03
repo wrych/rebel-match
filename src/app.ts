@@ -12,6 +12,7 @@ import { guardApi } from './routes/api-guard.js'
 import { adminApplicantRoutes } from './routes/admin-applicants.js'
 import { adminInviteRoutes } from './routes/admin-invites.js'
 import { adminOutboxRoutes } from './routes/admin-outbox.js'
+import { adminMemberRoutes } from './routes/admin-members.js'
 import { adminRoleRoutes } from './routes/admin-roles.js'
 import { authRoutes, renewSessions } from './routes/auth.js'
 import { onboardingRoutes } from './routes/onboarding.js'
@@ -28,6 +29,7 @@ import type { InviteService } from './services/invites.js'
 import type { OnboardingService } from './services/onboarding.js'
 import type { MemberProfiles } from './services/member-profiles.js'
 import type { OutboxLog } from './services/outbox-log.js'
+import type { ErasureService } from './services/erasure.js'
 import type { RoleService } from './services/roles.js'
 
 export interface AppDeps {
@@ -36,6 +38,7 @@ export interface AppDeps {
   auth: AuthProvider
   profiles: MemberProfiles
   roles: RoleService
+  erasure: ErasureService
   outbox: OutboxLog
   admission: AdmissionService
   approvals: ApprovalService
@@ -99,6 +102,7 @@ export function createApp(deps: AppDeps): Express {
   app.use(swipeRoutes(deps))
   app.use(cockpitRoutes(deps))
   app.use(adminRoleRoutes(deps))
+  app.use(adminMemberRoutes(deps))
   app.use(adminApplicantRoutes(deps))
   app.use(adminInviteRoutes(deps))
   app.use(adminOutboxRoutes(deps))
