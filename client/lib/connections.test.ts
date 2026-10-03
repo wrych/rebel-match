@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { kindOf, requestConnection } from './connections'
+import {
+  answerRequest,
+  fetchContact,
+  fetchRequest,
+  kindOf,
+  requestConnection,
+} from './connections'
 
 const input = {
   targetId: 'm2',
@@ -55,5 +61,72 @@ describe('kindOf', () => {
     [['same_boat'], null],
   ])('reads %j as %j', (value, expected) => {
     expect(kindOf(value)).toBe(expected)
+  })
+})
+
+describe('request reads and answers', () => {
+  function serve(status: number, body: unknown = {}): ReturnType<typeof vi.fn> {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: status < 300,
+      status,
+      json: () => Promise.resolve(body),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    return fetchMock
+  }
+
+  it('reads a request the member is a party to', async () => {
+    const request = { id: 'r1' }
+    const fetchMock = serve(200, { request })
+
+    expect(await fetchRequest('r1')).toEqual(request)
+    expect(fetchMock).toHaveBeenCalledWith('/api/connections/r1')
+  })
+
+  it('reads any other request as null (R-NAV-8)', async () => {
+    serve(404)
+
+    expect(await fetchRequest('r2')).toBeNull()
+  })
+
+  it.each([
+    ['accept', 'accept'],
+    ['decline', 'decline'],
+  ] as const)('posts %s (R-CONN-3,4)', async (verdict, path) => {
+    const fetchMock = serve(204)
+
+    expect(await answerRequest('r1', verdict)).toBe('done')
+    expect(fetchMock).toHaveBeenCalledWith(`/api/connections/r1/${path}`, {
+      method: 'POST',
+    })
+  })
+
+  it('reads an answer to a request no longer waiting as gone', async () => {
+    serve(404)
+
+    expect(await answerRequest('r1', 'accept')).toBe('gone')
+  })
+
+  it('reads the contact of an accepted request (R-CONN-3)', async () => {
+    const contact = { name: 'Sam', email: 's@x.invalid', mailto: 'mailto:s' }
+    serve(200, { contact })
+
+    expect(await fetchContact('r1')).toEqual(contact)
+  })
+
+  it('reads no contact before acceptance as null (R-CONN-6)', async () => {
+    serve(404)
+
+    expect(await fetchContact('r1')).toBeNull()
+  })
+
+  it.each([
+    ['fetchRequest', (): Promise<unknown> => fetchRequest('r1')],
+    ['answerRequest', (): Promise<unknown> => answerRequest('r1', 'accept')],
+    ['fetchContact', (): Promise<unknown> => fetchContact('r1')],
+  ])('%s throws on a server error', async (_name, call) => {
+    serve(500)
+
+    await expect(call()).rejects.toThrow('500')
   })
 })

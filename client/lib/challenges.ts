@@ -58,9 +58,11 @@ export async function fetchMatches(id: string): Promise<Matches | null> {
   return (await response.json()) as Matches
 }
 
-/** Who a peer is, as one line: job title, organization and sector, leaving
+/** Who a member is, as one line: job title, organization and sector, leaving
  * out what they did not give. */
-export function peerLine(peer: PeerCard): string {
+export function peerLine(
+  peer: Pick<PeerCard, 'jobTitle' | 'org' | 'sector'>,
+): string {
   return [peer.jobTitle, peer.org, peer.sector]
     .filter((part): part is string => part !== null && part !== '')
     .join(' · ')
