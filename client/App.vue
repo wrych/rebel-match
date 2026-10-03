@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import logo from './assets/corporate-rebels.png'
+import TabBar from './components/TabBar.vue'
 import { applyMood, savedMood, type Mood } from './lib/mood'
 
 const mood = ref<Mood>(savedMood())
@@ -31,6 +32,7 @@ function toggleMood(): void {
     <main class="page">
       <RouterView />
     </main>
+    <TabBar />
   </div>
 </template>
 

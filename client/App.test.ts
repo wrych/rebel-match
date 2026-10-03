@@ -5,7 +5,9 @@ import App from './App.vue'
 
 function mountApp(): ReturnType<typeof mount> {
   return mount(App, {
-    global: { stubs: { RouterLink: RouterLinkStub, RouterView: true } },
+    global: {
+      stubs: { RouterLink: RouterLinkStub, RouterView: true, TabBar: true },
+    },
   })
 }
 

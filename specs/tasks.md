@@ -162,8 +162,8 @@ printed dev link (R-DEV-6).
 - [x] Contact screen + `GET /api/connections/:id/contact`: email + mailto only
       when accepted and caller is a party. _(R-CONN-3,6)_
 - [x] Duplicate-request guard. _(R-CONN-5)_
-- [ ] Cockpit: my challenge(s) + counts, followed trends, nav badge. _(R-MINE-1,3,4)_
-      The cockpit screen is in; the nav badge waits for a nav.
+- [x] Cockpit: my challenge(s) + counts, followed trends, nav badge. _(R-MINE-1,3,4)_
+      The bottom bar has Submit and Matches; Swipe joins with the Offer screen.
 
 ## M5 — Supporting features _(Should-haves)_
 
