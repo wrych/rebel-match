@@ -1,6 +1,7 @@
 import type { OutgoingLink } from './auth/index.js'
 import { composeAuth, composeMailer } from './compose.js'
 import { loadRuntimeConfig } from './runtime-config.js'
+import { FolderInUseError } from './db/folder-lock.js'
 import { openDatabase } from './db/open.js'
 import {
   devLoginRefusal,
@@ -21,7 +22,17 @@ if (refusal !== null || member === null) {
   process.exit(1)
 }
 
-const connection = await openDatabase(config)
+// On a local PGlite folder the running dev server holds the database, and
+// PGlite admits one process (ADR 0024).
+const connection = await openDatabase(config).catch((error: unknown) => {
+  if (!(error instanceof FolderInUseError)) throw error
+  process.stderr.write(
+    'dev:login: the dev server has the local database open. Sign in as the ' +
+      'admin and copy the link from the outbound message log, or stop the ' +
+      'server and run this again.\n',
+  )
+  process.exit(1)
+})
 let issued: OutgoingLink | undefined
 
 try {

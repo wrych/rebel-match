@@ -4,6 +4,7 @@ import { drizzle as onNodePostgres } from 'drizzle-orm/node-postgres'
 import type { PgDatabase, PgQueryResultHKT } from 'drizzle-orm/pg-core'
 import { drizzle as onPglite } from 'drizzle-orm/pglite'
 import pg from 'pg'
+import { lockFolder } from './folder-lock.js'
 import * as schema from './schema.js'
 
 export type Database = PgDatabase<PgQueryResultHKT, typeof schema>
@@ -46,6 +47,8 @@ function onServer(url: string): Connection {
 }
 
 async function inProcess(dataDir?: string): Promise<Connection> {
+  const release =
+    dataDir === undefined ? () => Promise.resolve() : await lockFolder(dataDir)
   const client = await PGlite.create(dataDir)
   const db = onPglite(client, { schema })
   return {
@@ -60,7 +63,10 @@ async function inProcess(dataDir?: string): Promise<Connection> {
         throw error
       }
     },
-    close: () => client.close(),
+    close: async () => {
+      await client.close()
+      await release()
+    },
   }
 }
 

@@ -19,8 +19,17 @@ startOutboxRetention({
   },
 })
 
+// Close the database before exiting, so a local PGlite folder is released
+// for the restart `tsx watch` is about to make (ADR 0024).
+for (const signal of ['SIGINT', 'SIGTERM'] as const) {
+  process.once(signal, () => {
+    void connection.close().finally(() => process.exit(0))
+  })
+}
+
 createApp(deps).listen(config.port, () => {
   console.log(`rebel-match server on http://localhost:${String(config.port)}`)
   console.log(`  mail delivery: ${config.mail.delivery}`)
   console.log(`  seed profile:  ${config.seedProfile}`)
+  console.log(`  database:      ${config.database.kind}`)
 })
