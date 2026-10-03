@@ -782,6 +782,7 @@ textarea.input {
 
 .chip {
   flex: 0 0 auto;
+  justify-self: start;
   font-family: var(--font-mono);
   font-size: 0.62rem;
   font-weight: 700;
