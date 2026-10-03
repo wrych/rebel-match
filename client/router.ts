@@ -18,6 +18,7 @@ import OutboxScreen from './screens/OutboxScreen.vue'
 import RequestContactScreen from './screens/RequestContactScreen.vue'
 import RequestScreen from './screens/RequestScreen.vue'
 import TrendPickerScreen from './screens/TrendPickerScreen.vue'
+import TrendScreen from './screens/TrendScreen.vue'
 import WelcomeScreen from './screens/WelcomeScreen.vue'
 
 /**
@@ -56,6 +57,7 @@ export const router = createRouter({
     screen('challenge', ChallengeScreen),
     screen('trend-picker', TrendPickerScreen),
     screen('matches', MatchesScreen),
+    screen('trend', TrendScreen),
     screen('connect', ConnectScreen),
     screen('cockpit', CockpitScreen),
     screen('request', RequestScreen),

@@ -87,8 +87,12 @@ onMounted(async () => {
           You follow no trends yet.
         </p>
         <ul v-else class="follow-list">
-          <li v-for="trend in cockpit.following" :key="trend.id" class="chip">
-            {{ trend.short }}
+          <li v-for="trend in cockpit.following" :key="trend.id">
+            <RouterLink
+              :to="`/trends/${encodeURIComponent(trend.id)}`"
+              class="chip"
+              >{{ trend.short }}</RouterLink
+            >
           </li>
         </ul>
       </section>

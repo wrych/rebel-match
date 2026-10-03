@@ -56,6 +56,17 @@ function setup(): { app: Express; calls: unknown[][] } {
             }
           : null,
       ),
+    trend: (trendId) =>
+      Promise.resolve(
+        trendId === '06'
+          ? {
+              trend: { id: '06', short: 'DDM', from: 'Central', peers: 29 },
+              cases: [
+                { org: 'Haier', url: 'https://x.invalid', takeaway: 'T.' },
+              ],
+            }
+          : null,
+      ),
   }
   const app = express()
   app.use(express.json())
@@ -69,6 +80,22 @@ async function cookieFor(memberId: string): Promise<string> {
 }
 
 describe('challenge routes', () => {
+  it('shows a trend with its case studies (design S9)', async () => {
+    const response = await request(setup().app).get('/api/trends/06')
+
+    expect(response.status).toBe(200)
+    expect(response.body).toEqual({
+      trend: { id: '06', short: 'DDM', from: 'Central', peers: 29 },
+      cases: [{ org: 'Haier', url: 'https://x.invalid', takeaway: 'T.' }],
+    })
+  })
+
+  it('answers 404 for a trend that does not exist', async () => {
+    const response = await request(setup().app).get('/api/trends/99')
+
+    expect(response.status).toBe(404)
+  })
+
   it('lists the trends to pick from (R-ASK-6)', async () => {
     const response = await request(setup().app).get('/api/trends')
 

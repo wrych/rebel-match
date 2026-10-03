@@ -3,9 +3,10 @@ import type {
   Matches,
   PeerCard,
   Trend,
+  TrendDetail,
 } from '../../src/services/challenges'
 
-export type { Challenge, Matches, PeerCard, Trend }
+export type { Challenge, Matches, PeerCard, Trend, TrendDetail }
 
 /** Hints of what belongs in a challenge, taken from the prototype. They are
  * shown as text only, never inserted into the member's own words (R-ASK-2). */
@@ -56,6 +57,17 @@ export async function fetchMatches(id: string): Promise<Matches | null> {
   if (!response.ok)
     throw new Error(`matches unavailable (${String(response.status)})`)
   return (await response.json()) as Matches
+}
+
+/** One trend with its case studies, or null for an id that is no trend. */
+export async function fetchTrendDetail(
+  trendId: string,
+): Promise<TrendDetail | null> {
+  const response = await fetch(`/api/trends/${encodeURIComponent(trendId)}`)
+  if (response.status === 404) return null
+  if (!response.ok)
+    throw new Error(`trend unavailable (${String(response.status)})`)
+  return (await response.json()) as TrendDetail
 }
 
 /** Who a member is, as one line: job title, organization and sector, leaving

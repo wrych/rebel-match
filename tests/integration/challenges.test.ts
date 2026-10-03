@@ -68,6 +68,25 @@ describe('the ask journey over Postgres (F5)', () => {
     expect(challenge.autoTrend).toBe('06')
   })
 
+  it('shows a trend with its curated cases, and no member (design S9)', async () => {
+    const response = await request(app)
+      .get('/api/trends/06')
+      .set('Cookie', cookies['stranger']!)
+      .expect(200)
+    const detail = response.body as {
+      trend: { short: string }
+      cases: { org: string }[]
+    }
+
+    expect(detail.trend.short).toBe('Distributed Decision Making')
+    expect(detail.cases.length).toBeGreaterThan(0)
+    expect(JSON.stringify(detail)).not.toContain('@')
+    await request(app)
+      .get('/api/trends/99')
+      .set('Cookie', cookies['stranger']!)
+      .expect(404)
+  })
+
   it('keeps it from anyone but its author (R-NAV-8)', async () => {
     await request(app)
       .get(`/api/challenges/${challengeId}`)
