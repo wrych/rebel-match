@@ -72,6 +72,11 @@ onMounted(async () => {
       <section class="stack rule" aria-labelledby="cases">
         <h2 id="cases" class="display display-md">Case studies</h2>
         <CaseList :cases="matches.cases" />
+        <RouterLink
+          :to="`/trends/${encodeURIComponent(matches.trend.id)}`"
+          class="row-link"
+          >About {{ matches.trend.short }}</RouterLink
+        >
       </section>
 
       <div class="stack rule">

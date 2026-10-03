@@ -114,13 +114,25 @@ describe('MatchesScreen', () => {
   it('connects through the double opt-in screen, never by email (R-ASK-10)', async () => {
     server()
     const screen = await mountScreen()
-    const links = screen.findAllComponents(RouterLinkStub)
+    const links = screen
+      .findAllComponents(RouterLinkStub)
+      .filter((link) => link.classes().includes('btn'))
 
     expect(links.map((link) => [link.text(), link.props('to')])).toEqual([
       ['Connect', '/challenges/c1/connect/m2?kind=same_boat'],
       ['Ask them', '/challenges/c1/connect/m3?kind=been_there'],
     ])
     expect(screen.html()).not.toContain('mailto:')
+  })
+
+  it('leads to the trend’s own screen (design S9)', async () => {
+    server()
+    const about = (await mountScreen())
+      .findAllComponents(RouterLinkStub)
+      .find((link) => link.text().startsWith('About'))
+
+    expect(about?.props('to')).toBe('/trends/02')
+    expect(about?.text()).toBe('About Network of Teams')
   })
 
   it('opens case studies in a new tab without handing over the page', async () => {

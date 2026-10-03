@@ -92,12 +92,12 @@ describe('CockpitScreen', () => {
     expect(paths(screen)).toContain('/challenges/c1/matches')
   })
 
-  it('shows the trends the member follows (R-MINE-3)', async () => {
+  it('shows the trends the member follows, each opening its screen (R-MINE-3)', async () => {
     serve(cockpit, [])
+    const screen = await mountScreen()
 
-    expect((await mountScreen()).find('.follow-list').text()).toBe(
-      'Radical Transparency',
-    )
+    expect(screen.find('.follow-list').text()).toBe('Radical Transparency')
+    expect(paths(screen)).toContain('/trends/05')
   })
 
   it('says what is empty, and offers to ask when there is no challenge', async () => {

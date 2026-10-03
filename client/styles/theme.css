@@ -668,6 +668,8 @@ textarea.input {
 }
 
 .trend-title {
+  margin: 0;
+  font-weight: 400;
   font-family: var(--font-display);
   font-size: 1.8rem;
   line-height: 1;
@@ -815,6 +817,10 @@ textarea.input {
 
 .counts {
   color: var(--accent);
+}
+
+.follow-list a {
+  text-decoration: none;
 }
 
 .follow-list {

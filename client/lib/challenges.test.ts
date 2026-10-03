@@ -3,6 +3,7 @@ import {
   confirmTrend,
   fetchChallenge,
   fetchMatches,
+  fetchTrendDetail,
   fetchTrends,
   peerLine,
   shownTrend,
@@ -170,5 +171,27 @@ describe('fetchMatches', () => {
     answer(500)
 
     await expect(fetchMatches('c1')).rejects.toThrow('500')
+  })
+})
+
+describe('fetchTrendDetail', () => {
+  it('reads one trend with its cases (design S9)', async () => {
+    const detail = { trend: trends[0], cases: [] }
+    const fetchMock = answer(200, detail)
+
+    expect(await fetchTrendDetail('01')).toEqual(detail)
+    expect(fetchMock).toHaveBeenCalledWith('/api/trends/01')
+  })
+
+  it('is null for an id that is no trend', async () => {
+    answer(404)
+
+    expect(await fetchTrendDetail('99')).toBeNull()
+  })
+
+  it('throws when the trend cannot be read', async () => {
+    answer(500)
+
+    await expect(fetchTrendDetail('01')).rejects.toThrow('500')
   })
 })

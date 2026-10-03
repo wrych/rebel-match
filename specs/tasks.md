@@ -136,9 +136,8 @@ printed dev link (R-DEV-6).
       _(R-ASK-6,7, R-NAV-2)_
 - [x] `GET /api/challenges/:id/matches`: same boat / been there / cases (no
       emails). _(R-ASK-8)_
-- [ ] Matches screen with Follow + Connect; trend detail / case studies as its
-      own screen (`/trends/:trendId`). _(R-ASK-9,10, R-NAV-2)_ The matches
-      screen is in; Connect opens the M4 connection-request screen.
+- [x] Matches screen with Follow + Connect; trend detail / case studies as its
+      own screen (`/trends/:trendId`). _(R-ASK-9,10, R-NAV-2)_
 
 ## M3 — Offer journey _(M6, F6)_
 
