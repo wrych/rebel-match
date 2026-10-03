@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { rolePermissions } from './access.js'
+import { latestConsentVersion } from './consent.js'
 import { clientConfig, isDevelopmentDeployment, loadConfig } from './config.js'
 
 const valid = {
@@ -78,6 +79,18 @@ describe('loadConfig', () => {
 
   it('defaults to delivering nothing, so a dev run cannot email a real person', () => {
     expect(loadConfig(valid).mail.delivery).toBe('none')
+  })
+})
+
+describe('CONSENT_VERSION', () => {
+  it('defaults to the latest wording (R-ONB-3)', () => {
+    expect(loadConfig(valid).consentVersion).toBe(latestConsentVersion)
+  })
+
+  it('refuses a version with no wording to show', () => {
+    expect(() =>
+      loadConfig({ ...valid, CONSENT_VERSION: '1999-01-01' }),
+    ).toThrow(/no wording/)
   })
 })
 

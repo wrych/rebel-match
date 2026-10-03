@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { rolePermissions } from './access.js'
+import { consentTexts, latestConsentVersion } from './consent.js'
 
 // Node clamps a timer delay above 2^31-1 ms (about 24.8 days) to 1 ms, so a
 // longer purge interval would run the purge continuously.
@@ -50,7 +51,14 @@ const envSchema = z
 
     SEED_PROFILE: z.enum(['dev', 'prod']).default('dev'),
 
-    CONSENT_VERSION: z.string().min(1).default('2026-11-01'),
+    CONSENT_VERSION: z
+      .string()
+      .min(1)
+      .default(latestConsentVersion)
+      .refine((version) => version in consentTexts, {
+        message:
+          'CONSENT_VERSION has no wording in src/consent.ts; members cannot accept words they cannot read',
+      }),
 
     MIXPANEL_TOKEN: z.string().optional(),
     MIXPANEL_API_HOST: z.string().min(1).default('api-eu.mixpanel.com'),
