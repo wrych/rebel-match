@@ -25,6 +25,12 @@ import { createMysqlConnectionStore } from './services/connection-store.js'
 import { createConnections } from './services/connections.js'
 import { createMysqlSwipeStore } from './services/swipe-store.js'
 import { createSwipes } from './services/swipes.js'
+import {
+  createMysqlCockpitStore,
+  createMysqlFollowStore,
+} from './services/cockpit-store.js'
+import { createCockpit } from './services/cockpit.js'
+import { createFollows } from './services/follows.js'
 import { createMysqlDeckStore } from './services/deck-store.js'
 import { createDeck } from './services/deck.js'
 import { createMysqlInviteRedemption } from './services/invite-redemption-store.js'
@@ -77,19 +83,34 @@ export function composeAuth(
 function composeJourneys(
   config: Config,
   pool: Pool,
-): Pick<AppDeps, 'challenges' | 'deck' | 'connections' | 'swipes'> {
+): Pick<
+  AppDeps,
+  'challenges' | 'deck' | 'connections' | 'swipes' | 'follows' | 'cockpit'
+> {
+  const challenges = createChallenges({
+    store: createMysqlChallengeStore(pool),
+  })
+  const follows = createFollows({
+    store: createMysqlFollowStore(pool),
+    trends: () => challenges.trends(),
+  })
   const connections = createConnections({
     store: createMysqlConnectionStore(pool),
     newId: randomUUID,
   })
   return {
-    challenges: createChallenges({ store: createMysqlChallengeStore(pool) }),
+    challenges,
     deck: createDeck({
       store: createMysqlDeckStore(pool),
       pageSize: config.limits.deckPageSize,
     }),
     connections,
     swipes: createSwipes({ store: createMysqlSwipeStore(pool), connections }),
+    follows,
+    cockpit: createCockpit({
+      store: createMysqlCockpitStore(pool),
+      followed: (memberId) => follows.followed(memberId),
+    }),
   }
 }
 

@@ -68,6 +68,15 @@ function deps(
       contact: () => Promise.resolve(null),
     },
     swipes: { swipe: () => Promise.resolve({ result: 'not_found' }) },
+    follows: {
+      follow: () => Promise.resolve('unknown_trend'),
+      unfollow: () => Promise.resolve(),
+      followed: () => Promise.resolve([]),
+    },
+    cockpit: {
+      cockpit: () =>
+        Promise.resolve({ challenges: [], following: [], pendingIncoming: 0 }),
+    },
   }
 }
 
