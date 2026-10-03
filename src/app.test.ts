@@ -37,6 +37,11 @@ function deps(
       requestLink: () => Promise.resolve({ state: 'access-requested' }),
       describeApplicant: () => Promise.resolve('not-found'),
     },
+    approvals: {
+      listPending: () => Promise.resolve([]),
+      approve: () => Promise.resolve('not_pending'),
+      reject: () => Promise.resolve('not_pending'),
+    },
   }
 }
 
