@@ -23,6 +23,8 @@ import { createMysqlChallengeStore } from './services/challenge-store.js'
 import { createChallenges } from './services/challenges.js'
 import { createMysqlConnectionStore } from './services/connection-store.js'
 import { createConnections } from './services/connections.js'
+import { createMysqlSwipeStore } from './services/swipe-store.js'
+import { createSwipes } from './services/swipes.js'
 import { createMysqlDeckStore } from './services/deck-store.js'
 import { createDeck } from './services/deck.js'
 import { createMysqlInviteRedemption } from './services/invite-redemption-store.js'
@@ -75,17 +77,19 @@ export function composeAuth(
 function composeJourneys(
   config: Config,
   pool: Pool,
-): Pick<AppDeps, 'challenges' | 'deck' | 'connections'> {
+): Pick<AppDeps, 'challenges' | 'deck' | 'connections' | 'swipes'> {
+  const connections = createConnections({
+    store: createMysqlConnectionStore(pool),
+    newId: randomUUID,
+  })
   return {
     challenges: createChallenges({ store: createMysqlChallengeStore(pool) }),
     deck: createDeck({
       store: createMysqlDeckStore(pool),
       pageSize: config.limits.deckPageSize,
     }),
-    connections: createConnections({
-      store: createMysqlConnectionStore(pool),
-      newId: randomUUID,
-    }),
+    connections,
+    swipes: createSwipes({ store: createMysqlSwipeStore(pool), connections }),
   }
 }
 

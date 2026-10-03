@@ -67,6 +67,7 @@ function deps(
       respond: () => Promise.resolve('not_found'),
       contact: () => Promise.resolve(null),
     },
+    swipes: { swipe: () => Promise.resolve({ result: 'not_found' }) },
   }
 }
 

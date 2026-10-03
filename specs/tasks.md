@@ -130,7 +130,7 @@ printed dev link (R-DEV-6).
 - [ ] Swipe UI: same boat / been there / follow / skip. _(R-OFF-3)_
 - [ ] "Been there" note as its own screen, >30 chars from config + counter.
       _(R-OFF-4, R-CFG-1,2, R-NAV-2)_
-- [ ] `POST /api/swipe` records swipe and, for same boat/been there, creates a
+- [x] `POST /api/swipe` records swipe and, for same boat/been there, creates a
       connection request. _(R-OFF-3)_
 - [ ] Empty-deck screen with session summary. _(R-OFF-5)_
 - [ ] 🥚 "Trend 0 — Trust" easter egg on the empty deck: cosmetic only, records
