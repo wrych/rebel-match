@@ -25,6 +25,7 @@ docs/
   constitution.md   engineering rules
   adr/              architecture decision records
   email-setup.md    DNS and deliverability runbook (R-NFR-3, open question 4)
+  cloud-setup.md    one-time Google Cloud and GitHub setup (ADR 0025)
 src/                server + client (not yet created; M0 in tasks.md)
 ```
 
