@@ -11,6 +11,9 @@ async function eraseChecked(
   guardedRoles: readonly string[],
   mayErase: (holdings: readonly Holding[]) => boolean,
 ): Promise<EraseOutcome> {
+  // The holders go first: locking them also locks their member rows, so two
+  // erasures queue here in one order rather than deadlocking on each other.
+  const holdings = await lockedHoldings(db, guardedRoles)
   const [member] = await db
     .select({ email: members.email })
     .from(members)
@@ -27,7 +30,7 @@ async function eraseChecked(
     .limit(1)
   if (created.length > 0) return 'created_invites'
 
-  if (!mayErase(await lockedHoldings(db, guardedRoles))) return 'last_admin'
+  if (!mayErase(holdings)) return 'last_admin'
 
   await db
     .delete(outbox)
