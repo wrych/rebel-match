@@ -3,6 +3,7 @@ import type { AuthProvider } from './auth/index.js'
 import { clientConfig, type Config } from './config.js'
 import type { Pool } from './db.js'
 import { challengeRoutes } from './routes/challenges.js'
+import { connectionRoutes } from './routes/connections.js'
 import { deckRoutes } from './routes/deck.js'
 import { guardApi } from './routes/api-guard.js'
 import { adminApplicantRoutes } from './routes/admin-applicants.js'
@@ -15,6 +16,7 @@ import { requestLinkRoutes } from './routes/request-link.js'
 import type { AdmissionService } from './services/admission.js'
 import type { ApprovalService } from './services/approvals.js'
 import type { ChallengeService } from './services/challenges.js'
+import type { ConnectionService } from './services/connections.js'
 import type { DeckService } from './services/deck.js'
 import type { InviteService } from './services/invites.js'
 import type { OnboardingService } from './services/onboarding.js'
@@ -35,6 +37,7 @@ export interface AppDeps {
   invites: InviteService
   challenges: ChallengeService
   deck: DeckService
+  connections: ConnectionService
 }
 
 /** True when the database answers. Reported rather than thrown, so a dev server
@@ -83,6 +86,7 @@ export function createApp(deps: AppDeps): Express {
   app.use(onboardingRoutes(deps))
   app.use(challengeRoutes(deps))
   app.use(deckRoutes(deps))
+  app.use(connectionRoutes(deps))
   app.use(adminRoleRoutes(deps))
   app.use(adminApplicantRoutes(deps))
   app.use(adminInviteRoutes(deps))

@@ -21,6 +21,8 @@ import { createApprovals } from './services/approvals.js'
 import { mailLinks } from './services/link-delivery.js'
 import { createMysqlChallengeStore } from './services/challenge-store.js'
 import { createChallenges } from './services/challenges.js'
+import { createMysqlConnectionStore } from './services/connection-store.js'
+import { createConnections } from './services/connections.js'
 import { createMysqlDeckStore } from './services/deck-store.js'
 import { createDeck } from './services/deck.js'
 import { createMysqlInviteRedemption } from './services/invite-redemption-store.js'
@@ -69,6 +71,24 @@ export function composeAuth(
   })
 }
 
+// The member journeys: asking, offering and connecting (F5, F6, F7).
+function composeJourneys(
+  config: Config,
+  pool: Pool,
+): Pick<AppDeps, 'challenges' | 'deck' | 'connections'> {
+  return {
+    challenges: createChallenges({ store: createMysqlChallengeStore(pool) }),
+    deck: createDeck({
+      store: createMysqlDeckStore(pool),
+      pageSize: config.limits.deckPageSize,
+    }),
+    connections: createConnections({
+      store: createMysqlConnectionStore(pool),
+      newId: randomUUID,
+    }),
+  }
+}
+
 /** Every service the app serves, wired to MySQL: the server and the
  * integration tests build the same thing, so a test cannot pass on wiring the
  * server lacks. */
@@ -113,10 +133,6 @@ export function composeApp(config: Config, pool: Pool): AppDeps {
       defaults: config.limits,
       newId: randomUUID,
     }),
-    challenges: createChallenges({ store: createMysqlChallengeStore(pool) }),
-    deck: createDeck({
-      store: createMysqlDeckStore(pool),
-      pageSize: config.limits.deckPageSize,
-    }),
+    ...composeJourneys(config, pool),
   }
 }

@@ -60,6 +60,13 @@ function deps(
       matches: () => Promise.resolve(null),
     },
     deck: { next: () => Promise.resolve([]) },
+    connections: {
+      request: () => Promise.resolve({ result: 'not_found' }),
+      incoming: () => Promise.resolve([]),
+      get: () => Promise.resolve(null),
+      respond: () => Promise.resolve('not_found'),
+      contact: () => Promise.resolve(null),
+    },
   }
 }
 

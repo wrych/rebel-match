@@ -267,9 +267,11 @@ before both sides agree.**
 **Branches**
 
 - _Duplicate request_ to the same person for the same challenge → blocked, the
-  existing request is surfaced instead (R-CONN-5).
-- _Contact read while still pending or declined, or by a third party_ → `403`.
-  Authorization is checked on every contact read (R-CONN-6, R-NFR-1, design §8).
+  existing request is surfaced instead: `409` with its id (R-CONN-5).
+- _Contact read while still pending or declined, or by a third party_ → `404`,
+  not found rather than forbidden, so the request's existence is not confirmed
+  (ADR 0004, R-NAV-8). Authorization is checked on every contact read (R-CONN-6,
+  R-NFR-1, design §8).
 - _Target never responds_ → the request simply stays pending; nothing is
   revealed.
 
