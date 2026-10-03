@@ -81,6 +81,7 @@ thresholds have sane defaults in the file and may be overridden by env.
 | `limits.outboxRetentionDays`   | `30`                          | R-MSG-6                   |
 | `outboxPurgeIntervalHours`     | `1`                           | R-MSG-6                   |
 | `limits.outboxPageSize`        | `100`                         | R-MSG-5                   |
+| `limits.deckPageSize`          | `20`                          | R-OFF-1                   |
 | `seed.profile`                 | `dev` \| `prod`               | R-SEED-4                  |
 | `analytics.apiHost`            | `api-eu.mixpanel.com`         | R-ANA-5                   |
 | `rolePermissions`              | role → permission matrix (§2) | R-ROLE-3, R-ROLE-6        |
@@ -435,9 +436,16 @@ CREATE TABLE swipes (
   challenge_id CHAR(36) NOT NULL,
   action      ENUM('same_boat','been_there','follow','skip') NOT NULL,
   created_at  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (member_id, challenge_id, action)
+  PRIMARY KEY (member_id, challenge_id, action),
+  CONSTRAINT fk_swipe_member FOREIGN KEY (member_id) REFERENCES members(id)
+    ON DELETE CASCADE,
+  CONSTRAINT fk_swipe_challenge FOREIGN KEY (challenge_id) REFERENCES challenges(id)
+    ON DELETE CASCADE
 );
 ```
+
+The deck reads it too: a challenge the viewer has any swipe on is never dealt
+again (R-OFF-2).
 
 ### outbox (every outbound message, every environment — R-MSG-1..7)
 
