@@ -139,9 +139,9 @@ printed dev link (R-DEV-6).
 
 ## M4 — Connecting (double opt-in) _(M7 → M8 — privacy-critical, F7)_
 
-- [ ] Connection-request **screen** + `POST /api/connections`: pending request,
-      notify target, no email. _(R-CONN-1,2, R-NAV-2)_ The API is in; the target
-      is told through the incoming list until the M5 email lands.
+- [x] Connection-request **screen** + `POST /api/connections`: pending request,
+      notify target, no email. _(R-CONN-1,2, R-NAV-2)_ The target is told
+      through the incoming list until the M5 email lands.
 - [ ] Cockpit incoming list + incoming-request screen with accept/decline.
       _(R-MINE-2, R-CONN-3,4, R-NAV-2)_
 - [ ] Contact screen + `GET /api/connections/:id/contact`: email + mailto only
