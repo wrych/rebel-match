@@ -5,11 +5,14 @@ import { decide } from './guards'
 import { loadMe } from './lib/session'
 import AccessRequestedScreen from './screens/AccessRequestedScreen.vue'
 import ApplicantsScreen from './screens/ApplicantsScreen.vue'
+import AskScreen from './screens/AskScreen.vue'
+import ChallengeScreen from './screens/ChallengeScreen.vue'
 import InvitesScreen from './screens/InvitesScreen.vue'
 import LoginScreen from './screens/LoginScreen.vue'
 import NotFoundScreen from './screens/NotFoundScreen.vue'
 import OnboardingScreen from './screens/OnboardingScreen.vue'
 import OutboxScreen from './screens/OutboxScreen.vue'
+import TrendPickerScreen from './screens/TrendPickerScreen.vue'
 import WelcomeScreen from './screens/WelcomeScreen.vue'
 
 /**
@@ -44,6 +47,9 @@ export const router = createRouter({
     screen('access-requested', AccessRequestedScreen),
     screen('onboarding', OnboardingScreen),
     screen('welcome', WelcomeScreen),
+    screen('ask', AskScreen),
+    screen('challenge', ChallengeScreen),
+    screen('trend-picker', TrendPickerScreen),
     screen('admin-applicants', ApplicantsScreen),
     screen('admin-invites', InvitesScreen),
     screen('admin-outbox', OutboxScreen),
