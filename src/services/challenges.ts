@@ -37,6 +37,13 @@ export interface CaseStudy {
   takeaway: string
 }
 
+/** A trend on its own screen: what it moves from, and the curated cases
+ * (design S9, R-ASK-8). Reveals no member at all. */
+export interface TrendDetail {
+  trend: Trend
+  cases: CaseStudy[]
+}
+
 export interface Matches {
   trend: Trend
   sameBoat: PeerCard[]
@@ -79,6 +86,7 @@ export interface ChallengeService {
     trendId: string,
   ): Promise<ConfirmOutcome>
   matches(memberId: string, id: string): Promise<Matches | null>
+  trend(trendId: string): Promise<TrendDetail | null>
 }
 
 function shown(trend: StoredTrend): Trend {
@@ -136,6 +144,11 @@ export function createChallenges(deps: {
         deps.store.cases(trendId),
       ])
       return { trend: shown(trend), ...peers, cases }
+    },
+    trend: async (trendId) => {
+      const trend = (await deps.store.trends()).find((t) => t.id === trendId)
+      if (trend === undefined) return null
+      return { trend: shown(trend), cases: await deps.store.cases(trendId) }
     },
   }
 }

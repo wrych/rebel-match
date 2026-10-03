@@ -62,6 +62,22 @@ function setup(): {
 const decide = 'Since we flattened, nobody knows who can decide what any more.'
 
 describe('createChallenges', () => {
+  it('describes a trend with its cases, without keywords (design S9)', async () => {
+    const detail = await setup().service.trend('06')
+
+    expect(detail?.trend).toEqual({
+      id: '06',
+      short: 'Distributed Decision Making',
+      from: 'Centralized Authority',
+      peers: 29,
+    })
+    expect(detail?.cases).toHaveLength(1)
+  })
+
+  it('knows no trend outside the eight', async () => {
+    expect(await setup().service.trend('99')).toBeNull()
+  })
+
   it('lists trends without their keywords (R-ASK-6)', async () => {
     const [first] = await setup().service.trends()
 

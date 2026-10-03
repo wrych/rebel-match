@@ -8,6 +8,7 @@ import { requirePermission, type GuardedLocals } from './require-permission.js'
 
 const challengeParams = z.object({ id: z.string().min(1) })
 const confirmBody = z.object({ trendId: z.string().min(1) })
+const trendParams = z.object({ trendId: z.string().min(1) })
 
 const confirmStatus = {
   saved: 204,
@@ -86,6 +87,15 @@ export function challengeRoutes(deps: Deps): Router {
 
   router.get('/api/trends', async (_request, response) => {
     response.json({ trends: await deps.challenges.trends() })
+  })
+  router.get('/api/trends/:trendId', async (request, response) => {
+    const { trendId } = trendParams.parse(request.params)
+    const detail = await deps.challenges.trend(trendId)
+    if (detail === null) {
+      response.status(404).json({ error: 'not_found' })
+      return
+    }
+    response.json(detail)
   })
   router.post('/api/challenges', write, create(deps))
   router.get(
