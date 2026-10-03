@@ -7,6 +7,7 @@ import {
   revokeInvite,
   type Invite,
 } from '../lib/invites'
+import { when } from '../lib/when'
 
 const invites = ref<Invite[]>([])
 const limits = ref<ClientConfig['limits'] | null>(null)
@@ -19,6 +20,14 @@ const draft = reactive({
 const problem = ref<string | null>(null)
 const notice = ref<string | null>(null)
 const busy = ref(false)
+
+const chipFor: Record<Invite['state'], string> = {
+  active: 'chip-accent',
+  scheduled: 'chip-dashed',
+  expired: '',
+  exhausted: '',
+  revoked: 'chip-ink',
+}
 
 async function load(): Promise<void> {
   try {
@@ -76,95 +85,149 @@ onMounted(async () => {
 </script>
 
 <template>
-  <h1>Invite links</h1>
+  <section class="screen">
+    <div class="stack">
+      <p class="kicker kicker-accent">Host tools</p>
+      <h1 class="display display-lg">Invite links</h1>
+      <p class="lede">
+        A link in a QR code admits whoever scans it, inside its window and up to
+        its cap. Revoke it the moment it escapes.
+      </p>
+    </div>
 
-  <form @submit.prevent="create">
-    <label for="label">Label</label>
-    <input
-      id="label"
-      v-model="draft.label"
-      required
-      placeholder="Summit 2026 — main stage"
-      :maxlength="limits?.inviteLabelMaxChars"
-    />
-    <label for="valid-from">Valid from (blank: now)</label>
-    <input id="valid-from" v-model="draft.validFrom" type="datetime-local" />
-    <label for="valid-until"
-      >Valid until (blank: {{ limits?.inviteDefaultHours ?? '…' }} hours
-      later)</label
-    >
-    <input id="valid-until" v-model="draft.validUntil" type="datetime-local" />
-    <label for="max-uses"
-      >Maximum uses (blank: {{ limits?.inviteDefaultMaxUses ?? '…' }})</label
-    >
-    <input
-      id="max-uses"
-      v-model="draft.maxUses"
-      type="number"
-      min="1"
-      step="1"
-      :max="limits?.inviteMaxUsesCeiling"
-    />
-    <button type="submit" :disabled="busy || draft.label.trim() === ''">
-      Create invite
-    </button>
-  </form>
+    <form class="stack card" @submit.prevent="create">
+      <p class="kicker">New invite</p>
+      <div class="field">
+        <label for="label">Label</label>
+        <input
+          id="label"
+          v-model="draft.label"
+          class="input"
+          required
+          placeholder="Summit 2026 — main stage"
+          :maxlength="limits?.inviteLabelMaxChars"
+        />
+      </div>
+      <div class="pair">
+        <div class="field">
+          <label for="valid-from">From (blank: now)</label>
+          <input
+            id="valid-from"
+            v-model="draft.validFrom"
+            class="input"
+            type="datetime-local"
+          />
+        </div>
+        <div class="field">
+          <label for="valid-until"
+            >Until (blank: +{{ limits?.inviteDefaultHours ?? '…' }}h)</label
+          >
+          <input
+            id="valid-until"
+            v-model="draft.validUntil"
+            class="input"
+            type="datetime-local"
+          />
+        </div>
+      </div>
+      <div class="field">
+        <label for="max-uses"
+          >Maximum uses (blank:
+          {{ limits?.inviteDefaultMaxUses ?? '…' }})</label
+        >
+        <input
+          id="max-uses"
+          v-model="draft.maxUses"
+          class="input"
+          type="number"
+          min="1"
+          step="1"
+          :max="limits?.inviteMaxUsesCeiling"
+        />
+      </div>
+      <button
+        type="submit"
+        class="btn btn-primary"
+        :disabled="busy || draft.label.trim() === ''"
+      >
+        Create invite
+      </button>
+    </form>
 
-  <p v-if="notice" role="status">{{ notice }}</p>
-  <p v-if="problem" role="alert">{{ problem }}</p>
-  <p v-else-if="invites.length === 0">No invites yet.</p>
+    <p v-if="notice" class="notice notice-solid" role="status">{{ notice }}</p>
+    <p v-if="problem" class="alert" role="alert">{{ problem }}</p>
+    <p v-else-if="invites.length === 0" class="empty">No invites yet.</p>
 
-  <article v-for="invite in invites" :key="invite.id" class="invite">
-    <header>
-      <strong>{{ invite.label }}</strong>
-      <span :class="`state state-${invite.state}`">{{ invite.state }}</span>
-    </header>
-    <p>
-      {{ invite.uses }} of {{ invite.maxUses }} used ·
-      <time :datetime="invite.validFrom">{{ invite.validFrom }}</time> to
-      <time :datetime="invite.validUntil">{{ invite.validUntil }}</time> · by
-      {{ invite.createdBy }}
-    </p>
-    <p class="join">
-      Join URL: <code>{{ invite.joinUrl }}</code>
-    </p>
-    <button
-      v-if="invite.state !== 'revoked'"
-      type="button"
-      :disabled="busy"
-      @click="revoke(invite)"
-    >
-      Revoke
-    </button>
-  </article>
+    <article v-for="invite in invites" :key="invite.id" class="card">
+      <div class="card-head">
+        <span class="card-title">{{ invite.label }}</span>
+        <span :class="['chip', chipFor[invite.state]]">{{ invite.state }}</span>
+      </div>
+      <div class="meter" aria-hidden="true">
+        <span
+          :style="{
+            width: `${Math.min(100, (invite.uses / invite.maxUses) * 100)}%`,
+          }"
+        ></span>
+      </div>
+      <p class="mono meta">
+        {{ invite.uses }} of {{ invite.maxUses }} used ·
+        <time :datetime="invite.validFrom">{{ when(invite.validFrom) }}</time>
+        to
+        <time :datetime="invite.validUntil">{{ when(invite.validUntil) }}</time>
+        · by {{ invite.createdBy }}
+      </p>
+      <p class="join">
+        <span class="label">Join URL</span> {{ invite.joinUrl }}
+      </p>
+      <button
+        v-if="invite.state !== 'revoked'"
+        type="button"
+        class="btn btn-ghost btn-small"
+        :disabled="busy"
+        @click="revoke(invite)"
+      >
+        Revoke
+      </button>
+    </article>
+  </section>
 </template>
 
 <style scoped>
-form {
+.pair {
   display: grid;
-  gap: 0.5rem;
-  max-width: 28rem;
-  margin-bottom: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem;
 }
 
-input,
-button {
-  font: inherit;
-  padding: 0.6rem;
+.meta {
+  margin: 0;
+  color: var(--muted);
+  overflow-wrap: anywhere;
 }
 
-.invite {
-  border-top: 1px solid currentColor;
-  padding: 0.5rem 0;
+.meter {
+  height: 6px;
+  border-radius: 3px;
+  background: var(--line);
+  overflow: hidden;
 }
 
-.invite header {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
+.meter span {
+  display: block;
+  height: 100%;
+  background: var(--accent);
 }
 
-.join code {
+.join {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0.7rem 0.8rem;
+  border-radius: 10px;
+  background: var(--paper);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
   overflow-wrap: anywhere;
 }
 </style>

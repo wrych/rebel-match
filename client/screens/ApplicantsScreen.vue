@@ -6,6 +6,7 @@ import {
   type Applicant,
   type Decision,
 } from '../lib/applicants'
+import { when } from '../lib/when'
 
 const applicants = ref<Applicant[]>([])
 const loaded = ref(false)
@@ -56,52 +57,64 @@ onMounted(load)
 </script>
 
 <template>
-  <h1>Applicants</h1>
+  <section class="screen">
+    <div class="stack">
+      <p class="kicker kicker-accent">Host tools</p>
+      <h1 class="display display-lg">Applicants</h1>
+      <p class="lede">
+        People asking to join. Approving sends their sign-in link straight away.
+      </p>
+    </div>
 
-  <p v-if="notice" role="status">{{ notice }}</p>
-  <p v-if="problem" role="alert">{{ problem }}</p>
-  <p v-else-if="loaded && applicants.length === 0">Nobody is waiting.</p>
-
-  <article
-    v-for="applicant in applicants"
-    :key="applicant.id"
-    class="applicant"
-  >
-    <header>
-      <strong>{{ applicant.name ?? applicant.email }}</strong>
-      <span v-if="applicant.org"> · {{ applicant.org }}</span>
-    </header>
-    <p>
-      <span v-if="applicant.name">{{ applicant.email }} · </span>
-      asked
-      <time :datetime="applicant.requestedAt">{{ applicant.requestedAt }}</time>
+    <p v-if="notice" class="notice notice-solid" role="status">{{ notice }}</p>
+    <p v-if="problem" class="alert" role="alert">{{ problem }}</p>
+    <p v-else-if="loaded && applicants.length === 0" class="empty">
+      Nobody is waiting.
     </p>
-    <button
-      type="button"
-      :disabled="busy !== null"
-      @click="act(applicant, 'approve')"
-    >
-      Approve
-    </button>
-    <button
-      type="button"
-      :disabled="busy !== null"
-      @click="act(applicant, 'reject')"
-    >
-      Reject
-    </button>
-  </article>
+
+    <article v-for="applicant in applicants" :key="applicant.id" class="card">
+      <div class="card-head">
+        <div class="stack-tight">
+          <span class="card-title">{{
+            applicant.name ?? applicant.email
+          }}</span>
+          <span v-if="applicant.org" class="small">{{ applicant.org }}</span>
+        </div>
+        <span class="chip chip-dashed">Waiting</span>
+      </div>
+      <p class="mono meta">
+        <span v-if="applicant.name">{{ applicant.email }} · </span>
+        asked
+        <time :datetime="applicant.requestedAt">{{
+          when(applicant.requestedAt)
+        }}</time>
+      </p>
+      <div class="actions">
+        <button
+          type="button"
+          class="btn btn-primary btn-small"
+          :disabled="busy !== null"
+          @click="act(applicant, 'approve')"
+        >
+          Approve
+        </button>
+        <button
+          type="button"
+          class="btn btn-ghost btn-small"
+          :disabled="busy !== null"
+          @click="act(applicant, 'reject')"
+        >
+          Reject
+        </button>
+      </div>
+    </article>
+  </section>
 </template>
 
 <style scoped>
-.applicant {
-  border-top: 1px solid currentColor;
-  padding: 0.5rem 0;
-}
-
-button {
-  font: inherit;
-  padding: 0.6rem 1rem;
-  margin-right: 0.5rem;
+.meta {
+  margin: 0;
+  color: var(--muted);
+  overflow-wrap: anywhere;
 }
 </style>

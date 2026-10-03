@@ -88,67 +88,75 @@ onMounted(load)
 </script>
 
 <template>
-  <h1>Welcome to Rebel Match</h1>
-  <p>Two things before you start: your name, and how we use your data.</p>
-
-  <form @submit.prevent="submit">
-    <label for="name">Your name</label>
-    <input
-      id="name"
-      v-model="name"
-      autocomplete="name"
-      required
-      :maxlength="limits?.nameMaxChars"
-    />
-    <label for="job-title">Job title (optional)</label>
-    <input
-      id="job-title"
-      v-model="jobTitle"
-      autocomplete="organization-title"
-      :maxlength="limits?.jobTitleMaxChars"
-    />
-    <label for="org">Organization (optional)</label>
-    <input
-      id="org"
-      v-model="org"
-      autocomplete="organization"
-      :maxlength="limits?.orgMaxChars"
-    />
-
-    <section aria-labelledby="consent-heading">
-      <h2 id="consent-heading">How we use your data</h2>
-      <p v-for="(paragraph, index) in consentWords" :key="index">
-        {{ paragraph }}
+  <section class="screen">
+    <div class="stack">
+      <p class="kicker kicker-accent">One minute, then you are in</p>
+      <h1 class="display display-lg">Welcome to Rebel Match</h1>
+      <p class="lede">
+        Two things before you start: your name, and how we use your data.
       </p>
-    </section>
+    </div>
 
-    <label class="accept">
-      <input v-model="accepted" type="checkbox" />
-      I have read this and agree.
-    </label>
+    <form class="stack" @submit.prevent="submit">
+      <div class="field">
+        <label for="name">Your name</label>
+        <input
+          id="name"
+          v-model="name"
+          class="input"
+          autocomplete="name"
+          required
+          :maxlength="limits?.nameMaxChars"
+        />
+      </div>
+      <div class="field">
+        <label for="job-title">Job title (optional)</label>
+        <input
+          id="job-title"
+          v-model="jobTitle"
+          class="input"
+          autocomplete="organization-title"
+          :maxlength="limits?.jobTitleMaxChars"
+        />
+      </div>
+      <div class="field">
+        <label for="org">Organization (optional)</label>
+        <input
+          id="org"
+          v-model="org"
+          class="input"
+          autocomplete="organization"
+          :maxlength="limits?.orgMaxChars"
+        />
+      </div>
+      <p class="small">
+        Your name, job title and organization appear on the cards other members
+        see.
+      </p>
 
-    <button type="submit" :disabled="!ready">Continue</button>
-  </form>
+      <section class="card-solid consent" aria-labelledby="consent-heading">
+        <h2 id="consent-heading" class="kicker">How we use your data</h2>
+        <p v-for="(paragraph, index) in consentWords" :key="index">
+          {{ paragraph }}
+        </p>
+      </section>
 
-  <p v-if="problem" role="alert">{{ problem }}</p>
+      <label class="check">
+        <input v-model="accepted" type="checkbox" />
+        <span>I have read this and agree.</span>
+      </label>
+
+      <button type="submit" class="btn btn-primary" :disabled="!ready">
+        Continue
+      </button>
+    </form>
+
+    <p v-if="problem" class="alert" role="alert">{{ problem }}</p>
+  </section>
 </template>
 
 <style scoped>
-form {
-  display: grid;
-  gap: 0.5rem;
-  max-width: 28rem;
-}
-
-input:not([type='checkbox']),
-button {
-  font: inherit;
-  padding: 0.6rem;
-}
-
-.accept {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
+.consent {
+  margin-top: 0.5rem;
 }
 </style>

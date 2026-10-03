@@ -38,63 +38,73 @@ async function save(): Promise<void> {
 </script>
 
 <template>
-  <p v-if="inviteRefused" role="status" class="invite-notice">
-    This invitation link isn’t valid right now.
-  </p>
-  <h1>Thanks for your interest in Rebel Match</h1>
-  <p>
-    Access is approved by a person. We will email you as soon as it is approved,
-    and that email will contain your login link.
-  </p>
-  <p>There is nothing in your inbox yet, so there is no need to check it.</p>
-
-  <template v-if="handle !== null">
-    <p v-if="outcome === 'saved'" role="status">
-      Thanks — the host can now find you.
+  <section class="screen">
+    <p v-if="inviteRefused" role="status" class="notice invite-notice">
+      This invitation link isn’t valid right now.
     </p>
-    <form v-else @submit.prevent="save">
-      <p>Optional: your name and organization, so the host can find you.</p>
-      <label for="name">Name</label>
-      <input
-        id="name"
-        v-model="name"
-        autocomplete="name"
-        :maxlength="limits?.nameMaxChars"
-      />
-      <label for="org">Organization</label>
-      <input
-        id="org"
-        v-model="org"
-        autocomplete="organization"
-        :maxlength="limits?.orgMaxChars"
-      />
-      <button
-        type="submit"
-        :disabled="saving || (name.trim() === '' && org.trim() === '')"
-      >
-        Save
-      </button>
-      <p v-if="outcome === 'gone'" role="alert">
-        Your request is no longer waiting, so there is nothing to add to.
+
+    <div class="stack">
+      <p class="kicker kicker-accent">Request recorded</p>
+      <h1 class="display display-lg">
+        Thanks for your interest in Rebel Match
+      </h1>
+    </div>
+
+    <div class="card-solid">
+      <p class="kicker">What happens next</p>
+      <p>
+        Access is approved by a person. We will email you as soon as it is
+        approved, and that email will contain your login link.
       </p>
-      <p v-if="outcome === 'failed'" role="alert">
-        That did not save. Your request is recorded either way; try again if you
-        like.
+      <p>
+        There is nothing in your inbox yet, so there is no need to check it.
       </p>
-    </form>
-  </template>
+    </div>
+
+    <template v-if="handle !== null">
+      <p v-if="outcome === 'saved'" class="notice notice-solid" role="status">
+        Thanks — the host can now find you.
+      </p>
+      <form v-else class="stack rule" @submit.prevent="save">
+        <p class="small">
+          Optional: your name and organization, so the host can find you in the
+          room.
+        </p>
+        <div class="field">
+          <label for="name">Name</label>
+          <input
+            id="name"
+            v-model="name"
+            class="input"
+            autocomplete="name"
+            :maxlength="limits?.nameMaxChars"
+          />
+        </div>
+        <div class="field">
+          <label for="org">Organization</label>
+          <input
+            id="org"
+            v-model="org"
+            class="input"
+            autocomplete="organization"
+            :maxlength="limits?.orgMaxChars"
+          />
+        </div>
+        <button
+          type="submit"
+          class="btn btn-dark"
+          :disabled="saving || (name.trim() === '' && org.trim() === '')"
+        >
+          Save
+        </button>
+        <p v-if="outcome === 'gone'" class="alert" role="alert">
+          Your request is no longer waiting, so there is nothing to add to.
+        </p>
+        <p v-if="outcome === 'failed'" class="alert" role="alert">
+          That did not save. Your request is recorded either way; try again if
+          you like.
+        </p>
+      </form>
+    </template>
+  </section>
 </template>
-
-<style scoped>
-form {
-  display: grid;
-  gap: 0.5rem;
-  max-width: 20rem;
-}
-
-input,
-button {
-  font: inherit;
-  padding: 0.6rem;
-}
-</style>
