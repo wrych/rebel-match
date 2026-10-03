@@ -3,11 +3,11 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { answerCard, authorLine, fetchDeck, type DeckCard } from '../lib/deck'
 import { noticeFor } from '../lib/offer'
+import { countAnswer } from '../lib/offer-session'
 
 const router = useRouter()
 const cards = ref<DeckCard[]>([])
 const index = ref(0)
-const loaded = ref(false)
 const sending = ref(false)
 const notice = ref<string | null>(null)
 const problem = ref<string | null>(null)
@@ -18,10 +18,9 @@ async function load(): Promise<void> {
   try {
     cards.value = await fetchDeck()
     index.value = 0
+    if (cards.value.length === 0) await router.replace('/offer/done')
   } catch {
     problem.value = 'The challenges could not be loaded. Reload to try again.'
-  } finally {
-    loaded.value = true
   }
 }
 
@@ -53,6 +52,10 @@ async function answer(action: 'same_boat' | 'follow' | 'skip'): Promise<void> {
   try {
     const result = await answerCard(answered.challengeId, action)
     notice.value = noticeFor(answered, action, result)
+    if (result.result === 'recorded' && result.request === 'created')
+      countAnswer('sameBoat')
+    if (result.result === 'recorded' && action === 'follow')
+      countAnswer('follows')
     await settle(answered)
   } catch {
     problem.value = 'That did not save. Try again.'
@@ -154,17 +157,6 @@ onUnmounted(() => {
           </button>
         </div>
       </div>
-    </template>
-
-    <template v-else-if="loaded && !problem">
-      <div class="stack">
-        <h1 class="display display-lg">You’ve seen them all</h1>
-        <p class="lede">
-          No open challenge is waiting for you. Bring your own, and others can
-          answer it.
-        </p>
-      </div>
-      <RouterLink to="/ask" class="btn btn-primary">Ask for help</RouterLink>
     </template>
 
     <p v-if="problem" class="alert" role="alert">{{ problem }}</p>

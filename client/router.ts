@@ -14,6 +14,7 @@ import LoginScreen from './screens/LoginScreen.vue'
 import MatchesScreen from './screens/MatchesScreen.vue'
 import NotFoundScreen from './screens/NotFoundScreen.vue'
 import OnboardingScreen from './screens/OnboardingScreen.vue'
+import OfferDoneScreen from './screens/OfferDoneScreen.vue'
 import OfferNoteScreen from './screens/OfferNoteScreen.vue'
 import OfferScreen from './screens/OfferScreen.vue'
 import OutboxScreen from './screens/OutboxScreen.vue'
@@ -64,6 +65,7 @@ export const router = createRouter({
     screen('cockpit', CockpitScreen),
     screen('offer', OfferScreen),
     screen('offer-note', OfferNoteScreen),
+    screen('offer-done', OfferDoneScreen),
     screen('request', RequestScreen),
     screen('request-contact', RequestContactScreen),
     screen('admin-applicants', ApplicantsScreen),

@@ -935,6 +935,23 @@ textarea.input {
   opacity: 0.85;
 }
 
+/* The empty deck's last card, and the one hidden behind it (R-OFF-6). */
+.empty-card {
+  width: 100%;
+  min-height: 12rem;
+  background: transparent;
+  cursor: pointer;
+}
+
+.trust:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.trust-credit {
+  color: var(--token-meta);
+}
+
 /* ── Status ───────────────────────────────────────────────────────────── */
 
 .chip {
