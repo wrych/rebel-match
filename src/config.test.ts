@@ -155,11 +155,27 @@ describe('clientConfig', () => {
     expect(serialized).not.toContain(valid.DATABASE_URL)
   })
 
-  it('exposes only the two documented keys', () => {
+  it('exposes only the documented keys', () => {
     expect(Object.keys(clientConfig(loadConfig(valid))).sort()).toEqual([
       'consentVersion',
+      'feedbackTo',
       'limits',
     ])
+  })
+
+  it('sends feedback nowhere real by default, and refuses that in production (R-FB-1)', () => {
+    expect(loadConfig(valid).feedbackTo).toBe('feedback@rebel-match.invalid')
+    expect(
+      loadConfig({ ...valid, FEEDBACK_TO: 'owner@example.org' }).feedbackTo,
+    ).toBe('owner@example.org')
+    expect(() =>
+      loadConfig({
+        ...valid,
+        NODE_ENV: 'production',
+        MAIL_DELIVERY: 'smtp',
+        SMTP_HOST: 'mail.example.org',
+      }),
+    ).toThrow(/FEEDBACK_TO/)
   })
 })
 
@@ -263,6 +279,7 @@ describe('PUBLIC_URL in development', () => {
       SMTP_HOST: 'mail.example.org',
       PUBLIC_URL: 'https://match.example.org',
       PORT: '443',
+      FEEDBACK_TO: 'owner@example.org',
     }
 
     expect(loadConfig(production).publicUrl).toBe('https://match.example.org')
@@ -282,7 +299,12 @@ describe('isDevelopmentDeployment', () => {
     ).toBe(false)
     expect(
       isDevelopmentDeployment(
-        loadConfig({ ...valid, ...smtp, NODE_ENV: 'production' }),
+        loadConfig({
+          ...valid,
+          ...smtp,
+          NODE_ENV: 'production',
+          FEEDBACK_TO: 'owner@example.org',
+        }),
       ),
     ).toBe(false)
   })

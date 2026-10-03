@@ -41,6 +41,8 @@ function linksMissTheApp(env: {
  * unless LOCAL_DATA_DIR says otherwise (ADR 0024). */
 export const DEFAULT_LOCAL_DATA_DIR = '.data'
 
+const FEEDBACK_NOWHERE = 'feedback@rebel-match.invalid'
+
 const envSchema = z
   .object({
     NODE_ENV: z
@@ -60,6 +62,9 @@ const envSchema = z
 
     MAIL_DELIVERY: z.enum(['smtp', 'none']).default('none'),
     MAIL_FROM: z.email().default('hello@rebel-match.invalid'),
+    // Where members' feedback goes (R-FB-1). The default reaches nobody, so
+    // production must name a real inbox.
+    FEEDBACK_TO: z.email().default(FEEDBACK_NOWHERE),
     SMTP_HOST: z.string().min(1).optional(),
     SMTP_PORT: z.coerce.number().int().positive().default(587),
     SMTP_USER: z.string().optional(),
@@ -112,6 +117,13 @@ const envSchema = z
           'PGlite folder (ADR 0024)',
       })
     }
+    if (env.NODE_ENV === 'production' && env.FEEDBACK_TO === FEEDBACK_NOWHERE) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['FEEDBACK_TO'],
+        message: 'production needs FEEDBACK_TO, or feedback reaches nobody',
+      })
+    }
     if (env.NODE_ENV === 'production' && env.MAIL_DELIVERY === 'none') {
       ctx.addIssue({
         code: 'custom',
@@ -159,6 +171,7 @@ export interface Limits {
 export interface ClientConfig {
   limits: Limits
   consentVersion: string
+  feedbackTo: string
 }
 
 export interface Config {
@@ -175,6 +188,7 @@ export interface Config {
     from: string
     smtp: { host?: string; port: number; user?: string; password?: string }
   }
+  feedbackTo: string
   seedProfile: Env['SEED_PROFILE']
   consentVersion: string
   analytics: { token?: string; apiHost: string }
@@ -232,6 +246,7 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): Config {
           : { password: env.SMTP_PASSWORD }),
       },
     },
+    feedbackTo: env.FEEDBACK_TO,
     seedProfile: env.SEED_PROFILE,
     consentVersion: env.CONSENT_VERSION,
     analytics: {
@@ -248,7 +263,11 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): Config {
 /** The subset served by `GET /api/config`. Built by naming what goes in, so a
  * new secret cannot reach the client by being added to Config (R-CFG-2). */
 export function clientConfig(config: Config): ClientConfig {
-  return { limits: config.limits, consentVersion: config.consentVersion }
+  return {
+    limits: config.limits,
+    consentVersion: config.consentVersion,
+    feedbackTo: config.feedbackTo,
+  }
 }
 
 /** A development deployment: NODE_ENV=development with delivery off, so mail
