@@ -29,6 +29,14 @@ async function mountWelcome(): Promise<ReturnType<typeof mount>> {
   return screen
 }
 
+/** The admin screens offered, leaving out the journey doors. */
+function adminPaths(screen: ReturnType<typeof mount>): unknown[] {
+  return screen
+    .findAllComponents(RouterLinkStub)
+    .map((link) => link.props('to') as unknown)
+    .filter((to) => String(to).startsWith('/admin/'))
+}
+
 afterEach(() => {
   vi.unstubAllGlobals()
 })
@@ -42,9 +50,7 @@ describe('WelcomeScreen', () => {
 
   it('offers each admin screen by the permission it needs (R-ROLE-4)', async () => {
     signedIn(['applicant:review'])
-    const links = (await mountWelcome()).findAllComponents(RouterLinkStub)
-
-    expect(links.map((link) => link.props('to'))).toEqual(['/admin/applicants'])
+    expect(adminPaths(await mountWelcome())).toEqual(['/admin/applicants'])
   })
 
   it('offers the outbound log only to a holder of outbox:read (R-ROLE-4)', async () => {
@@ -53,10 +59,16 @@ describe('WelcomeScreen', () => {
     signedIn([])
     const member = await mountWelcome()
 
-    expect(admin.findComponent(RouterLinkStub).props('to')).toBe(
-      '/admin/outbox',
-    )
-    expect(member.findComponent(RouterLinkStub).exists()).toBe(false)
+    expect(adminPaths(admin)).toEqual(['/admin/outbox'])
+    expect(adminPaths(member)).toEqual([])
+  })
+
+  it('opens the Ask door onto the Ask journey (F5)', async () => {
+    signedIn([])
+    const door = (await mountWelcome()).findComponent(RouterLinkStub)
+
+    expect(door.props('to')).toBe('/ask')
+    expect(door.text()).toContain('Ask for help')
   })
 
   it('signs out on the server, then goes to the login screen', async () => {

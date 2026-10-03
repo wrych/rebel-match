@@ -9,6 +9,7 @@ import AskScreen from './screens/AskScreen.vue'
 import ChallengeScreen from './screens/ChallengeScreen.vue'
 import InvitesScreen from './screens/InvitesScreen.vue'
 import LoginScreen from './screens/LoginScreen.vue'
+import MatchesScreen from './screens/MatchesScreen.vue'
 import NotFoundScreen from './screens/NotFoundScreen.vue'
 import OnboardingScreen from './screens/OnboardingScreen.vue'
 import OutboxScreen from './screens/OutboxScreen.vue'
@@ -50,6 +51,7 @@ export const router = createRouter({
     screen('ask', AskScreen),
     screen('challenge', ChallengeScreen),
     screen('trend-picker', TrendPickerScreen),
+    screen('matches', MatchesScreen),
     screen('admin-applicants', ApplicantsScreen),
     screen('admin-invites', InvitesScreen),
     screen('admin-outbox', OutboxScreen),

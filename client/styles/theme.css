@@ -522,6 +522,10 @@ textarea.input {
   transform: var(--tilt-a);
 }
 
+.door-ask:hover {
+  background: var(--accent-hover);
+}
+
 .door-offer {
   background: var(--door);
   color: var(--door-fg);
@@ -683,6 +687,66 @@ textarea.input {
 
 .trend-option.chosen .trend-tag {
   color: var(--accent);
+}
+
+/* A peer on the matches screen: ember for those in the same boat. */
+.peer-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.peer-same_boat .peer {
+  border: 2px solid var(--accent);
+  background: var(--soft);
+}
+
+.peer-meta {
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.peer-note {
+  color: var(--ink-soft);
+}
+
+.mine {
+  margin: 0;
+  font-size: 1.03rem;
+  line-height: 1.38;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+
+/* Knowledge that already exists: filled, like the prototype's case cards. */
+.case {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.95rem;
+  border: var(--sticker-border);
+  border-radius: var(--radius);
+  background: var(--door);
+  color: var(--door-fg);
+  box-shadow: var(--tiny-shadow);
+  text-decoration: none;
+}
+
+.case:hover {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.case-org {
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+
+.case-takeaway {
+  font-size: 0.85rem;
+  line-height: 1.35;
+  opacity: 0.85;
 }
 
 /* ── Status ───────────────────────────────────────────────────────────── */
