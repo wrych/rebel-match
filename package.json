@@ -25,7 +25,7 @@
     "seed": "tsx --env-file-if-exists=.env src/seed.ts",
     "db:up": "docker compose up -d --wait postgres",
     "db:down": "docker compose down",
-    "db:reset": "docker compose down -v && npm run db:up && npm run migrate",
+    "db:reset": "tsx --env-file-if-exists=.env scripts/db-reset.ts && npm run migrate",
     "prepare": "husky"
   },
   "dependencies": {

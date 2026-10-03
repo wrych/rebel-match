@@ -117,7 +117,7 @@ describe('GET /api/config', () => {
 
     expect(body).not.toContain('mp-secret-token')
     expect(body).not.toContain(config.sessionSecret)
-    expect(body).not.toContain(config.databaseUrl)
+    expect(body).not.toContain('postgres://user:pw@localhost:5432')
   })
 })
 

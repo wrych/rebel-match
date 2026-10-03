@@ -1,29 +1,21 @@
 #!/usr/bin/env sh
-# Readies the development database before `npm run dev`: starts it in Docker
-# when Docker is reachable, then migrates, seeds, and prints a sign-in link for
-# the seeded admin (R-DEV-6).
+# Readies the database before `npm run dev`: migrates, seeds, and prints a
+# sign-in link for the seeded admin (R-DEV-6). Without DATABASE_URL that is a
+# local PGlite folder, so nothing needs installing (ADR 0024).
 #
-# No database is not a failure: the server still starts, /api/health reports the
-# database as down, and every screen that does not need it works. A hard failure
-# here would make `npm run dev` unusable on a machine without Docker or Postgres.
+# A DATABASE_URL that does not answer is not a failure: the server still
+# starts, /api/health reports the database as down, and every screen that does
+# not need it works.
 set -e
-
-if docker compose version >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
-  docker compose up -d --wait postgres
-fi
 
 if ! npx tsx --env-file-if-exists=.env scripts/db-reachable.ts; then
   cat <<'MSG'
 
-  No reachable database — starting without one.
+  DATABASE_URL is set but nothing answers there — starting without it.
   /api/health will report "database": "down", which is expected.
 
-  To get one:
-    Docker Desktop   Settings > Resources > WSL Integration > enable this distro
-    dockerd in WSL   sudo service docker start
-    no Docker        install Postgres 17 and point DATABASE_URL at it
-
-  Then run npm run dev again.
+  Either start that Postgres (npm run db:up starts one in Docker), or remove
+  DATABASE_URL from .env to run on a local PGlite folder instead.
 
 MSG
   exit 0

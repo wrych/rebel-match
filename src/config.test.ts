@@ -57,10 +57,6 @@ describe('loadConfig', () => {
     )
   })
 
-  it('rejects a missing database url rather than failing on first query', () => {
-    expect(() => loadConfig({ SESSION_SECRET: 'x'.repeat(32) })).toThrow()
-  })
-
   it('requires an smtp host when it is told to send over smtp', () => {
     expect(() => loadConfig({ ...valid, MAIL_DELIVERY: 'smtp' })).toThrow(
       /SMTP_HOST/,
@@ -75,6 +71,47 @@ describe('loadConfig', () => {
         MAIL_DELIVERY: 'none',
       }),
     ).toThrow(/nobody can log in/)
+  })
+
+  it('connects to the Postgres DATABASE_URL names (ADR 0024)', () => {
+    expect(loadConfig(valid).database).toEqual({
+      kind: 'postgres',
+      url: valid.DATABASE_URL,
+    })
+  })
+
+  it.each([[{}], [{ DATABASE_URL: '' }]])(
+    'runs locally on PGlite in the data folder without a URL: %j',
+    (url) => {
+      const config = loadConfig({
+        SESSION_SECRET: valid.SESSION_SECRET,
+        LOCAL_DATA_DIR: 'local',
+        ...url,
+      })
+
+      expect(config.database).toEqual({
+        kind: 'pglite',
+        dataDir: 'local/pglite',
+      })
+    },
+  )
+
+  it('refuses to start in production without a database URL (ADR 0024)', () => {
+    expect(() =>
+      loadConfig({
+        SESSION_SECRET: valid.SESSION_SECRET,
+        NODE_ENV: 'production',
+        MAIL_DELIVERY: 'smtp',
+        SMTP_HOST: 'mail.example.org',
+      }),
+    ).toThrow(/never falls back to a local/)
+  })
+
+  it('refuses to start without a session secret, URL or not (R-NFR-5)', () => {
+    expect(() => loadConfig({ DATABASE_URL: valid.DATABASE_URL })).toThrow(
+      /SESSION_SECRET/,
+    )
+    expect(() => loadConfig({})).toThrow(/SESSION_SECRET/)
   })
 
   it('defaults to delivering nothing, so a dev run cannot email a real person', () => {
@@ -115,7 +152,7 @@ describe('clientConfig', () => {
     expect(serialized).not.toContain('mp-secret-token')
     expect(serialized).not.toContain('smtp-secret')
     expect(serialized).not.toContain(config.sessionSecret)
-    expect(serialized).not.toContain(config.databaseUrl)
+    expect(serialized).not.toContain(valid.DATABASE_URL)
   })
 
   it('exposes only the two documented keys', () => {

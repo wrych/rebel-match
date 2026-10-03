@@ -2,11 +2,11 @@
    the rule exists to keep member data out of logs, and a port is not that. */
 import { createApp } from './app.js'
 import { composeApp } from './compose.js'
-import { loadConfig } from './config.js'
+import { loadRuntimeConfig } from './runtime-config.js'
 import { openDatabase } from './db/open.js'
 import { startOutboxRetention } from './services/outbox-retention.js'
 
-const config = loadConfig()
+const config = await loadRuntimeConfig()
 const connection = await openDatabase(config)
 const deps = composeApp(config, connection.db)
 
@@ -19,8 +19,17 @@ startOutboxRetention({
   },
 })
 
+// Close the database before exiting, so a local PGlite folder is released
+// for the restart `tsx watch` is about to make (ADR 0024).
+for (const signal of ['SIGINT', 'SIGTERM'] as const) {
+  process.once(signal, () => {
+    void connection.close().finally(() => process.exit(0))
+  })
+}
+
 createApp(deps).listen(config.port, () => {
   console.log(`rebel-match server on http://localhost:${String(config.port)}`)
   console.log(`  mail delivery: ${config.mail.delivery}`)
   console.log(`  seed profile:  ${config.seedProfile}`)
+  console.log(`  database:      ${config.database.kind}`)
 })
