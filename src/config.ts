@@ -69,6 +69,7 @@ const envSchema = z
     CHALLENGE_MIN_CHARS: z.coerce.number().int().positive().default(31),
     BEEN_THERE_NOTE_MIN_CHARS: z.coerce.number().int().positive().default(31),
     OUTBOX_PAGE_SIZE: z.coerce.number().int().positive().default(100),
+    DECK_PAGE_SIZE: z.coerce.number().int().positive().default(20),
     OUTBOX_RETENTION_DAYS: z.coerce.number().int().positive().default(30),
     OUTBOX_PURGE_INTERVAL_HOURS: z.coerce
       .number()
@@ -121,6 +122,7 @@ export interface Limits {
   inviteDefaultHours: number
   outboxRetentionDays: number
   outboxPageSize: number
+  deckPageSize: number
   nameMaxChars: number
   jobTitleMaxChars: number
   orgMaxChars: number
@@ -169,6 +171,7 @@ function limitsFrom(env: Env): Limits {
     inviteDefaultHours: env.INVITE_DEFAULT_HOURS,
     outboxRetentionDays: env.OUTBOX_RETENTION_DAYS,
     outboxPageSize: env.OUTBOX_PAGE_SIZE,
+    deckPageSize: env.DECK_PAGE_SIZE,
     nameMaxChars: NAME_MAX_CHARS,
     jobTitleMaxChars: JOB_TITLE_MAX_CHARS,
     orgMaxChars: ORG_MAX_CHARS,

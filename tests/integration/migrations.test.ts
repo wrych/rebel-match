@@ -65,6 +65,7 @@ describe('migrations', () => {
       'roles',
       'schema_migrations',
       'sessions',
+      'swipes',
       'trends',
     ])
   })

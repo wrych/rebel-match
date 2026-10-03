@@ -59,6 +59,7 @@ function deps(
       confirmTrend: () => Promise.resolve('not_found'),
       matches: () => Promise.resolve(null),
     },
+    deck: { next: () => Promise.resolve([]) },
   }
 }
 

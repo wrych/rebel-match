@@ -21,6 +21,8 @@ import { createApprovals } from './services/approvals.js'
 import { mailLinks } from './services/link-delivery.js'
 import { createMysqlChallengeStore } from './services/challenge-store.js'
 import { createChallenges } from './services/challenges.js'
+import { createMysqlDeckStore } from './services/deck-store.js'
+import { createDeck } from './services/deck.js'
 import { createMysqlInviteRedemption } from './services/invite-redemption-store.js'
 import { createMysqlInviteStore } from './services/invite-store.js'
 import { createInvites } from './services/invites.js'
@@ -112,5 +114,9 @@ export function composeApp(config: Config, pool: Pool): AppDeps {
       newId: randomUUID,
     }),
     challenges: createChallenges({ store: createMysqlChallengeStore(pool) }),
+    deck: createDeck({
+      store: createMysqlDeckStore(pool),
+      pageSize: config.limits.deckPageSize,
+    }),
   }
 }
