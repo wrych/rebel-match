@@ -23,7 +23,7 @@
     "migrate": "tsx --env-file-if-exists=.env src/migrate.ts",
     "db:generate": "drizzle-kit generate",
     "seed": "tsx --env-file-if-exists=.env src/seed.ts",
-    "db:up": "docker compose up -d --wait mysql",
+    "db:up": "docker compose up -d --wait postgres",
     "db:down": "docker compose down",
     "db:reset": "docker compose down -v && npm run db:up && npm run migrate",
     "prepare": "husky"
@@ -35,7 +35,6 @@
     "@fontsource/jetbrains-mono": "^5.3.0",
     "drizzle-orm": "^0.45.3",
     "express": "^5.2.1",
-    "mysql2": "^3.24.5",
     "nodemailer": "^10.0.13",
     "pg": "^8.23.1",
     "vue": "^3.5.43",

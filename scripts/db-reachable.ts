@@ -1,17 +1,18 @@
-import mysql from 'mysql2/promise'
+import pg from 'pg'
 
 const CONNECT_TIMEOUT_MS = 3000
 
 async function reachable(): Promise<boolean> {
-  const uri = process.env['DATABASE_URL']
-  if (uri === undefined) return false
+  const connectionString = process.env['DATABASE_URL']
+  if (connectionString === undefined) return false
 
+  const client = new pg.Client({
+    connectionString,
+    connectionTimeoutMillis: CONNECT_TIMEOUT_MS,
+  })
   try {
-    const connection = await mysql.createConnection({
-      uri,
-      connectTimeout: CONNECT_TIMEOUT_MS,
-    })
-    await connection.end()
+    await client.connect()
+    await client.end()
     return true
   } catch {
     return false

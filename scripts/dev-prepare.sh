@@ -5,11 +5,11 @@
 #
 # No database is not a failure: the server still starts, /api/health reports the
 # database as down, and every screen that does not need it works. A hard failure
-# here would make `npm run dev` unusable on a machine without Docker or MySQL.
+# here would make `npm run dev` unusable on a machine without Docker or Postgres.
 set -e
 
 if docker compose version >/dev/null 2>&1 && docker info >/dev/null 2>&1; then
-  docker compose up -d --wait mysql
+  docker compose up -d --wait postgres
 fi
 
 if ! npx tsx --env-file-if-exists=.env scripts/db-reachable.ts; then
@@ -21,7 +21,7 @@ if ! npx tsx --env-file-if-exists=.env scripts/db-reachable.ts; then
   To get one:
     Docker Desktop   Settings > Resources > WSL Integration > enable this distro
     dockerd in WSL   sudo service docker start
-    no Docker        install mysql-server and point DATABASE_URL at it
+    no Docker        install Postgres 17 and point DATABASE_URL at it
 
   Then run npm run dev again.
 
