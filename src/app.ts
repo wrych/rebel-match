@@ -2,6 +2,7 @@ import express, { type ErrorRequestHandler, type Express } from 'express'
 import type { AuthProvider } from './auth/index.js'
 import { clientConfig, type Config } from './config.js'
 import type { Pool } from './db.js'
+import { challengeRoutes } from './routes/challenges.js'
 import { guardApi } from './routes/api-guard.js'
 import { adminApplicantRoutes } from './routes/admin-applicants.js'
 import { adminInviteRoutes } from './routes/admin-invites.js'
@@ -12,6 +13,7 @@ import { onboardingRoutes } from './routes/onboarding.js'
 import { requestLinkRoutes } from './routes/request-link.js'
 import type { AdmissionService } from './services/admission.js'
 import type { ApprovalService } from './services/approvals.js'
+import type { ChallengeService } from './services/challenges.js'
 import type { InviteService } from './services/invites.js'
 import type { OnboardingService } from './services/onboarding.js'
 import type { MemberProfiles } from './services/member-profiles.js'
@@ -29,6 +31,7 @@ export interface AppDeps {
   approvals: ApprovalService
   onboarding: OnboardingService
   invites: InviteService
+  challenges: ChallengeService
 }
 
 /** True when the database answers. Reported rather than thrown, so a dev server
@@ -75,6 +78,7 @@ export function createApp(deps: AppDeps): Express {
   app.use(requestLinkRoutes(deps))
   app.use('/api', guardApi(deps))
   app.use(onboardingRoutes(deps))
+  app.use(challengeRoutes(deps))
   app.use(adminRoleRoutes(deps))
   app.use(adminApplicantRoutes(deps))
   app.use(adminInviteRoutes(deps))

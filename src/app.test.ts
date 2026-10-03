@@ -52,6 +52,13 @@ function deps(
       create: () => Promise.resolve({ result: 'bad_window' }),
       revoke: () => Promise.resolve('not_found'),
     },
+    challenges: {
+      trends: () => Promise.resolve([]),
+      create: () => Promise.reject(new Error('unused')),
+      get: () => Promise.resolve(null),
+      confirmTrend: () => Promise.resolve('not_found'),
+      matches: () => Promise.resolve(null),
+    },
   }
 }
 

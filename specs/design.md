@@ -521,11 +521,13 @@ onboarded → `403 {error: 'onboarding_required'}`. Only `/api/health` and
 
 ### Ask journey
 
-| Method | Path                          | Body        | Behavior                                                                    |
-| ------ | ----------------------------- | ----------- | --------------------------------------------------------------------------- |
-| POST   | `/api/challenges`             | `{body}`    | Create challenge, run matcher, return challenge with `autoTrend`.           |
-| PATCH  | `/api/challenges/:id`         | `{trendId}` | Confirm/override trend; set `overridden` if changed.                        |
-| GET    | `/api/challenges/:id/matches` | —           | `{sameBoat[], beenThere[], cases[]}` for the challenge's trend (no emails). |
+| Method | Path                          | Body        | Behavior                                                                                                                                                                                                |
+| ------ | ----------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/trends`                 | —           | The 8 trends with `short`, `from` and `peers`, for the domain screen and the picker (R-ASK-6).                                                                                                          |
+| POST   | `/api/challenges`             | `{body}`    | Create challenge (more than `limits.challengeMinChars` − 1 characters, trimmed), run matcher, return challenge with `autoTrend` (R-ASK-3,4,5). _Requires `challenge:create`._                           |
+| GET    | `/api/challenges/:id`         | —           | The author's own challenge; `404` for anyone else (R-NAV-8).                                                                                                                                            |
+| PATCH  | `/api/challenges/:id`         | `{trendId}` | Confirm/override trend; set `overridden` if it differs from `autoTrend`. Author only.                                                                                                                   |
+| GET    | `/api/challenges/:id/matches` | —           | `{trend, sameBoat[], beenThere[], cases[]}` for the confirmed trend, else the matched one; peers are other active, onboarded members, never the author, with no email (R-ASK-8, R-CONN-6). Author only. |
 
 ### Offer journey
 

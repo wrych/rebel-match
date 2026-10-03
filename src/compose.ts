@@ -19,6 +19,8 @@ import { createApplicantNotice } from './services/applicant-notice.js'
 import { createMysqlApprovalStore } from './services/approval-store.js'
 import { createApprovals } from './services/approvals.js'
 import { mailLinks } from './services/link-delivery.js'
+import { createMysqlChallengeStore } from './services/challenge-store.js'
+import { createChallenges } from './services/challenges.js'
 import { createMysqlInviteRedemption } from './services/invite-redemption-store.js'
 import { createMysqlInviteStore } from './services/invite-store.js'
 import { createInvites } from './services/invites.js'
@@ -109,5 +111,6 @@ export function composeApp(config: Config, pool: Pool): AppDeps {
       defaults: config.limits,
       newId: randomUUID,
     }),
+    challenges: createChallenges({ store: createMysqlChallengeStore(pool) }),
   }
 }
