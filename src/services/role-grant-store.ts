@@ -3,7 +3,8 @@ import type { Database } from '../db/connect.js'
 import { memberRoles, members } from '../db/schema.js'
 import type { Holding, RevokeCheck, RoleGrantStore } from './roles.js'
 
-async function lockedHoldings(
+/** The active holdings of these roles, locked until the transaction ends. */
+export async function lockedHoldings(
   db: Database,
   roles: readonly string[],
 ): Promise<Holding[]> {

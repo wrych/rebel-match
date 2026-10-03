@@ -42,6 +42,8 @@ import { createOnboardingStore } from './services/onboarding-store.js'
 import { createOnboarding } from './services/onboarding.js'
 import { createOutboxLog } from './services/outbox-log-store.js'
 import { createOutboxStore } from './services/outbox-store.js'
+import { createErasureService } from './services/erasure.js'
+import { createErasureStore } from './services/erasure-store.js'
 import { createRoleGrantStore } from './services/role-grant-store.js'
 import { createRoleService } from './services/roles.js'
 import { createTransport } from './services/smtp.js'
@@ -128,6 +130,10 @@ export function composeApp(config: Config, db: Database): AppDeps {
     profiles: createMemberProfiles(db, config.consentVersion),
     roles: createRoleService({
       store: createRoleGrantStore(db),
+      policy: configPolicy,
+    }),
+    erasure: createErasureService({
+      store: createErasureStore(db),
       policy: configPolicy,
     }),
     outbox: createOutboxLog(db),
