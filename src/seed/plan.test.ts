@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { DEV_ADMIN_EMAIL } from './dev/people.js'
 import { planSeed } from './plan.js'
+import { trends } from './shared/trends.js'
 
 describe('planSeed', () => {
   it('seeds the roles in every profile (R-SEED-1)', () => {
@@ -42,5 +43,56 @@ describe('planSeed', () => {
     expect(
       planSeed({ seedProfile: 'prod', env: 'production' }).members,
     ).toEqual([])
+  })
+
+  it('seeds the 8 trends and their case studies in every profile (R-ASK-5,8)', () => {
+    for (const seedProfile of ['dev', 'prod'] as const) {
+      const plan = planSeed({ seedProfile, env: 'development' })
+
+      expect(plan.trends.map((t) => t.id)).toEqual([
+        '01',
+        '02',
+        '03',
+        '04',
+        '05',
+        '06',
+        '07',
+        '08',
+      ])
+      for (const trend of plan.trends) {
+        expect(plan.cases.some((c) => c.trendId === trend.id)).toBe(true)
+      }
+    }
+  })
+
+  it('links every case study to the Corporate Rebels blog', () => {
+    const { cases } = planSeed({ seedProfile: 'prod', env: 'production' })
+
+    for (const item of cases) {
+      expect(item.url).toMatch(/^https:\/\/www\.corporate-rebels\.com\/blog\//)
+    }
+  })
+
+  it('gives production no fictional challenges or offers (R-SEED-4)', () => {
+    const plan = planSeed({ seedProfile: 'prod', env: 'production' })
+
+    expect(plan.challenges).toEqual([])
+    expect(plan.expertise).toEqual([])
+  })
+
+  it('attributes every dev challenge and offer to a seeded member on a known trend', () => {
+    const plan = planSeed({ seedProfile: 'dev', env: 'development' })
+    const emails = new Set(plan.members.map((m) => m.email))
+    const ids = new Set(trends.map((t) => t.id))
+
+    for (const c of plan.challenges) {
+      expect(emails.has(c.authorEmail)).toBe(true)
+      expect(ids.has(c.trendId)).toBe(true)
+      expect(c.body.length).toBeGreaterThan(30)
+    }
+    for (const e of plan.expertise) {
+      expect(emails.has(e.email)).toBe(true)
+      expect(ids.has(e.trendId)).toBe(true)
+    }
   })
 })

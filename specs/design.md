@@ -342,6 +342,7 @@ CREATE TABLE cases (
   org       VARCHAR(120) NOT NULL,
   url       VARCHAR(400) NOT NULL,
   takeaway  VARCHAR(400) NOT NULL,
+  UNIQUE KEY uq_case_trend_url (trend_id, url),     -- the seed's natural key
   CONSTRAINT fk_case_trend FOREIGN KEY (trend_id) REFERENCES trends(id)
 );
 ```
@@ -360,10 +361,16 @@ CREATE TABLE challenges (
   created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   KEY ix_challenge_member (member_id),
   KEY ix_challenge_trend (trend_id),
-  CONSTRAINT fk_challenge_member FOREIGN KEY (member_id) REFERENCES members(id),
-  CONSTRAINT fk_challenge_trend  FOREIGN KEY (trend_id)  REFERENCES trends(id)
+  CONSTRAINT fk_challenge_member FOREIGN KEY (member_id) REFERENCES members(id)
+    ON DELETE CASCADE,
+  CONSTRAINT fk_challenge_trend  FOREIGN KEY (trend_id)  REFERENCES trends(id),
+  CONSTRAINT fk_challenge_auto_trend FOREIGN KEY (auto_trend) REFERENCES trends(id)
 );
 ```
+
+A member's challenges, expertise and follows reference them with `ON DELETE
+CASCADE`, so deleting a member removes what they wrote with them (R-NFR-7,
+F11).
 
 ### member_expertise ("been there" supply)
 
@@ -376,7 +383,8 @@ CREATE TABLE member_expertise (
   trend_id  CHAR(2)      NOT NULL,
   note      VARCHAR(400) NULL,
   PRIMARY KEY (member_id, trend_id),
-  CONSTRAINT fk_exp_member FOREIGN KEY (member_id) REFERENCES members(id),
+  CONSTRAINT fk_exp_member FOREIGN KEY (member_id) REFERENCES members(id)
+    ON DELETE CASCADE,
   CONSTRAINT fk_exp_trend  FOREIGN KEY (trend_id)  REFERENCES trends(id)
 );
 ```
@@ -413,7 +421,8 @@ CREATE TABLE follows (
   trend_id  CHAR(2)  NOT NULL,
   created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (member_id, trend_id),
-  CONSTRAINT fk_follow_member FOREIGN KEY (member_id) REFERENCES members(id),
+  CONSTRAINT fk_follow_member FOREIGN KEY (member_id) REFERENCES members(id)
+    ON DELETE CASCADE,
   CONSTRAINT fk_follow_trend  FOREIGN KEY (trend_id)  REFERENCES trends(id)
 );
 ```

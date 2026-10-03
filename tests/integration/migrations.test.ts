@@ -51,16 +51,21 @@ describe('migrations', () => {
     expect(applied).toEqual(expected)
   })
 
-  it('creates every table the login journey needs', async () => {
+  it('creates every table the login and ask journeys need', async () => {
     expect(await tableNames()).toEqual([
+      'cases',
+      'challenges',
+      'follows',
       'invites',
       'magic_tokens',
+      'member_expertise',
       'member_roles',
       'members',
       'outbox',
       'roles',
       'schema_migrations',
       'sessions',
+      'trends',
     ])
   })
 
