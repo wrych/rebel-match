@@ -122,7 +122,8 @@ printed dev link (R-DEV-6).
 - [x] `GET /api/challenges/:id/matches`: same boat / been there / cases (no
       emails). _(R-ASK-8)_
 - [ ] Matches screen with Follow + Connect; trend detail / case studies as its
-      own screen (`/trends/:trendId`). _(R-ASK-9,10, R-NAV-2)_
+      own screen (`/trends/:trendId`). _(R-ASK-9,10, R-NAV-2)_ The matches
+      screen is in; Connect opens the M4 connection-request screen.
 
 ## M3 — Offer journey _(M6, F6)_
 
@@ -155,7 +156,8 @@ printed dev link (R-DEV-6).
       _(S19, R-AUTH-3,11, R-ROLE-3)_
 - [ ] Whitelist add (`POST /api/admin/whitelist`), permission-guarded.
       _(R-AUTH-1, R-ROLE-3)_
-- [ ] Follow endpoints + UI. _(S2, R-ASK-9)_ The endpoints are in.
+- [ ] Follow endpoints + UI. _(S2, R-ASK-9)_ The endpoints are in, and the
+      matches screen follows and unfollows.
 - [ ] Mixpanel wired in (client + server, **EU endpoints**, project created with
       EU residency), pseudonymous id, event set from design §7, consent-gated.
       _(S3, R-ANA-1..5)_

@@ -1,6 +1,11 @@
-import type { Challenge, Trend } from '../../src/services/challenges'
+import type {
+  Challenge,
+  Matches,
+  PeerCard,
+  Trend,
+} from '../../src/services/challenges'
 
-export type { Challenge, Trend }
+export type { Challenge, Matches, PeerCard, Trend }
 
 /** Hints of what belongs in a challenge, taken from the prototype. They are
  * shown as text only, never inserted into the member's own words (R-ASK-2). */
@@ -39,6 +44,26 @@ export async function fetchChallenge(id: string): Promise<Challenge | null> {
   if (!response.ok)
     throw new Error(`challenge unavailable (${String(response.status)})`)
   return ((await response.json()) as { challenge: Challenge }).challenge
+}
+
+/** Same boat, been there and case studies for the member's own challenge,
+ * or null when there is none for them under that id (R-ASK-8, R-NAV-8). */
+export async function fetchMatches(id: string): Promise<Matches | null> {
+  const response = await fetch(
+    `/api/challenges/${encodeURIComponent(id)}/matches`,
+  )
+  if (response.status === 404) return null
+  if (!response.ok)
+    throw new Error(`matches unavailable (${String(response.status)})`)
+  return (await response.json()) as Matches
+}
+
+/** Who a peer is, as one line: job title, organization and sector, leaving
+ * out what they did not give. */
+export function peerLine(peer: PeerCard): string {
+  return [peer.jobTitle, peer.org, peer.sector]
+    .filter((part): part is string => part !== null && part !== '')
+    .join(' · ')
 }
 
 /** Stores the trend the member confirmed, picked or suggested (R-ASK-7). */

@@ -2,7 +2,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   confirmTrend,
   fetchChallenge,
+  fetchMatches,
   fetchTrends,
+  peerLine,
   shownTrend,
   submitChallenge,
   type Challenge,
@@ -127,5 +129,46 @@ describe('the challenge API calls', () => {
     answer(400)
 
     await expect(confirmTrend('c1', '99')).rejects.toThrow('400')
+  })
+})
+
+describe('peerLine', () => {
+  const peer = {
+    memberId: 'm2',
+    name: 'Bo',
+    jobTitle: 'Coach',
+    org: 'Buurtzorg',
+    sector: 'Care',
+    note: 'Teams of 12.',
+  }
+
+  it('joins job title, organization and sector', () => {
+    expect(peerLine(peer)).toBe('Coach · Buurtzorg · Care')
+  })
+
+  it('leaves out what the peer did not give', () => {
+    expect(peerLine({ ...peer, jobTitle: null, sector: '' })).toBe('Buurtzorg')
+  })
+})
+
+describe('fetchMatches', () => {
+  it('reads the matches for the member’s own challenge (R-ASK-8)', async () => {
+    const matches = { trend: trends[0], sameBoat: [], beenThere: [], cases: [] }
+    const fetchMock = answer(200, matches)
+
+    expect(await fetchMatches('c1')).toEqual(matches)
+    expect(fetchMock).toHaveBeenCalledWith('/api/challenges/c1/matches')
+  })
+
+  it('is null for a challenge that is not theirs (R-NAV-8)', async () => {
+    answer(404)
+
+    expect(await fetchMatches('c2')).toBeNull()
+  })
+
+  it('throws when the matches cannot be read', async () => {
+    answer(500)
+
+    await expect(fetchMatches('c1')).rejects.toThrow('500')
   })
 })
