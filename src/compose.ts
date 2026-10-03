@@ -45,6 +45,8 @@ import { createOutboxStore } from './services/outbox-store.js'
 import { createErasureService } from './services/erasure.js'
 import { createErasureStore } from './services/erasure-store.js'
 import { createMemberRoster } from './services/member-roster-store.js'
+import { createWhitelist } from './services/whitelist.js'
+import { createWhitelistStore } from './services/whitelist-store.js'
 import { createRoleGrantStore } from './services/role-grant-store.js'
 import { createRoleService } from './services/roles.js'
 import { createTransport } from './services/smtp.js'
@@ -119,7 +121,7 @@ function composeJourneys(
 
 function composeMembershipAdmin(
   db: Database,
-): Pick<AppDeps, 'roles' | 'erasure' | 'roster'> {
+): Pick<AppDeps, 'roles' | 'erasure' | 'roster' | 'whitelist'> {
   return {
     roles: createRoleService({
       store: createRoleGrantStore(db),
@@ -130,6 +132,10 @@ function composeMembershipAdmin(
       policy: configPolicy,
     }),
     roster: createMemberRoster(db),
+    whitelist: createWhitelist({
+      store: createWhitelistStore(db),
+      admittedRole,
+    }),
   }
 }
 
