@@ -67,4 +67,25 @@ describe('the dev seed', () => {
     expect(rows[0]).toMatchObject({ status: 'active', roles: 'admin,member' })
     expect(rows[0]?.['consent_at']).not.toBeNull()
   })
+
+  it('seeds trends, cases, challenges and offers once, however often it runs (R-SEED-7)', async () => {
+    await applySeed(pool, plan, config.consentVersion)
+
+    expect(await count('SELECT COUNT(*) AS n FROM trends')).toBe(8)
+    expect(await count('SELECT COUNT(*) AS n FROM cases')).toBe(
+      plan.cases.length,
+    )
+    expect(
+      await count(
+        'SELECT COUNT(*) AS n FROM challenges c ' +
+          'JOIN members m ON m.id = c.member_id WHERE m.email IN (?)',
+      ),
+    ).toBe(plan.challenges.length)
+    expect(
+      await count(
+        'SELECT COUNT(*) AS n FROM member_expertise e ' +
+          'JOIN members m ON m.id = e.member_id WHERE m.email IN (?)',
+      ),
+    ).toBe(plan.expertise.length)
+  })
 })
