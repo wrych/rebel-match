@@ -53,13 +53,14 @@ that works.")_
 | C3  | "Peers working on this trend" counts shown live                    | Prototype shows static counts; live counts are a polish item.               |
 | C4  | GDPR self-service deletion (vs. admin-only)                        | Admin-triggered deletion covers the Must; self-service is extra.            |
 | C5  | LLM-based trend classification (replacing keywords)                | "AI will be pretty good at matching" — a clean post-beta upgrade.           |
+| C6  | Corporate↔rebel happy mode ("CR" button, R-LOOK-2)                 | Kept from the prototype: one token set, no screen changes. Was W2.          |
+| C7  | Dark mode as a further colour mode (R-LOOK-3)                      | Later: a third token set, possibly following the phone's own setting.       |
 
 ## Won't have (this beta)
 
 | #   | Feature                                                   | Reason                                                                                                                              |
 | --- | --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | W1  | Gamification: standings, badges, ranks, milestone pop-ups | Explicitly cut for beta.                                                                                                            |
-| W2  | Corporate↔rebel theme toggle ("CR" / happy mode)          | Prototype fun; no product value for beta.                                                                                           |
 | W3  | "Nominate as frontier" escalation                         | Idea stage; no defined flow.                                                                                                        |
 | W4  | Integration with the Corporate Rebels member platform     | "Significant work… avoid if possible."                                                                                              |
 | W5  | Connect via phone number or LinkedIn                      | Email only for beta.                                                                                                                |
