@@ -9,7 +9,7 @@ const requestBody = z.object({
 })
 
 function applicantBody(
-  limits: Pick<Limits, 'applicantNameMaxChars' | 'applicantOrgMaxChars'>,
+  limits: Pick<Limits, 'nameMaxChars' | 'orgMaxChars'>,
 ): z.ZodType<{
   handle: string
   name?: string | undefined
@@ -17,8 +17,8 @@ function applicantBody(
 }> {
   return z.object({
     handle: z.string().min(1),
-    name: z.string().trim().max(limits.applicantNameMaxChars).optional(),
-    org: z.string().trim().max(limits.applicantOrgMaxChars).optional(),
+    name: z.string().trim().max(limits.nameMaxChars).optional(),
+    org: z.string().trim().max(limits.orgMaxChars).optional(),
   })
 }
 

@@ -168,12 +168,12 @@ describe('outbound message log settings', () => {
   })
 })
 
-describe('applicant detail limits', () => {
-  it('match the requested_name and requested_org columns (R-AUTH-12)', () => {
+describe('profile text limits', () => {
+  it('match the name and org columns (R-AUTH-12, R-ONB-2)', () => {
     const { limits } = loadConfig(valid)
 
-    expect(limits.applicantNameMaxChars).toBe(120)
-    expect(limits.applicantOrgMaxChars).toBe(160)
+    expect(limits.nameMaxChars).toBe(120)
+    expect(limits.orgMaxChars).toBe(160)
   })
 })
 
