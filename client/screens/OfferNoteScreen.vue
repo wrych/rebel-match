@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { fetchConfig } from '../lib/api'
 import { answerCard, authorLine, fetchDeck, type DeckCard } from '../lib/deck'
+import { countAnswer } from '../lib/offer-session'
 
 const route = useRoute()
 const challengeId = String(route.params.challengeId)
@@ -45,6 +46,7 @@ async function send(): Promise<void> {
     const result = await answerCard(challengeId, 'been_there', note.value)
     if (result.result === 'gone') missing.value = true
     else sent.value = result.request ?? 'created'
+    if (sent.value === 'created') countAnswer('beenThere')
   } catch {
     problem.value = 'That did not send. Try again.'
   } finally {

@@ -5,7 +5,8 @@ import type { DeckCard } from '../lib/deck'
 import OfferScreen from './OfferScreen.vue'
 
 const push = vi.fn()
-vi.mock('vue-router', () => ({ useRouter: () => ({ push }) }))
+const replace = vi.fn()
+vi.mock('vue-router', () => ({ useRouter: () => ({ push, replace }) }))
 
 const cards: DeckCard[] = [
   {
@@ -77,6 +78,8 @@ async function click(
 afterEach(() => {
   vi.unstubAllGlobals()
   push.mockReset()
+  replace.mockReset()
+  sessionStorage.clear()
   document.body.innerHTML = ''
 })
 
@@ -137,7 +140,19 @@ describe('OfferScreen', () => {
       'Following “Network of Teams”.',
     )
     await click(screen, 'Skip')
-    expect(screen.text()).toContain('You’ve seen them all')
+    expect(replace).toHaveBeenCalledWith('/offer/done')
+  })
+
+  it('counts same-boat requests for the summary (R-OFF-5)', async () => {
+    server([cards, []], {
+      status: 201,
+      body: { result: 'recorded', connection: { result: 'created', id: 'r1' } },
+    })
+    await click(await mountScreen(), 'Same boat')
+
+    expect(
+      JSON.parse(sessionStorage.getItem('rm_offer_tally') ?? '{}'),
+    ).toEqual({ sameBoat: 1, beenThere: 0, follows: 0 })
   })
 
   it('asks for more when the hand is empty, then says there are none (R-OFF-5)', async () => {
@@ -148,7 +163,8 @@ describe('OfferScreen', () => {
     expect(
       fetchMock.mock.calls.filter(([url]) => url === '/api/deck'),
     ).toHaveLength(2)
-    expect(screen.findComponent(RouterLinkStub).props('to')).toBe('/ask')
+    expect(screen.find('.deck-card').exists()).toBe(false)
+    expect(replace).toHaveBeenCalledWith('/offer/done')
   })
 
   it('says so when an answer did not save, and keeps the card', async () => {
@@ -170,6 +186,6 @@ describe('OfferScreen', () => {
     expect(screen.find('[role="alert"]').text()).toContain(
       'could not be loaded',
     )
-    expect(screen.text()).not.toContain('seen them all')
+    expect(replace).not.toHaveBeenCalled()
   })
 })
