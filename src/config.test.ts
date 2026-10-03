@@ -169,11 +169,13 @@ describe('outbound message log settings', () => {
 })
 
 describe('profile text limits', () => {
-  it('match the name and org columns (R-AUTH-12, R-ONB-2)', () => {
+  it('match the profile columns (R-AUTH-12, R-ONB-2)', () => {
     const { limits } = loadConfig(valid)
 
     expect(limits.nameMaxChars).toBe(120)
+    expect(limits.jobTitleMaxChars).toBe(120)
     expect(limits.orgMaxChars).toBe(160)
+    expect(limits.sectorMaxChars).toBe(160)
   })
 })
 
