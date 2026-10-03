@@ -63,6 +63,15 @@ describe('WelcomeScreen', () => {
     expect(adminPaths(member)).toEqual([])
   })
 
+  it('leads to the member’s matches (F8)', async () => {
+    signedIn([])
+    const links = (await mountWelcome()).findAllComponents(RouterLinkStub)
+
+    expect(links.map((link) => link.props('to') as unknown)).toContain(
+      '/matches',
+    )
+  })
+
   it('opens the Ask door onto the Ask journey (F5)', async () => {
     signedIn([])
     const door = (await mountWelcome()).findComponent(RouterLinkStub)

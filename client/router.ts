@@ -7,6 +7,7 @@ import AccessRequestedScreen from './screens/AccessRequestedScreen.vue'
 import ApplicantsScreen from './screens/ApplicantsScreen.vue'
 import AskScreen from './screens/AskScreen.vue'
 import ChallengeScreen from './screens/ChallengeScreen.vue'
+import CockpitScreen from './screens/CockpitScreen.vue'
 import ConnectScreen from './screens/ConnectScreen.vue'
 import InvitesScreen from './screens/InvitesScreen.vue'
 import LoginScreen from './screens/LoginScreen.vue'
@@ -56,6 +57,7 @@ export const router = createRouter({
     screen('trend-picker', TrendPickerScreen),
     screen('matches', MatchesScreen),
     screen('connect', ConnectScreen),
+    screen('cockpit', CockpitScreen),
     screen('request', RequestScreen),
     screen('request-contact', RequestContactScreen),
     screen('admin-applicants', ApplicantsScreen),

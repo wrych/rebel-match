@@ -70,6 +70,8 @@ async function leave(): Promise<void> {
       </div>
     </div>
 
+    <RouterLink to="/matches" class="row-link">Your matches</RouterLink>
+
     <nav v-if="adminLinks.length > 0" class="stack rule" aria-label="Admin">
       <p class="kicker">Host tools</p>
       <RouterLink

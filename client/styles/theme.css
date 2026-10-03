@@ -749,6 +749,35 @@ textarea.input {
   opacity: 0.85;
 }
 
+/* Rows on the cockpit that open a request or a challenge's matches. */
+.request-row,
+.challenge-row {
+  text-decoration: none;
+  color: var(--ink);
+}
+
+.request-row:hover,
+.challenge-row:hover {
+  border-color: var(--ink);
+}
+
+.request-note {
+  overflow-wrap: anywhere;
+}
+
+.counts {
+  color: var(--accent);
+}
+
+.follow-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
 /* ── Status ───────────────────────────────────────────────────────────── */
 
 .chip {
