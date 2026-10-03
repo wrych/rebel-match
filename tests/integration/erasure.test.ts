@@ -33,7 +33,7 @@ const person = (): Person => ({
 
 let db: TestDatabase
 let erasure: ErasureService
-let setAside: string[] = []
+const guard = `erasure-${randomUUID().slice(0, 8)}`
 
 async function addMember(member: Person): Promise<void> {
   await db.query(
@@ -135,33 +135,25 @@ async function fillIn(member: Person, peer: Person): Promise<string> {
 beforeAll(async () => {
   db = await openTestDatabase()
   await applySeed(db.drizzle, { ...planSeed(config), members: [] }, '')
+  await db.query(
+    "INSERT INTO roles (role_key, label) VALUES (?, 'Erasure test guard')",
+    [guard],
+  )
+  // The suite's own guarded role, so the last-holder rule is checked against
+  // holders it knows, whatever other suites have in a shared database.
   erasure = createErasureService({
     store: createErasureStore(db.drizzle),
-    policy: configPolicy,
+    policy: { ...configPolicy, rolesGranting: () => [guard] },
   })
 })
 
 beforeEach(async () => {
-  // Leave only this suite's members active, so the last-admin rule is tested
-  // against known holders. afterAll restores exactly the members set aside.
-  const others = await db.query(
-    "SELECT id FROM members WHERE status = 'active'",
-  )
-  const ids = others.map((row) => String(row['id']))
-  if (ids.length > 0) {
-    await db.query("UPDATE members SET status = 'rejected' WHERE id IN (?)", [
-      ids,
-    ])
-  }
-  setAside = [...setAside, ...ids]
+  await db.query('DELETE FROM member_roles WHERE role_key = ?', [guard])
 })
 
 afterAll(async () => {
-  if (setAside.length > 0) {
-    await db.query("UPDATE members SET status = 'active' WHERE id IN (?)", [
-      setAside,
-    ])
-  }
+  await db.query('DELETE FROM member_roles WHERE role_key = ?', [guard])
+  await db.query('DELETE FROM roles WHERE role_key = ?', [guard])
   await db.close()
 })
 
@@ -207,15 +199,15 @@ describe('erasing a member over Postgres (R-NFR-7, R-MSG-6)', () => {
     await addMember(ana)
     await addMember(ben)
     await db.query(
-      "INSERT INTO member_roles (member_id, role_key) VALUES (?, 'admin')",
-      [ana.id],
+      'INSERT INTO member_roles (member_id, role_key) VALUES (?, ?)',
+      [ana.id, guard],
     )
 
     expect(await erasure.erase(ana.id)).toBe('last_admin')
 
     await db.query(
-      "INSERT INTO member_roles (member_id, role_key) VALUES (?, 'admin')",
-      [ben.id],
+      'INSERT INTO member_roles (member_id, role_key) VALUES (?, ?)',
+      [ben.id, guard],
     )
     expect(await erasure.erase(ana.id)).toBe('erased')
   })
@@ -226,8 +218,8 @@ describe('erasing a member over Postgres (R-NFR-7, R-MSG-6)', () => {
     await addMember(ana)
     await addMember(ben)
     await db.query(
-      "INSERT INTO member_roles (member_id, role_key) VALUES (?, 'admin'), (?, 'admin')",
-      [ana.id, ben.id],
+      'INSERT INTO member_roles (member_id, role_key) VALUES (?, ?), (?, ?)',
+      [ana.id, guard, ben.id, guard],
     )
 
     const outcomes = await Promise.all([
