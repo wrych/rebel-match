@@ -178,7 +178,7 @@ printed dev link (R-DEV-6).
 - [ ] Email notification on incoming connection request, deep-linking to
       `/matches/requests/:id` with no challenge text or contact detail.
       _(S4, R-CONN-2, R-NAV-9)_
-- [ ] Feedback mailto. _(S5, R-FB-1)_
+- [x] Feedback mailto. _(S5, R-FB-1)_ To `FEEDBACK_TO`, required in production.
 - [ ] Admin GDPR delete: member plus challenges, requests, swipes, follows, role
       grants and outbound log entries, in one transaction. _(R-NFR-7, R-MSG-6)_
 
