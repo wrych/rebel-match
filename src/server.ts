@@ -2,11 +2,11 @@
    the rule exists to keep member data out of logs, and a port is not that. */
 import { createApp } from './app.js'
 import { composeApp } from './compose.js'
-import { loadConfig } from './config.js'
+import { loadRuntimeConfig } from './runtime-config.js'
 import { openDatabase } from './db/open.js'
 import { startOutboxRetention } from './services/outbox-retention.js'
 
-const config = loadConfig()
+const config = await loadRuntimeConfig()
 const connection = await openDatabase(config)
 const deps = composeApp(config, connection.db)
 

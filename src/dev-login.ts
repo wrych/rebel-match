@@ -1,6 +1,6 @@
 import type { OutgoingLink } from './auth/index.js'
 import { composeAuth, composeMailer } from './compose.js'
-import { loadConfig } from './config.js'
+import { loadRuntimeConfig } from './runtime-config.js'
 import { openDatabase } from './db/open.js'
 import {
   devLoginRefusal,
@@ -9,7 +9,7 @@ import {
 } from './dev-login/guard.js'
 import { DEV_ADMIN_EMAIL } from './seed/dev/people.js'
 
-const config = loadConfig()
+const config = await loadRuntimeConfig()
 const email = process.argv[2] ?? DEV_ADMIN_EMAIL
 const refusal = devLoginRefusal(config)
 const member = refusal === null ? seededMember(config, email) : null
