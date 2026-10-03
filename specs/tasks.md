@@ -114,10 +114,10 @@ printed dev link (R-DEV-6).
 
 ## M2 — Ask journey _(M3 → M4 → M5, F5)_
 
-- [ ] Submit screen: textarea, read-only example hints (no insert action), >30-char gate from config + counter. _(R-ASK-1,2,3, R-CFG-1,2)_
+- [x] Submit screen: textarea, read-only example hints (no insert action), >30-char gate from config + counter. _(R-ASK-1,2,3, R-CFG-1,2)_
 - [x] `POST /api/challenges` + matcher service (keyword scorer §5). _(R-ASK-4,5)_
-- [ ] Domain screen (`/challenges/:id`) + separate trend-picker **screen**
-      (`/challenges/:id/trend`). `PATCH /api/challenges/:id` is in.
+- [x] Domain screen (`/challenges/:id`) + separate trend-picker **screen**
+      (`/challenges/:id/trend`).
       _(R-ASK-6,7, R-NAV-2)_
 - [x] `GET /api/challenges/:id/matches`: same boat / been there / cases (no
       emails). _(R-ASK-8)_
