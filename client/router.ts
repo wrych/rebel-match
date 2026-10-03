@@ -4,6 +4,7 @@ import { routeTable, type Access } from '../src/routes'
 import { decide } from './guards'
 import { loadMe } from './lib/session'
 import AccessRequestedScreen from './screens/AccessRequestedScreen.vue'
+import ApplicantsScreen from './screens/ApplicantsScreen.vue'
 import LoginScreen from './screens/LoginScreen.vue'
 import NotFoundScreen from './screens/NotFoundScreen.vue'
 import OutboxScreen from './screens/OutboxScreen.vue'
@@ -40,6 +41,7 @@ export const router = createRouter({
     screen('login', LoginScreen),
     screen('access-requested', AccessRequestedScreen),
     screen('welcome', WelcomeScreen),
+    screen('admin-applicants', ApplicantsScreen),
     screen('admin-outbox', OutboxScreen),
     { path: '/:pathMatch(.*)*', name: 'not-found', component: NotFoundScreen },
   ],

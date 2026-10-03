@@ -15,6 +15,10 @@ export const rolePermissions = {
 } as const satisfies Record<string, readonly string[]>
 
 export type RoleKey = keyof typeof rolePermissions
+
+/** The role someone admitted at the door receives, by approval or by invite
+ * (R-AUTH-3, R-INV-1). */
+export const admittedRole: RoleKey = 'member'
 export type Permission =
   (typeof rolePermissions)[RoleKey][number] extends infer P
     ? P extends string

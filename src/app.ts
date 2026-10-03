@@ -2,11 +2,13 @@ import express, { type ErrorRequestHandler, type Express } from 'express'
 import type { AuthProvider } from './auth/index.js'
 import { clientConfig, type Config } from './config.js'
 import type { Pool } from './db.js'
+import { adminApplicantRoutes } from './routes/admin-applicants.js'
 import { adminOutboxRoutes } from './routes/admin-outbox.js'
 import { adminRoleRoutes } from './routes/admin-roles.js'
 import { authRoutes, renewSessions } from './routes/auth.js'
 import { requestLinkRoutes } from './routes/request-link.js'
 import type { AdmissionService } from './services/admission.js'
+import type { ApprovalService } from './services/approvals.js'
 import type { MemberProfiles } from './services/member-profiles.js'
 import type { OutboxLog } from './services/outbox-log.js'
 import type { RoleService } from './services/roles.js'
@@ -19,6 +21,7 @@ export interface AppDeps {
   roles: RoleService
   outbox: OutboxLog
   admission: AdmissionService
+  approvals: ApprovalService
 }
 
 /** True when the database answers. Reported rather than thrown, so a dev server
@@ -64,6 +67,7 @@ export function createApp(deps: AppDeps): Express {
   app.use(authRoutes(deps))
   app.use(requestLinkRoutes(deps))
   app.use(adminRoleRoutes(deps))
+  app.use(adminApplicantRoutes(deps))
   app.use(adminOutboxRoutes(deps))
 
   app.get('/api/health', async (_request, response) => {

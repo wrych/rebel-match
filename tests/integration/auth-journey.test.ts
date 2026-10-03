@@ -3,18 +3,13 @@ import type { RowDataPacket } from 'mysql2/promise'
 import request from 'supertest'
 import { createApp } from '../../src/app.js'
 import type { AuthProvider } from '../../src/auth/index.js'
-import { composeAuth, composeMailer } from '../../src/compose.js'
+import { composeApp, composeAuth, composeMailer } from '../../src/compose.js'
 import { loadConfig } from '../../src/config.js'
 import { createPool, type Pool } from '../../src/db.js'
 import { migrate } from '../../src/migrations/run.js'
 import { DEV_ADMIN_EMAIL } from '../../src/seed/dev/people.js'
 import { planSeed } from '../../src/seed/plan.js'
 import { applySeed } from '../../src/seed/run.js'
-import { configPolicy } from '../../src/permissions.js'
-import { createMysqlMemberProfiles } from '../../src/services/member-profiles.js'
-import { createMysqlOutboxLog } from '../../src/services/outbox-log-store.js'
-import { createMysqlRoleGrantStore } from '../../src/services/role-grant-store.js'
-import { createRoleService } from '../../src/services/roles.js'
 
 const databaseUrl = process.env['DATABASE_URL']
 
@@ -57,21 +52,7 @@ afterAll(async () => {
 
 describe('signing in as the dev admin, end to end (R-QA-2)', () => {
   it('goes from a logged link to an admin session', async () => {
-    const app = createApp({
-      config,
-      pool,
-      auth,
-      profiles: createMysqlMemberProfiles(pool),
-      roles: createRoleService({
-        store: createMysqlRoleGrantStore(pool),
-        policy: configPolicy,
-      }),
-      outbox: createMysqlOutboxLog(pool),
-      admission: {
-        requestLink: () => Promise.resolve({ state: 'access-requested' }),
-        describeApplicant: () => Promise.resolve('not-found'),
-      },
-    })
+    const app = createApp({ ...composeApp(config, pool), auth })
     await auth.issueLink(DEV_ADMIN_EMAIL, {
       kind: 'self_service',
       next: '/admin/outbox',
