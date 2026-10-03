@@ -305,6 +305,15 @@ a {
   color: var(--faint);
 }
 
+.tab-feedback {
+  border-left: 1px solid var(--line);
+  color: var(--muted);
+}
+
+.tab-feedback:hover {
+  color: var(--accent);
+}
+
 .tab.on {
   border-top-color: var(--accent);
   color: var(--ink);

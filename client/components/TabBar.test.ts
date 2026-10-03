@@ -12,19 +12,27 @@ const route = {
 vi.mock('vue-router', () => ({ useRoute: () => route }))
 
 function serve(pendingIncoming: number | null): ReturnType<typeof vi.fn> {
-  const fetchMock = vi.fn().mockResolvedValue(
-    pendingIncoming === null
-      ? { ok: false, status: 500 }
-      : {
-          ok: true,
-          status: 200,
-          json: async () => ({
-            challenges: [],
-            following: [],
-            pendingIncoming,
-          }),
-        },
-  )
+  const fetchMock = vi.fn((url: string) => {
+    if (url === '/api/config')
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({ feedbackTo: 'owner@example.org' }),
+      })
+    return Promise.resolve(
+      pendingIncoming === null
+        ? { ok: false, status: 500 }
+        : {
+            ok: true,
+            status: 200,
+            json: async () => ({
+              challenges: [],
+              following: [],
+              pendingIncoming,
+            }),
+          },
+    )
+  })
   vi.stubGlobal('fetch', fetchMock)
   return fetchMock
 }
@@ -64,6 +72,16 @@ describe('TabBar', () => {
 
     serve(null)
     expect((await mountBar()).find('.badge').exists()).toBe(false)
+  })
+
+  it('ends with a Feedback mail naming the screen (R-FB-1)', async () => {
+    serve(0)
+    const link = (await mountBar()).find('a.tab-feedback')
+    const url = new URL(link.attributes('href') ?? '')
+
+    expect(link.text()).toContain('Feedback')
+    expect(url.pathname).toBe('owner@example.org')
+    expect(url.searchParams.get('body')).toContain('Screen: cockpit')
   })
 
   it('stays away from the welcome screen and asks nothing there', async () => {

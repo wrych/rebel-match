@@ -6,8 +6,6 @@ export interface Tab {
   owns: readonly string[]
 }
 
-// Feedback joins with its own task (R-FB-1): a tab that leads nowhere is
-// worse than none.
 export const tabs: readonly Tab[] = [
   { label: 'Submit', to: '/ask', owns: ['/ask', '/challenges/'] },
   { label: 'Swipe', to: '/offer', owns: ['/offer'] },

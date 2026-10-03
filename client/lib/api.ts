@@ -15,6 +15,7 @@ export interface ClientConfig {
     inviteMaxUsesCeiling: number
   }
   consentVersion: string
+  feedbackTo: string
 }
 
 /** Reads the limits the server enforces, so a disabled button and a server check
