@@ -116,7 +116,8 @@ printed dev link (R-DEV-6).
 
 - [ ] Drizzle schema for every table and a Postgres baseline migration that
       replaces the MySQL ones; the runner keeps its forward-only rules.
-      _(R-QA-4, constitution §6)_
+      _(R-QA-4, constitution §6)_ The schema, the baseline and a Postgres
+      runner tested on PGlite are in; the app still runs on MySQL.
 - [ ] Every store on Drizzle, with the integration suite green on PGlite; the
       duplicate-request guard becomes a partial unique index. _(R-QA-2, R-CONN-5)_
 - [ ] With `DATABASE_URL` unset, the server opens PGlite in `.data/pglite` and

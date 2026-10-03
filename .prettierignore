@@ -8,3 +8,6 @@ specs/prototype/
 
 # Source artifacts: evidence of what was said, not ours to reformat.
 xigo - *Transcript.md
+
+# Written by drizzle-kit; regenerated, never hand-edited.
+db/migrations/meta/
