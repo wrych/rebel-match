@@ -179,7 +179,7 @@ printed dev link (R-DEV-6).
       `/matches/requests/:id` with no challenge text or contact detail.
       _(S4, R-CONN-2, R-NAV-9)_
 - [x] Feedback mailto. _(S5, R-FB-1)_ To `FEEDBACK_TO`, required in production.
-- [ ] Admin GDPR delete: member plus challenges, requests, swipes, follows, role
+- [x] Admin GDPR delete: member plus challenges, requests, swipes, follows, role
       grants and outbound log entries, in one transaction. _(R-NFR-7, R-MSG-6)_
 
 ## M6 — Hardening & pilot _(by 2026-11-01)_
