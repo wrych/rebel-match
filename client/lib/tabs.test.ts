@@ -18,6 +18,8 @@ describe('activeTab', () => {
   it.each([
     ['/ask', 'Submit'],
     ['/challenges/c1/matches', 'Submit'],
+    ['/offer', 'Swipe'],
+    ['/offer/c1/note', 'Swipe'],
     ['/matches', 'Matches'],
     ['/matches/requests/r1/contact', 'Matches'],
     ['/admin/invites', undefined],

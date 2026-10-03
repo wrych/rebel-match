@@ -14,6 +14,8 @@ import LoginScreen from './screens/LoginScreen.vue'
 import MatchesScreen from './screens/MatchesScreen.vue'
 import NotFoundScreen from './screens/NotFoundScreen.vue'
 import OnboardingScreen from './screens/OnboardingScreen.vue'
+import OfferNoteScreen from './screens/OfferNoteScreen.vue'
+import OfferScreen from './screens/OfferScreen.vue'
 import OutboxScreen from './screens/OutboxScreen.vue'
 import RequestContactScreen from './screens/RequestContactScreen.vue'
 import RequestScreen from './screens/RequestScreen.vue'
@@ -60,6 +62,8 @@ export const router = createRouter({
     screen('trend', TrendScreen),
     screen('connect', ConnectScreen),
     screen('cockpit', CockpitScreen),
+    screen('offer', OfferScreen),
+    screen('offer-note', OfferNoteScreen),
     screen('request', RequestScreen),
     screen('request-contact', RequestContactScreen),
     screen('admin-applicants', ApplicantsScreen),

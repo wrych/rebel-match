@@ -1,0 +1,172 @@
+<script setup lang="ts">
+import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { answerCard, authorLine, fetchDeck, type DeckCard } from '../lib/deck'
+import { noticeFor } from '../lib/offer'
+
+const router = useRouter()
+const cards = ref<DeckCard[]>([])
+const index = ref(0)
+const loaded = ref(false)
+const sending = ref(false)
+const notice = ref<string | null>(null)
+const problem = ref<string | null>(null)
+
+const card = computed(() => cards.value[index.value])
+
+async function load(): Promise<void> {
+  try {
+    cards.value = await fetchDeck()
+    index.value = 0
+  } catch {
+    problem.value = 'The challenges could not be loaded. Reload to try again.'
+  } finally {
+    loaded.value = true
+  }
+}
+
+function browse(step: -1 | 1): void {
+  const next = index.value + step
+  if (next >= 0 && next < cards.value.length) index.value = next
+}
+
+// Arrow keys browse, as the prototype's arrow buttons do (R-OFF-1).
+function onKey(event: KeyboardEvent): void {
+  if (event.target instanceof HTMLTextAreaElement) return
+  if (event.key === 'ArrowLeft') browse(-1)
+  if (event.key === 'ArrowRight') browse(1)
+}
+
+// An answered card is never dealt again (R-OFF-2), so it leaves the hand;
+// an empty hand asks the server whether more are waiting.
+async function settle(answered: DeckCard): Promise<void> {
+  cards.value = cards.value.filter((each) => each !== answered)
+  if (index.value >= cards.value.length) index.value = 0
+  if (cards.value.length === 0) await load()
+}
+
+async function answer(action: 'same_boat' | 'follow' | 'skip'): Promise<void> {
+  const answered = card.value
+  if (answered === undefined) return
+  sending.value = true
+  problem.value = null
+  try {
+    const result = await answerCard(answered.challengeId, action)
+    notice.value = noticeFor(answered, action, result)
+    await settle(answered)
+  } catch {
+    problem.value = 'That did not save. Try again.'
+  } finally {
+    sending.value = false
+  }
+}
+
+async function offerExperience(): Promise<void> {
+  if (card.value === undefined) return
+  const id = encodeURIComponent(card.value.challengeId)
+  await router.push(`/offer/${id}/note`)
+}
+
+onMounted(() => {
+  window.addEventListener('keydown', onKey)
+  void load()
+})
+onUnmounted(() => {
+  window.removeEventListener('keydown', onKey)
+})
+</script>
+
+<template>
+  <section class="screen">
+    <p v-if="notice" class="notice notice-solid" role="status">{{ notice }}</p>
+
+    <template v-if="card">
+      <p class="footnote">
+        {{ index + 1 }} of {{ cards.length }} · arrows or ‹ › to browse
+      </p>
+
+      <div class="deck">
+        <button
+          type="button"
+          class="deck-arrow"
+          aria-label="Previous challenge"
+          :disabled="index === 0"
+          @click="browse(-1)"
+        >
+          ‹
+        </button>
+        <article class="deck-card" aria-live="polite">
+          <p class="kicker">{{ card.trend.short }}</p>
+          <p class="deck-text">{{ card.body }}</p>
+          <div class="deck-author">
+            <span class="card-title">{{ card.author.name }}</span>
+            <span v-if="authorLine(card)" class="mono">{{
+              authorLine(card)
+            }}</span>
+          </div>
+        </article>
+        <button
+          type="button"
+          class="deck-arrow"
+          aria-label="Next challenge"
+          :disabled="index >= cards.length - 1"
+          @click="browse(1)"
+        >
+          ›
+        </button>
+      </div>
+
+      <div class="stack-tight">
+        <button
+          type="button"
+          class="answer answer-same"
+          :disabled="sending"
+          @click="answer('same_boat')"
+        >
+          <span class="answer-title">Same boat</span>
+          <span class="answer-body">I’m facing this, too</span>
+        </button>
+        <button
+          type="button"
+          class="answer answer-been"
+          :disabled="sending"
+          @click="offerExperience"
+        >
+          <span class="answer-title">Been there</span>
+          <span class="answer-body">I can share experience</span>
+        </button>
+        <div class="actions">
+          <button
+            type="button"
+            class="btn btn-ghost btn-small"
+            :disabled="sending"
+            @click="answer('follow')"
+          >
+            Follow topic
+          </button>
+          <button
+            type="button"
+            class="btn btn-ghost btn-small"
+            :disabled="sending"
+            @click="answer('skip')"
+          >
+            Skip
+          </button>
+        </div>
+      </div>
+    </template>
+
+    <template v-else-if="loaded && !problem">
+      <div class="stack">
+        <h1 class="display display-lg">You’ve seen them all</h1>
+        <p class="lede">
+          No open challenge is waiting for you. Bring your own, and others can
+          answer it.
+        </p>
+      </div>
+      <RouterLink to="/ask" class="btn btn-primary">Ask for help</RouterLink>
+    </template>
+
+    <p v-if="problem" class="alert" role="alert">{{ problem }}</p>
+  </section>
+</template>
