@@ -10,6 +10,7 @@ export interface ClientConfig {
     jobTitleMaxChars: number
     orgMaxChars: number
     sectorMaxChars: number
+    inviteLabelMaxChars: number
   }
   consentVersion: string
 }

@@ -5,6 +5,7 @@ import { decide } from './guards'
 import { loadMe } from './lib/session'
 import AccessRequestedScreen from './screens/AccessRequestedScreen.vue'
 import ApplicantsScreen from './screens/ApplicantsScreen.vue'
+import InvitesScreen from './screens/InvitesScreen.vue'
 import LoginScreen from './screens/LoginScreen.vue'
 import NotFoundScreen from './screens/NotFoundScreen.vue'
 import OnboardingScreen from './screens/OnboardingScreen.vue'
@@ -44,6 +45,7 @@ export const router = createRouter({
     screen('onboarding', OnboardingScreen),
     screen('welcome', WelcomeScreen),
     screen('admin-applicants', ApplicantsScreen),
+    screen('admin-invites', InvitesScreen),
     screen('admin-outbox', OutboxScreen),
     { path: '/:pathMatch(.*)*', name: 'not-found', component: NotFoundScreen },
   ],

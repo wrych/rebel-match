@@ -10,6 +10,7 @@ const problem = ref<string | null>(null)
 // (ADR 0017), so this list cannot offer a door the router would refuse.
 const adminScreens = [
   { name: 'admin-applicants', label: 'Applicants' },
+  { name: 'admin-invites', label: 'Invite links' },
   { name: 'admin-outbox', label: 'Outbound message log' },
 ].flatMap(({ name, label }) => {
   const route = routeTable.find((candidate) => candidate.name === name)
