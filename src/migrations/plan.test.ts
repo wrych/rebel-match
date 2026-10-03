@@ -41,6 +41,25 @@ describe('orderMigrationNames', () => {
     ).toThrow(/share the number 001/)
   })
 
+  it('accepts four-digit numbers, as drizzle-kit writes them', () => {
+    expect(orderMigrationNames(['0001_next.sql', '0000_baseline.sql'])).toEqual(
+      ['0000_baseline.sql', '0001_next.sql'],
+    )
+  })
+
+  it('refuses the same number written with three and four digits', () => {
+    expect(() =>
+      orderMigrationNames(['001_members.sql', '0001_roles.sql']),
+    ).toThrow(/share the number/)
+  })
+
+  it('orders by number, not by text', () => {
+    expect(orderMigrationNames(['010_b.sql', '0009_a.sql'])).toEqual([
+      '0009_a.sql',
+      '010_b.sql',
+    ])
+  })
+
   it('allows gaps, since a migration may be dropped before it merges', () => {
     expect(
       orderMigrationNames(['001_members.sql', '004_outbox.sql']),

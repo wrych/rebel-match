@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 
-const FILENAME = /^(\d{3})_[a-z0-9_]+\.sql$/
+const FILENAME = /^(\d{3,4})_[a-z0-9_]+\.sql$/
 
 export interface Migration {
   name: string
@@ -34,23 +34,25 @@ export function orderMigrationNames(names: string[]): string[] {
   const badlyNamed = sql.filter((name) => !FILENAME.test(name))
   if (badlyNamed.length > 0) {
     throw new Error(
-      `migration filenames must be NNN_lower_snake.sql: ${badlyNamed.join(', ')}`,
+      `migration filenames must be NNN_lower_snake.sql (three or four digits): ${badlyNamed.join(', ')}`,
     )
   }
 
-  const seen = new Map<string, string>()
+  const digits = (name: string): string => FILENAME.exec(name)?.[1] ?? ''
+  const number = (name: string): number => Number(digits(name))
+  // Compared as numbers, so 001 and 0001 clash rather than both running.
+  const seen = new Map<number, string>()
   for (const name of sql) {
-    const prefix = FILENAME.exec(name)?.[1] ?? ''
-    const clash = seen.get(prefix)
+    const clash = seen.get(number(name))
     if (clash !== undefined) {
       throw new Error(
-        `two migrations share the number ${prefix}: ${clash}, ${name}`,
+        `two migrations share the number ${digits(name)}: ${clash}, ${name}`,
       )
     }
-    seen.set(prefix, name)
+    seen.set(number(name), name)
   }
 
-  return [...sql].sort((a, b) => a.localeCompare(b, 'en'))
+  return [...sql].sort((a, b) => number(a) - number(b))
 }
 
 /** Decides what to run. Refuses to proceed if a migration that already ran has
