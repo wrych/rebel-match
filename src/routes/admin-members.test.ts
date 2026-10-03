@@ -5,6 +5,7 @@ import { createAuth, createMemoryAuthStore } from '../auth/index.js'
 import { loadConfig } from '../config.js'
 import { configPolicy } from '../permissions.js'
 import type { EraseOutcome } from '../services/erasure.js'
+import type { RosterMember } from '../services/member-roster.js'
 import { adminMemberRoutes } from './admin-members.js'
 
 const config = loadConfig({
@@ -21,6 +22,15 @@ const auth = createAuth({
   config,
 })
 
+const listed: RosterMember = {
+  id: 'm-member',
+  email: 'm@example.invalid',
+  name: 'Mia',
+  status: 'active',
+  roles: ['member'],
+  joinedAt: '2026-10-01T09:00:00.000Z',
+}
+
 function setup(outcome: EraseOutcome = 'erased'): {
   app: Express
   erased: string[]
@@ -36,6 +46,7 @@ function setup(outcome: EraseOutcome = 'erased'): {
           return Promise.resolve(outcome)
         },
       },
+      roster: { list: () => Promise.resolve([listed]) },
     }),
   )
   return { app, erased }
@@ -91,5 +102,28 @@ describe('DELETE /api/admin/members/:id', () => {
 
     expect(response.status).toBe(401)
     expect(erased).toEqual([])
+  })
+})
+
+describe('GET /api/admin/members', () => {
+  it('lists the roster to an admin (R-NFR-7)', async () => {
+    const { app } = setup()
+
+    const response = await request(app)
+      .get('/api/admin/members')
+      .set('Cookie', await cookieFor('m-admin'))
+
+    expect(response.status).toBe(200)
+    expect(response.body).toEqual({ members: [listed] })
+  })
+
+  it('answers 404 to a member without member:delete (R-ROLE-5)', async () => {
+    const { app } = setup()
+
+    const response = await request(app)
+      .get('/api/admin/members')
+      .set('Cookie', await cookieFor('m-member'))
+
+    expect(response.status).toBe(404)
   })
 })

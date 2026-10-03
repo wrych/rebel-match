@@ -44,6 +44,7 @@ import { createOutboxLog } from './services/outbox-log-store.js'
 import { createOutboxStore } from './services/outbox-store.js'
 import { createErasureService } from './services/erasure.js'
 import { createErasureStore } from './services/erasure-store.js'
+import { createMemberRoster } from './services/member-roster-store.js'
 import { createRoleGrantStore } from './services/role-grant-store.js'
 import { createRoleService } from './services/roles.js'
 import { createTransport } from './services/smtp.js'
@@ -136,6 +137,7 @@ export function composeApp(config: Config, db: Database): AppDeps {
       store: createErasureStore(db),
       policy: configPolicy,
     }),
+    roster: createMemberRoster(db),
     outbox: createOutboxLog(db),
     admission: createAdmission({
       store: createAdmissionStore(db),
