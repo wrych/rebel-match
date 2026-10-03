@@ -143,7 +143,8 @@ printed dev link (R-DEV-6).
       notify target, no email. _(R-CONN-1,2, R-NAV-2)_ The target is told
       through the incoming list until the M5 email lands.
 - [ ] Cockpit incoming list + incoming-request screen with accept/decline.
-      _(R-MINE-2, R-CONN-3,4, R-NAV-2)_
+      _(R-MINE-2, R-CONN-3,4, R-NAV-2)_ The request screen
+      (`/matches/requests/:id`) is in.
 - [ ] Contact screen + `GET /api/connections/:id/contact`: email + mailto only
       when accepted and caller is a party. _(R-CONN-3,6)_ The API is in.
 - [x] Duplicate-request guard. _(R-CONN-5)_
