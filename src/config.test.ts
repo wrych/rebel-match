@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { rolePermissions } from './access.js'
+import { latestConsentVersion } from './consent.js'
 import { clientConfig, isDevelopmentDeployment, loadConfig } from './config.js'
 
 const valid = {
@@ -78,6 +79,18 @@ describe('loadConfig', () => {
 
   it('defaults to delivering nothing, so a dev run cannot email a real person', () => {
     expect(loadConfig(valid).mail.delivery).toBe('none')
+  })
+})
+
+describe('CONSENT_VERSION', () => {
+  it('defaults to the latest wording (R-ONB-3)', () => {
+    expect(loadConfig(valid).consentVersion).toBe(latestConsentVersion)
+  })
+
+  it('refuses a version with no wording to show', () => {
+    expect(() =>
+      loadConfig({ ...valid, CONSENT_VERSION: '1999-01-01' }),
+    ).toThrow(/no wording/)
   })
 })
 
@@ -168,12 +181,14 @@ describe('outbound message log settings', () => {
   })
 })
 
-describe('applicant detail limits', () => {
-  it('match the requested_name and requested_org columns (R-AUTH-12)', () => {
+describe('profile text limits', () => {
+  it('match the profile columns (R-AUTH-12, R-ONB-2)', () => {
     const { limits } = loadConfig(valid)
 
-    expect(limits.applicantNameMaxChars).toBe(120)
-    expect(limits.applicantOrgMaxChars).toBe(160)
+    expect(limits.nameMaxChars).toBe(120)
+    expect(limits.jobTitleMaxChars).toBe(120)
+    expect(limits.orgMaxChars).toBe(160)
+    expect(limits.sectorMaxChars).toBe(160)
   })
 })
 

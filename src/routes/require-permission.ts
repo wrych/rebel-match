@@ -29,3 +29,19 @@ export function requirePermission(
     next()
   }
 }
+
+/** Lets a request through for any signed-in active member, with no permission
+ * asked: the onboarding routes, which come before everything else (R-ONB-1).
+ * Nobody signed in is 401. */
+export function requireSession(auth: AuthProvider): RequestHandler {
+  return async (request, response, next) => {
+    const member = await auth.currentMember(request)
+
+    if (member === null) {
+      response.status(401).json({ error: 'unauthenticated' })
+      return
+    }
+    ;(response.locals as GuardedLocals).member = member
+    next()
+  }
+}

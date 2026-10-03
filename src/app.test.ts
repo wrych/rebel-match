@@ -42,6 +42,10 @@ function deps(
       approve: () => Promise.resolve('not_pending'),
       reject: () => Promise.resolve('not_pending'),
     },
+    onboarding: {
+      draft: () => Promise.resolve(null),
+      complete: () => Promise.resolve('stale_consent'),
+    },
   }
 }
 

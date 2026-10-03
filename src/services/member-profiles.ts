@@ -12,17 +12,31 @@ export interface MemberProfiles {
   profile(memberId: string): Promise<MemberProfile | null>
 }
 
-/** Onboarding is complete only when both a name and consent are recorded;
- * `requested_name` never counts (R-ONB-1, R-AUTH-12). */
-export function isOnboarded(row: {
-  name: string | null
-  consentAt: Date | null
-}): boolean {
-  return row.name !== null && row.consentAt !== null
+/** Onboarding is complete only when a name and an acceptance of the current
+ * consent version are both recorded; `requested_name` never counts, and an
+ * older consent sends the member back to accept again (R-ONB-1, R-ONB-4,
+ * R-AUTH-12). */
+export function isOnboarded(
+  row: {
+    name: string | null
+    consentVersion: string | null
+    consentAt: Date | null
+  },
+  currentConsentVersion: string,
+): boolean {
+  return (
+    row.name !== null &&
+    row.consentAt !== null &&
+    row.consentVersion === currentConsentVersion
+  )
 }
 
-/** MemberProfiles over the `members` table. */
-export function createMysqlMemberProfiles(pool: Pool): MemberProfiles {
+/** MemberProfiles over the `members` table, judged against the consent
+ * version in force. */
+export function createMysqlMemberProfiles(
+  pool: Pool,
+  currentConsentVersion: string,
+): MemberProfiles {
   return {
     profile: async (memberId) => {
       const [rows] = await pool.query<RowDataPacket[]>(
@@ -33,11 +47,15 @@ export function createMysqlMemberProfiles(pool: Pool): MemberProfiles {
       if (row === undefined) return null
 
       const name = (row['name'] as string | null) ?? null
+      const consentVersion = (row['consent_version'] as string | null) ?? null
       const consentAt = (row['consent_at'] as Date | null) ?? null
       return {
         name,
-        onboarded: isOnboarded({ name, consentAt }),
-        consentVersion: (row['consent_version'] as string | null) ?? null,
+        onboarded: isOnboarded(
+          { name, consentVersion, consentAt },
+          currentConsentVersion,
+        ),
+        consentVersion,
       }
     },
   }

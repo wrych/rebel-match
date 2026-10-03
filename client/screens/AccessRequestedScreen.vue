@@ -53,14 +53,14 @@ async function save(): Promise<void> {
         id="name"
         v-model="name"
         autocomplete="name"
-        :maxlength="limits?.applicantNameMaxChars"
+        :maxlength="limits?.nameMaxChars"
       />
       <label for="org">Organization</label>
       <input
         id="org"
         v-model="org"
         autocomplete="organization"
-        :maxlength="limits?.applicantOrgMaxChars"
+        :maxlength="limits?.orgMaxChars"
       />
       <button
         type="submit"

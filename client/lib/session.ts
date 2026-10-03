@@ -36,3 +36,9 @@ export async function signOut(): Promise<void> {
   }
   current = null
 }
+
+/** Drops what this page load knows about the member, so the next navigation
+ * asks the server again: after onboarding, say, when `onboarded` has changed. */
+export function forgetMe(): void {
+  current = null
+}

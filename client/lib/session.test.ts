@@ -37,6 +37,17 @@ describe('loadMe', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1)
   })
 
+  it('asks again after forgetMe, once onboarding has changed the answer', async () => {
+    const fetchMock = respond(200, { id: 'a', permissions: [] })
+    const { forgetMe, loadMe } = await freshSession()
+
+    await loadMe()
+    forgetMe()
+    await loadMe()
+
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
   it('fails on anything else rather than pretend nobody is signed in', async () => {
     respond(500)
     const { loadMe } = await freshSession()

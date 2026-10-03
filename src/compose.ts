@@ -20,6 +20,8 @@ import { createApprovals } from './services/approvals.js'
 import { mailLinks } from './services/link-delivery.js'
 import { createMailer, type Mailer } from './services/mailer.js'
 import { createMysqlMemberProfiles } from './services/member-profiles.js'
+import { createMysqlOnboardingStore } from './services/onboarding-store.js'
+import { createOnboarding } from './services/onboarding.js'
 import { createMysqlOutboxLog } from './services/outbox-log-store.js'
 import { createMysqlOutboxStore } from './services/outbox-store.js'
 import { createMysqlRoleGrantStore } from './services/role-grant-store.js'
@@ -70,7 +72,7 @@ export function composeApp(config: Config, pool: Pool): AppDeps {
     config,
     pool,
     auth,
-    profiles: createMysqlMemberProfiles(pool),
+    profiles: createMysqlMemberProfiles(pool, config.consentVersion),
     roles: createRoleService({
       store: createMysqlRoleGrantStore(pool),
       policy: configPolicy,
@@ -91,6 +93,10 @@ export function composeApp(config: Config, pool: Pool): AppDeps {
       store: createMysqlApprovalStore(pool),
       auth,
       admittedRole,
+    }),
+    onboarding: createOnboarding({
+      store: createMysqlOnboardingStore(pool),
+      currentConsentVersion: config.consentVersion,
     }),
   }
 }

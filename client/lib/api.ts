@@ -6,8 +6,10 @@ export interface ClientConfig {
     approvalLinkTtlHours: number
     inviteDefaultMaxUses: number
     inviteDefaultHours: number
-    applicantNameMaxChars: number
-    applicantOrgMaxChars: number
+    nameMaxChars: number
+    jobTitleMaxChars: number
+    orgMaxChars: number
+    sectorMaxChars: number
   }
   consentVersion: string
 }

@@ -1,14 +1,18 @@
 import { z } from 'zod'
 import { rolePermissions } from './access.js'
+import { consentWordsOf, latestConsentVersion } from './consent.js'
 
 // Node clamps a timer delay above 2^31-1 ms (about 24.8 days) to 1 ms, so a
 // longer purge interval would run the purge continuously.
 const MAX_TIMER_HOURS = Math.floor(0x7fffffff / 3_600_000)
 
-// The widths of members.requested_name and requested_org (migration 001): a
-// fact of the schema rather than a tunable, so no environment variable.
-const APPLICANT_NAME_MAX_CHARS = 120
-const APPLICANT_ORG_MAX_CHARS = 160
+// The widths of members.name and requested_name, job_title, org and
+// requested_org, and sector (migration 001): a fact of the schema rather than a
+// tunable, so no environment variable.
+const NAME_MAX_CHARS = 120
+const JOB_TITLE_MAX_CHARS = 120
+const ORG_MAX_CHARS = 160
+const SECTOR_MAX_CHARS = 160
 
 function portOf(url: URL): number {
   if (url.port !== '') return Number(url.port)
@@ -47,7 +51,14 @@ const envSchema = z
 
     SEED_PROFILE: z.enum(['dev', 'prod']).default('dev'),
 
-    CONSENT_VERSION: z.string().min(1).default('2026-11-01'),
+    CONSENT_VERSION: z
+      .string()
+      .min(1)
+      .default(latestConsentVersion)
+      .refine((version) => consentWordsOf(version).length > 0, {
+        message:
+          'CONSENT_VERSION has no wording in src/consent.ts; members cannot accept words they cannot read',
+      }),
 
     MIXPANEL_TOKEN: z.string().optional(),
     MIXPANEL_API_HOST: z.string().min(1).default('api-eu.mixpanel.com'),
@@ -107,8 +118,10 @@ export interface Limits {
   inviteDefaultHours: number
   outboxRetentionDays: number
   outboxPageSize: number
-  applicantNameMaxChars: number
-  applicantOrgMaxChars: number
+  nameMaxChars: number
+  jobTitleMaxChars: number
+  orgMaxChars: number
+  sectorMaxChars: number
 }
 
 /** Values the client is allowed to read, so a disabled button and a server
@@ -182,8 +195,10 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): Config {
       inviteDefaultHours: env.INVITE_DEFAULT_HOURS,
       outboxRetentionDays: env.OUTBOX_RETENTION_DAYS,
       outboxPageSize: env.OUTBOX_PAGE_SIZE,
-      applicantNameMaxChars: APPLICANT_NAME_MAX_CHARS,
-      applicantOrgMaxChars: APPLICANT_ORG_MAX_CHARS,
+      nameMaxChars: NAME_MAX_CHARS,
+      jobTitleMaxChars: JOB_TITLE_MAX_CHARS,
+      orgMaxChars: ORG_MAX_CHARS,
+      sectorMaxChars: SECTOR_MAX_CHARS,
     },
     rolePermissions,
   }

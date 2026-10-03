@@ -3,7 +3,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import AccessRequestedScreen from './AccessRequestedScreen.vue'
 
-const limits = { applicantNameMaxChars: 120, applicantOrgMaxChars: 160 }
+const limits = { nameMaxChars: 120, orgMaxChars: 160 }
 
 /** Answers `/api/config` with the limits and `/auth/applicant` with `status`. */
 function server(status = 204): ReturnType<typeof vi.fn> {
