@@ -3,8 +3,8 @@ import { eq } from 'drizzle-orm'
 import type { Database } from '../db/connect.js'
 import { memberRoles, members } from '../db/schema.js'
 import type {
-  WhitelistOutcome,
-  WhitelistResult,
+  StoredOutcome,
+  StoredResult,
   WhitelistStore,
 } from './whitelist.js'
 
@@ -25,7 +25,7 @@ async function addOne(
   email: string,
   role: string,
   grantedBy: string,
-): Promise<WhitelistOutcome> {
+): Promise<StoredOutcome> {
   const [created] = await db
     .insert(members)
     .values({
@@ -63,7 +63,7 @@ export function createWhitelistStore(db: Database): WhitelistStore {
   return {
     add: (emails, role, grantedBy) =>
       db.transaction(async (tx) => {
-        const results: WhitelistResult[] = []
+        const results: StoredResult[] = []
         for (const email of emails) {
           results.push({
             email,

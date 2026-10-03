@@ -121,6 +121,7 @@ function composeJourneys(
 
 function composeMembershipAdmin(
   db: Database,
+  auth: AuthProvider,
 ): Pick<AppDeps, 'roles' | 'erasure' | 'roster' | 'whitelist'> {
   return {
     roles: createRoleService({
@@ -134,6 +135,7 @@ function composeMembershipAdmin(
     roster: createMemberRoster(db),
     whitelist: createWhitelist({
       store: createWhitelistStore(db),
+      auth,
       admittedRole,
     }),
   }
@@ -151,7 +153,7 @@ export function composeApp(config: Config, db: Database): AppDeps {
     db,
     auth,
     profiles: createMemberProfiles(db, config.consentVersion),
-    ...composeMembershipAdmin(db),
+    ...composeMembershipAdmin(db, auth),
     outbox: createOutboxLog(db),
     admission: createAdmission({
       store: createAdmissionStore(db),
