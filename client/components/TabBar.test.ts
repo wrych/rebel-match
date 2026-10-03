@@ -47,7 +47,9 @@ describe('TabBar', () => {
   it('badges Matches with the requests waiting (R-MINE-4)', async () => {
     serve(2)
     const bar = await mountBar()
-    const matches = bar.findAllComponents(RouterLinkStub)[1]
+    const matches = bar
+      .findAllComponents(RouterLinkStub)
+      .find((link) => link.props('to') === '/matches')
 
     expect(matches?.find('.badge').text()).toBe('2')
     expect(matches?.attributes('aria-label')).toBe(

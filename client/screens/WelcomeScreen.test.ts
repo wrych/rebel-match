@@ -72,6 +72,14 @@ describe('WelcomeScreen', () => {
     )
   })
 
+  it('opens the Offer door onto the deck (F6)', async () => {
+    signedIn([])
+    const links = (await mountWelcome()).findAllComponents(RouterLinkStub)
+    const door = links.find((link) => link.text().startsWith('Offer help'))
+
+    expect(door?.props('to')).toBe('/offer')
+  })
+
   it('opens the Ask door onto the Ask journey (F5)', async () => {
     signedIn([])
     const door = (await mountWelcome()).findComponent(RouterLinkStub)

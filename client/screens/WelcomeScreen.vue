@@ -59,15 +59,13 @@ async function leave(): Promise<void> {
           solved it, and the case studies that apply.
         </span>
       </RouterLink>
-      <div class="door door-offer">
-        <span class="door-title"
-          >Offer help <span class="soon">Soon</span></span
-        >
+      <RouterLink to="/offer" class="door door-offer">
+        <span class="door-title">Offer help</span>
         <span class="door-body">
           Swipe through other members’ challenges and say where you can share
           experience or where you’re in the same boat.
         </span>
-      </div>
+      </RouterLink>
     </div>
 
     <RouterLink to="/matches" class="row-link">Your matches</RouterLink>
@@ -91,20 +89,3 @@ async function leave(): Promise<void> {
     </div>
   </section>
 </template>
-
-<style scoped>
-.soon {
-  display: inline-block;
-  margin-left: 0.4rem;
-  padding: 3px 9px;
-  border: 1.5px solid currentColor;
-  border-radius: 999px;
-  font-family: var(--font-mono);
-  font-size: 0.6rem;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  vertical-align: middle;
-  opacity: 0.85;
-}
-</style>
