@@ -117,6 +117,22 @@ function composeJourneys(
   }
 }
 
+function composeMembershipAdmin(
+  db: Database,
+): Pick<AppDeps, 'roles' | 'erasure' | 'roster'> {
+  return {
+    roles: createRoleService({
+      store: createRoleGrantStore(db),
+      policy: configPolicy,
+    }),
+    erasure: createErasureService({
+      store: createErasureStore(db),
+      policy: configPolicy,
+    }),
+    roster: createMemberRoster(db),
+  }
+}
+
 /** Every service the app serves, wired to the database: the server and the
  * integration tests build the same thing, so a test cannot pass on wiring the
  * server lacks. */
@@ -129,15 +145,7 @@ export function composeApp(config: Config, db: Database): AppDeps {
     db,
     auth,
     profiles: createMemberProfiles(db, config.consentVersion),
-    roles: createRoleService({
-      store: createRoleGrantStore(db),
-      policy: configPolicy,
-    }),
-    erasure: createErasureService({
-      store: createErasureStore(db),
-      policy: configPolicy,
-    }),
-    roster: createMemberRoster(db),
+    ...composeMembershipAdmin(db),
     outbox: createOutboxLog(db),
     admission: createAdmission({
       store: createAdmissionStore(db),
