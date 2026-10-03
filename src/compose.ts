@@ -70,7 +70,7 @@ export function composeApp(config: Config, pool: Pool): AppDeps {
     config,
     pool,
     auth,
-    profiles: createMysqlMemberProfiles(pool),
+    profiles: createMysqlMemberProfiles(pool, config.consentVersion),
     roles: createRoleService({
       store: createMysqlRoleGrantStore(pool),
       policy: configPolicy,
