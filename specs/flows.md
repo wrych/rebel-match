@@ -311,7 +311,11 @@ before both sides agree.**
    (R-AUTH-3, R-AUTH-10). **Reject** → `POST /api/admin/applicants/:id/reject`
    blocks login (R-AUTH-3).
 3. Admin may also pre-whitelist addresses in bulk → `POST /api/admin/whitelist`
-   (R-AUTH-1) — the normal pre-summit path for invited attendees.
+   (R-AUTH-1) — the normal pre-summit path for invited attendees. A new address
+   is not emailed; it signs in on arrival (F1) and onboards (F2). A pending
+   applicant on the list is admitted exactly as by **Approve**, sign-in email
+   included; a rejected one is kept out and reported, since re-admitting is a
+   deliberate, per-person decision (R-AUTH-3).
 
 **Branches**
 

@@ -32,6 +32,7 @@ function deps(
     },
     erasure: { erase: () => Promise.resolve('not_found') },
     roster: { list: () => Promise.resolve([]) },
+    whitelist: { add: () => Promise.resolve([]) },
     outbox: {
       list: () => Promise.resolve([]),
       purgeBefore: () => Promise.resolve(0),

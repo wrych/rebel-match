@@ -45,6 +45,8 @@ import { createOutboxStore } from './services/outbox-store.js'
 import { createErasureService } from './services/erasure.js'
 import { createErasureStore } from './services/erasure-store.js'
 import { createMemberRoster } from './services/member-roster-store.js'
+import { createWhitelist } from './services/whitelist.js'
+import { createWhitelistStore } from './services/whitelist-store.js'
 import { createRoleGrantStore } from './services/role-grant-store.js'
 import { createRoleService } from './services/roles.js'
 import { createTransport } from './services/smtp.js'
@@ -117,6 +119,28 @@ function composeJourneys(
   }
 }
 
+function composeMembershipAdmin(
+  db: Database,
+  auth: AuthProvider,
+): Pick<AppDeps, 'roles' | 'erasure' | 'roster' | 'whitelist'> {
+  return {
+    roles: createRoleService({
+      store: createRoleGrantStore(db),
+      policy: configPolicy,
+    }),
+    erasure: createErasureService({
+      store: createErasureStore(db),
+      policy: configPolicy,
+    }),
+    roster: createMemberRoster(db),
+    whitelist: createWhitelist({
+      store: createWhitelistStore(db),
+      auth,
+      admittedRole,
+    }),
+  }
+}
+
 /** Every service the app serves, wired to the database: the server and the
  * integration tests build the same thing, so a test cannot pass on wiring the
  * server lacks. */
@@ -129,15 +153,7 @@ export function composeApp(config: Config, db: Database): AppDeps {
     db,
     auth,
     profiles: createMemberProfiles(db, config.consentVersion),
-    roles: createRoleService({
-      store: createRoleGrantStore(db),
-      policy: configPolicy,
-    }),
-    erasure: createErasureService({
-      store: createErasureStore(db),
-      policy: configPolicy,
-    }),
-    roster: createMemberRoster(db),
+    ...composeMembershipAdmin(db, auth),
     outbox: createOutboxLog(db),
     admission: createAdmission({
       store: createAdmissionStore(db),
