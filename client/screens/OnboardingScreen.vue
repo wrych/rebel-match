@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { consentTexts } from '../../src/consent'
+import { consentWordsOf } from '../../src/consent'
 import { fetchConfig, type ClientConfig } from '../lib/api'
 import {
   afterOnboarding,
@@ -23,9 +23,7 @@ const sending = ref(false)
 const problem = ref<string | null>(null)
 
 const consentWords = computed(() =>
-  consentVersion.value === null
-    ? []
-    : (consentTexts[consentVersion.value] ?? []),
+  consentVersion.value === null ? [] : consentWordsOf(consentVersion.value),
 )
 const ready = computed(
   () =>

@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { rolePermissions } from './access.js'
-import { consentTexts, latestConsentVersion } from './consent.js'
+import { consentWordsOf, latestConsentVersion } from './consent.js'
 
 // Node clamps a timer delay above 2^31-1 ms (about 24.8 days) to 1 ms, so a
 // longer purge interval would run the purge continuously.
@@ -55,7 +55,7 @@ const envSchema = z
       .string()
       .min(1)
       .default(latestConsentVersion)
-      .refine((version) => version in consentTexts, {
+      .refine((version) => consentWordsOf(version).length > 0, {
         message:
           'CONSENT_VERSION has no wording in src/consent.ts; members cannot accept words they cannot read',
       }),

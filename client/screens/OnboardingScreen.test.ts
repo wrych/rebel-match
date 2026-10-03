@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { consentTexts, latestConsentVersion } from '../../src/consent'
+import { consentWordsOf, latestConsentVersion } from '../../src/consent'
 import OnboardingScreen from './OnboardingScreen.vue'
 
 const push = vi.fn()
@@ -70,7 +70,7 @@ describe('OnboardingScreen', () => {
     server()
     const text = (await mountScreen()).text()
 
-    for (const paragraph of consentTexts[latestConsentVersion] ?? []) {
+    for (const paragraph of consentWordsOf(latestConsentVersion)) {
       expect(text).toContain(paragraph)
     }
   })

@@ -11,3 +11,11 @@ export const consentTexts: Readonly<Record<string, readonly string[]>> = {
 }
 
 export const latestConsentVersion = '2026-11-01'
+
+/** The words of a version, or none for a version without words: own keys
+ * only, so `constructor` and friends never read as consent. */
+export function consentWordsOf(version: string): readonly string[] {
+  return Object.hasOwn(consentTexts, version)
+    ? (consentTexts[version] ?? [])
+    : []
+}

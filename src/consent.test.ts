@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
-import { consentTexts, latestConsentVersion } from './consent.js'
+import { consentWordsOf, latestConsentVersion } from './consent.js'
 
 describe('consent wording', () => {
-  const words = (consentTexts[latestConsentVersion] ?? []).join(' ')
+  const words = consentWordsOf(latestConsentVersion).join(' ')
 
   it('has words for the latest version', () => {
     expect(words.length).toBeGreaterThan(0)
@@ -15,4 +15,11 @@ describe('consent wording', () => {
   it('says membership is by invitation (R-ONB-5)', () => {
     expect(words).toContain('membership is by invitation')
   })
+
+  it.each(['constructor', 'toString', 'unknown'])(
+    'has no words for %s',
+    (version) => {
+      expect(consentWordsOf(version)).toEqual([])
+    },
+  )
 })
