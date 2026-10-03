@@ -147,6 +147,7 @@ printed dev link (R-DEV-6).
       when accepted and caller is a party. _(R-CONN-3,6)_ The API is in.
 - [x] Duplicate-request guard. _(R-CONN-5)_
 - [ ] Cockpit: my challenge(s) + counts, followed trends, nav badge. _(R-MINE-1,3,4)_
+      `GET /api/cockpit` is in.
 
 ## M5 — Supporting features _(Should-haves)_
 
@@ -154,7 +155,7 @@ printed dev link (R-DEV-6).
       _(S19, R-AUTH-3,11, R-ROLE-3)_
 - [ ] Whitelist add (`POST /api/admin/whitelist`), permission-guarded.
       _(R-AUTH-1, R-ROLE-3)_
-- [ ] Follow endpoints + UI. _(S2, R-ASK-9)_
+- [ ] Follow endpoints + UI. _(S2, R-ASK-9)_ The endpoints are in.
 - [ ] Mixpanel wired in (client + server, **EU endpoints**, project created with
       EU residency), pseudonymous id, event set from design §7, consent-gated.
       _(S3, R-ANA-1..5)_
