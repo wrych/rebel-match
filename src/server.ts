@@ -3,11 +3,12 @@
 import { createApp } from './app.js'
 import { composeApp } from './compose.js'
 import { loadConfig } from './config.js'
-import { createPool } from './db.js'
+import { openDatabase } from './db/open.js'
 import { startOutboxRetention } from './services/outbox-retention.js'
 
 const config = loadConfig()
-const deps = composeApp(config, createPool(config))
+const connection = await openDatabase(config)
+const deps = composeApp(config, connection.db)
 
 startOutboxRetention({
   log: deps.outbox,

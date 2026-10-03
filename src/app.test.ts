@@ -4,21 +4,21 @@ import { describe, expect, it, vi } from 'vitest'
 import { createApp, handleErrors, type AppDeps } from './app.js'
 import { createAuth, createMemoryAuthStore } from './auth/index.js'
 import { loadConfig } from './config.js'
-import type { Pool } from './db.js'
+import type { Database } from './db/connect.js'
 import { configPolicy } from './permissions.js'
 
 const config = loadConfig({
-  DATABASE_URL: 'mysql://user:pw@localhost:3306/rebel_match',
+  DATABASE_URL: 'postgres://user:pw@localhost:5432/rebel_match',
   SESSION_SECRET: 'x'.repeat(32),
   MIXPANEL_TOKEN: 'mp-secret-token',
 })
 
 function deps(
-  query: () => Promise<unknown> = () => Promise.resolve([[], []]),
+  execute: () => Promise<unknown> = () => Promise.resolve({ rows: [] }),
 ): AppDeps {
   return {
     config,
-    pool: { query } as unknown as Pool,
+    db: { execute } as unknown as Database,
     auth: createAuth({
       policy: configPolicy,
       store: createMemoryAuthStore([]),
@@ -189,7 +189,7 @@ describe('the error handler', () => {
 
   it('says nothing about an unexpected failure (constitution §5)', () => {
     const leaky = new Error(
-      'mysql://user:pw@host/db query failed for member a@b.c',
+      'postgres://user:pw@host/db query failed for member a@b.c',
     )
     const json = vi.fn()
     const response = { status: vi.fn().mockReturnValue({ json }) }
@@ -199,6 +199,6 @@ describe('the error handler', () => {
     expect(response.status).toHaveBeenCalledWith(500)
     expect(json).toHaveBeenCalledWith({ error: 'internal_error' })
     expect(JSON.stringify(json.mock.calls)).not.toContain('a@b.c')
-    expect(JSON.stringify(json.mock.calls)).not.toContain('mysql://')
+    expect(JSON.stringify(json.mock.calls)).not.toContain('postgres://')
   })
 })

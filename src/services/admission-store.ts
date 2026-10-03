@@ -1,57 +1,70 @@
 import { randomUUID } from 'node:crypto'
-import type { ResultSetHeader, RowDataPacket } from 'mysql2/promise'
-import type { Pool } from '../db.js'
-import type { AdmissionStore, MemberStatus } from './admission.js'
+import { and, eq, inArray, sql } from 'drizzle-orm'
+import type { Database } from '../db/connect.js'
+import { memberRoles, members } from '../db/schema.js'
+import type { AdmissionStore } from './admission.js'
 import type { ReviewerDirectory } from './applicant-notice.js'
 
+const isApplicant = (email: string): ReturnType<typeof and> =>
+  and(eq(members.email, email), eq(members.status, 'applicant'))
+
 /** Admission's reads and writes over `members` (design §2). */
-export function createMysqlAdmissionStore(pool: Pool): AdmissionStore {
+export function createAdmissionStore(db: Database): AdmissionStore {
   return {
     statusByEmail: async (email) => {
-      const [rows] = await pool.query<RowDataPacket[]>(
-        'SELECT status FROM members WHERE email = ?',
-        [email],
-      )
-      return (rows[0]?.['status'] as MemberStatus | undefined) ?? null
+      const [row] = await db
+        .select({ status: members.status })
+        .from(members)
+        .where(eq(members.email, email))
+      return row?.status ?? null
     },
     createApplicant: async (email) => {
-      const [result] = await pool.query<ResultSetHeader>(
-        'INSERT IGNORE INTO members (id, email, status, analytics_id) ' +
-          "VALUES (?, ?, 'applicant', ?)",
-        [randomUUID(), email, randomUUID()],
-      )
-      return result.affectedRows === 1
+      const created = await db
+        .insert(members)
+        .values({
+          id: randomUUID(),
+          email,
+          status: 'applicant',
+          analyticsId: randomUUID(),
+        })
+        .onConflictDoNothing()
+        .returning({ id: members.id })
+      return created.length === 1
     },
     removeApplicant: async (email) => {
-      await pool.query(
-        "DELETE FROM members WHERE email = ? AND status = 'applicant'",
-        [email],
-      )
+      await db.delete(members).where(isApplicant(email))
     },
     describeApplicant: async (email, details) => {
-      const [result] = await pool.query<ResultSetHeader>(
-        'UPDATE members SET requested_name = COALESCE(?, requested_name), ' +
-          'requested_org = COALESCE(?, requested_org) ' +
-          "WHERE email = ? AND status = 'applicant'",
-        [details.name ?? null, details.org ?? null, email],
-      )
-      return result.affectedRows === 1
+      const described = await db
+        .update(members)
+        .set({
+          requestedName: sql`coalesce(${details.name ?? null}, ${members.requestedName})`,
+          requestedOrg: sql`coalesce(${details.org ?? null}, ${members.requestedOrg})`,
+        })
+        .where(isApplicant(email))
+        .returning({ id: members.id })
+      return described.length === 1
     },
   }
 }
 
 /** Reviewer addresses over `members` and `member_roles`. */
-export function createMysqlReviewerDirectory(pool: Pool): ReviewerDirectory {
+export function createReviewerDirectory(db: Database): ReviewerDirectory {
   return {
     emailsHolding: async (roles) => {
       if (roles.length === 0) return []
-      const [rows] = await pool.query<RowDataPacket[]>(
-        'SELECT DISTINCT m.email FROM members m ' +
-          'JOIN member_roles mr ON mr.member_id = m.id ' +
-          "WHERE m.status = 'active' AND mr.role_key IN (?) ORDER BY m.email",
-        [roles],
-      )
-      return rows.map((row) => String(row['email']))
+      const rows = await db
+        .selectDistinct({ email: members.email })
+        .from(members)
+        .innerJoin(memberRoles, eq(memberRoles.memberId, members.id))
+        .where(
+          and(
+            eq(members.status, 'active'),
+            inArray(memberRoles.roleKey, [...roles]),
+          ),
+        )
+        .orderBy(members.email)
+      return rows.map((row) => row.email)
     },
   }
 }

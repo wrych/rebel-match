@@ -1,10 +1,7 @@
 import { randomUUID } from 'node:crypto'
-import type {
-  PoolConnection,
-  ResultSetHeader,
-  RowDataPacket,
-} from 'mysql2/promise'
-import type { Pool } from '../db.js'
+import { eq, sql } from 'drizzle-orm'
+import type { Database } from '../db/connect.js'
+import { invites, memberRoles, members } from '../db/schema.js'
 import {
   refusalFor,
   type Redemption,
@@ -12,65 +9,51 @@ import {
 } from './invite-redemption.js'
 
 async function admitLocked(
-  db: PoolConnection,
+  db: Database,
   args: { email: string; token: string; now: Date; role: string },
 ): Promise<Redemption> {
-  const [rows] = await db.query<RowDataPacket[]>(
-    'SELECT id, valid_from, valid_until, max_uses, uses, revoked_at, ' +
-      'created_by FROM invites WHERE token = ? FOR UPDATE',
-    [args.token],
-  )
-  const row = rows[0]
-  if (row === undefined) return { result: 'refused', refusal: 'unknown' }
+  const [invite] = await db
+    .select()
+    .from(invites)
+    .where(eq(invites.token, args.token))
+    .for('update')
+  if (invite === undefined) return { result: 'refused', refusal: 'unknown' }
 
-  const refusal = refusalFor(
-    {
-      validFrom: row['valid_from'] as Date,
-      validUntil: row['valid_until'] as Date,
-      maxUses: Number(row['max_uses']),
-      uses: Number(row['uses']),
-      revokedAt: (row['revoked_at'] as Date | null) ?? null,
-    },
-    args.now,
-  )
+  const refusal = refusalFor(invite, args.now)
   if (refusal !== null) return { result: 'refused', refusal }
 
   const memberId = randomUUID()
-  const [inserted] = await db.query<ResultSetHeader>(
-    'INSERT IGNORE INTO members (id, email, status, joined_via_invite_id, ' +
-      "analytics_id) VALUES (?, ?, 'active', ?, ?)",
-    [memberId, args.email, row['id'], randomUUID()],
-  )
-  if (inserted.affectedRows !== 1) return { result: 'address_taken' }
+  const inserted = await db
+    .insert(members)
+    .values({
+      id: memberId,
+      email: args.email,
+      status: 'active',
+      joinedViaInviteId: invite.id,
+      analyticsId: randomUUID(),
+    })
+    .onConflictDoNothing()
+    .returning({ id: members.id })
+  if (inserted.length !== 1) return { result: 'address_taken' }
 
-  await db.query(
-    'INSERT INTO member_roles (member_id, role_key, granted_by) VALUES (?, ?, ?)',
-    [memberId, args.role, row['created_by']],
-  )
-  await db.query('UPDATE invites SET uses = uses + 1 WHERE id = ?', [row['id']])
+  await db
+    .insert(memberRoles)
+    .values({ memberId, roleKey: args.role, grantedBy: invite.createdBy })
+  await db
+    .update(invites)
+    .set({ uses: sql`${invites.uses} + 1` })
+    .where(eq(invites.id, invite.id))
   return { result: 'admitted' }
 }
 
 /** Invite redemption over `invites`, `members` and `member_roles`. The invite
  * row is locked, so two scans cannot both take the last seat (R-INV-4). The
- * role is granted by whoever created the invite (R-ROLE-7). */
-export function createMysqlInviteRedemption(
-  pool: Pool,
+ * role is granted by whoever created the invite (R-ROLE-7). A refusal writes
+ * nothing, so every outcome commits. */
+export function createInviteRedemption(
+  db: Database,
   role: string,
 ): RedeemInvite {
-  return async (email, token, now) => {
-    const db = await pool.getConnection()
-    try {
-      await db.beginTransaction()
-      const redemption = await admitLocked(db, { email, token, now, role })
-      if (redemption.result === 'admitted') await db.commit()
-      else await db.rollback()
-      return redemption
-    } catch (error) {
-      await db.rollback()
-      throw error
-    } finally {
-      db.release()
-    }
-  }
+  return (email, token, now) =>
+    db.transaction((tx) => admitLocked(tx, { email, token, now, role }))
 }

@@ -1,7 +1,8 @@
 import express, { type ErrorRequestHandler, type Express } from 'express'
 import type { AuthProvider } from './auth/index.js'
 import { clientConfig, type Config } from './config.js'
-import type { Pool } from './db.js'
+import { sql } from 'drizzle-orm'
+import type { Database } from './db/connect.js'
 import { challengeRoutes } from './routes/challenges.js'
 import { connectionRoutes } from './routes/connections.js'
 import { deckRoutes } from './routes/deck.js'
@@ -31,7 +32,7 @@ import type { RoleService } from './services/roles.js'
 
 export interface AppDeps {
   config: Config
-  pool: Pool
+  db: Database
   auth: AuthProvider
   profiles: MemberProfiles
   roles: RoleService
@@ -50,9 +51,9 @@ export interface AppDeps {
 
 /** True when the database answers. Reported rather than thrown, so a dev server
  * still starts and says what is wrong. */
-async function databaseReachable(pool: Pool): Promise<boolean> {
+async function databaseReachable(db: Database): Promise<boolean> {
   try {
-    await pool.query('SELECT 1')
+    await db.execute(sql`SELECT 1`)
     return true
   } catch {
     return false
@@ -103,7 +104,7 @@ export function createApp(deps: AppDeps): Express {
   app.use(adminOutboxRoutes(deps))
 
   app.get('/api/health', async (_request, response) => {
-    const database = (await databaseReachable(deps.pool)) ? 'up' : 'down'
+    const database = (await databaseReachable(deps.db)) ? 'up' : 'down'
 
     response.json({ status: 'ok', database })
   })

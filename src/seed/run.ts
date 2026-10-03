@@ -1,122 +1,159 @@
 import { randomUUID } from 'node:crypto'
-import type { PoolConnection } from 'mysql2/promise'
-import type { Pool } from '../db.js'
+import { and, eq, sql } from 'drizzle-orm'
+import type { Database } from '../db/connect.js'
+import {
+  cases,
+  challenges,
+  memberExpertise,
+  memberRoles,
+  members,
+  roles,
+  trends,
+} from '../db/schema.js'
 import type {
   SeedCase,
   SeedChallenge,
   SeedExpertise,
   SeedMember,
   SeedPlan,
-  SeedRole,
-  SeedTrend,
 } from './types.js'
 
-async function upsertRole(db: PoolConnection, role: SeedRole): Promise<void> {
-  await db.query(
-    'INSERT INTO roles (role_key, label, description) VALUES (?, ?, ?) AS new ' +
-      'ON DUPLICATE KEY UPDATE label = new.label, description = new.description',
-    [role.key, role.label, role.description],
-  )
+// The value an upsert would have written: Postgres calls that row `excluded`.
+const excluded = (column: string): ReturnType<typeof sql> =>
+  sql.raw(`excluded.${column}`)
+
+async function memberIdOf(db: Database, email: string): Promise<string | null> {
+  const [row] = await db
+    .select({ id: members.id })
+    .from(members)
+    .where(eq(members.email, email))
+  return row?.id ?? null
 }
 
 async function upsertMember(
-  db: PoolConnection,
+  db: Database,
   member: SeedMember,
   consentVersion: string,
 ): Promise<void> {
-  await db.query(
-    'INSERT INTO members (id, email, name, job_title, org, sector, status, ' +
-      'consent_version, consent_at, analytics_id) ' +
-      "VALUES (?, ?, ?, ?, ?, ?, 'active', ?, UTC_TIMESTAMP(), ?) AS new " +
-      'ON DUPLICATE KEY UPDATE name = new.name, job_title = new.job_title, ' +
-      "org = new.org, sector = new.sector, status = 'active'",
-    [
-      randomUUID(),
-      member.email,
-      member.name,
-      member.jobTitle,
-      member.org,
-      member.sector,
+  await db
+    .insert(members)
+    .values({
+      id: randomUUID(),
+      email: member.email,
+      name: member.name,
+      jobTitle: member.jobTitle,
+      org: member.org,
+      sector: member.sector,
+      status: 'active',
       consentVersion,
-      randomUUID(),
-    ],
-  )
+      consentAt: new Date(),
+      analyticsId: randomUUID(),
+    })
+    .onConflictDoUpdate({
+      target: members.email,
+      set: {
+        name: excluded('name'),
+        jobTitle: excluded('job_title'),
+        org: excluded('org'),
+        sector: excluded('sector'),
+        status: 'active',
+      },
+    })
+  const memberId = await memberIdOf(db, member.email)
+  if (memberId === null) return
   for (const role of member.roles) {
-    await db.query(
-      'INSERT IGNORE INTO member_roles (member_id, role_key) ' +
-        'SELECT id, ? FROM members WHERE email = ?',
-      [role, member.email],
-    )
+    await db
+      .insert(memberRoles)
+      .values({ memberId, roleKey: role })
+      .onConflictDoNothing()
   }
 }
 
-async function upsertTrend(
-  db: PoolConnection,
-  trend: SeedTrend,
-): Promise<void> {
-  await db.query(
-    'INSERT INTO trends (id, short, from_label, peers, keywords) ' +
-      'VALUES (?, ?, ?, ?, ?) AS new ON DUPLICATE KEY UPDATE ' +
-      'short = new.short, from_label = new.from_label, peers = new.peers, ' +
-      'keywords = new.keywords',
-    [
-      trend.id,
-      trend.short,
-      trend.from,
-      trend.peers,
-      JSON.stringify(trend.keywords),
-    ],
-  )
-}
-
-async function upsertCase(db: PoolConnection, item: SeedCase): Promise<void> {
-  await db.query(
-    'INSERT INTO cases (trend_id, org, url, takeaway) VALUES (?, ?, ?, ?) ' +
-      'AS new ON DUPLICATE KEY UPDATE org = new.org, takeaway = new.takeaway',
-    [item.trendId, item.org, item.url, item.takeaway],
-  )
+async function upsertCase(db: Database, item: SeedCase): Promise<void> {
+  await db
+    .insert(cases)
+    .values(item)
+    .onConflictDoUpdate({
+      target: [cases.trendId, cases.url],
+      set: { org: excluded('org'), takeaway: excluded('takeaway') },
+    })
 }
 
 // A challenge has no natural key of its own, so author and text stand in.
 async function insertChallenge(
-  db: PoolConnection,
+  db: Database,
   challenge: SeedChallenge,
 ): Promise<void> {
-  await db.query(
-    'INSERT INTO challenges (id, member_id, body, trend_id, auto_trend) ' +
-      'SELECT ?, m.id, ?, ?, ? FROM members m WHERE m.email = ? ' +
-      'AND NOT EXISTS (SELECT 1 FROM challenges c ' +
-      'WHERE c.member_id = m.id AND c.body = ?)',
-    [
-      randomUUID(),
-      challenge.body,
-      challenge.trendId,
-      challenge.trendId,
-      challenge.authorEmail,
-      challenge.body,
-    ],
-  )
+  const memberId = await memberIdOf(db, challenge.authorEmail)
+  if (memberId === null) return
+  const [existing] = await db
+    .select({ id: challenges.id })
+    .from(challenges)
+    .where(
+      and(
+        eq(challenges.memberId, memberId),
+        eq(challenges.body, challenge.body),
+      ),
+    )
+    .limit(1)
+  if (existing !== undefined) return
+  await db.insert(challenges).values({
+    id: randomUUID(),
+    memberId,
+    body: challenge.body,
+    trendId: challenge.trendId,
+    autoTrend: challenge.trendId,
+  })
 }
 
 async function upsertExpertise(
-  db: PoolConnection,
+  db: Database,
   offer: SeedExpertise,
 ): Promise<void> {
-  await db.query(
-    'INSERT INTO member_expertise (member_id, trend_id, note) ' +
-      'SELECT id, ?, ? FROM members WHERE email = ? ' +
-      'ON DUPLICATE KEY UPDATE note = ?',
-    [offer.trendId, offer.note, offer.email, offer.note],
-  )
+  const memberId = await memberIdOf(db, offer.email)
+  if (memberId === null) return
+  await db
+    .insert(memberExpertise)
+    .values({ memberId, trendId: offer.trendId, note: offer.note })
+    .onConflictDoUpdate({
+      target: [memberExpertise.memberId, memberExpertise.trendId],
+      set: { note: excluded('note') },
+    })
 }
 
 async function applyPlan(
-  db: PoolConnection,
+  db: Database,
   plan: SeedPlan,
   consentVersion: string,
 ): Promise<void> {
-  for (const role of plan.roles) await upsertRole(db, role)
-  for (const trend of plan.trends) await upsertTrend(db, trend)
+  for (const role of plan.roles) {
+    await db
+      .insert(roles)
+      .values({
+        roleKey: role.key,
+        label: role.label,
+        description: role.description,
+      })
+      .onConflictDoUpdate({
+        target: roles.roleKey,
+        set: { label: excluded('label'), description: excluded('description') },
+      })
+  }
+  for (const trend of plan.trends) {
+    const { from, ...rest } = trend
+    await db
+      .insert(trends)
+      .values({ ...rest, fromLabel: from })
+      .onConflictDoUpdate({
+        target: trends.id,
+        set: {
+          short: excluded('short'),
+          fromLabel: excluded('from_label'),
+          peers: excluded('peers'),
+          keywords: excluded('keywords'),
+        },
+      })
+  }
   for (const item of plan.cases) await upsertCase(db, item)
   for (const member of plan.members) {
     await upsertMember(db, member, consentVersion)
@@ -127,20 +164,10 @@ async function applyPlan(
 
 /** Applies a plan in one transaction, upserting by natural key so a re-run
  * changes nothing it already made (R-SEED-7). */
-export async function applySeed(
-  pool: Pool,
+export function applySeed(
+  db: Database,
   plan: SeedPlan,
   consentVersion: string,
 ): Promise<void> {
-  const db = await pool.getConnection()
-  try {
-    await db.beginTransaction()
-    await applyPlan(db, plan, consentVersion)
-    await db.commit()
-  } catch (error) {
-    await db.rollback()
-    throw error
-  } finally {
-    db.release()
-  }
+  return db.transaction((tx) => applyPlan(tx, plan, consentVersion))
 }

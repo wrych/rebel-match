@@ -6,8 +6,9 @@ import { defineConfig } from 'vitest/config'
 if (existsSync('.env')) process.loadEnvFile('.env')
 
 /**
- * API-level tests (R-QA-2): a disposable MySQL and mail.delivery=none, so the
- * auth and double opt-in journeys are exercised without sending mail.
+ * API-level tests (R-QA-2) with mail.delivery=none, so the auth and double
+ * opt-in journeys are exercised without sending mail. Each file runs on a
+ * fresh in-memory PGlite, or on the Postgres `DATABASE_URL` names (ADR 0024).
  */
 export default defineConfig({
   test: {

@@ -1,191 +1,183 @@
-import type { ResultSetHeader, RowDataPacket } from 'mysql2/promise'
-import type { Pool } from '../db.js'
+import { and, desc, eq, isNotNull, or, sql, type SQL } from 'drizzle-orm'
+import type { Database } from '../db/connect.js'
+import {
+  challenges,
+  connectionRequests as r,
+  members,
+  trends,
+} from '../db/schema.js'
+import { challengeTrend } from './challenge-store.js'
 import type {
   ConnectionRecord,
   ConnectionStore,
   ConnectionView,
 } from './connections.js'
 
-function text(value: unknown): string | null {
-  return typeof value === 'string' ? value : null
-}
-
-function recordOf(row: RowDataPacket): ConnectionRecord {
+function recordOf(row: typeof r.$inferSelect): ConnectionRecord {
   return {
-    id: String(row['id']),
-    requesterId: String(row['requester_id']),
-    targetId: String(row['target_id']),
-    challengeId: text(row['challenge_id']),
-    kind: row['kind'] as ConnectionRecord['kind'],
-    message: text(row['message']),
-    status: row['status'] as ConnectionRecord['status'],
-    createdAt: (row['created_at'] as Date).toISOString(),
+    id: row.id,
+    requesterId: row.requesterId,
+    targetId: row.targetId,
+    challengeId: row.challengeId,
+    kind: row.kind,
+    message: row.message,
+    status: row.status,
+    createdAt: row.createdAt.toISOString(),
   }
 }
 
-function viewOf(row: RowDataPacket, viewerId: string): ConnectionView {
-  const record = recordOf(row)
-  const challengeId = text(row['ch_id'])
-  return {
-    id: record.id,
-    direction: record.targetId === viewerId ? 'incoming' : 'outgoing',
-    kind: record.kind,
-    status: record.status,
-    message: record.message,
-    createdAt: record.createdAt,
-    other: {
-      memberId: String(row['other_id']),
-      name: String(row['other_name']),
-      jobTitle: text(row['other_job_title']),
-      org: text(row['other_org']),
-      sector: text(row['other_sector']),
-    },
-    challenge:
-      challengeId === null
-        ? null
-        : {
-            id: challengeId,
-            body: String(row['ch_body']),
-            trendShort: text(row['ch_trend']),
-          },
-  }
-}
-
-// The other party is whoever of the two is not the viewer. No email column is
-// selected here, whatever the status (R-CONN-1).
-const VIEW_SELECT =
-  'SELECT r.*, o.id AS other_id, o.name AS other_name, ' +
-  'o.job_title AS other_job_title, o.org AS other_org, o.sector AS other_sector, ' +
-  'c.id AS ch_id, c.body AS ch_body, t.short AS ch_trend ' +
-  'FROM connection_requests r ' +
-  'JOIN members o ON o.id = IF(r.target_id = ?, r.requester_id, r.target_id) ' +
-  'LEFT JOIN challenges c ON c.id = r.challenge_id ' +
-  'LEFT JOIN trends t ON t.id = COALESCE(c.trend_id, c.auto_trend) '
-
-async function views(
-  pool: Pool,
-  where: string,
-  viewerId: string,
-  params: unknown[],
-): Promise<ConnectionView[]> {
-  const [rows] = await pool.query<RowDataPacket[]>(
-    `${VIEW_SELECT} WHERE ${where} ORDER BY r.created_at DESC, r.id`,
-    [viewerId, ...params],
+// The other party is whoever of the two is not the viewer.
+const otherParty = (viewerId: string): SQL =>
+  eq(
+    members.id,
+    sql`CASE WHEN ${r.targetId} = ${viewerId} THEN ${r.requesterId} ELSE ${r.targetId} END`,
   )
-  return rows.map((row) => viewOf(row, viewerId))
+
+const isParty = (viewerId: string): SQL | undefined =>
+  or(eq(r.requesterId, viewerId), eq(r.targetId, viewerId))
+
+// No email column is selected for a view, whatever the status (R-CONN-1).
+async function views(
+  db: Database,
+  where: SQL | undefined,
+  viewerId: string,
+): Promise<ConnectionView[]> {
+  const rows = await db
+    .select({
+      request: r,
+      other: {
+        memberId: members.id,
+        name: members.name,
+        jobTitle: members.jobTitle,
+        org: members.org,
+        sector: members.sector,
+      },
+      challenge: { id: challenges.id, body: challenges.body },
+      trendShort: trends.short,
+    })
+    .from(r)
+    .innerJoin(members, otherParty(viewerId))
+    .leftJoin(challenges, eq(challenges.id, r.challengeId))
+    .leftJoin(trends, eq(trends.id, challengeTrend))
+    .where(where)
+    .orderBy(desc(r.createdAt), r.id)
+  return rows.map((row) => {
+    const record = recordOf(row.request)
+    return {
+      id: record.id,
+      direction: record.targetId === viewerId ? 'incoming' : 'outgoing',
+      kind: record.kind,
+      status: record.status,
+      message: record.message,
+      createdAt: record.createdAt,
+      other: { ...row.other, name: row.other.name ?? '' },
+      challenge:
+        row.challenge === null
+          ? null
+          : { ...row.challenge, trendShort: row.trendShort },
+    }
+  })
 }
 
+// The only read of an email in the whole double opt-in: it checks accepted
+// status and that the reader is a party in the query itself (ADR 0004).
 async function contactFor(
-  pool: Pool,
+  db: Database,
   id: string,
   viewerId: string,
 ): Promise<{ name: string; email: string } | null> {
-  const [rows] = await pool.query<RowDataPacket[]>(
-    'SELECT o.name, o.email FROM connection_requests r ' +
-      'JOIN members o ON o.id = IF(r.target_id = ?, r.requester_id, r.target_id) ' +
-      "WHERE r.id = ? AND r.status = 'accepted' " +
-      'AND (r.requester_id = ? OR r.target_id = ?)',
-    [viewerId, id, viewerId, viewerId],
-  )
-  const row = rows[0]
-  return row === undefined
-    ? null
-    : { name: String(row['name']), email: String(row['email']) }
-}
-
-// The pending_key unique index refuses a second pending request (migration
-// 009); that refusal is the answer, not an error.
-async function insertPending(
-  pool: Pool,
-  record: Omit<ConnectionRecord, 'status' | 'createdAt'>,
-): Promise<boolean> {
-  try {
-    await pool.query(
-      'INSERT INTO connection_requests (id, requester_id, target_id, ' +
-        'challenge_id, kind, message) VALUES (?, ?, ?, ?, ?, ?)',
-      [
-        record.id,
-        record.requesterId,
-        record.targetId,
-        record.challengeId,
-        record.kind,
-        record.message,
-      ],
-    )
-    return true
-  } catch (error) {
-    if ((error as { code?: unknown }).code === 'ER_DUP_ENTRY') return false
-    throw error
-  }
+  const [row] = await db
+    .select({ name: members.name, email: members.email })
+    .from(r)
+    .innerJoin(members, otherParty(viewerId))
+    .where(and(eq(r.id, id), eq(r.status, 'accepted'), isParty(viewerId)))
+  return row === undefined ? null : { name: row.name ?? '', email: row.email }
 }
 
 // What a request is checked against before it is made.
 function lookups(
-  pool: Pool,
+  db: Database,
 ): Pick<ConnectionStore, 'isReachable' | 'challengeAuthor' | 'findPending'> {
   return {
     isReachable: async (memberId) => {
-      const [rows] = await pool.query<RowDataPacket[]>(
-        "SELECT 1 FROM members WHERE id = ? AND status = 'active' " +
-          'AND name IS NOT NULL',
-        [memberId],
-      )
+      const rows = await db
+        .select({ id: members.id })
+        .from(members)
+        .where(
+          and(
+            eq(members.id, memberId),
+            eq(members.status, 'active'),
+            isNotNull(members.name),
+          ),
+        )
       return rows.length > 0
     },
     challengeAuthor: async (challengeId) => {
-      const [rows] = await pool.query<RowDataPacket[]>(
-        "SELECT member_id FROM challenges WHERE id = ? AND status = 'active'",
-        [challengeId],
-      )
-      return text(rows[0]?.['member_id'])
+      const [row] = await db
+        .select({ memberId: challenges.memberId })
+        .from(challenges)
+        .where(
+          and(eq(challenges.id, challengeId), eq(challenges.status, 'active')),
+        )
+      return row?.memberId ?? null
     },
     findPending: async (requesterId, targetId, challengeId) => {
-      const [rows] = await pool.query<RowDataPacket[]>(
-        'SELECT id FROM connection_requests WHERE requester_id = ? ' +
-          "AND target_id = ? AND challenge_id <=> ? AND status = 'pending' LIMIT 1",
-        [requesterId, targetId, challengeId],
-      )
-      return text(rows[0]?.['id'])
+      const [row] = await db
+        .select({ id: r.id })
+        .from(r)
+        .where(
+          and(
+            eq(r.requesterId, requesterId),
+            eq(r.targetId, targetId),
+            sql`${r.challengeId} IS NOT DISTINCT FROM ${challengeId}`,
+            eq(r.status, 'pending'),
+          ),
+        )
+        .limit(1)
+      return row?.id ?? null
     },
   }
 }
 
-/** Connection requests over MySQL. The one query that reads an email checks
- * accepted status and party membership itself, so no caller can forget to
- * (R-CONN-3, R-CONN-6, ADR 0004). */
-export function createMysqlConnectionStore(pool: Pool): ConnectionStore {
+/** Connection requests over Postgres. The one query that reads an email
+ * checks accepted status and party membership itself, so no caller can forget
+ * to (R-CONN-3, R-CONN-6, ADR 0004). */
+export function createConnectionStore(db: Database): ConnectionStore {
   return {
-    ...lookups(pool),
-    insert: (record) => insertPending(pool, record),
+    ...lookups(db),
+    // uq_pending refuses a second pending request (R-CONN-5); that refusal is
+    // the answer, not an error.
+    insert: async (record) => {
+      const stored = await db
+        .insert(r)
+        .values(record)
+        .onConflictDoNothing()
+        .returning({ id: r.id })
+      return stored.length === 1
+    },
     find: async (id) => {
-      const [rows] = await pool.query<RowDataPacket[]>(
-        'SELECT * FROM connection_requests WHERE id = ?',
-        [id],
-      )
-      const row = rows[0]
+      const [row] = await db.select().from(r).where(eq(r.id, id))
       return row === undefined ? null : recordOf(row)
     },
     view: async (id, viewerId) =>
-      (
-        await views(
-          pool,
-          'r.id = ? AND (r.requester_id = ? OR r.target_id = ?)',
-          viewerId,
-          [id, viewerId, viewerId],
-        )
-      )[0] ?? null,
+      (await views(db, and(eq(r.id, id), isParty(viewerId)), viewerId))[0] ??
+      null,
     incoming: (targetId) =>
-      views(pool, "r.target_id = ? AND r.status = 'pending'", targetId, [
+      views(
+        db,
+        and(eq(r.targetId, targetId), eq(r.status, 'pending')),
         targetId,
-      ]),
+      ),
     respond: async (id, targetId, status) => {
-      const [result] = await pool.query<ResultSetHeader>(
-        'UPDATE connection_requests SET status = ?, responded_at = UTC_TIMESTAMP() ' +
-          "WHERE id = ? AND target_id = ? AND status = 'pending'",
-        [status, id, targetId],
-      )
-      return result.affectedRows === 1
+      const answered = await db
+        .update(r)
+        .set({ status, respondedAt: sql`now()` })
+        .where(
+          and(eq(r.id, id), eq(r.targetId, targetId), eq(r.status, 'pending')),
+        )
+        .returning({ id: r.id })
+      return answered.length === 1
     },
-    contactFor: (id, viewerId) => contactFor(pool, id, viewerId),
+    contactFor: (id, viewerId) => contactFor(db, id, viewerId),
   }
 }

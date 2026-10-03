@@ -1,5 +1,6 @@
-import type { RowDataPacket } from 'mysql2/promise'
-import type { Pool } from '../db.js'
+import { eq } from 'drizzle-orm'
+import type { Database } from '../db/connect.js'
+import { members } from '../db/schema.js'
 
 /** What `/auth/me` says about a member beyond who they are (design §3). */
 export interface MemberProfile {
@@ -33,29 +34,26 @@ export function isOnboarded(
 
 /** MemberProfiles over the `members` table, judged against the consent
  * version in force. */
-export function createMysqlMemberProfiles(
-  pool: Pool,
+export function createMemberProfiles(
+  db: Database,
   currentConsentVersion: string,
 ): MemberProfiles {
   return {
     profile: async (memberId) => {
-      const [rows] = await pool.query<RowDataPacket[]>(
-        'SELECT name, consent_version, consent_at FROM members WHERE id = ?',
-        [memberId],
-      )
-      const row = rows[0]
+      const [row] = await db
+        .select({
+          name: members.name,
+          consentVersion: members.consentVersion,
+          consentAt: members.consentAt,
+        })
+        .from(members)
+        .where(eq(members.id, memberId))
       if (row === undefined) return null
 
-      const name = (row['name'] as string | null) ?? null
-      const consentVersion = (row['consent_version'] as string | null) ?? null
-      const consentAt = (row['consent_at'] as Date | null) ?? null
       return {
-        name,
-        onboarded: isOnboarded(
-          { name, consentVersion, consentAt },
-          currentConsentVersion,
-        ),
-        consentVersion,
+        name: row.name,
+        onboarded: isOnboarded(row, currentConsentVersion),
+        consentVersion: row.consentVersion,
       }
     },
   }

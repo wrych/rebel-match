@@ -1,25 +1,22 @@
 import { randomUUID } from 'node:crypto'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import type { RowDataPacket } from 'mysql2/promise'
 import { loadConfig } from '../../src/config.js'
-import { createPool, type Pool } from '../../src/db.js'
-import { migrate } from '../../src/migrations/run.js'
+import {
+  openTestDatabase,
+  testDatabaseUrl,
+  type Row,
+  type TestDatabase,
+} from './support/database.js'
 import {
   createMailer,
   REDACTED,
   type MailTransport,
   type OutboundMessage,
 } from '../../src/services/mailer.js'
-import { createMysqlOutboxStore } from '../../src/services/outbox-store.js'
-
-const databaseUrl = process.env['DATABASE_URL']
-
-if (databaseUrl === undefined) {
-  throw new Error('integration tests need DATABASE_URL')
-}
+import { createOutboxStore } from '../../src/services/outbox-store.js'
 
 const config = loadConfig({
-  DATABASE_URL: databaseUrl,
+  DATABASE_URL: testDatabaseUrl,
   SESSION_SECRET: 'integration-session-secret-of-32-chars',
 })
 const to = `${randomUUID()}@example.invalid`
@@ -33,10 +30,10 @@ const message: OutboundMessage = {
   credential: link,
 }
 
-let pool: Pool
+let db: TestDatabase
 
-async function latest(): Promise<RowDataPacket> {
-  const [rows] = await pool.query<RowDataPacket[]>(
+async function latest(): Promise<Row> {
+  const rows = await db.query(
     'SELECT * FROM outbox WHERE to_email = ? ORDER BY created_at DESC, id LIMIT 1',
     [to],
   )
@@ -44,20 +41,19 @@ async function latest(): Promise<RowDataPacket> {
 }
 
 beforeAll(async () => {
-  await migrate(databaseUrl, 'migrations')
-  pool = createPool(config)
-  await pool.query('DELETE FROM outbox WHERE to_email = ?', [to])
+  db = await openTestDatabase()
+  await db.query('DELETE FROM outbox WHERE to_email = ?', [to])
 })
 
 afterAll(async () => {
-  await pool.query('DELETE FROM outbox WHERE to_email = ?', [to])
-  await pool.end()
+  await db.query('DELETE FROM outbox WHERE to_email = ?', [to])
+  await db.close()
 })
 
-describe('the outbound message log over MySQL', () => {
+describe('the outbound message log over Postgres', () => {
   it('records a suppressed message with its link in development (R-DEV-1)', async () => {
     const mailer = createMailer({
-      store: createMysqlOutboxStore(pool),
+      store: createOutboxStore(db.drizzle),
       transport: null,
       from: config.mail.from,
       keepCredentials: true,
@@ -72,12 +68,12 @@ describe('the outbound message log over MySQL', () => {
   })
 
   it('records a refused message as failed with a redacted reason (R-MSG-3,4,7)', async () => {
-    await pool.query('DELETE FROM outbox WHERE to_email = ?', [to])
+    await db.query('DELETE FROM outbox WHERE to_email = ?', [to])
     const refusing: MailTransport = {
       send: () => Promise.reject(new Error(`550 no such user, ${link}`)),
     }
     const mailer = createMailer({
-      store: createMysqlOutboxStore(pool),
+      store: createOutboxStore(db.drizzle),
       transport: refusing,
       from: config.mail.from,
       keepCredentials: false,
@@ -93,9 +89,9 @@ describe('the outbound message log over MySQL', () => {
   })
 
   it('records a delivered message as sent, with the time', async () => {
-    await pool.query('DELETE FROM outbox WHERE to_email = ?', [to])
+    await db.query('DELETE FROM outbox WHERE to_email = ?', [to])
     const mailer = createMailer({
-      store: createMysqlOutboxStore(pool),
+      store: createOutboxStore(db.drizzle),
       transport: { send: () => Promise.resolve() },
       from: config.mail.from,
       keepCredentials: false,
@@ -104,6 +100,6 @@ describe('the outbound message log over MySQL', () => {
     expect(await mailer.send(message)).toBe('sent')
     const row = await latest()
     expect(row['status']).toBe('sent')
-    expect(row['sent_at']).toBeInstanceOf(Date)
+    expect(Date.parse(String(row['sent_at']))).not.toBeNaN()
   })
 })

@@ -1,33 +1,29 @@
 import { randomUUID } from 'node:crypto'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import type { RowDataPacket } from 'mysql2/promise'
 import {
   createAuth,
-  createMysqlAuthStore,
+  createAuthStore,
   type AuthProvider,
   type OutgoingLink,
   type SessionCookie,
 } from '../../src/auth/index.js'
 import { loadConfig } from '../../src/config.js'
-import { createPool, type Pool } from '../../src/db.js'
-import { migrate } from '../../src/migrations/run.js'
+import {
+  openTestDatabase,
+  testDatabaseUrl,
+  type TestDatabase,
+} from './support/database.js'
 import { configPolicy } from '../../src/permissions.js'
 
-const databaseUrl = process.env['DATABASE_URL']
-
-if (databaseUrl === undefined) {
-  throw new Error('integration tests need DATABASE_URL')
-}
-
 const config = loadConfig({
-  DATABASE_URL: databaseUrl,
+  DATABASE_URL: testDatabaseUrl,
   SESSION_SECRET: 'integration-session-secret-of-32-chars',
 })
 
 const active = { id: randomUUID(), email: `${randomUUID()}@example.invalid` }
 const rejected = { id: randomUUID(), email: `${randomUUID()}@example.invalid` }
 
-let pool: Pool
+let db: TestDatabase
 let auth: AuthProvider
 const sent: OutgoingLink[] = []
 
@@ -36,12 +32,12 @@ async function insertMember(
   status: string,
   roles: string[],
 ): Promise<void> {
-  await pool.query(
+  await db.query(
     'INSERT INTO members (id, email, status, analytics_id) VALUES (?, ?, ?, ?)',
     [member.id, member.email, status, randomUUID()],
   )
   for (const role of roles) {
-    await pool.query(
+    await db.query(
       'INSERT INTO member_roles (member_id, role_key) VALUES (?, ?)',
       [member.id, role],
     )
@@ -58,16 +54,15 @@ async function issueAndTake(): Promise<string> {
 }
 
 beforeAll(async () => {
-  await migrate(databaseUrl, 'migrations')
-  pool = createPool(config)
-  await pool.query(
-    "INSERT IGNORE INTO roles (role_key, label) VALUES ('member', 'Member')",
+  db = await openTestDatabase()
+  await db.query(
+    "INSERT INTO roles (role_key, label) VALUES ('member', 'Member') ON CONFLICT DO NOTHING",
   )
   await insertMember(active, 'active', ['member'])
   await insertMember(rejected, 'rejected', ['member'])
   auth = createAuth({
     policy: configPolicy,
-    store: createMysqlAuthStore(pool),
+    store: createAuthStore(db.drizzle),
     config,
     deliver: (link) => {
       sent.push(link)
@@ -77,15 +72,15 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
-  await pool.query('DELETE FROM sessions')
-  await pool.query('DELETE FROM members WHERE id IN (?, ?)', [
+  await db.query('DELETE FROM sessions')
+  await db.query('DELETE FROM members WHERE id IN (?, ?)', [
     active.id,
     rejected.id,
   ])
-  await pool.end()
+  await db.close()
 })
 
-describe('the auth seam over MySQL', () => {
+describe('the auth seam over Postgres', () => {
   it('signs a member in with a link exactly once (R-AUTH-5)', async () => {
     const raw = await issueAndTake()
 
@@ -100,7 +95,7 @@ describe('the auth seam over MySQL', () => {
   it('keeps only the token hash in magic_tokens (R-NFR-5)', async () => {
     const raw = await issueAndTake()
 
-    const [rows] = await pool.query<RowDataPacket[]>(
+    const rows = await db.query(
       'SELECT * FROM magic_tokens WHERE member_id = ?',
       [active.id],
     )
@@ -111,8 +106,8 @@ describe('the auth seam over MySQL', () => {
 
   it('refuses an expired link', async () => {
     const raw = await issueAndTake()
-    await pool.query(
-      'UPDATE magic_tokens SET expires_at = UTC_TIMESTAMP() - INTERVAL 1 SECOND ' +
+    await db.query(
+      "UPDATE magic_tokens SET expires_at = now() - interval '1 second' " +
         'WHERE member_id = ?',
       [active.id],
     )
@@ -143,17 +138,17 @@ describe('the auth seam over MySQL', () => {
 
   it('slides an idle session forward when it is used (R-AUTH-7)', async () => {
     const cookie = await auth.createSession(active.id)
-    await pool.query(
-      'UPDATE sessions SET expires = UNIX_TIMESTAMP() + 3600 ' +
-        'WHERE JSON_EXTRACT(data, "$.memberId") = ?',
+    await db.query(
+      'UPDATE sessions SET expires = extract(epoch FROM now())::bigint + 3600 ' +
+        "WHERE data::jsonb ->> 'memberId' = ?",
       [active.id],
     )
 
     expect(await auth.renewSession(asRequest(cookie))).not.toBeNull()
 
-    const [rows] = await pool.query<RowDataPacket[]>(
-      'SELECT expires - UNIX_TIMESTAMP() AS remaining FROM sessions ' +
-        'WHERE JSON_EXTRACT(data, "$.memberId") = ?',
+    const rows = await db.query(
+      'SELECT expires - extract(epoch FROM now())::bigint AS remaining ' +
+        "FROM sessions WHERE data::jsonb ->> 'memberId' = ?",
       [active.id],
     )
     expect(Number(rows[0]!['remaining'])).toBeGreaterThan(29 * 86_400)

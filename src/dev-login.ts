@@ -1,7 +1,7 @@
 import type { OutgoingLink } from './auth/index.js'
 import { composeAuth, composeMailer } from './compose.js'
 import { loadConfig } from './config.js'
-import { createPool } from './db.js'
+import { openDatabase } from './db/open.js'
 import {
   devLoginRefusal,
   seededMember,
@@ -21,14 +21,14 @@ if (refusal !== null || member === null) {
   process.exit(1)
 }
 
-const pool = createPool(config)
+const connection = await openDatabase(config)
 let issued: OutgoingLink | undefined
 
 try {
   const auth = composeAuth(
     config,
-    pool,
-    composeMailer(config, pool),
+    connection.db,
+    composeMailer(config, connection.db),
     (link) => {
       issued = link
     },
@@ -38,5 +38,5 @@ try {
     process.stdout.write(`${signInBanner(issued.url, member.roles)}\n`)
   }
 } finally {
-  await pool.end()
+  await connection.close()
 }

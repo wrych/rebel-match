@@ -1,38 +1,35 @@
 import { randomUUID } from 'node:crypto'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import type { RowDataPacket } from 'mysql2/promise'
 import { loadConfig } from '../../src/config.js'
-import { createPool, type Pool } from '../../src/db.js'
-import { migrate } from '../../src/migrations/run.js'
+import {
+  openTestDatabase,
+  testDatabaseUrl,
+  type Row,
+  type TestDatabase,
+} from './support/database.js'
 import { configPolicy } from '../../src/permissions.js'
 import { planSeed } from '../../src/seed/plan.js'
 import { applySeed } from '../../src/seed/run.js'
-import { createMysqlRoleGrantStore } from '../../src/services/role-grant-store.js'
+import { createRoleGrantStore } from '../../src/services/role-grant-store.js'
 import {
   createRoleService,
   type RoleService,
 } from '../../src/services/roles.js'
 
-const databaseUrl = process.env['DATABASE_URL']
-
-if (databaseUrl === undefined) {
-  throw new Error('integration tests need DATABASE_URL')
-}
-
 const config = loadConfig({
-  DATABASE_URL: databaseUrl,
+  DATABASE_URL: testDatabaseUrl,
   SESSION_SECRET: 'integration-session-secret-of-32-chars',
   NODE_ENV: 'test',
 })
 const ana = { id: randomUUID(), email: `${randomUUID()}@example.invalid` }
 const ben = { id: randomUUID(), email: `${randomUUID()}@example.invalid` }
 
-let pool: Pool
+let db: TestDatabase
 let roles: RoleService
 let setAside: string[] = []
 
-async function rolesOf(memberId: string): Promise<RowDataPacket[]> {
-  const [rows] = await pool.query<RowDataPacket[]>(
+async function rolesOf(memberId: string): Promise<Row[]> {
+  const rows = await db.query(
     'SELECT role_key, granted_by FROM member_roles WHERE member_id = ? ' +
       'ORDER BY role_key',
     [memberId],
@@ -41,17 +38,16 @@ async function rolesOf(memberId: string): Promise<RowDataPacket[]> {
 }
 
 beforeAll(async () => {
-  await migrate(databaseUrl, 'migrations')
-  pool = createPool(config)
-  await applySeed(pool, { ...planSeed(config), members: [] }, '')
+  db = await openTestDatabase()
+  await applySeed(db.drizzle, { ...planSeed(config), members: [] }, '')
   for (const member of [ana, ben]) {
-    await pool.query(
+    await db.query(
       "INSERT INTO members (id, email, status, analytics_id) VALUES (?, ?, 'active', ?)",
       [member.id, member.email, randomUUID()],
     )
   }
   roles = createRoleService({
-    store: createMysqlRoleGrantStore(pool),
+    store: createRoleGrantStore(db.drizzle),
     policy: configPolicy,
   })
 })
@@ -60,17 +56,17 @@ beforeEach(async () => {
   // Make Ana and Ben the only active members, so the last-holder rule is tested
   // against a known set of role:grant holders rather than whatever else is in
   // the database. afterAll restores exactly the members set aside here.
-  await pool.query('DELETE FROM member_roles WHERE member_id IN (?, ?)', [
+  await db.query('DELETE FROM member_roles WHERE member_id IN (?, ?)', [
     ana.id,
     ben.id,
   ])
-  const [rows] = await pool.query<RowDataPacket[]>(
+  const rows = await db.query(
     "SELECT id FROM members WHERE status = 'active' AND id NOT IN (?, ?)",
     [ana.id, ben.id],
   )
   const ids = rows.map((row) => String(row['id']))
   if (ids.length > 0) {
-    await pool.query("UPDATE members SET status = 'rejected' WHERE id IN (?)", [
+    await db.query("UPDATE members SET status = 'rejected' WHERE id IN (?)", [
       ids,
     ])
   }
@@ -79,15 +75,15 @@ beforeEach(async () => {
 
 afterAll(async () => {
   if (setAside.length > 0) {
-    await pool.query("UPDATE members SET status = 'active' WHERE id IN (?)", [
+    await db.query("UPDATE members SET status = 'active' WHERE id IN (?)", [
       setAside,
     ])
   }
-  await pool.query('DELETE FROM members WHERE id IN (?, ?)', [ana.id, ben.id])
-  await pool.end()
+  await db.query('DELETE FROM members WHERE id IN (?, ?)', [ana.id, ben.id])
+  await db.close()
 })
 
-describe('granting and revoking roles over MySQL (R-ROLE-9)', () => {
+describe('granting and revoking roles over Postgres (R-ROLE-9)', () => {
   it('records who granted a role (R-ROLE-7)', async () => {
     expect(await roles.grant(ana.id, ben.id, 'admin')).toBe('granted')
 

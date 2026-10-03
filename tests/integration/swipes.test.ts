@@ -1,57 +1,51 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import type { RowDataPacket } from 'mysql2/promise'
 import request from 'supertest'
 import { createApp } from '../../src/app.js'
 import { composeApp } from '../../src/compose.js'
 import { loadConfig } from '../../src/config.js'
-import { createPool, type Pool } from '../../src/db.js'
-import { migrate } from '../../src/migrations/run.js'
+import {
+  openTestDatabase,
+  testDatabaseUrl,
+  type TestDatabase,
+} from './support/database.js'
 import { planSeed } from '../../src/seed/plan.js'
 import { applySeed } from '../../src/seed/run.js'
 
-const databaseUrl = process.env['DATABASE_URL']
-
-if (databaseUrl === undefined) {
-  throw new Error('integration tests need DATABASE_URL')
-}
-
 const config = loadConfig({
-  DATABASE_URL: databaseUrl,
+  DATABASE_URL: testDatabaseUrl,
   SESSION_SECRET: 'integration-session-secret-of-32-chars',
   NODE_ENV: 'test',
   SEED_PROFILE: 'dev',
 })
 const viewer = 'priya.raman@example.invalid'
 
-let pool: Pool
+let db: TestDatabase
 let app: ReturnType<typeof createApp>
 let cookie: string
 let viewerId: string
 let cards: { id: string; author: string; trend: string }[]
 
 async function cleanup(): Promise<void> {
-  await pool.query('DELETE FROM swipes WHERE member_id = ?', [viewerId])
-  await pool.query('DELETE FROM follows WHERE member_id = ?', [viewerId])
-  await pool.query('DELETE FROM connection_requests WHERE requester_id = ?', [
+  await db.query('DELETE FROM swipes WHERE member_id = ?', [viewerId])
+  await db.query('DELETE FROM follows WHERE member_id = ?', [viewerId])
+  await db.query('DELETE FROM connection_requests WHERE requester_id = ?', [
     viewerId,
   ])
 }
 
 beforeAll(async () => {
-  await migrate(databaseUrl, 'migrations')
-  pool = createPool(config)
-  await applySeed(pool, planSeed(config), config.consentVersion)
-  const deps = composeApp(config, pool)
+  db = await openTestDatabase()
+  await applySeed(db.drizzle, planSeed(config), config.consentVersion)
+  const deps = composeApp(config, db.drizzle)
   app = createApp(deps)
-  const [rows] = await pool.query<RowDataPacket[]>(
-    'SELECT id FROM members WHERE email = ?',
-    [viewer],
-  )
+  const rows = await db.query('SELECT id FROM members WHERE email = ?', [
+    viewer,
+  ])
   viewerId = String(rows[0]?.['id'])
   await cleanup()
   const session = await deps.auth.createSession(viewerId)
   cookie = `${session.name}=${session.value}`
-  const [others] = await pool.query<RowDataPacket[]>(
+  const others = await db.query(
     'SELECT id, member_id, COALESCE(trend_id, auto_trend) AS trend FROM challenges ' +
       'WHERE member_id <> ? ORDER BY created_at LIMIT 3',
     [viewerId],
@@ -65,14 +59,14 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await cleanup()
-  await pool.end()
+  await db.close()
 })
 
 function swipe(body: object): request.Test {
   return request(app).post('/api/swipe').set('Cookie', cookie).send(body)
 }
 
-describe('swiping over MySQL (F6)', () => {
+describe('swiping over Postgres (F6)', () => {
   it('turns been there into a pending request to the author, with the note (R-OFF-3,4)', async () => {
     const note =
       'We removed approval loops one by one; I can share the log we kept.'
@@ -84,7 +78,7 @@ describe('swiping over MySQL (F6)', () => {
       note,
     })
 
-    const [rows] = await pool.query<RowDataPacket[]>(
+    const rows = await db.query(
       'SELECT target_id, kind, message, status FROM connection_requests ' +
         'WHERE requester_id = ? AND challenge_id = ?',
       [viewerId, card.id],
@@ -103,7 +97,7 @@ describe('swiping over MySQL (F6)', () => {
 
     await swipe({ challengeId: card.id, action: 'follow' }).expect(201)
 
-    const [rows] = await pool.query<RowDataPacket[]>(
+    const rows = await db.query(
       'SELECT 1 FROM follows WHERE member_id = ? AND trend_id = ?',
       [viewerId, card.trend],
     )
@@ -121,7 +115,7 @@ describe('swiping over MySQL (F6)', () => {
   })
 
   it("refuses to swipe the viewer's own challenge (R-OFF-1)", async () => {
-    const [own] = await pool.query<RowDataPacket[]>(
+    const own = await db.query(
       'SELECT id FROM challenges WHERE member_id = ? LIMIT 1',
       [viewerId],
     )

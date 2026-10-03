@@ -1,30 +1,26 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import type { RowDataPacket } from 'mysql2/promise'
 import request from 'supertest'
 import { createApp } from '../../src/app.js'
 import { composeApp } from '../../src/compose.js'
 import { loadConfig } from '../../src/config.js'
-import { createPool, type Pool } from '../../src/db.js'
-import { migrate } from '../../src/migrations/run.js'
+import {
+  openTestDatabase,
+  testDatabaseUrl,
+  type TestDatabase,
+} from './support/database.js'
 import { planSeed } from '../../src/seed/plan.js'
 import { applySeed } from '../../src/seed/run.js'
 import type { Cockpit } from '../../src/services/cockpit.js'
 
-const databaseUrl = process.env['DATABASE_URL']
-
-if (databaseUrl === undefined) {
-  throw new Error('integration tests need DATABASE_URL')
-}
-
 const config = loadConfig({
-  DATABASE_URL: databaseUrl,
+  DATABASE_URL: testDatabaseUrl,
   SESSION_SECRET: 'integration-session-secret-of-32-chars',
   NODE_ENV: 'test',
   SEED_PROFILE: 'dev',
 })
 const member = 'milan.horvat@example.invalid'
 
-let pool: Pool
+let db: TestDatabase
 let app: ReturnType<typeof createApp>
 let cookie: string
 let memberId: string
@@ -35,18 +31,16 @@ async function cockpit(): Promise<Cockpit> {
 }
 
 beforeAll(async () => {
-  await migrate(databaseUrl, 'migrations')
-  pool = createPool(config)
-  await applySeed(pool, planSeed(config), config.consentVersion)
-  const deps = composeApp(config, pool)
+  db = await openTestDatabase()
+  await applySeed(db.drizzle, planSeed(config), config.consentVersion)
+  const deps = composeApp(config, db.drizzle)
   app = createApp(deps)
-  const [rows] = await pool.query<RowDataPacket[]>(
-    'SELECT id FROM members WHERE email = ?',
-    [member],
-  )
+  const rows = await db.query('SELECT id FROM members WHERE email = ?', [
+    member,
+  ])
   memberId = String(rows[0]?.['id'])
-  await pool.query('DELETE FROM follows WHERE member_id = ?', [memberId])
-  await pool.query('DELETE FROM connection_requests WHERE target_id = ?', [
+  await db.query('DELETE FROM follows WHERE member_id = ?', [memberId])
+  await db.query('DELETE FROM connection_requests WHERE target_id = ?', [
     memberId,
   ])
   const session = await deps.auth.createSession(memberId)
@@ -54,14 +48,14 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
-  await pool.query('DELETE FROM follows WHERE member_id = ?', [memberId])
-  await pool.query('DELETE FROM connection_requests WHERE target_id = ?', [
+  await db.query('DELETE FROM follows WHERE member_id = ?', [memberId])
+  await db.query('DELETE FROM connection_requests WHERE target_id = ?', [
     memberId,
   ])
-  await pool.end()
+  await db.close()
 })
 
-describe('the cockpit over MySQL (F8)', () => {
+describe('the cockpit over Postgres (F8)', () => {
   it('lists the member’s challenge with what it found (R-MINE-1)', async () => {
     const [mine] = (await cockpit()).challenges
 
@@ -83,11 +77,11 @@ describe('the cockpit over MySQL (F8)', () => {
   })
 
   it('counts the requests waiting for the member, for the badge (R-MINE-4)', async () => {
-    const [someone] = await pool.query<RowDataPacket[]>(
+    const someone = await db.query(
       "SELECT id FROM members WHERE email = 'sanne.kuipers@example.invalid'",
     )
-    await pool.query(
-      "INSERT INTO connection_requests (id, requester_id, target_id, kind) VALUES (UUID(), ?, ?, 'same_boat')",
+    await db.query(
+      "INSERT INTO connection_requests (id, requester_id, target_id, kind) VALUES (gen_random_uuid()::text, ?, ?, 'same_boat')",
       [someone[0]?.['id'], memberId],
     )
 
