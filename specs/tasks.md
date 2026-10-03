@@ -81,7 +81,7 @@ printed dev link (R-DEV-6).
       with the "we will email you a login link once approved" copy and optional
       name/org → `POST /auth/applicant`, keyed by a signed handle.
       _(R-AUTH-9,11,12,13)_
-- [ ] Approval sends a magic link immediately, with the 24 h approval TTL and the
+- [x] Approval sends a magic link immediately, with the 24 h approval TTL and the
       `kind` column on tokens. _(R-AUTH-3,10)_
 - [ ] Invite redemption: `/?invite=…` carried to login, usability check (window,
       cap, revoked), auto-approve + `joined_via_invite_id` + `uses`, fallback to
@@ -145,8 +145,10 @@ printed dev link (R-DEV-6).
 
 ## M5 — Supporting features _(Should-haves)_
 
-- [ ] Admin approvals screen + `/admin/applicants/*`, whitelist add; both
-      permission-guarded. _(S1, R-AUTH-3, R-ROLE-3)_
+- [x] Admin approvals screen + `/admin/applicants/*`, permission-guarded.
+      _(S19, R-AUTH-3,11, R-ROLE-3)_
+- [ ] Whitelist add (`POST /api/admin/whitelist`), permission-guarded.
+      _(R-AUTH-1, R-ROLE-3)_
 - [ ] Follow endpoints + UI. _(S2, R-ASK-9)_
 - [ ] Mixpanel wired in (client + server, **EU endpoints**, project created with
       EU residency), pseudonymous id, event set from design §7, consent-gated.

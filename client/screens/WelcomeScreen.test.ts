@@ -40,6 +40,13 @@ describe('WelcomeScreen', () => {
     expect((await mountWelcome()).find('h1').text()).toBe('Welcome, Ada')
   })
 
+  it('offers each admin screen by the permission it needs (R-ROLE-4)', async () => {
+    signedIn(['applicant:review'])
+    const links = (await mountWelcome()).findAllComponents(RouterLinkStub)
+
+    expect(links.map((link) => link.props('to'))).toEqual(['/admin/applicants'])
+  })
+
   it('offers the outbound log only to a holder of outbox:read (R-ROLE-4)', async () => {
     signedIn(['outbox:read'])
     const admin = await mountWelcome()
