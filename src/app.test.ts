@@ -1,3 +1,4 @@
+import type { Express } from 'express'
 import request from 'supertest'
 import { describe, expect, it, vi } from 'vitest'
 import { createApp, handleErrors, type AppDeps } from './app.js'
@@ -90,18 +91,58 @@ describe('GET /api/config', () => {
   })
 })
 
+/** The app with one onboarded member signed in, and their cookie. */
+async function signedIn(): Promise<{ app: Express; cookie: string }> {
+  const auth = createAuth({
+    policy: configPolicy,
+    store: createMemoryAuthStore([
+      { id: 'm-ada', email: 'ada@example.invalid', roles: ['member'] },
+    ]),
+    deliver: () => Promise.resolve(),
+    config,
+  })
+  const session = await auth.createSession('m-ada')
+  const app = createApp({
+    ...deps(),
+    auth,
+    profiles: {
+      profile: () =>
+        Promise.resolve({
+          name: 'Ada',
+          onboarded: true,
+          consentVersion: config.consentVersion,
+        }),
+    },
+  })
+  return { app, cookie: `${session.name}=${session.value}` }
+}
+
 describe('unknown api routes', () => {
   it('answer 404 without describing what is missing', async () => {
-    const response = await request(createApp(deps())).get('/api/members/42')
+    const { app, cookie } = await signedIn()
+
+    const response = await request(app)
+      .get('/api/members/42')
+      .set('Cookie', cookie)
 
     expect(response.status).toBe(404)
     expect(response.body).toEqual({ error: 'not_found' })
   })
 
   it('answer 404 and never 403, so nothing is confirmed (R-NAV-8)', async () => {
-    const response = await request(createApp(deps())).post('/api/admin/secrets')
+    const { app, cookie } = await signedIn()
+
+    const response = await request(app)
+      .post('/api/admin/secrets')
+      .set('Cookie', cookie)
 
     expect(response.status).toBe(404)
+  })
+
+  it('answer 401 to nobody, like every guarded route (R-ROLE-5)', async () => {
+    const response = await request(createApp(deps())).get('/api/members/42')
+
+    expect(response.status).toBe(401)
   })
 })
 

@@ -63,6 +63,15 @@ describe('onboarding over MySQL (F2)', () => {
     expect(await me()).toMatchObject({ onboarded: false, name: null })
   })
 
+  it('refuses the rest of /api until onboarded (R-NAV-7)', async () => {
+    const response = await request(app)
+      .get('/api/admin/applicants')
+      .set('Cookie', cookie)
+
+    expect(response.status).toBe(403)
+    expect(response.body).toEqual({ error: 'onboarding_required' })
+  })
+
   it('records name, profile and consent, and then reads as onboarded (R-ONB-1,3)', async () => {
     await request(app)
       .post('/api/onboarding')
@@ -87,6 +96,10 @@ describe('onboarding over MySQL (F2)', () => {
     })
     expect(rows[0]?.['consent_at']).toBeInstanceOf(Date)
     expect(await me()).toMatchObject({ onboarded: true, name: 'Ada Rebel' })
+    const admin = await request(app)
+      .get('/api/admin/applicants')
+      .set('Cookie', cookie)
+    expect(admin.status).toBe(404)
   })
 
   it('reads as not onboarded again once the consent version moves on (R-ONB-4)', async () => {
