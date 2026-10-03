@@ -7,6 +7,7 @@ import AccessRequestedScreen from './screens/AccessRequestedScreen.vue'
 import ApplicantsScreen from './screens/ApplicantsScreen.vue'
 import LoginScreen from './screens/LoginScreen.vue'
 import NotFoundScreen from './screens/NotFoundScreen.vue'
+import OnboardingScreen from './screens/OnboardingScreen.vue'
 import OutboxScreen from './screens/OutboxScreen.vue'
 import WelcomeScreen from './screens/WelcomeScreen.vue'
 
@@ -40,6 +41,7 @@ export const router = createRouter({
     screen('entry', LoginScreen),
     screen('login', LoginScreen),
     screen('access-requested', AccessRequestedScreen),
+    screen('onboarding', OnboardingScreen),
     screen('welcome', WelcomeScreen),
     screen('admin-applicants', ApplicantsScreen),
     screen('admin-outbox', OutboxScreen),

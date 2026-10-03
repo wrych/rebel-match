@@ -7,7 +7,9 @@ export interface ClientConfig {
     inviteDefaultMaxUses: number
     inviteDefaultHours: number
     nameMaxChars: number
+    jobTitleMaxChars: number
     orgMaxChars: number
+    sectorMaxChars: number
   }
   consentVersion: string
 }

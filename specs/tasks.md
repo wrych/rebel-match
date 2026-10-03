@@ -102,9 +102,10 @@ printed dev link (R-DEV-6).
 - [ ] Verify magic-link deliverability to a phone inbox (<30 s, not spam);
       confirm from-address + SPF/DKIM; check the outbound log distinguishes sent
       from failed. _(R-NFR-3, R-MSG-3, open question 4)_
-- [ ] Onboarding screen + `POST /api/onboarding` (name, optional job title,
+- [x] Onboarding screen + `POST /api/onboarding` (name, optional job title,
       consent version/ts). _(R-ONB-1..4, R-ROLE-8)_
-- [ ] Consent copy wired in: email-sharing on connect + membership by invitation.
+- [x] Consent copy wired in: email-sharing on connect + membership by invitation.
+      Draft wording in `src/consent.ts` until open question 1 names its owner.
       _(R-ONB-5)_
 - [ ] Route guard: active + onboarded required for `/api/*`; deep links land on
       onboarding first. _(R-NAV-7)_
