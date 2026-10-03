@@ -487,7 +487,10 @@ read it should not also be able to erase the record of what was sent.
 
 All `/api/*` routes, the admin API under `/api/admin/*` included, require an
 authenticated session and a member with `status='active'` and completed
-onboarding (except the onboarding routes).
+onboarding (except the onboarding routes). One server-side guard enforces this before any
+route runs (R-ROLE-5, R-NAV-7): nobody signed in → `401`; signed in but not yet
+onboarded → `403 {error: 'onboarding_required'}`. Only `/api/health` and
+`/api/config` are open, since they carry nothing about anyone (R-CFG-2).
 
 ### Auth
 
