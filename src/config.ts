@@ -69,6 +69,7 @@ const envSchema = z
     CHALLENGE_MIN_CHARS: z.coerce.number().int().positive().default(31),
     BEEN_THERE_NOTE_MIN_CHARS: z.coerce.number().int().positive().default(31),
     OUTBOX_PAGE_SIZE: z.coerce.number().int().positive().default(100),
+    DECK_PAGE_SIZE: z.coerce.number().int().positive().default(20),
     OUTBOX_RETENTION_DAYS: z.coerce.number().int().positive().default(30),
     OUTBOX_PURGE_INTERVAL_HOURS: z.coerce
       .number()
@@ -121,6 +122,7 @@ export interface Limits {
   inviteDefaultHours: number
   outboxRetentionDays: number
   outboxPageSize: number
+  deckPageSize: number
   nameMaxChars: number
   jobTitleMaxChars: number
   orgMaxChars: number
@@ -157,6 +159,26 @@ export interface Config {
   rolePermissions: typeof rolePermissions
 }
 
+function limitsFrom(env: Env): Limits {
+  return {
+    challengeMinChars: env.CHALLENGE_MIN_CHARS,
+    beenThereNoteMinChars: env.BEEN_THERE_NOTE_MIN_CHARS,
+    magicLinkTtlMinutes: env.MAGIC_LINK_TTL_MINUTES,
+    approvalLinkTtlHours: env.APPROVAL_LINK_TTL_HOURS,
+    inviteDefaultMaxUses: env.INVITE_DEFAULT_MAX_USES,
+    inviteDefaultHours: env.INVITE_DEFAULT_HOURS,
+    outboxRetentionDays: env.OUTBOX_RETENTION_DAYS,
+    outboxPageSize: env.OUTBOX_PAGE_SIZE,
+    deckPageSize: env.DECK_PAGE_SIZE,
+    nameMaxChars: NAME_MAX_CHARS,
+    jobTitleMaxChars: JOB_TITLE_MAX_CHARS,
+    orgMaxChars: ORG_MAX_CHARS,
+    sectorMaxChars: SECTOR_MAX_CHARS,
+    inviteLabelMaxChars: INVITE_LABEL_MAX_CHARS,
+    inviteMaxUsesCeiling: INVITE_MAX_USES_CEILING,
+  }
+}
+
 /** Reads and validates configuration, failing before the server accepts a
  * request rather than on the first use of a bad value (R-CFG-1, R-CFG-4). */
 export function loadConfig(source: NodeJS.ProcessEnv = process.env): Config {
@@ -191,22 +213,7 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): Config {
         : { token: env.MIXPANEL_TOKEN }),
       apiHost: env.MIXPANEL_API_HOST,
     },
-    limits: {
-      challengeMinChars: env.CHALLENGE_MIN_CHARS,
-      beenThereNoteMinChars: env.BEEN_THERE_NOTE_MIN_CHARS,
-      magicLinkTtlMinutes: env.MAGIC_LINK_TTL_MINUTES,
-      approvalLinkTtlHours: env.APPROVAL_LINK_TTL_HOURS,
-      inviteDefaultMaxUses: env.INVITE_DEFAULT_MAX_USES,
-      inviteDefaultHours: env.INVITE_DEFAULT_HOURS,
-      outboxRetentionDays: env.OUTBOX_RETENTION_DAYS,
-      outboxPageSize: env.OUTBOX_PAGE_SIZE,
-      nameMaxChars: NAME_MAX_CHARS,
-      jobTitleMaxChars: JOB_TITLE_MAX_CHARS,
-      orgMaxChars: ORG_MAX_CHARS,
-      sectorMaxChars: SECTOR_MAX_CHARS,
-      inviteLabelMaxChars: INVITE_LABEL_MAX_CHARS,
-      inviteMaxUsesCeiling: INVITE_MAX_USES_CEILING,
-    },
+    limits: limitsFrom(env),
     rolePermissions,
   }
 }

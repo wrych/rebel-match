@@ -126,7 +126,7 @@ printed dev link (R-DEV-6).
 
 ## M3 — Offer journey _(M6, F6)_
 
-- [ ] `GET /api/deck`: next challenges, exclude own + already-swiped. _(R-OFF-1,2)_
+- [x] `GET /api/deck`: next challenges, exclude own + already-swiped. _(R-OFF-1,2)_
 - [ ] Swipe UI: same boat / been there / follow / skip. _(R-OFF-3)_
 - [ ] "Been there" note as its own screen, >30 chars from config + counter.
       _(R-OFF-4, R-CFG-1,2, R-NAV-2)_

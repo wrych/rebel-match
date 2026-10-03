@@ -181,6 +181,15 @@ describe('outbound message log settings', () => {
   })
 })
 
+describe('deck page size', () => {
+  it('hands out 20 cards at a time unless told otherwise (R-OFF-1)', () => {
+    expect(loadConfig(valid).limits.deckPageSize).toBe(20)
+    expect(
+      loadConfig({ ...valid, DECK_PAGE_SIZE: '5' }).limits.deckPageSize,
+    ).toBe(5)
+  })
+})
+
 describe('profile text limits', () => {
   it('match the profile columns (R-AUTH-12, R-ONB-2)', () => {
     const { limits } = loadConfig(valid)
