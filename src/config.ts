@@ -37,6 +37,10 @@ function linksMissTheApp(env: {
   )
 }
 
+/** Where a local run keeps its PGlite database and generated session secret
+ * unless LOCAL_DATA_DIR says otherwise (ADR 0024). */
+export const DEFAULT_LOCAL_DATA_DIR = '.data'
+
 const envSchema = z
   .object({
     NODE_ENV: z
@@ -50,7 +54,7 @@ const envSchema = z
       .string()
       .optional()
       .transform((url) => (url === '' ? undefined : url)),
-    LOCAL_DATA_DIR: z.string().min(1).default('.data'),
+    LOCAL_DATA_DIR: z.string().min(1).default(DEFAULT_LOCAL_DATA_DIR),
     SESSION_SECRET: z.string().min(32),
     SESSION_TTL_DAYS: z.coerce.number().int().positive().default(30),
 

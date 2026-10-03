@@ -1,9 +1,9 @@
 import { randomBytes } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
+import { DEFAULT_LOCAL_DATA_DIR } from './config.js'
 
 const SECRET_BYTES = 32
-const DEFAULT_DATA_DIR = '.data'
 
 /** Whether a run is local: no database URL, so it is on PGlite, and not
  * production, which never runs without one (ADR 0024). */
@@ -35,7 +35,7 @@ export async function withLocalSessionSecret(
 ): Promise<NodeJS.ProcessEnv> {
   if (!isLocalRun(env) || (env['SESSION_SECRET'] ?? '') !== '') return env
 
-  const dir = env['LOCAL_DATA_DIR'] ?? DEFAULT_DATA_DIR
+  const dir = env['LOCAL_DATA_DIR'] ?? DEFAULT_LOCAL_DATA_DIR
   await mkdir(dir, { recursive: true })
   const secret = await readOrCreate(join(dir, 'session-secret'))
   return { ...env, SESSION_SECRET: secret }
