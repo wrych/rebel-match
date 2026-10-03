@@ -119,13 +119,13 @@ printed dev link (R-DEV-6).
       _(R-QA-4, constitution §6)_
 - [x] Every store on Drizzle, with the integration suite green on PGlite; the
       duplicate-request guard becomes a partial unique index. _(R-QA-2, R-CONN-5)_
-- [ ] With `DATABASE_URL` unset, the server opens PGlite in `.data/pglite` and
-      generates a `SESSION_SECRET` kept there; production refuses to start
+- [x] With `DATABASE_URL` unset, the server opens PGlite in `.data/pglite` and
+      generates a `SESSION_SECRET` into `.data`; production refuses to start
       without both. _(R-CFG-1, R-NFR-5)_
 - [x] CI: a Postgres 17 service for `migrate` and the integration suite, and the
       MySQL service, `compose.yaml` and `mysql2` removed. _(R-QA-2,4)_ The
-      suite also runs on PGlite in CI and on every push; `compose.yaml` now
-      offers Postgres 17 until local runs move to PGlite.
+      suite also runs on PGlite in CI and on every push; `compose.yaml` offers
+      an optional Postgres 17.
 
 ## M2 — Ask journey _(M3 → M4 → M5, F5)_
 

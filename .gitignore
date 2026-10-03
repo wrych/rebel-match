@@ -9,3 +9,6 @@ coverage/
 *:Zone.Identifier
 
 .DS_Store
+
+# Local runs on PGlite: the database and the generated session secret.
+.data/

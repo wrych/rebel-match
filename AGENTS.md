@@ -86,31 +86,36 @@ depends on it, rather than stacking.
 
 ```sh
 npm ci
-cp .env.example .env     # then set SESSION_SECRET to 32+ characters
-npm run dev              # starts Postgres if Docker is reachable, migrates, seeds,
-                         # prints a sign-in link for the dev admin, then both servers
+npm run dev              # migrates and seeds a local database, prints a sign-in
+                         # link for the dev admin, then starts both servers
 ```
 
-`npm run dev` fails loudly if configuration is missing, by design — it validates
-the environment and names what is absent rather than failing later on first use
-(R-CFG-1). Without a Docker daemon it starts anyway and `/api/health` reports
-`"database": "down"`; everything not backed by the database still works.
+No `.env` and no database server are needed: without `DATABASE_URL` the app
+runs on **PGlite** (Postgres in process) in `.data/pglite`, and generates its
+session secret once into `.data/session-secret` (ADR 0024). Copy `.env.example`
+to `.env` only to change something; set `DATABASE_URL` to use a real Postgres
+(`npm run db:up` starts one in Docker).
+
+PGlite admits one process per folder, so while the dev server runs,
+`npm run dev:login` is refused: take the link from the outbound message log as
+the admin, or stop the server first. Configuration is still validated on start
+and names what is wrong rather than failing on first use (R-CFG-1).
 
 ## Commands
 
-|                             |                                                                                                    |
-| --------------------------- | -------------------------------------------------------------------------------------------------- |
-| `npm run dev`               | starts the database (if Docker is reachable), migrates, then the server on :3000 and Vite on :5173 |
-| `npm run db:up` / `db:down` | the development Postgres on its own                                                                |
-| `npm run db:reset`          | drop the volume and rebuild from the migrations                                                    |
-| `npm test`                  | unit tests (Vitest)                                                                                |
-| `npm run test:integration`  | API tests — on the Postgres `DATABASE_URL` names, or in-memory PGlite when it is empty or unset    |
-| `npm run review`            | the reviewer agent on the branch's change, as the pre-push hook runs it                            |
-| `npm run lint`              | ESLint + Prettier check                                                                            |
-| `npm run typecheck`         | `tsc --noEmit` and `vue-tsc` for the client                                                        |
-| `npm run migrate`           | migrations, forward-only                                                                           |
-| `npm run seed`              | seeds per `SEED_PROFILE` (`dev` \| `prod`)                                                         |
-| `npm run dev:login [email]` | prints a sign-in link for a seeded member (default: the dev admin) — development only              |
+|                             |                                                                                                  |
+| --------------------------- | ------------------------------------------------------------------------------------------------ |
+| `npm run dev`               | migrates and seeds the database, then the server on :3000 and Vite on :5173                      |
+| `npm run db:up` / `db:down` | an optional Postgres 17 in Docker, for `DATABASE_URL`                                            |
+| `npm run db:reset`          | delete the local PGlite database and rebuild it from the migrations (server stopped)             |
+| `npm test`                  | unit tests (Vitest)                                                                              |
+| `npm run test:integration`  | API tests — on the Postgres `DATABASE_URL` names, or in-memory PGlite when it is empty or unset  |
+| `npm run review`            | the reviewer agent on the branch's change, as the pre-push hook runs it                          |
+| `npm run lint`              | ESLint + Prettier check                                                                          |
+| `npm run typecheck`         | `tsc --noEmit` and `vue-tsc` for the client                                                      |
+| `npm run migrate`           | migrations, forward-only                                                                         |
+| `npm run seed`              | seeds per `SEED_PROFILE` (`dev` \| `prod`)                                                       |
+| `npm run dev:login [email]` | prints a sign-in link for a seeded member (default: the dev admin) — development, server stopped |
 
 ## The six that get a change rejected
 

@@ -114,13 +114,20 @@ and nothing else (ADR 0015).
 ### The development database
 
 In development with no `DATABASE_URL`, the server opens **PGlite** — Postgres
-compiled to WebAssembly, running in the Node process — in a local data folder
-(`.data/pglite`, ignored by git), migrates it and seeds it. No database server,
-Docker or `.env` is needed: with no `DATABASE_URL`, a missing `SESSION_SECRET`
-is generated at random on first start and kept in that folder, so no secret is
-ever committed. Config refuses `NODE_ENV=production` without both values
-(ADR 0024). `npm run db:reset` deletes the folder so
-the next start rebuilds from the migrations.
+compiled to WebAssembly, running in the Node process — in `.data/pglite`, a
+local data folder that git ignores, and `npm run dev` migrates and seeds it. No
+database server, Docker or `.env` is needed: with no `DATABASE_URL`, a missing
+`SESSION_SECRET` is generated at random on first start into
+`.data/session-secret`, readable by its owner only, so no secret is ever
+committed. Config refuses `NODE_ENV=production` without both values
+(ADR 0024). `npm run db:reset` deletes the database folder so the next migrate
+rebuilds it.
+
+PGlite admits one process per folder. A lock beside the folder makes a second
+process, such as `npm run dev:login` while the server runs, stop with a clear
+message rather than corrupt the data; a lock left by a process that died is
+taken over, and the server closes the database on `SIGINT` and `SIGTERM` so a
+`tsx watch` restart finds the folder free.
 
 PGlite runs the same Postgres 17 as CI and production, so the engine does not
 drift. What it cannot prove is that the real server agrees, which is why CI
