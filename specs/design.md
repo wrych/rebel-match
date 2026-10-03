@@ -548,10 +548,10 @@ onboarded → `403 {error: 'onboarding_required'}`. Only `/api/health` and
 
 ### Offer journey
 
-| Method | Path         | Body                           | Behavior                                                                                |
-| ------ | ------------ | ------------------------------ | --------------------------------------------------------------------------------------- |
-| GET    | `/api/deck`  | —                              | Next challenges to swipe (exclude own, exclude already-swiped).                         |
-| POST   | `/api/swipe` | `{challengeId, action, note?}` | Record swipe; for `same_boat`/`been_there` also create a connection request (§connect). |
+| Method | Path         | Body                           | Behavior                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| ------ | ------------ | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/deck`  | —                              | Next challenges to swipe (exclude own, exclude already-swiped).                                                                                                                                                                                                                                                                                                                                                                  |
+| POST   | `/api/swipe` | `{challengeId, action, note?}` | Record the swipe on someone else's active challenge (own or gone → `404`). `same_boat`/`been_there` ask its author through the double opt-in (§connect), `been_there` with a note longer than `limits.beenThereNoteMinChars` − 1 characters (R-OFF-4); `follow` follows its trend; `skip` only records. A request already pending comes back as `{connection: {result: 'exists', id}}` (R-CONN-5). _Requires `challenge:swipe`._ |
 
 ### Connections (double opt-in)
 
