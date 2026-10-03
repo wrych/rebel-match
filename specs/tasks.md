@@ -142,14 +142,13 @@ printed dev link (R-DEV-6).
 - [x] Connection-request **screen** + `POST /api/connections`: pending request,
       notify target, no email. _(R-CONN-1,2, R-NAV-2)_ The target is told
       through the incoming list until the M5 email lands.
-- [ ] Cockpit incoming list + incoming-request screen with accept/decline.
-      _(R-MINE-2, R-CONN-3,4, R-NAV-2)_ The request screen
-      (`/matches/requests/:id`) is in.
+- [x] Cockpit incoming list + incoming-request screen with accept/decline.
+      _(R-MINE-2, R-CONN-3,4, R-NAV-2)_
 - [x] Contact screen + `GET /api/connections/:id/contact`: email + mailto only
       when accepted and caller is a party. _(R-CONN-3,6)_
 - [x] Duplicate-request guard. _(R-CONN-5)_
 - [ ] Cockpit: my challenge(s) + counts, followed trends, nav badge. _(R-MINE-1,3,4)_
-      `GET /api/cockpit` is in.
+      The cockpit screen is in; the nav badge waits for a nav.
 
 ## M5 — Supporting features _(Should-haves)_
 
