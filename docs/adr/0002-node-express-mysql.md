@@ -1,6 +1,6 @@
 # 0002. Node.js, Express and MySQL
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by 0024
 - **Date:** 2026-10-01
 - **Deciders:** Andy Moesch, Ivo Pejakovic, Pascal Dulex
 

@@ -71,7 +71,7 @@ SOLID where it earns its keep — for this codebase that is mostly **S** and
   clock, config) as arguments. No module reaches for a singleton or imports a
   live connection. This is what makes §2's database-free unit tests possible.
 - **Pure core, I/O at the edges.** Decisions are pure functions over data; the
-  edges do the talking to MySQL, SMTP, and Mixpanel.
+  edges do the talking to Postgres, SMTP, and Mixpanel.
 - **Open/closed where variation is real** — the trend matcher sits behind an
   interface because an LLM replaces it post-beta (ADR 0010). Nothing else gets a
   plug-in point on speculation.
@@ -152,7 +152,7 @@ pre-push hooks are the fast feedback (ADR 0019).
 | Type safety                             | `tsc --noEmit`, strict mode, no implicit `any`         |
 | Tests pass, coverage floor              | `vitest run --coverage` (pre-push hook + CI)           |
 | Review against these rules              | reviewer agent, blocking at score 4 (pre-push hook)    |
-| Migrations from scratch                 | CI job against a disposable MySQL                      |
+| Migrations from scratch                 | CI job against a disposable Postgres                   |
 | Secrets absent                          | CI uses synthetic config only; secret scanning on push |
 
 Enforced by **review**, because no linter can judge them: change size, comment

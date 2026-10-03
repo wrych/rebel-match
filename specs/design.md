@@ -1,7 +1,7 @@
 # Rebel Match — Technical Design
 
 Implements [`requirements.md`](requirements.md). Stack: **Node.js (Express) +
-MySQL**, single-page mobile-first client served by the Node app.
+Postgres** (ADR 0024), single-page mobile-first client served by the Node app.
 
 ---
 
@@ -23,9 +23,9 @@ MySQL**, single-page mobile-first client served by the Node app.
 │  - /admin   applicant approval, whitelist                    │
 │  - services: mailer (SMTP), matcher (trend detect), analytics│
 └───────────────┬───────────────────────┬─────────────────────┘
-                │ SQL (mysql2/pool)      │ SMTP
+                │ SQL (Drizzle)          │ SMTP
 ┌───────────────▼──────────┐   ┌─────────▼───────────┐
-│  MySQL                   │   │  Own SMTP server    │
+│  Postgres 17             │   │  Own SMTP server    │
 │  members, challenges,    │   │  (magic links +     │
 │  trends, cases,          │   │   notifications)    │
 │  connections, follows,   │   └─────────────────────┘
@@ -38,7 +38,7 @@ MySQL**, single-page mobile-first client served by the Node app.
 ```
 /src                     server (TypeScript, ESM)
   app.ts                 Express app + middleware
-  db.ts                  mysql2 connection pool
+  db/                    Drizzle schema, the Postgres or PGlite connection
   config.ts              env-driven config (§Configuration)
   routes.ts              THE SHARED ROUTE TABLE (ADR 0017) — imported by the
                          client router and by the server's `next` validator
@@ -113,17 +113,20 @@ and nothing else (ADR 0015).
 
 ### The development database
 
-`compose.yaml` runs **the same MySQL 8.4** (LTS) as the CI service and
-production, because the migrations are written in MySQL 8 DDL — `ENUM`,
-`utf8mb4_0900_ai_ci`, InnoDB specifics. Developing against a different engine
-would reintroduce exactly the drift that CI's run-from-scratch check (R-QA-4)
-exists to catch, in the week when it would hurt most. The version is pinned in
-both places; change one, change the other.
+In development with no `DATABASE_URL`, the server opens **PGlite** — Postgres
+compiled to WebAssembly, running in the Node process — in a local data folder
+(`.data/pglite`, ignored by git), migrates it and seeds it. No database server,
+Docker or `.env` is needed: with no `DATABASE_URL`, a missing `SESSION_SECRET`
+is generated at random on first start and kept in that folder, so no secret is
+ever committed. Config refuses `NODE_ENV=production` without both values
+(ADR 0024). `npm run db:reset` deletes the folder so
+the next start rebuilds from the migrations.
 
-`npm run dev` brings it up and migrates before starting. A missing Docker daemon
-is not a failure: the server starts anyway, `/api/health` reports the database as
-down, and everything that does not need it still works. `npm run db:reset` drops
-the volume and rebuilds from the migrations.
+PGlite runs the same Postgres 17 as CI and production, so the engine does not
+drift. What it cannot prove is that the real server agrees, which is why CI
+also runs the migrations and the integration suite against a Postgres 17
+service (R-QA-4). Pointing `DATABASE_URL` at a local Postgres uses that instead
+of PGlite.
 
 ### Client bundle budget
 
@@ -172,8 +175,8 @@ of the same shape (R-LOOK-3). Fonts are self-hosted through `@fontsource`.
 
 ### Key libraries
 
-**Server** — **TypeScript** (strict, ADR 0011), `express`, `mysql2` (promise
-pool), `nodemailer`, `zod` for boundary validation, `mixpanel` for server-side
+**Server** — **TypeScript** (strict, ADR 0011), `express`, `drizzle-orm` over
+`pg` in production and `@electric-sql/pglite` in development and tests, `nodemailer`, `zod` for boundary validation, `mixpanel` for server-side
 capture against the EU endpoint. Sessions are the auth seam's own (§8).
 
 **Client** (ADR 0017) — **Vue 3** (Composition API) with `vue-router` in history
@@ -185,10 +188,13 @@ proxies `/api` and `/auth` to Node.
 
 ---
 
-## 2. Data model (MySQL)
+## 2. Data model (Postgres)
 
-All tables InnoDB, `utf8mb4`. IDs are `BINARY(16)` UUIDs or `BIGINT AUTO_INCREMENT`
-(examples use `CHAR(36)` for readability). Timestamps UTC.
+The schema is declared in `src/db/schema.ts` and migrated by SQL files that
+`drizzle-kit` generates from it (ADR 0024). The sketches below predate the
+move from MySQL and show the shape, not the DDL: IDs are UUID text, timestamps
+are `timestamptz` in UTC, and the duplicate-request guard is a partial unique
+index over pending requests.
 
 ### members
 
@@ -914,7 +920,7 @@ Alternatives considered (kept only as fallbacks):
   from being cheap at scale; `/auth/request-link` is throttled per address and
   per IP.
 - Sessions: http-only, `Secure`, `SameSite=Lax` cookie; server-side session store
-  in MySQL. The cookie carries a random id and its HMAC under `SESSION_SECRET`;
+  in the database. The cookie carries a random id and its HMAC under `SESSION_SECRET`;
   the `sessions` table stores only the id's SHA-256, like `magic_tokens`. Both
   live inside `auth/` rather than in `express-session` (ADR 0018).
 - Authorization: every challenge/connection/contact read must check the caller is
@@ -955,7 +961,8 @@ branch rules are in ADR 0012 and `docs/constitution.md`.
   tested without a database — which is why services take their dependencies as
   arguments (constitution §4).
 - **Integration tests:** `supertest` against the Express app with a disposable
-  MySQL (the CI service container below) and `mail.delivery=none`, so the auth flow
+  PGlite in memory, and in CI also against a real Postgres 17 service (below),
+  with `mail.delivery=none`, so the auth flow
   is testable without sending mail — the outbox doubles as the test mailbox.
 - **Types:** `tsc --noEmit`, `strict: true`, no implicit `any`, across server and
   client.
@@ -982,11 +989,11 @@ branch rules are in ADR 0012 and `docs/constitution.md`.
 
 ```yaml
 services:
-  mysql:
-    image: mysql:8.4
-    env: { MYSQL_ROOT_PASSWORD: test, MYSQL_DATABASE: rebel_match_test }
+  postgres:
+    image: postgres:17
+    env: { POSTGRES_PASSWORD: test, POSTGRES_DB: rebel_match_test }
     options: >-
-      --health-cmd="mysqladmin ping" --health-interval=5s --health-retries=10
+      --health-cmd="pg_isready" --health-interval=5s --health-retries=10
 steps:
   - npm ci
   - npm run lint

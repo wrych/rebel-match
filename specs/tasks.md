@@ -112,6 +112,19 @@ printed dev link (R-DEV-6).
 - [x] Route guard: active + onboarded required for `/api/*`; deep links land on
       onboarding first. _(R-NAV-7)_
 
+## DB — Postgres through Drizzle _(ADR 0024)_
+
+- [ ] Drizzle schema for every table and a Postgres baseline migration that
+      replaces the MySQL ones; the runner keeps its forward-only rules.
+      _(R-QA-4, constitution §6)_
+- [ ] Every store on Drizzle, with the integration suite green on PGlite; the
+      duplicate-request guard becomes a partial unique index. _(R-QA-2, R-CONN-5)_
+- [ ] With `DATABASE_URL` unset, the server opens PGlite in `.data/pglite` and
+      generates a `SESSION_SECRET` kept there; production refuses to start
+      without both. _(R-CFG-1, R-NFR-5)_
+- [ ] CI: a Postgres 17 service for `migrate` and the integration suite, and the
+      MySQL service, `compose.yaml` and `mysql2` removed. _(R-QA-2,4)_
+
 ## M2 — Ask journey _(M3 → M4 → M5, F5)_
 
 - [x] Submit screen: textarea, read-only example hints (no insert action), >30-char gate from config + counter. _(R-ASK-1,2,3, R-CFG-1,2)_

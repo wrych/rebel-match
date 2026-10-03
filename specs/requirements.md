@@ -1,7 +1,7 @@
 # Rebel Match — Requirements
 
 Status: Draft for beta (summit launch 2026-11-08).
-Audience: implementers building against a Node.js + MySQL stack.
+Audience: implementers building against a Node.js + Postgres stack (ADR 0024).
 
 Acceptance criteria use EARS phrasing: **WHEN** <trigger> **THE SYSTEM SHALL**
 <response>, or **WHILE** <state> / **IF** <condition> **THEN THE SYSTEM SHALL**.
@@ -613,7 +613,7 @@ _(Decided by the maintainer after trying the redesign: ADR 0023.)_
   install, lint, unit tests, integration tests, and a production build. A failing
   job SHALL fail the check.
 - **R-QA-4 (Migrations in CI)** — CI SHALL run the database migrations from
-  scratch against a disposable MySQL service, so a broken migration is caught
+  scratch against a disposable Postgres service, so a broken migration is caught
   before deployment.
 - **R-QA-5 (No secrets in CI)** — CI SHALL use non-production, synthetic
   configuration only. Real SMTP credentials, the Mixpanel production token, the
@@ -648,7 +648,9 @@ _(Decided by the maintainer after trying the redesign: ADR 0023.)_
 - **R-NFR-5 (Data protection)** — Magic-link tokens SHALL be stored hashed, never
   in plaintext. Sessions SHALL use signed, http-only cookies. Secrets (SMTP,
   session key, DB credentials) SHALL come from environment configuration, not
-  source.
+  source. The one exception is a local run on PGlite (no `DATABASE_URL`), which
+  MAY generate its own session key and keep it in its git-ignored data folder;
+  a production start without both values SHALL be refused (ADR 0024).
 - **R-NFR-6 (Auditability of consent)** — The system SHALL retain, per member,
   the consent version and acceptance timestamp.
 - **R-NFR-7 (Deletion)** — The system SHALL support deleting a member and the

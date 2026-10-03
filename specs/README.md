@@ -24,18 +24,18 @@ detail is shared).
 
 ## Documents
 
-| File                                 | Purpose                                                                                            |
-| ------------------------------------ | -------------------------------------------------------------------------------------------------- |
-| [`requirements.md`](requirements.md) | What the system must do — user stories, acceptance criteria, scope boundaries.                     |
-| [`priorities.md`](priorities.md)     | Prioritized feature list (MoSCoW) mapped to the Nov 1 beta deadline.                               |
-| [`flows.md`](flows.md)               | Every user journey end to end — entry, onboarding, ask, offer, double opt-in connect, admin.       |
-| [`design.md`](design.md)             | How it is built — architecture, MySQL schema, Node.js API, screens, matching algorithm, seed data. |
-| [`tasks.md`](tasks.md)               | Implementation plan broken into milestones with the summit deadline.                               |
+| File                                 | Purpose                                                                                               |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------- |
+| [`requirements.md`](requirements.md) | What the system must do — user stories, acceptance criteria, scope boundaries.                        |
+| [`priorities.md`](priorities.md)     | Prioritized feature list (MoSCoW) mapped to the Nov 1 beta deadline.                                  |
+| [`flows.md`](flows.md)               | Every user journey end to end — entry, onboarding, ask, offer, double opt-in connect, admin.          |
+| [`design.md`](design.md)             | How it is built — architecture, Postgres schema, Node.js API, screens, matching algorithm, seed data. |
+| [`tasks.md`](tasks.md)               | Implementation plan broken into milestones with the summit deadline.                                  |
 
 ## Target stack
 
 - **Server:** Node.js (Express).
-- **Database:** MySQL.
+- **Database:** Postgres 17 through Drizzle; PGlite in development and tests (ADR 0024).
 - **Client:** a **Vue 3 SPA** (Vite, TypeScript, vue-router) served by the Node
   server; mobile-first, since the summit flow is "scan a QR code on your phone
   during the break". Every screen has its own URL, so emails and QR codes link
