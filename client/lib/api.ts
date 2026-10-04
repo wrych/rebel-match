@@ -15,6 +15,7 @@ export interface ClientConfig {
     inviteMaxUsesCeiling: number
   }
   consentVersion: string
+  analyticsVersion: string
   feedbackTo: string
 }
 

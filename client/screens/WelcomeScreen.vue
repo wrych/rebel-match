@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { routeTable } from '../../src/routes'
+import AnalyticsToggle from '../components/AnalyticsToggle.vue'
 import { loadMe, signOut, type Me } from '../lib/session'
 
 const me = ref<Me | null>(null)
@@ -70,6 +71,8 @@ async function leave(): Promise<void> {
     </div>
 
     <RouterLink to="/matches" class="row-link">Your matches</RouterLink>
+
+    <AnalyticsToggle v-if="me" :opted-in="me.analyticsOptIn" />
 
     <nav v-if="adminLinks.length > 0" class="stack rule" aria-label="Admin">
       <p class="kicker">Host tools</p>

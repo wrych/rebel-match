@@ -34,6 +34,7 @@ function deps(
       revoke: () => Promise.resolve('not_held'),
     },
     erasure: { erase: () => Promise.resolve('not_found') },
+    analyticsConsent: { choose: () => Promise.resolve('done') },
     roster: { list: () => Promise.resolve([]) },
     whitelist: { add: () => Promise.resolve([]) },
     outbox: {
@@ -148,6 +149,7 @@ async function signedIn(): Promise<{ app: Express; cookie: string }> {
           name: 'Ada',
           onboarded: true,
           consentVersion: config.consentVersion,
+          analyticsOptIn: false,
         }),
     },
   })

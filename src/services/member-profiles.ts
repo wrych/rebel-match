@@ -1,12 +1,14 @@
 import { eq } from 'drizzle-orm'
 import type { Database } from '../db/connect.js'
 import { members } from '../db/schema.js'
+import { isOptedIn } from './analytics-consent.js'
 
 /** What `/auth/me` says about a member beyond who they are (design §3). */
 export interface MemberProfile {
   name: string | null
   onboarded: boolean
   consentVersion: string | null
+  analyticsOptIn: boolean
 }
 
 export interface MemberProfiles {
@@ -32,11 +34,11 @@ export function isOnboarded(
   )
 }
 
-/** MemberProfiles over the `members` table, judged against the consent
- * version in force. */
+/** MemberProfiles over the `members` table, judged against the consent and
+ * analytics words in force. */
 export function createMemberProfiles(
   db: Database,
-  currentConsentVersion: string,
+  current: { consentVersion: string; analyticsVersion: string },
 ): MemberProfiles {
   return {
     profile: async (memberId) => {
@@ -45,6 +47,8 @@ export function createMemberProfiles(
           name: members.name,
           consentVersion: members.consentVersion,
           consentAt: members.consentAt,
+          analyticsConsentVersion: members.analyticsConsentVersion,
+          analyticsConsentAt: members.analyticsConsentAt,
         })
         .from(members)
         .where(eq(members.id, memberId))
@@ -52,8 +56,9 @@ export function createMemberProfiles(
 
       return {
         name: row.name,
-        onboarded: isOnboarded(row, currentConsentVersion),
+        onboarded: isOnboarded(row, current.consentVersion),
         consentVersion: row.consentVersion,
+        analyticsOptIn: isOptedIn(row, current.analyticsVersion),
       }
     },
   }

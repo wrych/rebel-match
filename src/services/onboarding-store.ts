@@ -19,6 +19,8 @@ export function createOnboardingStore(db: Database): OnboardingStore {
         jobTitle: row.jobTitle,
         org: row.org ?? row.requestedOrg,
         sector: row.sector,
+        analyticsVersion:
+          row.analyticsConsentAt === null ? null : row.analyticsConsentVersion,
       }
     },
     save: async (memberId, input, acceptedAt) => {
@@ -31,6 +33,9 @@ export function createOnboardingStore(db: Database): OnboardingStore {
           sector: input.sector ?? null,
           consentVersion: input.consentVersion,
           consentAt: acceptedAt,
+          analyticsConsentVersion: input.analyticsVersion ?? null,
+          analyticsConsentAt:
+            input.analyticsVersion === undefined ? null : acceptedAt,
         })
         .where(eq(members.id, memberId))
     },
