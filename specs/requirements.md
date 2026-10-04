@@ -477,7 +477,7 @@ at a screen instead of at the front door.
   | `/admin/applicants`                  | admin approvals                                |
   | `/admin/invites`                     | invite links (R-INV-9)                         |
   | `/admin/members`                     | members, with GDPR erasure (R-NFR-7)           |
-  | `/admin/settings`                    | the configuration, read-only (R-CFG-5)         |
+  | `/admin/settings`                    | the configuration (R-CFG-5,6)                  |
   | `/admin/outbox`                      | dev outbox (dev deployments only)              |
 
 - **R-NAV-5** — WHEN an unauthenticated visitor opens any deep link THE SYSTEM
@@ -607,7 +607,15 @@ What differs by environment is only whether mail **leaves the machine**.
   it does, its value with its unit, the environment variable that sets it, and
   whether it differs from the default. Values fixed in code SHALL be marked as
   such. No secret SHALL appear, nor whether one is set beyond on/off. Changing a
-  value stays a deployment change.
+  value is a deployment change, except as R-CFG-6 allows.
+
+- **R-CFG-6 (Changing settings in the host tools)** — A host with
+  `settings:manage` SHALL be able to change, on the settings screen, the
+  spam-protection numbers except the trusted proxies, the invite defaults, and
+  the minimum challenge and "been there" note lengths (ADR 0031). Each change
+  SHALL be checked against bounds and the order of paired limits, take effect
+  without a restart on every server within a minute, and show who made it and
+  when. The host SHALL be able to go back to the deployment's value.
 
 ---
 
