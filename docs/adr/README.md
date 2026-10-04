@@ -41,7 +41,7 @@ still holds except where the later ADR says otherwise.
 | [0002](0002-node-express-mysql.md)                        | Node.js, Express and MySQL                                      | Accepted, amended by 0024 |
 | [0003](0003-passwordless-magic-link-auth.md)              | Passwordless magic-link auth over a whitelist                   | Accepted                  |
 | [0004](0004-double-opt-in-contact-exchange.md)            | Double opt-in before any contact detail is shared               | Accepted                  |
-| [0005](0005-mixpanel-eu-residency.md)                     | Mixpanel with EU data residency for analytics                   | Accepted                  |
+| [0005](0005-mixpanel-eu-residency.md)                     | Mixpanel with EU data residency for analytics                   | Accepted, amended by 0026 |
 | [0006](0006-role-based-access-control.md)                 | Role-based access control instead of an is_admin flag           | Accepted, amended by 0021 |
 | [0007](0007-addressable-screens-not-modals.md)            | Addressable screens instead of modals                           | Accepted                  |
 | [0008](0008-own-smtp-with-dev-outbox.md)                  | Own SMTP server, with a no-send outbox in development           | Accepted, amended by 0016 |
@@ -62,3 +62,4 @@ still holds except where the later ADR says otherwise.
 | [0023](0023-prototype-look-and-colour-modes.md)           | Wear the prototype's look, with happy mode as a colour mode     | Accepted                  |
 | [0024](0024-postgres-via-drizzle-with-pglite-for-dev.md)  | Postgres through Drizzle, with PGlite for development and tests | Accepted                  |
 | [0025](0025-cloud-run-promote-staging.md)                 | Cloud Run from GitHub; production promoted from staging         | Proposed                  |
+| [0026](0026-analytics-opt-in-sent-from-the-server.md)     | Analytics is opt-in, and every event goes from the server       | Accepted                  |

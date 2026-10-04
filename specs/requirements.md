@@ -216,9 +216,9 @@ capability, not a secret** — and every requirement below exists because of tha
     (R-NAV-1), and SHALL NOT carry the token (R-INV-12).
   - The notice SHALL be announced to assistive technology, not conveyed by colour
     alone (R-NFR-2).
-  - THE SYSTEM SHALL emit a non-identifying analytics event carrying the reason,
-    so a host can see an invite failing during a session instead of hearing about
-    it afterwards (R-ANA-3).
+  - The refusal SHALL NOT be sent to analytics: the visitor has not onboarded,
+    so cannot have opted in (R-ANA-4, ADR 0026). A host sees a failing invite as
+    applicants arriving on the approvals screen instead of joining.
 - **R-INV-6 (Consent is not skipped)** — Auto-approval SHALL skip **admin
   approval only**. The member SHALL still complete onboarding, including explicit
   acceptance of the current consent version (R-ONB-1, R-ONB-3).
@@ -391,9 +391,13 @@ fallback).
 - **R-ANA-3** — The system SHALL NOT send challenge text, names, or email
   addresses to the analytics tool. Event properties SHALL be limited to
   non-identifying metadata (trend id, action type, screen, counts, timestamps).
-- **R-ANA-4** — The analytics tool and its data use SHALL be covered by the
-  data-usage consent (§3.3). IF a member declines non-essential analytics (where
-  consent is granular) THEN THE SYSTEM SHALL disable analytics capture for them.
+- **R-ANA-4** — Analytics SHALL be **opt-in** (ADR 0026): onboarding SHALL
+  offer a separate, unticked choice with its own versioned words, apart from
+  the data-usage consent (§3.3). Ticking it SHALL record the analytics consent
+  version and time; the member SHALL be able to withdraw or give it later in
+  the app as easily as at onboarding. THE SYSTEM SHALL capture events only for
+  a member opted in at that moment, and never for a visitor who has not
+  onboarded.
 - **R-ANA-5** — The chosen tool SHALL have a usable free tier at summit scale
   (hundreds of users, thousands of events) and SHALL store event data in the EU.
   _(Resolved: Mixpanel offers EU data residency on the free plan at no extra

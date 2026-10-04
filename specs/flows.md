@@ -499,6 +499,9 @@ they wait for a human (**F4**).
 
 Each flow emits events under a **pseudonymous** member id, and never carries
 challenge text, names, or email addresses (R-ANA-1, R-ANA-2, R-ANA-3). Capture is
-gated on the consent recorded in **F2** (R-ANA-4). The funnel that matters for
-R-NFR-3 is F1 → F2: _link requested → link opened → onboarding submitted_, with
-timestamps to confirm the 2-minute budget holds on real conference wifi.
+gated on the **separate analytics opt-in** ticked in **F2**, never on the
+data-usage consent itself (R-ANA-4, ADR 0026), so a member who leaves the box
+unticked is never counted. Mixpanel therefore cannot see the first F1 → F2 run:
+nobody has opted in before onboarding. The 2-minute budget of R-NFR-3 is
+checked from the database instead: the member's `created_at`, the magic token's
+`created_at` and `used_at`, and `consent_at`.
