@@ -1,6 +1,6 @@
 # 0029. Rate-limit sign-in, with a self-hosted human check for new applicants
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by 0030
 - **Date:** 2026-10-04
 - **Deciders:** Andy Moesch
 

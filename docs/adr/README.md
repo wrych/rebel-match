@@ -65,4 +65,5 @@ still holds except where the later ADR says otherwise.
 | [0026](0026-analytics-opt-in-sent-from-the-server.md)      | Analytics is opt-in, and every event goes from the server       | Accepted                  |
 | [0027](0027-sign-in-with-a-button.md)                      | Sign in with a button, never by opening the link                | Accepted                  |
 | [0028](0028-merge-without-updating.md)                     | Merge without updating the branch; previews on request          | Accepted                  |
-| [0029](0029-rate-limits-with-a-self-hosted-human-check.md) | Rate-limit sign-in, with a self-hosted human check              | Accepted                  |
+| [0029](0029-rate-limits-with-a-self-hosted-human-check.md) | Rate-limit sign-in, with a self-hosted human check              | Accepted, amended by 0030 |
+| [0030](0030-human-check-before-more-link-emails.md)        | Ask for the human check before more link emails to one address  | Accepted                  |
