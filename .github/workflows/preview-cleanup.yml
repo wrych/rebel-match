@@ -46,13 +46,20 @@ jobs:
           true
 
       # The revision can hold connections for a few minutes after its tag
-      # goes, and Postgres refuses to drop a database in use.
+      # goes, and Postgres refuses to drop a database in use: that alone is
+      # retried. Any other error, such as a missing permission, fails at once.
       - name: Drop the database
         run: |
           sql() { gcloud --project="$GCP_PROJECT" --quiet sql "$@"; }
           sql databases describe "$TARGET" --instance=rebel-match >/dev/null 2>&1 || exit 0
           for _ in 1 2 3 4 5 6 7 8 9 10; do
-            sql databases delete "$TARGET" --instance=rebel-match && exit 0
+            if out=$(sql databases delete "$TARGET" --instance=rebel-match 2>&1); then
+              echo "dropped database $TARGET"
+              exit 0
+            fi
+            echo "$out"
+            grep -qiE 'in use|being accessed|other (users|sessions)' <<<"$out" || exit 1
             sleep 60
           done
-          echo "::warning::database $TARGET is still in use; drop it by hand"
+          echo "::error::database $TARGET is still in use after 10 minutes; drop it by hand"
+          exit 1
