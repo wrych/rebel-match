@@ -14,6 +14,7 @@ import { adminInviteRoutes } from './routes/admin-invites.js'
 import { adminOutboxRoutes } from './routes/admin-outbox.js'
 import { adminMemberRoutes } from './routes/admin-members.js'
 import { adminRoleRoutes } from './routes/admin-roles.js'
+import { adminWhitelistRoutes } from './routes/admin-whitelist.js'
 import { authRoutes, renewSessions } from './routes/auth.js'
 import { onboardingRoutes } from './routes/onboarding.js'
 import { requestLinkRoutes } from './routes/request-link.js'
@@ -32,6 +33,7 @@ import type { OutboxLog } from './services/outbox-log.js'
 import type { ErasureService } from './services/erasure.js'
 import type { MemberRoster } from './services/member-roster.js'
 import type { RoleService } from './services/roles.js'
+import type { WhitelistService } from './services/whitelist.js'
 
 export interface AppDeps {
   config: Config
@@ -41,6 +43,7 @@ export interface AppDeps {
   roles: RoleService
   erasure: ErasureService
   roster: MemberRoster
+  whitelist: WhitelistService
   outbox: OutboxLog
   admission: AdmissionService
   approvals: ApprovalService
@@ -105,6 +108,7 @@ export function createApp(deps: AppDeps): Express {
   app.use(cockpitRoutes(deps))
   app.use(adminRoleRoutes(deps))
   app.use(adminMemberRoutes(deps))
+  app.use(adminWhitelistRoutes(deps))
   app.use(adminApplicantRoutes(deps))
   app.use(adminInviteRoutes(deps))
   app.use(adminOutboxRoutes(deps))

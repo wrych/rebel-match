@@ -243,6 +243,16 @@ describe('deck page size', () => {
   })
 })
 
+describe('whitelist batch size', () => {
+  it('takes up to 1000 addresses per request unless told otherwise (R-AUTH-1)', () => {
+    expect(loadConfig(valid).limits.whitelistBatchMax).toBe(1000)
+    expect(
+      loadConfig({ ...valid, WHITELIST_BATCH_MAX: '50' }).limits
+        .whitelistBatchMax,
+    ).toBe(50)
+  })
+})
+
 describe('profile text limits', () => {
   it('match the profile columns (R-AUTH-12, R-ONB-2)', () => {
     const { limits } = loadConfig(valid)
