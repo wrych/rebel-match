@@ -175,7 +175,9 @@ describe('ProfileScreen', () => {
     server()
     const screen = await mountScreen()
 
-    expect(screen.text()).toContain('Count how I use the app.')
+    expect(screen.text()).toContain(
+      'Help improve Rebel Match (optional data collection)',
+    )
     const leave = screen.find('a[href^="mailto:"]')
     expect(leave.attributes('href')).toContain('host@example.org')
   })

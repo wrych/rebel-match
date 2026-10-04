@@ -55,6 +55,14 @@ describe('AnalyticsToggle', () => {
     expect(box(await mountToggle(false)).checked).toBe(false)
   })
 
+  it('asks the member to help improve Rebel Match (R-ANA-4)', async () => {
+    server()
+
+    expect((await mountToggle(false)).find('label').text()).toContain(
+      'Help improve Rebel Match',
+    )
+  })
+
   it('opts in against the words in force (R-ANA-4)', async () => {
     const fetchMock = server()
     const toggle = await mountToggle(false)
