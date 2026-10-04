@@ -697,8 +697,9 @@ _(Decided by the maintainer after trying the redesign: ADR 0023.)_
     minutes;
   - after 30 new applicants from one IP address in an hour, recording another
     SHALL require a **human check**; past 300 in an hour, none SHALL be
-    recorded until the hour has passed. Members, invite-link visitors and an
-    address asking again SHALL NOT count;
+    recorded until the hour has passed. Members, visitors admitted by a usable
+    invite and an address asking again SHALL NOT count; a refused invite SHALL
+    count like any new applicant, or a made-up token would skip the limit;
   - the human check SHALL run on our own server, with no third party, cookie or
     device identifier, and ask nothing of a visitor beyond a moment's wait
     (R-NFR-1, R-NFR-2);
