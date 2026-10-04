@@ -39,7 +39,7 @@ still holds except where the later ADR says otherwise.
 | --------------------------------------------------------- | --------------------------------------------------------------- | ------------------------- |
 | [0001](0001-record-architecture-decisions.md)             | Record architecture decisions                                   | Accepted                  |
 | [0002](0002-node-express-mysql.md)                        | Node.js, Express and MySQL                                      | Accepted, amended by 0024 |
-| [0003](0003-passwordless-magic-link-auth.md)              | Passwordless magic-link auth over a whitelist                   | Accepted                  |
+| [0003](0003-passwordless-magic-link-auth.md)              | Passwordless magic-link auth over a whitelist                   | Accepted, amended by 0027 |
 | [0004](0004-double-opt-in-contact-exchange.md)            | Double opt-in before any contact detail is shared               | Accepted                  |
 | [0005](0005-mixpanel-eu-residency.md)                     | Mixpanel with EU data residency for analytics                   | Accepted, amended by 0026 |
 | [0006](0006-role-based-access-control.md)                 | Role-based access control instead of an is_admin flag           | Accepted, amended by 0021 |
@@ -63,3 +63,4 @@ still holds except where the later ADR says otherwise.
 | [0024](0024-postgres-via-drizzle-with-pglite-for-dev.md)  | Postgres through Drizzle, with PGlite for development and tests | Accepted                  |
 | [0025](0025-cloud-run-promote-staging.md)                 | Cloud Run from GitHub; production promoted from staging         | Proposed                  |
 | [0026](0026-analytics-opt-in-sent-from-the-server.md)     | Analytics is opt-in, and every event goes from the server       | Accepted                  |
+| [0027](0027-sign-in-with-a-button.md)                     | Sign in with a button, never by opening the link                | Accepted                  |

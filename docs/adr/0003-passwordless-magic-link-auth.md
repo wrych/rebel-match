@@ -1,6 +1,6 @@
 # 0003. Passwordless magic-link auth over a whitelist
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by 0027
 - **Date:** 2026-10-01
 - **Deciders:** Andy Moesch, Ivo Pejakovic, Pascal Dulex
 
