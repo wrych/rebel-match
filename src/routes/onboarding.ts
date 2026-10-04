@@ -7,6 +7,7 @@ import type {
   OnboardingInput,
   OnboardingService,
 } from '../services/onboarding.js'
+import { displayName, optionalText } from './profile-fields.js'
 import { requireSession, type GuardedLocals } from './require-permission.js'
 
 type TextLimits = Pick<
@@ -14,22 +15,12 @@ type TextLimits = Pick<
   'nameMaxChars' | 'jobTitleMaxChars' | 'orgMaxChars' | 'sectorMaxChars'
 >
 
-// A blank optional field is a field left out.
-function optional(max: number): z.ZodType<string | undefined> {
-  return z
-    .string()
-    .trim()
-    .max(max)
-    .optional()
-    .transform((value) => (value === '' ? undefined : value))
-}
-
 function onboardingBody(limits: TextLimits): z.ZodType<OnboardingInput> {
   return z.object({
-    name: z.string().trim().min(1).max(limits.nameMaxChars),
-    jobTitle: optional(limits.jobTitleMaxChars),
-    org: optional(limits.orgMaxChars),
-    sector: optional(limits.sectorMaxChars),
+    name: displayName(limits.nameMaxChars),
+    jobTitle: optionalText(limits.jobTitleMaxChars),
+    org: optionalText(limits.orgMaxChars),
+    sector: optionalText(limits.sectorMaxChars),
     consentVersion: z.string().min(1),
     analyticsVersion: z.string().min(1).optional(),
   })
