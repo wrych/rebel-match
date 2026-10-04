@@ -85,3 +85,26 @@ export function matchesSearch(member: RosterMember, search: string): boolean {
     (member.name ?? '').toLowerCase().includes(needle)
   )
 }
+
+/** One member's outcome of an action taken on several at once (R-MEM-3). */
+export interface EachOutcome<T> {
+  member: RosterMember
+  outcome: T | 'failed'
+}
+
+/** Runs `action` for each member in turn, so one refusal or failure never
+ * stops the rest; each outcome comes back beside its member (R-MEM-3). */
+export async function forEachMember<T>(
+  members: RosterMember[],
+  action: (id: string) => Promise<T>,
+): Promise<EachOutcome<T>[]> {
+  const outcomes: EachOutcome<T>[] = []
+  for (const member of members) {
+    try {
+      outcomes.push({ member, outcome: await action(member.id) })
+    } catch {
+      outcomes.push({ member, outcome: 'failed' })
+    }
+  }
+  return outcomes
+}
