@@ -123,6 +123,37 @@ async function contextHolds(
   return author === requesterId || author === input.targetId
 }
 
+/** Stores a pending request unless one is already pending between the same
+ * two members about the same challenge; the database's partial unique index
+ * settles a race between two such inserts (R-CONN-5). */
+async function storePending(
+  store: ConnectionStore,
+  newId: () => string,
+  requesterId: string,
+  input: NewConnection,
+): Promise<RequestOutcome> {
+  const challengeId = input.challengeId ?? null
+  const pending = (): Promise<string | null> =>
+    store.findPending(requesterId, input.targetId, challengeId)
+  const existing = await pending()
+  if (existing !== null) return { result: 'exists', id: existing }
+
+  const id = newId()
+  const stored = await store.insert({
+    id,
+    requesterId,
+    targetId: input.targetId,
+    challengeId,
+    kind: input.kind,
+    message: input.message ?? null,
+  })
+  if (stored) return { result: 'created', id }
+  const raced = await pending()
+  return raced === null
+    ? { result: 'not_found' }
+    : { result: 'exists', id: raced }
+}
+
 /** The double opt-in (ADR 0004, F7): a request starts pending and reveals
  * nothing; only its target may accept or decline; an email is read only for
  * an accepted request by one of its two parties. Anything a caller may not
@@ -140,26 +171,7 @@ export function createConnections(deps: {
       if (!(await contextHolds(store, requesterId, input))) {
         return { result: 'not_found' }
       }
-      const challengeId = input.challengeId ?? null
-      const pending = (): Promise<string | null> =>
-        store.findPending(requesterId, input.targetId, challengeId)
-      const existing = await pending()
-      if (existing !== null) return { result: 'exists', id: existing }
-
-      const id = deps.newId()
-      const stored = await store.insert({
-        id,
-        requesterId,
-        targetId: input.targetId,
-        challengeId,
-        kind: input.kind,
-        message: input.message ?? null,
-      })
-      if (stored) return { result: 'created', id }
-      const raced = await pending()
-      return raced === null
-        ? { result: 'not_found' }
-        : { result: 'exists', id: raced }
+      return storePending(store, deps.newId, requesterId, input)
     },
     incoming: (memberId) => store.incoming(memberId),
     get: (memberId, id) => store.view(id, memberId),

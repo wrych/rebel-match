@@ -143,23 +143,15 @@ function composeMembershipAdmin(
   }
 }
 
-/** Every service the app serves, wired to the database: the server and the
- * integration tests build the same thing, so a test cannot pass on wiring the
- * server lacks. */
-export function composeApp(config: Config, db: Database): AppDeps {
-  const mailer = composeMailer(config, db)
-  const auth = composeAuth(config, db, mailer)
-
+// Who gets in: applicants at the door, invites, and the hosts' approvals
+// (F4, F10, F15).
+function composeAdmission(
+  config: Config,
+  db: Database,
+  auth: AuthProvider,
+  mailer: Mailer,
+): Pick<AppDeps, 'admission' | 'approvals'> {
   return {
-    config,
-    db,
-    auth,
-    profiles: createMemberProfiles(db, {
-      consentVersion: config.consentVersion,
-      analyticsVersion: config.analyticsVersion,
-    }),
-    ...composeMembershipAdmin(db, auth),
-    outbox: createOutboxLog(db),
     admission: createAdmission({
       store: createAdmissionStore(db),
       auth,
@@ -177,6 +169,27 @@ export function composeApp(config: Config, db: Database): AppDeps {
       auth,
       admittedRole,
     }),
+  }
+}
+
+/** Every service the app serves, wired to the database: the server and the
+ * integration tests build the same thing, so a test cannot pass on wiring the
+ * server lacks. */
+export function composeApp(config: Config, db: Database): AppDeps {
+  const mailer = composeMailer(config, db)
+  const auth = composeAuth(config, db, mailer)
+
+  return {
+    config,
+    db,
+    auth,
+    profiles: createMemberProfiles(db, {
+      consentVersion: config.consentVersion,
+      analyticsVersion: config.analyticsVersion,
+    }),
+    ...composeMembershipAdmin(db, auth),
+    outbox: createOutboxLog(db),
+    ...composeAdmission(config, db, auth, mailer),
     onboarding: createOnboarding({
       store: createOnboardingStore(db),
       currentConsentVersion: config.consentVersion,

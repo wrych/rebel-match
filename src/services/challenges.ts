@@ -98,6 +98,31 @@ function shown(trend: StoredTrend): Trend {
   }
 }
 
+async function matchesFor(
+  store: ChallengeStore,
+  challenge: Challenge,
+  memberId: string,
+): Promise<Matches | null> {
+  const trendId = challenge.trendId ?? challenge.autoTrend
+  if (trendId === null) return null
+  const trend = (await store.trends()).find((t) => t.id === trendId)
+  if (trend === undefined) return null
+  const [peers, cases] = await Promise.all([
+    store.peers(trendId, memberId),
+    store.cases(trendId),
+  ])
+  return { trend: shown(trend), ...peers, cases }
+}
+
+async function trendDetail(
+  store: ChallengeStore,
+  trendId: string,
+): Promise<TrendDetail | null> {
+  const trend = (await store.trends()).find((t) => t.id === trendId)
+  if (trend === undefined) return null
+  return { trend: shown(trend), cases: await store.cases(trendId) }
+}
+
 /** The Ask journey (F5): a challenge is written, matched to a trend
  * (R-ASK-4,5), confirmed or overridden (R-ASK-6,7), and shown its matches
  * (R-ASK-8). Only the author sees their challenge here: anyone else gets
@@ -134,21 +159,10 @@ export function createChallenges(deps: {
     },
     matches: async (memberId, id) => {
       const challenge = await own(memberId, id)
-      if (challenge === null) return null
-      const trendId = challenge.trendId ?? challenge.autoTrend
-      if (trendId === null) return null
-      const trend = (await deps.store.trends()).find((t) => t.id === trendId)
-      if (trend === undefined) return null
-      const [peers, cases] = await Promise.all([
-        deps.store.peers(trendId, memberId),
-        deps.store.cases(trendId),
-      ])
-      return { trend: shown(trend), ...peers, cases }
+      return challenge === null
+        ? null
+        : matchesFor(deps.store, challenge, memberId)
     },
-    trend: async (trendId) => {
-      const trend = (await deps.store.trends()).find((t) => t.id === trendId)
-      if (trend === undefined) return null
-      return { trend: shown(trend), cases: await deps.store.cases(trendId) }
-    },
+    trend: (trendId) => trendDetail(deps.store, trendId),
   }
 }
