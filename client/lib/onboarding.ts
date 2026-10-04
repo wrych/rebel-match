@@ -7,6 +7,9 @@ export interface OnboardingDraft {
   org: string | null
   sector: string | null
   consentVersion: string
+  /** The analytics words in force, and whether the box starts ticked. */
+  analyticsVersion: string
+  analyticsOptIn: boolean
 }
 
 export interface OnboardingAnswers {
@@ -15,6 +18,8 @@ export interface OnboardingAnswers {
   org: string
   sector: string
   consentVersion: string
+  /** Sent only when the analytics box is ticked (R-ANA-4). */
+  analyticsVersion?: string
 }
 
 export async function fetchDraft(): Promise<OnboardingDraft> {
@@ -24,8 +29,8 @@ export async function fetchDraft(): Promise<OnboardingDraft> {
   return (await response.json()) as OnboardingDraft
 }
 
-/** Submits the form; 'stale' when the consent changed while they read it,
- * so they must read the new words (R-ONB-4). */
+/** Submits the form; 'stale' when the consent or analytics words changed
+ * while they read them, so they must read the new words (R-ONB-4). */
 export async function completeOnboarding(
   answers: OnboardingAnswers,
 ): Promise<'done' | 'stale'> {

@@ -11,6 +11,7 @@ function signedIn(permissions: string[]): ReturnType<typeof vi.fn> {
         id: 'a',
         name: 'Ada',
         onboarded: true,
+        analyticsOptIn: false,
         roles: [],
         permissions,
       }),

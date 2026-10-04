@@ -38,6 +38,8 @@ import { createInviteStore } from './services/invite-store.js'
 import { createInvites } from './services/invites.js'
 import { createMailer, type Mailer } from './services/mailer.js'
 import { createMemberProfiles } from './services/member-profiles.js'
+import { createAnalyticsConsent } from './services/analytics-consent.js'
+import { createAnalyticsConsentStore } from './services/analytics-consent-store.js'
 import { createOnboardingStore } from './services/onboarding-store.js'
 import { createOnboarding } from './services/onboarding.js'
 import { createOutboxLog } from './services/outbox-log-store.js'
@@ -152,7 +154,10 @@ export function composeApp(config: Config, db: Database): AppDeps {
     config,
     db,
     auth,
-    profiles: createMemberProfiles(db, config.consentVersion),
+    profiles: createMemberProfiles(db, {
+      consentVersion: config.consentVersion,
+      analyticsVersion: config.analyticsVersion,
+    }),
     ...composeMembershipAdmin(db, auth),
     outbox: createOutboxLog(db),
     admission: createAdmission({
@@ -175,6 +180,11 @@ export function composeApp(config: Config, db: Database): AppDeps {
     onboarding: createOnboarding({
       store: createOnboardingStore(db),
       currentConsentVersion: config.consentVersion,
+      currentAnalyticsVersion: config.analyticsVersion,
+    }),
+    analyticsConsent: createAnalyticsConsent({
+      store: createAnalyticsConsentStore(db),
+      currentVersion: config.analyticsVersion,
     }),
     invites: createInvites({
       store: createInviteStore(db),

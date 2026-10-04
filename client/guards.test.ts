@@ -6,6 +6,7 @@ const admin: Me = {
   id: 'a',
   name: 'Dev Admin',
   onboarded: true,
+  analyticsOptIn: false,
   roles: ['member', 'admin'],
   permissions: ['outbox:read'],
 }

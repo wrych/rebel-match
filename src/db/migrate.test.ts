@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { connect, type Connection } from './connect.js'
 import { applyMigrations } from './migrate.js'
 
-const BASELINE = 'db/migrations'
+const MIGRATIONS = 'db/migrations'
 
 let connection: Connection
 
@@ -34,11 +34,12 @@ async function tableExists(name: string): Promise<boolean> {
 }
 
 describe('applyMigrations on Postgres (ADR 0024)', () => {
-  it('applies the baseline once, then has nothing to do (R-QA-4)', async () => {
-    expect(await applyMigrations(connection, BASELINE)).toEqual([
+  it('applies the migrations once, in order, then has nothing to do (R-QA-4)', async () => {
+    expect(await applyMigrations(connection, MIGRATIONS)).toEqual([
       '0000_baseline.sql',
+      '0001_analytics_opt_in.sql',
     ])
-    expect(await applyMigrations(connection, BASELINE)).toEqual([])
+    expect(await applyMigrations(connection, MIGRATIONS)).toEqual([])
     expect(await tableExists('connection_requests')).toBe(true)
   })
 
@@ -66,7 +67,7 @@ describe('applyMigrations on Postgres (ADR 0024)', () => {
 
 describe('the pending-request guard (R-CONN-5)', () => {
   beforeEach(async () => {
-    await applyMigrations(connection, BASELINE)
+    await applyMigrations(connection, MIGRATIONS)
     await connection.db.execute(sql`
       INSERT INTO members (id, email, analytics_id) VALUES
         ('a', 'a@example.invalid', 'aa'), ('b', 'b@example.invalid', 'bb')`)

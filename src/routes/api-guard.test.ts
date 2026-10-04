@@ -32,6 +32,7 @@ function app(): Express {
             name: id === 'm-done' ? 'Done' : null,
             onboarded: id === 'm-done',
             consentVersion: null,
+            analyticsOptIn: false,
           }),
       },
     }),

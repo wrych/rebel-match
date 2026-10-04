@@ -3,6 +3,7 @@ export interface Me {
   id: string
   name: string | null
   onboarded: boolean
+  analyticsOptIn: boolean
   roles: string[]
   permissions: string[]
 }

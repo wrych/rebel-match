@@ -157,6 +157,7 @@ describe('clientConfig', () => {
 
   it('exposes only the documented keys', () => {
     expect(Object.keys(clientConfig(loadConfig(valid))).sort()).toEqual([
+      'analyticsVersion',
       'consentVersion',
       'feedbackTo',
       'limits',

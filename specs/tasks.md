@@ -172,7 +172,7 @@ printed dev link (R-DEV-6).
       _(R-AUTH-1, R-ROLE-3)_
 - [x] Follow endpoints + UI. _(S2, R-ASK-9)_ The endpoints are in, and the
       matches and trend screens follow and unfollow.
-- [ ] Analytics opt-in: the unticked onboarding checkbox with its versioned
+- [x] Analytics opt-in: the unticked onboarding checkbox with its versioned
       words, `analytics_consent_*` on members, `PUT /api/me/analytics` and the
       welcome-screen toggle. _(R-ANA-4, ADR 0026)_
 - [ ] Mixpanel sending from the server only (**EU endpoint**, project created

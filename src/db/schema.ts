@@ -48,7 +48,8 @@ export const memberStatus = pgEnum('member_status', [
 // Members, applicants and the whitelist are one table. Onboarding is complete
 // only when both `name` and `consent_at` are set (R-ONB-1); `requested_name`
 // is what an applicant typed at the door and never satisfies that gate
-// (R-AUTH-12).
+// (R-AUTH-12). The analytics opt-in is separate and optional: both
+// `analytics_consent_*` set means opted in (R-ANA-4, ADR 0026).
 export const members = pgTable(
   'members',
   {
@@ -67,6 +68,10 @@ export const members = pgTable(
     ),
     consentVersion: varchar('consent_version', { length: 20 }),
     consentAt: at('consent_at'),
+    analyticsConsentVersion: varchar('analytics_consent_version', {
+      length: 20,
+    }),
+    analyticsConsentAt: at('analytics_consent_at'),
     analyticsId: id('analytics_id').notNull(),
     createdAt: at('created_at').notNull().defaultNow(),
   },

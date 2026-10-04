@@ -39,9 +39,15 @@ afterAll(async () => {
   await db.close()
 })
 
-async function me(): Promise<{ onboarded: boolean; name: string | null }> {
+interface Me {
+  onboarded: boolean
+  name: string | null
+  analyticsOptIn: boolean
+}
+
+async function me(): Promise<Me> {
   const response = await request(app).get('/auth/me').set('Cookie', cookie)
-  return response.body as { onboarded: boolean; name: string | null }
+  return response.body as Me
 }
 
 describe('onboarding over Postgres (F2)', () => {
@@ -95,6 +101,49 @@ describe('onboarding over Postgres (F2)', () => {
       .get('/api/admin/applicants')
       .set('Cookie', cookie)
     expect(admin.status).toBe(404)
+  })
+
+  it('records nothing for analytics when the box is left unticked (R-ANA-4)', async () => {
+    const [row] = await db.query(
+      'SELECT analytics_consent_version, analytics_consent_at FROM members WHERE id = ?',
+      [newcomer.id],
+    )
+
+    expect(row).toEqual({
+      analytics_consent_version: null,
+      analytics_consent_at: null,
+    })
+    expect(await me()).toMatchObject({ analyticsOptIn: false })
+  })
+
+  it('records the opt-in when the box is ticked, and withdraws it (R-ANA-4)', async () => {
+    await request(app)
+      .post('/api/onboarding')
+      .set('Cookie', cookie)
+      .send({
+        name: 'Ada Rebel',
+        consentVersion: config.consentVersion,
+        analyticsVersion: config.analyticsVersion,
+      })
+      .expect(204)
+
+    const [row] = await db.query(
+      'SELECT analytics_consent_version, analytics_consent_at FROM members WHERE id = ?',
+      [newcomer.id],
+    )
+    expect(row?.['analytics_consent_version']).toBe(config.analyticsVersion)
+    expect(Date.parse(String(row?.['analytics_consent_at']))).not.toBeNaN()
+    expect(await me()).toMatchObject({ analyticsOptIn: true })
+    const form = await request(app).get('/api/onboarding').set('Cookie', cookie)
+    expect(form.body).toMatchObject({ analyticsOptIn: true })
+
+    await request(app)
+      .put('/api/me/analytics')
+      .set('Cookie', cookie)
+      .send({ optIn: false })
+      .expect(204)
+
+    expect(await me()).toMatchObject({ analyticsOptIn: false })
   })
 
   it('reads as not onboarded again once the consent version moves on (R-ONB-4)', async () => {

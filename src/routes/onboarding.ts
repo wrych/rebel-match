@@ -30,16 +30,22 @@ function onboardingBody(limits: TextLimits): z.ZodType<OnboardingInput> {
     org: optional(limits.orgMaxChars),
     sector: optional(limits.sectorMaxChars),
     consentVersion: z.string().min(1),
+    analyticsVersion: z.string().min(1).optional(),
   })
 }
 
 /** `GET` and `POST /api/onboarding` (design §3): the form pre-filled, and its
- * submission with the consent version accepted (R-ONB-1..3). Any signed-in
- * member may reach them, onboarded or not. */
+ * submission with the consent version accepted and the analytics opt-in
+ * (R-ONB-1..3, R-ANA-4). Any signed-in member may reach them, onboarded or
+ * not. */
 export function onboardingRoutes(deps: {
   auth: AuthProvider
   onboarding: OnboardingService
-  config: { limits: TextLimits; consentVersion: string }
+  config: {
+    limits: TextLimits
+    consentVersion: string
+    analyticsVersion: string
+  }
 }): Router {
   const router = Router()
   const guard = requireSession(deps.auth)
@@ -52,7 +58,11 @@ export function onboardingRoutes(deps: {
       response.status(401).json({ error: 'unauthenticated' })
       return
     }
-    response.json({ ...draft, consentVersion: deps.config.consentVersion })
+    response.json({
+      ...draft,
+      consentVersion: deps.config.consentVersion,
+      analyticsVersion: deps.config.analyticsVersion,
+    })
   })
 
   router.post('/api/onboarding', guard, async (request, response) => {
