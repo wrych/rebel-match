@@ -687,6 +687,22 @@ _(Decided by the maintainer after trying the redesign: ADR 0023.)_
   source. The one exception is a local run on PGlite (no `DATABASE_URL`), which
   MAY generate its own session key and keep it in its git-ignored data folder;
   a production start without both values SHALL be refused (ADR 0024).
+- **R-NFR-8 (Abuse limits)** — THE SYSTEM SHALL limit the sign-in endpoints
+  (ADR 0029), every number configurable (R-CFG-1):
+  - at most 3 link emails per address per 15 minutes; a further request SHALL
+    show the same screen and send nothing, revealing nothing;
+  - at most 1000 requests per IP address per 15 minutes across the sign-in
+    endpoints; past it the visitor SHALL be asked to try again in a few
+    minutes;
+  - after 30 new applicants from one IP address in an hour, recording another
+    SHALL require a **human check**; past 300 in an hour, none SHALL be
+    recorded until the hour has passed. Members, invite-link visitors and an
+    address asking again SHALL NOT count;
+  - the human check SHALL run on our own server, with no third party, cookie or
+    device identifier, and ask nothing of a visitor beyond a moment's wait
+    (R-NFR-1, R-NFR-2);
+  - the client's IP address SHALL be read from a forwarded header only behind
+    a proxy the configuration trusts.
 - **R-NFR-6 (Auditability of consent)** — The system SHALL retain, per member,
   the consent version and acceptance timestamp.
 - **R-NFR-7 (Deletion)** — The system SHALL support deleting a member and the
