@@ -68,8 +68,10 @@ runtime() { # runtime <public url> — the flags every job and revision shares
     --image="$IMAGE"
     --service-account="$GCP_RUN_SA"
     --set-cloudsql-instances="$GCP_SQL_INSTANCE"
+    # Cloud Run's front end is the one proxy hop whose X-Forwarded-For counts
+    # (R-NFR-8); without it every visitor shares one address.
     --set-env-vars="$(join NODE_ENV=development MAIL_DELIVERY=none \
-      SEED_PROFILE=dev "PUBLIC_URL=$1" "${DATABASE_ENV[@]}")"
+      SEED_PROFILE=dev TRUST_PROXY=1 "PUBLIC_URL=$1" "${DATABASE_ENV[@]}")"
     --set-secrets="$SECRETS"
   )
 }
