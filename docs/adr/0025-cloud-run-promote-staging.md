@@ -95,6 +95,23 @@ sits behind a global external Application Load Balancer, which works in every
 region and leaves room for Cloud Armor rate limits later. `PUBLIC_URL` is set
 per deployment to the address members' links point at.
 
+**Rollout, in two steps.** Non-prod costs a few francs a month; production's
+warm instance, load balancer and second database cost most of the rest. So:
+
+1. **Non-prod first.** The non-prod project is set up by hand
+   (`docs/cloud-setup.md`, part 1), then one pull request adds the deploy
+   workflows for previews and staging, with what the image needs to run there.
+   From then on every pull request gets a preview and every merge reaches
+   staging.
+2. **Production when the pilot needs it.** The production project (part 2),
+   then a second pull request adds the promote workflow. It has to land in time
+   for the pilot (M6) and for the mail trickle, which wants weeks rather than
+   days (`docs/email-setup.md`). Until then, staging is the only shared
+   deployment, and nothing can reach production because it does not exist.
+
+Nothing in step 1 is redone in step 2: production adds a project and two grants
+on non-prod (pulling images, reading which digest staging serves).
+
 ## Alternatives considered
 
 - **Azure (Container Apps, PostgreSQL Flexible Server)** — equally capable, and
@@ -141,11 +158,16 @@ per deployment to the address members' links point at.
   rate limits (R-NFR-5) when they land — belongs in the database, not in memory.
 - The SMTP server sees Cloud Run's changing egress addresses. If it relays by IP
   rather than by authentication, production needs Cloud NAT with a static IP.
-- Cost is tens of francs a month, most of it the warm production instance,
-  the load balancer, and two Cloud SQL instances. Billing alerts go on both
-  projects on day one.
+- Cost is a few francs a month while only non-prod exists, mostly its
+  database, which can be stopped when unused. With production it is tens of
+  francs, most of it the warm instance, the load balancer, and the second
+  Cloud SQL instance. Each project gets a billing alert the day it is created.
+- Production comes later, so it is the one deployment whose setup is not
+  exercised every day. Part 2 of the runbook has to be followed carefully once,
+  and the first promotion is a rehearsal well before the summit, not on the
+  day.
 - The one-time setup (projects, identities, database, secrets) is manual,
-  written up step by step in `docs/cloud-setup.md`. Infrastructure as code is a
+  written up step by step in `docs/cloud-setup.md`, in the same two parts. Infrastructure as code is a
   later decision, not this one.
 
 ## References
