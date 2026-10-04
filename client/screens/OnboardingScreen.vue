@@ -167,7 +167,7 @@ onMounted(load)
         <AnalyticsWords :version="analyticsVersion" />
         <label class="check">
           <input v-model="analytics" type="checkbox" />
-          <span>Yes, count how I use the app.</span>
+          <span>Yes, help improve Rebel Match: count how I use the app.</span>
         </label>
       </section>
 
