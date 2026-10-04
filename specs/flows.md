@@ -65,9 +65,12 @@ Conventions:
    on purpose, so email enumeration through this form is possible and accepted
    (R-AUTH-4, ADR 0013). Rate-limiting is what keeps it expensive.
 6. Member opens the email on the same phone and taps the link →
-   `GET /auth/verify?token=…`.
-7. Server validates and consumes the token, creates a signed http-only session
-   cookie that survives closing the browser (R-AUTH-5, R-AUTH-7, R-NFR-5).
+   **S2** `/sign-in#token=…`, which shows a **Sign in** button. Opening the link
+   uses nothing, so a mail scanner or a chat preview that fetched it first has
+   not spent it (R-AUTH-5, ADR 0027).
+7. Member taps **Sign in** → `POST /auth/verify`. Server validates and consumes
+   the token, creates a signed http-only session cookie that survives closing
+   the browser (R-AUTH-5, R-AUTH-7, R-NFR-5).
 8. **S2** routes onward: onboarding not yet complete → **F2**; otherwise → **F3**
    (R-ONB-1).
 
@@ -360,9 +363,9 @@ front door (R-NAV-1..10).
 2. **Signed in, onboarded, authorized** → the screen renders directly. Reload and
    browser-back keep working (R-NAV-1).
 3. **Signed out** → the app remembers the path, shows **S1 Login**, and passes it
-   as `next` to `POST /auth/request-link`. The emailed link carries it through
-   `/auth/verify?token=…&next=…`, and after verification the member lands on the
-   originally requested screen, not on welcome (R-NAV-5).
+   as `next` to `POST /auth/request-link`. The token carries it, and after
+   signing in on **S2** the member lands on the originally requested screen, not
+   on welcome (R-NAV-5).
 4. **Not onboarded yet** → **F2** runs first, then the member continues to the
    target (R-NAV-7).
 
