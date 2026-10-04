@@ -4,13 +4,13 @@
 # (requirements §8c): fictional people, no mail, readable links.
 #
 # In order: the target's database (previews only), the migrations and the dev
-# seed as a Cloud Run job, the sign-in job (R-DEV-6), the service, and a check
+# seed as a Cloud Run job, the service, the sign-in job (R-DEV-6), and a check
 # that it answers with its database up. A failing step stops the deploy with
 # the previous revision still serving.
 #
 # Reads: TARGET, IMAGE (with digest), GCP_PROJECT, GCP_REGION,
 # GCP_SQL_INSTANCE, GCP_RUN_SA, GCP_PROJECT_NUMBER; PUBLIC_URL optionally
-# overrides the address links point at.
+# overrides the address links point at (a custom domain).
 set -euo pipefail
 
 : "${TARGET:?}" "${IMAGE:?}" "${GCP_PROJECT:?}" "${GCP_REGION:?}"
@@ -25,16 +25,12 @@ gc() { gcloud --project="$GCP_PROJECT" --quiet "$@"; }
 # --region belongs to the command, so it goes after it.
 run() { gc run "$@" --region="$GCP_REGION"; }
 
-# Cloud Run's deterministic addresses: SERVICE-NUMBER.REGION.run.app, and
-# TAG---SERVICE-NUMBER.REGION.run.app for a tagged revision.
 if [[ "$TARGET" == staging ]]; then
   SERVICE=rebel-match-staging
-  HOST="$SERVICE-$GCP_PROJECT_NUMBER.$GCP_REGION.run.app"
   DATABASE_ENV=()
   DATABASE_SECRETS=(DATABASE_URL=staging-database-url:latest)
 else
   SERVICE=rebel-match-dev
-  HOST="$TARGET---$SERVICE-$GCP_PROJECT_NUMBER.$GCP_REGION.run.app"
   # The URL carries no password; node-postgres takes it from PGPASSWORD.
   DATABASE_ENV=("DATABASE_URL=postgres://rebel@/$TARGET?host=/cloudsql/$GCP_SQL_INSTANCE")
   DATABASE_SECRETS=(PGPASSWORD=db-password:latest)
@@ -44,57 +40,74 @@ else
     gc sql databases create "$TARGET" --instance=rebel-match
   fi
 fi
-DEFAULT_URL="https://$HOST"
-PUBLIC_URL="${PUBLIC_URL:-$DEFAULT_URL}"
+
+# Where Cloud Run serves the target now, or nothing before its first deploy:
+# the service's URL for staging, the tag's for a preview. A tag's URL has the
+# service's hashed host, which only Cloud Run knows.
+served_url() {
+  if [[ "$TARGET" == staging ]]; then
+    run services describe "$SERVICE" --format='value(status.url)' 2>/dev/null || true
+  else
+    { run services describe "$SERVICE" --format=json 2>/dev/null || echo '{}'; } |
+      jq -r --arg tag "$TARGET" \
+        '[.status.traffic[]? | select(.tag == $tag) | .url][0] // empty'
+  fi
+}
+
+# Links must point where the target is served. A PUBLIC_URL variable fixes
+# that (a custom domain); otherwise the current address, or for a first
+# deploy a guess that the deploy below corrects.
+OVERRIDE="${PUBLIC_URL:-}"
+PUBLIC_URL="${OVERRIDE:-$(served_url)}"
+PUBLIC_URL="${PUBLIC_URL:-https://$SERVICE-$GCP_PROJECT_NUMBER.$GCP_REGION.run.app}"
 
 join() { local IFS=,; echo "$*"; }
-ENV_VARS=$(join NODE_ENV=development MAIL_DELIVERY=none SEED_PROFILE=dev \
-  "PUBLIC_URL=$PUBLIC_URL" "${DATABASE_ENV[@]}")
 SECRETS=$(join SESSION_SECRET=session-secret:latest "${DATABASE_SECRETS[@]}")
-
-RUNTIME=(
-  --image="$IMAGE"
-  --service-account="$GCP_RUN_SA"
-  --set-cloudsql-instances="$GCP_SQL_INSTANCE"
-  --set-env-vars="$ENV_VARS"
-  --set-secrets="$SECRETS"
-)
+runtime() { # runtime <public url> — the flags every job and revision shares
+  RUNTIME=(
+    --image="$IMAGE"
+    --service-account="$GCP_RUN_SA"
+    --set-cloudsql-instances="$GCP_SQL_INSTANCE"
+    --set-env-vars="$(join NODE_ENV=development MAIL_DELIVERY=none \
+      SEED_PROFILE=dev "PUBLIC_URL=$1" "${DATABASE_ENV[@]}")"
+    --set-secrets="$SECRETS"
+  )
+}
 
 echo "deploy: migrations and seed for $TARGET"
+runtime "$PUBLIC_URL"
 run jobs deploy "prepare-$TARGET" "${RUNTIME[@]}" \
   --command=sh --args="-c,node dist/migrate.js && node dist/seed.js" \
   --max-retries=0 --task-timeout=10m --execute-now --wait
 
-echo "deploy: sign-in job for $TARGET (run it with the dev-login workflow)"
-run jobs deploy "login-$TARGET" "${RUNTIME[@]}" \
-  --command=node --args=dist/dev-login.js --max-retries=0 --task-timeout=2m
+deploy_service() {
+  runtime "$PUBLIC_URL"
+  local flags=("${RUNTIME[@]}" --no-invoker-iam-check --min-instances=0
+    --max-instances=1 --cpu-boost)
+  if [[ "$TARGET" == staging ]]; then
+    run deploy "$SERVICE" "${flags[@]}"
+  else
+    # A tagged revision with no traffic: its own URL, and nothing else moves.
+    # A service's first revision cannot be created without traffic.
+    local no_traffic=()
+    run services describe "$SERVICE" >/dev/null 2>&1 && no_traffic=(--no-traffic)
+    run deploy "$SERVICE" "${flags[@]}" --tag="$TARGET" "${no_traffic[@]}"
+  fi
+}
 
 echo "deploy: service $SERVICE"
-SERVICE_FLAGS=(
-  "${RUNTIME[@]}"
-  --no-invoker-iam-check
-  --min-instances=0
-  --max-instances=1
-  --cpu-boost
-)
-if [[ "$TARGET" == staging ]]; then
-  run deploy "$SERVICE" "${SERVICE_FLAGS[@]}"
-  ACTUAL=$(run services describe "$SERVICE" --format='value(status.url)')
-else
-  # A tagged revision with no traffic: its own URL, and nothing else moves.
-  # A service's first revision cannot be created without traffic.
-  NO_TRAFFIC=()
-  run services describe "$SERVICE" >/dev/null 2>&1 && NO_TRAFFIC=(--no-traffic)
-  run deploy "$SERVICE" "${SERVICE_FLAGS[@]}" --tag="$TARGET" "${NO_TRAFFIC[@]}"
-  ACTUAL=$(run services describe "$SERVICE" --format=json |
-    jq -r --arg tag "$TARGET" '.status.traffic[] | select(.tag == $tag) | .url')
+deploy_service
+SERVED=$(served_url)
+if [[ -z "$OVERRIDE" && "$SERVED" != "$PUBLIC_URL" ]]; then
+  echo "deploy: $TARGET is served at $SERVED; redeploying so links point there"
+  PUBLIC_URL="$SERVED"
+  deploy_service
 fi
 
-if [[ "$ACTUAL" != "$DEFAULT_URL" ]]; then
-  echo "deploy: Cloud Run serves $TARGET at $ACTUAL, but links were set to" \
-    "$DEFAULT_URL; set PUBLIC_URL for this target" >&2
-  exit 1
-fi
+echo "deploy: sign-in job for $TARGET (run it with the dev-login workflow)"
+runtime "$PUBLIC_URL"
+run jobs deploy "login-$TARGET" "${RUNTIME[@]}" \
+  --command=node --args=dist/dev-login.js --max-retries=0 --task-timeout=2m
 
 echo "deploy: checking $PUBLIC_URL/api/health"
 for attempt in 1 2 3 4 5 6; do

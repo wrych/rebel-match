@@ -252,9 +252,9 @@ Nothing more to set up: from here the workflows do it.
 - **A pull request** gets a preview once `check` is green: the image is built
   and pushed, database `pr-<n>` is created, migrated and seeded with the
   fictional roster, and a tagged revision of `rebel-match-dev` serves it at
-  `https://pr-<n>---rebel-match-dev-<project number>.europe-west6.run.app`.
-  The address is in the run's summary. Closing the pull request removes the
-  tag, its jobs and its database (`preview-cleanup.yml`).
+  its own `https://pr-<n>---rebel-match-dev-….a.run.app` address, given in
+  the run's summary. Closing the pull request removes the tag, its jobs and
+  its database (`preview-cleanup.yml`).
 - **A merge to `main`** does the same for `rebel-match-staging`, on database
   `staging`, at `https://rebel-match-staging-<project number>.europe-west6.run.app`.
 - **Signing in:** previews and staging send no mail, so the first sign-in is
