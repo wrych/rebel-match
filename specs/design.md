@@ -183,6 +183,14 @@ remembers the choice per browser (`client/lib/mood.ts`, R-LOOK-2). Calm is the
 default and happy the one alternative for the beta; a dark mode is another block
 of the same shape (R-LOOK-3). Fonts are self-hosted through `@fontsource`.
 
+The header's right-hand button opens the **menu** (R-PROF-3): the colour mode
+switch, "Profile & privacy" (`/profile`), the host tools the member's
+permissions allow (paths and permissions from the route table, ADR 0017), and
+sign out. It is a small panel under the header, closed by Escape, by a click
+outside it or by choosing an item, with focus returned to the button. Signed
+out, the menu offers only the colour mode. The welcome screen keeps the two
+doors and "Your matches"; host tools and sign out move into the menu.
+
 ### Key libraries
 
 **Server** — **TypeScript** (strict, ADR 0011), `express`, `drizzle-orm` over
@@ -564,7 +572,9 @@ onboarded → `403 {error: 'onboarding_required'}`. Only `/api/health` and
 | ------ | ------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | GET    | `/api/onboarding`   | —                                                                     | The form pre-filled: the member's profile so far, with `requested_name`/`requested_org` filling a missing name or organization (F2, R-AUTH-12), and the consent version in force. Pre-filling never stores them.                                                                                                   |
 | POST   | `/api/onboarding`   | `{name, jobTitle?, org?, sector?, consentVersion, analyticsVersion?}` | Set name/profile, record consent version + timestamp. Required before other `/api` routes. A `consentVersion` other than the current one → `409` (R-ONB-4). `analyticsVersion` is sent only when the analytics box is ticked and records the opt-in; one other than the current analytics words → `409` (R-ANA-4). |
-| PUT    | `/api/me/analytics` | `{optIn: true, version}` or `{optIn: false}`                          | Give or withdraw the analytics opt-in from the welcome screen, as easily as at onboarding. A `version` other than the current analytics words → `409` (R-ANA-4).                                                                                                                                                   |
+| PUT    | `/api/me/analytics` | `{optIn: true, version}` or `{optIn: false}`                          | Give or withdraw the analytics opt-in from the profile screen, as easily as at onboarding. A `version` other than the current analytics words → `409` (R-ANA-4).                                                                                                                                                   |
+| GET    | `/api/profile`      | —                                                                     | The member's own name, job title, organization, email (read-only), the consent version and time they accepted, and `analyticsOptIn` (R-PROF-1,2).                                                                                                                                                                  |
+| PUT    | `/api/profile`      | `{name, jobTitle?, org?}`                                             | Update the profile within the onboarding limits; a blank optional field clears it; sector is kept as it is (R-PROF-1).                                                                                                                                                                                             |
 | POST   | `/api/events`       | `{event, props}`                                                      | The UI events of §7 (`journey_chosen`, `feedback_opened`) with their listed properties only; anything else → `400`. Forwarded to Mixpanel only for a member opted in; always `204` otherwise, so the client cannot tell (ADR 0026).                                                                                |
 
 ### Ask journey
@@ -646,31 +656,32 @@ someone, bookmark, or reload lives in a modal.
 Each screen is addressable; the server serves the SPA for any unmatched GET so a
 deep link reloads cleanly.
 
-| #   | Screen                                                                                                                                                                                      | URL                                                     |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| S1  | **Login** — email field → "check your email"                                                                                                                                                | `/login`                                                |
-| S2  | **Sign in** — the magic link's landing: a **Sign in** button; tapping it verifies the token and routes onward (ADR 0027)                                                                    | `/sign-in#token=…`                                      |
-| S3  | **Onboarding** — name + consent (first time only)                                                                                                                                           | `/onboarding`                                           |
-| S4  | **Welcome** — two doors: _Ask for help_ / _Offer help_                                                                                                                                      | `/welcome`                                              |
-| S5  | **Submit challenge** — textarea + read-only example hints; disabled until the text passes `limits.challengeMinChars`                                                                        | `/ask`                                                  |
-| S6  | **Domain / trend** — detected trend, "from → to", peer line, confirm                                                                                                                        | `/challenges/:id`                                       |
-| S7  | **Trend picker** — all 8 trends, pick a different one _(was a sheet)_                                                                                                                       | `/challenges/:id/trend`                                 |
-| S8  | **Matches (for my challenge)** — Same boat / Been there / Case studies; follow; connect                                                                                                     | `/challenges/:id/matches`                               |
-| S9  | **Trend detail & case studies** — the trend's "from → to", peers, curated cases _(was a sheet)_                                                                                             | `/trends/:trendId`                                      |
-| S10 | **Swipe deck** — card stack; Same boat / Been there / Follow / skip                                                                                                                         | `/offer`                                                |
-| S11 | **"Been there" note** — write the ≥`limits.beenThereNoteMinChars` note for one card _(was a sheet)_                                                                                         | `/offer/:challengeId/note`                              |
-| S12 | **Connection request** — who, which challenge, optional message, send _(was a confirm modal)_                                                                                               | `/challenges/:challengeId/connect/:memberId`            |
-| S13 | **Request sent** — "waiting for them", no contact detail                                                                                                                                    | `/matches/requests/:id` (pending state)                 |
-| S14 | **Matches cockpit** — my challenge(s) with counts, incoming requests, followed trends                                                                                                       | `/matches`                                              |
-| S15 | **Incoming request** — the request with Accept / Decline _(was a cockpit modal)_                                                                                                            | `/matches/requests/:id`                                 |
-| S16 | **Contact exchanged** — the other member's email + prefilled mailto, accepted requests only _(was a modal)_                                                                                 | `/matches/requests/:id/contact`                         |
-| S17 | **Empty deck** — session summary + "submit your own challenge"; hosts the R-OFF-6 easter egg                                                                                                | `/offer/done`                                           |
-| S18 | **Not found / no access** — generic, reveals nothing (R-NAV-8)                                                                                                                              | any unresolved path                                     |
-| S19 | **Admin approvals** — applicant list with approve/reject                                                                                                                                    | `/admin/applicants`                                     |
-| S20 | **Outbound message log** — every message sent, with type, status, times and errors; magic links clickable in development only                                                               | `/admin/outbox`                                         |
-| S21 | **Access requested** — what happens next, an optional name/org so the host can find them, and the "invitation link is not valid" notice when one was refused (R-AUTH-9, R-AUTH-12, R-INV-5) | `/access-requested`, `/access-requested?invite=invalid` |
-| S22 | **Admin invites** — invite links with label, window, uses/cap, state; create, revoke, and the join URL / QR to display (R-INV-9)                                                            | `/admin/invites`                                        |
-| S23 | **Admin members** — search members by email or name and delete one after a confirmation (R-NFR-7)                                                                                           | `/admin/members`                                        |
+| #   | Screen                                                                                                                                                                                                  | URL                                                     |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| S1  | **Login** — email field → "check your email"                                                                                                                                                            | `/login`                                                |
+| S2  | **Sign in** — the magic link's landing: a **Sign in** button; tapping it verifies the token and routes onward (ADR 0027)                                                                                | `/sign-in#token=…`                                      |
+| S3  | **Onboarding** — name + consent (first time only)                                                                                                                                                       | `/onboarding`                                           |
+| S4  | **Welcome** — two doors: _Ask for help_ / _Offer help_                                                                                                                                                  | `/welcome`                                              |
+| S5  | **Submit challenge** — textarea + read-only example hints; disabled until the text passes `limits.challengeMinChars`                                                                                    | `/ask`                                                  |
+| S6  | **Domain / trend** — detected trend, "from → to", peer line, confirm                                                                                                                                    | `/challenges/:id`                                       |
+| S7  | **Trend picker** — all 8 trends, pick a different one _(was a sheet)_                                                                                                                                   | `/challenges/:id/trend`                                 |
+| S8  | **Matches (for my challenge)** — Same boat / Been there / Case studies; follow; connect                                                                                                                 | `/challenges/:id/matches`                               |
+| S9  | **Trend detail & case studies** — the trend's "from → to", peers, curated cases _(was a sheet)_                                                                                                         | `/trends/:trendId`                                      |
+| S10 | **Swipe deck** — card stack; Same boat / Been there / Follow / skip                                                                                                                                     | `/offer`                                                |
+| S11 | **"Been there" note** — write the ≥`limits.beenThereNoteMinChars` note for one card _(was a sheet)_                                                                                                     | `/offer/:challengeId/note`                              |
+| S12 | **Connection request** — who, which challenge, optional message, send _(was a confirm modal)_                                                                                                           | `/challenges/:challengeId/connect/:memberId`            |
+| S13 | **Request sent** — "waiting for them", no contact detail                                                                                                                                                | `/matches/requests/:id` (pending state)                 |
+| S14 | **Matches cockpit** — my challenge(s) with counts, incoming requests, followed trends                                                                                                                   | `/matches`                                              |
+| S15 | **Incoming request** — the request with Accept / Decline _(was a cockpit modal)_                                                                                                                        | `/matches/requests/:id`                                 |
+| S16 | **Contact exchanged** — the other member's email + prefilled mailto, accepted requests only _(was a modal)_                                                                                             | `/matches/requests/:id/contact`                         |
+| S17 | **Empty deck** — session summary + "submit your own challenge"; hosts the R-OFF-6 easter egg                                                                                                            | `/offer/done`                                           |
+| S18 | **Not found / no access** — generic, reveals nothing (R-NAV-8)                                                                                                                                          | any unresolved path                                     |
+| S19 | **Admin approvals** — applicant list with approve/reject                                                                                                                                                | `/admin/applicants`                                     |
+| S20 | **Outbound message log** — every message sent, with type, status, times and errors; magic links clickable in development only                                                                           | `/admin/outbox`                                         |
+| S21 | **Access requested** — what happens next, an optional name/org so the host can find them, and the "invitation link is not valid" notice when one was refused (R-AUTH-9, R-AUTH-12, R-INV-5)             | `/access-requested`, `/access-requested?invite=invalid` |
+| S22 | **Admin invites** — invite links with label, window, uses/cap, state; create, revoke, and the join URL / QR to display (R-INV-9)                                                                        | `/admin/invites`                                        |
+| S23 | **Admin members** — search members by email or name and delete one after a confirmation (R-NFR-7)                                                                                                       | `/admin/members`                                        |
+| S24 | **Profile & privacy** — edit name, job title and organization, each saved on change with a tick; the accepted consent, read-only with version and date; the analytics opt-in; how to leave (R-PROF-1,2) | `/profile`                                              |
 
 Remaining overlays, deliberately: the "really decline this request?" confirm, the
 "link sent" / "copied" toasts, and the feedback action (a `mailto:`, not a
@@ -925,8 +936,8 @@ Alternatives considered (kept only as fallbacks):
 - **Opt-in only** (R-ANA-4, ADR 0026). Onboarding shows an unticked checkbox
   under the consent, with its own versioned words (`analyticsTexts`, like
   `consentTexts`). Ticking it sets `analytics_consent_version` and
-  `analytics_consent_at`; the member changes it later from the welcome screen
-  (`PUT /api/me/analytics`). An event is sent only while both are set.
+  `analytics_consent_at`; the member changes it later on the profile screen
+  (`PUT /api/me/analytics`, R-PROF-2). An event is sent only while both are set.
 - **Server only.** The server sends every event through the Mixpanel HTTP
   ingestion API at `analytics.apiHost` (`api-eu.mixpanel.com`). The two UI
   events, `journey_chosen` and `feedback_opened`, are posted by the client to

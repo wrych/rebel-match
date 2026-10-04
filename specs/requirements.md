@@ -246,6 +246,28 @@ capability, not a secret** — and every requirement below exists because of tha
 
   worked before they type anything. It SHALL NOT reveal the token itself.
 
+### 3.5 Profile, privacy and the menu
+
+- **R-PROF-1** — An onboarded member SHALL be able to edit their **display name**
+  (required), **job title** and **organization** after onboarding, within the
+  same limits as onboarding (R-ONB-2, R-CFG-2). The email address is how they
+  sign in and SHALL NOT be editable here.
+  - Every setting on the profile screen SHALL **save on change**, with no save
+    button, and SHALL confirm each save beside the field with a small, quiet
+    mark (a tick), announced to assistive technology (R-NFR-2). A field left
+    invalid, such as an empty name, SHALL NOT save and SHALL say why; a failed
+    save SHALL say so and keep what the member typed.
+- **R-PROF-2** — The profile screen SHALL show the data-usage consent the member
+  accepted, read-only, with its version and the time they accepted it (R-NFR-6),
+  and SHALL carry the **analytics opt-in**, given or withdrawn there (R-ANA-4).
+  It SHALL say how to leave: by emailing the host, who erases the account
+  (R-NFR-7). Self-service deletion stays post-beta (C4).
+- **R-PROF-3** — The header SHALL carry a **menu** in place of the "CR" mark,
+  offering: the colour mode switch (R-LOOK-2), the profile screen, the host tools
+  the member's permissions allow (R-ROLE-4), and sign out. The menu holds links
+  and one switch only, so it is navigation, not a screen (R-NAV-1); every item it
+  leads to has its own URL.
+
 ---
 
 ## 4. Ask for help (challenge author journey)
@@ -401,7 +423,7 @@ fallback).
   version and time; the member SHALL be able to withdraw or give it later in
   the app as easily as at onboarding. THE SYSTEM SHALL capture events only for
   a member opted in at that moment, and never for a visitor who has not
-  onboarded.
+  onboarded. The opt-in lives on the profile screen (R-PROF-2).
 - **R-ANA-5** — The chosen tool SHALL have a usable free tier at summit scale
   (hundreds of users, thousands of events) and SHALL store event data in the EU.
   _(Resolved: Mixpanel offers EU data residency on the free plan at no extra
@@ -451,8 +473,10 @@ at a screen instead of at the front door.
   | `/matches`                           | cockpit                                        |
   | `/matches/requests/:id`              | one request (pending, or accept/decline)       |
   | `/matches/requests/:id/contact`      | contact detail, accepted requests only         |
+  | `/profile`                           | profile & privacy (R-PROF-1,2)                 |
   | `/admin/applicants`                  | admin approvals                                |
   | `/admin/invites`                     | invite links (R-INV-9)                         |
+  | `/admin/members`                     | members, with GDPR erasure (R-NFR-7)           |
   | `/admin/outbox`                      | dev outbox (dev deployments only)              |
 
 - **R-NAV-5** — WHEN an unauthenticated visitor opens any deep link THE SYSTEM
@@ -590,9 +614,9 @@ _(Decided by the maintainer after trying the redesign: ADR 0023.)_
   labels, cream paper, near-black ink and an ember accent. Fonts SHALL be served
   by the app itself, never from a third-party font host, so no visitor's address
   reaches one.
-- **R-LOOK-2 (Happy mode)** — The header SHALL offer the prototype's "CR" button
-  to switch between the calm default and happy mode, announced as a toggle to
-  assistive technology. The choice SHALL be remembered per browser and SHALL
+- **R-LOOK-2 (Happy mode)** — The header menu (R-PROF-3) SHALL offer a switch
+  between the calm default and happy mode, announced as a switch to assistive
+  technology. _(It replaces the prototype's "CR" button.)_ The choice SHALL be remembered per browser and SHALL
   change colours and decoration only, never content, behaviour or anything
   recorded. IF the browser refuses storage THEN the app SHALL still switch, and
   start calm next time.
