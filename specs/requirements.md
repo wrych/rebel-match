@@ -313,6 +313,20 @@ capability, not a secret** — and every requirement below exists because of tha
   notified of future challenges in it.
 - **R-ASK-10** — Each "same boat" and "been there" peer card SHALL expose a
   **Connect** action governed by the double opt-in flow (§6), not a direct email.
+- **R-ASK-11 (Posting is confirmed)** — WHEN the member confirms the trend THE
+  SYSTEM SHALL open the matches view with a success banner saying the challenge
+  is live and that members who can help will now see it. The banner SHALL show
+  only on that arrival, not when the member returns to the view later.
+- **R-ASK-12 (Purpose in every word)** — The matches view SHALL name its
+  sections by the people in them and what to do with them: _Rebels facing this
+  now — connect and compare notes_, _Rebels who've been there — ask how they
+  solved it_, _Rebel organizations that did it — read how they made the shift_.
+  The "Same boat" and "Been there" labels stay as tags elsewhere (deck, cockpit).
+- **R-ASK-13 (No dead end)** — IF a peer section is empty THE SYSTEM SHALL say
+  that other members will find the challenge, not merely that nobody is there;
+  and IF both peer sections are empty THE SYSTEM SHALL offer a way on to the
+  Offer help deck. It SHALL NOT promise a notification the system does not
+  send.
 
 ---
 
