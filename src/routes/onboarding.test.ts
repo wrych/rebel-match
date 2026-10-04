@@ -22,7 +22,13 @@ const auth = createAuth({
   deliver: () => Promise.resolve(),
   config,
 })
-const draft = { name: 'Door Name', jobTitle: null, org: 'Rebels', sector: null }
+const draft = {
+  name: 'Door Name',
+  jobTitle: null,
+  org: 'Rebels',
+  sector: null,
+  analyticsOptIn: false,
+}
 
 function setup(outcome: OnboardingOutcome = 'done'): {
   app: Express
@@ -53,7 +59,7 @@ async function cookie(): Promise<string> {
 }
 
 describe('GET /api/onboarding', () => {
-  it('pre-fills the form and names the consent version in force (F2)', async () => {
+  it('pre-fills the form and names the consent and analytics words in force (F2)', async () => {
     const response = await request(setup().app)
       .get('/api/onboarding')
       .set('Cookie', await cookie())
@@ -61,6 +67,7 @@ describe('GET /api/onboarding', () => {
     expect(response.body).toEqual({
       ...draft,
       consentVersion: config.consentVersion,
+      analyticsVersion: config.analyticsVersion,
     })
   })
 

@@ -1,6 +1,7 @@
 import { join } from 'node:path'
 import { z } from 'zod'
 import { rolePermissions } from './access.js'
+import { latestAnalyticsVersion } from './analytics-consent.js'
 import { consentWordsOf, latestConsentVersion } from './consent.js'
 import type { DatabaseTarget } from './db/connect.js'
 
@@ -188,6 +189,7 @@ export interface Limits {
 export interface ClientConfig {
   limits: Limits
   consentVersion: string
+  analyticsVersion: string
   feedbackTo: string
 }
 
@@ -210,6 +212,8 @@ export interface Config {
   feedbackTo: string
   seedProfile: Env['SEED_PROFILE']
   consentVersion: string
+  /** The analytics opt-in words in force (R-ANA-4); new words ship as code. */
+  analyticsVersion: string
   analytics: { token?: string; apiHost: string }
   limits: Limits
   rolePermissions: typeof rolePermissions
@@ -270,6 +274,7 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): Config {
     feedbackTo: env.FEEDBACK_TO,
     seedProfile: env.SEED_PROFILE,
     consentVersion: env.CONSENT_VERSION,
+    analyticsVersion: latestAnalyticsVersion,
     analytics: {
       ...(env.MIXPANEL_TOKEN === undefined
         ? {}
@@ -287,6 +292,7 @@ export function clientConfig(config: Config): ClientConfig {
   return {
     limits: config.limits,
     consentVersion: config.consentVersion,
+    analyticsVersion: config.analyticsVersion,
     feedbackTo: config.feedbackTo,
   }
 }

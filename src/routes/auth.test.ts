@@ -22,6 +22,7 @@ const profile: MemberProfile = {
   name: 'Ada',
   onboarded: true,
   consentVersion: '2026-11-01',
+  analyticsOptIn: true,
 }
 
 interface Harness {

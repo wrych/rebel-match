@@ -18,6 +18,7 @@ import { adminRoleRoutes } from './routes/admin-roles.js'
 import { adminWhitelistRoutes } from './routes/admin-whitelist.js'
 import { authRoutes, renewSessions } from './routes/auth.js'
 import { onboardingRoutes } from './routes/onboarding.js'
+import { analyticsConsentRoutes } from './routes/analytics-consent.js'
 import { requestLinkRoutes } from './routes/request-link.js'
 import type { AdmissionService } from './services/admission.js'
 import type { ApprovalService } from './services/approvals.js'
@@ -31,6 +32,7 @@ import type { InviteService } from './services/invites.js'
 import type { OnboardingService } from './services/onboarding.js'
 import type { MemberProfiles } from './services/member-profiles.js'
 import type { OutboxLog } from './services/outbox-log.js'
+import type { AnalyticsConsentService } from './services/analytics-consent.js'
 import type { ErasureService } from './services/erasure.js'
 import type { MemberRoster } from './services/member-roster.js'
 import type { RoleService } from './services/roles.js'
@@ -49,6 +51,7 @@ export interface AppDeps {
   admission: AdmissionService
   approvals: ApprovalService
   onboarding: OnboardingService
+  analyticsConsent: AnalyticsConsentService
   invites: InviteService
   challenges: ChallengeService
   deck: DeckService
@@ -102,6 +105,7 @@ export function createApp(deps: AppDeps): Express {
   app.use(requestLinkRoutes(deps))
   app.use('/api', guardApi(deps))
   app.use(onboardingRoutes(deps))
+  app.use(analyticsConsentRoutes(deps))
   app.use(challengeRoutes(deps))
   app.use(deckRoutes(deps))
   app.use(connectionRoutes(deps))
