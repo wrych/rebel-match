@@ -83,6 +83,7 @@ thresholds have sane defaults in the file and may be overridden by env.
 | `limits.outboxPageSize`        | `100`                         | R-MSG-5                   |
 | `limits.deckPageSize`          | `20`                          | R-OFF-1                   |
 | `limits.whitelistBatchMax`     | `1000`                        | R-AUTH-1                  |
+| `limits.savedTickMs`           | `2500`                        | R-PROF-1                  |
 | `seed.profile`                 | `dev` \| `prod`               | R-SEED-4                  |
 | `analytics.apiHost`            | `api-eu.mixpanel.com`         | R-ANA-5                   |
 | `rolePermissions`              | role → permission matrix (§2) | R-ROLE-3, R-ROLE-6        |
