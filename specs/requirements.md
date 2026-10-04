@@ -689,8 +689,9 @@ _(Decided by the maintainer after trying the redesign: ADR 0023.)_
   a production start without both values SHALL be refused (ADR 0024).
 - **R-NFR-8 (Abuse limits)** — THE SYSTEM SHALL limit the sign-in endpoints
   (ADR 0029), every number configurable (R-CFG-1):
-  - at most 3 link emails per address per 15 minutes; a further request SHALL
-    show the same screen and send nothing, revealing nothing;
+  - per address per 15 minutes, 3 link emails freely; from the 4th to the 10th
+    a request SHALL require the **human check** first (ADR 0030); past 10 it
+    SHALL show the same screen and send nothing, revealing nothing;
   - at most 1000 requests per IP address per 15 minutes across the sign-in
     endpoints; past it the visitor SHALL be asked to try again in a few
     minutes;
