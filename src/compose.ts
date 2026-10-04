@@ -8,7 +8,6 @@ import {
 import { admittedRole } from './access.js'
 import type { AppDeps } from './app.js'
 import {
-  fixedSettings,
   isDevelopmentDeployment,
   type AbuseLimits,
   type Config,
@@ -23,6 +22,8 @@ import { createAdmission } from './services/admission.js'
 import { createApplicantHandles } from './services/applicant-handle.js'
 import { createHumanCheck } from './services/human-check.js'
 import { createPacedGate, type PacedGate } from './services/paced-gate.js'
+import { createSettingOverrideStore } from './services/setting-override-store.js'
+import { createSettings } from './services/settings.js'
 import { createWindowCounter } from './services/rate-limit.js'
 import { createApplicantNotice } from './services/applicant-notice.js'
 import { createApprovalStore } from './services/approval-store.js'
@@ -262,7 +263,10 @@ export function composeApp(
   const mailer = composeMailer(config, db)
   const auth = composeAuth(config, db, mailer)
   const track = composeTrack(config, db, hooks.onAnalyticsError ?? ignoreError)
-  const settings = fixedSettings(config)
+  const settings = createSettings({
+    config,
+    store: createSettingOverrideStore(db),
+  })
 
   return {
     config,

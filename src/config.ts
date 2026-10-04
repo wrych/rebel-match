@@ -132,6 +132,9 @@ const envSchema = z
     // Proxy hops in front of the server whose X-Forwarded-For is believed;
     // 0 uses the socket address, Cloud Run needs 1.
     TRUST_PROXY: z.coerce.number().int().nonnegative().default(0),
+    // How often a server re-reads the values hosts changed in the app
+    // (ADR 0031); the server that saved a change applies it at once.
+    SETTINGS_REFRESH_SECONDS: z.coerce.number().int().positive().default(60),
   })
   .superRefine((env, ctx) => {
     if (env.MAIL_DELIVERY === 'smtp' && env.SMTP_HOST === undefined) {
@@ -251,6 +254,7 @@ export interface Config {
   sessionSecret: string
   sessionTtlDays: number
   outboxPurgeIntervalHours: number
+  settingsRefreshSeconds: number
   mail: {
     delivery: Env['MAIL_DELIVERY']
     from: string
@@ -324,6 +328,7 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): Config {
     sessionSecret: env.SESSION_SECRET,
     sessionTtlDays: env.SESSION_TTL_DAYS,
     outboxPurgeIntervalHours: env.OUTBOX_PURGE_INTERVAL_HOURS,
+    settingsRefreshSeconds: env.SETTINGS_REFRESH_SECONDS,
     mail: {
       delivery: env.MAIL_DELIVERY,
       from: env.MAIL_FROM,

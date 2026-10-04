@@ -38,6 +38,7 @@ describe('applyMigrations on Postgres (ADR 0024)', () => {
     expect(await applyMigrations(connection, MIGRATIONS)).toEqual([
       '0000_baseline.sql',
       '0001_analytics_opt_in.sql',
+      '0002_setting_overrides.sql',
     ])
     expect(await applyMigrations(connection, MIGRATIONS)).toEqual([])
     expect(await tableExists('connection_requests')).toBe(true)

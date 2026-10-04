@@ -56,6 +56,7 @@ describe('migrations', () => {
       'roles',
       'schema_migrations',
       'sessions',
+      'setting_overrides',
       'swipes',
       'trends',
     ])
