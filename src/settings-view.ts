@@ -328,7 +328,7 @@ const catalogue: Group[] = [
         name: 'Hold a member card to start selecting for',
         explanation:
           'How long a host holds a card in the members list before it is selected.',
-        envVar: null,
+        fixed: true,
         read: (c) => c.limits.holdToSelectMs / MS_PER_SECOND,
         unit: ['second', 'seconds'],
       },
