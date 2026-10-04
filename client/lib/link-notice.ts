@@ -4,7 +4,7 @@ const notices = new Map([
   ['unknown', 'That sign-in link is not valid.'],
 ])
 
-/** What to tell someone sent back from `/auth/verify` with a dead link, or
+/** What to tell someone sent back from the sign-in screen with a dead link, or
  * null when they were not (R-AUTH-6). */
 export function linkNotice(search: string): string | null {
   const reason = new URLSearchParams(search).get('link')

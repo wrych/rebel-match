@@ -20,6 +20,7 @@ export interface RouteDef {
 export const routeTable: readonly RouteDef[] = [
   { path: '/', name: 'entry', access: 'public' },
   { path: '/login', name: 'login', access: 'public' },
+  { path: '/sign-in', name: 'sign-in', access: 'public' },
   { path: '/access-requested', name: 'access-requested', access: 'public' },
   { path: '/onboarding', name: 'onboarding', access: 'session' },
   { path: '/welcome', name: 'welcome', access: 'onboarded' },

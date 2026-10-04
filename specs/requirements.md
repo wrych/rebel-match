@@ -107,9 +107,13 @@ Requirements:
     is known. This is a deliberate trade: telling an applicant the truth is worth
     more here than hiding membership of a 350-person invite list. See ADR 0013.
 - **R-AUTH-5** — The magic link SHALL be single-use and SHALL expire (default 15
-  minutes). WHEN a user opens a valid, unexpired, unused link THE SYSTEM SHALL
-  create an authenticated session and consume the token.
-- **R-AUTH-6** — IF a user opens an expired, used, or unknown link THEN THE
+  minutes). **Opening the link SHALL NOT use it:** it SHALL show a sign-in
+  screen, and WHEN the user confirms there with a deliberate action (a button,
+  never a timer or a script) on a valid, unexpired, unused link THE SYSTEM SHALL
+  create an authenticated session and consume the token. _(Chat apps fetch a
+  link to build its preview, and corporate mail scanners open every link in a
+  message; a link used by being opened would arrive spent. ADR 0027.)_
+- **R-AUTH-6** — IF a user confirms an expired, used, or unknown link THEN THE
   SYSTEM SHALL show an error and offer to resend a new link.
 - **R-AUTH-7** — The system SHALL keep the user signed in via a session that
   survives closing and reopening the browser (so a phone user mid-break is not

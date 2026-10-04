@@ -58,7 +58,7 @@ async function send(): Promise<void> {
       <p class="sent-to">{{ email }}</p>
       <p>
         We sent you a sign-in link. It works once, for a short while: open it on
-        this phone and you are in.
+        this phone and tap Sign in.
       </p>
     </div>
   </section>

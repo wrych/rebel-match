@@ -21,6 +21,7 @@ import OfferScreen from './screens/OfferScreen.vue'
 import OutboxScreen from './screens/OutboxScreen.vue'
 import RequestContactScreen from './screens/RequestContactScreen.vue'
 import RequestScreen from './screens/RequestScreen.vue'
+import SignInScreen from './screens/SignInScreen.vue'
 import TrendPickerScreen from './screens/TrendPickerScreen.vue'
 import TrendScreen from './screens/TrendScreen.vue'
 import WelcomeScreen from './screens/WelcomeScreen.vue'
@@ -54,6 +55,7 @@ export const router = createRouter({
   routes: [
     screen('entry', LoginScreen),
     screen('login', LoginScreen),
+    screen('sign-in', SignInScreen),
     screen('access-requested', AccessRequestedScreen),
     screen('onboarding', OnboardingScreen),
     screen('welcome', WelcomeScreen),
