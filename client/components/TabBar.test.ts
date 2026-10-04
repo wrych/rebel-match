@@ -84,6 +84,21 @@ describe('TabBar', () => {
     expect(url.searchParams.get('body')).toContain('Screen: cockpit')
   })
 
+  it('reports the feedback opened, by screen name only (R-ANA-1, ADR 0026)', async () => {
+    const fetchMock = serve(0)
+    const bar = await mountBar()
+
+    await bar.find('a.tab-feedback').trigger('click')
+
+    const [, init] = fetchMock.mock.calls.find(
+      ([url]) => url === '/api/events',
+    ) as [string, RequestInit]
+    expect(JSON.parse(init.body as string)).toEqual({
+      event: 'feedback_opened',
+      props: { screen: 'cockpit' },
+    })
+  })
+
   it('stays away from the welcome screen and asks nothing there', async () => {
     const fetchMock = serve(1)
     route.name = 'welcome'

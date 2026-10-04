@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { z } from 'zod'
 import type { AuthProvider } from '../auth/index.js'
+import { trackNothing, type Track } from '../services/analytics.js'
 import type { Limits } from '../config.js'
 import type {
   OnboardingInput,
@@ -41,6 +42,7 @@ function onboardingBody(limits: TextLimits): z.ZodType<OnboardingInput> {
 export function onboardingRoutes(deps: {
   auth: AuthProvider
   onboarding: OnboardingService
+  track?: Track
   config: {
     limits: TextLimits
     consentVersion: string
@@ -50,6 +52,7 @@ export function onboardingRoutes(deps: {
   const router = Router()
   const guard = requireSession(deps.auth)
   const body = onboardingBody(deps.config.limits)
+  const track = deps.track ?? trackNothing
 
   router.get('/api/onboarding', guard, async (_request, response) => {
     const member = (response.locals as GuardedLocals).member
@@ -77,6 +80,10 @@ export function onboardingRoutes(deps: {
       response.status(409).json({ result: outcome })
       return
     }
+    void track(member.id, {
+      name: 'onboarding_completed',
+      consent_version: input.data.consentVersion,
+    })
     response.status(204).end()
   })
 

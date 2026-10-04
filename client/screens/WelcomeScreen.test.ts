@@ -43,6 +43,29 @@ afterEach(() => {
 })
 
 describe('WelcomeScreen', () => {
+  it.each([
+    ['/ask', 'ask'],
+    ['/offer', 'offer'],
+  ])(
+    'reports the journey chosen through %s (R-ANA-1, ADR 0026)',
+    async (to, journey) => {
+      const fetchMock = signedIn([])
+      const door = (await mountWelcome())
+        .findAllComponents(RouterLinkStub)
+        .find((link) => link.props('to') === to)
+
+      await door?.trigger('click')
+
+      const [, init] = fetchMock.mock.calls.find(
+        ([url]) => url === '/api/events',
+      ) as [string, RequestInit]
+      expect(JSON.parse(init.body as string)).toEqual({
+        event: 'journey_chosen',
+        props: { journey },
+      })
+    },
+  )
+
   it('greets the member by name', async () => {
     signedIn([])
 

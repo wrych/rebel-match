@@ -1,3 +1,4 @@
+import { trackNothing, type Track } from './analytics.js'
 import { detectTrend, type TrendKeywords } from './matcher.js'
 
 /** A trend as screens show it (R-ASK-6). */
@@ -98,13 +99,40 @@ function shown(trend: StoredTrend): Trend {
   }
 }
 
+async function matchesFor(
+  store: ChallengeStore,
+  challenge: Challenge,
+  memberId: string,
+): Promise<Matches | null> {
+  const trendId = challenge.trendId ?? challenge.autoTrend
+  if (trendId === null) return null
+  const trend = (await store.trends()).find((t) => t.id === trendId)
+  if (trend === undefined) return null
+  const [peers, cases] = await Promise.all([
+    store.peers(trendId, memberId),
+    store.cases(trendId),
+  ])
+  return { trend: shown(trend), ...peers, cases }
+}
+
+async function trendDetail(
+  store: ChallengeStore,
+  trendId: string,
+): Promise<TrendDetail | null> {
+  const trend = (await store.trends()).find((t) => t.id === trendId)
+  if (trend === undefined) return null
+  return { trend: shown(trend), cases: await store.cases(trendId) }
+}
+
 /** The Ask journey (F5): a challenge is written, matched to a trend
  * (R-ASK-4,5), confirmed or overridden (R-ASK-6,7), and shown its matches
  * (R-ASK-8). Only the author sees their challenge here: anyone else gets
  * nothing, as for a challenge that does not exist (R-NAV-8). */
 export function createChallenges(deps: {
   store: ChallengeStore
+  track?: Track
 }): ChallengeService {
+  const track = deps.track ?? trackNothing
   const own = async (
     memberId: string,
     id: string,
@@ -121,6 +149,10 @@ export function createChallenges(deps: {
       await deps.store.insert({ id, memberId, body, autoTrend })
       const created = await deps.store.find(id)
       if (created === null) throw new Error('challenge vanished after insert')
+      void track(memberId, {
+        name: 'challenge_submitted',
+        char_count: body.length,
+      })
       return created
     },
     get: own,
@@ -129,26 +161,21 @@ export function createChallenges(deps: {
       if (challenge === null) return 'not_found'
       const known = (await deps.store.trends()).some((t) => t.id === trendId)
       if (!known) return 'unknown_trend'
-      await deps.store.setTrend(id, trendId, trendId !== challenge.autoTrend)
+      const overridden = trendId !== challenge.autoTrend
+      await deps.store.setTrend(id, trendId, overridden)
+      void track(memberId, {
+        name: 'trend_assigned',
+        trend_id: trendId,
+        overridden,
+      })
       return 'saved'
     },
     matches: async (memberId, id) => {
       const challenge = await own(memberId, id)
-      if (challenge === null) return null
-      const trendId = challenge.trendId ?? challenge.autoTrend
-      if (trendId === null) return null
-      const trend = (await deps.store.trends()).find((t) => t.id === trendId)
-      if (trend === undefined) return null
-      const [peers, cases] = await Promise.all([
-        deps.store.peers(trendId, memberId),
-        deps.store.cases(trendId),
-      ])
-      return { trend: shown(trend), ...peers, cases }
+      return challenge === null
+        ? null
+        : matchesFor(deps.store, challenge, memberId)
     },
-    trend: async (trendId) => {
-      const trend = (await deps.store.trends()).find((t) => t.id === trendId)
-      if (trend === undefined) return null
-      return { trend: shown(trend), cases: await deps.store.cases(trendId) }
-    },
+    trend: (trendId) => trendDetail(deps.store, trendId),
   }
 }

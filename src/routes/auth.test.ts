@@ -11,6 +11,7 @@ import { loadConfig } from '../config.js'
 import type { MemberProfile } from '../services/member-profiles.js'
 import { authRoutes, renewSessions } from './auth.js'
 import { configPolicy } from '../permissions.js'
+import type { AnalyticsEvent } from '../services/analytics.js'
 
 const DAY = 86_400_000
 const config = loadConfig({
@@ -32,11 +33,13 @@ interface Harness {
   tokenFor: (next?: string) => Promise<string>
   signIn: (token: string) => request.Test
   advance: (ms: number) => void
+  tracked: [string, AnalyticsEvent][]
 }
 
 function setup(): Harness {
   const clock = { now: new Date('2026-11-08T10:00:00Z') }
   const sent: OutgoingLink[] = []
+  const tracked: [string, AnalyticsEvent][] = []
   const auth = createAuth({
     policy: configPolicy,
     store: createMemoryAuthStore([ada]),
@@ -56,6 +59,10 @@ function setup(): Harness {
       profiles: {
         profile: (id) => Promise.resolve(id === ada.id ? profile : null),
       },
+      track: (memberId, event) => {
+        tracked.push([memberId, event])
+        return Promise.resolve()
+      },
     }),
   )
   const linkFor = async (next?: string): Promise<string> => {
@@ -69,7 +76,7 @@ function setup(): Harness {
   const advance = (ms: number): void => {
     clock.now = new Date(clock.now.getTime() + ms)
   }
-  return { app, auth, linkFor, tokenFor, signIn, advance }
+  return { app, auth, linkFor, tokenFor, signIn, advance, tracked }
 }
 
 function sessionCookie(response: request.Response): string {
@@ -120,6 +127,16 @@ describe('POST /auth/verify', () => {
     expect(response.status).toBe(200)
     expect(response.body).toEqual({ next: '/matches' })
     expect(sessionCookie(response)).toMatch(/^rm_session=.+/)
+  })
+
+  it('reports the sign-in once, and not a refused link (R-ANA-1)', async () => {
+    const { tokenFor, signIn, tracked } = setup()
+    const token = await tokenFor()
+
+    await signIn(token)
+    await signIn(token)
+
+    expect(tracked).toEqual([[ada.id, { name: 'login_completed' }]])
   })
 
   it('sends someone with no next path to the app root (R-NAV-6)', async () => {

@@ -35,6 +35,7 @@ function deps(
     },
     erasure: { erase: () => Promise.resolve('not_found') },
     analyticsConsent: { choose: () => Promise.resolve('done') },
+    track: () => Promise.resolve(),
     roster: { list: () => Promise.resolve([]) },
     whitelist: { add: () => Promise.resolve([]) },
     outbox: {

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import type { AnalyticsEvent } from './analytics.js'
 import type { NewConnection } from './connections.js'
 import { createSwipes, type SwipeAction } from './swipes.js'
 
@@ -7,11 +8,17 @@ function setup(connect: 'created' | 'exists' | 'not_found' = 'created'): {
   recorded: [string, string, SwipeAction][]
   follows: [string, string][]
   requests: [string, NewConnection][]
+  tracked: [string, AnalyticsEvent][]
 } {
+  const tracked: [string, AnalyticsEvent][] = []
   const recorded: [string, string, SwipeAction][] = []
   const follows: [string, string][] = []
   const requests: [string, NewConnection][] = []
   const swipes = createSwipes({
+    track: (memberId, event) => {
+      tracked.push([memberId, event])
+      return Promise.resolve()
+    },
     store: {
       target: (challengeId, viewerId) =>
         Promise.resolve(
@@ -39,10 +46,28 @@ function setup(connect: 'created' | 'exists' | 'not_found' = 'created'): {
       },
     },
   })
-  return { swipes, recorded, follows, requests }
+  return { swipes, recorded, follows, requests, tracked }
 }
 
 describe('createSwipes', () => {
+  it('reports each swipe with its action and the card’s trend (R-ANA-1)', async () => {
+    const { swipes, tracked } = setup()
+
+    await swipes.swipe('m-ada', { challengeId: 'c-bob', action: 'skip' })
+
+    expect(tracked).toEqual([
+      ['m-ada', { name: 'swipe', action: 'skip', trend_id: '06' }],
+    ])
+  })
+
+  it('reports nothing for a card that is not there', async () => {
+    const { swipes, tracked } = setup()
+
+    await swipes.swipe('m-bob', { challengeId: 'c-bob', action: 'skip' })
+
+    expect(tracked).toEqual([])
+  })
+
   it('asks the author to connect on same boat, through the opt-in (R-OFF-3)', async () => {
     const { swipes, recorded, requests } = setup()
 

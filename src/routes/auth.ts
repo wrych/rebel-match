@@ -1,6 +1,7 @@
 import { Router, type RequestHandler, type Response } from 'express'
 import { z } from 'zod'
 import type { AuthProvider, SessionCookie } from '../auth/index.js'
+import { trackNothing, type Track } from '../services/analytics.js'
 import type { MemberProfiles } from '../services/member-profiles.js'
 import { safeNextPath } from '../routes.js'
 
@@ -27,7 +28,9 @@ export function renewSessions(auth: AuthProvider): RequestHandler {
 export function authRoutes(deps: {
   auth: AuthProvider
   profiles: MemberProfiles
+  track?: Track
 }): Router {
+  const track = deps.track ?? trackNothing
   const router = Router()
 
   // Links sent before ADR 0027 point here. Opening one must not use it, so
@@ -51,6 +54,7 @@ export function authRoutes(deps: {
       return
     }
     setCookie(response, await deps.auth.createSession(result.memberId))
+    void track(result.memberId, { name: 'login_completed' })
     response.json({ next: safeNextPath(result.next) })
   })
 

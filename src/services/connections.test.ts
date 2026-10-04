@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import type { AnalyticsEvent } from './analytics.js'
 import {
   createConnections,
   type ConnectionRecord,
@@ -91,11 +92,20 @@ function fakeStore(): ConnectionStore & {
 function setup(): {
   service: ReturnType<typeof createConnections>
   store: ReturnType<typeof fakeStore>
+  tracked: [string, AnalyticsEvent][]
 } {
   let n = 0
+  const tracked: [string, AnalyticsEvent][] = []
   const store = fakeStore()
-  const service = createConnections({ store, newId: () => `r-${String(++n)}` })
-  return { service, store }
+  const service = createConnections({
+    store,
+    newId: () => `r-${String(++n)}`,
+    track: (memberId, event) => {
+      tracked.push([memberId, event])
+      return Promise.resolve()
+    },
+  })
+  return { service, store, tracked }
 }
 
 const sameBoat = {
@@ -175,6 +185,20 @@ describe('the double opt-in (ADR 0004)', () => {
       result: 'not_found',
     })
     expect(store.rows.size).toBe(0)
+  })
+
+  it('reports a created request and its answer, not a repeat (R-ANA-1)', async () => {
+    const { service, tracked } = setup()
+
+    await service.request('m-ada', sameBoat)
+    await service.request('m-ada', sameBoat)
+    await service.respond('m-eve', 'r-1', 'accepted')
+    await service.respond('m-bob', 'r-1', 'accepted')
+
+    expect(tracked).toEqual([
+      ['m-ada', { name: 'connection_requested', kind: 'same_boat' }],
+      ['m-bob', { name: 'connection_responded', status: 'accepted' }],
+    ])
   })
 
   it('lets only the target answer, and only once (R-CONN-3,4)', async () => {
