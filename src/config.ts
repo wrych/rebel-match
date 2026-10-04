@@ -18,6 +18,8 @@ const ORG_MAX_CHARS = 160
 const SECTOR_MAX_CHARS = 160
 // invites.label, and a cap on invites.max_uses (src/db/schema.ts).
 const INVITE_LABEL_MAX_CHARS = 120
+/** How long a "Saved" tick stays beside a setting (R-PROF-1). */
+const SAVED_TICK_MS = 2500
 const INVITE_MAX_USES_CEILING = 0xffffffff
 // connection_requests.message (src/db/schema.ts).
 const CONNECTION_MESSAGE_MAX_CHARS = 600
@@ -180,6 +182,7 @@ export interface Limits {
   orgMaxChars: number
   sectorMaxChars: number
   inviteLabelMaxChars: number
+  savedTickMs: number
   inviteMaxUsesCeiling: number
   connectionMessageMaxChars: number
 }
@@ -236,6 +239,7 @@ function limitsFrom(env: Env): Limits {
     orgMaxChars: ORG_MAX_CHARS,
     sectorMaxChars: SECTOR_MAX_CHARS,
     inviteLabelMaxChars: INVITE_LABEL_MAX_CHARS,
+    savedTickMs: SAVED_TICK_MS,
     inviteMaxUsesCeiling: INVITE_MAX_USES_CEILING,
     connectionMessageMaxChars: CONNECTION_MESSAGE_MAX_CHARS,
   }

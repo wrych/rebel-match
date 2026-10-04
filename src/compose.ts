@@ -54,6 +54,7 @@ import { createOutboxStore } from './services/outbox-store.js'
 import { createErasureService } from './services/erasure.js'
 import { createErasureStore } from './services/erasure-store.js'
 import { createMemberRoster } from './services/member-roster-store.js'
+import { createProfileStore } from './services/profile-store.js'
 import { createWhitelist } from './services/whitelist.js'
 import { createWhitelistStore } from './services/whitelist-store.js'
 import { createRoleGrantStore } from './services/role-grant-store.js'
@@ -221,6 +222,7 @@ export function composeApp(
       consentVersion: config.consentVersion,
       analyticsVersion: config.analyticsVersion,
     }),
+    profile: createProfileStore(db, config.analyticsVersion),
     ...composeMembershipAdmin(db, auth),
     outbox: createOutboxLog(db),
     ...composeAdmission(config, db, auth, mailer),

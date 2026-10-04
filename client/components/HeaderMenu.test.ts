@@ -58,6 +58,10 @@ function paths(menu: ReturnType<typeof mount>): unknown[] {
     .map((link) => link.props('to') as unknown)
 }
 
+function hostPaths(menu: ReturnType<typeof mount>): unknown[] {
+  return paths(menu).filter((to) => String(to).startsWith('/admin/'))
+}
+
 afterEach(() => {
   vi.unstubAllGlobals()
   document.body.innerHTML = ''
@@ -87,7 +91,7 @@ describe('HeaderMenu', () => {
   it('offers each host tool by the permission it needs (R-ROLE-4)', async () => {
     signedIn(['applicant:review', 'outbox:read'])
 
-    expect(paths(await opened())).toEqual([
+    expect(hostPaths(await opened())).toEqual([
       '/admin/applicants',
       '/admin/outbox',
     ])
@@ -97,8 +101,14 @@ describe('HeaderMenu', () => {
     signedIn([])
     const menu = await opened()
 
-    expect(paths(menu)).toEqual([])
+    expect(hostPaths(menu)).toEqual([])
     expect(menu.text()).not.toContain('Host tools')
+  })
+
+  it('leads an onboarded member to Profile & privacy (R-PROF-3)', async () => {
+    signedIn([])
+
+    expect(paths(await opened())).toContain('/profile')
   })
 
   it('offers only the colour mode to nobody signed in', async () => {
@@ -107,6 +117,7 @@ describe('HeaderMenu', () => {
 
     expect(menu.find('[role="switch"]').exists()).toBe(true)
     expect(menu.text()).not.toContain('Sign out')
+    expect(paths(menu)).toEqual([])
   })
 
   it('signs out on the server, then goes to the login screen', async () => {

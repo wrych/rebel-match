@@ -7,9 +7,14 @@ export const analyticsTexts: Readonly<Record<string, readonly string[]>> = {
     'These records go to Mixpanel, stored in the EU, under a random code instead of your name. They never contain your name, email address, organization or the words of your challenges.',
     'Leave it unticked and nothing about you is recorded. You can change your mind at any time on the welcome screen.',
   ],
+  '2026-10-05': [
+    'Optional. If you tick this, we record which screens and buttons you use, for example that you submitted a challenge or swiped a card, so we can see what works and what does not.',
+    'These records go to Mixpanel, stored in the EU, under a random code instead of your name. They never contain your name, email address, organization or the words of your challenges.',
+    'Leave it unticked and nothing about you is recorded. You can change your mind at any time under Profile & privacy, in the menu.',
+  ],
 }
 
-export const latestAnalyticsVersion = '2026-10-04'
+export const latestAnalyticsVersion = '2026-10-05'
 
 /** The words of a version, or none for a version without words. */
 export function analyticsWordsOf(version: string): readonly string[] {

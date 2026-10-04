@@ -37,6 +37,10 @@ function deps(
     analyticsConsent: { choose: () => Promise.resolve('done') },
     track: () => Promise.resolve(),
     roster: { list: () => Promise.resolve([]) },
+    profile: {
+      own: () => Promise.resolve(null),
+      update: () => Promise.resolve(),
+    },
     whitelist: { add: () => Promise.resolve([]) },
     outbox: {
       list: () => Promise.resolve([]),

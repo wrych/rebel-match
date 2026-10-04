@@ -13,7 +13,10 @@ function server(status = 204): ReturnType<typeof vi.fn> {
         : {
             ok: true,
             status: 200,
-            json: async () => ({ analyticsVersion: latestAnalyticsVersion }),
+            json: async () => ({
+              analyticsVersion: latestAnalyticsVersion,
+              limits: { savedTickMs: 2500 },
+            }),
           },
     ),
   )
@@ -63,7 +66,7 @@ describe('AnalyticsToggle', () => {
       optIn: true,
       version: latestAnalyticsVersion,
     })
-    expect(toggle.find('[role="status"]').text()).toContain('now count')
+    expect(toggle.find('[role="status"]').text()).toContain('Saved')
   })
 
   it('withdraws as easily as it was given (R-ANA-4)', async () => {
@@ -74,7 +77,7 @@ describe('AnalyticsToggle', () => {
     await flushPromises()
 
     expect(putBody(fetchMock)).toEqual({ optIn: false })
-    expect(toggle.find('[role="status"]').text()).toContain('nothing about you')
+    expect(toggle.find('[role="status"]').text()).toContain('Saved')
   })
 
   it('puts the box back and says so when saving fails', async () => {

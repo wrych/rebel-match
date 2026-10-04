@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import AnalyticsToggle from '../components/AnalyticsToggle.vue'
 import { reportEvent } from '../lib/events'
 import { loadMe, type Me } from '../lib/session'
 
@@ -45,7 +44,5 @@ function chose(journey: 'ask' | 'offer'): void {
     </div>
 
     <RouterLink to="/matches" class="row-link">Your matches</RouterLink>
-
-    <AnalyticsToggle v-if="me" :opted-in="me.analyticsOptIn" />
   </section>
 </template>

@@ -20,6 +20,7 @@ import { authRoutes, renewSessions } from './routes/auth.js'
 import { onboardingRoutes } from './routes/onboarding.js'
 import { analyticsConsentRoutes } from './routes/analytics-consent.js'
 import { eventRoutes } from './routes/events.js'
+import { profileRoutes } from './routes/profile.js'
 import { requestLinkRoutes } from './routes/request-link.js'
 import type { AdmissionService } from './services/admission.js'
 import type { ApprovalService } from './services/approvals.js'
@@ -37,6 +38,7 @@ import type { AnalyticsConsentService } from './services/analytics-consent.js'
 import type { Track } from './services/analytics.js'
 import type { ErasureService } from './services/erasure.js'
 import type { MemberRoster } from './services/member-roster.js'
+import type { ProfileStore } from './services/profile.js'
 import type { RoleService } from './services/roles.js'
 import type { WhitelistService } from './services/whitelist.js'
 
@@ -48,6 +50,7 @@ export interface AppDeps {
   roles: RoleService
   erasure: ErasureService
   roster: MemberRoster
+  profile: ProfileStore
   whitelist: WhitelistService
   outbox: OutboxLog
   admission: AdmissionService
@@ -110,6 +113,7 @@ export function createApp(deps: AppDeps): Express {
   app.use(onboardingRoutes(deps))
   app.use(analyticsConsentRoutes(deps))
   app.use(eventRoutes(deps))
+  app.use(profileRoutes(deps))
   app.use(challengeRoutes(deps))
   app.use(deckRoutes(deps))
   app.use(connectionRoutes(deps))
