@@ -260,8 +260,30 @@ capability, not a secret** — and every requirement below exists because of tha
 - **R-PROF-2** — The profile screen SHALL show the data-usage consent the member
   accepted, read-only, with its version and the time they accepted it (R-NFR-6),
   and SHALL carry the **analytics opt-in**, given or withdrawn there (R-ANA-4).
-  It SHALL say how to leave: by emailing the host, who erases the account
-  (R-NFR-7). Self-service deletion stays post-beta (C4).
+  It SHALL offer **deleting one's own account** (C4): after one confirmation
+  that says what goes and that it cannot be undone, the account and everything
+  R-NFR-7 lists are erased and the member is signed out. Deletion SHALL be
+  refused, saying why and what to do, while the member is the last who can grant
+  roles (R-ROLE-9) or invite links they created remain.
+- **R-MEM-1 (Member cards)** — The host tools' members list SHALL show each
+  member as a card with the same lines the app shows a person by elsewhere —
+  the name, then job title · organization · sector, leaving out what they did
+  not give — and below them the email, roles and status. Search by email or
+  name stays.
+- **R-MEM-2 (A member's page)** — Tapping a card SHALL open that member's own
+  page in the host tools, at its own URL, showing everything held about them:
+  name, job title, organization, sector, email, status, roles, when and through
+  which invite they joined, the consent version they accepted and when, the
+  analytics opt-in, and how many challenges and connection requests they have.
+  From there a host SHALL be able to change their roles (R-ROLE-9) and delete
+  them (R-NFR-7), each within the host's own permissions; later member actions
+  belong on this page.
+- **R-MEM-3 (Selecting several)** — Holding a card, or a Select button for
+  those who cannot hold, SHALL start selecting; each tap then selects or
+  deselects a card. Actions SHALL apply to every selected member: give a role,
+  take a role away, and delete after one confirmation that says how many. Each
+  member's outcome SHALL be reported, and one refused (the last admin, say)
+  SHALL NOT stop the rest.
 - **R-PROF-3** — The header SHALL carry a **menu** in place of the "CR" mark,
   offering: the colour mode switch (R-LOOK-2), the profile screen, the host tools
   the member's permissions allow (R-ROLE-4), and sign out. The menu holds links
@@ -490,7 +512,8 @@ at a screen instead of at the front door.
   | `/profile`                           | profile & privacy (R-PROF-1,2)                 |
   | `/admin/applicants`                  | admin approvals                                |
   | `/admin/invites`                     | invite links (R-INV-9)                         |
-  | `/admin/members`                     | members, with GDPR erasure (R-NFR-7)           |
+  | `/admin/members`                     | members (R-MEM-1,3, R-NFR-7)                   |
+  | `/admin/members/:id`                 | a member's page (R-MEM-2)                      |
   | `/admin/settings`                    | the configuration (R-CFG-5,6)                  |
   | `/admin/outbox`                      | dev outbox (dev deployments only)              |
 
