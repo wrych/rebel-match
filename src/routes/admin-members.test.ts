@@ -5,7 +5,7 @@ import { createAuth, createMemoryAuthStore } from '../auth/index.js'
 import { loadConfig } from '../config.js'
 import { configPolicy } from '../permissions.js'
 import type { EraseOutcome } from '../services/erasure.js'
-import type { RosterMember } from '../services/member-roster.js'
+import type { RosterMember, MemberDetail } from '../services/member-roster.js'
 import { adminMemberRoutes } from './admin-members.js'
 
 const config = loadConfig({
@@ -26,9 +26,25 @@ const listed: RosterMember = {
   id: 'm-member',
   email: 'm@example.invalid',
   name: 'Mia',
+  jobTitle: 'Coach',
+  org: 'Buurtzorg',
+  sector: null,
   status: 'active',
   roles: ['member'],
   joinedAt: '2026-10-01T09:00:00.000Z',
+}
+
+const detail: MemberDetail = {
+  ...listed,
+  requestedName: null,
+  requestedOrg: null,
+  joinedVia: 'Summit 2026 — main stage',
+  consentVersion: '2026-11-01',
+  consentAt: '2026-10-01T09:05:00.000Z',
+  analyticsOptIn: false,
+  challenges: 2,
+  requestsSent: 1,
+  requestsReceived: 0,
 }
 
 function setup(outcome: EraseOutcome = 'erased'): {
@@ -46,7 +62,10 @@ function setup(outcome: EraseOutcome = 'erased'): {
           return Promise.resolve(outcome)
         },
       },
-      roster: { list: () => Promise.resolve([listed]) },
+      roster: {
+        list: () => Promise.resolve([listed]),
+        detail: (id) => Promise.resolve(id === listed.id ? detail : null),
+      },
     }),
   )
   return { app, erased }
@@ -122,6 +141,39 @@ describe('GET /api/admin/members', () => {
 
     const response = await request(app)
       .get('/api/admin/members')
+      .set('Cookie', await cookieFor('m-member'))
+
+    expect(response.status).toBe(404)
+  })
+})
+
+describe('GET /api/admin/members/:id', () => {
+  it('shows everything held about the member to an admin (R-MEM-2)', async () => {
+    const { app } = setup()
+
+    const response = await request(app)
+      .get('/api/admin/members/m-member')
+      .set('Cookie', await cookieFor('m-admin'))
+
+    expect(response.status).toBe(200)
+    expect(response.body).toEqual({ member: detail })
+  })
+
+  it('is not found for an unknown member', async () => {
+    const { app } = setup()
+
+    const response = await request(app)
+      .get('/api/admin/members/m-nobody')
+      .set('Cookie', await cookieFor('m-admin'))
+
+    expect(response.status).toBe(404)
+  })
+
+  it('is not found for a member without member:delete (R-NAV-8)', async () => {
+    const { app } = setup()
+
+    const response = await request(app)
+      .get('/api/admin/members/m-member')
       .set('Cookie', await cookieFor('m-member'))
 
     expect(response.status).toBe(404)

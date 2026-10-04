@@ -136,6 +136,7 @@ function composeJourneys(
 }
 
 function composeMembershipAdmin(
+  config: Config,
   db: Database,
   auth: AuthProvider,
 ): Pick<AppDeps, 'roles' | 'erasure' | 'roster' | 'whitelist'> {
@@ -148,7 +149,7 @@ function composeMembershipAdmin(
       store: createErasureStore(db),
       policy: configPolicy,
     }),
-    roster: createMemberRoster(db),
+    roster: createMemberRoster(db, config.analyticsVersion),
     whitelist: createWhitelist({
       store: createWhitelistStore(db),
       auth,
@@ -248,7 +249,7 @@ export function composeApp(
       analyticsVersion: config.analyticsVersion,
     }),
     profile: createProfileStore(db, config.analyticsVersion),
-    ...composeMembershipAdmin(db, auth),
+    ...composeMembershipAdmin(config, db, auth),
     outbox: createOutboxLog(db),
     ...composeAdmission(config, db, auth, mailer),
     onboarding: createOnboarding({

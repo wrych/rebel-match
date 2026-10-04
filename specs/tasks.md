@@ -196,7 +196,7 @@ printed dev link (R-DEV-6).
 - [x] Feedback mailto. _(S5, R-FB-1)_ To `FEEDBACK_TO`, required in production.
 - [x] Admin GDPR delete: member plus challenges, requests, swipes, follows, role
       grants and outbound log entries, in one transaction. _(R-NFR-7, R-MSG-6)_
-- [ ] Member cards in the host tools, and a member's page with roles and
+- [x] Member cards in the host tools, and a member's page with roles and
       delete. _(R-MEM-1,2)_
 - [ ] Select several members by holding a card; give or take a role, or delete
       them. _(R-MEM-3)_
