@@ -274,10 +274,12 @@ export function clientConfig(config: Config): ClientConfig {
 }
 
 /** A development deployment: NODE_ENV=development with delivery off, so mail
- * cannot leave the machine. The only place the outbound log may keep a usable
- * link (R-DEV-1, R-MSG-4). */
-export function isDevelopmentDeployment(
-  config: Pick<Config, 'env' | 'mail'>,
-): boolean {
+ * cannot leave the server and it holds only fictional people, wherever it
+ * runs. The only place the outbound log may keep a usable link (R-DEV-1,
+ * R-MSG-4, requirements §8c). */
+export function isDevelopmentDeployment(config: {
+  env: Config['env']
+  mail: Pick<Config['mail'], 'delivery'>
+}): boolean {
   return config.env === 'development' && config.mail.delivery === 'none'
 }
