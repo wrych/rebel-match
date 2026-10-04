@@ -5,6 +5,7 @@ import {
   companySizeKeys,
   companySizes,
   pickedOrBlank,
+  sectorKeys,
   sectors,
 } from '../../src/profile-options'
 import AnalyticsToggle from '../components/AnalyticsToggle.vue'
@@ -68,7 +69,7 @@ onMounted(async () => {
     limits.value = config.limits
     leaveTo.value = config.feedbackTo
     for (const field of fields) form[field] = own[field] ?? ''
-    form.sector = pickedOrBlank(own.sector, sectors)
+    form.sector = pickedOrBlank(own.sector, sectorKeys)
     form.companySize = pickedOrBlank(own.companySize, companySizeKeys)
     Object.assign(saved, form)
   } catch {
@@ -184,8 +185,12 @@ function save(field: Field): Promise<void> {
             @change="save('sector')"
           >
             <option value="">Not given</option>
-            <option v-for="choice in sectors" :key="choice" :value="choice">
-              {{ choice }}
+            <option
+              v-for="choice in sectors"
+              :key="choice.key"
+              :value="choice.key"
+            >
+              {{ choice.label }}
             </option>
           </select>
           <p v-if="errors.sector" class="alert" role="alert">

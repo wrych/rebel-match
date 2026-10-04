@@ -12,6 +12,7 @@ import type {
   ConnectionStore,
   ConnectionView,
 } from './connections.js'
+import { companySizeLabel, sectorLabel } from './profile-labels.js'
 
 function recordOf(row: typeof r.$inferSelect): ConnectionRecord {
   return {
@@ -50,8 +51,8 @@ async function views(
         name: members.name,
         jobTitle: members.jobTitle,
         org: members.org,
-        sector: members.sector,
-        companySize: members.companySize,
+        sector: sectorLabel,
+        companySize: companySizeLabel,
       },
       challenge: { id: challenges.id, body: challenges.body },
       trendShort: trends.short,

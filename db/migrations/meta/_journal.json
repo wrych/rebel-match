@@ -22,6 +22,13 @@
       "when": 1791143021748,
       "tag": "0002_company_size",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791145067370,
+      "tag": "0003_profile_lists",
+      "breakpoints": true
     }
   ]
 }

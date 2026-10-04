@@ -13,6 +13,7 @@ import type {
   PeerCard,
   StoredTrend,
 } from './challenges.js'
+import { companySizeLabel, sectorLabel } from './profile-labels.js'
 
 /** The trend a challenge sits in: the confirmed one, else the matcher's. */
 export const challengeTrend = sql<
@@ -26,8 +27,8 @@ const peerColumns = {
   name: members.name,
   jobTitle: members.jobTitle,
   org: members.org,
-  sector: members.sector,
-  companySize: members.companySize,
+  sector: sectorLabel,
+  companySize: companySizeLabel,
 }
 
 const peerFilter = (viewerId: string): SQL | undefined =>

@@ -1,4 +1,4 @@
-import { mkdtemp, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { sql } from 'drizzle-orm'
@@ -39,6 +39,7 @@ describe('applyMigrations on Postgres (ADR 0024)', () => {
       '0000_baseline.sql',
       '0001_analytics_opt_in.sql',
       '0002_company_size.sql',
+      '0003_profile_lists.sql',
     ])
     expect(await applyMigrations(connection, MIGRATIONS)).toEqual([])
     expect(await tableExists('connection_requests')).toBe(true)
@@ -63,6 +64,61 @@ describe('applyMigrations on Postgres (ADR 0024)', () => {
       sql`SELECT name FROM schema_migrations`,
     )
     expect(ledger).toEqual([])
+  })
+})
+
+describe('the profile lists migration (R-ONB-2)', () => {
+  async function copied(names: string[]): Promise<Record<string, string>> {
+    const files: Record<string, string> = {}
+    for (const name of names)
+      files[name] = await readFile(join(MIGRATIONS, name), 'utf8')
+    return files
+  }
+
+  it('keeps listed values as keys and clears everything off the lists', async () => {
+    const before = await copied([
+      '0000_baseline.sql',
+      '0001_analytics_opt_in.sql',
+      '0002_company_size.sql',
+    ])
+    const dir = await scratchDir(before)
+    await applyMigrations(connection, dir)
+    await connection.db.execute(sql`
+      INSERT INTO members (id, email, analytics_id, sector, company_size) VALUES
+        ('a', 'a@example.invalid', 'aa', 'Software & technology', '251-1000'),
+        ('b', 'b@example.invalid', 'bb', 'Software · 260', '260'),
+        ('c', 'c@example.invalid', 'cc', NULL, NULL)`)
+    await writeFile(
+      join(dir, '0003_profile_lists.sql'),
+      (await copied(['0003_profile_lists.sql']))['0003_profile_lists.sql']!,
+    )
+
+    await applyMigrations(connection, dir)
+
+    expect(
+      await connection.rows(
+        sql`SELECT id, sector, company_size FROM members ORDER BY id`,
+      ),
+    ).toEqual([
+      { id: 'a', sector: 'software-technology', company_size: '251-1000' },
+      { id: 'b', sector: null, company_size: null },
+      { id: 'c', sector: null, company_size: null },
+    ])
+  })
+
+  it('refuses a sector or company size off the lists from then on', async () => {
+    await applyMigrations(connection, MIGRATIONS)
+
+    await expect(
+      connection.db.execute(sql`
+        INSERT INTO members (id, email, analytics_id, sector)
+        VALUES ('a', 'a@example.invalid', 'aa', 'Health')`),
+    ).rejects.toThrow()
+    await expect(
+      connection.db.execute(sql`
+        INSERT INTO members (id, email, analytics_id, company_size)
+        VALUES ('a', 'a@example.invalid', 'aa', '260')`),
+    ).rejects.toThrow()
   })
 })
 

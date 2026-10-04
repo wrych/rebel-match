@@ -140,7 +140,7 @@ describe('peerLine', () => {
     jobTitle: 'Coach',
     org: 'Buurtzorg',
     sector: 'Healthcare',
-    companySize: '1001+',
+    companySize: '1,001+ employees',
     note: 'Teams of 12.',
   }
 

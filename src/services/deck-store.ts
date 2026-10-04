@@ -3,6 +3,7 @@ import type { Database } from '../db/connect.js'
 import { challenges, members, swipes, trends } from '../db/schema.js'
 import { challengeTrend } from './challenge-store.js'
 import type { DeckStore } from './deck.js'
+import { companySizeLabel, sectorLabel } from './profile-labels.js'
 
 const cardColumns = {
   challengeId: challenges.id,
@@ -12,8 +13,8 @@ const cardColumns = {
   name: members.name,
   jobTitle: members.jobTitle,
   org: members.org,
-  sector: members.sector,
-  companySize: members.companySize,
+  sector: sectorLabel,
+  companySize: companySizeLabel,
 }
 
 /** The deck over Postgres. Selects no email column (R-CONN-6); the swipe

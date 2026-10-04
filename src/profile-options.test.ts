@@ -1,32 +1,22 @@
 import { describe, expect, it } from 'vitest'
 import {
   companySizeKeys,
-  companySizeLabel,
   companySizes,
   pickedOrBlank,
-  sectors,
+  sectorKeys,
 } from './profile-options.js'
 
 describe('company sizes', () => {
-  it('offer at most five bands (R-ONB-2)', () => {
+  it('offer at most five bands, each read as employees (R-ONB-2)', () => {
     expect(companySizes.length).toBeLessThanOrEqual(5)
-  })
-
-  it('read as employees on a card', () => {
-    expect(companySizeLabel('11-50')).toBe('11–50 employees')
-    expect(companySizeLabel('1001+')).toBe('1,001+ employees')
-  })
-
-  it('read as nothing for none or a key not on the list', () => {
-    expect(companySizeLabel(null)).toBeNull()
-    expect(companySizeLabel('260')).toBeNull()
+    for (const size of companySizes) expect(size.label).toMatch(/ employees$/)
   })
 })
 
 describe('pickedOrBlank', () => {
-  it('keeps a value on the list and blanks one that is not', () => {
-    expect(pickedOrBlank('Retail', sectors)).toBe('Retail')
-    expect(pickedOrBlank('Software · 260', sectors)).toBe('')
+  it('keeps a key on the list and blanks one that is not', () => {
+    expect(pickedOrBlank('retail', sectorKeys)).toBe('retail')
+    expect(pickedOrBlank('Software · 260', sectorKeys)).toBe('')
     expect(pickedOrBlank(null, companySizeKeys)).toBe('')
   })
 })

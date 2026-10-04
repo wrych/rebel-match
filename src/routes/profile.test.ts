@@ -98,11 +98,11 @@ describe('PUT /api/profile', () => {
     const response = await request(app)
       .put('/api/profile')
       .set('Cookie', await cookie())
-      .send({ name: 'Ada', sector: 'Retail', companySize: '1001+' })
+      .send({ name: 'Ada', sector: 'retail', companySize: '1001+' })
 
     expect(response.status).toBe(204)
     expect(edits[0]?.edit).toMatchObject({
-      sector: 'Retail',
+      sector: 'retail',
       companySize: '1001+',
     })
   })

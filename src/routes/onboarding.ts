@@ -7,7 +7,7 @@ import type {
   OnboardingInput,
   OnboardingService,
 } from '../services/onboarding.js'
-import { companySizeKeys, sectors } from '../profile-options.js'
+import { companySizeKeys, sectorKeys } from '../profile-options.js'
 import { displayName, optionalChoice, optionalText } from './profile-fields.js'
 import { requireSession, type GuardedLocals } from './require-permission.js'
 
@@ -21,7 +21,7 @@ function onboardingBody(limits: TextLimits): z.ZodType<OnboardingInput> {
     name: displayName(limits.nameMaxChars),
     jobTitle: optionalText(limits.jobTitleMaxChars),
     org: optionalText(limits.orgMaxChars),
-    sector: optionalChoice(sectors),
+    sector: optionalChoice(sectorKeys),
     companySize: optionalChoice(companySizeKeys),
     consentVersion: z.string().min(1),
     analyticsVersion: z.string().min(1).optional(),

@@ -95,7 +95,7 @@ describe('POST /api/onboarding', () => {
         name: '  Ada  ',
         jobTitle: '',
         org: 'Rebels',
-        sector: 'Healthcare',
+        sector: 'healthcare',
         companySize: '51-250',
         consentVersion: config.consentVersion,
       })
@@ -108,7 +108,7 @@ describe('POST /api/onboarding', () => {
           name: 'Ada',
           jobTitle: undefined,
           org: 'Rebels',
-          sector: 'Healthcare',
+          sector: 'healthcare',
           companySize: '51-250',
           consentVersion: config.consentVersion,
         },

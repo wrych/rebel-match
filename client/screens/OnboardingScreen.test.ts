@@ -15,7 +15,7 @@ const draft = {
   name: 'Door Name',
   jobTitle: null,
   org: 'Door Org',
-  sector: 'Healthcare',
+  sector: 'healthcare',
   companySize: null,
   consentVersion: latestConsentVersion,
   analyticsVersion: latestAnalyticsVersion,
@@ -109,7 +109,7 @@ describe('OnboardingScreen', () => {
       name: 'Door Name',
       jobTitle: 'Coach',
       org: 'Door Org',
-      sector: 'Healthcare',
+      sector: 'healthcare',
       companySize: '51-250',
       consentVersion: latestConsentVersion,
     })
@@ -122,7 +122,7 @@ describe('OnboardingScreen', () => {
 
     const sector = screen.find('#sector').element as HTMLSelectElement
     const size = screen.find('#company-size').element as HTMLSelectElement
-    expect(sector.value).toBe('Healthcare')
+    expect(sector.value).toBe('healthcare')
     expect(size.value).toBe('')
     expect([...size.options].map((option) => option.text)).toEqual([
       'Not given',

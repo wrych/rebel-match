@@ -61,6 +61,18 @@ describe('the swipe deck over Postgres (F6)', () => {
     expect(JSON.stringify(cards)).not.toContain('@')
   })
 
+  it('shows the sector and company size by label, not key (R-OFF-2)', async () => {
+    const cards = await deal()
+
+    expect(
+      cards.find((c) => c.author.name === 'Priya Raman')?.author,
+    ).toMatchObject({
+      org: 'Kestrel Digital',
+      sector: 'Software & technology',
+      companySize: '251–1,000 employees',
+    })
+  })
+
   it('never deals a card again once it was swiped (R-OFF-2)', async () => {
     const [first] = await deal()
     await db.query(

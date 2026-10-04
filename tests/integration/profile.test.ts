@@ -26,7 +26,7 @@ beforeAll(async () => {
   await db.query(
     'INSERT INTO members (id, email, name, job_title, org, sector, ' +
       'company_size, status, consent_version, consent_at, analytics_id) ' +
-      "VALUES (?, ?, 'Ada', 'Coach', 'Old Org', 'Healthcare', '51-250', " +
+      "VALUES (?, ?, 'Ada', 'Coach', 'Old Org', 'healthcare', '51-250', " +
       "'active', ?, now(), ?)",
     [member.id, member.email, config.consentVersion, randomUUID()],
   )
@@ -51,7 +51,7 @@ describe('the profile over Postgres (R-PROF-1,2)', () => {
       name: 'Ada',
       jobTitle: 'Coach',
       org: 'Old Org',
-      sector: 'Healthcare',
+      sector: 'healthcare',
       companySize: '51-250',
       email: member.email,
       consentVersion: config.consentVersion,
@@ -69,7 +69,7 @@ describe('the profile over Postgres (R-PROF-1,2)', () => {
         name: 'Ada Rebel',
         jobTitle: '',
         org: 'New Org',
-        sector: 'Retail',
+        sector: 'retail',
         companySize: '',
       })
       .expect(204)
@@ -83,7 +83,7 @@ describe('the profile over Postgres (R-PROF-1,2)', () => {
       name: 'Ada Rebel',
       job_title: null,
       org: 'New Org',
-      sector: 'Retail',
+      sector: 'retail',
       company_size: null,
       email: member.email,
     })

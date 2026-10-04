@@ -51,8 +51,16 @@ export interface SeedExpertise {
   note: string
 }
 
+/** A pick list entry, keyed by `key` (R-ONB-2, design §2). */
+export interface SeedOption {
+  key: string
+  label: string
+}
+
 export interface SeedPlan {
   roles: SeedRole[]
+  sectors: readonly SeedOption[]
+  companySizes: readonly SeedOption[]
   trends: SeedTrend[]
   cases: SeedCase[]
   members: SeedMember[]

@@ -1,4 +1,3 @@
-import { companySizeLabel } from '../../src/profile-options'
 import type { DeckCard } from '../../src/services/deck'
 import type { SwipeAction } from '../../src/services/swipes'
 
@@ -42,11 +41,7 @@ export async function answerCard(
 
 /** Who wrote a card, as one line: organization, sector and company size. */
 export function authorLine(card: DeckCard): string {
-  return [
-    card.author.org,
-    card.author.sector,
-    companySizeLabel(card.author.companySize),
-  ]
+  return [card.author.org, card.author.sector, card.author.companySize]
     .filter((part): part is string => part !== null && part !== '')
     .join(' · ')
 }

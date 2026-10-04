@@ -1,4 +1,3 @@
-import { companySizeLabel } from '../../src/profile-options'
 import type {
   Challenge,
   Matches,
@@ -76,12 +75,7 @@ export async function fetchTrendDetail(
 export function peerLine(
   peer: Pick<PeerCard, 'jobTitle' | 'org' | 'sector' | 'companySize'>,
 ): string {
-  return [
-    peer.jobTitle,
-    peer.org,
-    peer.sector,
-    companySizeLabel(peer.companySize),
-  ]
+  return [peer.jobTitle, peer.org, peer.sector, peer.companySize]
     .filter((part): part is string => part !== null && part !== '')
     .join(' · ')
 }

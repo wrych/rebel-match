@@ -45,6 +45,7 @@ describe('migrations', () => {
     expect(await tableNames()).toEqual([
       'cases',
       'challenges',
+      'company_sizes',
       'connection_requests',
       'follows',
       'invites',
@@ -55,6 +56,7 @@ describe('migrations', () => {
       'outbox',
       'roles',
       'schema_migrations',
+      'sectors',
       'sessions',
       'swipes',
       'trends',

@@ -8,7 +8,7 @@ const profile = {
   name: 'Ada',
   jobTitle: 'Coach',
   org: null,
-  sector: 'Retail',
+  sector: 'retail',
   companySize: null,
   email: 'ada@example.invalid',
   consentVersion: latestConsentVersion,
@@ -101,7 +101,7 @@ describe('ProfileScreen', () => {
         name: 'Ada',
         jobTitle: 'Coach',
         org: 'Rebels',
-        sector: 'Retail',
+        sector: 'retail',
         companySize: '',
       },
     ])
@@ -114,7 +114,7 @@ describe('ProfileScreen', () => {
     const screen = await mountScreen()
 
     expect((screen.find('#sector').element as HTMLSelectElement).value).toBe(
-      'Retail',
+      'retail',
     )
     await change(screen, '#company-size', '1001+')
     await change(screen, '#sector', '')
@@ -124,7 +124,7 @@ describe('ProfileScreen', () => {
         name: 'Ada',
         jobTitle: 'Coach',
         org: '',
-        sector: 'Retail',
+        sector: 'retail',
         companySize: '1001+',
       },
       {
@@ -183,14 +183,14 @@ describe('ProfileScreen', () => {
         name: 'Ada Rebel',
         jobTitle: 'Coach',
         org: '',
-        sector: 'Retail',
+        sector: 'retail',
         companySize: '',
       },
       {
         name: 'Ada Rebel',
         jobTitle: 'Coach',
         org: 'Rebels',
-        sector: 'Retail',
+        sector: 'retail',
         companySize: '',
       },
     ])

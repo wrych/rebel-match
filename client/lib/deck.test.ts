@@ -98,7 +98,7 @@ describe('authorLine', () => {
         author: {
           ...card.author,
           sector: 'Software & technology',
-          companySize: '251-1000',
+          companySize: '251–1,000 employees',
         },
       }),
     ).toBe('Björk · Software & technology · 251–1,000 employees')
