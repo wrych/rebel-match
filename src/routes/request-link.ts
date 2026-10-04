@@ -2,13 +2,14 @@ import { Router } from 'express'
 import { z } from 'zod'
 import type { Limits } from '../config.js'
 import type { AdmissionService } from '../services/admission.js'
+import { PAYLOAD_MAX_CHARS } from '../services/human-check.js'
 import { clientIp } from './ip-limit.js'
 
 const requestBody = z.object({
   email: z.string().trim().toLowerCase().pipe(z.email()),
   next: z.string().optional(),
   invite: z.string().min(1).optional(),
-  altcha: z.string().min(1).max(8192).optional(),
+  altcha: z.string().min(1).max(PAYLOAD_MAX_CHARS).optional(),
 })
 
 function applicantBody(

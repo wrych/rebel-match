@@ -22,6 +22,9 @@ const COUNTER_MAX = 3000
 // Payloads accepted within one challenge lifetime; past it the oldest go, and
 // by then they have expired anyway unless the server is flooded.
 const SPENT_MAX = 50_000
+/** A solved payload is about 700 characters; the cap bounds the work of
+ * decoding one, a fact of the format rather than a tunable. */
+export const PAYLOAD_MAX_CHARS = 8192
 
 /** A self-hosted proof of work that a browser solves unattended (ADR 0029). */
 export interface HumanCheck {
