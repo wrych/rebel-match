@@ -138,7 +138,7 @@ describe('GET /api/config', () => {
     const body = JSON.stringify(response.body)
 
     expect(body).not.toContain('applicantsCeiling')
-    expect(body).not.toContain('linkEmailsPerAddress')
+    expect(body).not.toContain('linkEmailsCeiling')
   })
 })
 

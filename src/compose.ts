@@ -14,9 +14,9 @@ import {
   createReviewerDirectory,
 } from './services/admission-store.js'
 import { createAdmission } from './services/admission.js'
-import { createApplicantGate } from './services/applicant-gate.js'
 import { createApplicantHandles } from './services/applicant-handle.js'
 import { createHumanCheck } from './services/human-check.js'
+import { createPacedGate } from './services/paced-gate.js'
 import { createWindowCounter } from './services/rate-limit.js'
 import { createApplicantNotice } from './services/applicant-notice.js'
 import { createApprovalStore } from './services/approval-store.js'
@@ -166,26 +166,31 @@ function composeAdmission(
   mailer: Mailer,
 ): Pick<AppDeps, 'admission' | 'approvals'> {
   const { abuse } = config
-  const linkEmails = createWindowCounter({
-    windowMinutes: abuse.linkEmailWindowMinutes,
+  const humanCheck = createHumanCheck({
+    secret: config.sessionSecret,
+    cost: abuse.humanCheckCost,
+    lifetimeMinutes: abuse.humanCheckMinutes,
   })
   return {
     admission: createAdmission({
       store: createAdmissionStore(db),
       auth,
       handles: createApplicantHandles(config.sessionSecret),
-      takeLinkEmail: (email) =>
-        linkEmails.take(email, abuse.linkEmailsPerAddress),
-      gate: createApplicantGate({
+      applicants: createPacedGate({
         counter: createWindowCounter({
           windowMinutes: abuse.applicantWindowMinutes,
         }),
-        humanCheck: createHumanCheck({
-          secret: config.sessionSecret,
-          cost: abuse.humanCheckCost,
-          lifetimeMinutes: abuse.humanCheckMinutes,
+        humanCheck,
+        freeUses: abuse.applicantsBeforeCheck,
+        ceiling: abuse.applicantsCeiling,
+      }),
+      linkEmails: createPacedGate({
+        counter: createWindowCounter({
+          windowMinutes: abuse.linkEmailWindowMinutes,
         }),
-        limits: abuse,
+        humanCheck,
+        freeUses: abuse.linkEmailsBeforeCheck,
+        ceiling: abuse.linkEmailsCeiling,
       }),
       redeemInvite: createInviteRedemption(db, admittedRole),
       notifyReviewers: createApplicantNotice({

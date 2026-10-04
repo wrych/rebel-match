@@ -22,7 +22,8 @@ describe('loadConfig', () => {
     const config = loadConfig(valid)
 
     expect(config.abuse).toMatchObject({
-      linkEmailsPerAddress: 3,
+      linkEmailsBeforeCheck: 3,
+      linkEmailsCeiling: 10,
       linkEmailWindowMinutes: 15,
       authRequestsPerIp: 1000,
       ipWindowMinutes: 15,

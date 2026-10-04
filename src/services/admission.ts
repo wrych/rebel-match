@@ -1,5 +1,5 @@
 import type { AuthProvider } from '../auth/index.js'
-import type { ApplicantGate, Client } from './applicant-gate.js'
+import type { Client, PacedGate } from './paced-gate.js'
 import type { ApplicantHandles } from './applicant-handle.js'
 import type { Challenge } from './human-check.js'
 import type { RedeemInvite } from './invite-redemption.js'
@@ -77,10 +77,10 @@ interface AdmissionDeps {
   handles: ApplicantHandles
   notifyReviewers: (applicantEmail: string) => Promise<void>
   redeemInvite: RedeemInvite
-  gate: ApplicantGate
-  /** Counts a link email to the address; false once it has had its share
-   * for now (R-NFR-8). */
-  takeLinkEmail: (email: string) => boolean
+  /** New applicants, paced per IP address (R-NFR-8). */
+  applicants: PacedGate
+  /** Link emails, paced per address (R-NFR-8, ADR 0030). */
+  linkEmails: PacedGate
   now?: () => Date
 }
 
@@ -93,7 +93,7 @@ export function createAdmission(deps: AdmissionDeps): AdmissionService {
   ): Promise<LinkRequest> => {
     const admission = admissionFor(await deps.store.statusByEmail(email))
 
-    if (admission === 'send-link') return sendLink(deps, email, opts.next)
+    if (admission === 'send-link') return sendLink(deps, email, opts)
     if (admission === 'not-approved') return { state: 'not-approved' }
     if (admission === 'already-asked') return { state: 'access-requested' }
     if (opts.invite === undefined)
@@ -101,8 +101,7 @@ export function createAdmission(deps: AdmissionDeps): AdmissionService {
 
     const now = (deps.now ?? ((): Date => new Date()))()
     const redemption = await deps.redeemInvite(email, opts.invite, now)
-    if (redemption.result === 'admitted')
-      return sendLink(deps, email, opts.next)
+    if (redemption.result === 'admitted') return sendLink(deps, email, opts)
     if (redemption.result === 'address_taken')
       return requestLink(email, { next: opts.next, client: opts.client })
     return queueApplicant(deps, email, opts.client, { inviteRefused: true })
@@ -120,15 +119,19 @@ export function createAdmission(deps: AdmissionDeps): AdmissionService {
   }
 }
 
-// Past the address's share the answer is the same and nothing is sent, so the
-// limit tells a caller nothing about the address (R-NFR-8).
+// Past the address's ceiling the answer is the same and nothing is sent, so
+// the limit tells a caller nothing more about the address (R-NFR-8).
 async function sendLink(
   deps: AdmissionDeps,
   email: string,
-  next: string | undefined,
+  opts: LinkRequestOptions,
 ): Promise<LinkRequest> {
-  if (deps.takeLinkEmail(email)) {
-    await deps.auth.issueLink(email, { kind: 'self_service', next })
+  const decision = await deps.linkEmails.admit(email, opts.client.altcha)
+  if (decision.result === 'human-check')
+    return { state: 'human-check', challenge: decision.challenge }
+  if (decision.result === 'admit') {
+    await deps.auth.issueLink(email, { kind: 'self_service', next: opts.next })
+    deps.linkEmails.recorded(email)
   }
   return { state: 'check-email' }
 }
@@ -141,13 +144,13 @@ async function queueApplicant(
   client: Client,
   flags: { inviteRefused?: true },
 ): Promise<LinkRequest> {
-  const decision = await deps.gate.admit(client)
+  const decision = await deps.applicants.admit(client.ip, client.altcha)
   if (decision.result === 'try-later') return { state: 'try-later' }
   if (decision.result === 'human-check')
     return { state: 'human-check', challenge: decision.challenge }
 
   const created = await recordApplicant(deps, email)
-  if (created) deps.gate.recorded(client)
+  if (created) deps.applicants.recorded(client.ip)
   return {
     state: 'access-requested',
     ...(created ? { handle: deps.handles.issue(email) } : {}),

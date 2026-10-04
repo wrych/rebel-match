@@ -119,7 +119,8 @@ const envSchema = z
     INVITE_DEFAULT_HOURS: z.coerce.number().int().positive().default(12),
 
     // Abuse limits on sign-in (R-NFR-8, ADR 0029).
-    LINK_EMAILS_PER_ADDRESS: z.coerce.number().int().positive().default(3),
+    LINK_EMAILS_BEFORE_CHECK: z.coerce.number().int().nonnegative().default(3),
+    LINK_EMAILS_CEILING: z.coerce.number().int().positive().default(10),
     LINK_EMAIL_WINDOW_MINUTES: z.coerce.number().int().positive().default(15),
     AUTH_REQUESTS_PER_IP: z.coerce.number().int().positive().default(1000),
     IP_WINDOW_MINUTES: z.coerce.number().int().positive().default(15),
@@ -204,7 +205,8 @@ export interface Limits {
 /** The sign-in abuse limits (R-NFR-8, ADR 0029). Kept out of `Limits`, so
  * `GET /api/config` never tells a script how far it can go. */
 export interface AbuseLimits {
-  linkEmailsPerAddress: number
+  linkEmailsBeforeCheck: number
+  linkEmailsCeiling: number
   linkEmailWindowMinutes: number
   authRequestsPerIp: number
   ipWindowMinutes: number
@@ -279,7 +281,8 @@ function limitsFrom(env: Env): Limits {
 
 function abuseLimitsFrom(env: Env): AbuseLimits {
   return {
-    linkEmailsPerAddress: env.LINK_EMAILS_PER_ADDRESS,
+    linkEmailsBeforeCheck: env.LINK_EMAILS_BEFORE_CHECK,
+    linkEmailsCeiling: env.LINK_EMAILS_CEILING,
     linkEmailWindowMinutes: env.LINK_EMAIL_WINDOW_MINUTES,
     authRequestsPerIp: env.AUTH_REQUESTS_PER_IP,
     ipWindowMinutes: env.IP_WINDOW_MINUTES,

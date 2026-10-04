@@ -6,7 +6,7 @@ import type {
   LinkRequestState,
 } from '../services/admission.js'
 import { loadConfig } from '../config.js'
-import type { Client } from '../services/applicant-gate.js'
+import type { Client } from '../services/paced-gate.js'
 import { requestLinkRoutes } from './request-link.js'
 
 function setup(state: LinkRequestState = 'check-email'): {
