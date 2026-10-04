@@ -1,0 +1,58 @@
+name: Preview cleanup
+
+# When a pull request closes, merged or not, its preview goes (ADR 0025): the
+# revision's tag, its jobs and its database. Untagged revisions without
+# traffic cost nothing and are left to Cloud Run.
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: read
+
+jobs:
+  cleanup:
+    if: github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    environment: dev
+    concurrency:
+      group: deploy-${{ github.event.pull_request.number }}
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      TARGET: pr-${{ github.event.pull_request.number }}
+      GCP_PROJECT: ${{ vars.GCP_PROJECT }}
+      GCP_REGION: ${{ vars.GCP_REGION }}
+
+    steps:
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOY_SA }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Remove the tag and the jobs
+        run: |
+          run() { gcloud --project="$GCP_PROJECT" --quiet run "$@" --region="$GCP_REGION"; }
+          if run services describe rebel-match-dev --format=json |
+            jq -e --arg tag "$TARGET" '.status.traffic[] | select(.tag == $tag)' >/dev/null; then
+            run services update-traffic rebel-match-dev --remove-tags="$TARGET"
+          fi
+          for job in "prepare-$TARGET" "login-$TARGET"; do
+            run jobs describe "$job" >/dev/null 2>&1 && run jobs delete "$job"
+          done
+          true
+
+      # The revision can hold connections for a few minutes after its tag
+      # goes, and Postgres refuses to drop a database in use.
+      - name: Drop the database
+        run: |
+          sql() { gcloud --project="$GCP_PROJECT" --quiet sql "$@"; }
+          sql databases describe "$TARGET" --instance=rebel-match >/dev/null 2>&1 || exit 0
+          for _ in 1 2 3 4 5 6 7 8 9 10; do
+            sql databases delete "$TARGET" --instance=rebel-match && exit 0
+            sleep 60
+          done
+          echo "::warning::database $TARGET is still in use; drop it by hand"

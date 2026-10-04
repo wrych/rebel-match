@@ -232,7 +232,7 @@ echo "GCP_SQL_INSTANCE=$NONPROD:$REGION:rebel-match"
 Add them as **variables** (not secrets — none is sensitive) under **Settings →
 Secrets and variables → Actions → Variables**: `GCP_REGION` and
 `GCP_IMAGE_REPO` on the **repository**, the other five on **both** `dev` and
-`staging`.
+`staging`. The names must match exactly; the workflows read them by name.
 
 ## 11. Check
 
@@ -245,12 +245,31 @@ gcloud sql instances describe rebel-match --project="$NONPROD" --format='value(s
 # RUNNABLE
 ```
 
-## 12. After the first staging deploy
+## 12. How deploys run
 
-- Cloud Run gives the staging service a `https://…run.app` address. Set it as a
-  `PUBLIC_URL` variable on `staging`, and redeploy.
-- **First sign-in:** run `dev:login` as a one-off job, as the workflow PR
-  documents (R-DEV-6). The link appears in the job's log.
+Nothing more to set up: from here the workflows do it.
+
+- **A pull request** gets a preview once `check` is green: the image is built
+  and pushed, database `pr-<n>` is created, migrated and seeded with the
+  fictional roster, and a tagged revision of `rebel-match-dev` serves it at
+  its own `https://pr-<n>---rebel-match-dev-….a.run.app` address, given in
+  the run's summary. Closing the pull request removes the tag, its jobs and
+  its database (`preview-cleanup.yml`).
+- **A merge to `main`** does the same for `rebel-match-staging`, on database
+  `staging`, at `https://rebel-match-staging-<project number>.europe-west6.run.app`.
+- **Signing in:** previews and staging send no mail, so the first sign-in is
+  the **dev-login** workflow (Actions → dev-login → Run workflow), with target
+  `staging` or `pr-<n>`. It runs that target's sign-in job (R-DEV-6); the link
+  is in the job's log in Google Cloud, which the run's summary links to, and
+  never in GitHub. As the dev admin you can then read further links in the
+  outbox.
+
+Magic links in the outbox point at the addresses above. A `PUBLIC_URL`
+variable on an environment overrides that, for a custom domain later.
+
+The `db-f1-micro` instance allows about 25 connections. Each preview runs at
+most one instance, which lets go of its connections when it scales to zero,
+so a handful of open pull requests is fine; dozens at once are not.
 
 ---
 
