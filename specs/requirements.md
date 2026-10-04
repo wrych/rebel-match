@@ -616,10 +616,10 @@ _(Decided by the maintainer after trying the redesign: ADR 0023.)_
   reaches one.
 - **R-LOOK-2 (Happy mode)** — The header menu (R-PROF-3) SHALL offer a switch
   between the calm default and happy mode, announced as a switch to assistive
-  technology. _(It replaces the prototype's "CR" button.)_ The choice SHALL be remembered per browser and SHALL
-  change colours and decoration only, never content, behaviour or anything
-  recorded. IF the browser refuses storage THEN the app SHALL still switch, and
-  start calm next time.
+  technology. _(It replaces the prototype's "CR" button.)_ The choice SHALL be
+  remembered per browser and SHALL change colours and decoration only, never
+  content, behaviour or anything recorded. IF the browser refuses storage THEN
+  the app SHALL still switch, and start calm next time.
 - **R-LOOK-3 (Modes are tokens)** — Colour modes SHALL be sets of colour tokens
   over one set of components, so a further mode (a dark mode, priorities C7) is a
   new token set rather than new screens. Every mode SHALL keep text readable
