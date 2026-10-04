@@ -1,31 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { routeTable } from '../../src/routes'
+import { onMounted, ref } from 'vue'
 import AnalyticsToggle from '../components/AnalyticsToggle.vue'
 import { reportEvent } from '../lib/events'
-import { loadMe, signOut, type Me } from '../lib/session'
+import { loadMe, type Me } from '../lib/session'
 
 const me = ref<Me | null>(null)
-const problem = ref<string | null>(null)
-
-// Each admin screen's path and permission come from the route table
-// (ADR 0017), so this list cannot offer a door the router would refuse.
-const adminScreens = [
-  { name: 'admin-applicants', label: 'Applicants' },
-  { name: 'admin-invites', label: 'Invite links' },
-  { name: 'admin-members', label: 'Members' },
-  { name: 'admin-outbox', label: 'Outbound message log' },
-].flatMap(({ name, label }) => {
-  const route = routeTable.find((candidate) => candidate.name === name)
-  return route === undefined ? [] : [{ ...route, label }]
-})
-const adminLinks = computed(() =>
-  adminScreens.filter(
-    (screen) =>
-      screen.permission === undefined ||
-      me.value?.permissions.includes(screen.permission),
-  ),
-)
 
 onMounted(async () => {
   me.value = await loadMe()
@@ -33,16 +12,6 @@ onMounted(async () => {
 
 function chose(journey: 'ask' | 'offer'): void {
   reportEvent({ event: 'journey_chosen', props: { journey } })
-}
-
-async function leave(): Promise<void> {
-  try {
-    await signOut()
-  } catch {
-    problem.value = 'You are still signed in: signing out failed. Try again.'
-    return
-  }
-  window.location.assign('/login')
 }
 </script>
 
@@ -78,23 +47,5 @@ async function leave(): Promise<void> {
     <RouterLink to="/matches" class="row-link">Your matches</RouterLink>
 
     <AnalyticsToggle v-if="me" :opted-in="me.analyticsOptIn" />
-
-    <nav v-if="adminLinks.length > 0" class="stack rule" aria-label="Admin">
-      <p class="kicker">Host tools</p>
-      <RouterLink
-        v-for="link in adminLinks"
-        :key="link.path"
-        :to="link.path"
-        class="row-link"
-        >{{ link.label }}</RouterLink
-      >
-    </nav>
-
-    <div class="stack">
-      <button type="button" class="btn btn-ghost" @click="leave">
-        Sign out
-      </button>
-      <p v-if="problem" class="alert" role="alert">{{ problem }}</p>
-    </div>
   </section>
 </template>

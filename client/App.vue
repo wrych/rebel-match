@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import logo from './assets/corporate-rebels.png'
+import HeaderMenu from './components/HeaderMenu.vue'
 import TabBar from './components/TabBar.vue'
 import { applyMood, savedMood, type Mood } from './lib/mood'
 
@@ -19,15 +20,7 @@ function toggleMood(): void {
       <RouterLink to="/" class="brand">
         <img :src="logo" alt="Corporate Rebels" width="43" height="19" />
       </RouterLink>
-      <button
-        type="button"
-        class="cap"
-        aria-label="Happy colour mode"
-        :aria-pressed="mood === 'happy'"
-        @click="toggleMood"
-      >
-        CR
-      </button>
+      <HeaderMenu :mood="mood" @toggle-mood="toggleMood" />
     </header>
     <main class="page">
       <RouterView />

@@ -24,15 +24,16 @@ describe('App shell', () => {
     expect(app.findComponent(RouterLinkStub).props('to')).toBe('/')
   })
 
-  it('switches happy mode on and off, saying which it is', async () => {
+  it('switches happy mode on and off from the menu (R-LOOK-2, R-PROF-3)', async () => {
     const app = mountApp()
-    const cap = app.find('button.cap')
+    const menu = app.findComponent({ name: 'HeaderMenu' })
 
-    expect(cap.attributes('aria-pressed')).toBe('false')
-    await cap.trigger('click')
+    menu.vm.$emit('toggleMood')
+    await app.vm.$nextTick()
     expect(document.documentElement.dataset['mood']).toBe('happy')
-    expect(cap.attributes('aria-pressed')).toBe('true')
-    await cap.trigger('click')
+    expect(menu.props('mood')).toBe('happy')
+    menu.vm.$emit('toggleMood')
+    await app.vm.$nextTick()
     expect(document.documentElement.dataset['mood']).toBe('calm')
   })
 
