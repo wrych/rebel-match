@@ -69,6 +69,12 @@ export const routeTable: readonly RouteDef[] = [
     access: 'onboarded',
     permission: 'outbox:read',
   },
+  {
+    path: '/admin/settings',
+    name: 'admin-settings',
+    access: 'onboarded',
+    permission: 'settings:read',
+  },
 ]
 
 const SEGMENT = /^:[A-Za-z][A-Za-z0-9]*$/

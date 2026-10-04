@@ -477,6 +477,7 @@ at a screen instead of at the front door.
   | `/admin/applicants`                  | admin approvals                                |
   | `/admin/invites`                     | invite links (R-INV-9)                         |
   | `/admin/members`                     | members, with GDPR erasure (R-NFR-7)           |
+  | `/admin/settings`                    | the configuration, read-only (R-CFG-5)         |
   | `/admin/outbox`                      | dev outbox (dev deployments only)              |
 
 - **R-NAV-5** — WHEN an unauthenticated visitor opens any deep link THE SYSTEM
@@ -600,6 +601,13 @@ What differs by environment is only whether mail **leaves the machine**.
   not remove the server check.
 - **R-CFG-4** — Changing a threshold SHALL NOT require code changes beyond that
   file, so the values can be tuned during the pilot without a redeploy of logic.
+- **R-CFG-5 (Settings in the host tools)** — A host with `settings:read` SHALL
+  see every configured value on one read-only screen, grouped by what it
+  governs (for example "Spam protection"), each with a plain-language name, what
+  it does, its value with its unit, the environment variable that sets it, and
+  whether it differs from the default. Values fixed in code SHALL be marked as
+  such. No secret SHALL appear, nor whether one is set beyond on/off. Changing a
+  value stays a deployment change.
 
 ---
 
