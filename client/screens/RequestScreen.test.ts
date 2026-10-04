@@ -23,6 +23,7 @@ const incoming: ConnectionView = {
     jobTitle: 'Lead',
     org: 'Acme',
     sector: null,
+    companySize: null,
   },
   challenge: {
     id: 'c1',

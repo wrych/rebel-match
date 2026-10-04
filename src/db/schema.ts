@@ -59,6 +59,7 @@ export const members = pgTable(
     jobTitle: varchar('job_title', { length: 120 }),
     org: varchar('org', { length: 160 }),
     sector: varchar('sector', { length: 160 }),
+    companySize: varchar('company_size', { length: 20 }),
     status: memberStatus('status').notNull().default('applicant'),
     requestedName: varchar('requested_name', { length: 120 }),
     requestedOrg: varchar('requested_org', { length: 160 }),

@@ -29,6 +29,7 @@ export interface PeerCard {
   jobTitle: string | null
   org: string | null
   sector: string | null
+  companySize: string | null
   note: string
 }
 

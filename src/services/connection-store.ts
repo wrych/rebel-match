@@ -51,6 +51,7 @@ async function views(
         jobTitle: members.jobTitle,
         org: members.org,
         sector: members.sector,
+        companySize: members.companySize,
       },
       challenge: { id: challenges.id, body: challenges.body },
       trendShort: trends.short,

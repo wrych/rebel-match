@@ -1,3 +1,4 @@
+import { companySizeLabel } from '../../src/profile-options'
 import type {
   Challenge,
   Matches,
@@ -70,12 +71,17 @@ export async function fetchTrendDetail(
   return (await response.json()) as TrendDetail
 }
 
-/** Who a member is, as one line: job title, organization and sector, leaving
- * out what they did not give. */
+/** Who a member is, as one line: job title, organization, sector and company
+ * size, leaving out what they did not give. */
 export function peerLine(
-  peer: Pick<PeerCard, 'jobTitle' | 'org' | 'sector'>,
+  peer: Pick<PeerCard, 'jobTitle' | 'org' | 'sector' | 'companySize'>,
 ): string {
-  return [peer.jobTitle, peer.org, peer.sector]
+  return [
+    peer.jobTitle,
+    peer.org,
+    peer.sector,
+    companySizeLabel(peer.companySize),
+  ]
     .filter((part): part is string => part !== null && part !== '')
     .join(' · ')
 }

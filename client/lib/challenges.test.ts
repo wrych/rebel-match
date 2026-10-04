@@ -139,16 +139,21 @@ describe('peerLine', () => {
     name: 'Bo',
     jobTitle: 'Coach',
     org: 'Buurtzorg',
-    sector: 'Care',
+    sector: 'Healthcare',
+    companySize: '1001+',
     note: 'Teams of 12.',
   }
 
-  it('joins job title, organization and sector', () => {
-    expect(peerLine(peer)).toBe('Coach · Buurtzorg · Care')
+  it('joins job title, organization, sector and company size', () => {
+    expect(peerLine(peer)).toBe(
+      'Coach · Buurtzorg · Healthcare · 1,001+ employees',
+    )
   })
 
   it('leaves out what the peer did not give', () => {
-    expect(peerLine({ ...peer, jobTitle: null, sector: '' })).toBe('Buurtzorg')
+    expect(
+      peerLine({ ...peer, jobTitle: null, sector: '', companySize: null }),
+    ).toBe('Buurtzorg')
   })
 })
 

@@ -44,6 +44,7 @@ async function upsertMember(
       jobTitle: member.jobTitle,
       org: member.org,
       sector: member.sector,
+      companySize: member.companySize,
       status: 'active',
       consentVersion,
       consentAt: new Date(),
@@ -56,6 +57,7 @@ async function upsertMember(
         jobTitle: excluded('job_title'),
         org: excluded('org'),
         sector: excluded('sector'),
+        companySize: excluded('company_size'),
         status: 'active',
       },
     })

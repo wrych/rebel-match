@@ -13,6 +13,7 @@ const cardColumns = {
   jobTitle: members.jobTitle,
   org: members.org,
   sector: members.sector,
+  companySize: members.companySize,
 }
 
 /** The deck over Postgres. Selects no email column (R-CONN-6); the swipe
@@ -54,6 +55,7 @@ export function createDeckStore(db: Database): DeckStore {
           jobTitle: row.jobTitle,
           org: row.org,
           sector: row.sector,
+          companySize: row.companySize,
         },
       }))
     },

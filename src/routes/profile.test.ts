@@ -23,6 +23,8 @@ const own: OwnProfile = {
   name: 'Ada',
   jobTitle: 'Coach',
   org: null,
+  sector: null,
+  companySize: null,
   email: 'ada@example.invalid',
   consentVersion: '2026-11-01',
   consentAt: '2026-11-08T10:00:00.000Z',
@@ -90,8 +92,25 @@ describe('PUT /api/profile', () => {
     ])
   })
 
+  it('saves a sector and company size picked from the lists (R-PROF-1)', async () => {
+    const { app, edits } = setup()
+
+    const response = await request(app)
+      .put('/api/profile')
+      .set('Cookie', await cookie())
+      .send({ name: 'Ada', sector: 'Retail', companySize: '1001+' })
+
+    expect(response.status).toBe(204)
+    expect(edits[0]?.edit).toMatchObject({
+      sector: 'Retail',
+      companySize: '1001+',
+    })
+  })
+
   it.each([
     ['a blank name', { name: '   ' }],
+    ['a sector not on the list', { name: 'Ada', sector: 'Health' }],
+    ['a company size not on the list', { name: 'Ada', companySize: '260' }],
     ['no name', { org: 'Rebels' }],
     [
       'a name over the limit',

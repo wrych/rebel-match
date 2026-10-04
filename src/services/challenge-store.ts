@@ -27,6 +27,7 @@ const peerColumns = {
   jobTitle: members.jobTitle,
   org: members.org,
   sector: members.sector,
+  companySize: members.companySize,
 }
 
 const peerFilter = (viewerId: string): SQL | undefined =>

@@ -10,6 +10,7 @@ export interface MemberCard {
   jobTitle: string | null
   org: string | null
   sector: string | null
+  companySize: string | null
 }
 
 export interface ConnectionRecord {

@@ -277,13 +277,6 @@ const catalogue: Group[] = [
         unit: CHARACTERS,
       },
       {
-        name: 'Longest sector',
-        explanation: 'Fixed by the database.',
-        envVar: null,
-        read: (c) => c.limits.sectorMaxChars,
-        unit: CHARACTERS,
-      },
-      {
         name: 'Addresses per attendee list upload',
         explanation: 'The most addresses one upload to the whitelist can add.',
         envVar: 'WHITELIST_BATCH_MAX',

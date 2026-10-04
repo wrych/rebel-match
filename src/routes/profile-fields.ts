@@ -14,3 +14,13 @@ export function optionalText(max: number): z.ZodType<string | undefined> {
     .optional()
     .transform((value) => (value === '' ? undefined : value))
 }
+
+/** An optional pick from a fixed list; a blank one is a field left out. */
+export function optionalChoice<const T extends string>(
+  values: readonly [T, ...T[]],
+): z.ZodType<T | undefined> {
+  return z
+    .union([z.literal(''), z.enum(values)])
+    .optional()
+    .transform((value) => (value === '' ? undefined : value))
+}

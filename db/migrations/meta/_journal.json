@@ -15,6 +15,13 @@
       "when": 1791112946603,
       "tag": "0001_analytics_opt_in",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791143021748,
+      "tag": "0002_company_size",
+      "breakpoints": true
     }
   ]
 }

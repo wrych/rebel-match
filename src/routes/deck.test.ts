@@ -28,7 +28,8 @@ const card: DeckCard = {
     name: 'Sanne Kuipers',
     jobTitle: 'Ops lead',
     org: 'Vaartlicht',
-    sector: 'Healthcare · 1,200',
+    sector: 'Healthcare',
+    companySize: '1001+',
   },
 }
 

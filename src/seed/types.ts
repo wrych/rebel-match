@@ -1,4 +1,5 @@
 import type { RoleKey } from '../access.js'
+import type { CompanySize, Sector } from '../profile-options.js'
 
 export interface SeedRole {
   key: RoleKey
@@ -13,7 +14,8 @@ export interface SeedMember {
   name: string
   jobTitle: string
   org: string
-  sector: string
+  sector: Sector
+  companySize: CompanySize
   roles: RoleKey[]
 }
 

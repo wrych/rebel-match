@@ -9,6 +9,7 @@ export interface DeckCard {
     jobTitle: string | null
     org: string | null
     sector: string | null
+    companySize: string | null
   }
 }
 

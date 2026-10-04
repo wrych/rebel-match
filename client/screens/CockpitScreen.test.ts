@@ -33,6 +33,7 @@ const request: ConnectionView = {
     jobTitle: null,
     org: null,
     sector: null,
+    companySize: null,
   },
   challenge: null,
 }

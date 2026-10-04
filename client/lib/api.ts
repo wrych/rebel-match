@@ -10,7 +10,6 @@ export interface ClientConfig {
     nameMaxChars: number
     jobTitleMaxChars: number
     orgMaxChars: number
-    sectorMaxChars: number
     inviteLabelMaxChars: number
     savedTickMs: number
     inviteMaxUsesCeiling: number
