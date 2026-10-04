@@ -278,9 +278,12 @@ capability, not a secret** — and every requirement below exists because of tha
   From there a host SHALL be able to change their roles (R-ROLE-9) and delete
   them (R-NFR-7), each within the host's own permissions; later member actions
   belong on this page.
-- **R-MEM-3 (Selecting several)** — Holding a card, or a Select button for
-  those who cannot hold, SHALL start selecting; each tap then selects or
-  deselects a card. Actions SHALL apply to every selected member: give a role,
+- **R-MEM-3 (Selecting several)** — Each card SHALL carry a small **selector**
+  that shows whether it is selected; tapping it, or holding the card, SHALL
+  start selecting with that card chosen, and while selecting each tap selects
+  or deselects a card. A selected card SHALL show it in its outline as well as
+  its selector, so it is plain which are chosen. Actions SHALL apply to every
+  selected member: give a role,
   take a role away, and delete after one confirmation that says how many. Each
   member's outcome SHALL be reported, and one refused (the last admin, say)
   SHALL NOT stop the rest.
