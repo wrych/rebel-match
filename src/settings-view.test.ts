@@ -1,6 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { defaultConfig, loadConfig } from './config.js'
-import { settingsView } from './settings-view.js'
+import { defaultConfig, loadConfig, type Config } from './config.js'
+import { settingsView, type SettingsState } from './settings-view.js'
+
+function unchanged(config: Config): SettingsState {
+  const values = { limits: config.limits, abuse: config.abuse }
+  return { current: values, deployment: values, overrides: [] }
+}
+
+function view(config: Config): ReturnType<typeof settingsView> {
+  return settingsView(config, defaultConfig(), unchanged(config))
+}
 
 const secrets = {
   SESSION_SECRET: 'session-secret-'.padEnd(40, 'x'),
@@ -23,23 +32,26 @@ function find(
 
 describe('settingsView (R-CFG-5)', () => {
   it('puts the rate limits under Spam protection', () => {
-    const groups = settingsView(defaultConfig(), defaultConfig())
-    const spam = groups.find((group) => group.title === 'Spam protection')
+    const spam = view(defaultConfig()).find(
+      (group) => group.title === 'Spam protection',
+    )
 
-    expect(spam?.settings.map((s) => s.envVar)).toEqual(
+    expect(spam?.settings.map((s) => s.edit?.key)).toEqual(
       expect.arrayContaining([
-        'LINK_EMAILS_BEFORE_CHECK',
-        'LINK_EMAILS_CEILING',
-        'AUTH_REQUESTS_PER_IP',
-        'APPLICANTS_BEFORE_CHECK',
-        'APPLICANTS_CEILING',
-        'TRUST_PROXY',
+        'abuse.linkEmailsBeforeCheck',
+        'abuse.linkEmailsCeiling',
+        'abuse.authRequestsPerIp',
+        'abuse.applicantsBeforeCheck',
+        'abuse.applicantsCeiling',
       ]),
+    )
+    expect(spam?.settings.map((s) => s.name)).toContain(
+      'Trusted proxies in front of the server',
     )
   })
 
   it('shows each value with its unit', () => {
-    const groups = settingsView(defaultConfig(), defaultConfig())
+    const groups = view(defaultConfig())
 
     expect(find(groups, 'Sign-in link valid for').value).toBe('15 minutes')
     expect(find(groups, 'Sign-in requests per network').value).toBe(
@@ -49,9 +61,8 @@ describe('settingsView (R-CFG-5)', () => {
   })
 
   it('marks what differs from the default', () => {
-    const groups = settingsView(
+    const groups = view(
       loadConfig({ SESSION_SECRET: 'x'.repeat(32), LINK_EMAILS_CEILING: '20' }),
-      defaultConfig(),
     )
 
     expect(find(groups, 'Sign-in emails per address, at most')).toMatchObject({
@@ -61,18 +72,63 @@ describe('settingsView (R-CFG-5)', () => {
     expect(find(groups, 'Sign-in link valid for').changed).toBe(false)
   })
 
-  it('marks values fixed in code, with no variable to set', () => {
-    const setting = find(
-      settingsView(defaultConfig(), defaultConfig()),
-      'Longest name',
-    )
+  it('marks values fixed in code, which cannot be edited', () => {
+    const setting = find(view(defaultConfig()), 'Longest name')
 
     expect(setting).toMatchObject({ fixed: true, changed: false })
-    expect(setting).not.toHaveProperty('envVar')
+    expect(setting).not.toHaveProperty('edit')
+  })
+
+  it('offers no edit for what only a deployment changes (R-CFG-6)', () => {
+    const groups = view(defaultConfig())
+
+    expect(
+      find(groups, 'Trusted proxies in front of the server'),
+    ).not.toHaveProperty('edit')
+    expect(find(groups, 'Sign-in link valid for')).not.toHaveProperty('edit')
+    expect(find(groups, 'Shortest challenge').edit).toEqual({
+      key: 'limits.challengeMinChars',
+      value: 31,
+      unit: 'characters',
+      min: 1,
+      max: 300,
+    })
+  })
+
+  it('shows a value changed in the app, who changed it and the deployment’s value', () => {
+    const config = defaultConfig()
+    const deployment = { limits: config.limits, abuse: config.abuse }
+    const groups = settingsView(config, config, {
+      current: {
+        ...deployment,
+        limits: { ...config.limits, challengeMinChars: 50 },
+      },
+      deployment,
+      overrides: [
+        {
+          key: 'limits.challengeMinChars',
+          value: 50,
+          changedBy: 'm-ada',
+          changerName: 'Ada Host',
+          changedAt: new Date('2026-11-08T09:00:00Z'),
+        },
+      ],
+    })
+
+    expect(find(groups, 'Shortest challenge')).toMatchObject({
+      value: '50 characters',
+      changed: true,
+      edit: { value: 50 },
+      override: {
+        by: 'Ada Host',
+        at: '2026-11-08T09:00:00.000Z',
+        deploymentValue: '31 characters',
+      },
+    })
   })
 
   it('shows no secret, only whether analytics is on', () => {
-    const groups = settingsView(loadConfig(secrets), defaultConfig())
+    const groups = view(loadConfig(secrets))
     const shown = JSON.stringify(groups)
 
     for (const secret of Object.values(secrets))
@@ -82,13 +138,14 @@ describe('settingsView (R-CFG-5)', () => {
     expect(find(groups, 'Database').value).toBe('Postgres')
   })
 
-  it('names every variable once', () => {
-    const vars = settingsView(defaultConfig(), defaultConfig())
+  it('offers each changeable setting once', () => {
+    const keys = view(defaultConfig())
       .flatMap((group) => group.settings)
       .flatMap((setting) =>
-        setting.envVar === undefined ? [] : [setting.envVar],
+        setting.edit === undefined ? [] : [setting.edit.key],
       )
 
-    expect(new Set(vars).size).toBe(vars.length)
+    expect(new Set(keys).size).toBe(keys.length)
+    expect(keys).toHaveLength(14)
   })
 })

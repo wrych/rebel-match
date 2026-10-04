@@ -1,6 +1,6 @@
 import express, { type ErrorRequestHandler, type Express } from 'express'
 import type { AuthProvider } from './auth/index.js'
-import { clientConfig, type Config, type LiveSettings } from './config.js'
+import { clientConfig, type Config } from './config.js'
 import { sql } from 'drizzle-orm'
 import type { Database } from './db/connect.js'
 import { challengeRoutes } from './routes/challenges.js'
@@ -44,10 +44,11 @@ import type { MemberRoster } from './services/member-roster.js'
 import type { ProfileStore } from './services/profile.js'
 import type { RoleService } from './services/roles.js'
 import type { WhitelistService } from './services/whitelist.js'
+import type { SettingsService } from './services/settings.js'
 
 export interface AppDeps {
   config: Config
-  settings: LiveSettings
+  settings: SettingsService
   db: Database
   auth: AuthProvider
   profiles: MemberProfiles

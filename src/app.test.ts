@@ -6,7 +6,9 @@ import request from 'supertest'
 import { describe, expect, it, vi } from 'vitest'
 import { createApp, handleErrors, type AppDeps } from './app.js'
 import { createAuth, createMemoryAuthStore } from './auth/index.js'
-import { fixedSettings, loadConfig } from './config.js'
+import { loadConfig } from './config.js'
+import { createMemorySettingOverrideStore } from './services/memory-setting-override-store.js'
+import { createSettings } from './services/settings.js'
 import type { Database } from './db/connect.js'
 import { configPolicy } from './permissions.js'
 
@@ -21,7 +23,10 @@ function deps(
 ): AppDeps {
   return {
     config,
-    settings: fixedSettings(config),
+    settings: createSettings({
+      config,
+      store: createMemorySettingOverrideStore(),
+    }),
     db: { execute } as unknown as Database,
     auth: createAuth({
       policy: configPolicy,
@@ -156,7 +161,10 @@ describe('the per-IP backstop on sign-in (R-NFR-8)', () => {
     return createApp({
       ...deps(),
       config: narrowed,
-      settings: fixedSettings(narrowed),
+      settings: createSettings({
+        config: narrowed,
+        store: createMemorySettingOverrideStore(),
+      }),
     })
   }
 
