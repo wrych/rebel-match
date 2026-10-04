@@ -190,7 +190,7 @@ of the same shape (R-LOOK-3). Fonts are self-hosted through `@fontsource`.
 capture against the EU endpoint. Sessions are the auth seam's own (§8).
 
 **Client** (ADR 0017) — **Vue 3** (Composition API) with `vue-router` in history
-mode, built by **Vite**, `mixpanel-browser` for UI events. Tests use
+mode, built by **Vite**; no analytics script (ADR 0026). Tests use
 `@vue/test-utils` with jsdom.
 
 Two builds: `tsc` for the server, Vite for the client. The Vite dev server
@@ -222,6 +222,8 @@ CREATE TABLE members (
   requested_org  VARCHAR(160) NULL,              -- applicant-supplied, for R-AUTH-11
   consent_version VARCHAR(20) NULL,
   consent_at     DATETIME     NULL,
+  analytics_consent_version VARCHAR(20) NULL,     -- opt-in words accepted (R-ANA-4)
+  analytics_consent_at      DATETIME    NULL,     -- both set = opted in
   joined_via_invite_id CHAR(36) NULL,            -- which invite admitted them (R-INV-8)
   analytics_id   CHAR(36)     NOT NULL,           -- pseudonymous id for Mixpanel
   created_at     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -551,16 +553,18 @@ onboarded → `403 {error: 'onboarding_required'}`. Only `/api/health` and
 | POST   | `/auth/request-link`          | `{email, next?, invite?}` | If whitelisted active member → create token, send link (recorded always, delivered per `mail.delivery`), return the "check your email" state. If unknown email **with a usable `invite`** → create the member active with the `member` role, record `joined_via_invite_id`, increment `uses`, send the link (R-INV-1). If unknown email without a usable one → create `applicant`, notify admin, return the access-requested state, flagging whether an invite was refused so the client can show the notice (R-AUTH-2, R-INV-5). A pending applicant asking again gets the access-requested state with no second notice; a rejected one gets the not-approved state, no link and no notice (R-AUTH-13). The states differ deliberately — see ADR 0013. |
 | GET    | `/auth/verify?token=…&next=…` | —                         | Validate token (unexpired, unused), consume it, create session, redirect to onboarding, or to the validated `next` path, else the app root (R-NAV-5, R-NAV-6).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | POST   | `/auth/logout`                | —                         | Destroy session.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| GET    | `/auth/me`                    | —                         | Current member + onboarding/consent status + `roles[]` and resolved `permissions[]` (R-ROLE-4).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| GET    | `/auth/me`                    | —                         | Current member + onboarding/consent status + `roles[]` and resolved `permissions[]` (R-ROLE-4), and `analyticsOptIn` (R-ANA-4).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | POST   | `/auth/applicant`             | `{handle, name?, org?}`   | Attach applicant-supplied name/org to the pending request, for the host (R-AUTH-11,12). Pending applicants only; no session required, keyed by the request: the access-requested answer to the `request-link` that records the applicant carries a `handle` (a repeat request carries none, since anyone can make it), the address with its HMAC under the session secret and its own purpose label, and only that handle can describe the request — knowing someone's email is not enough. An unknown handle or a request no longer pending → `404`.                                                                                                                                                                                                   |
 | GET    | `/api/config`                 | —                         | Client-relevant limits + current consent version (R-CFG-2). No secrets.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 
 ### Onboarding
 
-| Method | Path              | Body                                               | Behavior                                                                                                                                                                                                         |
-| ------ | ----------------- | -------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| GET    | `/api/onboarding` | —                                                  | The form pre-filled: the member's profile so far, with `requested_name`/`requested_org` filling a missing name or organization (F2, R-AUTH-12), and the consent version in force. Pre-filling never stores them. |
-| POST   | `/api/onboarding` | `{name, jobTitle?, org?, sector?, consentVersion}` | Set name/profile, record consent version + timestamp. Required before other `/api` routes. A `consentVersion` other than the current one → `409` (R-ONB-4).                                                      |
+| Method | Path                | Body                                                                  | Behavior                                                                                                                                                                                                                                                                                                           |
+| ------ | ------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| GET    | `/api/onboarding`   | —                                                                     | The form pre-filled: the member's profile so far, with `requested_name`/`requested_org` filling a missing name or organization (F2, R-AUTH-12), and the consent version in force. Pre-filling never stores them.                                                                                                   |
+| POST   | `/api/onboarding`   | `{name, jobTitle?, org?, sector?, consentVersion, analyticsVersion?}` | Set name/profile, record consent version + timestamp. Required before other `/api` routes. A `consentVersion` other than the current one → `409` (R-ONB-4). `analyticsVersion` is sent only when the analytics box is ticked and records the opt-in; one other than the current analytics words → `409` (R-ANA-4). |
+| PUT    | `/api/me/analytics` | `{optIn: true, version}` or `{optIn: false}`                          | Give or withdraw the analytics opt-in from the welcome screen, as easily as at onboarding. A `version` other than the current analytics words → `409` (R-ANA-4).                                                                                                                                                   |
+| POST   | `/api/events`       | `{event, props}`                                                      | The UI events of §7 (`journey_chosen`, `feedback_opened`) with their listed properties only; anything else → `400`. Forwarded to Mixpanel only for a member opted in; always `204` otherwise, so the client cannot tell (ADR 0026).                                                                                |
 
 ### Ask journey
 
@@ -904,24 +908,34 @@ Alternatives considered (kept only as fallbacks):
   or name.
 - Capture these events with non-identifying properties only:
 
-  | event                  | properties                                                    |
-  | ---------------------- | ------------------------------------------------------------- |
-  | `login_completed`      | —                                                             |
-  | `onboarding_completed` | `consent_version`                                             |
-  | `journey_chosen`       | `journey: ask\|offer`                                         |
-  | `challenge_submitted`  | `char_count`                                                  |
-  | `trend_assigned`       | `trend_id`, `overridden: bool`                                |
-  | `swipe`                | `action`, `trend_id`                                          |
-  | `connection_requested` | `kind`                                                        |
-  | `connection_responded` | `status: accepted\|declined`                                  |
-  | `feedback_opened`      | `screen`                                                      |
-  | `invite_rejected`      | `reason: unknown\|not_yet_valid\|expired\|revoked\|exhausted` |
+  | event                  | properties                     |
+  | ---------------------- | ------------------------------ |
+  | `login_completed`      | —                              |
+  | `onboarding_completed` | `consent_version`              |
+  | `journey_chosen`       | `journey: ask\|offer`          |
+  | `challenge_submitted`  | `char_count`                   |
+  | `trend_assigned`       | `trend_id`, `overridden: bool` |
+  | `swipe`                | `action`, `trend_id`           |
+  | `connection_requested` | `kind`                         |
+  | `connection_responded` | `status: accepted\|declined`   |
+  | `feedback_opened`      | `screen`                       |
 
 - **Never** send challenge `body`, member `name`, `email`, `org`.
-- Gate capture on analytics consent (R-ANA-4). Prefer server-side capture (the
-  `mixpanel` Node SDK) for connection/consent events so they can't be blocked by
-  ad blockers; client-side (`mixpanel-browser`) for UI interactions. Both must be
-  pointed at `api-eu.mixpanel.com`.
+- **Opt-in only** (R-ANA-4, ADR 0026). Onboarding shows an unticked checkbox
+  under the consent, with its own versioned words (`analyticsTexts`, like
+  `consentTexts`). Ticking it sets `analytics_consent_version` and
+  `analytics_consent_at`; the member changes it later from the welcome screen
+  (`PUT /api/me/analytics`). An event is sent only while both are set.
+- **Server only.** The server sends every event through the Mixpanel HTTP
+  ingestion API at `analytics.apiHost` (`api-eu.mixpanel.com`). The two UI
+  events, `journey_chosen` and `feedback_opened`, are posted by the client to
+  `POST /api/events`, which accepts only those names with their listed
+  properties. No Mixpanel script, cookie or device identifier is in the browser,
+  and the token never leaves the server.
+- `invite_rejected` is not captured: a visitor turned away has not onboarded,
+  so cannot have opted in.
+- A failed send never fails the request it describes; it is reported without
+  personal data and dropped. Without `MIXPANEL_TOKEN` nothing is sent.
 
 ---
 

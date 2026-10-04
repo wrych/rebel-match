@@ -86,8 +86,8 @@ printed dev link (R-DEV-6).
 - [x] Invite redemption: `/?invite=…` carried to login, usability check (window,
       cap, revoked), auto-approve + `joined_via_invite_id` + `uses`, fallback to
       the applicant flow with the invalid-invite notice on the access-requested
-      screen. _(R-INV-1..8, F15)_ The `invite_rejected` analytics event waits for
-      Mixpanel (M5); the optional "joining via …" recognition (R-INV-12) is not
+      screen. _(R-INV-1..8, F15)_ The `invite_rejected` analytics event is not
+      captured (ADR 0026); the optional "joining via …" recognition (R-INV-12) is not
       built.
 - [x] Admin invite screen (`/admin/invites`): list with state, create with label /
       window / cap, revoke, show the join URL for the QR. _(R-INV-9,10, F16)_
@@ -172,9 +172,13 @@ printed dev link (R-DEV-6).
       _(R-AUTH-1, R-ROLE-3)_
 - [x] Follow endpoints + UI. _(S2, R-ASK-9)_ The endpoints are in, and the
       matches and trend screens follow and unfollow.
-- [ ] Mixpanel wired in (client + server, **EU endpoints**, project created with
-      EU residency), pseudonymous id, event set from design §7, consent-gated.
-      _(S3, R-ANA-1..5)_
+- [ ] Analytics opt-in: the unticked onboarding checkbox with its versioned
+      words, `analytics_consent_*` on members, `PUT /api/me/analytics` and the
+      welcome-screen toggle. _(R-ANA-4, ADR 0026)_
+- [ ] Mixpanel sending from the server only (**EU endpoint**, project created
+      with EU residency), pseudonymous id, the event set from design §7 with
+      `POST /api/events` for the two UI events, opted-in members only.
+      _(S3, R-ANA-1..3,5, ADR 0026)_
 - [ ] Email notification on incoming connection request, deep-linking to
       `/matches/requests/:id` with no challenge text or contact detail.
       _(S4, R-CONN-2, R-NAV-9)_
