@@ -53,7 +53,7 @@ async function confirm(): Promise<void> {
   problem.value = null
   try {
     await confirmTrend(id, trend.value.id)
-    await router.push(`/challenges/${encodeURIComponent(id)}/matches`)
+    await router.push(`/challenges/${encodeURIComponent(id)}/matches?posted=1`)
   } catch {
     problem.value = 'That did not save. Try again.'
   } finally {

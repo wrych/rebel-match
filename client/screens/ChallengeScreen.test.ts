@@ -111,7 +111,7 @@ describe('ChallengeScreen', () => {
         body: JSON.stringify({ trendId: '02' }),
       }),
     )
-    expect(push).toHaveBeenCalledWith('/challenges/c1/matches')
+    expect(push).toHaveBeenCalledWith('/challenges/c1/matches?posted=1')
   })
 
   it('says so when the trend did not save', async () => {
