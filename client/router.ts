@@ -13,6 +13,7 @@ import InvitesScreen from './screens/InvitesScreen.vue'
 import LoginScreen from './screens/LoginScreen.vue'
 import MatchesScreen from './screens/MatchesScreen.vue'
 import MembersScreen from './screens/MembersScreen.vue'
+import MemberScreen from './screens/MemberScreen.vue'
 import NotFoundScreen from './screens/NotFoundScreen.vue'
 import OnboardingScreen from './screens/OnboardingScreen.vue'
 import OfferDoneScreen from './screens/OfferDoneScreen.vue'
@@ -77,6 +78,7 @@ export const router = createRouter({
     screen('admin-applicants', ApplicantsScreen),
     screen('admin-invites', InvitesScreen),
     screen('admin-members', MembersScreen),
+    screen('admin-member', MemberScreen),
     screen('admin-outbox', OutboxScreen),
     screen('admin-settings', SettingsScreen),
     { path: '/:pathMatch(.*)*', name: 'not-found', component: NotFoundScreen },

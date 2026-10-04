@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { flushPromises, mount, type DOMWrapper } from '@vue/test-utils'
+import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import MembersScreen from './MembersScreen.vue'
 
@@ -7,132 +7,94 @@ const mia = {
   id: 'm-mia',
   email: 'mia@example.invalid',
   name: 'Mia Rebel',
+  jobTitle: 'Coach',
+  org: 'Buurtzorg',
+  sector: 'Health',
   status: 'active',
-  roles: ['member'],
+  roles: ['admin', 'member'],
   joinedAt: '2026-10-01T09:00:00.000Z',
 }
 const ben = {
   id: 'm-ben',
   email: 'ben@example.invalid',
   name: null,
+  jobTitle: null,
+  org: null,
+  sector: null,
   status: 'applicant',
   roles: [],
   joinedAt: '2026-10-02T09:00:00.000Z',
 }
 
-/** Serves the roster, then answers a DELETE with `status` and `body`; an
- * erased member leaves the roster. */
-function server(
-  status = 204,
-  body: unknown = undefined,
-): ReturnType<typeof vi.fn> {
-  let roster = [ben, mia]
-  const fetchMock = vi.fn((url: string, init?: RequestInit) => {
-    if (init?.method === 'DELETE') {
-      if (status === 204) roster = roster.filter((m) => !url.endsWith(m.id))
-      return Promise.resolve({
-        ok: status < 300,
-        status,
-        json: async () => body,
-      })
-    }
-    return Promise.resolve({
-      ok: true,
-      status: 200,
-      json: async () => ({ members: roster }),
-    })
-  })
-  vi.stubGlobal('fetch', fetchMock)
-  return fetchMock
+function respond(ok = true): void {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockResolvedValue({
+      ok,
+      status: ok ? 200 : 500,
+      json: async () => ({ members: [ben, mia] }),
+    }),
+  )
 }
 
-async function mountScreen(): Promise<ReturnType<typeof mount>> {
-  const screen = mount(MembersScreen)
+async function shown(): Promise<ReturnType<typeof mount>> {
+  const screen = mount(MembersScreen, {
+    global: { stubs: { RouterLink: RouterLinkStub } },
+  })
   await flushPromises()
   return screen
-}
-
-function button(
-  screen: ReturnType<typeof mount>,
-  label: string,
-): DOMWrapper<HTMLButtonElement> {
-  const found = screen
-    .findAll<HTMLButtonElement>('button')
-    .find((b) => b.text() === label)
-  if (found === undefined) throw new Error(`no button ${label}`)
-  return found
 }
 
 afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-describe('MembersScreen', () => {
-  it('lists members with email, roles and status', async () => {
-    server()
+describe('MembersScreen (R-MEM-1)', () => {
+  it('shows each member with the lines the app shows a person by', async () => {
+    respond()
+    const screen = await shown()
 
-    const text = (await mountScreen()).text()
+    const card = screen.findAll('.member')[1]
+    expect(card?.find('.card-title').text()).toBe('Mia Rebel')
+    expect(card?.find('.line').text()).toBe('Coach · Buurtzorg · Health')
+    expect(card?.text()).toContain('mia@example.invalid')
+    expect(card?.text()).toContain('admin')
+    expect(card?.text()).toContain('active')
+  })
 
-    expect(text).toContain('Mia Rebel')
-    expect(text).toContain('mia@example.invalid')
-    expect(text).toContain('member')
-    expect(text).toContain('ben@example.invalid')
-    expect(text).toContain('applicant')
+  it('names someone without a name by their email', async () => {
+    respond()
+    const screen = await shown()
+
+    expect(screen.findAll('.member')[0]?.find('.card-title').text()).toBe(
+      'ben@example.invalid',
+    )
+  })
+
+  it("opens a member's page from their card (R-MEM-2)", async () => {
+    respond()
+    const screen = await shown()
+
+    const links = screen.findAllComponents(RouterLinkStub)
+    expect(links.map((link) => link.props('to'))).toEqual([
+      '/admin/members/m-ben',
+      '/admin/members/m-mia',
+    ])
   })
 
   it('narrows the list by search', async () => {
-    server()
-    const screen = await mountScreen()
+    respond()
+    const screen = await shown()
 
-    await screen.find('input').setValue('mia')
+    await screen.find('#member-search').setValue('mia')
 
-    expect(screen.text()).not.toContain('ben@example.invalid')
-    expect(screen.text()).toContain('mia@example.invalid')
+    expect(screen.findAll('.member')).toHaveLength(1)
   })
 
-  it('asks before deleting, and Keep sends nothing', async () => {
-    const fetchMock = server()
-    const screen = await mountScreen()
+  it('says so when the members cannot be loaded', async () => {
+    respond(false)
+    const screen = await shown()
 
-    await button(screen, 'Delete…').trigger('click')
-    expect(screen.find('[role="alert"]').text()).toContain('cannot be undone')
-    await button(screen, 'Keep').trigger('click')
-
-    expect(screen.find('[role="alert"]').exists()).toBe(false)
-    expect(
-      fetchMock.mock.calls.some(
-        ([, init]) => (init as RequestInit | undefined)?.method === 'DELETE',
-      ),
-    ).toBe(false)
-  })
-
-  it('deletes on confirmation and drops the row (R-NFR-7)', async () => {
-    const fetchMock = server()
-    const screen = await mountScreen()
-
-    await button(screen, 'Delete…').trigger('click')
-    await button(screen, 'Delete for good').trigger('click')
-    await flushPromises()
-
-    expect(fetchMock).toHaveBeenCalledWith('/api/admin/members/m-ben', {
-      method: 'DELETE',
-    })
-    expect(screen.find('[role="status"]').text()).toContain(
-      'Deleted ben@example.invalid',
-    )
-    expect(screen.text()).not.toContain('Delete for good')
-    expect(screen.findAll('article')).toHaveLength(1)
-  })
-
-  it('says why the last admin stays (R-ROLE-9)', async () => {
-    server(409, { result: 'last_admin' })
-    const screen = await mountScreen()
-
-    await button(screen, 'Delete…').trigger('click')
-    await button(screen, 'Delete for good').trigger('click')
-    await flushPromises()
-
-    expect(screen.find('[role="status"]').text()).toContain('only admin')
-    expect(screen.findAll('article')).toHaveLength(2)
+    expect(screen.find('[role="alert"]').text()).toContain('could not')
   })
 })
