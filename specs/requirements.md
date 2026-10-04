@@ -642,12 +642,13 @@ What differs by environment is only whether mail **leaves the machine**.
 - **R-CFG-4** — Changing a threshold SHALL NOT require code changes beyond that
   file, so the values can be tuned during the pilot without a redeploy of logic.
 - **R-CFG-5 (Settings in the host tools)** — A host with `settings:read` SHALL
-  see every configured value on one read-only screen, grouped by what it
-  governs (for example "Spam protection"), each with a plain-language name, what
-  it does, its value with its unit, the environment variable that sets it, and
-  whether it differs from the default. Values fixed in code SHALL be marked as
-  such. No secret SHALL appear, nor whether one is set beyond on/off. Changing a
-  value is a deployment change, except as R-CFG-6 allows.
+  see every configured value on one screen, grouped by what it governs (for
+  example "Spam protection"), each with a plain-language name, what it does,
+  its value with its unit, and whether it differs from the default. Values
+  fixed in code SHALL be marked as such. The screen SHALL NOT show environment
+  variable names: they are a technical detail. No secret SHALL appear, nor
+  whether one is set beyond on/off. Changing a value is a deployment change,
+  except as R-CFG-6 allows.
 
 - **R-CFG-6 (Changing settings in the host tools)** — A host with
   `settings:manage` SHALL be able to change, on the settings screen, the
@@ -655,7 +656,10 @@ What differs by environment is only whether mail **leaves the machine**.
   the minimum challenge and "been there" note lengths (ADR 0031). Each change
   SHALL be checked against bounds and the order of paired limits, take effect
   without a restart on every server within a minute, and show who made it and
-  when. The host SHALL be able to go back to the deployment's value.
+  when. The host SHALL be able to go back to the deployment's value. Each
+  changeable value SHALL be an editable field, saved on change and confirmed
+  with the same "Saved" tick as the profile screen (R-PROF-1); a host without
+  `settings:manage` sees it as text.
 
 ---
 
