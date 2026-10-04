@@ -102,7 +102,7 @@ describe('approving applicants over Postgres (F10)', () => {
     )
     expect((await memberRow(welcome.id))?.['status']).toBe('active')
     expect(roles.map((row) => String(row['role_key']))).toEqual(['member'])
-    expect(String(mail[0]?.['body_text'])).toContain('/auth/verify?token=')
+    expect(String(mail[0]?.['body_text'])).toContain('/sign-in#token=')
     expect(tokens[0]?.['hours']).toBe(config.limits.approvalLinkTtlHours)
   })
 

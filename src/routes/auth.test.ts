@@ -28,6 +28,8 @@ interface Harness {
   app: Express
   auth: AuthProvider
   linkFor: (next?: string) => Promise<string>
+  tokenFor: (next?: string) => Promise<string>
+  signIn: (token: string) => request.Test
   advance: (ms: number) => void
 }
 
@@ -45,6 +47,7 @@ function setup(): Harness {
     },
   })
   const app = express()
+  app.use(express.json())
   app.use(renewSessions(auth))
   app.use(
     authRoutes({
@@ -56,13 +59,16 @@ function setup(): Harness {
   )
   const linkFor = async (next?: string): Promise<string> => {
     await auth.issueLink(ada.email, { kind: 'self_service', next })
-    const url = new URL(sent.at(-1)!.url)
-    return `${url.pathname}${url.search}`
+    return sent.at(-1)!.url
   }
+  const tokenFor = async (next?: string): Promise<string> =>
+    new URL(await linkFor(next)).hash.replace(/^#token=/, '')
+  const signIn = (token: string): request.Test =>
+    request(app).post('/auth/verify').send({ token })
   const advance = (ms: number): void => {
     clock.now = new Date(clock.now.getTime() + ms)
   }
-  return { app, auth, linkFor, advance }
+  return { app, auth, linkFor, tokenFor, signIn, advance }
 }
 
 function sessionCookie(response: request.Response): string {
@@ -70,55 +76,100 @@ function sessionCookie(response: request.Response): string {
   return header[0]!.split(';')[0]!
 }
 
+describe('the emailed link (ADR 0027)', () => {
+  it('opens the sign-in screen, with the token only in the fragment', async () => {
+    const { linkFor } = setup()
+
+    const link = new URL(await linkFor())
+
+    expect(link.pathname).toBe('/sign-in')
+    expect(link.search).toBe('')
+    expect(link.hash).toMatch(/^#token=[\w-]{43}$/)
+  })
+})
+
 describe('GET /auth/verify', () => {
-  it('signs the member in and sends them to their next path (R-AUTH-5, R-NAV-5)', async () => {
-    const { app, linkFor } = setup()
+  it('moves an old link into the sign-in screen without using it (R-AUTH-5)', async () => {
+    const { app, tokenFor, signIn } = setup()
+    const token = await tokenFor()
 
-    const response = await request(app).get(await linkFor('/matches'))
+    const opened = await request(app).get(`/auth/verify?token=${token}`)
 
-    expect(response.status).toBe(303)
-    expect(response.headers['location']).toBe('/matches')
+    expect(opened.status).toBe(303)
+    expect(opened.headers['location']).toBe(`/sign-in#token=${token}`)
+    expect(opened.headers['set-cookie']).toBeUndefined()
+    expect((await signIn(token)).status).toBe(200)
+  })
+
+  it('sends a link without a token to the sign-in screen, which says so', async () => {
+    const { app } = setup()
+
+    const response = await request(app).get('/auth/verify')
+
+    expect(response.headers['location']).toBe('/sign-in')
+  })
+})
+
+describe('POST /auth/verify', () => {
+  it('signs the member in and says where to go next (R-AUTH-5, R-NAV-5)', async () => {
+    const { tokenFor, signIn } = setup()
+
+    const response = await signIn(await tokenFor('/matches'))
+
+    expect(response.status).toBe(200)
+    expect(response.body).toEqual({ next: '/matches' })
     expect(sessionCookie(response)).toMatch(/^rm_session=.+/)
   })
 
-  it('sends a used link to the login screen to ask for another (R-AUTH-6)', async () => {
-    const { app, linkFor } = setup()
-    const link = await linkFor()
-    await request(app).get(link)
+  it('sends someone with no next path to the app root (R-NAV-6)', async () => {
+    const { tokenFor, signIn } = setup()
 
-    const response = await request(app).get(link)
+    const response = await signIn(await tokenFor())
 
-    expect(response.headers['location']).toBe('/login?link=used')
+    expect(response.body).toEqual({ next: '/' })
+  })
+
+  it('refuses a used link, without a session (R-AUTH-6)', async () => {
+    const { tokenFor, signIn } = setup()
+    const token = await tokenFor()
+    await signIn(token)
+
+    const response = await signIn(token)
+
+    expect(response.status).toBe(400)
+    expect(response.body).toEqual({ reason: 'used' })
     expect(response.headers['set-cookie']).toBeUndefined()
   })
 
   it.each([
-    ['/auth/verify?token=nope', 'unknown'],
-    ['/auth/verify', 'unknown'],
-    [`/auth/verify?token=${'x'.repeat(600)}`, 'unknown'],
-  ])('treats %s as an unknown link', async (path, reason) => {
+    [{ token: 'nope' }],
+    [{}],
+    [{ token: 'x'.repeat(600) }],
+    [{ token: 42 }],
+  ])('treats %j as an unknown link', async (body) => {
     const { app } = setup()
 
-    const response = await request(app).get(path)
+    const response = await request(app).post('/auth/verify').send(body)
 
-    expect(response.headers['location']).toBe(`/login?link=${reason}`)
+    expect(response.status).toBe(400)
+    expect(response.body).toEqual({ reason: 'unknown' })
   })
 
   it('says an expired link has expired', async () => {
-    const { app, linkFor, advance } = setup()
-    const link = await linkFor()
+    const { tokenFor, signIn, advance } = setup()
+    const token = await tokenFor()
     advance(DAY)
 
-    const response = await request(app).get(link)
+    const response = await signIn(token)
 
-    expect(response.headers['location']).toBe('/login?link=expired')
+    expect(response.body).toEqual({ reason: 'expired' })
   })
 })
 
 describe('GET /auth/me', () => {
   it('describes the signed-in member, roles and permissions included (R-ROLE-4)', async () => {
-    const { app, linkFor } = setup()
-    const login = await request(app).get(await linkFor())
+    const { app, tokenFor, signIn } = setup()
+    const login = await signIn(await tokenFor())
 
     const response = await request(app)
       .get('/auth/me')
@@ -149,8 +200,8 @@ describe('GET /auth/me', () => {
 
 describe('POST /auth/logout', () => {
   it('ends the session and expires the cookie (R-AUTH-7)', async () => {
-    const { app, linkFor } = setup()
-    const cookie = sessionCookie(await request(app).get(await linkFor()))
+    const { app, tokenFor, signIn } = setup()
+    const cookie = sessionCookie(await signIn(await tokenFor()))
 
     const logout = await request(app).post('/auth/logout').set('Cookie', cookie)
     const me = await request(app).get('/auth/me').set('Cookie', cookie)
@@ -163,8 +214,8 @@ describe('POST /auth/logout', () => {
 
 describe('session renewal on every request', () => {
   it('refreshes the cookie once a day has passed (R-AUTH-7, ADR 0020)', async () => {
-    const { app, linkFor, advance } = setup()
-    const cookie = sessionCookie(await request(app).get(await linkFor()))
+    const { app, tokenFor, signIn, advance } = setup()
+    const cookie = sessionCookie(await signIn(await tokenFor()))
 
     const sameDay = await request(app).get('/auth/me').set('Cookie', cookie)
     advance(2 * DAY)

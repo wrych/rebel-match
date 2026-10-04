@@ -57,7 +57,7 @@ function setup(start = new Date('2026-11-08T10:00:00Z')): Harness {
     clock.now = new Date(clock.now.getTime() + ms)
   }
   const tokenOf = (link: OutgoingLink): string =>
-    new URL(link.url).searchParams.get('token')!
+    new URL(link.url).hash.replace(/^#token=/, '')
 
   return { auth, store, sent, advance, tokenOf }
 }
@@ -75,7 +75,7 @@ describe('issueLink', () => {
     expect(sent).toHaveLength(1)
     expect(sent[0]).toMatchObject({ memberId: 'm-ada', kind: 'self_service' })
     expect(sent[0]!.url).toMatch(
-      /^https:\/\/match\.example\.org\/auth\/verify\?token=[\w-]{43}$/,
+      /^https:\/\/match\.example\.org\/sign-in#token=[\w-]{43}$/,
     )
   })
 

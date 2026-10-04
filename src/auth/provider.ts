@@ -42,9 +42,11 @@ interface Context extends AuthDeps {
   secure: boolean
 }
 
+/** The sign-in screen, with the token in the fragment: opening it uses
+ * nothing, and the token never reaches a server log (ADR 0027). */
 function verifyUrl(publicUrl: string, rawToken: string): string {
-  const url = new URL('/auth/verify', publicUrl)
-  url.searchParams.set('token', rawToken)
+  const url = new URL('/sign-in', publicUrl)
+  url.hash = `token=${rawToken}`
   return url.toString()
 }
 

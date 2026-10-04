@@ -50,7 +50,7 @@ function asRequest(cookie: SessionCookie): { headers: { cookie: string } } {
 
 async function issueAndTake(): Promise<string> {
   await auth.issueLink(active.email, { kind: 'self_service', next: '/ask' })
-  return new URL(sent.at(-1)!.url).searchParams.get('token')!
+  return new URL(sent.at(-1)!.url).hash.replace(/^#token=/, '')
 }
 
 beforeAll(async () => {

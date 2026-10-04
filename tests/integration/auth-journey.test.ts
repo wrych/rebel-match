@@ -30,8 +30,7 @@ async function linkFromOutbox(): Promise<string> {
     [DEV_ADMIN_EMAIL],
   )
   const match = /https?:\/\/\S+/.exec(String(rows[0]?.['body_text']))
-  const url = new URL(match![0])
-  return `${url.pathname}${url.search}`
+  return match![0]
 }
 
 beforeAll(async () => {
@@ -53,13 +52,19 @@ describe('signing in as the dev admin, end to end (R-QA-2)', () => {
       next: '/admin/outbox',
     })
 
-    const verify = await request(app).get(await linkFromOutbox())
+    const link = new URL(await linkFromOutbox())
+    expect(link.pathname).toBe('/sign-in')
+
+    // Opening the link uses nothing; the sign-in screen's button does.
+    const verify = await request(app)
+      .post('/auth/verify')
+      .send({ token: link.hash.replace(/^#token=/, '') })
     const cookie = (verify.headers['set-cookie'] as unknown as string[])[0]!
     const me = await request(app)
       .get('/auth/me')
       .set('Cookie', cookie.split(';')[0]!)
 
-    expect(verify.headers['location']).toBe('/admin/outbox')
+    expect(verify.body).toEqual({ next: '/admin/outbox' })
     expect(me.body).toMatchObject({
       name: 'Dev Admin',
       onboarded: true,
