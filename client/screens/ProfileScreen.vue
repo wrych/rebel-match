@@ -220,8 +220,7 @@ function save(field: Field): Promise<void> {
         </div>
         <p class="small">
           Signed in as <strong>{{ profile.email }}</strong
-          >. Your name, job title, organization, sector and company size appear
-          on the cards other members see.
+          >. Your name and profile information may be seen by other members.
         </p>
       </div>
 

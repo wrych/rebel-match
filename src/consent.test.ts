@@ -12,6 +12,12 @@ describe('consent wording', () => {
     expect(words).toContain('only when both of you accept a connection')
   })
 
+  it('says other members may see the profile (R-ONB-5)', () => {
+    expect(words).toContain(
+      'name, organization and other profile information may be seen by other members',
+    )
+  })
+
   it('says membership is by invitation (R-ONB-5)', () => {
     expect(words).toContain('membership is by invitation')
   })

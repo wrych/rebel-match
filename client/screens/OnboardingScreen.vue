@@ -172,8 +172,7 @@ onMounted(load)
         </select>
       </div>
       <p class="small">
-        Your name, job title, organization, sector and company size appear on
-        the cards other members see.
+        Your name and profile information may be seen by other members.
       </p>
 
       <section class="card-solid consent" aria-labelledby="consent-heading">
