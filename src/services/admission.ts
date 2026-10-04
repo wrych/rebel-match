@@ -1,5 +1,7 @@
 import type { AuthProvider } from '../auth/index.js'
+import type { ApplicantGate, Client } from './applicant-gate.js'
 import type { ApplicantHandles } from './applicant-handle.js'
+import type { Challenge } from './human-check.js'
 import type { RedeemInvite } from './invite-redemption.js'
 
 export type MemberStatus = 'applicant' | 'active' | 'rejected' | 'deleted'
@@ -35,26 +37,34 @@ export interface ApplicantDetails {
 }
 
 export type LinkRequestState =
-  'check-email' | 'access-requested' | 'not-approved'
+  | 'check-email'
+  | 'access-requested'
+  | 'not-approved'
+  | 'human-check'
+  | 'try-later'
 
 /** The login screen's next step. The request that records an applicant also
  * carries the handle that lets them describe it (R-AUTH-11); `inviteRefused`
- * asks for the invalid-invite notice (R-INV-5). */
+ * asks for the invalid-invite notice (R-INV-5); `human-check` carries the
+ * challenge to solve and send back, and `try-later` means the applicant
+ * ceiling was reached (R-NFR-8). */
 export interface LinkRequest {
   state: LinkRequestState
   handle?: string
   inviteRefused?: true
+  challenge?: Challenge
 }
 
-/** What came with the address: the deep link to return to (R-NAV-5) and the
- * invite token from the QR (R-INV-1). */
+/** What came with the address: the deep link to return to (R-NAV-5), the
+ * invite token from the QR (R-INV-1), and who is asking (R-NFR-8). */
 export interface LinkRequestOptions {
   next?: string | undefined
   invite?: string | undefined
+  client: Client
 }
 
 export interface AdmissionService {
-  requestLink(email: string, opts?: LinkRequestOptions): Promise<LinkRequest>
+  requestLink(email: string, opts: LinkRequestOptions): Promise<LinkRequest>
   /** `POST /auth/applicant`: not-found for a handle that does not hold or a
    * request no longer pending. */
   describeApplicant(
@@ -69,6 +79,10 @@ interface AdmissionDeps {
   handles: ApplicantHandles
   notifyReviewers: (applicantEmail: string) => Promise<void>
   redeemInvite: RedeemInvite
+  gate: ApplicantGate
+  /** Counts a link email to the address; false once it has had its share
+   * for now (R-NFR-8). */
+  takeLinkEmail: (email: string) => boolean
   now?: () => Date
 }
 
@@ -77,22 +91,23 @@ interface AdmissionDeps {
 export function createAdmission(deps: AdmissionDeps): AdmissionService {
   const requestLink = async (
     email: string,
-    opts: LinkRequestOptions = {},
+    opts: LinkRequestOptions,
   ): Promise<LinkRequest> => {
     const admission = admissionFor(await deps.store.statusByEmail(email))
 
     if (admission === 'send-link') return sendLink(deps, email, opts.next)
     if (admission === 'not-approved') return { state: 'not-approved' }
     if (admission === 'already-asked') return { state: 'access-requested' }
-    if (opts.invite === undefined) return queueApplicant(deps, email, {})
+    if (opts.invite === undefined)
+      return queueApplicant(deps, email, opts.client, {})
 
     const now = (deps.now ?? ((): Date => new Date()))()
     const redemption = await deps.redeemInvite(email, opts.invite, now)
     if (redemption.result === 'admitted')
       return sendLink(deps, email, opts.next)
     if (redemption.result === 'address_taken')
-      return requestLink(email, { next: opts.next })
-    return queueApplicant(deps, email, { inviteRefused: true })
+      return requestLink(email, { next: opts.next, client: opts.client })
+    return queueApplicant(deps, email, opts.client, { inviteRefused: true })
   }
 
   return {
@@ -107,12 +122,16 @@ export function createAdmission(deps: AdmissionDeps): AdmissionService {
   }
 }
 
+// Past the address's share the answer is the same and nothing is sent, so the
+// limit tells a caller nothing about the address (R-NFR-8).
 async function sendLink(
   deps: AdmissionDeps,
   email: string,
   next: string | undefined,
 ): Promise<LinkRequest> {
-  await deps.auth.issueLink(email, { kind: 'self_service', next })
+  if (deps.takeLinkEmail(email)) {
+    await deps.auth.issueLink(email, { kind: 'self_service', next })
+  }
   return { state: 'check-email' }
 }
 
@@ -121,9 +140,16 @@ async function sendLink(
 async function queueApplicant(
   deps: AdmissionDeps,
   email: string,
+  client: Client,
   flags: { inviteRefused?: true },
 ): Promise<LinkRequest> {
+  const decision = await deps.gate.admit(client)
+  if (decision.result === 'try-later') return { state: 'try-later' }
+  if (decision.result === 'human-check')
+    return { state: 'human-check', challenge: decision.challenge }
+
   const created = await recordApplicant(deps, email)
+  if (created) deps.gate.recorded(client)
   return {
     state: 'access-requested',
     ...(created ? { handle: deps.handles.issue(email) } : {}),

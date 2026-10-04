@@ -2,11 +2,13 @@ import { Router } from 'express'
 import { z } from 'zod'
 import type { Limits } from '../config.js'
 import type { AdmissionService } from '../services/admission.js'
+import { clientIp } from './ip-limit.js'
 
 const requestBody = z.object({
   email: z.string().trim().toLowerCase().pipe(z.email()),
   next: z.string().optional(),
   invite: z.string().min(1).optional(),
+  altcha: z.string().min(1).max(8192).optional(),
 })
 
 function applicantBody(
@@ -44,12 +46,16 @@ export function requestLinkRoutes(deps: {
       response.status(400).json({ error: 'bad_request' })
       return
     }
-    response.json(
-      await deps.admission.requestLink(body.data.email, {
-        next: body.data.next,
-        invite: body.data.invite,
-      }),
-    )
+    const answer = await deps.admission.requestLink(body.data.email, {
+      next: body.data.next,
+      invite: body.data.invite,
+      client: { ip: clientIp(request), altcha: body.data.altcha },
+    })
+    if (answer.state === 'try-later') {
+      response.status(429).json({ error: 'too_many_requests' })
+      return
+    }
+    response.json(answer)
   })
 
   router.post('/auth/applicant', async (request, response) => {

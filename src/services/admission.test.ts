@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import type { ApplicantGate } from './applicant-gate.js'
 import { createApplicantHandles } from './applicant-handle.js'
 import type { Redemption } from './invite-redemption.js'
 import {
@@ -22,6 +23,11 @@ describe('admissionFor', () => {
 })
 
 const handles = createApplicantHandles('x'.repeat(32))
+const client = { ip: '203.0.113.7' }
+const openGate: ApplicantGate = {
+  admit: () => Promise.resolve({ result: 'admit' }),
+  recorded: () => undefined,
+}
 
 interface Harness {
   requestLink: (email: string, next?: string) => Promise<string>
@@ -39,6 +45,10 @@ function setup(
     result: 'refused',
     refusal: 'unknown',
   }),
+  limits: {
+    gate?: ApplicantGate
+    takeLinkEmail?: (email: string) => boolean
+  } = {},
 ): Harness {
   const members = new Map(initial)
   const details = new Map<string, ApplicantDetails>()
@@ -64,6 +74,8 @@ function setup(
   const admission = createAdmission({
     store,
     handles,
+    gate: limits.gate ?? openGate,
+    takeLinkEmail: limits.takeLinkEmail ?? ((): boolean => true),
     redeemInvite: (email, token) => {
       const redemption = redeem(email, token)
       if (redemption.result === 'admitted') members.set(email, 'active')
@@ -83,7 +95,7 @@ function setup(
   })
   return {
     requestLink: async (email, next) =>
-      (await admission.requestLink(email, { next })).state,
+      (await admission.requestLink(email, { next, client })).state,
     admission,
     links,
     notified,
@@ -148,7 +160,9 @@ describe('createAdmission', () => {
   it('hands an applicant the handle for their own address (R-AUTH-11)', async () => {
     const harness = setup()
 
-    const answer = await harness.admission.requestLink('new@example.invalid')
+    const answer = await harness.admission.requestLink('new@example.invalid', {
+      client,
+    })
 
     expect(answer.handle).toBeDefined()
     expect(handles.read(String(answer.handle))).toBe('new@example.invalid')
@@ -157,7 +171,9 @@ describe('createAdmission', () => {
   it('hands no handle to a repeat request, which anyone can make', async () => {
     const harness = setup([['new@example.invalid', 'applicant']])
 
-    expect(await harness.admission.requestLink('new@example.invalid')).toEqual({
+    expect(
+      await harness.admission.requestLink('new@example.invalid', { client }),
+    ).toEqual({
       state: 'access-requested',
     })
   })
@@ -169,9 +185,9 @@ describe('createAdmission', () => {
     ])
 
     for (const email of ['ada@example.invalid', 'no@example.invalid']) {
-      expect(await harness.admission.requestLink(email)).not.toHaveProperty(
-        'handle',
-      )
+      expect(
+        await harness.admission.requestLink(email, { client }),
+      ).not.toHaveProperty('handle')
     }
   })
 })
@@ -222,6 +238,7 @@ describe('requestLink with an invite (F15)', () => {
 
     expect(
       await harness.admission.requestLink('new@example.invalid', {
+        client,
         invite: 'tok',
         next: '/matches',
       }),
@@ -240,6 +257,7 @@ describe('requestLink with an invite (F15)', () => {
     }))
 
     const answer = await harness.admission.requestLink('new@example.invalid', {
+      client,
       invite: 'tok',
     })
 
@@ -265,6 +283,7 @@ describe('requestLink with an invite (F15)', () => {
 
     expect(
       await harness.admission.requestLink('ada@example.invalid', {
+        client,
         invite: 'tok',
       }),
     ).toEqual({ state: 'check-email' })
@@ -285,6 +304,7 @@ describe('requestLink with an invite (F15)', () => {
 
       expect(
         await harness.admission.requestLink('x@example.invalid', {
+          client,
           invite: 'tok',
         }),
       ).toEqual({ state })
@@ -300,8 +320,128 @@ describe('requestLink with an invite (F15)', () => {
 
     expect(
       await harness.admission.requestLink('race@example.invalid', {
+        client,
         invite: 'tok',
       }),
     ).toEqual({ state: 'check-email' })
+  })
+})
+
+describe('createAdmission within the abuse limits (R-NFR-8)', () => {
+  const challenge = { parameters: {}, signature: 'sig' } as never
+
+  /** A gate answering `decision`, recording what it was asked and told. */
+  function gate(decision: Awaited<ReturnType<ApplicantGate['admit']>>): {
+    gate: ApplicantGate
+    asked: string[]
+    recorded: string[]
+  } {
+    const asked: string[] = []
+    const recorded: string[] = []
+    return {
+      asked,
+      recorded,
+      gate: {
+        admit: (who) => {
+          asked.push(who.ip)
+          return Promise.resolve(decision)
+        },
+        recorded: (who) => {
+          recorded.push(who.ip)
+        },
+      },
+    }
+  }
+
+  it('answers as usual past the address share, and sends nothing', async () => {
+    const harness = setup(
+      [['ada@example.invalid', 'active']],
+      false,
+      undefined,
+      {
+        takeLinkEmail: () => false,
+      },
+    )
+
+    expect(await harness.requestLink('ada@example.invalid')).toBe('check-email')
+    expect(harness.links).toEqual([])
+  })
+
+  it('admits by invite past the address share without sending', async () => {
+    const harness = setup([], false, () => ({ result: 'admitted' }), {
+      takeLinkEmail: () => false,
+    })
+
+    expect(
+      await harness.admission.requestLink('new@example.invalid', {
+        client,
+        invite: 'tok',
+      }),
+    ).toEqual({ state: 'check-email' })
+    expect(harness.members.get('new@example.invalid')).toBe('active')
+    expect(harness.links).toEqual([])
+  })
+
+  it('counts a recorded applicant against the client', async () => {
+    const paced = gate({ result: 'admit' })
+    const harness = setup([], false, undefined, { gate: paced.gate })
+
+    await harness.requestLink('new@example.invalid')
+
+    expect(paced.recorded).toEqual([client.ip])
+  })
+
+  it('never asks the gate about members or repeat requests', async () => {
+    const paced = gate({ result: 'try-later' })
+    const harness = setup(
+      [
+        ['ada@example.invalid', 'active'],
+        ['wait@example.invalid', 'applicant'],
+        ['no@example.invalid', 'rejected'],
+      ],
+      false,
+      undefined,
+      { gate: paced.gate },
+    )
+
+    expect(await harness.requestLink('ada@example.invalid')).toBe('check-email')
+    expect(await harness.requestLink('wait@example.invalid')).toBe(
+      'access-requested',
+    )
+    expect(await harness.requestLink('no@example.invalid')).toBe('not-approved')
+    expect(paced.asked).toEqual([])
+  })
+
+  it('asks for the human check and records nothing until it is solved', async () => {
+    const paced = gate({ result: 'human-check', challenge })
+    const harness = setup([], false, undefined, { gate: paced.gate })
+
+    expect(
+      await harness.admission.requestLink('new@example.invalid', { client }),
+    ).toEqual({ state: 'human-check', challenge })
+    expect(harness.members.has('new@example.invalid')).toBe(false)
+    expect(harness.notified).toEqual([])
+    expect(paced.recorded).toEqual([])
+  })
+
+  it('records nothing past the ceiling', async () => {
+    const paced = gate({ result: 'try-later' })
+    const harness = setup([], false, undefined, { gate: paced.gate })
+
+    expect(await harness.requestLink('new@example.invalid')).toBe('try-later')
+    expect(harness.members.has('new@example.invalid')).toBe(false)
+    expect(harness.notified).toEqual([])
+  })
+
+  it('paces an applicant whose invite was refused like any other', async () => {
+    const paced = gate({ result: 'try-later' })
+    const harness = setup([], false, undefined, { gate: paced.gate })
+
+    expect(
+      await harness.admission.requestLink('new@example.invalid', {
+        client,
+        invite: 'bad',
+      }),
+    ).toEqual({ state: 'try-later' })
   })
 })

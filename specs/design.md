@@ -67,34 +67,36 @@ Postgres** (ADR 0024), single-page mobile-first client served by the Node app.
 One module owns every tunable (R-CFG-1..4). Secrets come from env; product
 thresholds have sane defaults in the file and may be overridden by env.
 
-| Key                             | Default                       | Serves                    |
-| ------------------------------- | ----------------------------- | ------------------------- |
-| `limits.challengeMinChars`      | `31` (i.e. "more than 30")    | R-ASK-3                   |
-| `limits.beenThereNoteMinChars`  | `31`                          | R-OFF-4                   |
-| `limits.magicLinkTtlMinutes`    | `15`                          | R-AUTH-5                  |
-| `limits.approvalLinkTtlHours`   | `24`                          | R-AUTH-10                 |
-| `sessionTtlDays` (idle)         | `30`                          | R-AUTH-7                  |
-| `limits.inviteDefaultMaxUses`   | `400`                         | R-INV-4                   |
-| `limits.inviteDefaultHours`     | `12`                          | R-INV-2                   |
-| `consent.currentVersion`        | e.g. `"2026-11-01"`           | R-ONB-3, R-ONB-4          |
-| `mail.delivery`                 | `smtp` \| `none`              | R-DEV-1, R-DEV-4, R-DEV-5 |
-| `limits.outboxRetentionDays`    | `30`                          | R-MSG-6                   |
-| `outboxPurgeIntervalHours`      | `1`                           | R-MSG-6                   |
-| `limits.outboxPageSize`         | `100`                         | R-MSG-5                   |
-| `limits.deckPageSize`           | `20`                          | R-OFF-1                   |
-| `limits.whitelistBatchMax`      | `1000`                        | R-AUTH-1                  |
-| `limits.savedTickMs`            | `2500`                        | R-PROF-1                  |
-| `limits.linkEmailsPerAddress`   | `3`                           | R-NFR-8                   |
-| `limits.linkEmailWindowMinutes` | `15`                          | R-NFR-8                   |
-| `limits.authRequestsPerIp`      | `1000`                        | R-NFR-8                   |
-| `limits.ipWindowMinutes`        | `15`                          | R-NFR-8                   |
-| `limits.applicantsBeforeCheck`  | `30`                          | R-NFR-8                   |
-| `limits.applicantsCeiling`      | `300`                         | R-NFR-8                   |
-| `limits.applicantWindowMinutes` | `60`                          | R-NFR-8                   |
-| `trustProxy` (`TRUST_PROXY`)    | `0`; `1` on Cloud Run         | R-NFR-8                   |
-| `seed.profile`                  | `dev` \| `prod`               | R-SEED-4                  |
-| `analytics.apiHost`             | `api-eu.mixpanel.com`         | R-ANA-5                   |
-| `rolePermissions`               | role → permission matrix (§2) | R-ROLE-3, R-ROLE-6        |
+| Key                            | Default                       | Serves                    |
+| ------------------------------ | ----------------------------- | ------------------------- |
+| `limits.challengeMinChars`     | `31` (i.e. "more than 30")    | R-ASK-3                   |
+| `limits.beenThereNoteMinChars` | `31`                          | R-OFF-4                   |
+| `limits.magicLinkTtlMinutes`   | `15`                          | R-AUTH-5                  |
+| `limits.approvalLinkTtlHours`  | `24`                          | R-AUTH-10                 |
+| `sessionTtlDays` (idle)        | `30`                          | R-AUTH-7                  |
+| `limits.inviteDefaultMaxUses`  | `400`                         | R-INV-4                   |
+| `limits.inviteDefaultHours`    | `12`                          | R-INV-2                   |
+| `consent.currentVersion`       | e.g. `"2026-11-01"`           | R-ONB-3, R-ONB-4          |
+| `mail.delivery`                | `smtp` \| `none`              | R-DEV-1, R-DEV-4, R-DEV-5 |
+| `limits.outboxRetentionDays`   | `30`                          | R-MSG-6                   |
+| `outboxPurgeIntervalHours`     | `1`                           | R-MSG-6                   |
+| `limits.outboxPageSize`        | `100`                         | R-MSG-5                   |
+| `limits.deckPageSize`          | `20`                          | R-OFF-1                   |
+| `limits.whitelistBatchMax`     | `1000`                        | R-AUTH-1                  |
+| `limits.savedTickMs`           | `2500`                        | R-PROF-1                  |
+| `abuse.linkEmailsPerAddress`   | `3`                           | R-NFR-8                   |
+| `abuse.linkEmailWindowMinutes` | `15`                          | R-NFR-8                   |
+| `abuse.authRequestsPerIp`      | `1000`                        | R-NFR-8                   |
+| `abuse.ipWindowMinutes`        | `15`                          | R-NFR-8                   |
+| `abuse.applicantsBeforeCheck`  | `30`                          | R-NFR-8                   |
+| `abuse.applicantsCeiling`      | `300`                         | R-NFR-8                   |
+| `abuse.applicantWindowMinutes` | `60`                          | R-NFR-8                   |
+| `abuse.humanCheckCost`         | `1000`                        | R-NFR-8                   |
+| `abuse.humanCheckMinutes`      | `5`                           | R-NFR-8                   |
+| `trustProxy` (`TRUST_PROXY`)   | `0`; `1` on Cloud Run         | R-NFR-8                   |
+| `seed.profile`                 | `dev` \| `prod`               | R-SEED-4                  |
+| `analytics.apiHost`            | `api-eu.mixpanel.com`         | R-ANA-5                   |
+| `rolePermissions`              | role → permission matrix (§2) | R-ROLE-3, R-ROLE-6        |
 
 - `GET /api/config` returns the **client-relevant subset** (`limits`,
   `consent.currentVersion`) so the submit button, the note counter, and the
@@ -967,16 +969,16 @@ Alternatives considered (kept only as fallbacks):
   15).
 - **Abuse limits (R-NFR-8, ADR 0029).** In-memory counters per server
   instance, reset on restart:
-  - per address, `limits.linkEmailsPerAddress` (3) per
-    `limits.linkEmailWindowMinutes` (15): over it, `/auth/request-link`
+  - per address, `abuse.linkEmailsPerAddress` (3) per
+    `abuse.linkEmailWindowMinutes` (15): over it, `/auth/request-link`
     answers as usual and sends nothing;
-  - per IP, `limits.authRequestsPerIp` (1000) per `limits.ipWindowMinutes`
+  - per IP, `abuse.authRequestsPerIp` (1000) per `abuse.ipWindowMinutes`
     (15) across `POST /auth/request-link`, `/auth/applicant` and
     `/auth/verify`: over it, `429 too_many_requests`;
-  - new applicants per IP per `limits.applicantWindowMinutes` (60): after
-    `limits.applicantsBeforeCheck` (30) the request answers
+  - new applicants per IP per `abuse.applicantWindowMinutes` (60): after
+    `abuse.applicantsBeforeCheck` (30) the request answers
     `{state: 'human-check', challenge}` until it is resent with a solved
-    ALTCHA payload; after `limits.applicantsCeiling` (300), `429`.
+    ALTCHA payload; after `abuse.applicantsCeiling` (300), `429`.
   - The ALTCHA challenge is HMAC-signed with a key derived from
     `SESSION_SECRET`, expires after a few minutes, and is accepted once.
   - The client IP comes from `X-Forwarded-For` only through `TRUST_PROXY`
