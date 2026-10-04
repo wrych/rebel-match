@@ -11,6 +11,7 @@ import { loadConfig } from '../config.js'
 import type { MemberProfile } from '../services/member-profiles.js'
 import { authRoutes, renewSessions } from './auth.js'
 import { configPolicy } from '../permissions.js'
+import type { AnalyticsEvent } from '../services/analytics.js'
 
 const DAY = 86_400_000
 const config = loadConfig({
@@ -30,11 +31,13 @@ interface Harness {
   auth: AuthProvider
   linkFor: (next?: string) => Promise<string>
   advance: (ms: number) => void
+  tracked: [string, AnalyticsEvent][]
 }
 
 function setup(): Harness {
   const clock = { now: new Date('2026-11-08T10:00:00Z') }
   const sent: OutgoingLink[] = []
+  const tracked: [string, AnalyticsEvent][] = []
   const auth = createAuth({
     policy: configPolicy,
     store: createMemoryAuthStore([ada]),
@@ -53,6 +56,10 @@ function setup(): Harness {
       profiles: {
         profile: (id) => Promise.resolve(id === ada.id ? profile : null),
       },
+      track: (memberId, event) => {
+        tracked.push([memberId, event])
+        return Promise.resolve()
+      },
     }),
   )
   const linkFor = async (next?: string): Promise<string> => {
@@ -63,7 +70,7 @@ function setup(): Harness {
   const advance = (ms: number): void => {
     clock.now = new Date(clock.now.getTime() + ms)
   }
-  return { app, auth, linkFor, advance }
+  return { app, auth, linkFor, advance, tracked }
 }
 
 function sessionCookie(response: request.Response): string {
@@ -80,6 +87,16 @@ describe('GET /auth/verify', () => {
     expect(response.status).toBe(303)
     expect(response.headers['location']).toBe('/matches')
     expect(sessionCookie(response)).toMatch(/^rm_session=.+/)
+  })
+
+  it('reports the sign-in once, and not a refused link (R-ANA-1)', async () => {
+    const { app, linkFor, tracked } = setup()
+    const link = await linkFor()
+
+    await request(app).get(link)
+    await request(app).get(link)
+
+    expect(tracked).toEqual([[ada.id, { name: 'login_completed' }]])
   })
 
   it('sends a used link to the login screen to ask for another (R-AUTH-6)', async () => {

@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { createAuth, createMemoryAuthStore } from '../auth/index.js'
 import { loadConfig } from '../config.js'
 import { configPolicy } from '../permissions.js'
+import type { AnalyticsEvent } from '../services/analytics.js'
 import type {
   OnboardingInput,
   OnboardingOutcome,
@@ -33,14 +34,20 @@ const draft = {
 function setup(outcome: OnboardingOutcome = 'done'): {
   app: Express
   completed: { memberId: string; input: OnboardingInput }[]
+  tracked: [string, AnalyticsEvent][]
 } {
   const completed: { memberId: string; input: OnboardingInput }[] = []
+  const tracked: [string, AnalyticsEvent][] = []
   const app = express()
   app.use(express.json())
   app.use(
     onboardingRoutes({
       auth,
       config,
+      track: (memberId, event) => {
+        tracked.push([memberId, event])
+        return Promise.resolve()
+      },
       onboarding: {
         draft: () => Promise.resolve(draft),
         complete: (memberId, input) => {
@@ -50,7 +57,7 @@ function setup(outcome: OnboardingOutcome = 'done'): {
       },
     }),
   )
-  return { app, completed }
+  return { app, completed, tracked }
 }
 
 async function cookie(): Promise<string> {
@@ -103,6 +110,32 @@ describe('POST /api/onboarding', () => {
         },
       },
     ])
+  })
+
+  it('reports onboarding with the consent version, and not a refused one (R-ANA-1)', async () => {
+    const done = setup()
+    const stale = setup('stale_consent')
+    const body = { name: 'Ada', consentVersion: config.consentVersion }
+
+    await request(done.app)
+      .post('/api/onboarding')
+      .set('Cookie', await cookie())
+      .send(body)
+    await request(stale.app)
+      .post('/api/onboarding')
+      .set('Cookie', await cookie())
+      .send(body)
+
+    expect(done.tracked).toEqual([
+      [
+        'm-new',
+        {
+          name: 'onboarding_completed',
+          consent_version: config.consentVersion,
+        },
+      ],
+    ])
+    expect(stale.tracked).toEqual([])
   })
 
   it('answers 409 when the consent accepted is no longer current (R-ONB-4)', async () => {

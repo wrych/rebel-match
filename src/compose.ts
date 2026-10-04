@@ -38,6 +38,13 @@ import { createInviteStore } from './services/invite-store.js'
 import { createInvites } from './services/invites.js'
 import { createMailer, type Mailer } from './services/mailer.js'
 import { createMemberProfiles } from './services/member-profiles.js'
+import {
+  createTracker,
+  trackNothing,
+  type Track,
+} from './services/analytics.js'
+import { createAnalyticsIds } from './services/analytics-ids-store.js'
+import { createMixpanelSink } from './services/mixpanel-sink.js'
 import { createAnalyticsConsent } from './services/analytics-consent.js'
 import { createAnalyticsConsentStore } from './services/analytics-consent-store.js'
 import { createOnboardingStore } from './services/onboarding-store.js'
@@ -90,12 +97,14 @@ export function composeAuth(
 function composeJourneys(
   config: Config,
   db: Database,
+  track: Track,
 ): Pick<
   AppDeps,
   'challenges' | 'deck' | 'connections' | 'swipes' | 'follows' | 'cockpit'
 > {
   const challenges = createChallenges({
     store: createChallengeStore(db),
+    track,
   })
   const follows = createFollows({
     store: createFollowStore(db),
@@ -104,6 +113,7 @@ function composeJourneys(
   const connections = createConnections({
     store: createConnectionStore(db),
     newId: randomUUID,
+    track,
   })
   return {
     challenges,
@@ -112,7 +122,7 @@ function composeJourneys(
       pageSize: config.limits.deckPageSize,
     }),
     connections,
-    swipes: createSwipes({ store: createSwipeStore(db), connections }),
+    swipes: createSwipes({ store: createSwipeStore(db), connections, track }),
     follows,
     cockpit: createCockpit({
       store: createCockpitStore(db),
@@ -172,16 +182,40 @@ function composeAdmission(
   }
 }
 
+// Analytics goes to Mixpanel only with a token, and only for opted-in members
+// (ADR 0026); without a token nothing is sent.
+function composeTrack(
+  config: Config,
+  db: Database,
+  onError: (error: unknown) => void,
+): Track {
+  const { token, apiHost } = config.analytics
+  if (token === undefined) return trackNothing
+  return createTracker({
+    ids: createAnalyticsIds(db, config.analyticsVersion),
+    sink: createMixpanelSink({ token, apiHost }),
+    onError,
+  })
+}
+
+const ignoreError = (): void => undefined
+
 /** Every service the app serves, wired to the database: the server and the
  * integration tests build the same thing, so a test cannot pass on wiring the
- * server lacks. */
-export function composeApp(config: Config, db: Database): AppDeps {
+ * server lacks. `onAnalyticsError` hears of an event that could not be sent. */
+export function composeApp(
+  config: Config,
+  db: Database,
+  hooks: { onAnalyticsError?: (error: unknown) => void } = {},
+): AppDeps {
   const mailer = composeMailer(config, db)
   const auth = composeAuth(config, db, mailer)
+  const track = composeTrack(config, db, hooks.onAnalyticsError ?? ignoreError)
 
   return {
     config,
     db,
+    track,
     auth,
     profiles: createMemberProfiles(db, {
       consentVersion: config.consentVersion,
@@ -205,6 +239,6 @@ export function composeApp(config: Config, db: Database): AppDeps {
       defaults: config.limits,
       newId: randomUUID,
     }),
-    ...composeJourneys(config, db),
+    ...composeJourneys(config, db, track),
   }
 }

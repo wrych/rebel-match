@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import type { AnalyticsEvent, Track } from './analytics.js'
 import { trends as seedTrends } from '../seed/shared/trends.js'
 import {
   createChallenges,
@@ -27,7 +28,9 @@ function setup(): {
   service: ReturnType<typeof createChallenges>
   rows: Map<string, Challenge>
   peerCalls: [string, string][]
+  tracked: [string, AnalyticsEvent][]
 } {
+  const tracked: [string, AnalyticsEvent][] = []
   const rows = new Map<string, Challenge>()
   const peerCalls: [string, string][] = []
   const store: ChallengeStore = {
@@ -56,7 +59,16 @@ function setup(): {
         { org: 'Advice process', url: 'https://x.invalid', takeaway: 'Ask.' },
       ]),
   }
-  return { service: createChallenges({ store }), rows, peerCalls }
+  const track: Track = (memberId, event) => {
+    tracked.push([memberId, event])
+    return Promise.resolve()
+  }
+  return {
+    service: createChallenges({ store, track }),
+    rows,
+    peerCalls,
+    tracked,
+  }
 }
 
 const decide = 'Since we flattened, nobody knows who can decide what any more.'
@@ -125,6 +137,28 @@ describe('createChallenges', () => {
     await service.confirmTrend('m-ada', 'c-1', '02')
 
     expect(rows.get('c-1')).toMatchObject({ trendId: '02', overridden: true })
+  })
+
+  it('reports a submitted challenge by its length, never its words (R-ANA-1,3)', async () => {
+    const { service, tracked } = setup()
+
+    await service.create('m-ada', decide, () => 'c-1')
+
+    expect(tracked).toEqual([
+      ['m-ada', { name: 'challenge_submitted', char_count: decide.length }],
+    ])
+  })
+
+  it('reports the trend chosen and whether it overrode the matcher (R-ANA-1)', async () => {
+    const { service, tracked } = setup()
+    await service.create('m-ada', decide, () => 'c-1')
+
+    await service.confirmTrend('m-ada', 'c-1', '02')
+
+    expect(tracked.at(-1)).toEqual([
+      'm-ada',
+      { name: 'trend_assigned', trend_id: '02', overridden: true },
+    ])
   })
 
   it('refuses an unknown trend, and a challenge that is not theirs', async () => {

@@ -1,3 +1,5 @@
+import { trackNothing, type Track } from './analytics.js'
+
 export type ConnectionKind = 'same_boat' | 'been_there'
 export type ConnectionStatus = 'pending' | 'accepted' | 'declined'
 
@@ -161,8 +163,10 @@ async function storePending(
 export function createConnections(deps: {
   store: ConnectionStore
   newId: () => string
+  track?: Track
 }): ConnectionService {
   const { store } = deps
+  const track = deps.track ?? trackNothing
   return {
     request: async (requesterId, input) => {
       if (input.targetId === requesterId) return { result: 'not_found' }
@@ -171,12 +175,21 @@ export function createConnections(deps: {
       if (!(await contextHolds(store, requesterId, input))) {
         return { result: 'not_found' }
       }
-      return storePending(store, deps.newId, requesterId, input)
+      const outcome = await storePending(store, deps.newId, requesterId, input)
+      if (outcome.result === 'created')
+        void track(requesterId, {
+          name: 'connection_requested',
+          kind: input.kind,
+        })
+      return outcome
     },
     incoming: (memberId) => store.incoming(memberId),
     get: (memberId, id) => store.view(id, memberId),
-    respond: async (memberId, id, answer) =>
-      (await store.respond(id, memberId, answer)) ? 'done' : 'not_found',
+    respond: async (memberId, id, answer) => {
+      if (!(await store.respond(id, memberId, answer))) return 'not_found'
+      void track(memberId, { name: 'connection_responded', status: answer })
+      return 'done'
+    },
     contact: async (memberId, id) => {
       const record = await store.find(id)
       if (record?.status !== 'accepted' || !isParty(record, memberId))

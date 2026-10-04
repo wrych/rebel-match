@@ -1,3 +1,4 @@
+import { trackNothing, type Track } from './analytics.js'
 import type { ConnectionService, RequestOutcome } from './connections.js'
 
 export type SwipeAction = 'same_boat' | 'been_there' | 'follow' | 'skip'
@@ -44,7 +45,9 @@ export interface SwipeService {
 export function createSwipes(deps: {
   store: SwipeStore
   connections: Pick<ConnectionService, 'request'>
+  track?: Track
 }): SwipeService {
+  const track = deps.track ?? trackNothing
   return {
     swipe: async (memberId, input) => {
       const target = await deps.store.target(input.challengeId, memberId)
@@ -65,6 +68,11 @@ export function createSwipes(deps: {
         await deps.store.follow(memberId, target.trendId)
       }
       await deps.store.record(memberId, input.challengeId, input.action)
+      void track(memberId, {
+        name: 'swipe',
+        action: input.action,
+        trend_id: target.trendId,
+      })
       return recorded
     },
   }

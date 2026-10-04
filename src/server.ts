@@ -8,7 +8,11 @@ import { startOutboxRetention } from './services/outbox-retention.js'
 
 const config = await loadRuntimeConfig()
 const connection = await openDatabase(config)
-const deps = composeApp(config, connection.db)
+const deps = composeApp(config, connection.db, {
+  onAnalyticsError: () => {
+    console.warn('analytics: an event could not be sent')
+  },
+})
 
 startOutboxRetention({
   log: deps.outbox,

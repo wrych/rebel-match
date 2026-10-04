@@ -1,3 +1,4 @@
+import { trackNothing, type Track } from './analytics.js'
 import { detectTrend, type TrendKeywords } from './matcher.js'
 
 /** A trend as screens show it (R-ASK-6). */
@@ -129,7 +130,9 @@ async function trendDetail(
  * nothing, as for a challenge that does not exist (R-NAV-8). */
 export function createChallenges(deps: {
   store: ChallengeStore
+  track?: Track
 }): ChallengeService {
+  const track = deps.track ?? trackNothing
   const own = async (
     memberId: string,
     id: string,
@@ -146,6 +149,10 @@ export function createChallenges(deps: {
       await deps.store.insert({ id, memberId, body, autoTrend })
       const created = await deps.store.find(id)
       if (created === null) throw new Error('challenge vanished after insert')
+      void track(memberId, {
+        name: 'challenge_submitted',
+        char_count: body.length,
+      })
       return created
     },
     get: own,
@@ -154,7 +161,13 @@ export function createChallenges(deps: {
       if (challenge === null) return 'not_found'
       const known = (await deps.store.trends()).some((t) => t.id === trendId)
       if (!known) return 'unknown_trend'
-      await deps.store.setTrend(id, trendId, trendId !== challenge.autoTrend)
+      const overridden = trendId !== challenge.autoTrend
+      await deps.store.setTrend(id, trendId, overridden)
+      void track(memberId, {
+        name: 'trend_assigned',
+        trend_id: trendId,
+        overridden,
+      })
       return 'saved'
     },
     matches: async (memberId, id) => {
