@@ -19,6 +19,7 @@ import OfferDoneScreen from './screens/OfferDoneScreen.vue'
 import OfferNoteScreen from './screens/OfferNoteScreen.vue'
 import OfferScreen from './screens/OfferScreen.vue'
 import OutboxScreen from './screens/OutboxScreen.vue'
+import SettingsScreen from './screens/SettingsScreen.vue'
 import ProfileScreen from './screens/ProfileScreen.vue'
 import RequestContactScreen from './screens/RequestContactScreen.vue'
 import RequestScreen from './screens/RequestScreen.vue'
@@ -77,6 +78,7 @@ export const router = createRouter({
     screen('admin-invites', InvitesScreen),
     screen('admin-members', MembersScreen),
     screen('admin-outbox', OutboxScreen),
+    screen('admin-settings', SettingsScreen),
     { path: '/:pathMatch(.*)*', name: 'not-found', component: NotFoundScreen },
   ],
 })

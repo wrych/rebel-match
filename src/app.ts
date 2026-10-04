@@ -13,6 +13,7 @@ import { guardApi } from './routes/api-guard.js'
 import { adminApplicantRoutes } from './routes/admin-applicants.js'
 import { adminInviteRoutes } from './routes/admin-invites.js'
 import { adminOutboxRoutes } from './routes/admin-outbox.js'
+import { adminSettingsRoutes } from './routes/admin-settings.js'
 import { adminMemberRoutes } from './routes/admin-members.js'
 import { adminRoleRoutes } from './routes/admin-roles.js'
 import { adminWhitelistRoutes } from './routes/admin-whitelist.js'
@@ -137,6 +138,7 @@ export function createApp(deps: AppDeps): Express {
   app.use(adminApplicantRoutes(deps))
   app.use(adminInviteRoutes(deps))
   app.use(adminOutboxRoutes(deps))
+  app.use(adminSettingsRoutes(deps))
 
   app.get('/api/health', async (_request, response) => {
     const database = (await databaseReachable(deps.db)) ? 'up' : 'down'

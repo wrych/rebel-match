@@ -341,6 +341,12 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): Config {
   }
 }
 
+/** The configuration with nothing set but a placeholder secret: what each
+ * value would be by default, for the host tools to compare with (R-CFG-5). */
+export function defaultConfig(): Config {
+  return loadConfig({ SESSION_SECRET: '0'.repeat(32) })
+}
+
 /** The subset served by `GET /api/config`. Built by naming what goes in, so a
  * new secret cannot reach the client by being added to Config (R-CFG-2). */
 export function clientConfig(config: Config): ClientConfig {
