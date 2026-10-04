@@ -61,6 +61,6 @@ still holds except where the later ADR says otherwise.
 | [0022](0022-agents-merge-routine-prs.md)                  | Agents merge routine pull requests; people approve decisions    | Accepted                  |
 | [0023](0023-prototype-look-and-colour-modes.md)           | Wear the prototype's look, with happy mode as a colour mode     | Accepted                  |
 | [0024](0024-postgres-via-drizzle-with-pglite-for-dev.md)  | Postgres through Drizzle, with PGlite for development and tests | Accepted                  |
-| [0025](0025-cloud-run-promote-staging.md)                 | Cloud Run from GitHub; production promoted from staging         | Proposed                  |
+| [0025](0025-cloud-run-promote-staging.md)                 | Cloud Run from GitHub; production promoted from staging         | Accepted                  |
 | [0026](0026-analytics-opt-in-sent-from-the-server.md)     | Analytics is opt-in, and every event goes from the server       | Accepted                  |
 | [0027](0027-sign-in-with-a-button.md)                     | Sign in with a button, never by opening the link                | Accepted                  |
