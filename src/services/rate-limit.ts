@@ -1,3 +1,5 @@
+import { MS_PER_MINUTE } from '../time.js'
+
 /** Counts uses per key within a fixed window, in this server's memory only
  * (ADR 0029): a restart forgets them, and each instance counts on its own. */
 export interface WindowCounter {
@@ -18,22 +20,23 @@ interface Window {
  * ended are swept once per window length, so the map holds only the keys seen
  * recently, however many visit over a day. */
 export function createWindowCounter(options: {
-  windowMs: number
+  windowMinutes: number
   now?: () => number
 }): WindowCounter {
   const now = options.now ?? Date.now
+  const windowMs = options.windowMinutes * MS_PER_MINUTE
   const windows = new Map<string, Window>()
-  let nextSweep = now() + options.windowMs
+  let nextSweep = now() + windowMs
 
   const ended = (window: Window, at: number): boolean =>
-    at - window.startedAt >= options.windowMs
+    at - window.startedAt >= windowMs
 
   const sweep = (at: number): void => {
     if (at < nextSweep) return
     for (const [key, window] of windows) {
       if (ended(window, at)) windows.delete(key)
     }
-    nextSweep = at + options.windowMs
+    nextSweep = at + windowMs
   }
 
   const current = (key: string): Window => {

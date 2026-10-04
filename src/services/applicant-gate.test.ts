@@ -12,7 +12,7 @@ function setup(): ReturnType<typeof createApplicantGate> {
     verify: (payload) => Promise.resolve(payload === 'solved'),
   }
   return createApplicantGate({
-    counter: createWindowCounter({ windowMs: 60_000 }),
+    counter: createWindowCounter({ windowMinutes: 1 }),
     humanCheck,
     limits,
   })

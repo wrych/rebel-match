@@ -9,6 +9,7 @@ import {
 } from 'altcha-lib'
 import { deriveKey } from 'altcha-lib/algorithms/pbkdf2'
 import { z } from 'zod'
+import { MS_PER_MINUTE } from '../time.js'
 
 export type { Challenge }
 
@@ -90,7 +91,9 @@ export function createHumanCheck(options: {
         cost: options.cost,
         counter: randomInt(COUNTER_MAX, COUNTER_MIN),
         deriveKey,
-        expiresAt: new Date(now().getTime() + options.lifetimeMinutes * 60_000),
+        expiresAt: new Date(
+          now().getTime() + options.lifetimeMinutes * MS_PER_MINUTE,
+        ),
         hmacSignatureSecret: signatureSecret,
         hmacKeySignatureSecret: keySecret,
       }),

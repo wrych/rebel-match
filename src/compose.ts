@@ -167,7 +167,7 @@ function composeAdmission(
 ): Pick<AppDeps, 'admission' | 'approvals'> {
   const { abuse } = config
   const linkEmails = createWindowCounter({
-    windowMs: abuse.linkEmailWindowMinutes * 60_000,
+    windowMinutes: abuse.linkEmailWindowMinutes,
   })
   return {
     admission: createAdmission({
@@ -178,7 +178,7 @@ function composeAdmission(
         linkEmails.take(email, abuse.linkEmailsPerAddress),
       gate: createApplicantGate({
         counter: createWindowCounter({
-          windowMs: abuse.applicantWindowMinutes * 60_000,
+          windowMinutes: abuse.applicantWindowMinutes,
         }),
         humanCheck: createHumanCheck({
           secret: config.sessionSecret,

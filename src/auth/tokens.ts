@@ -1,10 +1,10 @@
 import { createHash, randomBytes } from 'node:crypto'
 import type { Limits } from '../config.js'
+import { MS_PER_MINUTE } from '../time.js'
 import type { TokenRecord } from './store.js'
 import type { LinkKind } from './types.js'
 
 const SECRET_BYTES = 32
-const MS_PER_MINUTE = 60_000
 const MS_PER_HOUR = 60 * MS_PER_MINUTE
 
 /** A fresh unguessable secret, URL-safe so it can sit in a link or a cookie. */

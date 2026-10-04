@@ -43,11 +43,9 @@ export type LinkRequestState =
   | 'human-check'
   | 'try-later'
 
-/** The login screen's next step. The request that records an applicant also
- * carries the handle that lets them describe it (R-AUTH-11); `inviteRefused`
- * asks for the invalid-invite notice (R-INV-5); `human-check` carries the
- * challenge to solve and send back, and `try-later` means the applicant
- * ceiling was reached (R-NFR-8). */
+/** The login screen's next step, with the applicant's handle (R-AUTH-11),
+ * the invalid-invite notice (R-INV-5), or the human check's challenge;
+ * `try-later` is the applicant ceiling (R-NFR-8). */
 export interface LinkRequest {
   state: LinkRequestState
   handle?: string

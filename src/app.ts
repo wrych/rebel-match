@@ -112,7 +112,7 @@ export function createApp(deps: AppDeps): Express {
     [...SIGN_IN_POSTS],
     limitPerIp(
       createWindowCounter({
-        windowMs: deps.config.abuse.ipWindowMinutes * 60_000,
+        windowMinutes: deps.config.abuse.ipWindowMinutes,
       }),
       deps.config.abuse.authRequestsPerIp,
     ),
