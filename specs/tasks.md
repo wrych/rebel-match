@@ -197,7 +197,7 @@ printed dev link (R-DEV-6).
 ## M6 — Hardening & pilot _(by 2026-11-01)_
 
 - [ ] Mobile-first pass on every screen (portrait phone). _(R-NFR-2)_
-- [ ] Abuse limits on sign-in: per address, a per-IP backstop, and the
+- [x] Abuse limits on sign-in: per address, a per-IP backstop, and the
       self-hosted ALTCHA check for new applicants past the per-IP cap; client
       IP through `TRUST_PROXY`. _(R-NFR-8, ADR 0029)_
 - [ ] Admin view of the configuration in the host tools, and which values

@@ -132,6 +132,101 @@ describe('GET /api/config', () => {
     expect(body).not.toContain(config.sessionSecret)
     expect(body).not.toContain('postgres://user:pw@localhost:5432')
   })
+
+  it('keeps the abuse limits from scripts (R-NFR-8)', async () => {
+    const response = await request(createApp(deps())).get('/api/config')
+    const body = JSON.stringify(response.body)
+
+    expect(body).not.toContain('applicantsCeiling')
+    expect(body).not.toContain('linkEmailsCeiling')
+  })
+})
+
+describe('the per-IP backstop on sign-in (R-NFR-8)', () => {
+  function limited(trustProxy = 0): Express {
+    return createApp({
+      ...deps(),
+      config: {
+        ...config,
+        trustProxy,
+        abuse: { ...config.abuse, authRequestsPerIp: 2 },
+      },
+    })
+  }
+
+  it('answers 429 once an address has used its sign-in requests', async () => {
+    const app = limited()
+
+    const statuses = []
+    for (const path of [
+      '/auth/request-link',
+      '/auth/verify',
+      '/auth/applicant',
+    ]) {
+      statuses.push((await request(app).post(path).send({})).status)
+    }
+
+    expect(statuses.slice(0, 2)).not.toContain(429)
+    expect(statuses[2]).toBe(429)
+  })
+
+  it('cannot be dodged by changing case or adding a slash', async () => {
+    const app = limited()
+    await request(app).post('/auth/request-link').send({})
+    await request(app).post('/auth/request-link').send({})
+
+    const response = await request(app).post('/AUTH/Request-Link/').send({})
+
+    expect(response.status).toBe(429)
+  })
+
+  it('leaves other requests uncounted', async () => {
+    const app = limited()
+    for (let i = 0; i < 3; i++) await request(app).get('/api/health')
+
+    const response = await request(app).post('/auth/request-link').send({})
+
+    expect(response.status).not.toBe(429)
+  })
+
+  it('ignores X-Forwarded-For unless a proxy is trusted', async () => {
+    const app = limited()
+    for (const ip of ['198.51.100.1', '198.51.100.2']) {
+      await request(app)
+        .post('/auth/request-link')
+        .set('X-Forwarded-For', ip)
+        .send({})
+    }
+
+    const response = await request(app)
+      .post('/auth/request-link')
+      .set('X-Forwarded-For', '198.51.100.3')
+      .send({})
+
+    expect(response.status).toBe(429)
+  })
+
+  it('counts each forwarded client on its own behind a trusted proxy', async () => {
+    const app = limited(1)
+    for (let i = 0; i < 2; i++) {
+      await request(app)
+        .post('/auth/request-link')
+        .set('X-Forwarded-For', '198.51.100.1')
+        .send({})
+    }
+
+    const other = await request(app)
+      .post('/auth/request-link')
+      .set('X-Forwarded-For', '198.51.100.2')
+      .send({})
+    const same = await request(app)
+      .post('/auth/request-link')
+      .set('X-Forwarded-For', '198.51.100.1')
+      .send({})
+
+    expect(other.status).not.toBe(429)
+    expect(same.status).toBe(429)
+  })
 })
 
 /** The app with one onboarded member signed in, and their cookie. */

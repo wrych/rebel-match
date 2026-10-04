@@ -22,6 +22,8 @@ import { analyticsConsentRoutes } from './routes/analytics-consent.js'
 import { eventRoutes } from './routes/events.js'
 import { profileRoutes } from './routes/profile.js'
 import { requestLinkRoutes } from './routes/request-link.js'
+import { limitPerIp, SIGN_IN_POSTS } from './routes/ip-limit.js'
+import { createWindowCounter } from './services/rate-limit.js'
 import type { AdmissionService } from './services/admission.js'
 import type { ApprovalService } from './services/approvals.js'
 import type { ChallengeService } from './services/challenges.js'
@@ -105,6 +107,16 @@ export function createApp(deps: AppDeps): Express {
   const app = express()
 
   app.disable('x-powered-by')
+  app.set('trust proxy', deps.config.trustProxy)
+  app.post(
+    [...SIGN_IN_POSTS],
+    limitPerIp(
+      createWindowCounter({
+        windowMinutes: deps.config.abuse.ipWindowMinutes,
+      }),
+      deps.config.abuse.authRequestsPerIp,
+    ),
+  )
   app.use(express.json({ limit: '64kb' }))
   app.use(renewSessions(deps.auth))
   app.use(authRoutes(deps))

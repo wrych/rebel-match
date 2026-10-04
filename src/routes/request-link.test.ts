@@ -6,6 +6,7 @@ import type {
   LinkRequestState,
 } from '../services/admission.js'
 import { loadConfig } from '../config.js'
+import type { Client } from '../services/paced-gate.js'
 import { requestLinkRoutes } from './request-link.js'
 
 function setup(state: LinkRequestState = 'check-email'): {
@@ -13,7 +14,9 @@ function setup(state: LinkRequestState = 'check-email'): {
   calls: { email: string; next: string | undefined }[]
   described: { handle: string; details: ApplicantDetails }[]
   invites: (string | undefined)[]
+  clients: Client[]
 } {
+  const clients: Client[] = []
   const calls: { email: string; next: string | undefined }[] = []
   const described: { handle: string; details: ApplicantDetails }[] = []
   const invites: (string | undefined)[] = []
@@ -27,9 +30,12 @@ function setup(state: LinkRequestState = 'check-email'): {
       }),
       admission: {
         requestLink: (email, opts) => {
-          const next = opts?.next
-          invites.push(opts?.invite)
+          const next = opts.next
+          invites.push(opts.invite)
+          clients.push(opts.client)
           calls.push({ email, next })
+          if (state === 'human-check')
+            return Promise.resolve({ state, challenge })
           return Promise.resolve(
             state === 'access-requested' ? { state, handle: 'h.s' } : { state },
           )
@@ -41,10 +47,46 @@ function setup(state: LinkRequestState = 'check-email'): {
       },
     }),
   )
-  return { app, calls, described, invites }
+  return { app, calls, described, invites, clients }
 }
 
+const challenge = { parameters: { nonce: 'n' }, signature: 'sig' } as never
+
 describe('POST /auth/request-link', () => {
+  it('passes the client address and the solved check to admission (R-NFR-8)', async () => {
+    const { app, clients } = setup()
+
+    await request(app)
+      .post('/auth/request-link')
+      .send({ email: 'ada@example.invalid', altcha: 'solved' })
+
+    expect(clients).toHaveLength(1)
+    expect(clients[0]?.altcha).toBe('solved')
+    expect(clients[0]?.ip).toMatch(/127\.0\.0\.1|::1/)
+  })
+
+  it('carries the challenge with human-check (R-NFR-8)', async () => {
+    const { app } = setup('human-check')
+
+    const response = await request(app)
+      .post('/auth/request-link')
+      .send({ email: 'ada@example.invalid' })
+
+    expect(response.status).toBe(200)
+    expect(response.body).toEqual({ state: 'human-check', challenge })
+  })
+
+  it('answers 429 past the applicant ceiling (R-NFR-8)', async () => {
+    const { app } = setup('try-later')
+
+    const response = await request(app)
+      .post('/auth/request-link')
+      .send({ email: 'ada@example.invalid' })
+
+    expect(response.status).toBe(429)
+    expect(response.body).toEqual({ error: 'too_many_requests' })
+  })
+
   it.each(['check-email', 'not-approved'] as const)(
     'answers with the next screen, %s (ADR 0013)',
     async (state) => {

@@ -18,6 +18,26 @@ describe('loadConfig', () => {
     expect(config.limits.approvalLinkTtlHours).toBe(24)
   })
 
+  it('defaults the abuse limits ADR 0029 fixes (R-NFR-8)', () => {
+    const config = loadConfig(valid)
+
+    expect(config.abuse).toMatchObject({
+      linkEmailsBeforeCheck: 3,
+      linkEmailsCeiling: 10,
+      linkEmailWindowMinutes: 15,
+      authRequestsPerIp: 1000,
+      ipWindowMinutes: 15,
+      applicantsBeforeCheck: 30,
+      applicantsCeiling: 300,
+      applicantWindowMinutes: 60,
+    })
+  })
+
+  it('trusts no proxy unless told how many hops (R-NFR-8)', () => {
+    expect(loadConfig(valid).trustProxy).toBe(0)
+    expect(loadConfig({ ...valid, TRUST_PROXY: '1' }).trustProxy).toBe(1)
+  })
+
   it('sends analytics to the EU ingestion host by default', () => {
     expect(loadConfig(valid).analytics.apiHost).toBe('api-eu.mixpanel.com')
   })

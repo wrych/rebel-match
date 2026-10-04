@@ -1,15 +1,23 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { nextTick, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { requestLink, keepHandle } from '../lib/admission'
+import {
+  requestLink,
+  keepHandle,
+  TooManyRequests,
+  type LinkRequest,
+} from '../lib/admission'
 import { fetchConfig } from '../lib/api'
+import { solveHumanCheck } from '../lib/human-check'
 import { linkNotice } from '../lib/link-notice'
 
 const router = useRouter()
 const email = ref('')
 const sending = ref(false)
 const answer = ref<'check-email' | 'not-approved' | null>(null)
-const failed = ref(false)
+const failed = ref<'error' | 'check' | 'busy' | null>(null)
+const checking = ref(false)
+const checkHost = ref<HTMLElement | null>(null)
 const deadLink = linkNotice(window.location.search)
 const consentVersion = ref<string | null>(null)
 const problem = ref<string | null>(null)
@@ -22,15 +30,44 @@ onMounted(async () => {
   }
 })
 
+function ask(altcha?: string): Promise<LinkRequest> {
+  const query = new URLSearchParams(window.location.search)
+  return requestLink(email.value, {
+    next: query.get('next'),
+    invite: query.get('invite'),
+    ...(altcha === undefined ? {} : { altcha }),
+  })
+}
+
+// Past the per-network pace for new applicants the server asks for a human
+// check: the widget solves it unattended, and the request goes again with the
+// answer, once (R-NFR-8).
+async function askWithCheck(): Promise<LinkRequest | 'unsolved'> {
+  const reply = await ask()
+  if (reply.state !== 'human-check' || reply.challenge === undefined)
+    return reply
+  checking.value = true
+  try {
+    await nextTick()
+    if (checkHost.value === null) return 'unsolved'
+    const payload = await solveHumanCheck(checkHost.value, reply.challenge)
+    if (payload === null) return 'unsolved'
+    const again = await ask(payload)
+    return again.state === 'human-check' ? 'unsolved' : again
+  } finally {
+    checking.value = false
+  }
+}
+
 async function send(): Promise<void> {
   sending.value = true
-  failed.value = false
+  failed.value = null
   try {
-    const query = new URLSearchParams(window.location.search)
-    const reply = await requestLink(email.value, {
-      next: query.get('next'),
-      invite: query.get('invite'),
-    })
+    const reply = await askWithCheck()
+    if (reply === 'unsolved' || reply.state === 'human-check') {
+      failed.value = 'check'
+      return
+    }
     if (reply.state === 'access-requested') {
       keepHandle(reply.handle)
       await router.push(
@@ -41,8 +78,8 @@ async function send(): Promise<void> {
       return
     }
     answer.value = reply.state
-  } catch {
-    failed.value = true
+  } catch (error) {
+    failed.value = error instanceof TooManyRequests ? 'busy' : 'error'
   } finally {
     sending.value = false
   }
@@ -110,8 +147,22 @@ async function send(): Promise<void> {
           Send me a link
         </button>
       </form>
-      <p v-if="failed" class="alert" role="alert">
+      <div v-if="checking" class="stack" role="status">
+        <p class="small">
+          One moment: a quick check that you are a person, not a script. It runs
+          by itself.
+        </p>
+        <div ref="checkHost" />
+      </div>
+      <p v-if="failed === 'error'" class="alert" role="alert">
         That did not go through. Check the address and try again.
+      </p>
+      <p v-else-if="failed === 'check'" class="alert" role="alert">
+        The check did not finish. Try again.
+      </p>
+      <p v-else-if="failed === 'busy'" class="alert" role="alert">
+        Too many sign-in requests have come from this network. Try again a
+        little later.
       </p>
       <p class="small">
         No password. We email you a link that signs you in on this phone.

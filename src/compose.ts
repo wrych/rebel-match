@@ -15,6 +15,9 @@ import {
 } from './services/admission-store.js'
 import { createAdmission } from './services/admission.js'
 import { createApplicantHandles } from './services/applicant-handle.js'
+import { createHumanCheck } from './services/human-check.js'
+import { createPacedGate } from './services/paced-gate.js'
+import { createWindowCounter } from './services/rate-limit.js'
 import { createApplicantNotice } from './services/applicant-notice.js'
 import { createApprovalStore } from './services/approval-store.js'
 import { createApprovals } from './services/approvals.js'
@@ -162,11 +165,33 @@ function composeAdmission(
   auth: AuthProvider,
   mailer: Mailer,
 ): Pick<AppDeps, 'admission' | 'approvals'> {
+  const { abuse } = config
+  const humanCheck = createHumanCheck({
+    secret: config.sessionSecret,
+    cost: abuse.humanCheckCost,
+    lifetimeMinutes: abuse.humanCheckMinutes,
+  })
   return {
     admission: createAdmission({
       store: createAdmissionStore(db),
       auth,
       handles: createApplicantHandles(config.sessionSecret),
+      applicants: createPacedGate({
+        counter: createWindowCounter({
+          windowMinutes: abuse.applicantWindowMinutes,
+        }),
+        humanCheck,
+        freeUses: abuse.applicantsBeforeCheck,
+        ceiling: abuse.applicantsCeiling,
+      }),
+      linkEmails: createPacedGate({
+        counter: createWindowCounter({
+          windowMinutes: abuse.linkEmailWindowMinutes,
+        }),
+        humanCheck,
+        freeUses: abuse.linkEmailsBeforeCheck,
+        ceiling: abuse.linkEmailsCeiling,
+      }),
       redeemInvite: createInviteRedemption(db, admittedRole),
       notifyReviewers: createApplicantNotice({
         mailer,

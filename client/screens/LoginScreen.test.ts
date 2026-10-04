@@ -6,6 +6,37 @@ import LoginScreen from './LoginScreen.vue'
 const push = vi.fn()
 vi.mock('vue-router', () => ({ useRouter: () => ({ push }) }))
 
+const solveHumanCheck = vi.fn()
+vi.mock('../lib/human-check', () => ({
+  solveHumanCheck: (...args: unknown[]) => solveHumanCheck(...args) as unknown,
+}))
+
+/** Answers the link requests in turn with `replies`, recording each body. */
+function serverInTurn(replies: { status: number; body: unknown }[]): {
+  bodies: Record<string, unknown>[]
+} {
+  const bodies: Record<string, unknown>[] = []
+  vi.stubGlobal(
+    'fetch',
+    vi.fn((url: string, init?: { body?: string }) => {
+      if (url === '/api/config')
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () => config,
+        })
+      bodies.push(JSON.parse(init?.body ?? '{}') as Record<string, unknown>)
+      const reply = replies.shift() ?? { status: 500, body: null }
+      return Promise.resolve({
+        ok: reply.status < 400,
+        status: reply.status,
+        json: async () => reply.body,
+      })
+    }),
+  )
+  return { bodies }
+}
+
 const config = { limits: {}, consentVersion: '2026-11-01' }
 
 /** Answers `/api/config` with the config and the link request with `reply`,
@@ -45,6 +76,7 @@ function respondWith(body: unknown, ok = true): void {
 afterEach(() => {
   vi.unstubAllGlobals()
   push.mockReset()
+  solveHumanCheck.mockReset()
   sessionStorage.clear()
   window.history.replaceState(null, '', '/')
 })
@@ -197,5 +229,67 @@ describe('LoginScreen', () => {
     await submit(screen, 'new@example.invalid')
 
     expect(push).toHaveBeenCalledWith('/access-requested?invite=invalid')
+  })
+
+  describe('within the abuse limits (R-NFR-8)', () => {
+    const challenge = { parameters: { nonce: 'n' }, signature: 'sig' }
+
+    it('solves the human check and asks again with the answer', async () => {
+      const { bodies } = serverInTurn([
+        { status: 200, body: { state: 'human-check', challenge } },
+        { status: 200, body: { state: 'access-requested', handle: 'h.s' } },
+      ])
+      solveHumanCheck.mockResolvedValue('solved-payload')
+      const screen = mount(LoginScreen)
+
+      await submit(screen, 'new@example.invalid')
+
+      expect(solveHumanCheck).toHaveBeenCalledWith(
+        expect.any(HTMLElement),
+        challenge,
+      )
+      expect(bodies[1]).toEqual({
+        email: 'new@example.invalid',
+        altcha: 'solved-payload',
+      })
+      expect(push).toHaveBeenCalledWith('/access-requested')
+    })
+
+    it('says the check did not finish when it cannot be solved', async () => {
+      const { bodies } = serverInTurn([
+        { status: 200, body: { state: 'human-check', challenge } },
+      ])
+      solveHumanCheck.mockResolvedValue(null)
+      const screen = mount(LoginScreen)
+
+      await submit(screen, 'new@example.invalid')
+
+      expect(bodies).toHaveLength(1)
+      expect(screen.find('[role="alert"]').text()).toContain('did not finish')
+    })
+
+    it('asks only once, even if the server asks again', async () => {
+      const { bodies } = serverInTurn([
+        { status: 200, body: { state: 'human-check', challenge } },
+        { status: 200, body: { state: 'human-check', challenge } },
+      ])
+      solveHumanCheck.mockResolvedValue('solved-payload')
+      const screen = mount(LoginScreen)
+
+      await submit(screen, 'new@example.invalid')
+
+      expect(bodies).toHaveLength(2)
+      expect(screen.find('[role="alert"]').text()).toContain('did not finish')
+    })
+
+    it('asks to try again later on a 429', async () => {
+      serverInTurn([{ status: 429, body: { error: 'too_many_requests' } }])
+      const screen = mount(LoginScreen)
+
+      await submit(screen)
+
+      expect(screen.find('[role="alert"]').text()).toContain('a little later')
+      expect(screen.find('form').exists()).toBe(true)
+    })
   })
 })

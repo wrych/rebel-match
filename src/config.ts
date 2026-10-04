@@ -117,6 +117,21 @@ const envSchema = z
     APPROVAL_LINK_TTL_HOURS: z.coerce.number().int().positive().default(24),
     INVITE_DEFAULT_MAX_USES: z.coerce.number().int().positive().default(400),
     INVITE_DEFAULT_HOURS: z.coerce.number().int().positive().default(12),
+
+    // Abuse limits on sign-in (R-NFR-8, ADR 0029).
+    LINK_EMAILS_BEFORE_CHECK: z.coerce.number().int().nonnegative().default(3),
+    LINK_EMAILS_CEILING: z.coerce.number().int().positive().default(10),
+    LINK_EMAIL_WINDOW_MINUTES: z.coerce.number().int().positive().default(15),
+    AUTH_REQUESTS_PER_IP: z.coerce.number().int().positive().default(1000),
+    IP_WINDOW_MINUTES: z.coerce.number().int().positive().default(15),
+    APPLICANTS_BEFORE_CHECK: z.coerce.number().int().nonnegative().default(30),
+    APPLICANTS_CEILING: z.coerce.number().int().positive().default(300),
+    APPLICANT_WINDOW_MINUTES: z.coerce.number().int().positive().default(60),
+    HUMAN_CHECK_COST: z.coerce.number().int().positive().default(1000),
+    HUMAN_CHECK_MINUTES: z.coerce.number().int().positive().default(5),
+    // Proxy hops in front of the server whose X-Forwarded-For is believed;
+    // 0 uses the socket address, Cloud Run needs 1.
+    TRUST_PROXY: z.coerce.number().int().nonnegative().default(0),
   })
   .superRefine((env, ctx) => {
     if (env.MAIL_DELIVERY === 'smtp' && env.SMTP_HOST === undefined) {
@@ -187,6 +202,23 @@ export interface Limits {
   connectionMessageMaxChars: number
 }
 
+/** The sign-in abuse limits (R-NFR-8, ADR 0029). Kept out of `Limits`, so
+ * `GET /api/config` never tells a script how far it can go. */
+export interface AbuseLimits {
+  linkEmailsBeforeCheck: number
+  linkEmailsCeiling: number
+  linkEmailWindowMinutes: number
+  authRequestsPerIp: number
+  ipWindowMinutes: number
+  applicantsBeforeCheck: number
+  applicantsCeiling: number
+  applicantWindowMinutes: number
+  /** PBKDF2 iterations per try of the human check's proof of work. */
+  humanCheckCost: number
+  /** How long a human-check challenge can be solved and sent back. */
+  humanCheckMinutes: number
+}
+
 /** Values the client is allowed to read, so a disabled button and a server
  * check can never disagree (R-CFG-2). Secrets are structurally absent. */
 export interface ClientConfig {
@@ -219,6 +251,8 @@ export interface Config {
   analyticsVersion: string
   analytics: { token?: string; apiHost: string }
   limits: Limits
+  abuse: AbuseLimits
+  trustProxy: number
   rolePermissions: typeof rolePermissions
 }
 
@@ -242,6 +276,21 @@ function limitsFrom(env: Env): Limits {
     savedTickMs: SAVED_TICK_MS,
     inviteMaxUsesCeiling: INVITE_MAX_USES_CEILING,
     connectionMessageMaxChars: CONNECTION_MESSAGE_MAX_CHARS,
+  }
+}
+
+function abuseLimitsFrom(env: Env): AbuseLimits {
+  return {
+    linkEmailsBeforeCheck: env.LINK_EMAILS_BEFORE_CHECK,
+    linkEmailsCeiling: env.LINK_EMAILS_CEILING,
+    linkEmailWindowMinutes: env.LINK_EMAIL_WINDOW_MINUTES,
+    authRequestsPerIp: env.AUTH_REQUESTS_PER_IP,
+    ipWindowMinutes: env.IP_WINDOW_MINUTES,
+    applicantsBeforeCheck: env.APPLICANTS_BEFORE_CHECK,
+    applicantsCeiling: env.APPLICANTS_CEILING,
+    applicantWindowMinutes: env.APPLICANT_WINDOW_MINUTES,
+    humanCheckCost: env.HUMAN_CHECK_COST,
+    humanCheckMinutes: env.HUMAN_CHECK_MINUTES,
   }
 }
 
@@ -286,6 +335,8 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): Config {
       apiHost: env.MIXPANEL_API_HOST,
     },
     limits: limitsFrom(env),
+    abuse: abuseLimitsFrom(env),
+    trustProxy: env.TRUST_PROXY,
     rolePermissions,
   }
 }
