@@ -202,8 +202,9 @@ printed dev link (R-DEV-6).
       IP through `TRUST_PROXY`. _(R-NFR-8, ADR 0029)_
 - [x] Admin view of the configuration in the host tools, read-only and
       grouped. _(R-CFG-5)_
-- [ ] Decide which settings hosts may change from the host tools, and build
-      it. _(R-CFG-5)_
+- [ ] Hosts change the spam-protection numbers, invite defaults and minimum
+      lengths from the settings screen, stored in the database. _(R-CFG-6,
+      ADR 0031)_
 - [ ] Rate-limit auth, verify token hashing, session flags, permission + party
       checks on every read. _(R-NFR-5, R-ROLE-5, design §8)_
 - [ ] Production seed: attendee whitelist + the ~15 real collected challenges
