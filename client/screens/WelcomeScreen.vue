@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { routeTable } from '../../src/routes'
 import AnalyticsToggle from '../components/AnalyticsToggle.vue'
+import { reportEvent } from '../lib/events'
 import { loadMe, signOut, type Me } from '../lib/session'
 
 const me = ref<Me | null>(null)
@@ -30,6 +31,10 @@ onMounted(async () => {
   me.value = await loadMe()
 })
 
+function chose(journey: 'ask' | 'offer'): void {
+  reportEvent({ event: 'journey_chosen', props: { journey } })
+}
+
 async function leave(): Promise<void> {
   try {
     await signOut()
@@ -54,14 +59,14 @@ async function leave(): Promise<void> {
     </div>
 
     <div class="stack">
-      <RouterLink to="/ask" class="door door-ask">
+      <RouterLink to="/ask" class="door door-ask" @click="chose('ask')">
         <span class="door-title">Ask for help</span>
         <span class="door-body">
           Bring your challenge and we find the members living it, the ones who
           solved it, and the case studies that apply.
         </span>
       </RouterLink>
-      <RouterLink to="/offer" class="door door-offer">
+      <RouterLink to="/offer" class="door door-offer" @click="chose('offer')">
         <span class="door-title">Offer help</span>
         <span class="door-body">
           Swipe through other members’ challenges and say where you can share
