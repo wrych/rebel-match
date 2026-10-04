@@ -91,6 +91,14 @@ onBeforeUnmount(() => {
         }}</span>
       </button>
 
+      <RouterLink
+        v-if="me?.onboarded"
+        to="/profile"
+        class="item"
+        @click="close(false)"
+        >Profile &amp; privacy</RouterLink
+      >
+
       <nav v-if="hostTools.length > 0" aria-label="Host tools" class="group">
         <p class="kicker">Host tools</p>
         <RouterLink

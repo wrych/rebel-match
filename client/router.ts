@@ -19,6 +19,7 @@ import OfferDoneScreen from './screens/OfferDoneScreen.vue'
 import OfferNoteScreen from './screens/OfferNoteScreen.vue'
 import OfferScreen from './screens/OfferScreen.vue'
 import OutboxScreen from './screens/OutboxScreen.vue'
+import ProfileScreen from './screens/ProfileScreen.vue'
 import RequestContactScreen from './screens/RequestContactScreen.vue'
 import RequestScreen from './screens/RequestScreen.vue'
 import SignInScreen from './screens/SignInScreen.vue'
@@ -59,6 +60,7 @@ export const router = createRouter({
     screen('access-requested', AccessRequestedScreen),
     screen('onboarding', OnboardingScreen),
     screen('welcome', WelcomeScreen),
+    screen('profile', ProfileScreen),
     screen('ask', AskScreen),
     screen('challenge', ChallengeScreen),
     screen('trend-picker', TrendPickerScreen),
