@@ -1,19 +1,31 @@
+import type { Challenge } from './human-check'
+
 export type LinkRequestState =
-  'check-email' | 'access-requested' | 'not-approved'
+  'check-email' | 'access-requested' | 'not-approved' | 'human-check'
 
 export interface LinkRequest {
   state: LinkRequestState
   handle?: string
   inviteRefused?: true
+  challenge?: Challenge
+}
+
+/** The server's `429`: too many sign-in requests from this network for now
+ * (R-NFR-8). */
+export class TooManyRequests extends Error {
+  constructor() {
+    super('too many sign-in requests')
+  }
 }
 
 const HANDLE_KEY = 'rm_applicant_handle'
 
-/** Asks for a sign-in link, carrying the deep link and the QR's invite token;
- * the answer says which screen comes next (F1, F4, F15, R-AUTH-13). */
+/** Asks for a sign-in link, carrying the deep link, the QR's invite token and
+ * a solved human check; the answer says which screen comes next (F1, F4, F15,
+ * R-AUTH-13, R-NFR-8). */
 export async function requestLink(
   email: string,
-  carried: { next: string | null; invite: string | null },
+  carried: { next: string | null; invite: string | null; altcha?: string },
 ): Promise<LinkRequest> {
   const response = await fetch('/auth/request-link', {
     method: 'POST',
@@ -22,8 +34,10 @@ export async function requestLink(
       email,
       ...(carried.next === null ? {} : { next: carried.next }),
       ...(carried.invite === null ? {} : { invite: carried.invite }),
+      ...(carried.altcha === undefined ? {} : { altcha: carried.altcha }),
     }),
   })
+  if (response.status === 429) throw new TooManyRequests()
   if (!response.ok) {
     throw new Error(`link request failed (${String(response.status)})`)
   }
