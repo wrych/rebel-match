@@ -35,7 +35,7 @@ jobs:
 
       - name: Remove the tag and the jobs
         run: |
-          run() { gcloud --project="$GCP_PROJECT" --quiet run --region="$GCP_REGION" "$@"; }
+          run() { gcloud --project="$GCP_PROJECT" --quiet run "$@" --region="$GCP_REGION"; }
           if run services describe rebel-match-dev --format=json |
             jq -e --arg tag "$TARGET" '.status.traffic[] | select(.tag == $tag)' >/dev/null; then
             run services update-traffic rebel-match-dev --remove-tags="$TARGET"

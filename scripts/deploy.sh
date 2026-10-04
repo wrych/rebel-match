@@ -22,7 +22,8 @@ set -euo pipefail
 }
 
 gc() { gcloud --project="$GCP_PROJECT" --quiet "$@"; }
-run() { gc run --region="$GCP_REGION" "$@"; }
+# --region belongs to the command, so it goes after it.
+run() { gc run "$@" --region="$GCP_REGION"; }
 
 # Cloud Run's deterministic addresses: SERVICE-NUMBER.REGION.run.app, and
 # TAG---SERVICE-NUMBER.REGION.run.app for a tagged revision.
