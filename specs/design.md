@@ -84,6 +84,7 @@ thresholds have sane defaults in the file and may be overridden by env.
 | `limits.deckPageSize`          | `20`                          | R-OFF-1                   |
 | `limits.whitelistBatchMax`     | `1000`                        | R-AUTH-1                  |
 | `limits.savedTickMs`           | `2500`                        | R-PROF-1                  |
+| `limits.holdToSelectMs`        | `500`                         | R-MEM-3                   |
 | `abuse.linkEmailsBeforeCheck`  | `3`                           | R-NFR-8                   |
 | `abuse.linkEmailsCeiling`      | `10`                          | R-NFR-8                   |
 | `abuse.linkEmailWindowMinutes` | `15`                          | R-NFR-8                   |

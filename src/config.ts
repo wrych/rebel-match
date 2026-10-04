@@ -20,6 +20,8 @@ const SECTOR_MAX_CHARS = 160
 const INVITE_LABEL_MAX_CHARS = 120
 /** How long a "Saved" tick stays beside a setting (R-PROF-1). */
 const SAVED_TICK_MS = 2500
+/** How long a member card is held to start selecting (R-MEM-3). */
+const HOLD_TO_SELECT_MS = 500
 const INVITE_MAX_USES_CEILING = 0xffffffff
 // connection_requests.message (src/db/schema.ts).
 const CONNECTION_MESSAGE_MAX_CHARS = 600
@@ -201,6 +203,7 @@ export interface Limits {
   sectorMaxChars: number
   inviteLabelMaxChars: number
   savedTickMs: number
+  holdToSelectMs: number
   inviteMaxUsesCeiling: number
   connectionMessageMaxChars: number
 }
@@ -290,6 +293,7 @@ function limitsFrom(env: Env): Limits {
     sectorMaxChars: SECTOR_MAX_CHARS,
     inviteLabelMaxChars: INVITE_LABEL_MAX_CHARS,
     savedTickMs: SAVED_TICK_MS,
+    holdToSelectMs: HOLD_TO_SELECT_MS,
     inviteMaxUsesCeiling: INVITE_MAX_USES_CEILING,
     connectionMessageMaxChars: CONNECTION_MESSAGE_MAX_CHARS,
   }
