@@ -4,6 +4,9 @@ on:
   push:
     branches: [main]
   pull_request:
+    # `labeled` so that adding the preview label deploys at once (ADR 0028).
+    # `check` runs on it too: a skipped required check would count as passed.
+    types: [opened, synchronize, reopened, labeled]
 
 permissions:
   contents: read
@@ -81,14 +84,17 @@ jobs:
       - name: Build
         run: npm run build
 
-  # Non-prod deploys (ADR 0025): a preview per pull request, staging from
-  # main. Only after `check` is green, so nothing deploys from a red commit.
-  # Pull requests from forks get no token from GitHub, so no preview.
+  # Non-prod deploys (ADR 0025): staging from main, and a preview for a pull
+  # request that carries the `preview` label (ADR 0028). Only after `check` is
+  # green, so nothing deploys from a red commit. Pull requests from forks get
+  # no token from GitHub, so no preview.
   deploy:
     needs: check
     if: >-
       github.event_name == 'push' ||
-      github.event.pull_request.head.repo.full_name == github.repository
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       contains(github.event.pull_request.labels.*.name, 'preview') &&
+       (github.event.action != 'labeled' || github.event.label.name == 'preview'))
     runs-on: ubuntu-latest
     environment: ${{ github.event_name == 'push' && 'staging' || 'dev' }}
     concurrency:

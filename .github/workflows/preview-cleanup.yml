@@ -1,18 +1,24 @@
 name: Preview cleanup
 
-# When a pull request closes, merged or not, its preview goes (ADR 0025): the
-# revision's tag, its jobs and its database. Untagged revisions without
-# traffic cost nothing and are left to Cloud Run.
+# A preview goes when its pull request closes, merged or not, or when the
+# `preview` label comes off (ADR 0025, ADR 0028): the revision's tag, its jobs
+# and its database. Untagged revisions without traffic cost nothing and are
+# left to Cloud Run. On close it runs whatever the labels, since a preview
+# from before the label existed has none; with nothing deployed it does nothing.
 on:
   pull_request:
-    types: [closed]
+    types: [closed, unlabeled]
 
 permissions:
   contents: read
 
 jobs:
   cleanup:
-    if: github.event.pull_request.head.repo.full_name == github.repository
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      (github.event.action == 'closed' ||
+       (github.event.action == 'unlabeled' &&
+        github.event.label.name == 'preview'))
     runs-on: ubuntu-latest
     environment: dev
     concurrency:
