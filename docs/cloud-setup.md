@@ -434,6 +434,37 @@ separate step (ADR 0025, consequences).
 
 ---
 
+## Cleaning up old images
+
+Every deploy pushes an image, one per commit. Layers are shared, so each adds
+only what changed, but the repository never shrinks by itself; there is
+deliberately no automatic cleanup. Look now and then (storage beyond 0.5 GB
+costs about $0.10 per GB a month), and clear out old images by hand:
+
+```sh
+REPO="$REGION-docker.pkg.dev/$NONPROD/rebel-match/app"
+
+# How big the repository is, and what is in it, newest first.
+gcloud artifacts repositories describe rebel-match --project="$NONPROD" \
+  --location="$REGION" --format='value(sizeBytes)'
+gcloud artifacts docker images list "$REPO" --include-tags --sort-by=~updateTime
+
+# Images older than 30 days: count them, then delete them.
+CUTOFF=$(date -u -d '30 days ago' +%Y-%m-%dT%H:%M:%SZ)
+OLD=$(gcloud artifacts docker images list "$REPO" \
+  --filter="updateTime<'$CUTOFF'" --format='value(version)')
+echo "$OLD" | grep -c sha256
+for DIGEST in $OLD; do
+  gcloud artifacts docker images delete "$REPO@$DIGEST" --delete-tags --quiet
+done
+```
+
+Staging is redeployed on every merge and a preview on every push, so what
+they run is newer than any sensible cutoff. A pull request left untouched for
+longer may not start its preview again after its image is gone; pushing to it
+redeploys. Once production exists (part 2), keep every image it may roll back
+to: check what it runs before deleting.
+
 ## Taking it down
 
 ```sh
