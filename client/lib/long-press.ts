@@ -1,8 +1,5 @@
-/** Calls `onHold` when a pointer stays down on an element for `holdMs()`;
- * `held()` then says whether the click that follows ends that hold, so it
- * can be ignored (R-MEM-3). Releasing stops the timer. Leaving the element,
- * or a cancelled pointer, while still pressed forgets the hold, as no click
- * will follow; touch reports leaving after the release, which keeps it. */
+/** Calls `onHold` when a pointer stays down for `holdMs()`; `held()` then
+ * says whether the next click ends that hold, so it can be ignored (R-MEM-3). */
 export function longPress(
   onHold: () => void,
   holdMs: () => number,
@@ -31,6 +28,8 @@ export function longPress(
     },
     abandon: () => {
       clearTimeout(timer)
+      // Leaving while pressed means no click follows. Touch reports leaving
+      // only after the release, and that click must still end the hold.
       if (down) fired = false
       down = false
     },
