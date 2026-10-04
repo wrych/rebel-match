@@ -186,6 +186,9 @@ printed dev link (R-DEV-6).
       analytics toggle, moved off the welcome screen, with its words reworded
       (a new analytics version) to point at the profile screen; how to leave.
       _(R-PROF-1,2, R-ANA-4)_
+- [ ] Sector and company size picked from fixed lists at onboarding and on
+      the profile screen, shown on cards as "_n_ employees". _(R-ONB-2,
+      R-PROF-1, R-OFF-2)_
 - [x] Mixpanel sending from the server only (**EU endpoint**, project created
       with EU residency), pseudonymous id, the event set from design §7 with
       `POST /api/events` for the two UI events, opted-in members only.

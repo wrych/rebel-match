@@ -163,8 +163,11 @@ Requirements:
   current consent version are both recorded — a name alone SHALL NOT satisfy it
   (R-ONB-4, R-NFR-6).
 - **R-ONB-2** — The onboarding screen SHALL collect the member's **display name**
-  (required) and MAY collect **job title** and organization (optional, used in
-  match cards). "Job title" is profile text and is unrelated to access roles
+  (required) and MAY collect **job title**, organization, **sector** and
+  **company size** (optional, used in match cards). Sector and company size are
+  each picked from a fixed list, never typed: sector from the list in design §2,
+  company size from at most five headcount bands, shown on cards as "_n_
+  employees". "Job title" is profile text and is unrelated to access roles
   (R-ROLE-8).
 - **R-ONB-3** — The onboarding screen SHALL present the **data-usage consent**
   and require explicit acceptance before continuing. THE SYSTEM SHALL record the
@@ -249,8 +252,9 @@ capability, not a secret** — and every requirement below exists because of tha
 ### 3.5 Profile, privacy and the menu
 
 - **R-PROF-1** — An onboarded member SHALL be able to edit their **display name**
-  (required), **job title** and **organization** after onboarding, within the
-  same limits as onboarding (R-ONB-2, R-CFG-2). The email address is how they
+  (required), **job title**, **organization**, **sector** and **company size**
+  after onboarding, within the same limits and lists as onboarding (R-ONB-2,
+  R-CFG-2). The email address is how they
   sign in and SHALL NOT be editable here.
   - Every setting on the profile screen SHALL **save on change**, with no save
     button, and SHALL confirm each save beside the field with a small, quiet
@@ -336,7 +340,8 @@ capability, not a secret** — and every requirement below exists because of tha
   deck (one card at a time, swipe or arrow navigation), excluding the viewer's
   own challenges.
 - **R-OFF-2** — Each card SHALL show the challenge text, its trend, author, and
-  organization/sector.
+  organization, sector and company size, leaving out what the author did not
+  give.
 - **R-OFF-3** — For each card the member SHALL be able to:
   - **Same boat** — "I'm facing this too" (a same-boat connection request).
   - **Been there** — "I can share experience" (an offer-help connection request,

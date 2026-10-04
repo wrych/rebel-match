@@ -101,13 +101,14 @@ Conventions:
    unaccepted current consent version — and forces **S3** before anything else
    (R-ONB-1).
 2. Member enters their **display name** (required), pre-filled from what they
-   gave at the door if they came through **F4** (R-AUTH-12). Job title and
-   organization are optional and only feed the match cards (R-ONB-2).
+   gave at the door if they came through **F4** (R-AUTH-12). Job title,
+   organization, sector and company size are optional and only feed the match
+   cards; sector and company size are picked from a list (R-ONB-2).
 3. Member reads the data-usage consent, which states plainly that **email
    addresses are shared only when both sides accept a connection**, and that the
    app is closed to whitelisted members (R-ONB-5).
 4. Member ticks explicit acceptance and submits → `POST /api/onboarding` with
-   `{name, jobTitle?, org?, consentVersion}`.
+   `{name, jobTitle?, org?, sector?, companySize?, consentVersion}`.
 5. Server stores the profile plus the consent version and timestamp (R-ONB-3,
    R-NFR-6). **Stopwatch for R-NFR-3 stops here.**
 6. Member lands on **F3**.

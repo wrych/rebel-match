@@ -236,7 +236,8 @@ CREATE TABLE members (
   name           VARCHAR(120) NULL,               -- display name, set at onboarding
   job_title      VARCHAR(120) NULL,               -- profile only (was `role`)
   org            VARCHAR(160) NULL,
-  sector         VARCHAR(160) NULL,
+  sector         VARCHAR(160) NULL,              -- one of the sectors below
+  company_size   VARCHAR(20)  NULL,               -- one of the size bands below
   status         ENUM('applicant','active','rejected','deleted')
                               NOT NULL DEFAULT 'applicant',
   requested_name VARCHAR(120) NULL,              -- applicant-supplied, for R-AUTH-11
@@ -264,6 +265,26 @@ Two things deliberately **not** in this table:
   later is a data change, not a schema and code change (R-ROLE-1).
 - The profile field is `job_title`, not `role` — "role" in this spec always means
   an **access role**. The onboarding API field is named `jobTitle` to match.
+
+**Sector and company size** are picked, not typed (R-ONB-2), from lists that
+ship as code and are shared with the client, so the form and the server check
+read the same values (R-CFG-2). `sector` stores the label; a value outside the
+list is refused at the boundary.
+
+- **Sectors:** Agency & consulting · Construction · Education · Energy &
+  utilities · Financial services · Food & agriculture · Government & public
+  sector · Healthcare · Hospitality · Industrial services · Logistics ·
+  Manufacturing · Media & creative · Nonprofit · Retail · Software & technology
+  · Telecom · Other.
+- **Company size** (`company_size` stores the key; cards show the label):
+
+  | Key        | Label               |
+  | ---------- | ------------------- |
+  | `1-10`     | 1–10 employees      |
+  | `11-50`    | 11–50 employees     |
+  | `51-250`   | 51–250 employees    |
+  | `251-1000` | 251–1,000 employees |
+  | `1001+`    | 1,001+ employees    |
 
 ### roles & member_roles (access control)
 
@@ -600,14 +621,14 @@ onboarded → `403 {error: 'onboarding_required'}`. Only `/api/health` and
 
 ### Onboarding
 
-| Method | Path                | Body                                                                  | Behavior                                                                                                                                                                                                                                                                                                           |
-| ------ | ------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| GET    | `/api/onboarding`   | —                                                                     | The form pre-filled: the member's profile so far, with `requested_name`/`requested_org` filling a missing name or organization (F2, R-AUTH-12), and the consent version in force. Pre-filling never stores them.                                                                                                   |
-| POST   | `/api/onboarding`   | `{name, jobTitle?, org?, sector?, consentVersion, analyticsVersion?}` | Set name/profile, record consent version + timestamp. Required before other `/api` routes. A `consentVersion` other than the current one → `409` (R-ONB-4). `analyticsVersion` is sent only when the analytics box is ticked and records the opt-in; one other than the current analytics words → `409` (R-ANA-4). |
-| PUT    | `/api/me/analytics` | `{optIn: true, version}` or `{optIn: false}`                          | Give or withdraw the analytics opt-in from the profile screen, as easily as at onboarding. A `version` other than the current analytics words → `409` (R-ANA-4).                                                                                                                                                   |
-| GET    | `/api/profile`      | —                                                                     | The member's own name, job title, organization, email (read-only), the consent version and time they accepted, and `analyticsOptIn` (R-PROF-1,2).                                                                                                                                                                  |
-| PUT    | `/api/profile`      | `{name, jobTitle?, org?}`                                             | Update the profile within the onboarding limits; a blank optional field clears it; sector is kept as it is (R-PROF-1).                                                                                                                                                                                             |
-| POST   | `/api/events`       | `{event, props}`                                                      | The UI events of §7 (`journey_chosen`, `feedback_opened`) with their listed properties only; anything else → `400`. Forwarded to Mixpanel only for a member opted in; always `204` otherwise, so the client cannot tell (ADR 0026).                                                                                |
+| Method | Path                | Body                                                                                | Behavior                                                                                                                                                                                                                                                                                                           |
+| ------ | ------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| GET    | `/api/onboarding`   | —                                                                                   | The form pre-filled: the member's profile so far, with `requested_name`/`requested_org` filling a missing name or organization (F2, R-AUTH-12), and the consent version in force. Pre-filling never stores them.                                                                                                   |
+| POST   | `/api/onboarding`   | `{name, jobTitle?, org?, sector?, companySize?, consentVersion, analyticsVersion?}` | Set name/profile, record consent version + timestamp. Required before other `/api` routes. A `consentVersion` other than the current one → `409` (R-ONB-4). `analyticsVersion` is sent only when the analytics box is ticked and records the opt-in; one other than the current analytics words → `409` (R-ANA-4). |
+| PUT    | `/api/me/analytics` | `{optIn: true, version}` or `{optIn: false}`                                        | Give or withdraw the analytics opt-in from the profile screen, as easily as at onboarding. A `version` other than the current analytics words → `409` (R-ANA-4).                                                                                                                                                   |
+| GET    | `/api/profile`      | —                                                                                   | The member's own name, job title, organization, sector, company size, email (read-only), the consent version and time they accepted, and `analyticsOptIn` (R-PROF-1,2).                                                                                                                                            |
+| PUT    | `/api/profile`      | `{name, jobTitle?, org?, sector?, companySize?}`                                    | Update the profile within the onboarding limits and lists; a blank or left-out optional field clears it (R-PROF-1).                                                                                                                                                                                                |
+| POST   | `/api/events`       | `{event, props}`                                                                    | The UI events of §7 (`journey_chosen`, `feedback_opened`) with their listed properties only; anything else → `400`. Forwarded to Mixpanel only for a member opted in; always `204` otherwise, so the client cannot tell (ADR 0026).                                                                                |
 
 ### Ask journey
 
@@ -716,7 +737,7 @@ deep link reloads cleanly.
 | S21 | **Access requested** — what happens next, an optional name/org so the host can find them, and the "invitation link is not valid" notice when one was refused (R-AUTH-9, R-AUTH-12, R-INV-5)                                                               | `/access-requested`, `/access-requested?invite=invalid` |
 | S22 | **Admin invites** — invite links with label, window, uses/cap, state; create, revoke, and the join URL / QR to display (R-INV-9)                                                                                                                          | `/admin/invites`                                        |
 | S23 | **Admin members** — search members by email or name and delete one after a confirmation (R-NFR-7)                                                                                                                                                         | `/admin/members`                                        |
-| S24 | **Profile & privacy** — edit name, job title and organization, each saved on change with a tick; the accepted consent, read-only with version and date; the analytics opt-in; how to leave (R-PROF-1,2)                                                   | `/profile`                                              |
+| S24 | **Profile & privacy** — edit name, job title, organization, sector and company size, each saved on change with a tick; the accepted consent, read-only with version and date; the analytics opt-in; how to leave (R-PROF-1,2)                             | `/profile`                                              |
 | S25 | **Settings** — every configured value in named groups such as Spam protection, marking what differs from the default; the values R-CFG-6 allows can be changed, saved on change, with who changed them and a way back to the deployment value (R-CFG-5,6) | `/admin/settings`                                       |
 
 Remaining overlays, deliberately: the "really decline this request?" confirm, the
