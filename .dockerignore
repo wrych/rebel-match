@@ -1,0 +1,16 @@
+# Only what `npm ci` and `npm run build` need goes into the build context.
+.git
+.github
+.husky
+.claude
+node_modules
+dist
+coverage
+.data
+.env
+.env.*
+!.env.example
+specs
+docs
+tests
+*.md

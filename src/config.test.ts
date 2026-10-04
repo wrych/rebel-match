@@ -294,6 +294,24 @@ describe('PUBLIC_URL in development', () => {
 
     expect(loadConfig(production).publicUrl).toBe('https://match.example.org')
   })
+
+  it("allows the server's own port when it serves the built client", () => {
+    const config = loadConfig({
+      ...valid,
+      PUBLIC_URL: 'http://localhost:3000',
+      CLIENT_DIR: 'dist/client',
+    })
+
+    expect(config.publicUrl).toBe('http://localhost:3000')
+    expect(config.clientDir).toBe('dist/client')
+  })
+})
+
+describe('CLIENT_DIR', () => {
+  it('is absent by default, and when empty, so Vite serves the client', () => {
+    expect(loadConfig(valid).clientDir).toBeUndefined()
+    expect(loadConfig({ ...valid, CLIENT_DIR: '' }).clientDir).toBeUndefined()
+  })
 })
 
 describe('isDevelopmentDeployment', () => {

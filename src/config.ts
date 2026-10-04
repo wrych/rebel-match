@@ -30,9 +30,11 @@ function linksMissTheApp(env: {
   NODE_ENV: string
   PUBLIC_URL: string
   PORT: number
+  CLIENT_DIR?: string | undefined
 }): boolean {
   return (
     env.NODE_ENV === 'development' &&
+    env.CLIENT_DIR === undefined &&
     portOf(new URL(env.PUBLIC_URL)) === env.PORT
   )
 }
@@ -40,6 +42,11 @@ function linksMissTheApp(env: {
 /** Where a local run keeps its PGlite database and generated session secret
  * unless LOCAL_DATA_DIR says otherwise (ADR 0024). */
 export const DEFAULT_LOCAL_DATA_DIR = '.data'
+
+// How long a browser may keep a built asset: a year. Vite names each asset
+// after its content hash, so a change is a new URL; a fact of the build rather
+// than a tunable, so no environment variable.
+export const IMMUTABLE_ASSET_MAX_AGE_MS = 365 * 24 * 60 * 60 * 1000
 
 const FEEDBACK_NOWHERE = 'feedback@rebel-match.invalid'
 
@@ -50,6 +57,13 @@ const envSchema = z
       .default('development'),
     PORT: z.coerce.number().int().positive().default(3000),
     PUBLIC_URL: z.url().default('http://localhost:5173'),
+    // The built client (`npm run build` puts it in dist/client). Set, the
+    // server serves the screens itself, as a deployment does; unset, Vite
+    // serves them in development (ADR 0017, ADR 0025).
+    CLIENT_DIR: z
+      .string()
+      .optional()
+      .transform((dir) => (dir === '' ? undefined : dir)),
 
     // Unset or empty means a local run on PGlite in LOCAL_DATA_DIR (ADR 0024).
     DATABASE_URL: z
@@ -141,7 +155,8 @@ const envSchema = z
         message:
           `PUBLIC_URL points at the API server (port ${String(env.PORT)}); ` +
           'in development links must go through Vite, which serves the ' +
-          'screens: use http://localhost:5173',
+          'screens: use http://localhost:5173, or set CLIENT_DIR to serve ' +
+          'the built client from this server',
       })
     }
   })
@@ -181,6 +196,8 @@ export interface Config {
   isProduction: boolean
   port: number
   publicUrl: string
+  /** Where the built client is served from; absent when Vite serves it. */
+  clientDir?: string
   database: DatabaseTarget
   sessionSecret: string
   sessionTtlDays: number
@@ -230,6 +247,7 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): Config {
     isProduction: env.NODE_ENV === 'production',
     port: env.PORT,
     publicUrl: env.PUBLIC_URL,
+    ...(env.CLIENT_DIR === undefined ? {} : { clientDir: env.CLIENT_DIR }),
     database:
       env.DATABASE_URL === undefined
         ? { kind: 'pglite', dataDir: join(env.LOCAL_DATA_DIR, 'pglite') }

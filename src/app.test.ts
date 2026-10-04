@@ -1,3 +1,6 @@
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import type { Express } from 'express'
 import request from 'supertest'
 import { describe, expect, it, vi } from 'vitest'
@@ -177,6 +180,35 @@ describe('unknown api routes', () => {
     const response = await request(createApp(deps())).get('/api/members/42')
 
     expect(response.status).toBe(401)
+  })
+})
+
+describe('the built client (ADR 0017)', () => {
+  it('is left to Vite unless CLIENT_DIR is set', async () => {
+    const response = await request(createApp(deps())).get('/matches')
+
+    expect(response.status).toBe(404)
+  })
+
+  it('is served for screens, never for the API', async () => {
+    const dir = mkdtempSync(join(tmpdir(), 'app-client-'))
+    writeFileSync(join(dir, 'index.html'), '<div id="app"></div>')
+    try {
+      const app = createApp({
+        ...deps(),
+        config: { ...config, clientDir: dir },
+      })
+
+      const screen = await request(app).get('/matches')
+      expect(screen.status).toBe(200)
+      expect(screen.text).toContain('id="app"')
+
+      const api = await request(app).get('/api/nothing-here')
+      expect(api.status).toBe(401)
+      expect(api.type).toBe('application/json')
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
   })
 })
 
