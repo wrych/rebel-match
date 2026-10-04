@@ -965,7 +965,7 @@ Alternatives considered (kept only as fallbacks):
 - Magic-link tokens: generate 32 bytes random, email the raw token, store only
   its SHA-256. Single-use, expiry from `limits.magicLinkTtlMinutes` (default
   15).
-- **Abuse limits (R-NFR-8, ADR 0028).** In-memory counters per server
+- **Abuse limits (R-NFR-8, ADR 0029).** In-memory counters per server
   instance, reset on restart:
   - per address, `limits.linkEmailsPerAddress` (3) per
     `limits.linkEmailWindowMinutes` (15): over it, `/auth/request-link`

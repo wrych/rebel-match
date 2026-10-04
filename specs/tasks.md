@@ -199,7 +199,7 @@ printed dev link (R-DEV-6).
 - [ ] Mobile-first pass on every screen (portrait phone). _(R-NFR-2)_
 - [ ] Abuse limits on sign-in: per address, a per-IP backstop, and the
       self-hosted ALTCHA check for new applicants past the per-IP cap; client
-      IP through `TRUST_PROXY`. _(R-NFR-8, ADR 0028)_
+      IP through `TRUST_PROXY`. _(R-NFR-8, ADR 0029)_
 - [ ] Admin view of the configuration in the host tools, and which values
       hosts should be able to change. _(R-CFG-1)_
 - [ ] Rate-limit auth, verify token hashing, session flags, permission + party

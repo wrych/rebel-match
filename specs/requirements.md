@@ -688,7 +688,7 @@ _(Decided by the maintainer after trying the redesign: ADR 0023.)_
   MAY generate its own session key and keep it in its git-ignored data folder;
   a production start without both values SHALL be refused (ADR 0024).
 - **R-NFR-8 (Abuse limits)** — THE SYSTEM SHALL limit the sign-in endpoints
-  (ADR 0028), every number configurable (R-CFG-1):
+  (ADR 0029), every number configurable (R-CFG-1):
   - at most 3 link emails per address per 15 minutes; a further request SHALL
     show the same screen and send nothing, revealing nothing;
   - at most 1000 requests per IP address per 15 minutes across the sign-in
