@@ -4,6 +4,7 @@ import { clientConfig, type Config } from './config.js'
 import { sql } from 'drizzle-orm'
 import type { Database } from './db/connect.js'
 import { challengeRoutes } from './routes/challenges.js'
+import { clientShellRoutes } from './routes/client-shell.js'
 import { connectionRoutes } from './routes/connections.js'
 import { deckRoutes } from './routes/deck.js'
 import { swipeRoutes } from './routes/swipes.js'
@@ -126,6 +127,10 @@ export function createApp(deps: AppDeps): Express {
   app.use('/api', (_request, response) => {
     response.status(404).json({ error: 'not_found' })
   })
+
+  if (deps.config.clientDir !== undefined) {
+    app.use(clientShellRoutes(deps.config.clientDir))
+  }
 
   app.use(handleErrors)
 
