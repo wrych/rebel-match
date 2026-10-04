@@ -236,8 +236,8 @@ CREATE TABLE members (
   name           VARCHAR(120) NULL,               -- display name, set at onboarding
   job_title      VARCHAR(120) NULL,               -- profile only (was `role`)
   org            VARCHAR(160) NULL,
-  sector         VARCHAR(160) NULL,              -- one of the sectors below
-  company_size   VARCHAR(20)  NULL,               -- one of the size bands below
+  sector         VARCHAR(40)  NULL REFERENCES sectors(key) ON DELETE SET NULL,
+  company_size   VARCHAR(20)  NULL REFERENCES company_sizes(key) ON DELETE SET NULL,
   status         ENUM('applicant','active','rejected','deleted')
                               NOT NULL DEFAULT 'applicant',
   requested_name VARCHAR(120) NULL,              -- applicant-supplied, for R-AUTH-11
@@ -268,15 +268,26 @@ Two things deliberately **not** in this table:
 
 **Sector and company size** are picked, not typed (R-ONB-2), from lists that
 ship as code and are shared with the client, so the form and the server check
-read the same values (R-CFG-2). `sector` stores the label; a value outside the
-list is refused at the boundary.
+read the same values (R-CFG-2). Every seed copies them into two lookup tables,
+which members reference by key, so the database refuses a value off the list
+too. Cards read the label through the reference, so a label can be reworded
+without touching a member row.
 
-- **Sectors:** Agency & consulting · Construction · Education · Energy &
-  utilities · Financial services · Food & agriculture · Government & public
-  sector · Healthcare · Hospitality · Industrial services · Logistics ·
-  Manufacturing · Media & creative · Nonprofit · Retail · Software & technology
-  · Telecom · Other.
-- **Company size** (`company_size` stores the key; cards show the label):
+```sql
+CREATE TABLE sectors       (key VARCHAR(40) PRIMARY KEY, label VARCHAR(80) NOT NULL);
+CREATE TABLE company_sizes (key VARCHAR(20) PRIMARY KEY, label VARCHAR(40) NOT NULL);
+```
+
+- **Sectors** (key → label): `agency-consulting` Agency & consulting ·
+  `construction` Construction · `education` Education · `energy-utilities`
+  Energy & utilities · `financial-services` Financial services ·
+  `food-agriculture` Food & agriculture · `government` Government & public
+  sector · `healthcare` Healthcare · `hospitality` Hospitality ·
+  `industrial-services` Industrial services · `logistics` Logistics ·
+  `manufacturing` Manufacturing · `media-creative` Media & creative ·
+  `nonprofit` Nonprofit · `retail` Retail · `software-technology` Software &
+  technology · `telecom` Telecom · `other` Other.
+- **Company sizes:**
 
   | Key        | Label               |
   | ---------- | ------------------- |
@@ -285,6 +296,10 @@ list is refused at the boundary.
   | `51-250`   | 51–250 employees    |
   | `251-1000` | 251–1,000 employees |
   | `1001+`    | 1,001+ employees    |
+
+The migration that introduces the tables fills them, turns a stored label into
+its key, and clears any sector or company size not on the lists before the
+references are added.
 
 ### roles & member_roles (access control)
 
@@ -836,13 +851,14 @@ seed/
   shared/trends.js    the 8 trends (§6.1)      — both profiles
   shared/cases.js     case studies (§6.2)      — both profiles
   shared/roles.js     `member`, `admin` rows   — both profiles
+  profile-options.ts  sectors, company sizes   — both profiles
   dev/people.js       fictional roster (§6.3)  — dev only
   dev/challenges.js   prototype examples       — dev only
   prod/load.js        reads whitelist + real challenges from env-pointed files
 ```
 
 Seeding is **idempotent**: re-running upserts by natural key (trend number, case
-URL, member email) rather than duplicating rows.
+URL, member email, sector and company size key) rather than duplicating rows.
 
 ### 6.1 The 8 trends
 

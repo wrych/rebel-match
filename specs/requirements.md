@@ -177,7 +177,10 @@ Requirements:
 - **R-ONB-5** — The consent copy SHALL state plainly that **email addresses are
   shared with another member only when both sides accept a connection**, and that
   the app is **closed: membership is by invitation**, whether from the whitelist
-  or an event invite link (R-INV-1). _(Meeting: "we need to make it very explicit
+  or an event invite link (R-INV-1). It SHALL also say that the member's
+  **name, organization and other profile information may be seen by other
+  members** — wherever the app shows them, not only on match cards — while the
+  email address stays private until a connection is accepted. _(Meeting: "we need to make it very explicit
   that the emails will be shared when you connect.")_
 
 ---
@@ -757,8 +760,9 @@ fixtures. `design.md` §6 lists the exact records and the profile mechanism.
 - **R-SEED-1 (Shared content)** — Both environments SHALL be seeded with the
   **role records** (`member`, `admin`) and the curated product content: the **8
   trends** (number, short name, "from" label, peer count, keywords) and the
-  per-trend **case studies** (organization, Corporate Rebels URL, takeaway), so
-  the app is demonstrable without user-generated data.
+  per-trend **case studies** (organization, Corporate Rebels URL, takeaway), and
+  the **sector** and **company size** lists (R-ONB-2), so the app is
+  demonstrable without user-generated data.
 - **R-SEED-2 (Dev seed)** — A dev deployment SHALL be seeded from the prototype
   (`prototype/rebel-match-beta.html`): the fictional roster, their experience
   notes and challenges, and the example challenges — enough for a non-empty
