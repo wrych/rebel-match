@@ -161,10 +161,12 @@ whether it then leaves the machine (R-DEV-4).
   with status `suppressed`.
 - **The stored body keeps the link only in a development deployment:**
   `NODE_ENV=development` **and** `mail.delivery=none`, so mail cannot leave the
-  machine (R-DEV-1; the term is defined in requirements §8c). Anything else redacts it
-  (R-MSG-4): a staging server with delivery off holds no usable credential, and
-  neither does a development machine pointed at a real SMTP server. Both inputs
-  are configuration, so this is a config decision, not a code branch (R-DEV-4).
+  machine (R-DEV-1; the term is defined in requirements §8c). The pull-request
+  previews and staging are development deployments too: they hold only
+  fictional people, and the prod seed refuses to run there (R-SEED-8). Anything
+  else redacts it (R-MSG-4): production, and a development machine pointed at a
+  real SMTP server. Both inputs are configuration, so this is a config
+  decision, not a code branch (R-DEV-4).
 - **Production refuses to start with `delivery=none`** (R-DEV-5): a deployment that
   records magic links and sends none is one where nobody can log in, and that
   should fail at boot rather than at the first scan of the QR code.
@@ -744,7 +746,9 @@ trend id + confidence; keep the same interface so callers don't change.
 Seeding is split into **profiles** so a dev deployment and production never share
 fixtures. The profile is chosen by `SEED_PROFILE` (`dev` | `prod`), defaulting to
 `dev`; the seed runner **refuses to load `dev` fixtures when `NODE_ENV=production`**
-so fictional members can never reach the summit database.
+so fictional members can never reach the summit database, and **refuses the
+`prod` profile in a development deployment** (R-SEED-8), so real attendees never
+reach a server whose log keeps their sign-in links readable.
 
 | Profile | Shared content (§6.1, §6.2) | Members / whitelist                                                                              | Challenges                               |
 | ------- | --------------------------- | ------------------------------------------------------------------------------------------------ | ---------------------------------------- |

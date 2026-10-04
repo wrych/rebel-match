@@ -515,10 +515,14 @@ What differs by environment is only whether mail **leaves the machine**.
 ### Development deployment
 
 - **Development deployment** means `NODE_ENV=development` **and**
-  `MAIL_DELIVERY=none`: a machine from which mail cannot leave. It is the only
-  environment R-DEV-1 exempts from R-MSG-4. CI (`NODE_ENV=test`), every deployed
-  server, and a developer's machine pointed at a real SMTP server to test
-  deliverability are not development deployments, so they redact.
+  `MAIL_DELIVERY=none`: a server from which mail cannot leave, holding only
+  fictional people. It is the only environment R-DEV-1 exempts from R-MSG-4. It
+  may be a developer's machine or a deployed server — the pull-request previews
+  and staging are development deployments (ADR 0025). What decides it is the
+  data, not where it runs: production, CI (`NODE_ENV=test`), and a developer's
+  machine pointed at a real SMTP server to test deliverability are not
+  development deployments, so they redact. R-SEED-8 keeps real people out of
+  one.
 - **R-DEV-1** — WHILE running as a development deployment THE SYSTEM SHALL NOT
   send outbound email. Messages SHALL still be recorded (R-MSG-1) with status
   `suppressed`, and in this environment **only**, the stored body SHALL keep the
@@ -690,6 +694,11 @@ fixtures. `design.md` §6 lists the exact records and the profile mechanism.
   recorded by their own acceptance (R-ONB-3, R-NFR-6).
 - **R-SEED-7 (Idempotent)** — Re-running a seed SHALL upsert by natural key
   (trend number, case URL, member email) rather than duplicating rows.
+- **R-SEED-8 (No real people in a development deployment)** — IF the seed runner
+  is invoked with the prod profile WHILE running as a development deployment
+  THEN THE SYSTEM SHALL abort without writing. A development deployment keeps
+  magic links readable in its log (R-DEV-1); real addresses there would make
+  the log a way into real people's accounts.
 
 ---
 

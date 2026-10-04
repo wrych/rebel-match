@@ -190,6 +190,12 @@ printed dev link (R-DEV-6).
 - [ ] Production seed: attendee whitelist + the ~15 real collected challenges
       from env-pointed private files; admins granted the `admin` role.
       _(S6, R-SEED-3,5,6)_
+- [ ] The seed runner refuses the prod profile in a development deployment, so
+      no real address reaches a preview or staging. _(R-SEED-8)_
+- [ ] Deploy non-prod from GitHub to Cloud Run: a preview per pull request and
+      staging from `main`. _(ADR 0025, rollout step 1)_
+- [ ] Production on Cloud Run, promoted from staging by a reviewed workflow,
+      in time for the pilot. _(ADR 0025, rollout step 2)_
 - [ ] Decide and implement challenge attribution for the production seed.
       _(open question 5)_
 - [ ] Deep-link pass: every email/QR target opens correctly signed out, signed
