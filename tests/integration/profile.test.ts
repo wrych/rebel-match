@@ -78,3 +78,33 @@ describe('the profile over Postgres (R-PROF-1,2)', () => {
     })
   })
 })
+
+describe('deleting your own account over Postgres (R-PROF-2)', () => {
+  it('erases the member and ends their session', async () => {
+    const leaver = {
+      id: randomUUID(),
+      email: `${randomUUID()}@example.invalid`,
+    }
+    await db.query(
+      'INSERT INTO members (id, email, name, status, consent_version, ' +
+        "consent_at, analytics_id) VALUES (?, ?, 'Lea', 'active', ?, now(), ?)",
+      [leaver.id, leaver.email, config.consentVersion, randomUUID()],
+    )
+    const deps = composeApp(config, db.drizzle)
+    const session = await deps.auth.createSession(leaver.id)
+    const theirs = `${session.name}=${session.value}`
+
+    const response = await request(createApp(deps))
+      .delete('/api/profile')
+      .set('Cookie', theirs)
+
+    expect(response.status).toBe(204)
+    expect(
+      await db.query('SELECT id FROM members WHERE id = ?', [leaver.id]),
+    ).toEqual([])
+    const after = await request(createApp(deps))
+      .get('/api/profile')
+      .set('Cookie', theirs)
+    expect(after.status).toBe(401)
+  })
+})

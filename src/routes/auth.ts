@@ -8,7 +8,8 @@ import { safeNextPath } from '../routes.js'
 const verifyQuery = z.object({ token: z.string().min(1) })
 const verifyBody = z.object({ token: z.string().min(1) })
 
-function setCookie(response: Response, cookie: SessionCookie): void {
+/** Sets or clears the session cookie the seam describes. */
+export function setCookie(response: Response, cookie: SessionCookie): void {
   response.cookie(cookie.name, cookie.value, cookie.options)
 }
 

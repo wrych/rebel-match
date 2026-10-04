@@ -171,14 +171,13 @@ describe('ProfileScreen', () => {
     }
   })
 
-  it('carries the analytics opt-in and says how to leave (R-PROF-2)', async () => {
+  it('carries the analytics opt-in and offers deleting the account (R-PROF-2)', async () => {
     server()
     const screen = await mountScreen()
 
     expect(screen.text()).toContain(
       'Help improve Rebel Match (optional data collection)',
     )
-    const leave = screen.find('a[href^="mailto:"]')
-    expect(leave.attributes('href')).toContain('host@example.org')
+    expect(screen.find('#delete-heading').text()).toBe('Delete your account')
   })
 })

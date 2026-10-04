@@ -200,7 +200,7 @@ printed dev link (R-DEV-6).
       delete. _(R-MEM-1,2)_
 - [ ] Select several members by holding a card; give or take a role, or delete
       them. _(R-MEM-3)_
-- [ ] Delete your own account from the profile screen. _(R-PROF-2, C4)_
+- [x] Delete your own account from the profile screen. _(R-PROF-2, C4)_
 
 ## M6 — Hardening & pilot _(by 2026-11-01)_
 

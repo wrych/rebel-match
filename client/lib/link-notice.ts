@@ -14,3 +14,11 @@ export function linkNotice(search: string): string | null {
     ? null
     : `${notice} Enter your email and we will send you a new one.`
 }
+
+/** What to tell someone who has just deleted their own account, or null when
+ * they have not (R-PROF-2). */
+export function accountNotice(search: string): string | null {
+  return new URLSearchParams(search).get('account') === 'deleted'
+    ? 'Your account and everything about you have been deleted.'
+    : null
+}

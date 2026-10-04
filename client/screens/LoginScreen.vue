@@ -9,7 +9,7 @@ import {
 } from '../lib/admission'
 import { fetchConfig } from '../lib/api'
 import { solveHumanCheck } from '../lib/human-check'
-import { linkNotice } from '../lib/link-notice'
+import { accountNotice, linkNotice } from '../lib/link-notice'
 
 const router = useRouter()
 const email = ref('')
@@ -19,6 +19,7 @@ const failed = ref<'error' | 'check' | 'busy' | null>(null)
 const checking = ref(false)
 const checkHost = ref<HTMLElement | null>(null)
 const deadLink = linkNotice(window.location.search)
+const accountGone = accountNotice(window.location.search)
 const consentVersion = ref<string | null>(null)
 const problem = ref<string | null>(null)
 
@@ -125,6 +126,9 @@ async function send(): Promise<void> {
 
     <div class="stack">
       <p v-if="deadLink" class="notice" role="alert">{{ deadLink }}</p>
+      <p v-if="accountGone" class="notice notice-solid" role="status">
+        {{ accountGone }}
+      </p>
       <form class="stack" @submit.prevent="send">
         <div class="field">
           <label for="email">Your email</label>
