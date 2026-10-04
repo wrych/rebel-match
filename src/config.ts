@@ -43,6 +43,11 @@ function linksMissTheApp(env: {
  * unless LOCAL_DATA_DIR says otherwise (ADR 0024). */
 export const DEFAULT_LOCAL_DATA_DIR = '.data'
 
+// How long a browser may keep a built asset: a year. Vite names each asset
+// after its content hash, so a change is a new URL; a fact of the build rather
+// than a tunable, so no environment variable.
+export const IMMUTABLE_ASSET_MAX_AGE_MS = 365 * 24 * 60 * 60 * 1000
+
 const FEEDBACK_NOWHERE = 'feedback@rebel-match.invalid'
 
 const envSchema = z

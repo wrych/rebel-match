@@ -1,22 +1,15 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import express, { Router } from 'express'
+import { IMMUTABLE_ASSET_MAX_AGE_MS } from '../config.js'
 import { isKnownPath } from '../routes.js'
 
 /** Paths the server answers itself; the shell never stands in for them. */
 const SERVER_PATH = /^\/(api|auth)(\/|$)/
 
-/** A year: Vite names every asset after its content hash, so a changed file is
- * a new URL and the old one can be cached for good. */
-const ASSET_MAX_AGE_MS = 365 * 24 * 60 * 60 * 1000
-
-/**
- * Serves the built client from `dir` (ADR 0017): the hashed assets as files,
- * and the shell for every other GET. A path in the route table gets `200`;
- * anything else gets the shell with `404`, and the client renders its
- * not-found screen. Reads `index.html` once, so a deployment without a built
- * client fails at boot rather than on the first visit.
- */
+/** Serves the built client in `dir` (ADR 0017): its files, and the shell for
+ * any other GET — `200` for a path in the route table, `404` otherwise.
+ * Throws when `dir` has no shell, so a broken deployment fails at boot. */
 export function clientShellRoutes(dir: string): Router {
   const shellPath = join(dir, 'index.html')
   let shell: string
@@ -35,7 +28,7 @@ export function clientShellRoutes(dir: string): Router {
     '/assets',
     express.static(join(dir, 'assets'), {
       immutable: true,
-      maxAge: ASSET_MAX_AGE_MS,
+      maxAge: IMMUTABLE_ASSET_MAX_AGE_MS,
       fallthrough: false,
     }),
   )
