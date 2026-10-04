@@ -173,4 +173,25 @@ describe('PUT and DELETE /api/admin/settings/:key (R-CFG-6)', () => {
 
     expect(response.status).toBe(404)
   })
+
+  it('refuses with 400 to go back across a pair', async () => {
+    const server = app()
+    const cookie = await cookieFor('m-admin')
+    for (const [key, value] of [
+      ['abuse.linkEmailsCeiling', 20],
+      ['abuse.linkEmailsBeforeCheck', 15],
+    ] as const) {
+      await request(server)
+        .put(`/api/admin/settings/${key}`)
+        .set('Cookie', cookie)
+        .send({ value })
+    }
+
+    const response = await request(server)
+      .delete('/api/admin/settings/abuse.linkEmailsCeiling')
+      .set('Cookie', cookie)
+
+    expect(response.status).toBe(400)
+    expect(response.body).toEqual({ error: 'out_of_order' })
+  })
 })

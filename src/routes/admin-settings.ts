@@ -46,7 +46,10 @@ function resetSetting(settings: EditableSettings): RequestHandler {
       response.status(404).json({ error: 'not_found' })
       return
     }
-    await settings.reset(params.data.key)
+    if ((await settings.reset(params.data.key)) === 'out_of_order') {
+      response.status(400).json({ error: 'out_of_order' })
+      return
+    }
     response.status(204).end()
   }
 }

@@ -137,4 +137,20 @@ describe('createEditableSettings (R-CFG-6, ADR 0031)', () => {
     expect(isEditableKey('abuse.trustProxy')).toBe(false)
     expect(isEditableKey('toString')).toBe(false)
   })
+
+  it('refuses to go back when the deployment value would cross a pair', async () => {
+    const { config, settings } = setup()
+    await settings.set('abuse.linkEmailsCeiling', 20, 'm')
+    await settings.set('abuse.linkEmailsBeforeCheck', 15, 'm')
+
+    expect(await settings.reset('abuse.linkEmailsCeiling')).toBe('out_of_order')
+    expect(config.abuse.linkEmailsCeiling).toBe(20)
+
+    expect(await settings.reset('abuse.linkEmailsBeforeCheck')).toBe('saved')
+    expect(await settings.reset('abuse.linkEmailsCeiling')).toBe('saved')
+    expect(config.abuse).toMatchObject({
+      linkEmailsBeforeCheck: 3,
+      linkEmailsCeiling: 10,
+    })
+  })
 })

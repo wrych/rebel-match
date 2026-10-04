@@ -162,8 +162,8 @@ export interface EditableSettings {
   /** Re-reads the overrides and applies them over the deployment's values. */
   refresh(): Promise<void>
   set(key: EditableKey, value: number, memberId: string): Promise<SetResult>
-  /** Goes back to the deployment's value. */
-  reset(key: EditableKey): Promise<void>
+  /** Goes back to the deployment's value, unless that would cross a pair. */
+  reset(key: EditableKey): Promise<'saved' | 'out_of_order'>
   /** The overrides in force, by key, as of the last refresh or change. */
   overrides(): ReadonlyMap<string, Override>
   /** The value the deployment gives a key, before any override. */
@@ -180,17 +180,21 @@ function checkChange(
   const { min, max } = boundsOf(config, key)
   if (!Number.isInteger(value) || value < min || value > max)
     return 'out_of_bounds'
+  return crosses(config, key, value) ? 'out_of_order' : 'saved'
+}
+
+// Whether giving `key` this value would put free uses above their ceiling.
+function crosses(config: Sections, key: EditableKey, value: number): boolean {
   const candidate: Sections = {
     abuse: { ...config.abuse },
     limits: { ...config.limits },
   }
   write(candidate, key, value)
-  const crossed = ordered.some(
+  return ordered.some(
     ([low, high]) =>
       (low === key || high === key) &&
       valueOf(candidate, low) > valueOf(candidate, high),
   )
-  return crossed ? 'out_of_order' : 'saved'
 }
 
 /** Applies hosts' changes to the live configuration, in place, so everything
@@ -228,8 +232,11 @@ export function createEditableSettings(deps: {
       return 'saved'
     },
     reset: async (key) => {
+      if (crosses(deps.config, key, valueOf(deployment, key)))
+        return 'out_of_order'
       await deps.store.remove(key)
       await refresh()
+      return 'saved'
     },
     overrides: () => current,
     deployed: (key) => valueOf(deployment, key),

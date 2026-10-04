@@ -51,11 +51,15 @@ export async function saveSetting(
   throw new Error(`saving the setting failed (${String(response.status)})`)
 }
 
-/** Goes back to the deployment's value (R-CFG-6). */
-export async function resetSetting(key: string): Promise<void> {
+/** Goes back to the deployment's value (R-CFG-6), unless that would put a
+ * free number above its "at most" number. */
+export async function resetSetting(
+  key: string,
+): Promise<'saved' | 'out_of_order'> {
   const response = await fetch(`/api/admin/settings/${key}`, {
     method: 'DELETE',
   })
-  if (!response.ok)
-    throw new Error(`resetting the setting failed (${String(response.status)})`)
+  if (response.ok) return 'saved'
+  if (response.status === 400) return 'out_of_order'
+  throw new Error(`resetting the setting failed (${String(response.status)})`)
 }

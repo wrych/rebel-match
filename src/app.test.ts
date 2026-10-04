@@ -93,7 +93,7 @@ function deps(
     settings: {
       refresh: () => Promise.resolve(),
       set: () => Promise.resolve('saved'),
-      reset: () => Promise.resolve(),
+      reset: () => Promise.resolve('saved'),
       overrides: () => new Map(),
       deployed: () => 0,
     },

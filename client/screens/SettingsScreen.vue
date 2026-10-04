@@ -77,7 +77,11 @@ async function reset(setting: Setting): Promise<void> {
   if (key === undefined) return
   errors[key] = null
   try {
-    await resetSetting(key)
+    if ((await resetSetting(key)) === 'out_of_order') {
+      errors[key] =
+        'Going back would put the free number above the “at most” number. Change the other one first.'
+      return
+    }
     await load()
     tick(key)
   } catch {
