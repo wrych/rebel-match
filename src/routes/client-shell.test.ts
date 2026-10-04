@@ -67,7 +67,7 @@ describe('clientShellRoutes (ADR 0017)', () => {
     const response = await request(app).get('/assets/gone-000.js')
 
     expect(response.status).toBe(404)
-    expect(response.text).not.toBe(SHELL)
+    expect(response.text).toBe('Not Found')
   })
 
   it('never stands in for the server under /api or /auth', async () => {

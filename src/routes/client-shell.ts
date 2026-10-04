@@ -29,8 +29,11 @@ export function clientShellRoutes(dir: string): Router {
     express.static(join(dir, 'assets'), {
       immutable: true,
       maxAge: IMMUTABLE_ASSET_MAX_AGE_MS,
-      fallthrough: false,
     }),
+    // An asset from an older build: a plain 404, never the shell.
+    (_request, response) => {
+      response.sendStatus(404)
+    },
   )
   router.use(express.static(dir, { index: false }))
 
