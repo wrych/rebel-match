@@ -1,0 +1,54 @@
+name: dev-login
+
+# The first sign-in on a deployed development deployment (R-DEV-6, ADR 0025).
+# Runs the target's sign-in job, which prints a magic link for a seeded,
+# fictional member into the job's log in Google Cloud, readable only by
+# project members. The link never appears in GitHub.
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'staging, or pr-<number> for a preview'
+        required: true
+        default: staging
+      email:
+        description: 'A seeded member'
+        required: true
+        default: admin@rebel-match.invalid
+
+permissions:
+  contents: read
+
+jobs:
+  login:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.target == 'staging' && 'staging' || 'dev' }}
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      TARGET: ${{ inputs.target }}
+      EMAIL: ${{ inputs.email }}
+      GCP_PROJECT: ${{ vars.GCP_PROJECT }}
+      GCP_REGION: ${{ vars.GCP_REGION }}
+
+    steps:
+      - name: Check the inputs
+        run: |
+          [[ "$TARGET" =~ ^(staging|pr-[0-9]+)$ ]] || { echo "::error::target must be staging or pr-<n>"; exit 1; }
+          [[ "$EMAIL" =~ ^[^,[:space:]]+@[^,[:space:]]+$ ]] || { echo "::error::not an email address"; exit 1; }
+
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOY_SA }}
+
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Run the sign-in job
+        run: |
+          gcloud --project="$GCP_PROJECT" --quiet run jobs execute "login-$TARGET" \
+            --region="$GCP_REGION" --args="dist/dev-login.js,$EMAIL" --wait
+          LOGS="https://console.cloud.google.com/run/jobs/details/$GCP_REGION/login-$TARGET/logs?project=$GCP_PROJECT"
+          echo "The sign-in link is in the job's log: $LOGS"
+          echo "Open the [sign-in job's log]($LOGS) and click the link. It works once and expires soon." >> "$GITHUB_STEP_SUMMARY"
