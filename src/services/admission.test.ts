@@ -26,7 +26,7 @@ const handles = createApplicantHandles('x'.repeat(32))
 const client = { ip: '203.0.113.7' }
 const openGate: PacedGate = {
   admit: () => Promise.resolve({ result: 'admit' }),
-  recorded: () => undefined,
+  release: () => undefined,
 }
 
 interface Harness {
@@ -331,20 +331,20 @@ describe('createAdmission within the abuse limits (R-NFR-8)', () => {
   function gate(decision: Awaited<ReturnType<PacedGate['admit']>>): {
     gate: PacedGate
     asked: { key: string; altcha: string | undefined }[]
-    recorded: string[]
+    released: string[]
   } {
     const asked: { key: string; altcha: string | undefined }[] = []
-    const recorded: string[] = []
+    const released: string[] = []
     return {
       asked,
-      recorded,
+      released,
       gate: {
         admit: (key, altcha) => {
           asked.push({ key, altcha })
           return Promise.resolve(decision)
         },
-        recorded: (key) => {
-          recorded.push(key)
+        release: (key) => {
+          released.push(key)
         },
       },
     }
@@ -369,7 +369,7 @@ describe('createAdmission within the abuse limits (R-NFR-8)', () => {
       expect(paced.asked).toEqual([
         { key: 'ada@example.invalid', altcha: 'solved' },
       ])
-      expect(paced.recorded).toEqual(['ada@example.invalid'])
+      expect(paced.released).toEqual([])
       expect(harness.links).toHaveLength(1)
     })
 
@@ -388,7 +388,6 @@ describe('createAdmission within the abuse limits (R-NFR-8)', () => {
         await harness.admission.requestLink('ada@example.invalid', { client }),
       ).toEqual({ state: 'human-check', challenge })
       expect(harness.links).toEqual([])
-      expect(paced.recorded).toEqual([])
     })
 
     it('answers as usual past the ceiling, and sends nothing', async () => {
@@ -425,13 +424,23 @@ describe('createAdmission within the abuse limits (R-NFR-8)', () => {
   })
 
   describe('new applicants, per IP address', () => {
-    it('counts a recorded applicant against the client', async () => {
+    it('keeps the use of a recorded applicant', async () => {
       const paced = gate({ result: 'admit' })
       const harness = setup([], false, undefined, { applicants: paced.gate })
 
       await harness.requestLink('new@example.invalid')
 
-      expect(paced.recorded).toEqual([client.ip])
+      expect(paced.asked).toEqual([{ key: client.ip, altcha: undefined }])
+      expect(paced.released).toEqual([])
+    })
+
+    it('gives the use back when the applicant could not be recorded', async () => {
+      const paced = gate({ result: 'admit' })
+      const harness = setup([], true, undefined, { applicants: paced.gate })
+
+      await expect(harness.requestLink('new@example.invalid')).rejects.toThrow()
+
+      expect(paced.released).toEqual([client.ip])
     })
 
     it('never asks about members or repeat requests', async () => {
@@ -468,7 +477,6 @@ describe('createAdmission within the abuse limits (R-NFR-8)', () => {
       ).toEqual({ state: 'human-check', challenge })
       expect(harness.members.has('new@example.invalid')).toBe(false)
       expect(harness.notified).toEqual([])
-      expect(paced.recorded).toEqual([])
     })
 
     it('records nothing past the ceiling', async () => {

@@ -58,4 +58,16 @@ describe('createWindowCounter', () => {
     expect(counter.count('ip-0')).toBe(0)
     expect(counter.count('fresh')).toBe(1)
   })
+
+  it('takes back a use, never below none', () => {
+    const counter = createWindowCounter({ windowMinutes: 1, now: clock().now })
+    counter.add('a')
+
+    counter.remove('a')
+    counter.remove('a')
+    counter.remove('b')
+
+    expect(counter.count('a')).toBe(0)
+    expect(counter.count('b')).toBe(0)
+  })
 })

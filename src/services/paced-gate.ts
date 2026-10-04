@@ -14,11 +14,12 @@ export type GateDecision =
   | { result: 'try-later' }
 
 /** Paces something per key within a window (R-NFR-8): free up to a number of
- * uses, then each needs a human check, then none until the window ends. Only
- * what the caller reports as done counts. */
+ * uses, then each needs a human check, then none until the window ends. An
+ * admitted use counts at once, so simultaneous requests cannot share one. */
 export interface PacedGate {
   admit(key: string, altcha: string | undefined): Promise<GateDecision>
-  recorded(key: string): void
+  /** Takes back an admitted use that did not happen. */
+  release(key: string): void
 }
 
 export function createPacedGate(deps: {
@@ -29,21 +30,24 @@ export function createPacedGate(deps: {
 }): PacedGate {
   return {
     admit: async (key, altcha) => {
+      const free = deps.counter.count(key) < deps.freeUses
+      const solved =
+        !free && altcha !== undefined && (await deps.humanCheck.verify(altcha))
+
+      // Checked and counted with no await between, after the verify above.
       const recent = deps.counter.count(key)
       if (recent >= deps.ceiling) return { result: 'try-later' }
-      if (recent < deps.freeUses) return { result: 'admit' }
-
-      const solved =
-        altcha !== undefined && (await deps.humanCheck.verify(altcha))
-      return solved
-        ? { result: 'admit' }
-        : {
-            result: 'human-check',
-            challenge: await deps.humanCheck.challenge(),
-          }
+      if (recent < deps.freeUses || solved) {
+        deps.counter.add(key)
+        return { result: 'admit' }
+      }
+      return {
+        result: 'human-check',
+        challenge: await deps.humanCheck.challenge(),
+      }
     },
-    recorded: (key) => {
-      deps.counter.add(key)
+    release: (key) => {
+      deps.counter.remove(key)
     },
   }
 }

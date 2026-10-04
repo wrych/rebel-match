@@ -7,6 +7,8 @@ export interface WindowCounter {
   count(key: string): number
   /** Counts one use of `key`. */
   add(key: string): void
+  /** Takes back one use of `key` counted in its current window. */
+  remove(key: string): void
   /** Counts one use of `key` if it has fewer than `limit`; says whether it did. */
   take(key: string, limit: number): boolean
 }
@@ -56,6 +58,11 @@ export function createWindowCounter(options: {
     },
     add: (key) => {
       current(key).uses += 1
+    },
+    remove: (key) => {
+      const window = windows.get(key)
+      if (window !== undefined && !ended(window, now()) && window.uses > 0)
+        window.uses -= 1
     },
     take: (key, limit) => {
       const window = current(key)

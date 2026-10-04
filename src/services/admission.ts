@@ -130,8 +130,15 @@ async function sendLink(
   if (decision.result === 'human-check')
     return { state: 'human-check', challenge: decision.challenge }
   if (decision.result === 'admit') {
-    await deps.auth.issueLink(email, { kind: 'self_service', next: opts.next })
-    deps.linkEmails.recorded(email)
+    try {
+      await deps.auth.issueLink(email, {
+        kind: 'self_service',
+        next: opts.next,
+      })
+    } catch (error) {
+      deps.linkEmails.release(email)
+      throw error
+    }
   }
   return { state: 'check-email' }
 }
@@ -149,8 +156,14 @@ async function queueApplicant(
   if (decision.result === 'human-check')
     return { state: 'human-check', challenge: decision.challenge }
 
-  const created = await recordApplicant(deps, email)
-  if (created) deps.applicants.recorded(client.ip)
+  let created: boolean
+  try {
+    created = await recordApplicant(deps, email)
+  } catch (error) {
+    deps.applicants.release(client.ip)
+    throw error
+  }
+  if (!created) deps.applicants.release(client.ip)
   return {
     state: 'access-requested',
     ...(created ? { handle: deps.handles.issue(email) } : {}),
