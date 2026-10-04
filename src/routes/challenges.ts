@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { Router, type RequestHandler } from 'express'
 import { z } from 'zod'
 import type { AuthProvider } from '../auth/index.js'
-import type { Limits } from '../config.js'
+import type { LiveSettings } from '../config.js'
 import type { ChallengeService } from '../services/challenges.js'
 import { requirePermission, type GuardedLocals } from './require-permission.js'
 
@@ -23,15 +23,18 @@ function memberOf(locals: unknown): string {
 type Deps = {
   auth: AuthProvider
   challenges: ChallengeService
-  config: { limits: Pick<Limits, 'challengeMinChars'> }
+  settings: Pick<LiveSettings, 'limits'>
+}
+
+function createBody(minChars: number): z.ZodType<{ body: string }> {
+  return z.object({ body: z.string().trim().min(minChars) })
 }
 
 function create(deps: Deps): RequestHandler {
-  const createBody = z.object({
-    body: z.string().trim().min(deps.config.limits.challengeMinChars),
-  })
   return async (request, response) => {
-    const input = createBody.safeParse(request.body)
+    const input = createBody(
+      deps.settings.limits().challengeMinChars,
+    ).safeParse(request.body)
     if (!input.success) {
       response.status(400).json({ error: 'bad_request' })
       return

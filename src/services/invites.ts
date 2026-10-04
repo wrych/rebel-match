@@ -123,7 +123,7 @@ function view(invite: ListedInvite, publicUrl: string, now: Date): InviteView {
 export function createInvites(deps: {
   store: InviteStore
   publicUrl: string
-  defaults: { inviteDefaultMaxUses: number; inviteDefaultHours: number }
+  defaults: () => { inviteDefaultMaxUses: number; inviteDefaultHours: number }
   now?: () => Date
   newId: () => string
 }): InviteService {
@@ -135,12 +135,12 @@ export function createInvites(deps: {
     },
     create: async (input, createdBy) => {
       const at = now()
+      const defaults = deps.defaults()
       const validFrom = wholeSecond(input.validFrom ?? at)
       const validUntil = wholeSecond(
         input.validUntil ??
           new Date(
-            validFrom.getTime() +
-              deps.defaults.inviteDefaultHours * MS_PER_HOUR,
+            validFrom.getTime() + defaults.inviteDefaultHours * MS_PER_HOUR,
           ),
       )
       if (validUntil <= validFrom) return { result: 'bad_window' }
@@ -151,7 +151,7 @@ export function createInvites(deps: {
         label: input.label,
         validFrom,
         validUntil,
-        maxUses: input.maxUses ?? deps.defaults.inviteDefaultMaxUses,
+        maxUses: input.maxUses ?? defaults.inviteDefaultMaxUses,
         createdBy,
       }
       await deps.store.insert(invite)

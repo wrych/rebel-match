@@ -154,7 +154,7 @@ describe('CONSENT_VERSION', () => {
 describe('clientConfig', () => {
   it('carries the limits and the consent version', () => {
     const config = loadConfig(valid)
-    const forClient = clientConfig(config)
+    const forClient = clientConfig(config, config.limits)
 
     expect(forClient.limits).toEqual(config.limits)
     expect(forClient.consentVersion).toBe(config.consentVersion)
@@ -167,7 +167,7 @@ describe('clientConfig', () => {
       SMTP_PASSWORD: 'smtp-secret',
     })
 
-    const serialized = JSON.stringify(clientConfig(config))
+    const serialized = JSON.stringify(clientConfig(config, config.limits))
 
     expect(serialized).not.toContain('mp-secret-token')
     expect(serialized).not.toContain('smtp-secret')
@@ -176,12 +176,11 @@ describe('clientConfig', () => {
   })
 
   it('exposes only the documented keys', () => {
-    expect(Object.keys(clientConfig(loadConfig(valid))).sort()).toEqual([
-      'analyticsVersion',
-      'consentVersion',
-      'feedbackTo',
-      'limits',
-    ])
+    expect(
+      Object.keys(
+        clientConfig(loadConfig(valid), loadConfig(valid).limits),
+      ).sort(),
+    ).toEqual(['analyticsVersion', 'consentVersion', 'feedbackTo', 'limits'])
   })
 
   it('sends feedback nowhere real by default, and refuses that in production (R-FB-1)', () => {

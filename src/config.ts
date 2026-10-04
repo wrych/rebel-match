@@ -219,6 +219,18 @@ export interface AbuseLimits {
   humanCheckMinutes: number
 }
 
+/** The values hosts may change while the server runs (ADR 0031). Read when
+ * used, never kept from startup, so a change applies without a restart. */
+export interface LiveSettings {
+  limits(): Limits
+  abuse(): AbuseLimits
+}
+
+/** The deployment's values, never changed: settings as loaded at startup. */
+export function fixedSettings(config: Config): LiveSettings {
+  return { limits: () => config.limits, abuse: () => config.abuse }
+}
+
 /** Values the client is allowed to read, so a disabled button and a server
  * check can never disagree (R-CFG-2). Secrets are structurally absent. */
 export interface ClientConfig {
@@ -349,9 +361,9 @@ export function defaultConfig(): Config {
 
 /** The subset served by `GET /api/config`. Built by naming what goes in, so a
  * new secret cannot reach the client by being added to Config (R-CFG-2). */
-export function clientConfig(config: Config): ClientConfig {
+export function clientConfig(config: Config, limits: Limits): ClientConfig {
   return {
-    limits: config.limits,
+    limits,
     consentVersion: config.consentVersion,
     analyticsVersion: config.analyticsVersion,
     feedbackTo: config.feedbackTo,

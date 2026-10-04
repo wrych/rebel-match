@@ -25,19 +25,19 @@ export interface PacedGate {
 export function createPacedGate(deps: {
   counter: WindowCounter
   humanCheck: HumanCheck
-  freeUses: number
-  ceiling: number
+  limits: () => { freeUses: number; ceiling: number }
 }): PacedGate {
   return {
     admit: async (key, altcha) => {
-      const free = deps.counter.count(key) < deps.freeUses
+      const { freeUses, ceiling } = deps.limits()
+      const free = deps.counter.count(key) < freeUses
       const solved =
         !free && altcha !== undefined && (await deps.humanCheck.verify(altcha))
 
       // Checked and counted with no await between, after the verify above.
       const recent = deps.counter.count(key)
-      if (recent >= deps.ceiling) return { result: 'try-later' }
-      if (recent < deps.freeUses || solved) {
+      if (recent >= ceiling) return { result: 'try-later' }
+      if (recent < freeUses || solved) {
         deps.counter.add(key)
         return { result: 'admit' }
       }

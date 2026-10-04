@@ -18,8 +18,7 @@ function check(
 ): ReturnType<typeof createHumanCheck> {
   return createHumanCheck({
     secret: options.secret ?? secret,
-    cost: 1,
-    lifetimeMinutes: 5,
+    limits: () => ({ cost: 1, lifetimeMinutes: 5 }),
     ...(options.now === undefined ? {} : { now: options.now }),
   })
 }

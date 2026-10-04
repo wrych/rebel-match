@@ -6,7 +6,7 @@ import request from 'supertest'
 import { describe, expect, it, vi } from 'vitest'
 import { createApp, handleErrors, type AppDeps } from './app.js'
 import { createAuth, createMemoryAuthStore } from './auth/index.js'
-import { loadConfig } from './config.js'
+import { fixedSettings, loadConfig } from './config.js'
 import type { Database } from './db/connect.js'
 import { configPolicy } from './permissions.js'
 
@@ -21,6 +21,7 @@ function deps(
 ): AppDeps {
   return {
     config,
+    settings: fixedSettings(config),
     db: { execute } as unknown as Database,
     auth: createAuth({
       policy: configPolicy,
@@ -144,13 +145,15 @@ describe('GET /api/config', () => {
 
 describe('the per-IP backstop on sign-in (R-NFR-8)', () => {
   function limited(trustProxy = 0): Express {
+    const narrowed = {
+      ...config,
+      trustProxy,
+      abuse: { ...config.abuse, authRequestsPerIp: 2 },
+    }
     return createApp({
       ...deps(),
-      config: {
-        ...config,
-        trustProxy,
-        abuse: { ...config.abuse, authRequestsPerIp: 2 },
-      },
+      config: narrowed,
+      settings: fixedSettings(narrowed),
     })
   }
 
