@@ -158,14 +158,22 @@ done
 ## 7. The identity GitHub deploys as
 
 It deploys, hands the runtime identity to what it deploys, pushes images, and
-creates and drops preview databases.
+creates and drops preview databases. No predefined role does the last part
+and nothing more (Cloud SQL Editor can create a database but not drop one),
+so it gets a small custom role with just those permissions.
 
 ```sh
 DEPLOYER=github-deployer@$NONPROD.iam.gserviceaccount.com
 gcloud iam service-accounts create github-deployer --project="$NONPROD" \
   --display-name="GitHub Actions deploys"
 
-for ROLE in roles/run.admin roles/cloudsql.editor; do
+gcloud iam roles create previewDatabases --project="$NONPROD" \
+  --title="Preview databases" \
+  --description="Create and drop the pr-<n> databases of pull-request previews" \
+  --permissions=cloudsql.databases.create,cloudsql.databases.delete,cloudsql.databases.get,cloudsql.databases.list,cloudsql.instances.get \
+  --stage=GA
+
+for ROLE in roles/run.admin "projects/$NONPROD/roles/previewDatabases"; do
   gcloud projects add-iam-policy-binding "$NONPROD" --condition=None \
     --member="serviceAccount:$DEPLOYER" --role="$ROLE"
 done
