@@ -67,8 +67,9 @@ warning, and CI remains the gate for everything else.
 
 ### Merging
 
-`main` takes squash merges of pull requests with CI's `check` green on an
-up-to-date branch. Who presses the button depends on the change (ADR 0022):
+`main` takes squash merges of pull requests with CI's `check` green on their
+own branch; the branch need not be up to date with `main` (ADR 0028). Who
+presses the button depends on the change (ADR 0022):
 
 | The change                                                                   | Merged by                         |
 | ---------------------------------------------------------------------------- | --------------------------------- |
@@ -82,6 +83,12 @@ up-to-date branch. Who presses the button depends on the change (ADR 0022):
 An agent that merges says so, with the PR link. When unsure which row a change
 falls in, it is the maintainer's. Agents merge one PR before starting work that
 depends on it, rather than stacking.
+
+**A red `main` comes first.** When `check` fails on `main`, fix it, or revert
+the pull request that broke it, before merging anything else (ADR 0028).
+
+A pull request gets a preview deployment only with the `preview` label; add it
+when someone wants to try the change, not by default (ADR 0028).
 
 ## First run
 

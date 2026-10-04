@@ -1,6 +1,6 @@
 # 0022. Agents merge routine pull requests; people approve decisions
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by 0028
 - **Date:** 2026-10-02
 - **Deciders:** Andy Moesch
 
