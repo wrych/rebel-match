@@ -138,7 +138,7 @@ printed dev link (R-DEV-6).
       emails). _(R-ASK-8)_
 - [x] Matches screen with Follow + Connect; trend detail / case studies as its
       own screen (`/trends/:trendId`). _(R-ASK-9,10, R-NAV-2)_
-- [ ] Matches screen says posting worked and what it is for: posted banner,
+- [x] Matches screen says posting worked and what it is for: posted banner,
       people-first section headings, empty sections that point onward.
       _(R-ASK-11,12,13)_
 

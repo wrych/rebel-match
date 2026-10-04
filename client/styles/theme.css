@@ -30,6 +30,8 @@
   --accent-hover: #b93a16;
   --on-accent: #fff;
   --disabled: #c9c2b4;
+  --ok: #2c6e3a;
+  --ok-soft: #e7f1e6;
 
   --door: #111010;
   --door-fg: #faf8f4;
@@ -77,6 +79,8 @@
   --token-meta: #0b4c85;
   --mark: #ff2e93;
   --soft: #ffe3f1;
+  --ok: #04301f;
+  --ok-soft: #38d6a6;
   --line-strong: #111010;
 
   --sticker-border: 2.5px solid #111010;
@@ -1012,6 +1016,14 @@ textarea.input {
   border-style: solid;
   background: var(--soft);
   color: var(--ink);
+}
+
+/* Something the member did has worked, such as a posted challenge. */
+.notice-ok {
+  border-style: solid;
+  border-color: var(--ok);
+  background: var(--ok-soft);
+  color: var(--ok);
 }
 
 .alert {
