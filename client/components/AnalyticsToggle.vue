@@ -67,7 +67,7 @@ async function change(): Promise<void> {
         :disabled="saving || version === null"
         @change="change"
       />
-      <span>Help improve Rebel Match: count how I use the app.</span>
+      <span>Help improve Rebel Match (optional data collection)</span>
     </label>
     <details v-if="version">
       <summary class="small">What this means</summary>
