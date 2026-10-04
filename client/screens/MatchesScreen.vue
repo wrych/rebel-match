@@ -52,8 +52,11 @@ onMounted(async () => {
 
     <template v-else-if="challenge && matches">
       <p v-if="posted" class="notice notice-ok" role="status">
-        <strong>✓ Your challenge is live.</strong> Rebels who can help will now
-        see it.
+        <span class="tick" aria-hidden="true">✓</span>
+        <span
+          ><strong>Your challenge is live.</strong> Rebels who can help will now
+          see it.</span
+        >
       </p>
 
       <div class="stack-tight">
@@ -123,6 +126,17 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+.notice-ok {
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+}
+
+.tick {
+  flex: none;
+  font-size: 1rem;
+}
+
 .purpose {
   margin: 0;
   color: var(--muted);
