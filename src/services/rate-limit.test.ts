@@ -13,7 +13,10 @@ function clock(): { now: () => number; advance: (ms: number) => void } {
 
 describe('createWindowCounter', () => {
   it('takes up to the limit, then refuses (R-NFR-8)', () => {
-    const counter = createWindowCounter({ windowMinutes: 1, now: clock().now })
+    const counter = createWindowCounter({
+      windowMinutes: () => 1,
+      now: clock().now,
+    })
 
     expect([1, 2, 3, 4].map(() => counter.take('a', 3))).toEqual([
       true,
@@ -25,7 +28,10 @@ describe('createWindowCounter', () => {
   })
 
   it('counts each key on its own', () => {
-    const counter = createWindowCounter({ windowMinutes: 1, now: clock().now })
+    const counter = createWindowCounter({
+      windowMinutes: () => 1,
+      now: clock().now,
+    })
 
     counter.add('a')
     counter.add('a')
@@ -37,7 +43,10 @@ describe('createWindowCounter', () => {
 
   it('starts over once the window has passed', () => {
     const time = clock()
-    const counter = createWindowCounter({ windowMinutes: 1, now: time.now })
+    const counter = createWindowCounter({
+      windowMinutes: () => 1,
+      now: time.now,
+    })
     counter.take('a', 1)
 
     time.advance(59_999)
@@ -49,7 +58,10 @@ describe('createWindowCounter', () => {
 
   it('forgets ended windows rather than keeping every key it has seen', () => {
     const time = clock()
-    const counter = createWindowCounter({ windowMinutes: 1, now: time.now })
+    const counter = createWindowCounter({
+      windowMinutes: () => 1,
+      now: time.now,
+    })
     for (let i = 0; i < 100; i++) counter.add(`ip-${String(i)}`)
 
     time.advance(60_000)
@@ -60,7 +72,10 @@ describe('createWindowCounter', () => {
   })
 
   it('takes back a use, never below none', () => {
-    const counter = createWindowCounter({ windowMinutes: 1, now: clock().now })
+    const counter = createWindowCounter({
+      windowMinutes: () => 1,
+      now: clock().now,
+    })
     counter.add('a')
 
     counter.remove('a')

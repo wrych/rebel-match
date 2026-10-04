@@ -2,7 +2,7 @@ import express, { type Express } from 'express'
 import request from 'supertest'
 import { describe, expect, it } from 'vitest'
 import { createAuth, createMemoryAuthStore } from '../auth/index.js'
-import { loadConfig } from '../config.js'
+import { fixedSettings, loadConfig, type LiveSettings } from '../config.js'
 import { configPolicy } from '../permissions.js'
 import type { Challenge, ChallengeService } from '../services/challenges.js'
 import { challengeRoutes } from './challenges.js'
@@ -30,7 +30,10 @@ const challenge: Challenge = {
   createdAt: '2026-11-08T10:00:00.000Z',
 }
 
-function setup(): { app: Express; calls: unknown[][] } {
+function setup(settings: LiveSettings = fixedSettings(config)): {
+  app: Express
+  calls: unknown[][]
+} {
   const calls: unknown[][] = []
   const challenges: ChallengeService = {
     trends: () =>
@@ -70,7 +73,7 @@ function setup(): { app: Express; calls: unknown[][] } {
   }
   const app = express()
   app.use(express.json())
-  app.use(challengeRoutes({ auth, challenges, config }))
+  app.use(challengeRoutes({ auth, challenges, settings }))
   return { app, calls }
 }
 
@@ -116,6 +119,20 @@ describe('challenge routes', () => {
     expect(response.status).toBe(201)
     expect(response.body).toEqual({ challenge })
     expect(calls).toEqual([['create', 'm-ada', 'y'.repeat(31)]])
+  })
+
+  it('applies a changed minimum length to the next challenge (ADR 0031)', async () => {
+    const limits = { ...config.limits }
+    const { app } = setup({ limits: () => limits, abuse: () => config.abuse })
+    const cookie = await cookieFor('m-ada')
+    limits.challengeMinChars = 40
+
+    const response = await request(app)
+      .post('/api/challenges')
+      .set('Cookie', cookie)
+      .send({ body: 'y'.repeat(31) })
+
+    expect(response.status).toBe(400)
   })
 
   it.each([{}, { body: 'too short' }, { body: `  ${'z'.repeat(30)}  ` }])(

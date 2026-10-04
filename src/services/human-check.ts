@@ -78,8 +78,7 @@ function parse(payload: string): Payload | null {
 
 export function createHumanCheck(options: {
   secret: string
-  cost: number
-  lifetimeMinutes: number
+  limits: () => { cost: number; lifetimeMinutes: number }
   now?: () => Date
 }): HumanCheck {
   const now = options.now ?? ((): Date => new Date())
@@ -88,18 +87,18 @@ export function createHumanCheck(options: {
   const spent = new CappedMap<string, true>({ maxSize: SPENT_MAX })
 
   return {
-    challenge: () =>
-      createChallenge({
+    challenge: () => {
+      const { cost, lifetimeMinutes } = options.limits()
+      return createChallenge({
         algorithm: ALGORITHM,
-        cost: options.cost,
+        cost,
         counter: randomInt(COUNTER_MAX, COUNTER_MIN),
         deriveKey,
-        expiresAt: new Date(
-          now().getTime() + options.lifetimeMinutes * MS_PER_MINUTE,
-        ),
+        expiresAt: new Date(now().getTime() + lifetimeMinutes * MS_PER_MINUTE),
         hmacSignatureSecret: signatureSecret,
         hmacKeySignatureSecret: keySecret,
-      }),
+      })
+    },
     verify: async (payload) => {
       const parsed = parse(payload)
       if (parsed === null) return false

@@ -18,10 +18,9 @@ function setup(): ReturnType<typeof createPacedGate> {
       }),
   }
   return createPacedGate({
-    counter: createWindowCounter({ windowMinutes: 1 }),
+    counter: createWindowCounter({ windowMinutes: () => 1 }),
     humanCheck,
-    freeUses: 2,
-    ceiling: 3,
+    limits: () => ({ freeUses: 2, ceiling: 3 }),
   })
 }
 
@@ -62,6 +61,22 @@ describe('createPacedGate (R-NFR-8)', () => {
     expect(await gate.admit('a', 'solved-again')).toEqual({
       result: 'try-later',
     })
+  })
+
+  it('reads its limits on every use, so a changed limit applies at once', async () => {
+    const limits = { freeUses: 1, ceiling: 3 }
+    const gate = createPacedGate({
+      counter: createWindowCounter({ windowMinutes: () => 1 }),
+      humanCheck: {
+        challenge: () => Promise.resolve(challenge),
+        verify: () => Promise.resolve(false),
+      },
+      limits: () => limits,
+    })
+    await gate.admit('a', undefined)
+    limits.freeUses = 2
+
+    expect((await gate.admit('a', undefined)).result).toBe('admit')
   })
 
   it('counts simultaneous requests one by one', async () => {
