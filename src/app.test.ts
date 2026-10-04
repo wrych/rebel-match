@@ -90,6 +90,13 @@ function deps(
       cockpit: () =>
         Promise.resolve({ challenges: [], following: [], pendingIncoming: 0 }),
     },
+    settings: {
+      refresh: () => Promise.resolve(),
+      set: () => Promise.resolve('saved'),
+      reset: () => Promise.resolve(),
+      overrides: () => new Map(),
+      deployed: () => 0,
+    },
   }
 }
 

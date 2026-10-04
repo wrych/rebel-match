@@ -78,8 +78,9 @@ function parse(payload: string): Payload | null {
 
 export function createHumanCheck(options: {
   secret: string
-  cost: number
-  lifetimeMinutes: number
+  /** Read for each challenge, so a host's change applies at once (R-CFG-6). */
+  cost: () => number
+  lifetimeMinutes: () => number
   now?: () => Date
 }): HumanCheck {
   const now = options.now ?? ((): Date => new Date())
@@ -91,11 +92,11 @@ export function createHumanCheck(options: {
     challenge: () =>
       createChallenge({
         algorithm: ALGORITHM,
-        cost: options.cost,
+        cost: options.cost(),
         counter: randomInt(COUNTER_MAX, COUNTER_MIN),
         deriveKey,
         expiresAt: new Date(
-          now().getTime() + options.lifetimeMinutes * MS_PER_MINUTE,
+          now().getTime() + options.lifetimeMinutes() * MS_PER_MINUTE,
         ),
         hmacSignatureSecret: signatureSecret,
         hmacKeySignatureSecret: keySecret,

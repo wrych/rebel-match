@@ -22,23 +22,24 @@ interface Window {
  * ended are swept once per window length, so the map holds only the keys seen
  * recently, however many visit over a day. */
 export function createWindowCounter(options: {
-  windowMinutes: number
+  /** Read at each use, so a host's change applies at once (R-CFG-6). */
+  windowMinutes: () => number
   now?: () => number
 }): WindowCounter {
   const now = options.now ?? Date.now
-  const windowMs = options.windowMinutes * MS_PER_MINUTE
+  const windowMs = (): number => options.windowMinutes() * MS_PER_MINUTE
   const windows = new Map<string, Window>()
-  let nextSweep = now() + windowMs
+  let nextSweep = now() + windowMs()
 
   const ended = (window: Window, at: number): boolean =>
-    at - window.startedAt >= windowMs
+    at - window.startedAt >= windowMs()
 
   const sweep = (at: number): void => {
     if (at < nextSweep) return
     for (const [key, window] of windows) {
       if (ended(window, at)) windows.delete(key)
     }
-    nextSweep = at + windowMs
+    nextSweep = at + windowMs()
   }
 
   const current = (key: string): Window => {

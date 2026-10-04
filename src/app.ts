@@ -44,6 +44,7 @@ import type { MemberRoster } from './services/member-roster.js'
 import type { ProfileStore } from './services/profile.js'
 import type { RoleService } from './services/roles.js'
 import type { WhitelistService } from './services/whitelist.js'
+import type { EditableSettings } from './services/editable-settings.js'
 
 export interface AppDeps {
   config: Config
@@ -68,6 +69,7 @@ export interface AppDeps {
   swipes: SwipeService
   follows: FollowService
   cockpit: { cockpit(memberId: string): Promise<Cockpit> }
+  settings: EditableSettings
 }
 
 /** True when the database answers. Reported rather than thrown, so a dev server
@@ -113,9 +115,9 @@ export function createApp(deps: AppDeps): Express {
     [...SIGN_IN_POSTS],
     limitPerIp(
       createWindowCounter({
-        windowMinutes: deps.config.abuse.ipWindowMinutes,
+        windowMinutes: () => deps.config.abuse.ipWindowMinutes,
       }),
-      deps.config.abuse.authRequestsPerIp,
+      () => deps.config.abuse.authRequestsPerIp,
     ),
   )
   app.use(express.json({ limit: '64kb' }))

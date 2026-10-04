@@ -27,11 +27,13 @@ type Deps = {
 }
 
 function create(deps: Deps): RequestHandler {
-  const createBody = z.object({
-    body: z.string().trim().min(deps.config.limits.challengeMinChars),
-  })
   return async (request, response) => {
-    const input = createBody.safeParse(request.body)
+    // Built per request: a host can change the minimum length (R-CFG-6).
+    const input = z
+      .object({
+        body: z.string().trim().min(deps.config.limits.challengeMinChars),
+      })
+      .safeParse(request.body)
     if (!input.success) {
       response.status(400).json({ error: 'bad_request' })
       return

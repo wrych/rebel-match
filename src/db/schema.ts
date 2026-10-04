@@ -362,3 +362,15 @@ export const connectionRequests = pgTable(
       .where(sql`${t.status} = 'pending'`),
   ],
 )
+
+// A value a host set in the app, overriding the environment for its key; no
+// row means the deployment's value (R-CFG-6, ADR 0031). Only the keys the
+// settings catalogue names are written, so no secret can land here.
+export const settingOverrides = pgTable('setting_overrides', {
+  key: varchar('key', { length: 64 }).primaryKey(),
+  value: integer('value').notNull(),
+  changedBy: id('changed_by').references(() => members.id, {
+    onDelete: 'set null',
+  }),
+  changedAt: at('changed_at').notNull().defaultNow(),
+})

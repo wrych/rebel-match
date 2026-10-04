@@ -132,6 +132,9 @@ const envSchema = z
     // Proxy hops in front of the server whose X-Forwarded-For is believed;
     // 0 uses the socket address, Cloud Run needs 1.
     TRUST_PROXY: z.coerce.number().int().nonnegative().default(0),
+    // How often each server re-reads the settings hosts change in the app
+    // (R-CFG-6, ADR 0031).
+    SETTINGS_REFRESH_SECONDS: z.coerce.number().int().positive().default(60),
   })
   .superRefine((env, ctx) => {
     if (env.MAIL_DELIVERY === 'smtp' && env.SMTP_HOST === undefined) {
@@ -253,6 +256,7 @@ export interface Config {
   limits: Limits
   abuse: AbuseLimits
   trustProxy: number
+  settingsRefreshSeconds: number
   rolePermissions: typeof rolePermissions
 }
 
@@ -337,6 +341,7 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): Config {
     limits: limitsFrom(env),
     abuse: abuseLimitsFrom(env),
     trustProxy: env.TRUST_PROXY,
+    settingsRefreshSeconds: env.SETTINGS_REFRESH_SECONDS,
     rolePermissions,
   }
 }

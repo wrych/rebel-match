@@ -33,13 +33,13 @@ export function swipeRoutes(deps: {
   config: { limits: NoteLimits }
 }): Router {
   const router = Router()
-  const body = swipeBody(deps.config.limits)
 
   router.post(
     '/api/swipe',
     requirePermission(deps.auth, 'challenge:swipe'),
     async (request, response) => {
-      const input = body.safeParse(request.body)
+      // Built per request: a host can change the note length (R-CFG-6).
+      const input = swipeBody(deps.config.limits).safeParse(request.body)
       if (!input.success) {
         response.status(400).json({ error: 'bad_request' })
         return

@@ -18,6 +18,8 @@ import { createApplicantHandles } from './services/applicant-handle.js'
 import { createHumanCheck } from './services/human-check.js'
 import { createPacedGate } from './services/paced-gate.js'
 import { createWindowCounter } from './services/rate-limit.js'
+import { createEditableSettings } from './services/editable-settings.js'
+import { createOverrideStore } from './services/setting-override-store.js'
 import { createApplicantNotice } from './services/applicant-notice.js'
 import { createApprovalStore } from './services/approval-store.js'
 import { createApprovals } from './services/approvals.js'
@@ -168,8 +170,8 @@ function composeAdmission(
   const { abuse } = config
   const humanCheck = createHumanCheck({
     secret: config.sessionSecret,
-    cost: abuse.humanCheckCost,
-    lifetimeMinutes: abuse.humanCheckMinutes,
+    cost: () => abuse.humanCheckCost,
+    lifetimeMinutes: () => abuse.humanCheckMinutes,
   })
   return {
     admission: createAdmission({
@@ -178,19 +180,19 @@ function composeAdmission(
       handles: createApplicantHandles(config.sessionSecret),
       applicants: createPacedGate({
         counter: createWindowCounter({
-          windowMinutes: abuse.applicantWindowMinutes,
+          windowMinutes: () => abuse.applicantWindowMinutes,
         }),
         humanCheck,
-        freeUses: abuse.applicantsBeforeCheck,
-        ceiling: abuse.applicantsCeiling,
+        freeUses: () => abuse.applicantsBeforeCheck,
+        ceiling: () => abuse.applicantsCeiling,
       }),
       linkEmails: createPacedGate({
         counter: createWindowCounter({
-          windowMinutes: abuse.linkEmailWindowMinutes,
+          windowMinutes: () => abuse.linkEmailWindowMinutes,
         }),
         humanCheck,
-        freeUses: abuse.linkEmailsBeforeCheck,
-        ceiling: abuse.linkEmailsCeiling,
+        freeUses: () => abuse.linkEmailsBeforeCheck,
+        ceiling: () => abuse.linkEmailsCeiling,
       }),
       redeemInvite: createInviteRedemption(db, admittedRole),
       notifyReviewers: createApplicantNotice({
@@ -267,5 +269,9 @@ export function composeApp(
       newId: randomUUID,
     }),
     ...composeJourneys(config, db, track),
+    settings: createEditableSettings({
+      config,
+      store: createOverrideStore(db),
+    }),
   }
 }

@@ -1,4 +1,10 @@
 import type { Config } from './config.js'
+import {
+  boundsOf,
+  type EditableKey,
+  type EditableSettings,
+  valueOf,
+} from './services/editable-settings.js'
 
 /** One setting as the host tools show it (R-CFG-5). */
 export interface SettingView {
@@ -10,6 +16,17 @@ export interface SettingView {
   envVar?: string
   changed: boolean
   fixed: boolean
+  /** Present when hosts may change it in the app (R-CFG-6). */
+  editable?: {
+    key: EditableKey
+    number: number
+    min: number
+    max: number
+    /** The unit beside the field, such as "minutes". */
+    unit: string
+  }
+  /** Present when a host has changed it in the app. */
+  override?: { by: string | null; at: string; deploymentValue: string }
 }
 
 export interface SettingsGroup {
@@ -31,6 +48,8 @@ interface Entry {
   explanation: string
   /** The environment variable, or null for a value fixed in code. */
   envVar: string | null
+  /** The key hosts change it by, when R-CFG-6 allows. */
+  editKey?: EditableKey
   read: (config: Config) => string | number
   unit?: Unit
 }
@@ -68,6 +87,7 @@ const catalogue: Group[] = [
           'Sign-in emails one address can get in the time window below ' +
           'without any check.',
         envVar: 'LINK_EMAILS_BEFORE_CHECK',
+        editKey: 'abuse.linkEmailsBeforeCheck',
         read: (c) => c.abuse.linkEmailsBeforeCheck,
         unit: ['email', 'emails'],
       },
@@ -77,6 +97,7 @@ const catalogue: Group[] = [
           'Past the free ones, each email up to this many needs the ' +
           'automatic human check; beyond it nothing is sent.',
         envVar: 'LINK_EMAILS_CEILING',
+        editKey: 'abuse.linkEmailsCeiling',
         read: (c) => c.abuse.linkEmailsCeiling,
         unit: ['email', 'emails'],
       },
@@ -84,6 +105,7 @@ const catalogue: Group[] = [
         name: 'Time window for sign-in emails per address',
         explanation: 'The period both email limits above count over.',
         envVar: 'LINK_EMAIL_WINDOW_MINUTES',
+        editKey: 'abuse.linkEmailWindowMinutes',
         read: (c) => c.abuse.linkEmailWindowMinutes,
         unit: MINUTES,
       },
@@ -93,6 +115,7 @@ const catalogue: Group[] = [
           'Requests from one network (IP address) before it is asked to ' +
           'wait. High on purpose: a whole venue shares one Wi-Fi.',
         envVar: 'AUTH_REQUESTS_PER_IP',
+        editKey: 'abuse.authRequestsPerIp',
         read: (c) => c.abuse.authRequestsPerIp,
         unit: ['request', 'requests'],
       },
@@ -100,6 +123,7 @@ const catalogue: Group[] = [
         name: 'Time window for sign-in requests per network',
         explanation: 'The period the request limit above counts over.',
         envVar: 'IP_WINDOW_MINUTES',
+        editKey: 'abuse.ipWindowMinutes',
         read: (c) => c.abuse.ipWindowMinutes,
         unit: MINUTES,
       },
@@ -110,6 +134,7 @@ const catalogue: Group[] = [
           'needs the automatic human check. Members and invite links never ' +
           'count.',
         envVar: 'APPLICANTS_BEFORE_CHECK',
+        editKey: 'abuse.applicantsBeforeCheck',
         read: (c) => c.abuse.applicantsBeforeCheck,
         unit: ['applicant', 'applicants'],
       },
@@ -119,6 +144,7 @@ const catalogue: Group[] = [
           'Past this many from one network, nobody more is recorded until ' +
           'the time window ends.',
         envVar: 'APPLICANTS_CEILING',
+        editKey: 'abuse.applicantsCeiling',
         read: (c) => c.abuse.applicantsCeiling,
         unit: ['applicant', 'applicants'],
       },
@@ -126,6 +152,7 @@ const catalogue: Group[] = [
         name: 'Time window for new applicants per network',
         explanation: 'The period both applicant limits above count over.',
         envVar: 'APPLICANT_WINDOW_MINUTES',
+        editKey: 'abuse.applicantWindowMinutes',
         read: (c) => c.abuse.applicantWindowMinutes,
         unit: MINUTES,
       },
@@ -135,6 +162,7 @@ const catalogue: Group[] = [
           'Work per try of the puzzle the browser solves (PBKDF2 ' +
           'iterations). Higher is slower for people and scripts alike.',
         envVar: 'HUMAN_CHECK_COST',
+        editKey: 'abuse.humanCheckCost',
         read: (c) => c.abuse.humanCheckCost,
         unit: ['iteration', 'iterations'],
       },
@@ -142,6 +170,7 @@ const catalogue: Group[] = [
         name: 'Time to solve a human check',
         explanation: 'How long a puzzle can be solved and sent back.',
         envVar: 'HUMAN_CHECK_MINUTES',
+        editKey: 'abuse.humanCheckMinutes',
         read: (c) => c.abuse.humanCheckMinutes,
         unit: MINUTES,
       },
@@ -196,6 +225,7 @@ const catalogue: Group[] = [
         explanation:
           'Suggested when creating an invite link; can be changed per link.',
         envVar: 'INVITE_DEFAULT_MAX_USES',
+        editKey: 'limits.inviteDefaultMaxUses',
         read: (c) => c.limits.inviteDefaultMaxUses,
         unit: ['use', 'uses'],
       },
@@ -204,6 +234,7 @@ const catalogue: Group[] = [
         explanation:
           'Suggested when creating an invite link; can be changed per link.',
         envVar: 'INVITE_DEFAULT_HOURS',
+        editKey: 'limits.inviteDefaultHours',
         read: (c) => c.limits.inviteDefaultHours,
         unit: HOURS,
       },
@@ -224,6 +255,7 @@ const catalogue: Group[] = [
         name: 'Shortest challenge',
         explanation: 'A challenge needs at least this many characters.',
         envVar: 'CHALLENGE_MIN_CHARS',
+        editKey: 'limits.challengeMinChars',
         read: (c) => c.limits.challengeMinChars,
         unit: CHARACTERS,
       },
@@ -232,6 +264,7 @@ const catalogue: Group[] = [
         explanation:
           'A member offering help writes at least this many characters.',
         envVar: 'BEEN_THERE_NOTE_MIN_CHARS',
+        editKey: 'limits.beenThereNoteMinChars',
         read: (c) => c.limits.beenThereNoteMinChars,
         unit: CHARACTERS,
       },
@@ -431,11 +464,39 @@ const catalogue: Group[] = [
   },
 ]
 
+// What the screen needs to change a value, and who last changed it.
+function editing(
+  config: Config,
+  key: EditableKey,
+  unit: Unit | undefined,
+  settings: Pick<EditableSettings, 'overrides' | 'deployed'> | undefined,
+): Pick<SettingView, 'editable' | 'override'> {
+  const row = settings?.overrides().get(key)
+  return {
+    editable: {
+      key,
+      number: valueOf(config, key),
+      ...boundsOf(config, key),
+      unit: unit?.[1] ?? '',
+    },
+    ...(row === undefined || settings === undefined
+      ? {}
+      : {
+          override: {
+            by: row.changedByName,
+            at: row.changedAt.toISOString(),
+            deploymentValue: withUnit(settings.deployed(key), unit),
+          },
+        }),
+  }
+}
+
 /** The configuration as the host tools show it, each value beside its default
  * (R-CFG-5). Built from the catalogue, so nothing reaches it unnamed. */
 export function settingsView(
   config: Config,
   defaults: Config,
+  settings?: Pick<EditableSettings, 'overrides' | 'deployed'>,
 ): SettingsGroup[] {
   return catalogue.map((group) => ({
     title: group.title,
@@ -450,6 +511,9 @@ export function settingsView(
         envVar: entry.envVar,
         changed: value !== withUnit(entry.read(defaults), entry.unit),
         fixed: false,
+        ...(entry.editKey === undefined
+          ? {}
+          : editing(config, entry.editKey, entry.unit, settings)),
       }
     }),
   }))

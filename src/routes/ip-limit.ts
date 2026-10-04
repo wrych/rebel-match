@@ -19,10 +19,10 @@ export const SIGN_IN_POSTS = [
  * what counts. */
 export function limitPerIp(
   counter: WindowCounter,
-  limit: number,
+  limit: () => number,
 ): RequestHandler {
   return (request, response, next) => {
-    if (!counter.take(clientIp(request), limit)) {
+    if (!counter.take(clientIp(request), limit())) {
       response.status(429).json({ error: 'too_many_requests' })
       return
     }
