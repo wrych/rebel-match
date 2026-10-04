@@ -1,6 +1,6 @@
 # 0005. Mixpanel with EU data residency for product analytics
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by 0026 (opt-in; server-only sending)
 - **Date:** 2026-10-01
 - **Deciders:** Andy Moesch
 
