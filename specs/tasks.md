@@ -175,7 +175,7 @@ printed dev link (R-DEV-6).
 - [x] Analytics opt-in: the unticked onboarding checkbox with its versioned
       words, `analytics_consent_*` on members, `PUT /api/me/analytics` and the
       welcome-screen toggle. _(R-ANA-4, ADR 0026)_
-- [ ] Mixpanel sending from the server only (**EU endpoint**, project created
+- [x] Mixpanel sending from the server only (**EU endpoint**, project created
       with EU residency), pseudonymous id, the event set from design §7 with
       `POST /api/events` for the two UI events, opted-in members only.
       _(S3, R-ANA-1..3,5, ADR 0026)_
