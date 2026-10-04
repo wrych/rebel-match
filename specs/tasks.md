@@ -196,6 +196,11 @@ printed dev link (R-DEV-6).
 - [x] Feedback mailto. _(S5, R-FB-1)_ To `FEEDBACK_TO`, required in production.
 - [x] Admin GDPR delete: member plus challenges, requests, swipes, follows, role
       grants and outbound log entries, in one transaction. _(R-NFR-7, R-MSG-6)_
+- [ ] Member cards in the host tools, and a member's page with roles and
+      delete. _(R-MEM-1,2)_
+- [ ] Select several members by holding a card; give or take a role, or delete
+      them. _(R-MEM-3)_
+- [ ] Delete your own account from the profile screen. _(R-PROF-2, C4)_
 
 ## M6 — Hardening & pilot _(by 2026-11-01)_
 
@@ -239,7 +244,6 @@ printed dev link (R-DEV-6).
 - [ ] `moderator` role + moderation screens — a role row plus a permission-matrix
       column, no schema change. _(C2, R-ROLE-6)_
 - [ ] Live peer counts per trend. _(C3)_
-- [ ] Self-service GDPR deletion. _(C4)_
 - [ ] Dark mode as a further colour mode: a third token block, possibly
       following the phone's own setting. _(C7, R-LOOK-3, ADR 0023)_
 - [ ] (Deferred) gamification, frontier nomination, platform integration,

@@ -51,7 +51,7 @@ that works.")_
 | C1  | Live character-count coaching / phrasing help on the submit screen | Beyond the plain counter the gate needs.                                    |
 | C2  | Richer admin dashboard (metrics, moderation) + a `moderator` role  | Beyond a plain approvals list; the role model already allows it (R-ROLE-6). |
 | C3  | "Peers working on this trend" counts shown live                    | Prototype shows static counts; live counts are a polish item.               |
-| C4  | GDPR self-service deletion (vs. admin-only)                        | Admin-triggered deletion covers the Must; self-service is extra.            |
+| C4  | GDPR self-service deletion (vs. admin-only)                        | Admin-triggered deletion covers the Must; pulled into the beta (R-PROF-2).  |
 | C5  | LLM-based trend classification (replacing keywords)                | "AI will be pretty good at matching" — a clean post-beta upgrade.           |
 | C6  | Corporate↔rebel happy mode ("CR" button, R-LOOK-2)                 | Kept from the prototype: one token set, no screen changes. Was W2.          |
 | C7  | Dark mode as a further colour mode (R-LOOK-3)                      | Later: a third token set, possibly following the phone's own setting.       |

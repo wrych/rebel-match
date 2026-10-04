@@ -334,11 +334,14 @@ before both sides agree.**
 
 ---
 
-## F11 — Admin: GDPR deletion
+## F11 — GDPR deletion
 
-1. A member asks to be removed (by email; self-service is post-beta).
-2. Admin finds them on `/admin/members` (S23) and confirms the delete, which
-   calls `DELETE /api/admin/members/:id`. It deletes the member
+1. A member deletes their own account on the profile screen (S24) after one
+   confirmation, which calls `DELETE /api/profile` and signs them out
+   (R-PROF-2). Or they ask the host to remove them.
+2. Asked, the admin finds them on `/admin/members` (S23), opens their page
+   (S26) and confirms the delete, which calls `DELETE /api/admin/members/:id`.
+   Either way the erasure is the same, and one call. It deletes the member
    together with their challenges, connection requests, swipes, follows, role
    grants, sessions and outbound log entries, in one transaction (R-NFR-7,
    R-MSG-6).
