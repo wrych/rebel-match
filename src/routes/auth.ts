@@ -45,6 +45,9 @@ function verify(
     // are signed in, or the new session would find nobody active (ADR 0032).
     if (result.kind === 'restore')
       await deps.erasure.restoreOwn(result.memberId)
+    // A browser someone else used, or one handed a planted cookie, must not
+    // carry that session past the moment its new owner signs in.
+    await deps.auth.endSession(request)
     setCookie(response, await deps.auth.createSession(result.memberId))
     void track(result.memberId, { name: 'login_completed' })
     response.json({ next: safeNextPath(result.next) })

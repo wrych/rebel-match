@@ -126,6 +126,19 @@ describe('GET /auth/verify (ADR 0034)', () => {
 })
 
 describe('POST /auth/verify', () => {
+  it('ends the session the browser held before starting a new one (ADR 0034)', async () => {
+    const { app, auth, signIn, tokenFor } = setup()
+    const old = await auth.createSession(ada.id)
+    const oldCookie = `${old.name}=${old.value}`
+
+    const response = await signIn(await tokenFor()).set('Cookie', oldCookie)
+
+    expect(response.status).toBe(200)
+    expect(sessionCookie(response)).not.toBe(oldCookie)
+    const before = await request(app).get('/auth/me').set('Cookie', oldCookie)
+    expect(before.status).toBe(401)
+  })
+
   it('signs the member in and says where to go next (R-AUTH-5, R-NAV-5)', async () => {
     const { tokenFor, signIn } = setup()
 
