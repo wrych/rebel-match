@@ -262,6 +262,10 @@ printed dev link (R-DEV-6).
       on the access-requested screen. _(R-INV-3,5)_
 - [ ] `onboarding_completed` carries `seconds_to_onboard`, from the sign-in
       email to the consent, so R-NFR-3 is watched in Mixpanel. _(R-NFR-3)_
+- [ ] Record invite opens: `POST /auth/invite-opened` from the entry screen
+      into `invite_opens`, shown nowhere yet. _(R-STAT-6, ADR 0035)_
+- [ ] `onboarding_completed` carries `invite_id` once its invite has admitted
+      20 people. _(R-ANA-3, ADR 0035)_
 - [ ] QR-code entry flow validated end-to-end on a phone; time scan → onboarding
       complete (<2 min). _(R-NFR-3)_
 - [ ] CI green on `main`. _(R-QA-6)_

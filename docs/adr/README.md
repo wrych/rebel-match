@@ -71,3 +71,4 @@ still holds except where the later ADR says otherwise.
 | [0032](0032-erasure-waits-30-days.md)                      | Erasure waits 30 days, during which it can be undone              | Accepted                  |
 | [0033](0033-record-activity-show-it-later.md)              | Record activity in our own tables; showing it is separate         | Accepted                  |
 | [0034](0034-hardened-headers-transport-and-sessions.md)    | Hardened headers, transport and sessions                          | Accepted                  |
+| [0035](0035-attribute-onboardings-and-opens-to-invites.md) | Attribute onboardings and opens to the invite they came through   | Accepted                  |
