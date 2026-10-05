@@ -39,6 +39,16 @@ export async function answerCard(
     : { result: 'recorded', request: outcome.connection.result }
 }
 
+/** Tells the server a card became the visible one (R-STAT-1). Fire and
+ * forget: a view that fails to record never stops the deck. */
+export function reportSeen(challengeId: string): void {
+  void fetch('/api/deck/seen', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ challengeId }),
+  }).catch(() => undefined)
+}
+
 /** Who wrote a card, as one line: organization, sector and company size. */
 export function authorLine(card: DeckCard): string {
   return [card.author.org, card.author.sector, card.author.companySize]

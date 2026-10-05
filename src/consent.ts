@@ -14,9 +14,16 @@ export const consentTexts: Readonly<Record<string, readonly string[]>> = {
     'Your email address is shared with another member only when both of you accept a connection. Until then nobody sees it, and a declined request reveals nothing.',
     'You can ask to be removed at any time by emailing the host. We then delete your account together with your challenges and connection requests.',
   ],
+  '2026-11-01.3': [
+    'Rebel Match is closed: membership is by invitation, from the host’s list or an event invite link.',
+    'We keep your email address, the name you give, and anything optional you add to your profile, such as your job title, organization, sector and company size. Your name, organization and other profile information may be seen by other members of Rebel Match.',
+    'Your email address is shared with another member only when both of you accept a connection. Until then nobody sees it, and a declined request reveals nothing.',
+    'We record your activity in the app, such as which challenges you are shown and how you respond, so that its features work, and keep it as long as your account exists. The app may show figures that combine many members’ activity, such as how often a challenge was viewed. We share your personal data with other members only where a feature needs it, such as your match card or a connection you both accept. You can delete your activity history at any time.',
+    'You can ask to be removed at any time by emailing the host. We then delete your account together with your challenges and connection requests.',
+  ],
 }
 
-export const latestConsentVersion = '2026-11-01.2'
+export const latestConsentVersion = '2026-11-01.3'
 
 /** The words of a version, or none for a version without words: own keys
  * only, so `constructor` and friends never read as consent. */
