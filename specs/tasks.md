@@ -186,7 +186,7 @@ printed dev link (R-DEV-6).
       analytics toggle, moved off the welcome screen, with its words reworded
       (a new analytics version) to point at the profile screen; how to leave.
       _(R-PROF-1,2, R-ANA-4)_
-- [ ] Sector and company size picked from fixed lists at onboarding and on
+- [x] Sector and company size picked from fixed lists at onboarding and on
       the profile screen, shown on cards as "_n_ employees". _(R-ONB-2,
       R-PROF-1, R-OFF-2)_
 - [x] Mixpanel sending from the server only (**EU endpoint**, project created
@@ -203,7 +203,7 @@ printed dev link (R-DEV-6).
       delete. _(R-MEM-1,2)_
 - [x] Select several members by holding a card; give or take a role, or delete
       them. _(R-MEM-3)_
-- [ ] Delete your own account from the profile screen. _(R-PROF-2, C4)_
+- [x] Delete your own account from the profile screen. _(R-PROF-2, C4)_
 - [x] Erasure waits 30 days: deactivate now, undo by emailed link or host,
       sweep after the grace period. _(R-NFR-7, ADR 0032)_
 
@@ -225,7 +225,7 @@ printed dev link (R-DEV-6).
       _(S6, R-SEED-3,5,6)_
 - [x] The seed runner refuses the prod profile in a development deployment, so
       no real address reaches a preview or staging. _(R-SEED-8)_
-- [ ] Deploy non-prod from GitHub to Cloud Run: a preview per pull request and
+- [x] Deploy non-prod from GitHub to Cloud Run: a preview per pull request and
       staging from `main`. _(ADR 0025, rollout step 1)_
 - [ ] Production on Cloud Run, promoted from staging by a reviewed workflow,
       in time for the pilot. _(ADR 0025, rollout step 2)_
