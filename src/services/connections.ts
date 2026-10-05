@@ -88,6 +88,9 @@ export interface ConnectionStore {
   insertAccepted(
     record: Omit<ConnectionRecord, 'status' | 'createdAt'>,
   ): Promise<void>
+  /** Accepts every request still pending between the two, either side, as
+   * seen by `accepterId`, who just accepted one of them (R-CONN-11). */
+  acceptPending(accepterId: string, otherId: string): Promise<void>
   /** Deletes a request its target was never told of. */
   remove(id: string): Promise<void>
   find(id: string): Promise<ConnectionRecord | null>
@@ -298,14 +301,16 @@ async function join(
   return { result: 'joined', id }
 }
 
-// The requester learns of an acceptance by email as well as by the badge.
-async function announceAccepted(
+// Once connected, nothing between the two is left to answer (R-CONN-11); the
+// requester learns of the acceptance by email as well as by the badge.
+async function settleAccepted(
   store: ConnectionStore,
   notifyAccepted: (request: AcceptedRequest) => Promise<void>,
   id: string,
 ): Promise<void> {
   const record = await store.find(id)
   if (record === null) return
+  await store.acceptPending(record.targetId, record.requesterId)
   await notifyAccepted({
     id,
     requesterId: record.requesterId,
@@ -365,8 +370,7 @@ export function createConnections(deps: {
     respond: async (memberId, id, answer) => {
       if (!(await store.respond(id, memberId, answer))) return 'not_found'
       void track(memberId, { name: 'connection_responded', status: answer })
-      if (answer === 'accepted')
-        await announceAccepted(store, notifyAccepted, id)
+      if (answer === 'accepted') await settleAccepted(store, notifyAccepted, id)
       return 'done'
     },
     contact: (memberId, id) => readContact(store, memberId, id),

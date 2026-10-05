@@ -370,6 +370,48 @@ describe('connecting again once connected, over Postgres (R-CONN-8..10, ADR 0035
   })
 })
 
+describe('accepting one of several requests between two, over Postgres (R-CONN-11)', () => {
+  it('accepts every request pending between them, telling the requester once', async () => {
+    const [waiting] = await db.query(
+      "SELECT id FROM connection_requests WHERE requester_id = ? AND target_id = ? AND status = 'pending'",
+      [ids['dee'], ids['eve']],
+    )
+    const fromDee = String(waiting?.['id'])
+    const reverse = await connect('eve', 'dee', 'been_there')
+    expect(reverse.status).toBe(201)
+    const fromEve = (reverse.body as { id: string }).id
+
+    await as('eve')(
+      request(app).post(`/api/connections/${fromDee}/accept`),
+    ).expect(204)
+
+    const rows = await db.query(
+      'SELECT id, status FROM connection_requests WHERE id IN (?)',
+      [[fromDee, fromEve]],
+    )
+    expect(rows.map((row) => row['status'])).toEqual(['accepted', 'accepted'])
+    expect(await newConnections('eve')).toBe(0)
+    expect(await newConnections('dee')).toBe(2)
+    const incoming = await as('dee')(
+      request(app).get('/api/connections/incoming'),
+    )
+    expect(JSON.stringify(incoming.body)).not.toContain(fromEve)
+    const told = await db.query(
+      "SELECT id FROM outbox WHERE kind = 'connection_accepted' AND member_id = ?",
+      [ids['dee']],
+    )
+    expect(told).toHaveLength(1)
+    const contact = await as('dee')(
+      request(app).get(`/api/connections/${fromDee}/contact`),
+    ).expect(200)
+    expect(
+      (contact.body as { contact: { over: ConnectionView[] } }).contact.over
+        .map((each) => each.id)
+        .sort(),
+    ).toEqual([fromDee, fromEve].sort())
+  })
+})
+
 describe('a member set to be deleted, over Postgres (ADR 0032)', () => {
   const insert = async (
     from: string,

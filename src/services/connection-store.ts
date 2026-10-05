@@ -264,6 +264,34 @@ async function respond(
   return answered.length === 1
 }
 
+// A target's answer, and what being connected settles with it (R-CONN-11).
+function answers(
+  db: Database,
+): Pick<ConnectionStore, 'respond' | 'acceptPending'> {
+  return {
+    respond: (id, targetId, status) => respond(db, id, targetId, status),
+    acceptPending: async (accepterId, otherId) => {
+      const seenBy = (column: typeof r.targetId): SQL =>
+        sql`CASE WHEN ${column} = ${accepterId} THEN now() END`
+      await db
+        .update(r)
+        .set({
+          status: 'accepted',
+          respondedAt: sql`now()`,
+          requesterSeenAt: seenBy(r.requesterId),
+          targetSeenAt: seenBy(r.targetId),
+        })
+        .where(
+          and(
+            between(accepterId, otherId),
+            eq(r.status, 'pending'),
+            requesterActive,
+          ),
+        )
+    },
+  }
+}
+
 /** Connection requests over Postgres. The one query that reads an email
  * checks accepted status and party membership itself, so no caller can forget
  * to (R-CONN-3, R-CONN-6, ADR 0004). */
@@ -271,6 +299,7 @@ export function createConnectionStore(db: Database): ConnectionStore {
   return {
     ...lookups(db),
     ...acceptedLookups(db),
+    ...answers(db),
     // uq_pending refuses a second pending request (R-CONN-5); that refusal is
     // the answer, not an error.
     insert: async (record) => {
@@ -310,7 +339,6 @@ export function createConnectionStore(db: Database): ConnectionStore {
         and(eq(r.status, 'accepted'), between(viewerId, otherId)),
         viewerId,
       ),
-    respond: (id, targetId, status) => respond(db, id, targetId, status),
     contactFor: (id, viewerId) => contactFor(db, id, viewerId),
     markSeen: (viewerId, otherId) => markSeen(db, viewerId, otherId),
   }

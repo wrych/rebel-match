@@ -91,6 +91,13 @@ function fakeStore(): ConnectionStore & {
       })
       return Promise.resolve()
     },
+    acceptPending: (a, b) => {
+      for (const r of rows.values()) {
+        if (r.status === 'pending' && party(r, a) && party(r, b))
+          rows.set(r.id, { ...r, status: 'accepted' })
+      }
+      return Promise.resolve()
+    },
     remove: (id) => {
       rows.delete(id)
       return Promise.resolve()
@@ -227,6 +234,52 @@ describe('telling the requester (R-CONN-7)', () => {
     expect(told).toEqual([
       { id: 'r-1', requesterId: 'm-ada', targetId: 'm-bob' },
     ])
+  })
+
+  it('accepts every other request pending between the two, telling the requester once (R-CONN-11)', async () => {
+    const store = fakeStore()
+    const told: unknown[] = []
+    let n = 0
+    const service = createConnections({
+      store,
+      newId: () => `r-${String(++n)}`,
+      notifyAccepted: (request) => {
+        told.push(request)
+        return Promise.resolve()
+      },
+    })
+    await service.request('m-ada', sameBoat)
+    await service.request('m-ada', { ...sameBoat, challengeId: 'c-bob2' })
+    await service.request('m-bob', {
+      targetId: 'm-ada',
+      challengeId: 'c-ada',
+      kind: 'same_boat',
+    })
+    await service.request('m-eve', sameBoat)
+
+    await service.respond('m-bob', 'r-1', 'accepted')
+
+    expect([...store.rows.values()].map((r) => [r.id, r.status])).toEqual([
+      ['r-1', 'accepted'],
+      ['r-2', 'accepted'],
+      ['r-3', 'accepted'],
+      ['r-4', 'pending'],
+    ])
+    expect(told).toHaveLength(1)
+  })
+
+  it('leaves the others pending after a decline (R-CONN-4)', async () => {
+    const { service, store } = accepting()
+    await service.request('m-ada', sameBoat)
+    store.rows.set('r-2', {
+      ...store.rows.get('r-1')!,
+      id: 'r-2',
+      challengeId: 'c-bob2',
+    })
+
+    await service.respond('m-bob', 'r-1', 'declined')
+
+    expect(store.rows.get('r-2')?.status).toBe('pending')
   })
 
   it('says nothing of a decline (R-CONN-4)', async () => {
