@@ -113,25 +113,15 @@ describe('the emailed link (ADR 0027)', () => {
   })
 })
 
-describe('GET /auth/verify', () => {
-  it('moves an old link into the sign-in screen without using it (R-AUTH-5)', async () => {
-    const { app, tokenFor, signIn } = setup()
-    const token = await tokenFor()
+describe('GET /auth/verify (ADR 0034)', () => {
+  it('is not served, so no token travels in a query string', async () => {
+    const { app, tokenFor } = setup()
 
-    const opened = await request(app).get(`/auth/verify?token=${token}`)
+    const opened = await request(app).get(
+      `/auth/verify?token=${await tokenFor()}`,
+    )
 
-    expect(opened.status).toBe(303)
-    expect(opened.headers['location']).toBe(`/sign-in#token=${token}`)
-    expect(opened.headers['set-cookie']).toBeUndefined()
-    expect((await signIn(token)).status).toBe(200)
-  })
-
-  it('sends a link without a token to the sign-in screen, which says so', async () => {
-    const { app } = setup()
-
-    const response = await request(app).get('/auth/verify')
-
-    expect(response.headers['location']).toBe('/sign-in')
+    expect(opened.status).toBe(404)
   })
 })
 
