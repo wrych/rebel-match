@@ -134,6 +134,25 @@ describe('CockpitScreen', () => {
     vi.useRealTimers()
   })
 
+  it('shows a connection accepted on the other side without a reload (R-MINE-5)', async () => {
+    vi.useFakeTimers()
+    let people: ConnectionView[] = []
+    serve(
+      cockpit,
+      () => [],
+      () => people,
+    )
+    const screen = await mountScreen()
+
+    people = [{ ...request, status: 'accepted', direction: 'outgoing' }]
+    await vi.advanceTimersByTimeAsync(30_000)
+    await flushPromises()
+
+    expect(paths(screen)).toContain('/matches/requests/r1/contact')
+    screen.unmount()
+    vi.useRealTimers()
+  })
+
   it('starts no timer when left before it loaded', async () => {
     vi.useFakeTimers()
     serve(cockpit, () => [])
