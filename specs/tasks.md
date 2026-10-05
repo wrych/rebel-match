@@ -228,6 +228,11 @@ printed dev link (R-DEV-6).
       `requirePermission`), five or six queries before the handler. Refactor
       only: behaviour and tests unchanged, one pull request. _(R-ROLE-5,
       R-NAV-7, constitution §4, design §8)_
+- [ ] Structured, PII-safe error logging: one logger module (the only place
+      `no-console` lets write) injected through `AppDeps`; `handleErrors` logs
+      the error with a request id and returns the id in the 500 body; the
+      server's `onError` hooks log through it; the email-address redaction of
+      an error message is unit-tested. _(R-NFR-9)_
 - [ ] Security headers through `helmet`, with a CSP the human-check widget is
       checked against. _(ADR 0034)_
 - [x] Production refuses an http `PUBLIC_URL` or `TRUST_PROXY=0`. _(ADR 0034)_
