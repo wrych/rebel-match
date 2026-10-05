@@ -15,7 +15,7 @@ function setup(addresses: Record<string, string>): {
   }
   const notify = createConnectionNotice({
     mailer,
-    addresses: { emailOf: (id) => Promise.resolve(addresses[id] ?? null) },
+    members: { emailOf: (id) => Promise.resolve(addresses[id] ?? null) },
     publicUrl: 'https://match.example.invalid',
   })
   return { notify, sent }

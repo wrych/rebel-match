@@ -1,6 +1,6 @@
 import type { Mailer } from './mailer.js'
 
-export interface MemberAddresses {
+export interface MemberDirectory {
   /** The address of an active member, or null. */
   emailOf(memberId: string): Promise<string | null>
 }
@@ -15,11 +15,11 @@ export interface NewRequest {
  * else: no names, challenge text, note or address (R-CONN-2, R-NAV-9). */
 export function createConnectionNotice(deps: {
   mailer: Mailer
-  addresses: MemberAddresses
+  members: MemberDirectory
   publicUrl: string
 }): (request: NewRequest) => Promise<void> {
   return async (request) => {
-    const to = await deps.addresses.emailOf(request.targetId)
+    const to = await deps.members.emailOf(request.targetId)
     if (to === null) return
     const path = `/matches/requests/${encodeURIComponent(request.id)}`
     const link = new URL(path, deps.publicUrl).toString()
