@@ -109,9 +109,9 @@ describe('connecting over Postgres: the double opt-in (F7, ADR 0004)', () => {
     }
   })
 
-  it('emails the target a link to the request, and nothing about it (R-CONN-2, R-NAV-9)', async () => {
+  it('emails the target who asks, their note and a link, but no address or challenge (R-CONN-2, R-NAV-9)', async () => {
     const logged = await db.query(
-      "SELECT to_email, member_id, subject, body_text FROM outbox WHERE kind = 'connection_request' AND member_id = ?",
+      "SELECT to_email, about_member_id, subject, body_text FROM outbox WHERE kind = 'connection_request' AND member_id = ?",
       [ids['bob']],
     )
     const [ada] = await db.query('SELECT name FROM members WHERE id = ?', [
@@ -124,16 +124,13 @@ describe('connecting over Postgres: the double opt-in (F7, ADR 0004)', () => {
 
     expect(logged).toHaveLength(1)
     expect(logged[0]?.['to_email']).toBe(people.bob)
+    expect(logged[0]?.['about_member_id']).toBe(ids['ada'])
     const mail = `${String(logged[0]?.['subject'])}\n${String(logged[0]?.['body_text'])}`
     expect(mail).toContain(`/matches/requests/${accepted}`)
-    for (const secret of [
-      people.ada,
-      String(ada?.['name']),
-      String(challenge?.['body']),
-      'compare notes',
-    ]) {
-      expect(mail).not.toContain(secret)
-    }
+    expect(mail).toContain(String(ada?.['name']))
+    expect(mail).toContain('would love to compare notes')
+    expect(mail).not.toContain(people.ada)
+    expect(mail).not.toContain(String(challenge?.['body']))
   })
 
   it('surfaces the existing request rather than a second one (R-CONN-5)', async () => {

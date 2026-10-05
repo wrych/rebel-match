@@ -34,7 +34,7 @@ import { createChallenges } from './services/challenges.js'
 import { createConnectionStore } from './services/connection-store.js'
 import { createConnections } from './services/connections.js'
 import { createConnectionNotice } from './services/connection-notice.js'
-import { createMemberAddresses } from './services/member-address-store.js'
+import { createMemberDirectory } from './services/member-directory-store.js'
 import { createSwipeStore } from './services/swipe-store.js'
 import { createSwipes } from './services/swipes.js'
 import {
@@ -130,7 +130,7 @@ function composeJourneys(
     track,
     notify: createConnectionNotice({
       mailer,
-      addresses: createMemberAddresses(db),
+      members: createMemberDirectory(db),
       publicUrl: config.publicUrl,
     }),
   })

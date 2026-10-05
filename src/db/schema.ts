@@ -205,6 +205,10 @@ export const outbox = pgTable(
     memberId: id('member_id').references(() => members.id, {
       onDelete: 'cascade',
     }),
+    // A member the body quotes, so erasing them erases it too (R-MSG-6).
+    aboutMemberId: id('about_member_id').references(() => members.id, {
+      onDelete: 'cascade',
+    }),
     toEmail: varchar('to_email', { length: 320 }).notNull(),
     kind: outboxKind('kind').notNull(),
     subject: varchar('subject', { length: 255 }).notNull(),

@@ -71,6 +71,9 @@ async function traces(member: Person): Promise<Record<string, number>> {
       member.id,
       member.email,
     ]),
+    outbox_quoting: await count('outbox WHERE about_member_id = ?', [
+      member.id,
+    ]),
     sessions: await count("sessions WHERE (data::jsonb ->> 'memberId') = ?", [
       member.id,
     ]),
@@ -124,6 +127,11 @@ async function fillIn(member: Person, peer: Person): Promise<string> {
     'INSERT INTO outbox (id, member_id, to_email, kind, subject, body_text) ' +
       "VALUES (?, ?, ?, 'magic_link', 's', 'b'), (?, NULL, ?, 'admin_notice', 's', 'b')",
     [randomUUID(), member.id, member.email, randomUUID(), member.email],
+  )
+  await db.query(
+    'INSERT INTO outbox (id, member_id, about_member_id, to_email, kind, subject, body_text) ' +
+      "VALUES (?, ?, ?, ?, 'connection_request', 's', 'their name and note')",
+    [randomUUID(), peer.id, member.id, peer.email],
   )
   await db.query(
     'INSERT INTO sessions (session_id, expires, data) VALUES (?, ?, ?)',

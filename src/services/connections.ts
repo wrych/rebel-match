@@ -161,6 +161,20 @@ async function storePending(
     : { result: 'exists', id: raced }
 }
 
+// A request its target was never told of is withdrawn, so a retry tells them.
+async function notifyOrWithdraw(
+  store: ConnectionStore,
+  notify: (request: NewRequest) => Promise<void>,
+  request: NewRequest,
+): Promise<void> {
+  try {
+    await notify(request)
+  } catch (error) {
+    await store.remove(request.id)
+    throw error
+  }
+}
+
 const notifyNobody = (): Promise<void> => Promise.resolve()
 
 /** The double opt-in (ADR 0004, F7): a request starts pending, reveals
@@ -185,12 +199,12 @@ export function createConnections(deps: {
       }
       const outcome = await storePending(store, deps.newId, requesterId, input)
       if (outcome.result !== 'created') return outcome
-      try {
-        await notify({ id: outcome.id, targetId: input.targetId })
-      } catch (error) {
-        await store.remove(outcome.id)
-        throw error
-      }
+      await notifyOrWithdraw(store, notify, {
+        id: outcome.id,
+        requesterId,
+        targetId: input.targetId,
+        message: input.message ?? null,
+      })
       void track(requesterId, {
         name: 'connection_requested',
         kind: input.kind,

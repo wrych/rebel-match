@@ -556,6 +556,7 @@ again (R-OFF-2).
 CREATE TABLE outbox (
   id          CHAR(36)     NOT NULL PRIMARY KEY,
   member_id   CHAR(36)     NULL,                 -- when known, for erasure (R-MSG-6)
+  about_member_id CHAR(36) NULL,                 -- a member the body quotes (R-MSG-6)
   to_email    VARCHAR(320) NOT NULL,
   kind        ENUM('magic_link','approval','connection_request',
                    'admin_notice')
@@ -572,6 +573,8 @@ CREATE TABLE outbox (
   INDEX ix_outbox_to (to_email),
   INDEX ix_outbox_status (status),
   CONSTRAINT fk_outbox_member FOREIGN KEY (member_id)
+    REFERENCES members(id) ON DELETE CASCADE,
+  CONSTRAINT fk_outbox_about FOREIGN KEY (about_member_id)
     REFERENCES members(id) ON DELETE CASCADE
 );
 ```
@@ -594,7 +597,9 @@ system: an admin could read any member's magic link and sign in as them.
 `ON DELETE CASCADE` on `member_id` is what makes erasure one transaction
 (R-NFR-7). `member_id` is null for messages to an address that never became a
 member — an admin notice about an unknown applicant, say — and those age out under
-retention rather than erasure.
+retention rather than erasure. `about_member_id` names the member a body quotes:
+a request email carries its requester's name and note, so erasing the requester
+erases the email in the target's log as well.
 
 **Retention is a job, not an endpoint (R-MSG-6).** The server deletes entries
 older than `limits.outboxRetentionDays` once at startup and then every

@@ -10,6 +10,7 @@ export function createOutboxStore(db: Database): OutboxStore {
       await db.insert(outbox).values({
         id: entry.id,
         memberId: entry.memberId,
+        aboutMemberId: entry.aboutMemberId,
         toEmail: entry.to,
         kind: entry.kind,
         subject: entry.subject,
