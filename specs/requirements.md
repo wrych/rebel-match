@@ -261,8 +261,9 @@ capability, not a secret** — and every requirement below exists because of tha
   accepted, read-only, with its version and the time they accepted it (R-NFR-6),
   and SHALL carry the **analytics opt-in**, given or withdrawn there (R-ANA-4).
   It SHALL offer **deleting one's own account** (C4): after one confirmation
-  that says what goes and that it cannot be undone, the account and everything
-  R-NFR-7 lists are erased and the member is signed out. Deletion SHALL be
+  that says what goes, when, and how to change one's mind, the account is
+  deactivated and the member signed out; everything R-NFR-7 lists is erased
+  after the grace period unless they keep the account (ADR 0032). Deletion SHALL be
   refused, saying why and what to do, while the member is the last who can grant
   roles (R-ROLE-9) or invite links they created remain.
 - **R-MEM-1 (Member cards)** — The host tools' members list SHALL show each
@@ -277,7 +278,8 @@ capability, not a secret** — and every requirement below exists because of tha
   analytics opt-in, and how many challenges and connection requests they have.
   From there a host SHALL be able to change their roles (R-ROLE-9) and delete
   them (R-NFR-7), each within the host's own permissions; later member actions
-  belong on this page.
+  belong on this page. For a deleted account it SHALL show when it will be
+  erased, and offer to restore it or erase it at once (ADR 0032).
 - **R-MEM-3 (Selecting several)** — Each card SHALL carry a small **selector**
   that shows whether it is selected; tapping it, or holding the card, SHALL
   start selecting with that card chosen, and while selecting each tap selects
@@ -770,7 +772,12 @@ _(Decided by the maintainer after trying the redesign: ADR 0023.)_
 - **R-NFR-7 (Deletion)** — The system SHALL support deleting a member and the
   personal data attached to them — challenges, connection requests, swipes,
   follows, role grants, and their **outbound message log entries** (R-MSG-6) — on
-  request (GDPR erasure), at minimum via an admin action.
+  request (GDPR erasure), at minimum via an admin action. Deleting SHALL first
+  **deactivate** the account at once: no sign-in, and nothing of theirs shown
+  to anyone. The erasure SHALL follow after a **grace period** of 30 days
+  (configurable), during which a host can undo it, and so can the person, by a
+  link emailed to their address, when they deleted the account themselves; a
+  host MAY erase at once (ADR 0032).
 
 ---
 
