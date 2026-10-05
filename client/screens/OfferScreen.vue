@@ -1,7 +1,13 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { answerCard, authorLine, fetchDeck, type DeckCard } from '../lib/deck'
+import {
+  answerCard,
+  authorLine,
+  fetchDeck,
+  reportSeen,
+  type DeckCard,
+} from '../lib/deck'
 import { noticeFor } from '../lib/offer'
 import { countAnswer } from '../lib/offer-session'
 
@@ -13,6 +19,15 @@ const notice = ref<string | null>(null)
 const problem = ref<string | null>(null)
 
 const card = computed(() => cards.value[index.value])
+
+// Each card that becomes the visible one is a view, the same card shown again
+// included (R-STAT-1). Cards sent ahead but never shown are not.
+watch(
+  () => card.value?.challengeId,
+  (shown) => {
+    if (shown !== undefined) reportSeen(shown)
+  },
+)
 
 async function load(): Promise<void> {
   try {

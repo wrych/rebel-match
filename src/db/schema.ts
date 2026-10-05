@@ -348,6 +348,28 @@ export const swipes = pgTable(
   ],
 )
 
+// What a member was shown: one row each time a card becomes the visible one
+// in their swipe deck (R-STAT-1, ADR 0033). No endpoint reads it back
+// (R-STAT-2). It goes with the member or the challenge (R-STAT-3), and the
+// member can clear it apart from their account (R-STAT-4).
+export const deckViews = pgTable(
+  'deck_views',
+  {
+    id: id('id').primaryKey(),
+    memberId: id('member_id')
+      .notNull()
+      .references(() => members.id, { onDelete: 'cascade' }),
+    challengeId: id('challenge_id')
+      .notNull()
+      .references(() => challenges.id, { onDelete: 'cascade' }),
+    seenAt: at('seen_at').notNull().defaultNow(),
+  },
+  (t) => [
+    index('ix_view_challenge').on(t.challengeId),
+    index('ix_view_member').on(t.memberId),
+  ],
+)
+
 export const connectionKind = pgEnum('connection_kind', [
   'same_boat',
   'been_there',

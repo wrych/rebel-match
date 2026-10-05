@@ -45,6 +45,8 @@ function server(
 ): ReturnType<typeof vi.fn> {
   const reads = [...decks]
   const fetchMock = vi.fn((url: string) => {
+    if (url === '/api/deck/seen')
+      return Promise.resolve({ ok: true, status: 204 })
     if (url === '/api/swipe')
       return Promise.resolve({
         ok: swipe.status < 300,
@@ -194,5 +196,58 @@ describe('OfferScreen', () => {
       'could not be loaded',
     )
     expect(replace).not.toHaveBeenCalled()
+  })
+})
+
+/** The challenge ids the screen reported as seen, in order (R-STAT-1). */
+function seenIds(fetchMock: ReturnType<typeof vi.fn>): string[] {
+  return fetchMock.mock.calls
+    .filter(([url]) => url === '/api/deck/seen')
+    .map(([, init]) => {
+      const body = (init as { body: string }).body
+      return (JSON.parse(body) as { challengeId: string }).challengeId
+    })
+}
+
+describe('reporting what the deck shows (R-STAT-1, ADR 0033)', () => {
+  it('reports the visible card, and not the ones sent ahead', async () => {
+    const fetchMock = server([cards])
+
+    const screen = await mountScreen()
+
+    expect(seenIds(fetchMock)).toEqual(['c1'])
+    screen.unmount()
+  })
+
+  it('reports each card as it becomes visible, again when it comes back', async () => {
+    const fetchMock = server([cards])
+    const screen = await mountScreen()
+
+    await screen.find('[aria-label="Next challenge"]').trigger('click')
+    await flushPromises()
+    await screen.find('[aria-label="Previous challenge"]').trigger('click')
+    await flushPromises()
+
+    expect(seenIds(fetchMock)).toEqual(['c1', 'c2', 'c1'])
+    screen.unmount()
+  })
+
+  it('keeps the deck working when a view fails to record', async () => {
+    const fetchMock = vi.fn((url: string) =>
+      url === '/api/deck/seen'
+        ? Promise.reject(new Error('offline'))
+        : Promise.resolve({
+            ok: true,
+            status: 200,
+            json: async () => ({ cards }),
+          }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    const screen = await mountScreen()
+
+    expect(screen.text()).toContain('Two shifts, two cultures.')
+    expect(screen.find('[role="alert"]').exists()).toBe(false)
+    screen.unmount()
   })
 })

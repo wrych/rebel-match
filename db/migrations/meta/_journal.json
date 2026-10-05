@@ -43,6 +43,13 @@
       "when": 1791184168573,
       "tag": "0005_outbox_about_member",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791194806817,
+      "tag": "0006_deck_views",
+      "breakpoints": true
     }
   ]
 }

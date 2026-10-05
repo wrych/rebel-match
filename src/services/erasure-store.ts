@@ -67,7 +67,7 @@ async function eraseChecked(
     .where(or(eq(outbox.memberId, memberId), eq(outbox.toEmail, member.email)))
   await endSessions(db, memberId)
   // The rest goes by cascade: roles, tokens, challenges, expertise, follows,
-  // swipes and connection requests on either side (design §2).
+  // swipes, deck views and connection requests on either side (design §2).
   await db.delete(members).where(eq(members.id, memberId))
   return 'erased'
 }

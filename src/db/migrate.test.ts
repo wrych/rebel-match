@@ -42,6 +42,7 @@ describe('applyMigrations on Postgres (ADR 0024)', () => {
       '0003_profile_lists.sql',
       '0004_erasure_grace.sql',
       '0005_outbox_about_member.sql',
+      '0006_deck_views.sql',
     ])
     expect(await applyMigrations(connection, MIGRATIONS)).toEqual([])
     expect(await tableExists('connection_requests')).toBe(true)

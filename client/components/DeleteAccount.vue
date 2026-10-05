@@ -46,9 +46,9 @@ async function erase(): Promise<void> {
     <p class="small">
       You are signed out and hidden from everyone at once. After
       {{ graceSpan(graceDays) }} your profile, your challenges, your connection
-      requests, what you swiped and followed, and the emails we sent you are
-      erased for good. Until then, ask for a sign-in link with your email and
-      the email lets you keep your account.
+      requests, what you were shown, swiped and followed, and the emails we sent
+      you are erased for good. Until then, ask for a sign-in link with your
+      email and the email lets you keep your account.
     </p>
     <p v-if="problem" class="alert" role="alert">{{ problem }}</p>
     <div v-if="confirming" class="stack-tight">
