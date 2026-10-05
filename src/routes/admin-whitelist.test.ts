@@ -27,7 +27,7 @@ function setup(): { app: Express; calls: unknown[] } {
   app.use(
     adminWhitelistRoutes({
       auth,
-      config: { limits: { whitelistBatchMax: 3 } },
+      config: { limits: { whitelistBatchMax: 3, emailMaxChars: 320 } },
       whitelist: {
         add: (emails, actorId) => {
           calls.push({ emails, actorId })

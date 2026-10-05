@@ -1,17 +1,22 @@
 import { Router } from 'express'
 import { z } from 'zod'
-import { EMAIL_MAX } from '../db/schema.js'
 import type { AuthProvider } from '../auth/index.js'
 import type { Limits } from '../config.js'
 import type { WhitelistService } from '../services/whitelist.js'
 import { requirePermission, type GuardedLocals } from './require-permission.js'
 
 function whitelistBody(
-  limits: Pick<Limits, 'whitelistBatchMax'>,
+  limits: Pick<Limits, 'whitelistBatchMax' | 'emailMaxChars'>,
 ): z.ZodType<{ emails: string[] }> {
   return z.object({
     emails: z
-      .array(z.string().trim().toLowerCase().pipe(z.email().max(EMAIL_MAX)))
+      .array(
+        z
+          .string()
+          .trim()
+          .toLowerCase()
+          .pipe(z.email().max(limits.emailMaxChars)),
+      )
       .min(1)
       .max(limits.whitelistBatchMax),
   })
@@ -21,7 +26,7 @@ function whitelistBody(
 export function adminWhitelistRoutes(deps: {
   auth: AuthProvider
   whitelist: WhitelistService
-  config: { limits: Pick<Limits, 'whitelistBatchMax'> }
+  config: { limits: Pick<Limits, 'whitelistBatchMax' | 'emailMaxChars'> }
 }): Router {
   const router = Router()
   const schema = whitelistBody(deps.config.limits)
