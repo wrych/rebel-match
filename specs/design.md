@@ -84,6 +84,7 @@ thresholds have sane defaults in the file and may be overridden by env.
 | `erasureSweepIntervalHours`    | `1`                           | R-NFR-7                   |
 | `limits.outboxPageSize`        | `100`                         | R-MSG-5                   |
 | `limits.deckPageSize`          | `20`                          | R-OFF-1                   |
+| `limits.matchesPollSeconds`    | `30`                          | R-MINE-4                  |
 | `limits.whitelistBatchMax`     | `1000`                        | R-AUTH-1                  |
 | `limits.savedTickMs`           | `2500`                        | R-PROF-1                  |
 | `limits.holdToSelectMs`        | `500`                         | R-MEM-3                   |

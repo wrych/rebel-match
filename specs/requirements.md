@@ -436,7 +436,9 @@ connect.")_
   / R-CONN-4 are triggered).
 - **R-MINE-3** — The system SHALL show which trends the member is following.
 - **R-MINE-4** — The navigation SHALL badge the "Matches" tab when there are
-  pending incoming requests or new matches.
+  pending incoming requests or new matches. While the app is open and visible,
+  the badge and the list of waiting requests SHALL refresh on their own, at most
+  `limits.matchesPollSeconds` apart, so a new request shows without a reload.
 
 ---
 
