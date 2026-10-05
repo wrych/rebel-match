@@ -43,6 +43,7 @@ describe('applyMigrations on Postgres (ADR 0024)', () => {
       '0004_erasure_grace.sql',
       '0005_outbox_about_member.sql',
       '0006_deck_views.sql',
+      '0007_accept_notice.sql',
     ])
     expect(await applyMigrations(connection, MIGRATIONS)).toEqual([])
     expect(await tableExists('connection_requests')).toBe(true)
@@ -70,14 +71,14 @@ describe('applyMigrations on Postgres (ADR 0024)', () => {
   })
 })
 
-describe('the profile lists migration (R-ONB-2)', () => {
-  async function copied(names: string[]): Promise<Record<string, string>> {
-    const files: Record<string, string> = {}
-    for (const name of names)
-      files[name] = await readFile(join(MIGRATIONS, name), 'utf8')
-    return files
-  }
+async function copied(names: string[]): Promise<Record<string, string>> {
+  const files: Record<string, string> = {}
+  for (const name of names)
+    files[name] = await readFile(join(MIGRATIONS, name), 'utf8')
+  return files
+}
 
+describe('the profile lists migration (R-ONB-2)', () => {
   it('turns a listed sector into its key and clears one off the list', async () => {
     const before = await copied([
       '0000_baseline.sql',
@@ -151,5 +152,43 @@ describe('the pending-request guard (R-CONN-5)', () => {
     )
 
     await expect(request('r2', null)).resolves.toBeDefined()
+  })
+})
+
+describe('the accept notice migration (R-CONN-7)', () => {
+  it('counts every connection accepted before it as already seen', async () => {
+    const all = await copied([
+      '0000_baseline.sql',
+      '0001_analytics_opt_in.sql',
+      '0002_setting_overrides.sql',
+      '0003_profile_lists.sql',
+      '0004_erasure_grace.sql',
+      '0005_outbox_about_member.sql',
+      '0006_deck_views.sql',
+      '0007_accept_notice.sql',
+    ])
+    const { ['0007_accept_notice.sql']: notice, ...before } = all
+    const dir = await scratchDir(before)
+    await applyMigrations(connection, dir)
+    await connection.db.execute(sql`
+      INSERT INTO members (id, email, analytics_id) VALUES
+        ('a', 'a@example.invalid', 'aa'), ('b', 'b@example.invalid', 'bb')`)
+    await connection.db.execute(sql`
+      INSERT INTO connection_requests
+        (id, requester_id, target_id, kind, status, responded_at) VALUES
+        ('r1', 'a', 'b', 'same_boat', 'accepted', now()),
+        ('r2', 'a', 'b', 'same_boat', 'pending', NULL)`)
+    await writeFile(join(dir, '0007_accept_notice.sql'), notice!)
+
+    await applyMigrations(connection, dir)
+
+    expect(
+      await connection.rows(sql`
+        SELECT id, requester_seen_at IS NOT NULL AS seen
+        FROM connection_requests ORDER BY id`),
+    ).toEqual([
+      { id: 'r1', seen: true },
+      { id: 'r2', seen: false },
+    ])
   })
 })

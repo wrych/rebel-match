@@ -1,4 +1,13 @@
-import { and, desc, eq, isNotNull, or, sql, type SQL } from 'drizzle-orm'
+import {
+  and,
+  desc,
+  eq,
+  isNotNull,
+  isNull,
+  or,
+  sql,
+  type SQL,
+} from 'drizzle-orm'
 import type { Database } from '../db/connect.js'
 import {
   challenges,
@@ -82,6 +91,10 @@ async function views(
         row.challenge === null
           ? null
           : { ...row.challenge, trendShort: row.trendShort },
+      unseen:
+        record.requesterId === viewerId &&
+        record.status === 'accepted' &&
+        row.request.requesterSeenAt === null,
     }
   })
 }
@@ -99,6 +112,25 @@ async function contactFor(
     .innerJoin(members, activeOtherParty(viewerId))
     .where(and(eq(r.id, id), eq(r.status, 'accepted'), isParty(viewerId)))
   return row === undefined ? null : { name: row.name ?? '', email: row.email }
+}
+
+// Only the first read counts, so the time says when the notice ended.
+async function markSeen(
+  db: Database,
+  id: string,
+  requesterId: string,
+): Promise<void> {
+  await db
+    .update(r)
+    .set({ requesterSeenAt: sql`now()` })
+    .where(
+      and(
+        eq(r.id, id),
+        eq(r.requesterId, requesterId),
+        eq(r.status, 'accepted'),
+        isNull(r.requesterSeenAt),
+      ),
+    )
 }
 
 // A request from someone deleted since cannot be answered (ADR 0032).
@@ -199,5 +231,6 @@ export function createConnectionStore(db: Database): ConnectionStore {
       return answered.length === 1
     },
     contactFor: (id, viewerId) => contactFor(db, id, viewerId),
+    markSeen: (id, requesterId) => markSeen(db, id, requesterId),
   }
 }

@@ -70,4 +70,4 @@ still holds except where the later ADR says otherwise.
 | [0031](0031-hosts-change-selected-settings.md)             | Hosts change selected settings in the app, stored in the database | Accepted                  |
 | [0032](0032-erasure-waits-30-days.md)                      | Erasure waits 30 days, during which it can be undone              | Accepted                  |
 | [0033](0033-record-activity-show-it-later.md)              | Record activity in our own tables; showing it is separate         | Accepted                  |
-| [0034](0034-hardened-headers-transport-and-sessions.md)    | Hardened headers, transport and sessions                          | Proposed                  |
+| [0034](0034-hardened-headers-transport-and-sessions.md)    | Hardened headers, transport and sessions                          | Accepted                  |

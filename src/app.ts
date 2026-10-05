@@ -18,6 +18,7 @@ import { adminSettingsRoutes } from './routes/admin-settings.js'
 import { adminMemberRoutes } from './routes/admin-members.js'
 import { adminRoleRoutes } from './routes/admin-roles.js'
 import { adminWhitelistRoutes } from './routes/admin-whitelist.js'
+import { securityHeaders } from './security-headers.js'
 import { authRoutes, renewSessions } from './routes/auth.js'
 import { onboardingRoutes } from './routes/onboarding.js'
 import { analyticsConsentRoutes } from './routes/analytics-consent.js'
@@ -112,8 +113,8 @@ export const handleErrors: ErrorRequestHandler = (
 export function createApp(deps: AppDeps): Express {
   const app = express()
 
-  app.disable('x-powered-by')
   app.set('trust proxy', deps.config.trustProxy)
+  app.use(securityHeaders(deps.config))
   app.post(
     [...SIGN_IN_POSTS],
     limitPerIp(

@@ -12,28 +12,33 @@ export interface Cockpit {
   challenges: CockpitChallenge[]
   following: Trend[]
   pendingIncoming: number
+  /** The member's requests accepted since, not opened yet (R-CONN-7). */
+  newConnections: number
 }
 
 export interface CockpitStore {
   challenges(memberId: string): Promise<CockpitChallenge[]>
   pendingIncoming(memberId: string): Promise<number>
+  newConnections(memberId: string): Promise<number>
 }
 
 /** F8's cockpit: the member's challenges with their match counts, the trends
- * they follow, and how many requests wait for them, which also badges the
- * nav (R-MINE-1,3,4). The requests themselves come from the incoming list. */
+ * they follow, how many requests wait for them and how many of theirs were
+ * accepted unseen, which badge the nav (R-MINE-1,3,4, R-CONN-7). */
 export function createCockpit(deps: {
   store: CockpitStore
   followed: (memberId: string) => Promise<Trend[]>
 }): { cockpit(memberId: string): Promise<Cockpit> } {
   return {
     cockpit: async (memberId) => {
-      const [challenges, following, pendingIncoming] = await Promise.all([
-        deps.store.challenges(memberId),
-        deps.followed(memberId),
-        deps.store.pendingIncoming(memberId),
-      ])
-      return { challenges, following, pendingIncoming }
+      const [challenges, following, pendingIncoming, newConnections] =
+        await Promise.all([
+          deps.store.challenges(memberId),
+          deps.followed(memberId),
+          deps.store.pendingIncoming(memberId),
+          deps.store.newConnections(memberId),
+        ])
+      return { challenges, following, pendingIncoming, newConnections }
     },
   }
 }

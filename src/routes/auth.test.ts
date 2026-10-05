@@ -113,29 +113,32 @@ describe('the emailed link (ADR 0027)', () => {
   })
 })
 
-describe('GET /auth/verify', () => {
-  it('moves an old link into the sign-in screen without using it (R-AUTH-5)', async () => {
-    const { app, tokenFor, signIn } = setup()
-    const token = await tokenFor()
+describe('GET /auth/verify (ADR 0034)', () => {
+  it('is not served, so no token travels in a query string', async () => {
+    const { app, tokenFor } = setup()
 
-    const opened = await request(app).get(`/auth/verify?token=${token}`)
+    const opened = await request(app).get(
+      `/auth/verify?token=${await tokenFor()}`,
+    )
 
-    expect(opened.status).toBe(303)
-    expect(opened.headers['location']).toBe(`/sign-in#token=${token}`)
-    expect(opened.headers['set-cookie']).toBeUndefined()
-    expect((await signIn(token)).status).toBe(200)
-  })
-
-  it('sends a link without a token to the sign-in screen, which says so', async () => {
-    const { app } = setup()
-
-    const response = await request(app).get('/auth/verify')
-
-    expect(response.headers['location']).toBe('/sign-in')
+    expect(opened.status).toBe(404)
   })
 })
 
 describe('POST /auth/verify', () => {
+  it('ends the session the browser held before starting a new one (ADR 0034)', async () => {
+    const { app, auth, signIn, tokenFor } = setup()
+    const old = await auth.createSession(ada.id)
+    const oldCookie = `${old.name}=${old.value}`
+
+    const response = await signIn(await tokenFor()).set('Cookie', oldCookie)
+
+    expect(response.status).toBe(200)
+    expect(sessionCookie(response)).not.toBe(oldCookie)
+    const before = await request(app).get('/auth/me').set('Cookie', oldCookie)
+    expect(before.status).toBe(401)
+  })
+
   it('signs the member in and says where to go next (R-AUTH-5, R-NAV-5)', async () => {
     const { tokenFor, signIn } = setup()
 

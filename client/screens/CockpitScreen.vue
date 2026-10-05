@@ -8,13 +8,16 @@ import {
   fetchIncoming,
   type Cockpit,
 } from '../lib/cockpit'
-import type { ConnectionView } from '../lib/connections'
+import { answerRequest, type ConnectionView } from '../lib/connections'
 import { poll } from '../lib/poll'
 
 const cockpit = ref<Cockpit | null>(null)
 const incoming = ref<ConnectionView[]>([])
 const connected = ref<ConnectionView[]>([])
 const problem = ref<string | null>(null)
+const answering = ref<string | null>(null)
+const notice = ref<string | null>(null)
+const failed = ref<string | null>(null)
 
 const requestPath = (id: string): string =>
   `/matches/requests/${encodeURIComponent(id)}`
@@ -41,6 +44,38 @@ async function load(): Promise<void> {
 // A failed refresh keeps what is on screen; the next one tries again.
 function refresh(): void {
   load().catch(() => undefined)
+}
+
+function afterAnswer(
+  request: ConnectionView,
+  verdict: 'accept' | 'decline',
+  outcome: 'done' | 'gone',
+): string {
+  if (outcome === 'gone') return 'That request is no longer waiting for you.'
+  return verdict === 'accept'
+    ? `You are connected with ${request.other.name}.`
+    : `You declined ${request.other.name}. Nothing was shared.`
+}
+
+// The answered request leaves the list at once; the refresh that follows
+// brings an accepted one back under connections (R-MINE-2, R-MINE-5).
+async function answer(
+  request: ConnectionView,
+  verdict: 'accept' | 'decline',
+): Promise<void> {
+  answering.value = request.id
+  notice.value = null
+  failed.value = null
+  try {
+    const outcome = await answerRequest(request.id, verdict)
+    incoming.value = incoming.value.filter((each) => each.id !== request.id)
+    notice.value = afterAnswer(request, verdict, outcome)
+    refresh()
+  } catch {
+    failed.value = 'That did not save. Try again.'
+  } finally {
+    answering.value = null
+  }
 }
 
 onMounted(async () => {
@@ -73,26 +108,53 @@ onUnmounted(() => {
           Waiting for you
         </h2>
         <p v-if="incoming.length === 0" class="empty">No requests waiting.</p>
-        <RouterLink
-          v-for="request in incoming"
-          :key="request.id"
-          :to="requestPath(request.id)"
-          class="card request-row"
-        >
-          <span class="card-head">
-            <span class="card-title">{{ request.other.name }}</span>
-            <span
-              class="chip"
-              :class="request.kind === 'same_boat' ? 'chip-accent' : 'chip-ink'"
-              >{{
-                request.kind === 'same_boat' ? 'Same boat' : 'Been there'
-              }}</span
+        <p v-else class="small">
+          Accepting shares your email addresses with each other. Open a request
+          to read it in full first.
+        </p>
+        <p v-if="notice" class="notice notice-solid" role="status">
+          {{ notice }}
+        </p>
+        <p v-if="failed" class="alert" role="alert">{{ failed }}</p>
+        <div v-for="request in incoming" :key="request.id" class="card">
+          <RouterLink :to="requestPath(request.id)" class="request-row">
+            <span class="card-head">
+              <span class="card-title">{{ request.other.name }}</span>
+              <span
+                class="chip"
+                :class="
+                  request.kind === 'same_boat' ? 'chip-accent' : 'chip-ink'
+                "
+                >{{
+                  request.kind === 'same_boat' ? 'Same boat' : 'Been there'
+                }}</span
+              >
+            </span>
+            <span v-if="request.message" class="small request-note">{{
+              request.message
+            }}</span>
+          </RouterLink>
+          <div class="actions">
+            <button
+              type="button"
+              class="btn btn-ghost btn-small"
+              :disabled="answering !== null"
+              :aria-label="`Decline ${request.other.name}`"
+              @click="answer(request, 'decline')"
             >
-          </span>
-          <span v-if="request.message" class="small request-note">{{
-            request.message
-          }}</span>
-        </RouterLink>
+              Decline
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary btn-small"
+              :disabled="answering !== null"
+              :aria-label="`Accept ${request.other.name}`"
+              @click="answer(request, 'accept')"
+            >
+              Accept
+            </button>
+          </div>
+        </div>
       </section>
 
       <section class="stack rule" aria-labelledby="connections">
@@ -106,7 +168,10 @@ onUnmounted(() => {
           :to="contactPath(connection.id)"
           class="card request-row"
         >
-          <span class="card-title">{{ connection.other.name }}</span>
+          <span class="card-head">
+            <span class="card-title">{{ connection.other.name }}</span>
+            <span v-if="connection.unseen" class="chip chip-accent">New</span>
+          </span>
           <span v-if="peerLine(connection.other)" class="mono peer-meta">{{
             peerLine(connection.other)
           }}</span>

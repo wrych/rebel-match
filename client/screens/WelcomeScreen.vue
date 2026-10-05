@@ -1,26 +1,27 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { fetchConfig } from '../lib/api'
-import { fetchCockpit } from '../lib/cockpit'
+import { fetchMatchesNews, NO_NEWS, type MatchesNews } from '../lib/cockpit'
 import { reportEvent } from '../lib/events'
 import { poll } from '../lib/poll'
 import { loadMe, type Me } from '../lib/session'
-import { matchesLabel } from '../lib/tabs'
+import { matchesBadge, matchesLabel } from '../lib/tabs'
 
 const MS_PER_SECOND = 1000
 const me = ref<Me | null>(null)
-const waiting = ref(0)
+const news = ref<MatchesNews>(NO_NEWS)
+const badge = computed(() => matchesBadge(news.value))
 let stopPolling: (() => void) | undefined
 let gone = false
 
 // This screen has no tab bar, so its matches link carries the badge, read now
-// and on the same timer as the tab's (R-MINE-4). A failed read shows none.
-async function countWaiting(): Promise<void> {
+// and on the same timer as the tab's (R-MINE-4, R-CONN-7). A failed read
+// shows none.
+async function readNews(): Promise<void> {
   try {
-    const count = (await fetchCockpit()).pendingIncoming
-    waiting.value = Number.isInteger(count) && count > 0 ? count : 0
+    news.value = await fetchMatchesNews()
   } catch {
-    waiting.value = 0
+    news.value = NO_NEWS
   }
 }
 
@@ -28,12 +29,12 @@ async function startPolling(): Promise<void> {
   const config = await fetchConfig().catch(() => null)
   if (config === null || gone) return
   stopPolling = poll(() => {
-    void countWaiting()
+    void readNews()
   }, config.limits.matchesPollSeconds * MS_PER_SECOND)
 }
 
 onMounted(async () => {
-  void countWaiting()
+  void readNews()
   void startPolling()
   me.value = await loadMe()
 })
@@ -80,12 +81,12 @@ function chose(journey: 'ask' | 'offer'): void {
     <RouterLink
       to="/matches"
       class="row-link"
-      :aria-label="`Your ${matchesLabel(waiting).toLowerCase()}`"
+      :aria-label="`Your ${matchesLabel(news).toLowerCase()}`"
     >
       <span class="row-link-label">
         Your matches
-        <span v-if="waiting > 0" class="badge" aria-hidden="true">{{
-          waiting
+        <span v-if="badge > 0" class="badge" aria-hidden="true">{{
+          badge
         }}</span>
       </span>
     </RouterLink>
