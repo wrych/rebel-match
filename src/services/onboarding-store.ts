@@ -1,6 +1,6 @@
-import { eq } from 'drizzle-orm'
+import { and, desc, eq } from 'drizzle-orm'
 import type { Database } from '../db/connect.js'
-import { members } from '../db/schema.js'
+import { members, outbox } from '../db/schema.js'
 import type { OnboardingStore } from './onboarding.js'
 
 /** Onboarding over `members` (design §2). `requested_name` and
@@ -40,6 +40,17 @@ export function createOnboardingStore(db: Database): OnboardingStore {
             input.analyticsVersion === undefined ? null : acceptedAt,
         })
         .where(eq(members.id, memberId))
+    },
+    signInEmailAt: async (memberId) => {
+      const [row] = await db
+        .select({ at: outbox.createdAt })
+        .from(outbox)
+        .where(
+          and(eq(outbox.memberId, memberId), eq(outbox.kind, 'magic_link')),
+        )
+        .orderBy(desc(outbox.createdAt))
+        .limit(1)
+      return row?.at ?? null
     },
   }
 }

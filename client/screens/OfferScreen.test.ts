@@ -133,6 +133,17 @@ describe('OfferScreen', () => {
     expect(screen.find('.deck-text').text()).toContain('salary model')
   })
 
+  it('takes the member to the contact when the author is already a connection (R-CONN-8)', async () => {
+    server([cards], {
+      status: 201,
+      body: { result: 'recorded', connection: { result: 'joined', id: 'r9' } },
+    })
+    const screen = await mountScreen()
+    await click(screen, 'Same boat')
+
+    expect(push).toHaveBeenCalledWith('/matches/requests/r9/contact')
+  })
+
   it('drops what it said about one card when the member browses to another', async () => {
     server([[...cards, { ...cards[0]!, challengeId: 'c3' }]], {
       status: 201,

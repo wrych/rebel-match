@@ -72,7 +72,7 @@ function deps(
     },
     onboarding: {
       draft: () => Promise.resolve(null),
-      complete: () => Promise.resolve('stale_consent'),
+      complete: () => Promise.resolve({ result: 'stale_consent' }),
     },
     invites: {
       list: () => Promise.resolve([]),

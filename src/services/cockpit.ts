@@ -12,7 +12,7 @@ export interface Cockpit {
   challenges: CockpitChallenge[]
   following: Trend[]
   pendingIncoming: number
-  /** The member's requests accepted since, not opened yet (R-CONN-7). */
+  /** Accepted requests the member has not opened yet (R-CONN-7,9). */
   newConnections: number
 }
 
@@ -23,8 +23,8 @@ export interface CockpitStore {
 }
 
 /** F8's cockpit: the member's challenges with their match counts, the trends
- * they follow, how many requests wait for them and how many of theirs were
- * accepted unseen, which badge the nav (R-MINE-1,3,4, R-CONN-7). */
+ * they follow, how many requests wait for them and how many accepted ones
+ * they have not opened, which badge the nav (R-MINE-1,3,4, R-CONN-7,9). */
 export function createCockpit(deps: {
   store: CockpitStore
   followed: (memberId: string) => Promise<Trend[]>

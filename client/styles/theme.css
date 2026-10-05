@@ -628,6 +628,12 @@ textarea.input {
   box-shadow: var(--tiny-shadow);
 }
 
+/* Something the member has not opened yet (R-MINE-6, R-CONN-10). */
+.card-new {
+  outline: 3px solid var(--accent);
+  outline-offset: -1px;
+}
+
 .card-solid {
   display: grid;
   gap: 0.75rem;

@@ -199,18 +199,21 @@ describe('CockpitScreen', () => {
     expect(paths(screen)).toContain('/matches/requests/r7/contact')
   })
 
-  it('marks a connection the member has not opened yet as new (R-CONN-7)', async () => {
+  it('lists each member once, those with something unopened first, outlined and counted (R-MINE-5,6)', async () => {
     const accepted: ConnectionView = {
       ...request,
       direction: 'outgoing',
       status: 'accepted',
     }
+    const pal = { ...request.other, memberId: 'm3', name: 'Old Pal' }
     serve(
       cockpit,
       () => [],
       () => [
+        { ...accepted, id: 'r10', other: pal },
+        { ...accepted, id: 'r9', unseen: true },
         { ...accepted, id: 'r8', unseen: true },
-        { ...accepted, id: 'r9', other: { ...request.other, name: 'Old Pal' } },
+        { ...accepted, id: 'r7' },
       ],
     )
     const screen = await mountScreen()
@@ -218,8 +221,14 @@ describe('CockpitScreen', () => {
     const rows = screen
       .findAllComponents(RouterLinkStub)
       .filter((link) => String(link.props('to')).endsWith('/contact'))
-    expect(rows.map((row) => row.find('.chip').exists())).toEqual([true, false])
-    expect(rows[0]?.find('.chip').text()).toBe('New')
+    expect(rows.map((row) => row.props('to'))).toEqual([
+      '/matches/requests/r9/contact',
+      '/matches/requests/r10/contact',
+    ])
+    expect(rows.map((row) => row.classes('card-new'))).toEqual([true, false])
+    expect(rows[0]?.find('.badge').text()).toBe('2')
+    expect(rows[0]?.attributes('aria-label')).toBe('Bea There, 2 new')
+    expect(rows[1]?.find('.badge').exists()).toBe(false)
   })
 
   it('shows a new request without a reload (R-MINE-4)', async () => {

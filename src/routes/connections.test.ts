@@ -33,6 +33,9 @@ function setup(): { app: Express; requests: NewConnection[] } {
       if (input.targetId === 'm-dup') {
         return Promise.resolve({ result: 'exists', id: 'r-old' })
       }
+      if (input.targetId === 'm-friend') {
+        return Promise.resolve({ result: 'joined', id: 'r-new' })
+      }
       if (input.targetId === 'm-ghost') {
         return Promise.resolve({ result: 'not_found' })
       }
@@ -48,7 +51,12 @@ function setup(): { app: Express; requests: NewConnection[] } {
     contact: (_m, id) =>
       Promise.resolve(
         id === 'r-1'
-          ? { name: 'Bob', email: 'bob@example.invalid', mailto: 'mailto:x' }
+          ? {
+              name: 'Bob',
+              email: 'bob@example.invalid',
+              mailto: 'mailto:x',
+              over: [],
+            }
           : null,
       ),
   }
@@ -91,6 +99,16 @@ describe('connection routes', () => {
 
     expect(response.status).toBe(409)
     expect(response.body).toEqual({ result: 'exists', id: 'r-old' })
+  })
+
+  it('answers a connection added between members already connected with 200 (R-CONN-8)', async () => {
+    const response = await request(setup().app)
+      .post('/api/connections')
+      .set('Cookie', await cookieFor('m-ada'))
+      .send({ targetId: 'm-friend', kind: 'same_boat' })
+
+    expect(response.status).toBe(200)
+    expect(response.body).toEqual({ result: 'joined', id: 'r-new' })
   })
 
   it.each([
@@ -142,6 +160,7 @@ describe('connection routes', () => {
         name: 'Bob',
         email: 'bob@example.invalid',
         mailto: 'mailto:x',
+        over: [],
       },
     })
   })

@@ -38,6 +38,7 @@ Conventions:
                    ▼
             F8 Matches cockpit  ──►  F7 (accept / decline)
                    ├──►  F9 Follow a trend
+                   ├──►  F17 Notifications
                    └──►  F12 Feedback
 
    Admin only: F10 Approvals · F16 Invite links · F11 GDPR deletion
@@ -285,6 +286,14 @@ before both sides agree.**
   R-NFR-1, design §8).
 - _Target never responds_ → the request simply stays pending; nothing is
   revealed.
+- _Already connected_ → when the two already share an accepted request, the new
+  one is accepted at once and the requester lands on **S16**, the new request
+  on top of what they are connected over; the target is told by a badge and an
+  email linking to S16 (R-CONN-8,9,10). About a challenge they are already
+  connected over, nothing is added and the requester lands on S16 all the same.
+- _Several requests pending between the two_ → accepting one accepts them all,
+  either side; they show on S16 as what the two are connected over, and the
+  requester is told once (R-CONN-11).
 
 ---
 
@@ -295,10 +304,12 @@ before both sides agree.**
 1. Member opens Matches from the bottom nav.
 2. Screen shows: their own challenge(s) with same-boat / been-there counts
    (R-MINE-1), **incoming requests** with Accept / Decline (R-MINE-2 → **F7**
-   step 5), and their followed trends (R-MINE-3).
+   step 5), their connections, each member once, those with something new on
+   top, outlined and counted (R-MINE-5,6), and their followed trends
+   (R-MINE-3).
 3. The nav badge reflects the number of pending incoming requests and of
    connections accepted that the member has not opened yet (R-MINE-4,
-   R-CONN-7).
+   R-CONN-7,9).
 
 ---
 
@@ -307,6 +318,8 @@ before both sides agree.**
 1. From a match card, the trend sheet, or the cockpit, the member taps Follow →
    `POST /api/follows/:trendId`; unfollow → `DELETE` (R-ASK-9).
 2. Followed trends are listed in the cockpit (**F8**, R-MINE-3).
+3. A challenge posted later in the trend notifies the member, daily by default,
+   with a link to the deck opened at its card (**F17**, R-NOTE-1, R-OFF-7).
 
 ---
 
@@ -515,8 +528,9 @@ they wait for a human (**F4**).
 - _Window ends mid-session_ → the invite goes inert on its own; scans fall to
   **F4**. Extending means creating a new invite, which is deliberate: an invite's
   window is a promise, not a setting to nudge.
-- _Cap reached with people still queuing_ → raise it by creating a second invite,
-  or approve the stragglers through **F10**.
+- _Cap reached, or close to it, with people still queuing_ → the host raises
+  the invite's cap on the invite screen, and the printed code keeps admitting.
+  Stragglers who already fell to **F4** are approved through **F10**.
 
 ---
 
@@ -533,3 +547,36 @@ box. The part before the email, from the scan to typing the address, happens in
 a browser the app stores nothing in before consent, so the whole path is timed
 by hand on a phone (tasks.md, M6). The database keeps no sign-in tokens for it: used
 and expired ones are purged (ADR 0034).
+
+---
+
+## F17 — Notifications
+
+**Screens:** S27 Notifications, S24 Profile & privacy (ADR 0037).
+
+1. Something happens for the member: a request to them, a new connection, a
+   challenge in a trend they follow, or, for hosts, a new applicant
+   (R-NOTE-1). Unless the type is _Off_, it is stored with the event
+   (R-NOTE-4, R-NOTE-10).
+2. The header's menu button shows a badge with the number of new
+   notifications, and the menu reads **Notifications (n new)**; with none new,
+   just **Notifications** (R-NOTE-6).
+3. The member opens it → **S27** `/notifications`, newest first. What was new
+   is outlined on this visit and counts as seen from now on (R-NOTE-5). Each
+   entry links to its screen (**F13**).
+4. Meanwhile the worker mails what the member has not seen, at the cadence
+   chosen for its type: every type on the same cadence in one mail
+   (R-NOTE-7, R-NOTE-8, R-NOTE-9).
+5. On **S24** the member picks, per type, _Immediately_, _Hourly_, _Daily_,
+   _In the app only_ or _Off_; hosts also _Every 15 minutes_ for applicants
+   (R-NOTE-2, R-NOTE-3).
+
+**Branches**
+
+- _Seen in the app before the mail is due_ → it is left out of the mail; with
+  nothing left, no mail goes (R-NOTE-9).
+- _The request was answered, or the member it is about left_ → it is left out
+  of the mail, and of the list if the member can no longer open it (R-NOTE-5,
+  R-NOTE-9).
+- _The mail fails_ → it is tried again, longer apart each time; the request it
+  announces stands regardless (R-NOTE-10).

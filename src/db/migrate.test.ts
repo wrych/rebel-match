@@ -44,6 +44,7 @@ describe('applyMigrations on Postgres (ADR 0024)', () => {
       '0005_outbox_about_member.sql',
       '0006_deck_views.sql',
       '0007_accept_notice.sql',
+      '0008_added_connection.sql',
     ])
     expect(await applyMigrations(connection, MIGRATIONS)).toEqual([])
     expect(await tableExists('connection_requests')).toBe(true)
@@ -166,6 +167,7 @@ describe('the accept notice migration (R-CONN-7)', () => {
       '0005_outbox_about_member.sql',
       '0006_deck_views.sql',
       '0007_accept_notice.sql',
+      '0008_added_connection.sql',
     ])
     const { ['0007_accept_notice.sql']: notice, ...before } = all
     const dir = await scratchDir(before)

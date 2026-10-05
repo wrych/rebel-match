@@ -1,10 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   answerRequest,
+  byMember,
+  contactPath,
   fetchContact,
   fetchRequest,
   kindOf,
+  overInOrder,
   requestConnection,
+  type ConnectionView,
 } from './connections'
 
 const input = {
@@ -28,7 +32,7 @@ describe('requestConnection', () => {
   it('posts the request and reads 201 as created (R-CONN-1)', async () => {
     const fetchMock = answer(201)
 
-    expect(await requestConnection(input)).toBe('created')
+    expect(await requestConnection(input)).toEqual({ result: 'created' })
     expect(fetchMock).toHaveBeenCalledWith('/api/connections', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -42,7 +46,23 @@ describe('requestConnection', () => {
   ])('reads %i as %s (R-CONN-5, R-NAV-8)', async (status, expected) => {
     answer(status)
 
-    expect(await requestConnection(input)).toBe(expected)
+    expect(await requestConnection(input)).toEqual({ result: expected })
+  })
+
+  it('reads 200 as joined, with the request to open (R-CONN-8)', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ result: 'joined', id: 'r9' }),
+      }),
+    )
+
+    expect(await requestConnection(input)).toEqual({
+      result: 'joined',
+      id: 'r9',
+    })
   })
 
   it('throws on anything else', async () => {
@@ -128,5 +148,83 @@ describe('request reads and answers', () => {
     serve(500)
 
     await expect(call()).rejects.toThrow('500')
+  })
+})
+
+function accepted(
+  id: string,
+  memberId: string,
+  unseen = false,
+): ConnectionView {
+  return {
+    id,
+    direction: 'outgoing',
+    kind: 'same_boat',
+    status: 'accepted',
+    message: null,
+    createdAt: '2026-11-08T10:00:00.000Z',
+    other: {
+      memberId,
+      name: memberId,
+      jobTitle: null,
+      org: null,
+      sector: null,
+      companySize: null,
+    },
+    challenge: null,
+    unseen,
+  }
+}
+
+describe('byMember (R-MINE-5,6)', () => {
+  it('lists each member once, opening their newest request', () => {
+    const cards = byMember([
+      accepted('r3', 'ivo'),
+      accepted('r2', 'ana'),
+      accepted('r1', 'ivo'),
+    ])
+
+    expect(cards.map((card) => [card.other.memberId, card.id])).toEqual([
+      ['ivo', 'r3'],
+      ['ana', 'r2'],
+    ])
+  })
+
+  it('puts members with something unopened first, counted, opening the newest of it', () => {
+    const cards = byMember([
+      accepted('r4', 'ana'),
+      accepted('r3', 'ivo'),
+      accepted('r2', 'ivo', true),
+      accepted('r1', 'ivo', true),
+    ])
+
+    expect(
+      cards.map((card) => [card.other.memberId, card.id, card.unseen]),
+    ).toEqual([
+      ['ivo', 'r2', 2],
+      ['ana', 'r4', 0],
+    ])
+  })
+
+  it('lists nobody for no connections', () => {
+    expect(byMember([])).toEqual([])
+  })
+})
+
+describe('overInOrder (R-CONN-10)', () => {
+  it('puts what is not opened yet first, the order otherwise kept', () => {
+    const over = overInOrder([
+      accepted('r3', 'ivo'),
+      accepted('r2', 'ivo', true),
+      accepted('r1', 'ivo'),
+    ])
+
+    expect(over.map((each) => each.id)).toEqual(['r2', 'r3', 'r1'])
+  })
+})
+
+describe('contactPath', () => {
+  it('encodes the request id', () => {
+    expect(contactPath('r/1')).toBe('/matches/requests/r%2F1/contact')
   })
 })

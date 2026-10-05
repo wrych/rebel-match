@@ -4,10 +4,13 @@ import type { SwipeAction } from '../../src/services/swipes'
 export type { DeckCard, SwipeAction }
 
 /** What came of an answer to a card: recorded, with whether a connection
- * request is new or was already waiting; or gone, when the card is no
+ * request is new or was already waiting; joined, with the request, when its
+ * author is already a connection (R-CONN-8); or gone, when the card is no
  * longer there to answer (R-OFF-3). */
 export type SwipeResult =
-  { result: 'recorded'; request?: 'created' | 'exists' } | { result: 'gone' }
+  | { result: 'recorded'; request?: 'created' | 'exists' }
+  | { result: 'joined'; id: string }
+  | { result: 'gone' }
 
 /** The next cards to answer, never the member's own (R-OFF-1). */
 export async function fetchDeck(): Promise<DeckCard[]> {
@@ -31,12 +34,13 @@ export async function answerCard(
   if (response.status === 404) return { result: 'gone' }
   if (!response.ok)
     throw new Error(`answer not saved (${String(response.status)})`)
-  const outcome = (await response.json()) as {
-    connection?: { result: 'created' | 'exists' }
+  const { connection } = (await response.json()) as {
+    connection?: { result: 'created' | 'exists' | 'joined'; id: string }
   }
-  return outcome.connection === undefined
-    ? { result: 'recorded' }
-    : { result: 'recorded', request: outcome.connection.result }
+  if (connection === undefined) return { result: 'recorded' }
+  return connection.result === 'joined'
+    ? { result: 'joined', id: connection.id }
+    : { result: 'recorded', request: connection.result }
 }
 
 /** Tells the server a card became the visible one (R-STAT-1). Fire and

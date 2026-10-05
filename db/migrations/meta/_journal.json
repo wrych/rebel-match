@@ -57,6 +57,13 @@
       "when": 1791202848213,
       "tag": "0007_accept_notice",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791224394376,
+      "tag": "0008_added_connection",
+      "breakpoints": true
     }
   ]
 }

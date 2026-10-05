@@ -9,6 +9,7 @@ import {
   testDatabaseUrl,
   type TestDatabase,
 } from './support/database.js'
+import { createOnboardingStore } from '../../src/services/onboarding-store.js'
 
 const config = loadConfig({
   DATABASE_URL: testDatabaseUrl,
@@ -153,5 +154,24 @@ describe('onboarding over Postgres (F2)', () => {
     )
 
     expect(await me()).toMatchObject({ onboarded: false })
+  })
+
+  it('finds the latest sign-in email, for the onboarding time (R-NFR-3)', async () => {
+    const email = (kind: string, at: string): Promise<unknown> =>
+      db.query(
+        'INSERT INTO outbox (id, member_id, to_email, kind, subject, body_text, created_at) ' +
+          "VALUES (gen_random_uuid()::text, ?, ?, ?, 'S', 'B', ?)",
+        [newcomer.id, newcomer.email, kind, at],
+      )
+    const store = createOnboardingStore(db.drizzle)
+    expect(await store.signInEmailAt(newcomer.id)).toBeNull()
+
+    await email('magic_link', '2026-11-08T09:58:00Z')
+    await email('magic_link', '2026-11-08T09:59:00Z')
+    await email('connection_request', '2026-11-08T10:05:00Z')
+
+    expect(await store.signInEmailAt(newcomer.id)).toEqual(
+      new Date('2026-11-08T09:59:00Z'),
+    )
   })
 })

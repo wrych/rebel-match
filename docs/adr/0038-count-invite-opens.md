@@ -1,4 +1,4 @@
-# 0035. Count the opens of each invite, and show them with its uses
+# 0038. Count the opens of each invite, and show them with its uses
 
 - **Status:** Accepted
 - **Date:** 2026-10-05

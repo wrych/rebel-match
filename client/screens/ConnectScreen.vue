@@ -1,15 +1,17 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { fetchConfig } from '../lib/api'
 import { fetchMatches, peerLine, type PeerCard } from '../lib/challenges'
 import {
+  contactPath,
   kindOf,
   requestConnection,
   type RequestOutcome,
 } from '../lib/connections'
 
 const route = useRoute()
+const router = useRouter()
 const challengeId = String(route.params.challengeId)
 const memberId = String(route.params.memberId)
 const kind = kindOf(route.query.kind)
@@ -20,7 +22,7 @@ const missing = ref(false)
 const message = ref('')
 const maxChars = ref<number | null>(null)
 const sending = ref(false)
-const outcome = ref<RequestOutcome | null>(null)
+const outcome = ref<RequestOutcome['result'] | null>(null)
 const problem = ref<string | null>(null)
 
 const firstName = computed(() => peer.value?.name.split(' ')[0] ?? '')
@@ -50,12 +52,17 @@ async function send(): Promise<void> {
   sending.value = true
   problem.value = null
   try {
-    outcome.value = await requestConnection({
+    const sent = await requestConnection({
       targetId: memberId,
       challengeId,
       kind,
       message: message.value,
     })
+    if (sent.result === 'joined') {
+      await router.replace(contactPath(sent.id))
+      return
+    }
+    outcome.value = sent.result
   } catch {
     problem.value = 'That did not send. Try again.'
   } finally {

@@ -166,6 +166,12 @@ printed dev link (R-DEV-6).
 - [x] Duplicate-request guard. _(R-CONN-5)_
 - [x] Cockpit: my challenge(s) + counts, followed trends, nav badge. _(R-MINE-1,3,4)_
       The bottom bar has Submit and Matches; Swipe joins with the Offer screen.
+- [x] Already connected: a further request is accepted at once and the target
+      told; one card per member in the cockpit, new ones first, outlined and
+      counted; the contact screen lists what the two are connected over.
+      _(R-CONN-8,9,10, R-MINE-5,6, ADR 0035)_
+- [x] Accepting one request accepts every other one pending between the two.
+      _(R-CONN-11)_
 
 ## M5 — Supporting features _(Should-haves)_
 
@@ -260,12 +266,14 @@ printed dev link (R-DEV-6).
 - [ ] Invite-link dry run: create one, scan it on a phone as an unknown address,
       revoke it, confirm the next scan shows the invalid-invite notice and lands
       on the access-requested screen. _(R-INV-3,5)_
-- [ ] `onboarding_completed` carries `seconds_to_onboard`, from the sign-in
+- [x] `onboarding_completed` carries `seconds_to_onboard`, from the sign-in
       email to the consent, so R-NFR-3 is watched in Mixpanel. _(R-NFR-3)_
+- [ ] Raise an invite's cap from its card on the invite links screen.
+      _(R-INV-4, R-INV-9)_
 - [ ] Record invite opens: `POST /auth/invite-opened` from the entry screen
-      into `invite_opens`. _(R-STAT-6, ADR 0035)_
+      into `invite_opens`. _(R-STAT-6, ADR 0038)_
 - [ ] Show each invite's opens beside its uses on the invite links screen.
-      _(R-STAT-6, R-INV-9, ADR 0035)_
+      _(R-STAT-6, R-INV-9, ADR 0038)_
 - [ ] QR-code entry flow validated end-to-end on a phone; time scan → onboarding
       complete (<2 min). _(R-NFR-3)_
 - [ ] CI green on `main`. _(R-QA-6)_
@@ -273,6 +281,18 @@ printed dev link (R-DEV-6).
       it… with a couple of people.")_
 - [ ] Record deck views and offer deleting one's activity history, with the
       consent words that say so. _(R-STAT-1..5, ADR 0033)_
+- [ ] Notifications in the app: the `notifications` table, written with each
+      connection request, new connection and applicant; `/notifications`; the
+      menu's badge and "Notifications (n new)". Mail still goes as today.
+      _(R-NOTE-1,4,5,6, R-PROF-3, ADR 0037)_
+- [ ] Mail notifications through the worker, every type _Immediately_; a
+      request stands when its mail fails, so `notifyOrWithdraw` goes.
+      _(R-NOTE-9,10,11, ADR 0037)_
+- [ ] Cadences: _Every 15 minutes_, _Hourly_, _Daily_, _In the app only_ and
+      _Off_ per type on the profile screen, with the defaults; the digest mail
+      and `outbox_quotes`. _(R-NOTE-2,3,7,8, R-MSG-6)_
+- [ ] Notify followers of a new challenge in their trend, linking to the deck
+      opened at its card. _(R-ASK-9, R-NOTE-1, R-OFF-7)_
 
 ## Post-beta backlog _(Could / Won't-for-now)_
 

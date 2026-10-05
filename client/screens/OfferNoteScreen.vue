@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { fetchConfig } from '../lib/api'
+import { contactPath } from '../lib/connections'
 import { answerCard, authorLine, fetchDeck, type DeckCard } from '../lib/deck'
 import { countAnswer } from '../lib/offer-session'
 
 const route = useRoute()
+const router = useRouter()
 const challengeId = String(route.params.challengeId)
 const card = ref<DeckCard | null>(null)
 const missing = ref(false)
@@ -44,6 +46,11 @@ async function send(): Promise<void> {
   problem.value = null
   try {
     const result = await answerCard(challengeId, 'been_there', note.value)
+    if (result.result === 'joined') {
+      countAnswer('beenThere')
+      await router.replace(contactPath(result.id))
+      return
+    }
     if (result.result === 'gone') missing.value = true
     else sent.value = result.request ?? 'created'
     if (sent.value === 'created') countAnswer('beenThere')
