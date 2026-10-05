@@ -253,6 +253,16 @@ describe('MembersScreen, selecting several (R-MEM-3)', () => {
     expect(text).toContain('4 November 2026')
   })
 
+  it('puts the actions above the list, where they stay in reach', async () => {
+    server()
+    const screen = await shown()
+    await cards(screen)[0]?.find('.selector').trigger('click')
+
+    const bars = screen.findAll('.action-bar')
+    expect(bars).toHaveLength(1)
+    expect(bars[0]?.element.nextElementSibling?.tagName).toBe('UL')
+  })
+
   it('offers no role actions to a host who cannot grant roles', async () => {
     permissions.mockReturnValue(['member:delete'])
     server()
