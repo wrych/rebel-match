@@ -69,13 +69,16 @@ export function onboardingRoutes(deps: {
     }
     const member = (response.locals as GuardedLocals).member
     const outcome = await deps.onboarding.complete(member.id, input.data)
-    if (outcome === 'stale_consent') {
-      response.status(409).json({ result: outcome })
+    if (outcome.result === 'stale_consent') {
+      response.status(409).json({ result: outcome.result })
       return
     }
     void track(member.id, {
       name: 'onboarding_completed',
       consent_version: input.data.consentVersion,
+      ...(outcome.secondsToOnboard === null
+        ? {}
+        : { seconds_to_onboard: outcome.secondsToOnboard }),
     })
     response.status(204).end()
   })
