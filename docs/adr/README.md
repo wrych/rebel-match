@@ -73,3 +73,4 @@ still holds except where the later ADR says otherwise.
 | [0034](0034-hardened-headers-transport-and-sessions.md)    | Hardened headers, transport and sessions                             | Accepted                  |
 | [0035](0035-already-connected-members-skip-the-opt-in.md)  | Members already connected skip the opt-in for each further challenge | Accepted                  |
 | [0037](0037-notifications-queued-at-a-cadence-per-type.md) | Store every notification; mail it at a cadence chosen per type       | Proposed                  |
+| [0038](0038-count-invite-opens.md)                         | Count the opens of each invite, and show them with its uses          | Accepted                  |

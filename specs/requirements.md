@@ -244,7 +244,7 @@ capability, not a secret** — and every requirement below exists because of tha
   when. A bad batch must be identifiable after the fact, and removable (R-NFR-7).
 - **R-INV-9 (Admin screen)** — The admin interface SHALL include an **invite
   screen** of its own that lists every invite with its label, window, uses against
-  cap, and state (active / scheduled / expired / revoked / exhausted), and allows
+  cap, opens (R-STAT-6), and state (active / scheduled / expired / revoked / exhausted), and allows
   creating and revoking. Each invite SHALL show its join URL so the host can
   render or re-render the QR code; it MAY render the QR itself.
 - **R-INV-10 (Labelled)** — Every invite SHALL carry a human label (for example
@@ -834,6 +834,12 @@ records, and nothing here shows a number to anyone (ADR 0033).
   activity is recorded and kept with the account, that the app may show
   combined figures, that personal data reaches another member only where a
   feature needs it, and that the history can be deleted (R-ONB-5).
+- **R-STAT-6 (Invite opens)** — WHEN the entry screen loads with an invite
+  token THE SYSTEM SHALL record an **open** of that invite: the invite and the
+  time, and nothing about who opened it. The invite links screen SHALL show
+  each invite's count of opens beside its uses (R-INV-9); no other screen or
+  endpoint SHALL show or return opens (R-STAT-2). Opens SHALL go with their
+  invite and SHALL NOT be sent to the analytics tool (ADR 0038).
 
 ---
 
@@ -957,7 +963,7 @@ notifications: they go out at once, whatever is chosen here (R-NFR-3).
     a request SHALL require the **human check** first (ADR 0030); past 10 it
     SHALL show the same screen and send nothing, revealing nothing;
   - at most 1000 requests per IP address per 15 minutes across the sign-in
-    endpoints; past it the visitor SHALL be asked to try again in a few
+    endpoints and the invite-open record (R-STAT-6); past it the visitor SHALL be asked to try again in a few
     minutes;
   - after 30 new applicants from one IP address in an hour, recording another
     SHALL require a **human check**; past 300 in an hour, none SHALL be
