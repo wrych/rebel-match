@@ -1,4 +1,4 @@
-# 0033. Hardened headers, transport and sessions
+# 0034. Hardened headers, transport and sessions
 
 - **Status:** Proposed
 - **Date:** 2026-10-05

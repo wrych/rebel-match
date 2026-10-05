@@ -47,3 +47,12 @@ export async function deleteAccount(): Promise<DeleteOutcome> {
   }
   throw new Error(`deleting the account failed (${String(response.status)})`)
 }
+
+/** Deletes the member's activity history, nothing else (R-STAT-4). Throws
+ * when it did not happen, so a failure is never shown as done. */
+export async function deleteHistory(): Promise<void> {
+  const response = await fetch('/api/me/history', { method: 'DELETE' })
+  if (!response.ok) {
+    throw new Error(`deleting the history failed (${String(response.status)})`)
+  }
+}

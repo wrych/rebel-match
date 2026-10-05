@@ -1,7 +1,13 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { answerCard, authorLine, fetchDeck, type DeckCard } from '../lib/deck'
+import {
+  answerCard,
+  authorLine,
+  fetchDeck,
+  reportSeen,
+  type DeckCard,
+} from '../lib/deck'
 import { noticeFor } from '../lib/offer'
 import { countAnswer } from '../lib/offer-session'
 
@@ -14,6 +20,15 @@ const problem = ref<string | null>(null)
 
 const card = computed(() => cards.value[index.value])
 
+// Each card that becomes the visible one is a view, the same card shown again
+// included (R-STAT-1). Cards sent ahead but never shown are not.
+watch(
+  () => card.value?.challengeId,
+  (shown) => {
+    if (shown !== undefined) reportSeen(shown)
+  },
+)
+
 async function load(): Promise<void> {
   try {
     cards.value = await fetchDeck()
@@ -24,9 +39,18 @@ async function load(): Promise<void> {
   }
 }
 
+// What was said about one card would read as about the next, so it goes when
+// the member moves on.
+function clearMessages(): void {
+  notice.value = null
+  problem.value = null
+}
+
 function browse(step: -1 | 1): void {
   const next = index.value + step
-  if (next >= 0 && next < cards.value.length) index.value = next
+  if (next < 0 || next >= cards.value.length) return
+  index.value = next
+  clearMessages()
 }
 
 // Arrow keys browse, as the prototype's arrow buttons do (R-OFF-1).
@@ -48,7 +72,7 @@ async function answer(action: 'same_boat' | 'follow' | 'skip'): Promise<void> {
   const answered = card.value
   if (answered === undefined) return
   sending.value = true
-  problem.value = null
+  clearMessages()
   try {
     const result = await answerCard(answered.challengeId, action)
     notice.value = noticeFor(answered, action, result)

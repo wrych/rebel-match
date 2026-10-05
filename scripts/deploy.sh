@@ -10,7 +10,8 @@
 #
 # Reads: TARGET, IMAGE (with digest), GCP_PROJECT, GCP_REGION,
 # GCP_SQL_INSTANCE, GCP_RUN_SA, GCP_PROJECT_NUMBER; PUBLIC_URL optionally
-# overrides the address links point at (a custom domain).
+# overrides the address links point at (a custom domain), and MIXPANEL_TOKEN
+# optionally turns analytics on (ADR 0026).
 set -euo pipefail
 
 : "${TARGET:?}" "${IMAGE:?}" "${GCP_PROJECT:?}" "${GCP_REGION:?}"
@@ -62,6 +63,11 @@ PUBLIC_URL="${OVERRIDE:-$(served_url)}"
 PUBLIC_URL="${PUBLIC_URL:-https://$SERVICE-$GCP_PROJECT_NUMBER.$GCP_REGION.run.app}"
 
 join() { local IFS=,; echo "$*"; }
+# Every deploy replaces the service's variables, so the token goes with each.
+ANALYTICS_ENV=()
+if [[ -n "${MIXPANEL_TOKEN:-}" ]]; then
+  ANALYTICS_ENV=("MIXPANEL_TOKEN=$MIXPANEL_TOKEN")
+fi
 SECRETS=$(join SESSION_SECRET=session-secret:latest "${DATABASE_SECRETS[@]}")
 runtime() { # runtime <public url> — the flags every job and revision shares
   RUNTIME=(
@@ -71,7 +77,8 @@ runtime() { # runtime <public url> — the flags every job and revision shares
     # Cloud Run's front end is the one proxy hop whose X-Forwarded-For counts
     # (R-NFR-8); without it every visitor shares one address.
     --set-env-vars="$(join NODE_ENV=development MAIL_DELIVERY=none \
-      SEED_PROFILE=dev TRUST_PROXY=1 "PUBLIC_URL=$1" "${DATABASE_ENV[@]}")"
+      SEED_PROFILE=dev TRUST_PROXY=1 "PUBLIC_URL=$1" \
+      "${DATABASE_ENV[@]}" "${ANALYTICS_ENV[@]}")"
     --set-secrets="$SECRETS"
   )
 }

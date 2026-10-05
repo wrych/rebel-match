@@ -5,12 +5,23 @@ import type { AdmissionService } from '../services/admission.js'
 import { PAYLOAD_MAX_CHARS } from '../services/human-check.js'
 import { clientIp } from './ip-limit.js'
 
-const requestBody = z.object({
-  email: z.string().trim().toLowerCase().pipe(z.email()),
-  next: z.string().optional(),
-  invite: z.string().min(1).optional(),
-  altcha: z.string().min(1).max(PAYLOAD_MAX_CHARS).optional(),
-})
+function requestBody(limits: Pick<Limits, 'emailMaxChars'>): z.ZodType<{
+  email: string
+  next?: string | undefined
+  invite?: string | undefined
+  altcha?: string | undefined
+}> {
+  return z.object({
+    email: z
+      .string()
+      .trim()
+      .toLowerCase()
+      .pipe(z.email().max(limits.emailMaxChars)),
+    next: z.string().optional(),
+    invite: z.string().min(1).optional(),
+    altcha: z.string().min(1).max(PAYLOAD_MAX_CHARS).optional(),
+  })
+}
 
 function applicantBody(
   limits: Pick<Limits, 'nameMaxChars' | 'orgMaxChars'>,
@@ -39,10 +50,11 @@ export function requestLinkRoutes(deps: {
   config: { limits: Limits }
 }): Router {
   const router = Router()
+  const linkBody = requestBody(deps.config.limits)
   const describeBody = applicantBody(deps.config.limits)
 
   router.post('/auth/request-link', async (request, response) => {
-    const body = requestBody.safeParse(request.body)
+    const body = linkBody.safeParse(request.body)
     if (!body.success) {
       response.status(400).json({ error: 'bad_request' })
       return

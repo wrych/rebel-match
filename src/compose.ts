@@ -45,6 +45,8 @@ import { createCockpit } from './services/cockpit.js'
 import { createFollows } from './services/follows.js'
 import { createDeckStore } from './services/deck-store.js'
 import { createDeck } from './services/deck.js'
+import { createActivity } from './services/activity.js'
+import { createActivityStore } from './services/activity-store.js'
 import { createInviteRedemption } from './services/invite-redemption-store.js'
 import { createInviteStore } from './services/invite-store.js'
 import { createInvites } from './services/invites.js'
@@ -304,6 +306,10 @@ export function composeApp(
       store: createInviteStore(db),
       publicUrl: config.publicUrl,
       defaults: () => settings.limits(),
+      newId: randomUUID,
+    }),
+    activity: createActivity({
+      store: createActivityStore(db),
       newId: randomUUID,
     }),
     ...composeJourneys(config, db, track, mailer),

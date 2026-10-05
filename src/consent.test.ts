@@ -18,6 +18,20 @@ describe('consent wording', () => {
     )
   })
 
+  it('says activity is recorded, kept with the account and deletable (R-STAT-5)', () => {
+    expect(words).toContain('We record your activity in the app')
+    expect(words).toContain('keep it as long as your account exists')
+    expect(words).toContain('figures that combine many members’ activity')
+    expect(words).toContain('only where a feature needs it')
+    expect(words).toContain('You can delete your activity history at any time')
+  })
+
+  it('leaves the words of earlier versions as they were accepted (R-ONB-4)', () => {
+    expect(consentWordsOf('2026-11-01.2').join(' ')).not.toContain(
+      'We record your activity',
+    )
+  })
+
   it('says membership is by invitation (R-ONB-5)', () => {
     expect(words).toContain('membership is by invitation')
   })

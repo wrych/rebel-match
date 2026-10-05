@@ -10,6 +10,7 @@ import {
 } from '../../src/profile-options'
 import AnalyticsToggle from '../components/AnalyticsToggle.vue'
 import DeleteAccount from '../components/DeleteAccount.vue'
+import DeleteHistory from '../components/DeleteHistory.vue'
 import SavedTick from '../components/SavedTick.vue'
 import { fetchConfig, type ClientConfig } from '../lib/api'
 import { fetchProfile, saveProfile, type OwnProfile } from '../lib/profile'
@@ -239,6 +240,8 @@ function save(field: Field): Promise<void> {
           </p>
         </div>
       </section>
+
+      <DeleteHistory />
 
       <DeleteAccount :grace-days="limits?.erasureGraceDays ?? null" />
     </template>

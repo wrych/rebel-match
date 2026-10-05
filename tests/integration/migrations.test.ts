@@ -47,6 +47,7 @@ describe('migrations', () => {
       'challenges',
       'company_sizes',
       'connection_requests',
+      'deck_views',
       'follows',
       'invites',
       'magic_tokens',
