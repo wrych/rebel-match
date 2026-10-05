@@ -8,6 +8,8 @@ const profile = {
   name: 'Ada',
   jobTitle: 'Coach',
   org: null,
+  sector: 'retail',
+  companySize: null,
   email: 'ada@example.invalid',
   consentVersion: latestConsentVersion,
   consentAt: '2026-11-08T10:00:00.000Z',
@@ -25,11 +27,11 @@ const config = {
 }
 
 /** Serves the profile and config, and answers each save with `status`. */
-function server(status = 204): ReturnType<typeof vi.fn> {
+function server(status = 204, own = profile): ReturnType<typeof vi.fn> {
   const fetchMock = vi.fn((url: string, init?: RequestInit) => {
     if (init?.method === 'PUT')
       return Promise.resolve({ ok: status < 300, status })
-    const body = url === '/api/config' ? config : profile
+    const body = url === '/api/config' ? config : own
     return Promise.resolve({
       ok: true,
       status: 200,
@@ -95,10 +97,63 @@ describe('ProfileScreen', () => {
     await change(screen, '#org', '  Rebels  ')
 
     expect(saves(fetchMock)).toEqual([
-      { name: 'Ada', jobTitle: 'Coach', org: 'Rebels' },
+      {
+        name: 'Ada',
+        jobTitle: 'Coach',
+        org: 'Rebels',
+        sector: 'retail',
+        companySize: '',
+      },
     ])
     const org = screen.findAll('.field')[2]!
     expect(org.find('[role="status"]').text()).toContain('Saved')
+  })
+
+  it('saves a sector and company size picked from the lists (R-PROF-1)', async () => {
+    const fetchMock = server()
+    const screen = await mountScreen()
+
+    expect((screen.find('#sector').element as HTMLSelectElement).value).toBe(
+      'retail',
+    )
+    await change(screen, '#company-size', '1001+')
+    await change(screen, '#sector', '')
+
+    expect(saves(fetchMock)).toEqual([
+      {
+        name: 'Ada',
+        jobTitle: 'Coach',
+        org: '',
+        sector: 'retail',
+        companySize: '1001+',
+      },
+      {
+        name: 'Ada',
+        jobTitle: 'Coach',
+        org: '',
+        sector: '',
+        companySize: '1001+',
+      },
+    ])
+    const size = screen.findAll('.field')[4]!
+    expect(size.find('[role="status"]').text()).toContain('Saved')
+  })
+
+  it('blanks a stored sector that is not on the list, so saves still go through', async () => {
+    const fetchMock = server(204, { ...profile, sector: 'Software · 260' })
+    const screen = await mountScreen()
+
+    await change(screen, '#org', 'Rebels')
+
+    expect(saves(fetchMock)).toEqual([
+      {
+        name: 'Ada',
+        jobTitle: 'Coach',
+        org: 'Rebels',
+        sector: '',
+        companySize: '',
+      },
+    ])
   })
 
   it('takes the tick away again after a moment', async () => {
@@ -124,8 +179,20 @@ describe('ProfileScreen', () => {
     await flushPromises()
 
     expect(saves(fetchMock)).toEqual([
-      { name: 'Ada Rebel', jobTitle: 'Coach', org: '' },
-      { name: 'Ada Rebel', jobTitle: 'Coach', org: 'Rebels' },
+      {
+        name: 'Ada Rebel',
+        jobTitle: 'Coach',
+        org: '',
+        sector: 'retail',
+        companySize: '',
+      },
+      {
+        name: 'Ada Rebel',
+        jobTitle: 'Coach',
+        org: 'Rebels',
+        sector: 'retail',
+        companySize: '',
+      },
     ])
   })
 

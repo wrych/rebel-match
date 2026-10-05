@@ -10,12 +10,11 @@ import type { DatabaseTarget } from './db/connect.js'
 const MAX_TIMER_HOURS = Math.floor(0x7fffffff / 3_600_000)
 
 // The widths of members.name and requested_name, job_title, org and
-// requested_org, and sector (src/db/schema.ts): a fact of the schema rather
+// requested_org (src/db/schema.ts): a fact of the schema rather
 // than a tunable, so no environment variable.
 const NAME_MAX_CHARS = 120
 const JOB_TITLE_MAX_CHARS = 120
 const ORG_MAX_CHARS = 160
-const SECTOR_MAX_CHARS = 160
 // invites.label, and a cap on invites.max_uses (src/db/schema.ts).
 const INVITE_LABEL_MAX_CHARS = 120
 /** How long a "Saved" tick stays beside a setting (R-PROF-1). */
@@ -210,7 +209,6 @@ export interface Limits {
   nameMaxChars: number
   jobTitleMaxChars: number
   orgMaxChars: number
-  sectorMaxChars: number
   inviteLabelMaxChars: number
   savedTickMs: number
   holdToSelectMs: number
@@ -302,7 +300,6 @@ function limitsFrom(env: Env): Limits {
     nameMaxChars: NAME_MAX_CHARS,
     jobTitleMaxChars: JOB_TITLE_MAX_CHARS,
     orgMaxChars: ORG_MAX_CHARS,
-    sectorMaxChars: SECTOR_MAX_CHARS,
     inviteLabelMaxChars: INVITE_LABEL_MAX_CHARS,
     savedTickMs: SAVED_TICK_MS,
     holdToSelectMs: HOLD_TO_SELECT_MS,

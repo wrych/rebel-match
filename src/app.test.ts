@@ -136,7 +136,7 @@ describe('GET /api/config', () => {
     }
 
     expect(body.limits.challengeMinChars).toBe(31)
-    expect(body.consentVersion).toBe('2026-11-01')
+    expect(body.consentVersion).toBe('2026-11-01.2')
   })
 
   it('leaks no secret, whatever the server holds', async () => {

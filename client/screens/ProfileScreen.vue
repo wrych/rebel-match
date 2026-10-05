@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { consentWordsOf } from '../../src/consent'
+import {
+  companySizeKeys,
+  companySizes,
+  pickedOrBlank,
+  sectorKeys,
+  sectors,
+} from '../../src/profile-options'
 import AnalyticsToggle from '../components/AnalyticsToggle.vue'
 import DeleteAccount from '../components/DeleteAccount.vue'
 import SavedTick from '../components/SavedTick.vue'
@@ -9,23 +16,35 @@ import { fetchProfile, saveProfile, type OwnProfile } from '../lib/profile'
 import { forgetMe } from '../lib/session'
 import { when } from '../lib/when'
 
-type Field = 'name' | 'jobTitle' | 'org'
+const fields = ['name', 'jobTitle', 'org', 'sector', 'companySize'] as const
+type Field = (typeof fields)[number]
 
 const profile = ref<OwnProfile | null>(null)
 const limits = ref<ClientConfig['limits'] | null>(null)
 const problem = ref<string | null>(null)
-const form = reactive({ name: '', jobTitle: '', org: '' })
+const blank = (): Record<Field, string> => ({
+  name: '',
+  jobTitle: '',
+  org: '',
+  sector: '',
+  companySize: '',
+})
+const form = reactive(blank())
 // What the server last accepted: a save sends it with the one field changed.
-const saved = reactive({ name: '', jobTitle: '', org: '' })
+const saved = reactive(blank())
 const ticks = reactive<Record<Field, boolean>>({
   name: false,
   jobTitle: false,
   org: false,
+  sector: false,
+  companySize: false,
 })
 const errors = reactive<Record<Field, string | null>>({
   name: null,
   jobTitle: null,
   org: null,
+  sector: null,
+  companySize: null,
 })
 const timers: Partial<Record<Field, ReturnType<typeof setTimeout>>> = {}
 // Saves run one at a time, each built from what the server last accepted,
@@ -43,10 +62,10 @@ onMounted(async () => {
     const [own, config] = await Promise.all([fetchProfile(), fetchConfig()])
     profile.value = own
     limits.value = config.limits
-    for (const field of ['name', 'jobTitle', 'org'] as const) {
-      form[field] = own[field] ?? ''
-      saved[field] = form[field]
-    }
+    for (const field of fields) form[field] = own[field] ?? ''
+    form.sector = pickedOrBlank(own.sector, sectorKeys)
+    form.companySize = pickedOrBlank(own.companySize, companySizeKeys)
+    Object.assign(saved, form)
   } catch {
     problem.value = 'Your profile could not be loaded. Reload to try again.'
   }
@@ -148,10 +167,59 @@ function save(field: Field): Promise<void> {
           />
           <p v-if="errors.org" class="alert" role="alert">{{ errors.org }}</p>
         </div>
+        <div class="field">
+          <div class="label-row">
+            <label for="sector" class="label">Sector (optional)</label>
+            <SavedTick :shown="ticks.sector" />
+          </div>
+          <select
+            id="sector"
+            v-model="form.sector"
+            class="input"
+            @change="save('sector')"
+          >
+            <option value="">Not given</option>
+            <option
+              v-for="choice in sectors"
+              :key="choice.key"
+              :value="choice.key"
+            >
+              {{ choice.label }}
+            </option>
+          </select>
+          <p v-if="errors.sector" class="alert" role="alert">
+            {{ errors.sector }}
+          </p>
+        </div>
+        <div class="field">
+          <div class="label-row">
+            <label for="company-size" class="label"
+              >Company size (optional)</label
+            >
+            <SavedTick :shown="ticks.companySize" />
+          </div>
+          <select
+            id="company-size"
+            v-model="form.companySize"
+            class="input"
+            @change="save('companySize')"
+          >
+            <option value="">Not given</option>
+            <option
+              v-for="size in companySizes"
+              :key="size.key"
+              :value="size.key"
+            >
+              {{ size.label }}
+            </option>
+          </select>
+          <p v-if="errors.companySize" class="alert" role="alert">
+            {{ errors.companySize }}
+          </p>
+        </div>
         <p class="small">
           Signed in as <strong>{{ profile.email }}</strong
-          >. Your name, job title and organization appear on the cards other
-          members see.
+          >. Your name and profile information may be seen by other members.
         </p>
       </div>
 

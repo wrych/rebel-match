@@ -26,8 +26,15 @@
     {
       "idx": 3,
       "version": "7",
-      "when": 1791172661290,
-      "tag": "0003_erasure_grace",
+      "when": 1791180431364,
+      "tag": "0003_profile_lists",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1791182054105,
+      "tag": "0004_erasure_grace",
       "breakpoints": true
     }
   ]

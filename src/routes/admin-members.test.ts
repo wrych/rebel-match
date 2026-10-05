@@ -29,6 +29,7 @@ const listed: RosterMember = {
   jobTitle: 'Coach',
   org: 'Buurtzorg',
   sector: null,
+  companySize: null,
   status: 'active',
   roles: ['member'],
   joinedAt: '2026-10-01T09:00:00.000Z',

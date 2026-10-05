@@ -11,7 +11,8 @@ export const people: SeedMember[] = [
     name: 'Dev Admin',
     jobTitle: 'Developer',
     org: 'Rebel Match',
-    sector: 'Software',
+    sector: 'software-technology',
+    companySize: '1-10',
     roles: ['member', 'admin'],
   },
   {
@@ -19,7 +20,8 @@ export const people: SeedMember[] = [
     name: 'Marieke de Wit',
     jobTitle: 'People lead',
     org: 'Kade Collectief',
-    sector: 'Agency · 90',
+    sector: 'agency-consulting',
+    companySize: '51-250',
     roles: ['member'],
   },
   {
@@ -27,7 +29,8 @@ export const people: SeedMember[] = [
     name: 'Tobias Renner',
     jobTitle: 'CFO',
     org: 'Novaflex',
-    sector: 'Manufacturing · 480',
+    sector: 'manufacturing',
+    companySize: '251-1000',
     roles: ['member'],
   },
   {
@@ -35,7 +38,8 @@ export const people: SeedMember[] = [
     name: 'Ana Ferreira',
     jobTitle: 'Ops director',
     org: 'Meridian Care',
-    sector: 'Healthcare · 1,200',
+    sector: 'healthcare',
+    companySize: '1001+',
     roles: ['member'],
   },
   {
@@ -43,7 +47,8 @@ export const people: SeedMember[] = [
     name: 'Jonas Brand',
     jobTitle: 'Transformation lead',
     org: 'Werkhaus',
-    sector: 'Industrial services · 2,300',
+    sector: 'industrial-services',
+    companySize: '1001+',
     roles: ['member'],
   },
   {
@@ -51,7 +56,8 @@ export const people: SeedMember[] = [
     name: 'Priya Raman',
     jobTitle: 'Head of workplace',
     org: 'Kestrel Digital',
-    sector: 'Software · 260',
+    sector: 'software-technology',
+    companySize: '251-1000',
     roles: ['member'],
   },
   {
@@ -59,7 +65,8 @@ export const people: SeedMember[] = [
     name: 'Lars Petersen',
     jobTitle: 'Finance partner',
     org: 'Nordlys',
-    sector: 'Energy · 700',
+    sector: 'energy-utilities',
+    companySize: '251-1000',
     roles: ['member'],
   },
   {
@@ -67,7 +74,8 @@ export const people: SeedMember[] = [
     name: 'Nadia Osei',
     jobTitle: 'Culture lead',
     org: 'Baumann Bau',
-    sector: 'Construction · 340',
+    sector: 'construction',
+    companySize: '251-1000',
     roles: ['member'],
   },
   {
@@ -75,7 +83,8 @@ export const people: SeedMember[] = [
     name: 'Ruben Vos',
     jobTitle: 'Managing director',
     org: 'Helder Groep',
-    sector: 'Logistics · 610',
+    sector: 'logistics',
+    companySize: '251-1000',
     roles: ['member'],
   },
   {
@@ -83,7 +92,8 @@ export const people: SeedMember[] = [
     name: 'Aline Dubois',
     jobTitle: 'People lead',
     org: 'Cartographe',
-    sector: 'Agency · 90',
+    sector: 'agency-consulting',
+    companySize: '51-250',
     roles: ['member'],
   },
   {
@@ -91,7 +101,8 @@ export const people: SeedMember[] = [
     name: 'Sanne Kuipers',
     jobTitle: 'Ops lead',
     org: 'Vaartlicht',
-    sector: 'Healthcare · 1,200',
+    sector: 'healthcare',
+    companySize: '1001+',
     roles: ['member'],
   },
   {
@@ -99,7 +110,8 @@ export const people: SeedMember[] = [
     name: 'Milan Horvat',
     jobTitle: 'Team coach',
     org: 'Sova Systems',
-    sector: 'Software · 150',
+    sector: 'software-technology',
+    companySize: '51-250',
     roles: ['member'],
   },
   {
@@ -107,7 +119,8 @@ export const people: SeedMember[] = [
     name: 'Elena Marchetti',
     jobTitle: 'HR business partner',
     org: 'Terrafino',
-    sector: 'Food · 900',
+    sector: 'food-agriculture',
+    companySize: '251-1000',
     roles: ['member'],
   },
   {
@@ -115,7 +128,8 @@ export const people: SeedMember[] = [
     name: 'Ola Nyberg',
     jobTitle: 'Site manager',
     org: 'Björk Industri',
-    sector: 'Manufacturing · 520',
+    sector: 'manufacturing',
+    companySize: '251-1000',
     roles: ['member'],
   },
   {
@@ -123,7 +137,8 @@ export const people: SeedMember[] = [
     name: 'Yusuf Kaya',
     jobTitle: 'Product director',
     org: 'Arcadia Labs',
-    sector: 'Software · 310',
+    sector: 'software-technology',
+    companySize: '251-1000',
     roles: ['member'],
   },
   {
@@ -131,7 +146,8 @@ export const people: SeedMember[] = [
     name: 'Hanna Vogt',
     jobTitle: 'Team lead',
     org: 'Lindquist',
-    sector: 'Retail · 1,400',
+    sector: 'retail',
+    companySize: '1001+',
     roles: ['member'],
   },
   {
@@ -139,7 +155,8 @@ export const people: SeedMember[] = [
     name: 'Diego Salas',
     jobTitle: 'Head of people',
     org: 'Puerto Verde',
-    sector: 'Logistics · 400',
+    sector: 'logistics',
+    companySize: '251-1000',
     roles: ['member'],
   },
 ]

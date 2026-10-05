@@ -16,6 +16,7 @@ const peer = {
   jobTitle: 'Lead',
   org: 'Acme',
   sector: null,
+  companySize: null,
   note: 'Roles and circles, and nobody decides.',
 }
 

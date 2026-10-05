@@ -1,6 +1,6 @@
 {
-  "id": "af1c4256-5b75-42ce-9e53-8d724f874bb2",
-  "prevId": "d7e5c7be-6dd5-4334-8a41-26d750f07cef",
+  "id": "f802b20a-0753-4fa9-884f-ebd3905e66e1",
+  "prevId": "af1c4256-5b75-42ce-9e53-8d724f874bb2",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -934,6 +934,25 @@
           "notNull": true,
           "default": "'applicant'"
         },
+        "erase_after": {
+          "name": "erase_after",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status_before_deletion": {
+          "name": "status_before_deletion",
+          "type": "member_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "deleted_by_self": {
+          "name": "deleted_by_self",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false
+        },
         "requested_name": {
           "name": "requested_name",
           "type": "varchar(120)",
@@ -1590,7 +1609,8 @@
       "schema": "public",
       "values": [
         "self_service",
-        "approval"
+        "approval",
+        "restore"
       ]
     }
   },

@@ -1,3 +1,5 @@
+import type { CompanySize, Sector } from '../profile-options.js'
+
 /** The onboarding form as the member first sees it: their profile so far,
  * with what they gave at the door filling the gaps (F2, R-AUTH-12). */
 export interface OnboardingDraft {
@@ -5,6 +7,7 @@ export interface OnboardingDraft {
   jobTitle: string | null
   org: string | null
   sector: string | null
+  companySize: string | null
   /** The analytics words they last opted in to, if they did (R-ANA-4). */
   analyticsVersion: string | null
 }
@@ -15,7 +18,8 @@ export interface OnboardingInput {
   name: string
   jobTitle?: string | undefined
   org?: string | undefined
-  sector?: string | undefined
+  sector?: Sector | undefined
+  companySize?: CompanySize | undefined
   consentVersion: string
   /** Sent only when the analytics box is ticked: the words it was ticked
    * against (R-ANA-4, ADR 0026). */

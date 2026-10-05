@@ -239,7 +239,8 @@ CREATE TABLE members (
   name           VARCHAR(120) NULL,               -- display name, set at onboarding
   job_title      VARCHAR(120) NULL,               -- profile only (was `role`)
   org            VARCHAR(160) NULL,
-  sector         VARCHAR(160) NULL,
+  sector         VARCHAR(40)  NULL REFERENCES sectors(key) ON DELETE SET NULL,
+  company_size   VARCHAR(20)  NULL REFERENCES company_sizes(key) ON DELETE SET NULL,
   status         ENUM('applicant','active','rejected','deleted')
                               NOT NULL DEFAULT 'applicant',
   erase_after    DATETIME     NULL,              -- set with status 'deleted' (ADR 0032)
@@ -270,6 +271,41 @@ Two things deliberately **not** in this table:
   later is a data change, not a schema and code change (R-ROLE-1).
 - The profile field is `job_title`, not `role` — "role" in this spec always means
   an **access role**. The onboarding API field is named `jobTitle` to match.
+
+**Sector and company size** are picked, not typed (R-ONB-2), from lists that
+ship as code and are shared with the client, so the form and the server check
+read the same values (R-CFG-2). Every seed copies them into two lookup tables,
+which members reference by key, so the database refuses a value off the list
+too. Cards read the label through the reference, so a label can be reworded
+without touching a member row.
+
+```sql
+CREATE TABLE sectors       (key VARCHAR(40) PRIMARY KEY, label VARCHAR(80) NOT NULL);
+CREATE TABLE company_sizes (key VARCHAR(20) PRIMARY KEY, label VARCHAR(40) NOT NULL);
+```
+
+- **Sectors** (key → label): `agency-consulting` Agency & consulting ·
+  `construction` Construction · `education` Education · `energy-utilities`
+  Energy & utilities · `financial-services` Financial services ·
+  `food-agriculture` Food & agriculture · `government` Government & public
+  sector · `healthcare` Healthcare · `hospitality` Hospitality ·
+  `industrial-services` Industrial services · `logistics` Logistics ·
+  `manufacturing` Manufacturing · `media-creative` Media & creative ·
+  `nonprofit` Nonprofit · `retail` Retail · `software-technology` Software &
+  technology · `telecom` Telecom · `other` Other.
+- **Company sizes:**
+
+  | Key        | Label               |
+  | ---------- | ------------------- |
+  | `1-10`     | 1–10 employees      |
+  | `11-50`    | 11–50 employees     |
+  | `51-250`   | 51–250 employees    |
+  | `251-1000` | 251–1,000 employees |
+  | `1001+`    | 1,001+ employees    |
+
+The migration that introduces the tables fills them, turns a stored label into
+its key, and clears any sector or company size not on the lists before the
+references are added.
 
 ### roles & member_roles (access control)
 
@@ -612,15 +648,15 @@ onboarded → `403 {error: 'onboarding_required'}`. Only `/api/health` and
 
 ### Onboarding
 
-| Method | Path                | Body                                                                  | Behavior                                                                                                                                                                                                                                                                                                           |
-| ------ | ------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| GET    | `/api/onboarding`   | —                                                                     | The form pre-filled: the member's profile so far, with `requested_name`/`requested_org` filling a missing name or organization (F2, R-AUTH-12), and the consent version in force. Pre-filling never stores them.                                                                                                   |
-| POST   | `/api/onboarding`   | `{name, jobTitle?, org?, sector?, consentVersion, analyticsVersion?}` | Set name/profile, record consent version + timestamp. Required before other `/api` routes. A `consentVersion` other than the current one → `409` (R-ONB-4). `analyticsVersion` is sent only when the analytics box is ticked and records the opt-in; one other than the current analytics words → `409` (R-ANA-4). |
-| PUT    | `/api/me/analytics` | `{optIn: true, version}` or `{optIn: false}`                          | Give or withdraw the analytics opt-in from the profile screen, as easily as at onboarding. A `version` other than the current analytics words → `409` (R-ANA-4).                                                                                                                                                   |
-| GET    | `/api/profile`      | —                                                                     | The member's own name, job title, organization, email (read-only), the consent version and time they accepted, and `analyticsOptIn` (R-PROF-1,2).                                                                                                                                                                  |
-| PUT    | `/api/profile`      | `{name, jobTitle?, org?}`                                             | Update the profile within the onboarding limits; a blank optional field clears it; sector is kept as it is (R-PROF-1).                                                                                                                                                                                             |
-| DELETE | `/api/profile`      | —                                                                     | Delete the member's own account as `DELETE /api/admin/members/:id` does: deactivate now, erase after the grace period; then end the session (R-PROF-2, ADR 0032). Refused with 409 `last_admin` or `created_invites`, as there. Answers `{eraseAfter}`.                                                            |
-| POST   | `/api/events`       | `{event, props}`                                                      | The UI events of §7 (`journey_chosen`, `feedback_opened`) with their listed properties only; anything else → `400`. Forwarded to Mixpanel only for a member opted in; always `204` otherwise, so the client cannot tell (ADR 0026).                                                                                |
+| Method | Path                | Body                                                                                | Behavior                                                                                                                                                                                                                                                                                                           |
+| ------ | ------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| GET    | `/api/onboarding`   | —                                                                                   | The form pre-filled: the member's profile so far, with `requested_name`/`requested_org` filling a missing name or organization (F2, R-AUTH-12), and the consent version in force. Pre-filling never stores them.                                                                                                   |
+| POST   | `/api/onboarding`   | `{name, jobTitle?, org?, sector?, companySize?, consentVersion, analyticsVersion?}` | Set name/profile, record consent version + timestamp. Required before other `/api` routes. A `consentVersion` other than the current one → `409` (R-ONB-4). `analyticsVersion` is sent only when the analytics box is ticked and records the opt-in; one other than the current analytics words → `409` (R-ANA-4). |
+| PUT    | `/api/me/analytics` | `{optIn: true, version}` or `{optIn: false}`                                        | Give or withdraw the analytics opt-in from the profile screen, as easily as at onboarding. A `version` other than the current analytics words → `409` (R-ANA-4).                                                                                                                                                   |
+| GET    | `/api/profile`      | —                                                                                   | The member's own name, job title, organization, sector, company size, email (read-only), the consent version and time they accepted, and `analyticsOptIn` (R-PROF-1,2).                                                                                                                                            |
+| PUT    | `/api/profile`      | `{name, jobTitle?, org?, sector?, companySize?}`                                    | Update the profile within the onboarding limits and lists; a blank or left-out optional field clears it (R-PROF-1).                                                                                                                                                                                                |
+| DELETE | `/api/profile`      | —                                                                                   | Delete the member's own account as `DELETE /api/admin/members/:id` does: deactivate now, erase after the grace period; then end the session (R-PROF-2, ADR 0032). Refused with 409 `last_admin` or `created_invites`, as there. Answers `{eraseAfter}`.                                                            |
+| POST   | `/api/events`       | `{event, props}`                                                                    | The UI events of §7 (`journey_chosen`, `feedback_opened`) with their listed properties only; anything else → `400`. Forwarded to Mixpanel only for a member opted in; always `204` otherwise, so the client cannot tell (ADR 0026).                                                                                |
 
 ### Ask journey
 
@@ -732,7 +768,7 @@ deep link reloads cleanly.
 | S22 | **Admin invites** — invite links with label, window, uses/cap, state; create, revoke, and the join URL / QR to display (R-INV-9)                                                                                                                                                                                  | `/admin/invites`                                        |
 | S23 | **Admin members** — member cards (name; job title · organization · sector; email, roles, status), searchable; tap a card's selector or hold the card to choose several; selected cards are outlined; a bar above the list, staying at the top while scrolling, gives or takes a role, or deletes them (R-MEM-1,3) | `/admin/members`                                        |
 | S26 | **A member's page** — everything held about one member; change their roles, delete them, and for a deleted account the erasure date with restore and erase-now (R-MEM-2, ADR 0032)                                                                                                                                | `/admin/members/:id`                                    |
-| S24 | **Profile & privacy** — edit name, job title and organization, each saved on change with a tick; the accepted consent, read-only with version and date; the analytics opt-in; deleting the account after a confirmation (R-PROF-1,2)                                                                              | `/profile`                                              |
+| S24 | **Profile & privacy** — edit name, job title, organization, sector and company size, each saved on change with a tick; the accepted consent, read-only with version and date; the analytics opt-in; how to leave (R-PROF-1,2)                                                                                     | `/profile`                                              |
 | S25 | **Settings** — every configured value in named groups such as Spam protection, marking what differs from the default; the values R-CFG-6 allows are fields saved on change with a tick, with who changed them and a way back to the deployment value (R-CFG-5,6)                                                  | `/admin/settings`                                       |
 
 Remaining overlays, deliberately: the "really decline this request?" confirm, the
@@ -831,13 +867,14 @@ seed/
   shared/trends.js    the 8 trends (§6.1)      — both profiles
   shared/cases.js     case studies (§6.2)      — both profiles
   shared/roles.js     `member`, `admin` rows   — both profiles
+  profile-options.ts  sectors, company sizes   — both profiles
   dev/people.js       fictional roster (§6.3)  — dev only
   dev/challenges.js   prototype examples       — dev only
   prod/load.js        reads whitelist + real challenges from env-pointed files
 ```
 
 Seeding is **idempotent**: re-running upserts by natural key (trend number, case
-URL, member email) rather than duplicating rows.
+URL, member email, sector and company size key) rather than duplicating rows.
 
 ### 6.1 The 8 trends
 
