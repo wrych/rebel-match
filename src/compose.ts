@@ -155,6 +155,7 @@ function composeMembershipAdmin(
     erasure: createErasureService({
       store: createErasureStore(db),
       policy: configPolicy,
+      graceDays: () => config.limits.erasureGraceDays,
     }),
     roster: createMemberRoster(db, config.analyticsVersion),
     whitelist: createWhitelist({

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import type { LinkOptions } from '../auth/index.js'
 import type { PacedGate } from './paced-gate.js'
 import { createApplicantHandles } from './applicant-handle.js'
 import type { Redemption } from './invite-redemption.js'
@@ -16,7 +17,7 @@ describe('admissionFor', () => {
     [null, 'record-applicant'],
     ['applicant', 'already-asked'],
     ['rejected', 'not-approved'],
-    ['deleted', 'already-asked'],
+    ['deleted', 'set-to-be-deleted'],
   ] as const)('treats %s as %s (R-AUTH-1,2,4)', (status, admission) => {
     expect(admissionFor(status)).toBe(admission)
   })
@@ -33,6 +34,7 @@ interface Harness {
   requestLink: (email: string, next?: string) => Promise<string>
   admission: ReturnType<typeof createAdmission>
   links: { email: string; next: string | undefined }[]
+  issued: LinkOptions[]
   notified: string[]
   members: Map<string, MemberStatus>
   details: Map<string, ApplicantDetails>
@@ -45,8 +47,13 @@ function setup(
     result: 'refused',
     refusal: 'unknown',
   }),
-  limits: { applicants?: PacedGate; linkEmails?: PacedGate } = {},
+  limits: {
+    applicants?: PacedGate
+    linkEmails?: PacedGate
+    ownDeletions?: Map<string, Date>
+  } = {},
 ): Harness {
+  const issued: LinkOptions[] = []
   const members = new Map(initial)
   const details = new Map<string, ApplicantDetails>()
   const links: Harness['links'] = []
@@ -67,6 +74,8 @@ function setup(
       details.set(email, { ...details.get(email), ...given })
       return Promise.resolve(true)
     },
+    ownDeletion: (email) =>
+      Promise.resolve(limits.ownDeletions?.get(email) ?? null),
   }
   const admission = createAdmission({
     store,
@@ -81,6 +90,7 @@ function setup(
     auth: {
       issueLink: (email, opts) => {
         links.push({ email, next: opts.next })
+        issued.push(opts)
         return Promise.resolve()
       },
     },
@@ -95,6 +105,7 @@ function setup(
       (await admission.requestLink(email, { next, client })).state,
     admission,
     links,
+    issued,
     notified,
     members,
     details,
@@ -501,5 +512,31 @@ describe('createAdmission within the abuse limits (R-NFR-8)', () => {
         }),
       ).toEqual({ state: 'try-later' })
     })
+  })
+})
+
+describe('createAdmission for an account set to be deleted (ADR 0032)', () => {
+  const eraseAfter = new Date('2026-11-04T10:00:00Z')
+
+  it('answers as for any member, and emails its member a link to keep it', async () => {
+    const harness = setup(
+      [['ada@example.invalid', 'deleted']],
+      false,
+      undefined,
+      {
+        ownDeletions: new Map([['ada@example.invalid', eraseAfter]]),
+      },
+    )
+
+    expect(await harness.requestLink('ada@example.invalid')).toBe('check-email')
+    expect(harness.issued).toEqual([{ kind: 'restore', eraseAfter }])
+  })
+
+  it("answers the same for a host's deletion, and sends nothing", async () => {
+    const harness = setup([['bo@example.invalid', 'deleted']])
+
+    expect(await harness.requestLink('bo@example.invalid')).toBe('check-email')
+    expect(harness.links).toEqual([])
+    expect(harness.notified).toEqual([])
   })
 })

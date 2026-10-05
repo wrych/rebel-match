@@ -15,7 +15,7 @@ import type {
   AuthProvider,
   CallerRequest,
   LinkDelivery,
-  LinkKind,
+  LinkOptions,
   MemberRef,
   SessionCookie,
   VerifyResult,
@@ -53,7 +53,7 @@ function verifyUrl(publicUrl: string, rawToken: string): string {
 async function issueLink(
   ctx: Context,
   email: string,
-  opts: { kind: LinkKind; next?: string | undefined },
+  opts: LinkOptions,
 ): Promise<void> {
   const memberId = await ctx.store.memberIdByEmail(email)
   if (memberId === null) throw new Error('issueLink: no member for address')
@@ -71,7 +71,13 @@ async function issueLink(
   })
 
   const url = verifyUrl(ctx.config.publicUrl, raw)
-  await ctx.deliver({ memberId, email, kind: opts.kind, url })
+  await ctx.deliver({
+    memberId,
+    email,
+    kind: opts.kind,
+    url,
+    ...(opts.eraseAfter === undefined ? {} : { eraseAfter: opts.eraseAfter }),
+  })
 }
 
 async function verifyToken(ctx: Context, raw: string): Promise<VerifyResult> {
@@ -85,7 +91,12 @@ async function verifyToken(ctx: Context, raw: string): Promise<VerifyResult> {
     return { ok: false, reason: 'used' }
   }
 
-  return { ok: true, memberId: token.memberId, next: token.nextPath }
+  return {
+    ok: true,
+    memberId: token.memberId,
+    next: token.nextPath,
+    kind: token.kind,
+  }
 }
 
 async function createSession(

@@ -88,6 +88,7 @@ describe('the auth seam over Postgres', () => {
       ok: true,
       memberId: active.id,
       next: '/ask',
+      kind: 'self_service',
     })
     expect(await auth.verifyToken(raw)).toEqual({ ok: false, reason: 'used' })
   })

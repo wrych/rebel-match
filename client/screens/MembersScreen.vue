@@ -5,7 +5,7 @@ import { rolePermissions } from '../../src/access'
 import { peerLine } from '../lib/challenges'
 import { longPress } from '../lib/long-press'
 import {
-  eraseMember,
+  deleteMember,
   fetchMembers,
   forEachMember,
   grantRole,
@@ -16,6 +16,7 @@ import {
 } from '../lib/members'
 import { fetchConfig } from '../lib/api'
 import { loadMe } from '../lib/session'
+import { day } from '../lib/when'
 
 const router = useRouter()
 const members = ref<RosterMember[]>([])
@@ -25,6 +26,7 @@ const problem = ref<string | null>(null)
 const canGrant = ref(false)
 const canDelete = ref(false)
 const holdMs = ref(0)
+const graceDays = ref(30)
 const selecting = ref(false)
 const selected = reactive(new Set<string>())
 const role = ref<string>(Object.keys(rolePermissions)[0] ?? '')
@@ -56,6 +58,7 @@ onMounted(async () => {
     canGrant.value = me?.permissions.includes('role:grant') ?? false
     canDelete.value = me?.permissions.includes('member:delete') ?? false
     holdMs.value = config.limits.holdToSelectMs
+    graceDays.value = config.limits.erasureGraceDays
   } catch {
     problem.value = 'The members could not be loaded.'
   }
@@ -180,14 +183,23 @@ async function takeAway(): Promise<void> {
 
 async function erase(): Promise<void> {
   busy.value = true
-  const outcomes = await forEachMember(chosen.value, eraseMember)
+  let eraseAfter: string | null = null
+  const outcomes = await forEachMember(chosen.value, async (id) => {
+    const outcome = await deleteMember(id)
+    if (outcome.result === 'deleted') eraseAfter = outcome.eraseAfter
+    return outcome.result
+  })
+  const when =
+    eraseAfter === null
+      ? ''
+      : ` They will be erased on ${day(eraseAfter)} unless restored.`
   await finish(
-    summary(outcomes, 'erased', 'Deleted', {
+    summary(outcomes, 'deleted', 'Deleted, hidden from everyone:', {
       gone: 'they were already gone.',
       'created-invites':
         'they created invite links, so they stay until those are dealt with.',
       'last-admin': 'they are the only admin left, so they stay.',
-    }),
+    }).map((line, index) => (index === 0 && when !== '' ? line + when : line)),
   )
 }
 </script>
@@ -251,7 +263,12 @@ async function erase(): Promise<void> {
                 peerLine(member)
               }}</span>
             </span>
-            <span class="chip chip-dashed">{{ member.status }}</span>
+            <span
+              v-if="member.status === 'deleted' && member.eraseAfter"
+              class="chip chip-accent"
+              >Erased {{ day(member.eraseAfter) }}</span
+            >
+            <span v-else class="chip chip-dashed">{{ member.status }}</span>
           </span>
           <span v-if="member.name" class="small email">{{ member.email }}</span>
           <span v-if="member.roles.length > 0" class="roles">
@@ -313,8 +330,9 @@ async function erase(): Promise<void> {
       <div v-if="canDelete && confirmingDelete" class="stack-tight">
         <p class="alert" role="alert">
           Delete {{ chosen.length }}
-          {{ chosen.length === 1 ? 'member' : 'members' }} for good? Everything
-          they wrote goes with them. This cannot be undone.
+          {{ chosen.length === 1 ? 'member' : 'members' }}? They are hidden from
+          everyone at once and erased with everything they wrote after
+          {{ graceDays }} days, unless restored.
         </p>
         <div class="actions">
           <button
@@ -323,7 +341,7 @@ async function erase(): Promise<void> {
             :disabled="busy"
             @click="erase"
           >
-            Delete for good
+            Delete
           </button>
           <button
             type="button"

@@ -10,6 +10,7 @@ export type {
   CallerRequest,
   LinkDelivery,
   LinkKind,
+  LinkOptions,
   MemberRef,
   OutgoingLink,
   SessionCookie,

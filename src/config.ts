@@ -109,6 +109,8 @@ const envSchema = z
     DECK_PAGE_SIZE: z.coerce.number().int().positive().default(20),
     WHITELIST_BATCH_MAX: z.coerce.number().int().positive().default(1000),
     OUTBOX_RETENTION_DAYS: z.coerce.number().int().positive().default(30),
+    // How long a deleted account waits before it is erased (ADR 0032).
+    ERASURE_GRACE_DAYS: z.coerce.number().int().positive().default(30),
     OUTBOX_PURGE_INTERVAL_HOURS: z.coerce
       .number()
       .int()
@@ -194,6 +196,7 @@ export interface Limits {
   inviteDefaultMaxUses: number
   inviteDefaultHours: number
   outboxRetentionDays: number
+  erasureGraceDays: number
   outboxPageSize: number
   deckPageSize: number
   whitelistBatchMax: number
@@ -284,6 +287,7 @@ function limitsFrom(env: Env): Limits {
     inviteDefaultMaxUses: env.INVITE_DEFAULT_MAX_USES,
     inviteDefaultHours: env.INVITE_DEFAULT_HOURS,
     outboxRetentionDays: env.OUTBOX_RETENTION_DAYS,
+    erasureGraceDays: env.ERASURE_GRACE_DAYS,
     outboxPageSize: env.OUTBOX_PAGE_SIZE,
     deckPageSize: env.DECK_PAGE_SIZE,
     whitelistBatchMax: env.WHITELIST_BATCH_MAX,

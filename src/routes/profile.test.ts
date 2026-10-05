@@ -51,10 +51,21 @@ function setup(outcome: EraseOutcome = 'erased'): {
         },
       },
       erasure: {
-        erase: (memberId) => {
-          erased.push(memberId)
-          return Promise.resolve(outcome)
+        erase: () => Promise.reject(new Error('not erased at once')),
+        delete: (memberId, bySelf) => {
+          erased.push(`${memberId}${bySelf ? ' by self' : ''}`)
+          return Promise.resolve(
+            outcome === 'erased'
+              ? {
+                  result: 'scheduled',
+                  eraseAfter: new Date('2026-11-04T10:00:00.000Z'),
+                }
+              : { result: outcome },
+          )
         },
+        restore: () => Promise.resolve(false),
+        restoreOwn: () => Promise.resolve(false),
+        eraseDue: () => Promise.resolve(0),
       },
     }),
   )
@@ -132,15 +143,16 @@ describe('PUT /api/profile', () => {
 })
 
 describe('DELETE /api/profile', () => {
-  it("erases the member's own account and clears the cookie (R-PROF-2)", async () => {
+  it("deletes the member's own account as theirs, and clears the cookie (R-PROF-2, ADR 0032)", async () => {
     const { app, erased } = setup()
 
     const response = await request(app)
       .delete('/api/profile')
       .set('Cookie', await cookie())
 
-    expect(response.status).toBe(204)
-    expect(erased).toEqual(['m-ada'])
+    expect(response.status).toBe(200)
+    expect(response.body).toEqual({ eraseAfter: '2026-11-04T10:00:00.000Z' })
+    expect(erased).toEqual(['m-ada by self'])
     expect(String(response.headers['set-cookie'])).toMatch(
       /Expires=Thu, 01 Jan 1970|Max-Age=0/,
     )

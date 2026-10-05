@@ -1,6 +1,8 @@
 import type { Permission } from '../access.js'
 
-export type LinkKind = 'self_service' | 'approval'
+/** `restore` keeps an account its member deleted, before signing in
+ * (ADR 0032). */
+export type LinkKind = 'self_service' | 'approval' | 'restore'
 
 /** Who is calling, already resolved. Handlers see this and never a token, a
  * cookie, or a provider's claims (ADR 0015). */
@@ -11,7 +13,7 @@ export interface MemberRef {
 }
 
 export type VerifyResult =
-  | { ok: true; memberId: string; next: string }
+  | { ok: true; memberId: string; next: string; kind: LinkKind }
   | { ok: false; reason: 'unknown' | 'expired' | 'used' }
 
 /** A cookie for the route to set verbatim. Its name, value and flags are the
@@ -41,6 +43,16 @@ export interface OutgoingLink {
   email: string
   kind: LinkKind
   url: string
+  /** For a `restore` link: when the account will otherwise be erased. */
+  eraseAfter?: Date
+}
+
+/** What to issue: the kind, the deep link to return to, and for a `restore`
+ * link the date the account would be erased. */
+export interface LinkOptions {
+  kind: LinkKind
+  next?: string | undefined
+  eraseAfter?: Date | undefined
 }
 
 /** Hands an issued link to whatever delivers mail (design §1). */
@@ -49,10 +61,7 @@ export type LinkDelivery = (link: OutgoingLink) => Promise<void>
 /** The only way the application proves who a member is (ADR 0015). Routes and
  * services receive this interface, never a concrete implementation. */
 export interface AuthProvider {
-  issueLink(
-    email: string,
-    opts: { kind: LinkKind; next?: string | undefined },
-  ): Promise<void>
+  issueLink(email: string, opts: LinkOptions): Promise<void>
   verifyToken(raw: string): Promise<VerifyResult>
   createSession(memberId: string): Promise<SessionCookie>
   currentMember(request: CallerRequest): Promise<MemberRef | null>

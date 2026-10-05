@@ -29,17 +29,22 @@ const profile: MemberProfile = {
 interface Harness {
   app: Express
   auth: AuthProvider
-  linkFor: (next?: string) => Promise<string>
-  tokenFor: (next?: string) => Promise<string>
+  linkFor: (next?: string, kind?: 'self_service' | 'restore') => Promise<string>
+  tokenFor: (
+    next?: string,
+    kind?: 'self_service' | 'restore',
+  ) => Promise<string>
   signIn: (token: string) => request.Test
   advance: (ms: number) => void
   tracked: [string, AnalyticsEvent][]
+  restored: string[]
 }
 
 function setup(): Harness {
   const clock = { now: new Date('2026-11-08T10:00:00Z') }
   const sent: OutgoingLink[] = []
   const tracked: [string, AnalyticsEvent][] = []
+  const restored: string[] = []
   const auth = createAuth({
     policy: configPolicy,
     store: createMemoryAuthStore([ada]),
@@ -59,24 +64,36 @@ function setup(): Harness {
       profiles: {
         profile: (id) => Promise.resolve(id === ada.id ? profile : null),
       },
+      erasure: {
+        restoreOwn: (memberId) => {
+          restored.push(memberId)
+          return Promise.resolve(true)
+        },
+      },
       track: (memberId, event) => {
         tracked.push([memberId, event])
         return Promise.resolve()
       },
     }),
   )
-  const linkFor = async (next?: string): Promise<string> => {
-    await auth.issueLink(ada.email, { kind: 'self_service', next })
+  const linkFor = async (
+    next?: string,
+    kind: 'self_service' | 'restore' = 'self_service',
+  ): Promise<string> => {
+    await auth.issueLink(ada.email, { kind, next })
     return sent.at(-1)!.url
   }
-  const tokenFor = async (next?: string): Promise<string> =>
-    new URL(await linkFor(next)).hash.replace(/^#token=/, '')
+  const tokenFor = async (
+    next?: string,
+    kind: 'self_service' | 'restore' = 'self_service',
+  ): Promise<string> =>
+    new URL(await linkFor(next, kind)).hash.replace(/^#token=/, '')
   const signIn = (token: string): request.Test =>
     request(app).post('/auth/verify').send({ token })
   const advance = (ms: number): void => {
     clock.now = new Date(clock.now.getTime() + ms)
   }
-  return { app, auth, linkFor, tokenFor, signIn, advance, tracked }
+  return { app, auth, linkFor, tokenFor, signIn, advance, tracked, restored }
 }
 
 function sessionCookie(response: request.Response): string {
@@ -127,6 +144,23 @@ describe('POST /auth/verify', () => {
     expect(response.status).toBe(200)
     expect(response.body).toEqual({ next: '/matches' })
     expect(sessionCookie(response)).toMatch(/^rm_session=.+/)
+  })
+
+  it('restores an account its member deleted before signing them in (ADR 0032)', async () => {
+    const { tokenFor, signIn, restored } = setup()
+
+    const response = await signIn(await tokenFor(undefined, 'restore'))
+
+    expect(response.status).toBe(200)
+    expect(restored).toEqual([ada.id])
+  })
+
+  it('restores nothing on an ordinary sign-in', async () => {
+    const { tokenFor, signIn, restored } = setup()
+
+    await signIn(await tokenFor())
+
+    expect(restored).toEqual([])
   })
 
   it('reports the sign-in once, and not a refused link (R-ANA-1)', async () => {

@@ -60,20 +60,62 @@ export async function revokeRole(
   throw new Error(`revoking failed (${String(response.status)})`)
 }
 
-/** Erases one member and their personal data (R-NFR-7). Throws on anything
- * the host cannot act on, so a failure is never shown as done. */
-export async function eraseMember(id: string): Promise<EraseOutcome> {
-  const response = await fetch(`/api/admin/members/${encodeURIComponent(id)}`, {
-    method: 'DELETE',
-  })
-  if (response.status === 204) return 'erased'
+type Refusal = 'gone' | 'created-invites' | 'last-admin'
+
+async function refusalOf(response: Response): Promise<Refusal | null> {
   if (response.status === 404) return 'gone'
   if (response.status === 409) {
     const { result } = (await response.json()) as { result?: string }
     if (result === 'created_invites') return 'created-invites'
     if (result === 'last_admin') return 'last-admin'
   }
+  return null
+}
+
+/** What deleting did: hidden now and erased on `eraseAfter`, or why the
+ * member stays (ADR 0032). */
+export type DeleteOutcome =
+  { result: 'deleted'; eraseAfter: string } | { result: Refusal }
+
+/** Deletes one member with the grace period: hidden at once, erased later
+ * unless restored (R-NFR-7, ADR 0032). Throws on anything the host cannot act
+ * on, so a failure is never shown as done. */
+export async function deleteMember(id: string): Promise<DeleteOutcome> {
+  const response = await fetch(`/api/admin/members/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  })
+  if (response.ok) {
+    const { eraseAfter } = (await response.json()) as { eraseAfter: string }
+    return { result: 'deleted', eraseAfter }
+  }
+  const refusal = await refusalOf(response)
+  if (refusal !== null) return { result: refusal }
+  throw new Error(`deleting failed (${String(response.status)})`)
+}
+
+/** Erases one member and their personal data at once, for someone who
+ * insists (R-NFR-7). */
+export async function eraseNow(id: string): Promise<EraseOutcome> {
+  const response = await fetch(
+    `/api/admin/members/${encodeURIComponent(id)}?now=true`,
+    { method: 'DELETE' },
+  )
+  if (response.status === 204) return 'erased'
+  const refusal = await refusalOf(response)
+  if (refusal !== null) return refusal
   throw new Error(`erasure failed (${String(response.status)})`)
+}
+
+/** Undoes a deletion before it is erased; 'gone' when there was none to
+ * undo (ADR 0032). */
+export async function restoreMember(id: string): Promise<'restored' | 'gone'> {
+  const response = await fetch(
+    `/api/admin/members/${encodeURIComponent(id)}/restore`,
+    { method: 'POST' },
+  )
+  if (response.status === 204) return 'restored'
+  if (response.status === 404) return 'gone'
+  throw new Error(`restoring failed (${String(response.status)})`)
 }
 
 /** True when the member's email or name contains the search, ignoring case. */

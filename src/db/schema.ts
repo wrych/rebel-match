@@ -60,6 +60,11 @@ export const members = pgTable(
     org: varchar('org', { length: 160 }),
     sector: varchar('sector', { length: 160 }),
     status: memberStatus('status').notNull().default('applicant'),
+    // A deleted account waits here until the sweep erases it, with what it
+    // was for an undo, and whether the member deleted it (ADR 0032).
+    eraseAfter: at('erase_after'),
+    statusBeforeDeletion: memberStatus('status_before_deletion'),
+    deletedBySelf: boolean('deleted_by_self'),
     requestedName: varchar('requested_name', { length: 120 }),
     requestedOrg: varchar('requested_org', { length: 160 }),
     joinedViaInviteId: id('joined_via_invite_id').references(
@@ -107,7 +112,11 @@ export const memberRoles = pgTable(
   (t) => [primaryKey({ columns: [t.memberId, t.roleKey] })],
 )
 
-export const tokenKind = pgEnum('token_kind', ['self_service', 'approval'])
+export const tokenKind = pgEnum('token_kind', [
+  'self_service',
+  'approval',
+  'restore',
+])
 
 // Only the hash is stored; the raw token exists in the email and nowhere else
 // (R-NFR-5). `kind` drives the lifetime (R-AUTH-10).

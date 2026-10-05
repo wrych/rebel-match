@@ -8,6 +8,23 @@ import type { ReviewerDirectory } from './applicant-notice.js'
 const isApplicant = (email: string): ReturnType<typeof and> =>
   and(eq(members.email, email), eq(members.status, 'applicant'))
 
+async function ownDeletionOf(
+  db: Database,
+  email: string,
+): Promise<Date | null> {
+  const [row] = await db
+    .select({ eraseAfter: members.eraseAfter })
+    .from(members)
+    .where(
+      and(
+        eq(members.email, email),
+        eq(members.status, 'deleted'),
+        eq(members.deletedBySelf, true),
+      ),
+    )
+  return row?.eraseAfter ?? null
+}
+
 /** Admission's reads and writes over `members` (design §2). */
 export function createAdmissionStore(db: Database): AdmissionStore {
   return {
@@ -18,6 +35,7 @@ export function createAdmissionStore(db: Database): AdmissionStore {
         .where(eq(members.email, email))
       return row?.status ?? null
     },
+    ownDeletion: (email) => ownDeletionOf(db, email),
     createApplicant: async (email) => {
       const created = await db
         .insert(members)

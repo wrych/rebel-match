@@ -55,17 +55,25 @@ export function profileRoutes(deps: {
     response.status(204).end()
   })
 
-  // The same erasure a host runs, refused for the same reasons; once done
-  // the session is gone, so its cookie is cleared too.
+  // Deleting as a host does, refused for the same reasons, but marked as the
+  // member's own so their emailed link can undo it (ADR 0032). The session
+  // has ended, so its cookie is cleared too.
   router.delete('/api/profile', guard, async (request, response) => {
     const member = (response.locals as GuardedLocals).member
-    const outcome = await deps.erasure.erase(member.id)
-    if (outcome === 'last_admin' || outcome === 'created_invites') {
-      response.status(409).json({ result: outcome })
+    const outcome = await deps.erasure.delete(member.id, true)
+    if (
+      outcome.result === 'last_admin' ||
+      outcome.result === 'created_invites'
+    ) {
+      response.status(409).json({ result: outcome.result })
       return
     }
     setCookie(response, await deps.auth.endSession(request))
-    response.status(204).end()
+    response.json(
+      outcome.result === 'scheduled'
+        ? { eraseAfter: outcome.eraseAfter.toISOString() }
+        : {},
+    )
   })
 
   return router

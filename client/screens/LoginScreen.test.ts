@@ -120,11 +120,17 @@ describe('LoginScreen', () => {
 
   it('confirms a deleted account (R-PROF-2)', () => {
     respondWith({ limits: {}, consentVersion: '2026-11-01' })
-    window.history.replaceState(null, '', '/login?account=deleted')
+    window.history.replaceState(
+      null,
+      '',
+      '/login?account=deleted&until=2026-11-04T10:00:00.000Z',
+    )
 
-    const screen = mount(LoginScreen)
+    const text = mount(LoginScreen).find('[role="status"]').text()
 
-    expect(screen.find('[role="status"]').text()).toContain('have been deleted')
+    expect(text).toContain('hidden from everyone')
+    expect(text).toContain('4 November 2026')
+    expect(text).toContain('Changed your mind?')
   })
 
   it('shows no alert on an ordinary visit', () => {

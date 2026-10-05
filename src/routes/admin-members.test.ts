@@ -32,6 +32,8 @@ const listed: RosterMember = {
   status: 'active',
   roles: ['member'],
   joinedAt: '2026-10-01T09:00:00.000Z',
+  eraseAfter: null,
+  deletedBySelf: null,
 }
 
 const detail: MemberDetail = {
@@ -47,11 +49,19 @@ const detail: MemberDetail = {
   requestsReceived: 0,
 }
 
+const ERASE_AFTER = new Date('2026-11-04T10:00:00.000Z')
+
+/** Routes over an erasure that answers `outcome` and records each call: an
+ * erasure as `erased`, a deletion as `deleted`, an undo as `restored`. */
 function setup(outcome: EraseOutcome = 'erased'): {
   app: Express
   erased: string[]
+  deleted: string[]
+  restored: string[]
 } {
   const erased: string[] = []
+  const deleted: string[] = []
+  const restored: string[] = []
   const app = express()
   app.use(
     adminMemberRoutes({
@@ -61,6 +71,20 @@ function setup(outcome: EraseOutcome = 'erased'): {
           erased.push(memberId)
           return Promise.resolve(outcome)
         },
+        delete: (memberId) => {
+          deleted.push(memberId)
+          return Promise.resolve(
+            outcome === 'erased'
+              ? { result: 'scheduled', eraseAfter: ERASE_AFTER }
+              : { result: outcome },
+          )
+        },
+        restore: (memberId) => {
+          restored.push(memberId)
+          return Promise.resolve(memberId === 'm-deleted')
+        },
+        restoreOwn: () => Promise.resolve(false),
+        eraseDue: () => Promise.resolve(0),
       },
       roster: {
         list: () => Promise.resolve([listed]),
@@ -68,7 +92,7 @@ function setup(outcome: EraseOutcome = 'erased'): {
       },
     }),
   )
-  return { app, erased }
+  return { app, erased, deleted, restored }
 }
 
 async function cookieFor(memberId: string): Promise<string> {
@@ -77,15 +101,29 @@ async function cookieFor(memberId: string): Promise<string> {
 }
 
 describe('DELETE /api/admin/members/:id', () => {
-  it('erases the member as an admin (R-NFR-7)', async () => {
-    const { app, erased } = setup()
+  it('deletes with the grace period, erasing nothing yet (ADR 0032)', async () => {
+    const { app, erased, deleted } = setup()
 
     const response = await request(app)
       .delete('/api/admin/members/m-gone')
       .set('Cookie', await cookieFor('m-admin'))
 
+    expect(response.status).toBe(200)
+    expect(response.body).toEqual({ eraseAfter: ERASE_AFTER.toISOString() })
+    expect(deleted).toEqual(['m-gone'])
+    expect(erased).toEqual([])
+  })
+
+  it('erases at once when asked to (R-NFR-7)', async () => {
+    const { app, erased, deleted } = setup()
+
+    const response = await request(app)
+      .delete('/api/admin/members/m-gone?now=true')
+      .set('Cookie', await cookieFor('m-admin'))
+
     expect(response.status).toBe(204)
     expect(erased).toEqual(['m-gone'])
+    expect(deleted).toEqual([])
   })
 
   it.each([
@@ -102,6 +140,24 @@ describe('DELETE /api/admin/members/:id', () => {
     expect(response.status).toBe(status)
     expect(response.body).toEqual({ result: outcome })
   })
+
+  it.each([
+    ['not_found', 404],
+    ['created_invites', 409],
+    ['last_admin', 409],
+  ] as const)(
+    'answers %s with %i when erasing at once',
+    async (outcome, status) => {
+      const { app } = setup(outcome)
+
+      const response = await request(app)
+        .delete('/api/admin/members/x?now=true')
+        .set('Cookie', await cookieFor('m-admin'))
+
+      expect(response.status).toBe(status)
+      expect(response.body).toEqual({ result: outcome })
+    },
+  )
 
   it('answers 404 to a member without member:delete (R-ROLE-5)', async () => {
     const { app, erased } = setup()
@@ -177,5 +233,39 @@ describe('GET /api/admin/members/:id', () => {
       .set('Cookie', await cookieFor('m-member'))
 
     expect(response.status).toBe(404)
+  })
+})
+
+describe('POST /api/admin/members/:id/restore (ADR 0032)', () => {
+  it('restores a deleted member', async () => {
+    const { app, restored } = setup()
+
+    const response = await request(app)
+      .post('/api/admin/members/m-deleted/restore')
+      .set('Cookie', await cookieFor('m-admin'))
+
+    expect(response.status).toBe(204)
+    expect(restored).toEqual(['m-deleted'])
+  })
+
+  it('is not found for a member who is not deleted', async () => {
+    const { app } = setup()
+
+    const response = await request(app)
+      .post('/api/admin/members/m-member/restore')
+      .set('Cookie', await cookieFor('m-admin'))
+
+    expect(response.status).toBe(404)
+  })
+
+  it('is not found for a member without member:delete', async () => {
+    const { app, restored } = setup()
+
+    const response = await request(app)
+      .post('/api/admin/members/m-deleted/restore')
+      .set('Cookie', await cookieFor('m-member'))
+
+    expect(response.status).toBe(404)
+    expect(restored).toEqual([])
   })
 })

@@ -39,7 +39,13 @@ function deps(
       grant: () => Promise.resolve('no_member'),
       revoke: () => Promise.resolve('not_held'),
     },
-    erasure: { erase: () => Promise.resolve('not_found') },
+    erasure: {
+      erase: () => Promise.resolve('not_found'),
+      delete: () => Promise.resolve({ result: 'not_found' }),
+      restore: () => Promise.resolve(false),
+      restoreOwn: () => Promise.resolve(false),
+      eraseDue: () => Promise.resolve(0),
+    },
     analyticsConsent: { choose: () => Promise.resolve('done') },
     track: () => Promise.resolve(),
     roster: {

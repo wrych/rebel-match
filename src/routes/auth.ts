@@ -2,6 +2,7 @@ import { Router, type RequestHandler, type Response } from 'express'
 import { z } from 'zod'
 import type { AuthProvider, SessionCookie } from '../auth/index.js'
 import { trackNothing, type Track } from '../services/analytics.js'
+import type { ErasureService } from '../services/erasure.js'
 import type { MemberProfiles } from '../services/member-profiles.js'
 import { safeNextPath } from '../routes.js'
 
@@ -23,12 +24,41 @@ export function renewSessions(auth: AuthProvider): RequestHandler {
   }
 }
 
+// Signs in with a link's token from the sign-in screen's button (ADR 0027).
+function verify(
+  deps: {
+    auth: AuthProvider
+    erasure: Pick<ErasureService, 'restoreOwn'>
+  },
+  track: Track,
+): RequestHandler {
+  return async (request, response) => {
+    const body = verifyBody.safeParse(request.body)
+    const result = body.success
+      ? await deps.auth.verifyToken(body.data.token)
+      : ({ ok: false, reason: 'unknown' } as const)
+
+    if (!result.ok) {
+      response.status(400).json({ reason: result.reason })
+      return
+    }
+    // A keep-it link restores the account its member deleted before they
+    // are signed in, or the new session would find nobody active (ADR 0032).
+    if (result.kind === 'restore')
+      await deps.erasure.restoreOwn(result.memberId)
+    setCookie(response, await deps.auth.createSession(result.memberId))
+    void track(result.memberId, { name: 'login_completed' })
+    response.json({ next: safeNextPath(result.next) })
+  }
+}
+
 /** `/auth/verify`, `/auth/me` and `/auth/logout` (design §3). Thin: every
  * decision about a credential is the seam's (ADR 0015). Opening a link never
  * uses it; only the sign-in screen's POST does (R-AUTH-5, ADR 0027). */
 export function authRoutes(deps: {
   auth: AuthProvider
   profiles: MemberProfiles
+  erasure: Pick<ErasureService, 'restoreOwn'>
   track?: Track
 }): Router {
   const track = deps.track ?? trackNothing
@@ -44,20 +74,7 @@ export function authRoutes(deps: {
     response.redirect(303, `/sign-in${fragment}`)
   })
 
-  router.post('/auth/verify', async (request, response) => {
-    const body = verifyBody.safeParse(request.body)
-    const result = body.success
-      ? await deps.auth.verifyToken(body.data.token)
-      : ({ ok: false, reason: 'unknown' } as const)
-
-    if (!result.ok) {
-      response.status(400).json({ reason: result.reason })
-      return
-    }
-    setCookie(response, await deps.auth.createSession(result.memberId))
-    void track(result.memberId, { name: 'login_completed' })
-    response.json({ next: safeNextPath(result.next) })
-  })
+  router.post('/auth/verify', verify(deps, track))
 
   router.get('/auth/me', async (request, response) => {
     const member = await deps.auth.currentMember(request)
