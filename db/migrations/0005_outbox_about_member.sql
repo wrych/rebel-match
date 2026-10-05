@@ -1,0 +1,2 @@
+ALTER TABLE "outbox" ADD COLUMN "about_member_id" varchar(36);--> statement-breakpoint
+ALTER TABLE "outbox" ADD CONSTRAINT "outbox_about_member_id_members_id_fk" FOREIGN KEY ("about_member_id") REFERENCES "public"."members"("id") ON DELETE cascade ON UPDATE no action;
