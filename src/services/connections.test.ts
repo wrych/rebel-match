@@ -77,6 +77,7 @@ function fakeStore(): ConnectionStore & {
       })
     },
     incoming: () => Promise.resolve([]),
+    connected: () => Promise.resolve([]),
     respond: (id, target, status) => {
       const r = rows.get(id)
       if (r?.targetId !== target || r.status !== 'pending')

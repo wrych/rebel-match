@@ -40,17 +40,24 @@ const request: ConnectionView = {
 
 const config = { limits: { matchesPollSeconds: 30 } }
 
-function serve(mine: Cockpit, waiting: () => ConnectionView[]): void {
+function serve(
+  mine: Cockpit,
+  waiting: () => ConnectionView[],
+  people: () => ConnectionView[] = () => [],
+): void {
+  const bodies: Record<string, () => unknown> = {
+    '/api/config': () => config,
+    '/api/cockpit': () => mine,
+    '/api/connections/incoming': () => ({ requests: waiting() }),
+    '/api/connections/connected': () => ({ connections: people() }),
+  }
   vi.stubGlobal(
     'fetch',
     vi.fn((url: string) =>
       Promise.resolve({
         ok: true,
         status: 200,
-        json: async () => {
-          if (url === '/api/config') return config
-          return url === '/api/cockpit' ? mine : { requests: waiting() }
-        },
+        json: async () => bodies[url]?.(),
       }),
     ),
   )
@@ -85,6 +92,32 @@ describe('CockpitScreen', () => {
     expect(paths(screen)).toContain('/matches/requests/r1')
   })
 
+  it('lists connections made on either side, each opening its contact (R-MINE-5)', async () => {
+    const connection: ConnectionView = {
+      ...request,
+      id: 'r7',
+      direction: 'outgoing',
+      status: 'accepted',
+      other: {
+        ...request.other,
+        name: 'Cas Nected',
+        jobTitle: 'Coach',
+        org: 'Acme',
+      },
+    }
+    serve(
+      cockpit,
+      () => [],
+      () => [connection],
+    )
+    const screen = await mountScreen()
+
+    expect(screen.text()).toContain('Your connections')
+    expect(screen.text()).toContain('Cas Nected')
+    expect(screen.text()).toContain('Coach · Acme')
+    expect(paths(screen)).toContain('/matches/requests/r7/contact')
+  })
+
   it('shows a new request without a reload (R-MINE-4)', async () => {
     vi.useFakeTimers()
     let waiting: ConnectionView[] = []
@@ -97,6 +130,25 @@ describe('CockpitScreen', () => {
     await flushPromises()
 
     expect(screen.text()).toContain('Bea There')
+    screen.unmount()
+    vi.useRealTimers()
+  })
+
+  it('shows a connection accepted on the other side without a reload (R-MINE-5)', async () => {
+    vi.useFakeTimers()
+    let people: ConnectionView[] = []
+    serve(
+      cockpit,
+      () => [],
+      () => people,
+    )
+    const screen = await mountScreen()
+
+    people = [{ ...request, status: 'accepted', direction: 'outgoing' }]
+    await vi.advanceTimersByTimeAsync(30_000)
+    await flushPromises()
+
+    expect(paths(screen)).toContain('/matches/requests/r1/contact')
     screen.unmount()
     vi.useRealTimers()
   })
@@ -143,6 +195,7 @@ describe('CockpitScreen', () => {
 
     expect(screen.findAll('.empty').map((each) => each.text())).toEqual([
       'No requests waiting.',
+      'No connections yet. They show here once a request is accepted.',
       'You have not asked for help yet.',
       'You follow no trends yet.',
     ])

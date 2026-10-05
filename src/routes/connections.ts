@@ -99,6 +99,11 @@ export function connectionRoutes(deps: Deps): Router {
       requests: await service.incoming(memberOf(response.locals)),
     })
   })
+  router.get('/api/connections/connected', guard, async (_q, response) => {
+    response.json({
+      connections: await service.connected(memberOf(response.locals)),
+    })
+  })
   router.get(
     '/api/connections/:id',
     guard,

@@ -440,6 +440,12 @@ connect.")_
   pending incoming requests or new matches. While the app is open and visible,
   the badge and the list of waiting requests SHALL refresh on their own, at most
   `limits.matchesPollSeconds` apart, so a new request shows without a reload.
+- **R-MINE-5** — The "Matches" screen SHALL list the member's **connections** —
+  accepted requests, whichever side sent them — below the requests waiting for
+  them, each as a member card. Each SHALL open that connection's contact screen
+  (R-CONN-3). The list itself SHALL carry no email address; only the contact
+  screen reads it (R-CONN-6). It SHALL refresh with the waiting list (R-MINE-4),
+  so a request accepted on the other side shows without a reload.
 
 ---
 

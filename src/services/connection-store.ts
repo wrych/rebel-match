@@ -173,6 +173,8 @@ export function createConnectionStore(db: Database): ConnectionStore {
         and(eq(r.targetId, targetId), eq(r.status, 'pending')),
         targetId,
       ),
+    connected: (memberId) =>
+      views(db, and(eq(r.status, 'accepted'), isParty(memberId)), memberId),
     respond: async (id, targetId, status) => {
       const answered = await db
         .update(r)

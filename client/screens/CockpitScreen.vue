@@ -1,16 +1,25 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue'
 import { fetchConfig } from '../lib/api'
-import { fetchCockpit, fetchIncoming, type Cockpit } from '../lib/cockpit'
+import { peerLine } from '../lib/challenges'
+import {
+  fetchCockpit,
+  fetchConnected,
+  fetchIncoming,
+  type Cockpit,
+} from '../lib/cockpit'
 import type { ConnectionView } from '../lib/connections'
 import { poll } from '../lib/poll'
 
 const cockpit = ref<Cockpit | null>(null)
 const incoming = ref<ConnectionView[]>([])
+const connected = ref<ConnectionView[]>([])
 const problem = ref<string | null>(null)
 
 const requestPath = (id: string): string =>
   `/matches/requests/${encodeURIComponent(id)}`
+const contactPath = (id: string): string =>
+  `/matches/requests/${encodeURIComponent(id)}/contact`
 const matchesPath = (id: string): string =>
   `/challenges/${encodeURIComponent(id)}/matches`
 
@@ -19,9 +28,14 @@ let stopPolling: (() => void) | undefined
 let gone = false
 
 async function load(): Promise<void> {
-  const [mine, waiting] = await Promise.all([fetchCockpit(), fetchIncoming()])
+  const [mine, waiting, people] = await Promise.all([
+    fetchCockpit(),
+    fetchIncoming(),
+    fetchConnected(),
+  ])
   cockpit.value = mine
   incoming.value = waiting
+  connected.value = people
 }
 
 // A failed refresh keeps what is on screen; the next one tries again.
@@ -77,6 +91,24 @@ onUnmounted(() => {
           </span>
           <span v-if="request.message" class="small request-note">{{
             request.message
+          }}</span>
+        </RouterLink>
+      </section>
+
+      <section class="stack rule" aria-labelledby="connections">
+        <h2 id="connections" class="display display-md">Your connections</h2>
+        <p v-if="connected.length === 0" class="empty">
+          No connections yet. They show here once a request is accepted.
+        </p>
+        <RouterLink
+          v-for="connection in connected"
+          :key="connection.id"
+          :to="contactPath(connection.id)"
+          class="card request-row"
+        >
+          <span class="card-title">{{ connection.other.name }}</span>
+          <span v-if="peerLine(connection.other)" class="mono peer-meta">{{
+            peerLine(connection.other)
           }}</span>
         </RouterLink>
       </section>
