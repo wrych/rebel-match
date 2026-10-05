@@ -196,11 +196,13 @@ printed dev link (R-DEV-6).
 - [x] Feedback mailto. _(S5, R-FB-1)_ To `FEEDBACK_TO`, required in production.
 - [x] Admin GDPR delete: member plus challenges, requests, swipes, follows, role
       grants and outbound log entries, in one transaction. _(R-NFR-7, R-MSG-6)_
-- [ ] Member cards in the host tools, and a member's page with roles and
+- [x] Member cards in the host tools, and a member's page with roles and
       delete. _(R-MEM-1,2)_
-- [ ] Select several members by holding a card; give or take a role, or delete
+- [x] Select several members by holding a card; give or take a role, or delete
       them. _(R-MEM-3)_
-- [x] Delete your own account from the profile screen. _(R-PROF-2, C4)_
+- [ ] Delete your own account from the profile screen. _(R-PROF-2, C4)_
+- [ ] Erasure waits 30 days: deactivate now, undo by emailed link or host,
+      sweep after the grace period. _(R-NFR-7, ADR 0032)_
 
 ## M6 — Hardening & pilot _(by 2026-11-01)_
 
@@ -210,7 +212,7 @@ printed dev link (R-DEV-6).
       IP through `TRUST_PROXY`. _(R-NFR-8, ADR 0029)_
 - [x] Admin view of the configuration in the host tools, read-only and
       grouped. _(R-CFG-5)_
-- [ ] Hosts change the spam-protection numbers, invite defaults and minimum
+- [x] Hosts change the spam-protection numbers, invite defaults and minimum
       lengths from the settings screen, stored in the database. _(R-CFG-6,
       ADR 0031)_
 - [ ] Rate-limit auth, verify token hashing, session flags, permission + party

@@ -1,64 +1,195 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { rolePermissions } from '../../src/access'
+import { peerLine } from '../lib/challenges'
+import { longPress } from '../lib/long-press'
 import {
   eraseMember,
   fetchMembers,
+  forEachMember,
+  grantRole,
   matchesSearch,
-  type EraseOutcome,
+  revokeRole,
+  type EachOutcome,
   type RosterMember,
 } from '../lib/members'
-import { when } from '../lib/when'
+import { fetchConfig } from '../lib/api'
+import { loadMe } from '../lib/session'
 
+const router = useRouter()
 const members = ref<RosterMember[]>([])
 const loaded = ref(false)
 const search = ref('')
 const problem = ref<string | null>(null)
-const notice = ref<string | null>(null)
-const confirming = ref<string | null>(null)
+const canGrant = ref(false)
+const canDelete = ref(false)
+const holdMs = ref(0)
+const selecting = ref(false)
+const selected = reactive(new Set<string>())
+const role = ref<string>(Object.keys(rolePermissions)[0] ?? '')
+const confirmingDelete = ref(false)
 const busy = ref(false)
+const report = ref<string[]>([])
+const roles = Object.keys(rolePermissions)
 
 const shown = computed(() =>
   members.value.filter((member) => matchesSearch(member, search.value)),
 )
+// Only selected members still in view are acted on, so a search never hides
+// whom an action reaches.
+const chosen = computed(() =>
+  shown.value.filter((member) => selected.has(member.id)),
+)
 
-const outcomeNotice: Record<EraseOutcome, (email: string) => string> = {
-  erased: (email) => `Deleted ${email} and everything attached to them.`,
-  gone: (email) => `${email} was already gone.`,
-  'created-invites': (email) =>
-    `${email} created invite links, so they stay for now. Those links have to be dealt with first.`,
-  'last-admin': (email) =>
-    `${email} is the only admin left, so they stay. Make someone else admin first.`,
-}
+const who = (member: RosterMember): string => member.name ?? member.email
+const pathOf = (member: RosterMember): string =>
+  `/admin/members/${encodeURIComponent(member.id)}`
 
 async function load(): Promise<void> {
+  members.value = await fetchMembers()
+}
+
+onMounted(async () => {
   try {
-    members.value = await fetchMembers()
-    problem.value = null
+    const [me, config] = await Promise.all([loadMe(), fetchConfig(), load()])
+    canGrant.value = me?.permissions.includes('role:grant') ?? false
+    canDelete.value = me?.permissions.includes('member:delete') ?? false
+    holdMs.value = config.limits.holdToSelectMs
   } catch {
     problem.value = 'The members could not be loaded.'
   }
   loaded.value = true
+})
+
+function select(member: RosterMember): void {
+  report.value = []
+  selecting.value = true
+  if (selected.has(member.id)) selected.delete(member.id)
+  else selected.add(member.id)
 }
 
-function ask(member: RosterMember): void {
-  notice.value = null
-  confirming.value = member.id
+function stopSelecting(): void {
+  selecting.value = false
+  confirmingDelete.value = false
+  selected.clear()
 }
 
-async function erase(member: RosterMember): Promise<void> {
-  busy.value = true
+let pressed: RosterMember | null = null
+const press = longPress(
+  () => {
+    if (pressed !== null && !selected.has(pressed.id)) select(pressed)
+  },
+  () => holdMs.value,
+)
+
+function hold(member: RosterMember): void {
+  pressed = member
+  press.start()
+}
+
+// While selecting, a tap on a card chooses it; otherwise it opens the
+// member's page, leaving a modified click to the browser.
+function open(event: MouseEvent, member: RosterMember): void {
+  // A keyboard activation has no pointer behind it, so it never ends a hold.
+  const endsHold = press.held() && event.detail > 0
+  if (endsHold) {
+    event.preventDefault()
+    return
+  }
+  if (selecting.value) {
+    event.preventDefault()
+    select(member)
+    return
+  }
+  if (event.metaKey || event.ctrlKey || event.shiftKey) return
+  event.preventDefault()
+  void router.push(pathOf(member))
+}
+
+function summary<T>(
+  outcomes: EachOutcome<T>[],
+  done: T,
+  doneWords: string,
+  reasons: Partial<Record<T & string, string>>,
+): string[] {
+  const succeeded = outcomes.filter((each) => each.outcome === done)
+  const lines =
+    succeeded.length === 0
+      ? []
+      : [
+          `${doneWords} ${succeeded.map((each) => who(each.member)).join(', ')}.`,
+        ]
+  for (const each of outcomes) {
+    if (each.outcome === done) continue
+    const reason =
+      each.outcome === 'failed'
+        ? 'that did not go through; try again.'
+        : (reasons[each.outcome as T & string] ?? String(each.outcome))
+    lines.push(`${who(each.member)}: ${reason}`)
+  }
+  return lines
+}
+
+// The outcomes are shown whatever happens next; a list that cannot be
+// refreshed says so rather than passing for current.
+async function finish(lines: string[]): Promise<void> {
+  report.value = lines
+  stopSelecting()
+  busy.value = false
   try {
-    notice.value = outcomeNotice[await eraseMember(member.id)](member.email)
-    confirming.value = null
     await load()
   } catch {
-    notice.value = `That did not go through for ${member.email}. Try again.`
-  } finally {
-    busy.value = false
+    report.value = [
+      ...lines,
+      'The list could not be refreshed. Reload the page to see it as it is.',
+    ]
   }
 }
 
-onMounted(load)
+async function give(): Promise<void> {
+  busy.value = true
+  const lacking = chosen.value.filter((m) => !m.roles.includes(role.value))
+  const already = chosen.value.filter((m) => m.roles.includes(role.value))
+  const outcomes = await forEachMember(lacking, (id) =>
+    grantRole(id, role.value),
+  )
+  await finish([
+    ...summary(outcomes, 'done', `Gave ${role.value} to`, {
+      gone: 'they are no longer an active member.',
+    }),
+    ...already.map((m) => `${who(m)}: already had ${role.value}.`),
+  ])
+}
+
+async function takeAway(): Promise<void> {
+  busy.value = true
+  const holding = chosen.value.filter((m) => m.roles.includes(role.value))
+  const without = chosen.value.filter((m) => !m.roles.includes(role.value))
+  const outcomes = await forEachMember(holding, (id) =>
+    revokeRole(id, role.value),
+  )
+  await finish([
+    ...summary(outcomes, 'done', `Took ${role.value} away from`, {
+      gone: 'they no longer had it.',
+      'last-holder': `nobody else could give roles, so they keep ${role.value}.`,
+    }),
+    ...without.map((m) => `${who(m)}: did not have ${role.value}.`),
+  ])
+}
+
+async function erase(): Promise<void> {
+  busy.value = true
+  const outcomes = await forEachMember(chosen.value, eraseMember)
+  await finish(
+    summary(outcomes, 'erased', 'Deleted', {
+      gone: 'they were already gone.',
+      'created-invites':
+        'they created invite links, so they stay until those are dealt with.',
+      'last-admin': 'they are the only admin left, so they stay.',
+    }),
+  )
+}
 </script>
 
 <template>
@@ -67,8 +198,9 @@ onMounted(load)
       <p class="kicker kicker-accent">Host tools</p>
       <h1 class="display display-lg">Members</h1>
       <p class="lede">
-        Find someone who asked to be removed and delete them with their
-        challenges, requests, swipes, follows and messages.
+        Everyone who has joined or asked to. Open a member to see all that is
+        held about them, or tick the circle on a card (or hold the card) to act
+        on several at once.
       </p>
     </div>
 
@@ -77,39 +209,119 @@ onMounted(load)
       <input id="member-search" v-model="search" class="input" type="search" />
     </div>
 
-    <p v-if="notice" class="notice notice-solid" role="status">{{ notice }}</p>
+    <div v-if="report.length > 0" class="notice notice-solid" role="status">
+      <p v-for="line in report" :key="line">{{ line }}</p>
+    </div>
     <p v-if="problem" class="alert" role="alert">{{ problem }}</p>
     <p v-else-if="loaded && shown.length === 0" class="empty">
       Nobody matches.
     </p>
 
-    <article v-for="member in shown" :key="member.id" class="card">
-      <div class="card-head">
-        <div class="stack-tight">
-          <span class="card-title">{{ member.name ?? member.email }}</span>
-          <span v-if="member.name" class="small">{{ member.email }}</span>
-        </div>
-        <span class="chip chip-dashed">{{ member.status }}</span>
-      </div>
-      <p class="mono meta">
-        <span v-if="member.roles.length > 0"
-          >{{ member.roles.join(', ') }} ·
-        </span>
-        since
-        <time :datetime="member.joinedAt">{{ when(member.joinedAt) }}</time>
-      </p>
+    <ul class="stack members">
+      <li
+        v-for="member in shown"
+        :key="member.id"
+        class="card member"
+        :class="{ selected: selected.has(member.id) }"
+      >
+        <button
+          type="button"
+          class="selector"
+          role="checkbox"
+          :aria-checked="selected.has(member.id)"
+          :aria-label="`Select ${who(member)}`"
+          @click="select(member)"
+        >
+          <span aria-hidden="true">✓</span>
+        </button>
+        <a
+          :href="pathOf(member)"
+          class="member-link"
+          @click="open($event, member)"
+          @pointerdown="hold(member)"
+          @pointerup="press.release()"
+          @pointerleave="press.abandon()"
+          @pointercancel="press.abandon()"
+          @contextmenu="selecting && $event.preventDefault()"
+        >
+          <span class="card-head">
+            <span class="stack-tight">
+              <span class="card-title">{{ who(member) }}</span>
+              <span v-if="peerLine(member)" class="mono line">{{
+                peerLine(member)
+              }}</span>
+            </span>
+            <span class="chip chip-dashed">{{ member.status }}</span>
+          </span>
+          <span v-if="member.name" class="small email">{{ member.email }}</span>
+          <span v-if="member.roles.length > 0" class="roles">
+            <span v-for="held in member.roles" :key="held" class="chip">{{
+              held
+            }}</span>
+          </span>
+        </a>
+      </li>
+    </ul>
 
-      <div v-if="confirming === member.id" class="stack-tight">
+    <div
+      v-if="selecting"
+      class="card action-bar stack-tight"
+      role="region"
+      aria-label="Selected members"
+    >
+      <div class="bar-head">
+        <strong>{{ chosen.length }} selected</strong>
+        <button
+          type="button"
+          class="btn btn-ghost btn-small"
+          @click="shown.forEach((m) => selected.add(m.id))"
+        >
+          Select all shown
+        </button>
+        <button
+          type="button"
+          class="btn btn-ghost btn-small"
+          @click="stopSelecting"
+        >
+          Done
+        </button>
+      </div>
+      <div v-if="canGrant" class="bar-roles">
+        <label for="bulk-role" class="small">Role</label>
+        <select id="bulk-role" v-model="role" class="input">
+          <option v-for="option in roles" :key="option" :value="option">
+            {{ option }}
+          </option>
+        </select>
+        <button
+          type="button"
+          class="btn btn-primary btn-small"
+          :disabled="busy || chosen.length === 0"
+          @click="give"
+        >
+          Give
+        </button>
+        <button
+          type="button"
+          class="btn btn-ghost btn-small"
+          :disabled="busy || chosen.length === 0"
+          @click="takeAway"
+        >
+          Take away
+        </button>
+      </div>
+      <div v-if="canDelete && confirmingDelete" class="stack-tight">
         <p class="alert" role="alert">
-          Delete {{ member.email }} for good? Everything they wrote goes with
-          them. This cannot be undone.
+          Delete {{ chosen.length }}
+          {{ chosen.length === 1 ? 'member' : 'members' }} for good? Everything
+          they wrote goes with them. This cannot be undone.
         </p>
         <div class="actions">
           <button
             type="button"
             class="btn btn-dark btn-small"
             :disabled="busy"
-            @click="erase(member)"
+            @click="erase"
           >
             Delete for good
           </button>
@@ -117,30 +329,114 @@ onMounted(load)
             type="button"
             class="btn btn-ghost btn-small"
             :disabled="busy"
-            @click="confirming = null"
+            @click="confirmingDelete = false"
           >
             Keep
           </button>
         </div>
       </div>
-      <div v-else class="actions">
-        <button
-          type="button"
-          class="btn btn-ghost btn-small"
-          :disabled="busy"
-          @click="ask(member)"
-        >
-          Delete…
-        </button>
-      </div>
-    </article>
+      <button
+        v-else-if="canDelete"
+        type="button"
+        class="btn btn-ghost btn-small"
+        :disabled="busy || chosen.length === 0"
+        @click="confirmingDelete = true"
+      >
+        Delete…
+      </button>
+    </div>
   </section>
 </template>
 
 <style scoped>
-.meta {
+.members {
+  list-style: none;
   margin: 0;
+  padding: 0;
+}
+
+.member {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.8rem;
+  align-items: start;
+}
+
+.member.selected {
+  outline: 3px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.selector {
+  display: grid;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  margin-top: 0.1rem;
+  border: 2px solid var(--line-strong);
+  border-radius: 50%;
+  background: transparent;
+  color: transparent;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.selected .selector {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.selector:focus-visible,
+.member-link:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.member-link {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  color: inherit;
+  text-decoration: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.line,
+.email {
   color: var(--muted);
   overflow-wrap: anywhere;
+}
+
+.roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.action-bar {
+  position: sticky;
+  bottom: 0.75rem;
+  z-index: 5;
+  border: 2px solid var(--accent);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 18%);
+}
+
+.bar-head,
+.bar-roles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.bar-head strong {
+  margin-right: auto;
+}
+
+.bar-roles .input {
+  width: auto;
+  min-width: 7rem;
 }
 </style>

@@ -13,6 +13,7 @@ export interface ClientConfig {
     sectorMaxChars: number
     inviteLabelMaxChars: number
     savedTickMs: number
+    holdToSelectMs: number
     inviteMaxUsesCeiling: number
   }
   consentVersion: string

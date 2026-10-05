@@ -14,7 +14,8 @@ const eraseStatus = {
   last_admin: 409,
 } as const
 
-/** The roster and GDPR erasure (R-NFR-7, design §3), behind `member:delete`. */
+/** The roster, one member's page and GDPR erasure (R-MEM-1,2, R-NFR-7,
+ * design §3), behind `member:delete`. */
 export function adminMemberRoutes(deps: {
   auth: AuthProvider
   erasure: ErasureService
@@ -25,6 +26,18 @@ export function adminMemberRoutes(deps: {
 
   router.get('/api/admin/members', guard, async (_request, response) => {
     response.json({ members: await deps.roster.list() })
+  })
+
+  router.get('/api/admin/members/:id', guard, async (request, response) => {
+    const params = memberParams.safeParse(request.params)
+    const member = params.success
+      ? await deps.roster.detail(params.data.id)
+      : null
+    if (member === null) {
+      response.status(404).json({ error: 'not_found' })
+      return
+    }
+    response.json({ member })
   })
 
   router.delete('/api/admin/members/:id', guard, async (request, response) => {

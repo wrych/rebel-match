@@ -5,12 +5,24 @@ import { composeApp } from './compose.js'
 import { loadRuntimeConfig } from './runtime-config.js'
 import { openDatabase } from './db/open.js'
 import { startOutboxRetention } from './services/outbox-retention.js'
+import { startSettingsRefresh } from './services/settings-refresh.js'
 
 const config = await loadRuntimeConfig()
 const connection = await openDatabase(config)
 const deps = composeApp(config, connection.db, {
   onAnalyticsError: () => {
     console.warn('analytics: an event could not be sent')
+  },
+})
+
+// The hosts' changes apply before the first request, then follow other servers
+// (ADR 0031).
+await deps.settings.refresh()
+startSettingsRefresh({
+  settings: deps.settings,
+  intervalSeconds: config.settingsRefreshSeconds,
+  onError: () => {
+    console.warn('settings: refresh failed, keeping the values in force')
   },
 })
 

@@ -261,8 +261,9 @@ capability, not a secret** — and every requirement below exists because of tha
   accepted, read-only, with its version and the time they accepted it (R-NFR-6),
   and SHALL carry the **analytics opt-in**, given or withdrawn there (R-ANA-4).
   It SHALL offer **deleting one's own account** (C4): after one confirmation
-  that says what goes and that it cannot be undone, the account and everything
-  R-NFR-7 lists are erased and the member is signed out. Deletion SHALL be
+  that says what goes, when, and how to change one's mind, the account is
+  deactivated and the member signed out; everything R-NFR-7 lists is erased
+  after the grace period unless they keep the account (ADR 0032). Deletion SHALL be
   refused, saying why and what to do, while the member is the last who can grant
   roles (R-ROLE-9) or invite links they created remain.
 - **R-MEM-1 (Member cards)** — The host tools' members list SHALL show each
@@ -277,7 +278,8 @@ capability, not a secret** — and every requirement below exists because of tha
   analytics opt-in, and how many challenges and connection requests they have.
   From there a host SHALL be able to change their roles (R-ROLE-9) and delete
   them (R-NFR-7), each within the host's own permissions; later member actions
-  belong on this page.
+  belong on this page. For a deleted account it SHALL show when it will be
+  erased, and offer to restore it or erase it at once (ADR 0032).
 - **R-MEM-3 (Selecting several)** — Each card SHALL carry a small **selector**
   that shows whether it is selected; tapping it, or holding the card, SHALL
   start selecting with that card chosen, and while selecting each tap selects
@@ -642,12 +644,13 @@ What differs by environment is only whether mail **leaves the machine**.
 - **R-CFG-4** — Changing a threshold SHALL NOT require code changes beyond that
   file, so the values can be tuned during the pilot without a redeploy of logic.
 - **R-CFG-5 (Settings in the host tools)** — A host with `settings:read` SHALL
-  see every configured value on one read-only screen, grouped by what it
-  governs (for example "Spam protection"), each with a plain-language name, what
-  it does, its value with its unit, the environment variable that sets it, and
-  whether it differs from the default. Values fixed in code SHALL be marked as
-  such. No secret SHALL appear, nor whether one is set beyond on/off. Changing a
-  value is a deployment change, except as R-CFG-6 allows.
+  see every configured value on one screen, grouped by what it governs (for
+  example "Spam protection"), each with a plain-language name, what it does,
+  its value with its unit, and whether it differs from the default. Values
+  fixed in code SHALL be marked as such. The screen SHALL NOT show environment
+  variable names: they are a technical detail. No secret SHALL appear, nor
+  whether one is set beyond on/off. Changing a value is a deployment change,
+  except as R-CFG-6 allows.
 
 - **R-CFG-6 (Changing settings in the host tools)** — A host with
   `settings:manage` SHALL be able to change, on the settings screen, the
@@ -655,7 +658,10 @@ What differs by environment is only whether mail **leaves the machine**.
   the minimum challenge and "been there" note lengths (ADR 0031). Each change
   SHALL be checked against bounds and the order of paired limits, take effect
   without a restart on every server within a minute, and show who made it and
-  when. The host SHALL be able to go back to the deployment's value.
+  when. The host SHALL be able to go back to the deployment's value. Each
+  changeable value SHALL be an editable field, saved on change and confirmed
+  with the same "Saved" tick as the profile screen (R-PROF-1); a host without
+  `settings:manage` sees it as text.
 
 ---
 
@@ -766,7 +772,12 @@ _(Decided by the maintainer after trying the redesign: ADR 0023.)_
 - **R-NFR-7 (Deletion)** — The system SHALL support deleting a member and the
   personal data attached to them — challenges, connection requests, swipes,
   follows, role grants, and their **outbound message log entries** (R-MSG-6) — on
-  request (GDPR erasure), at minimum via an admin action.
+  request (GDPR erasure), at minimum via an admin action. Deleting SHALL first
+  **deactivate** the account at once: no sign-in, and nothing of theirs shown
+  to anyone. The erasure SHALL follow after a **grace period** of 30 days
+  (configurable), during which a host can undo it, and so can the person, by a
+  link emailed to their address, when they deleted the account themselves; a
+  host MAY erase at once (ADR 0032).
 
 ---
 

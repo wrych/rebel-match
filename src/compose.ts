@@ -8,7 +8,6 @@ import {
 import { admittedRole } from './access.js'
 import type { AppDeps } from './app.js'
 import {
-  fixedSettings,
   isDevelopmentDeployment,
   type AbuseLimits,
   type Config,
@@ -23,6 +22,8 @@ import { createAdmission } from './services/admission.js'
 import { createApplicantHandles } from './services/applicant-handle.js'
 import { createHumanCheck } from './services/human-check.js'
 import { createPacedGate, type PacedGate } from './services/paced-gate.js'
+import { createSettingOverrideStore } from './services/setting-override-store.js'
+import { createSettings } from './services/settings.js'
 import { createWindowCounter } from './services/rate-limit.js'
 import { createApplicantNotice } from './services/applicant-notice.js'
 import { createApprovalStore } from './services/approval-store.js'
@@ -142,6 +143,7 @@ function composeJourneys(
 }
 
 function composeMembershipAdmin(
+  config: Config,
   db: Database,
   auth: AuthProvider,
 ): Pick<AppDeps, 'roles' | 'erasure' | 'roster' | 'whitelist'> {
@@ -154,7 +156,7 @@ function composeMembershipAdmin(
       store: createErasureStore(db),
       policy: configPolicy,
     }),
-    roster: createMemberRoster(db),
+    roster: createMemberRoster(db, config.analyticsVersion),
     whitelist: createWhitelist({
       store: createWhitelistStore(db),
       auth,
@@ -261,7 +263,10 @@ export function composeApp(
   const mailer = composeMailer(config, db)
   const auth = composeAuth(config, db, mailer)
   const track = composeTrack(config, db, hooks.onAnalyticsError ?? ignoreError)
-  const settings = fixedSettings(config)
+  const settings = createSettings({
+    config,
+    store: createSettingOverrideStore(db),
+  })
 
   return {
     config,
@@ -274,7 +279,7 @@ export function composeApp(
       analyticsVersion: config.analyticsVersion,
     }),
     profile: createProfileStore(db, config.analyticsVersion),
-    ...composeMembershipAdmin(db, auth),
+    ...composeMembershipAdmin(config, db, auth),
     outbox: createOutboxLog(db),
     ...composeAdmission(config, settings, db, auth, mailer),
     onboarding: createOnboarding({

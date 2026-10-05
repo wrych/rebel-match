@@ -42,15 +42,18 @@ afterAll(async () => {
 describe('the member roster over Postgres (R-NFR-7)', () => {
   it('lists each member once, with their roles, by email', async () => {
     const ours = new Set<string>([host.id, asker.id])
-    const listed = (await createMemberRoster(db.drizzle).list()).filter((m) =>
-      ours.has(m.id),
-    )
+    const listed = (
+      await createMemberRoster(db.drizzle, config.analyticsVersion).list()
+    ).filter((m) => ours.has(m.id))
 
     expect(listed).toEqual([
       {
         id: host.id,
         email: host.email,
         name: 'Hana',
+        jobTitle: null,
+        org: null,
+        sector: null,
         status: 'active',
         roles: ['admin', 'member'],
         joinedAt: expect.any(String) as string,
@@ -59,10 +62,49 @@ describe('the member roster over Postgres (R-NFR-7)', () => {
         id: asker.id,
         email: asker.email,
         name: null,
+        jobTitle: null,
+        org: null,
+        sector: null,
         status: 'applicant',
         roles: [],
         joinedAt: expect.any(String) as string,
       },
     ])
+  })
+
+  it("shows one member's page with their consent and activity (R-MEM-2)", async () => {
+    await db.query(
+      "UPDATE members SET job_title = 'Coach', consent_version = '2026-11-01', " +
+        'consent_at = now() WHERE id = ?',
+      [host.id],
+    )
+    await db.query(
+      "INSERT INTO challenges (id, member_id, body, trend_id) VALUES (?, ?, 'mine', '01')",
+      [randomUUID(), host.id],
+    )
+
+    const page = await createMemberRoster(
+      db.drizzle,
+      config.analyticsVersion,
+    ).detail(host.id)
+
+    expect(page).toMatchObject({
+      id: host.id,
+      jobTitle: 'Coach',
+      roles: ['admin', 'member'],
+      consentVersion: '2026-11-01',
+      consentAt: expect.any(String) as string,
+      analyticsOptIn: false,
+      joinedVia: null,
+      challenges: 1,
+      requestsSent: 0,
+      requestsReceived: 0,
+    })
+  })
+
+  it('has no page for someone who is not a member', async () => {
+    const roster = createMemberRoster(db.drizzle, config.analyticsVersion)
+
+    expect(await roster.detail(randomUUID())).toBeNull()
   })
 })

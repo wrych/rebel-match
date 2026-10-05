@@ -12,6 +12,7 @@ export const rolePermissions = {
     'outbox:read',
     'role:grant',
     'settings:read',
+    'settings:manage',
   ],
 } as const satisfies Record<string, readonly string[]>
 
