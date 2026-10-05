@@ -277,6 +277,18 @@ printed dev link (R-DEV-6).
       it… with a couple of people.")_
 - [ ] Record deck views and offer deleting one's activity history, with the
       consent words that say so. _(R-STAT-1..5, ADR 0033)_
+- [ ] Notifications in the app: the `notifications` table, written with each
+      connection request, new connection and applicant; `/notifications`; the
+      menu's badge and "Notifications (n new)". Mail still goes as today.
+      _(R-NOTE-1,4,5,6, R-PROF-3, ADR 0037)_
+- [ ] Mail notifications through the worker, every type _Immediately_; a
+      request stands when its mail fails, so `notifyOrWithdraw` goes.
+      _(R-NOTE-9,10,11, ADR 0037)_
+- [ ] Cadences: _Every 15 minutes_, _Hourly_, _Daily_, _In the app only_ and
+      _Off_ per type on the profile screen, with the defaults; the digest mail
+      and `outbox_quotes`. _(R-NOTE-2,3,7,8, R-MSG-6)_
+- [ ] Notify followers of a new challenge in their trend, linking to the deck
+      opened at its card. _(R-ASK-9, R-NOTE-1, R-OFF-7)_
 
 ## Post-beta backlog _(Could / Won't-for-now)_
 

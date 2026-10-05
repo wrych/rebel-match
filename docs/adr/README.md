@@ -72,3 +72,4 @@ still holds except where the later ADR says otherwise.
 | [0033](0033-record-activity-show-it-later.md)              | Record activity in our own tables; showing it is separate            | Accepted                  |
 | [0034](0034-hardened-headers-transport-and-sessions.md)    | Hardened headers, transport and sessions                             | Accepted                  |
 | [0035](0035-already-connected-members-skip-the-opt-in.md)  | Members already connected skip the opt-in for each further challenge | Accepted                  |
+| [0037](0037-notifications-queued-at-a-cadence-per-type.md) | Store every notification; mail it at a cadence chosen per type       | Proposed                  |
