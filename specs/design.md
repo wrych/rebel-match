@@ -498,6 +498,7 @@ CREATE TABLE connection_requests (
   status        ENUM('pending','accepted','declined') NOT NULL DEFAULT 'pending',
   created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   responded_at  DATETIME NULL,
+  requester_seen_at DATETIME NULL,                 -- requester opened the accepted contact (R-CONN-7)
   pending_key   VARCHAR(110) AS (IF(status = 'pending',
                   CONCAT(requester_id, ':', target_id, ':',
                          COALESCE(challenge_id, '-')), NULL)) VIRTUAL,
@@ -576,7 +577,7 @@ CREATE TABLE outbox (
   about_member_id CHAR(36) NULL,                 -- a member the body quotes (R-MSG-6)
   to_email    VARCHAR(320) NOT NULL,
   kind        ENUM('magic_link','approval','connection_request',
-                   'admin_notice')
+                   'admin_notice','connection_accepted')
                            NOT NULL,
   subject     VARCHAR(255) NOT NULL,
   body_text   TEXT         NOT NULL,             -- credential redacted outside dev
@@ -706,11 +707,11 @@ onboarded → `403 {error: 'onboarding_required'}`. Only `/api/health` and
 | ------ | ------------------------------ | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | POST   | `/api/connections`             | `{targetId, challengeId?, kind, message?}` | Create a pending request to an active, onboarded member other than oneself; a `challengeId` must belong to one of the two. **No email revealed.** A request already made from this requester to this target about this challenge → `409 {result: 'exists', id}` (R-CONN-1, R-CONN-5). |
 | GET    | `/api/connections/incoming`    | —                                          | Pending requests addressed to me, with the requester's card, note and challenge, no email (R-MINE-2, R-CONN-2).                                                                                                                                                                       |
-| GET    | `/api/connections/connected`   | —                                          | Accepted requests I am a party to, either side, newest first: the other member's card, no email (R-MINE-5). Their contact is read per request.                                                                                                                                        |
+| GET    | `/api/connections/connected`   | —                                          | Accepted requests I am a party to, either side, newest first: the other member's card, no email, and `unseen` while I sent it and have not opened its contact (R-MINE-5, R-CONN-7). Their contact is read per request.                                                                |
 | GET    | `/api/connections/:id`         | —                                          | The request as one of its two parties sees it: direction, status, the other member's card, note and challenge, no email. Anyone else → `404`.                                                                                                                                         |
-| POST   | `/api/connections/:id/accept`  | —                                          | Target only, pending only: mark accepted (R-CONN-3). Anyone else, or a request already answered → `404`.                                                                                                                                                                              |
+| POST   | `/api/connections/:id/accept`  | —                                          | Target only, pending only: mark accepted (R-CONN-3) and email the requester a link to the contact (R-CONN-7). Anyone else, or a request already answered → `404`.                                                                                                                     |
 | POST   | `/api/connections/:id/decline` | —                                          | Target only, pending only: mark declined; emails stay private for good (R-CONN-4).                                                                                                                                                                                                    |
-| GET    | `/api/connections/:id/contact` | —                                          | If accepted and I'm a party → the other member's name, email and a prefilled mailto. Anything else → `404`, never `403` (ADR 0004, R-NAV-8).                                                                                                                                          |
+| GET    | `/api/connections/:id/contact` | —                                          | If accepted and I'm a party → the other member's name, email and a prefilled mailto; the requester's first read marks the connection seen (R-CONN-7). Anything else → `404`, never `403` (ADR 0004, R-NAV-8).                                                                         |
 
 ### Follow
 
@@ -725,9 +726,9 @@ or unfollowing what is not followed changes nothing.
 
 ### Cockpit
 
-| Method | Path           | Behavior                                                                                                                                                                                                                                                                                                                |
-| ------ | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| GET    | `/api/cockpit` | `{challenges[], following[], pendingIncoming}`: my active challenges with same-boat / been-there / case-study counts counted as the matches view lists them, my followed trends, and how many requests wait for me, which badges the nav (R-MINE-1,3,4). The requests themselves come from `/api/connections/incoming`. |
+| Method | Path           | Behavior                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| ------ | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/cockpit` | `{challenges[], following[], pendingIncoming, newConnections}`: my active challenges with same-boat / been-there / case-study counts counted as the matches view lists them, my followed trends, how many requests wait for me, and how many of my requests were accepted since I last opened them, which together badge the nav (R-MINE-1,3,4, R-CONN-7). The requests themselves come from `/api/connections/incoming`. |
 
 ### Admin (permission-guarded, not role-name-guarded — R-ROLE-3)
 
