@@ -431,6 +431,25 @@ connect.")_
   no address and no challenge text (R-NAV-9). The in-app notice SHALL last until
   the requester first opens that contact screen. A decline is not announced
   (R-CONN-4).
+- **R-CONN-8 (Already connected)** — IF the two members already share an
+  accepted request, whichever side sent it, WHEN one of them initiates a
+  connection THE SYSTEM SHALL record it as accepted at once, with nothing left
+  for the target to answer, and SHALL take the requester straight to the
+  contact screen. Both opted in to sharing addresses already, so nothing new is
+  revealed (R-CONN-6). A connection about a challenge they are already
+  connected over SHALL add nothing, and SHALL take the requester to the contact
+  screen the same way.
+- **R-CONN-9** — WHEN a connection is recorded under R-CONN-8 THE SYSTEM SHALL
+  notify the target, in-app and by email, that the requester connected with
+  them over another challenge. The email carries the requester's name, their
+  note and a link to the contact screen, but no address and no challenge text
+  (R-NAV-9). The in-app notice SHALL last until the target first opens that
+  contact screen.
+- **R-CONN-10 (Connected over)** — The contact screen SHALL list, under
+  _Connected over_, every accepted request between the two members, each with
+  its challenge and trend, whether it was same boat or been there, and the note
+  sent. The newest SHALL come first, those the viewer has not opened yet above
+  the rest and outlined.
 
 ---
 
@@ -452,11 +471,16 @@ connect.")_
   shows without a reload.
 - **R-MINE-5** — The "Matches" screen SHALL list the member's **connections** —
   accepted requests, whichever side sent them — below the requests waiting for
-  them, each as a member card. Each SHALL open that connection's contact screen
-  (R-CONN-3). The list itself SHALL carry no email address; only the contact
-  screen reads it (R-CONN-6). It SHALL refresh with the waiting list (R-MINE-4),
-  so a request accepted on the other side shows without a reload, and SHALL
-  mark a connection as new until the member first opens it (R-CONN-7).
+  them, each other member once, as a member card, however many challenges they
+  are connected over (R-CONN-10). Each SHALL open that connection's contact
+  screen (R-CONN-3). The list itself SHALL carry no email address; only the
+  contact screen reads it (R-CONN-6). It SHALL refresh with the waiting list
+  (R-MINE-4), so a request accepted on the other side shows without a reload,
+  and SHALL mark a connection as new until the member first opens it
+  (R-CONN-7, R-CONN-9).
+- **R-MINE-6** — WHILE a connection holds accepted requests the member has not
+  opened yet (R-CONN-7, R-CONN-9) THE SYSTEM SHALL list its card above the
+  others, outlined, with a badge counting those requests.
 
 ---
 
@@ -928,6 +952,10 @@ fixtures. `design.md` §6 lists the exact records and the profile mechanism.
 - **Accept notice** (2026-10-05) — the requester is told when their request is
   accepted, by a badge and by email; until then they had to look. A decline
   stays silent, as a request ignored does (R-CONN-7, R-CONN-4).
+- **Already connected** (2026-10-05) — a second connection between two members
+  already connected was listed as a second connection, once per challenge.
+  Now it is accepted at once and listed under the one connection, as what they
+  are connected over, with the target told (R-CONN-8..10, R-MINE-5,6, ADR 0035).
 - **Seed data** (2026-10-01) — split by environment rather than chosen between:
   prototype fixtures for dev, real whitelist + collected challenges for
   production. See §10 (R-SEED-1..7) and `design.md` §6.

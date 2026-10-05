@@ -166,6 +166,10 @@ printed dev link (R-DEV-6).
 - [x] Duplicate-request guard. _(R-CONN-5)_
 - [x] Cockpit: my challenge(s) + counts, followed trends, nav badge. _(R-MINE-1,3,4)_
       The bottom bar has Submit and Matches; Swipe joins with the Offer screen.
+- [x] Already connected: a further request is accepted at once and the target
+      told; one card per member in the cockpit, new ones first, outlined and
+      counted; the contact screen lists what the two are connected over.
+      _(R-CONN-8,9,10, R-MINE-5,6, ADR 0035)_
 
 ## M5 — Supporting features _(Should-haves)_
 
