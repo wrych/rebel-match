@@ -50,6 +50,10 @@ function fakeStore(): ConnectionStore & {
       })
       return Promise.resolve(true)
     },
+    remove: (id) => {
+      rows.delete(id)
+      return Promise.resolve()
+    },
     find: (id) => Promise.resolve(rows.get(id) ?? null),
     view: (id, viewer) => {
       const r = rows.get(id)
@@ -114,6 +118,48 @@ const sameBoat = {
   challengeId: 'c-bob',
   kind: 'same_boat',
 } as const
+
+describe('telling the target (R-CONN-2)', () => {
+  it('notifies the target of a new request, once', async () => {
+    const notified: unknown[] = []
+    const service = createConnections({
+      store: fakeStore(),
+      newId: () => 'r-1',
+      notify: (request) => {
+        notified.push(request)
+        return Promise.resolve()
+      },
+    })
+
+    await service.request('m-ada', sameBoat)
+    await service.request('m-ada', sameBoat)
+    await service.request('m-ada', { targetId: 'm-ghost', kind: 'same_boat' })
+
+    expect(notified).toEqual([{ id: 'r-1', targetId: 'm-bob' }])
+  })
+
+  it('keeps no request its target could not be told of, so a retry tells them', async () => {
+    const store = fakeStore()
+    let attempts = 0
+    const service = createConnections({
+      store,
+      newId: () => `r-${String(++attempts)}`,
+      notify: () =>
+        attempts === 1
+          ? Promise.reject(new Error('database went away'))
+          : Promise.resolve(),
+    })
+
+    await expect(service.request('m-ada', sameBoat)).rejects.toThrow(
+      'database went away',
+    )
+    expect(store.rows.size).toBe(0)
+    expect(await service.request('m-ada', sameBoat)).toEqual({
+      result: 'created',
+      id: 'r-2',
+    })
+  })
+})
 
 describe('the double opt-in (ADR 0004)', () => {
   it('creates a pending request and reveals nothing yet (R-CONN-1)', async () => {

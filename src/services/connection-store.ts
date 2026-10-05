@@ -157,6 +157,9 @@ export function createConnectionStore(db: Database): ConnectionStore {
         .returning({ id: r.id })
       return stored.length === 1
     },
+    remove: async (id) => {
+      await db.delete(r).where(eq(r.id, id))
+    },
     find: async (id) => {
       const [row] = await db.select().from(r).where(eq(r.id, id))
       return row === undefined ? null : recordOf(row)

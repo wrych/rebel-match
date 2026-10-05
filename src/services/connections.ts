@@ -1,4 +1,5 @@
 import { trackNothing, type Track } from './analytics.js'
+import type { NewRequest } from './connection-notice.js'
 
 export type ConnectionKind = 'same_boat' | 'been_there'
 export type ConnectionStatus = 'pending' | 'accepted' | 'declined'
@@ -68,6 +69,8 @@ export interface ConnectionStore {
   insert(
     record: Omit<ConnectionRecord, 'status' | 'createdAt'>,
   ): Promise<boolean>
+  /** Deletes a request its target was never told of. */
+  remove(id: string): Promise<void>
   find(id: string): Promise<ConnectionRecord | null>
   /** The request as `viewerId` sees it, or null when they are no party. */
   view(id: string, viewerId: string): Promise<ConnectionView | null>
@@ -158,17 +161,20 @@ async function storePending(
     : { result: 'exists', id: raced }
 }
 
-/** The double opt-in (ADR 0004, F7): a request starts pending and reveals
- * nothing; only its target may accept or decline; an email is read only for
- * an accepted request by one of its two parties. Anything a caller may not
- * see reads as not found (R-NAV-8). */
+const notifyNobody = (): Promise<void> => Promise.resolve()
+
+/** The double opt-in (ADR 0004, F7): a request starts pending, reveals
+ * nothing and tells its target; only the target may answer; an email is read
+ * only for an accepted request by a party. Hidden reads as not found (R-NAV-8). */
 export function createConnections(deps: {
   store: ConnectionStore
   newId: () => string
   track?: Track
+  notify?: (request: NewRequest) => Promise<void>
 }): ConnectionService {
   const { store } = deps
   const track = deps.track ?? trackNothing
+  const notify = deps.notify ?? notifyNobody
   return {
     request: async (requesterId, input) => {
       if (input.targetId === requesterId) return { result: 'not_found' }
@@ -178,11 +184,17 @@ export function createConnections(deps: {
         return { result: 'not_found' }
       }
       const outcome = await storePending(store, deps.newId, requesterId, input)
-      if (outcome.result === 'created')
-        void track(requesterId, {
-          name: 'connection_requested',
-          kind: input.kind,
-        })
+      if (outcome.result !== 'created') return outcome
+      try {
+        await notify({ id: outcome.id, targetId: input.targetId })
+      } catch (error) {
+        await store.remove(outcome.id)
+        throw error
+      }
+      void track(requesterId, {
+        name: 'connection_requested',
+        kind: input.kind,
+      })
       return outcome
     },
     incoming: (memberId) => store.incoming(memberId),

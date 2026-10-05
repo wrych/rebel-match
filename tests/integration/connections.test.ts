@@ -48,6 +48,10 @@ beforeAll(async () => {
     'DELETE FROM connection_requests WHERE requester_id IN (?) OR target_id IN (?)',
     [Object.values(ids), Object.values(ids)],
   )
+  await db.query(
+    "DELETE FROM outbox WHERE kind = 'connection_request' AND member_id IN (?)",
+    [Object.values(ids)],
+  )
   const challenge = await db.query(
     'SELECT id FROM challenges WHERE member_id = ? LIMIT 1',
     [ids['bob']],
@@ -102,6 +106,33 @@ describe('connecting over Postgres: the double opt-in (F7, ADR 0004)', () => {
       await as(who)(
         request(app).get(`/api/connections/${accepted}/contact`),
       ).expect(404)
+    }
+  })
+
+  it('emails the target a link to the request, and nothing about it (R-CONN-2, R-NAV-9)', async () => {
+    const logged = await db.query(
+      "SELECT to_email, member_id, subject, body_text FROM outbox WHERE kind = 'connection_request' AND member_id = ?",
+      [ids['bob']],
+    )
+    const [ada] = await db.query('SELECT name FROM members WHERE id = ?', [
+      ids['ada'],
+    ])
+    const [challenge] = await db.query(
+      'SELECT body FROM challenges WHERE id = ?',
+      [bobChallenge],
+    )
+
+    expect(logged).toHaveLength(1)
+    expect(logged[0]?.['to_email']).toBe(people.bob)
+    const mail = `${String(logged[0]?.['subject'])}\n${String(logged[0]?.['body_text'])}`
+    expect(mail).toContain(`/matches/requests/${accepted}`)
+    for (const secret of [
+      people.ada,
+      String(ada?.['name']),
+      String(challenge?.['body']),
+      'compare notes',
+    ]) {
+      expect(mail).not.toContain(secret)
     }
   })
 
