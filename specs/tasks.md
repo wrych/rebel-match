@@ -247,6 +247,11 @@ printed dev link (R-DEV-6).
       staging from `main`. _(ADR 0025, rollout step 1)_
 - [ ] Production on Cloud Run, promoted from staging by a reviewed workflow,
       in time for the pilot. _(ADR 0025, rollout step 2)_
+- [ ] Uptime check and alerts on production: a Cloud Monitoring uptime check
+      on `/api/health` expecting `"database":"up"`, alert policies on the 5xx
+      share and on failed job executions, a notification channel reaching the
+      hosts' phones; added to `docs/cloud-setup.md` part 2 as a numbered step
+      and done once on staging first. _(R-NFR-10, ADR 0025)_
 - [ ] Decide and implement challenge attribution for the production seed.
       _(open question 5)_
 - [ ] Deep-link pass: every email/QR target opens correctly signed out, signed

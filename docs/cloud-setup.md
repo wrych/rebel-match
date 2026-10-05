@@ -287,6 +287,58 @@ The `db-f1-micro` instance allows about 25 connections. Each preview runs at
 most one instance, which lets go of its connections when it scales to zero,
 so a handful of open pull requests is fine; dozens at once are not.
 
+### Where to look
+
+Health, logs and, once it exists, the uptime check. Everything here is in the
+non-prod project; production (part 2) has the same under its own project and
+the service `rebel-match`.
+
+- **Is it up?** `GET /api/health` answers `{"status":"ok","database":"up"}`
+  without signing in. After each deploy `scripts/deploy.sh` checks it for about
+  a minute and fails the deploy if the database never reports up; nothing checks
+  it afterwards. An uptime check is proposed in pull request #119; once created
+  it shows under **Monitoring → Uptime checks**, with a pass/fail history per
+  region and the alert policy it feeds.
+
+  ```sh
+  curl -s https://rebel-match-staging-<project number>.europe-west6.run.app/api/health
+  ```
+
+- **Request log.** Cloud Run records every request on its own: method, path,
+  status, latency and client address, with no code in the app. In the console
+  it is the **Logs** tab of the service under **Cloud Run**, or **Logging →
+  Logs Explorer** with a query such as
+
+  ```
+  resource.type="cloud_run_revision"
+  resource.labels.service_name="rebel-match-staging"
+  httpRequest.status>=500
+  ```
+
+  Drop the last line for all traffic. Previews share `rebel-match-dev`; add
+  `resource.labels.revision_name` for the revision a `pr-<n>` tag points at,
+  which `gcloud run services describe rebel-match-dev --format=json` lists
+  under `status.traffic`. From a shell:
+
+  ```sh
+  gcloud run services logs read rebel-match-staging \
+    --project="$NONPROD" --region="$REGION" --limit=100
+  ```
+
+- **The app's own lines.** Few, by design (constitution §5): what the server
+  prints at start, and one warning when the analytics send, the settings
+  refresh, the erasure sweep or the outbox purge fails. An error inside a
+  request appears in the request log as its status and nothing more. A log
+  line per failed request, with a request id the 500 response also carries,
+  is proposed in pull request #118; the same Logs Explorer query will
+  then show it, and no line holds an email address, a name or a challenge's
+  words.
+
+- **Job logs.** The migrate-and-seed job and the sign-in job are under **Cloud
+  Run → Jobs → `prepare-<target>` / `login-<target>` → Executions**; each
+  execution has its own log. The dev-login workflow's summary links straight to
+  the sign-in job's log, which is where the magic link is printed (R-DEV-6).
+
 ---
 
 # Part 2 — production
