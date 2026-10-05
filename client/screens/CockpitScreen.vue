@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
+import { fetchConfig } from '../lib/api'
 import { fetchCockpit, fetchIncoming, type Cockpit } from '../lib/cockpit'
 import type { ConnectionView } from '../lib/connections'
+import { poll } from '../lib/poll'
 
 const cockpit = ref<Cockpit | null>(null)
 const incoming = ref<ConnectionView[]>([])
@@ -12,14 +14,36 @@ const requestPath = (id: string): string =>
 const matchesPath = (id: string): string =>
   `/challenges/${encodeURIComponent(id)}/matches`
 
+const MS_PER_SECOND = 1000
+let stopPolling: (() => void) | undefined
+let gone = false
+
+async function load(): Promise<void> {
+  const [mine, waiting] = await Promise.all([fetchCockpit(), fetchIncoming()])
+  cockpit.value = mine
+  incoming.value = waiting
+}
+
+// A failed refresh keeps what is on screen; the next one tries again.
+function refresh(): void {
+  load().catch(() => undefined)
+}
+
 onMounted(async () => {
   try {
-    const [mine, waiting] = await Promise.all([fetchCockpit(), fetchIncoming()])
-    cockpit.value = mine
-    incoming.value = waiting
+    await load()
   } catch {
     problem.value = 'Your matches could not be loaded. Reload to try again.'
+    return
   }
+  const config = await fetchConfig().catch(() => null)
+  if (config === null || gone) return
+  stopPolling = poll(refresh, config.limits.matchesPollSeconds * MS_PER_SECOND)
+})
+
+onUnmounted(() => {
+  gone = true
+  stopPolling?.()
 })
 </script>
 

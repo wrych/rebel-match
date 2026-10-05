@@ -12,6 +12,7 @@ export interface ClientConfig {
     orgMaxChars: number
     inviteLabelMaxChars: number
     savedTickMs: number
+    matchesPollSeconds: number
     erasureGraceDays: number
     holdToSelectMs: number
     inviteMaxUsesCeiling: number
