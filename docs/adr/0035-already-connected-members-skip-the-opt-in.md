@@ -19,7 +19,8 @@ A request between two members who already share an accepted request, in either
 direction, is stored accepted at once. The requester goes straight to the
 contact screen; the target is told in-app and by email, as a requester is when
 their request is accepted. A request about a challenge the two are already
-connected over adds nothing.
+connected over adds nothing. Accepting one request accepts every other one
+pending between the two, either side, for the same reason.
 
 The cockpit shows one card per connected member. The contact screen lists
 every accepted request between the two under _Connected over_. Each party has
@@ -50,5 +51,5 @@ now also the target's — which outlines, counts and raises the card.
 
 ## References
 
-Requirements: R-CONN-8, R-CONN-9, R-CONN-10, R-MINE-5, R-MINE-6. ADR 0004.
+Requirements: R-CONN-8, R-CONN-9, R-CONN-10, R-CONN-11, R-MINE-5, R-MINE-6. ADR 0004.
 Spec: `specs/flows.md` F7, F8; `specs/design.md` §3, §4.

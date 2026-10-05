@@ -290,6 +290,9 @@ before both sides agree.**
   on top of what they are connected over; the target is told by a badge and an
   email linking to S16 (R-CONN-8,9,10). About a challenge they are already
   connected over, nothing is added and the requester lands on S16 all the same.
+- _Several requests pending between the two_ → accepting one accepts them all,
+  either side; they show on S16 as what the two are connected over, and the
+  requester is told once (R-CONN-11).
 
 ---
 

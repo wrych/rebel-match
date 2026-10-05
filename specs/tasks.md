@@ -170,6 +170,8 @@ printed dev link (R-DEV-6).
       told; one card per member in the cockpit, new ones first, outlined and
       counted; the contact screen lists what the two are connected over.
       _(R-CONN-8,9,10, R-MINE-5,6, ADR 0035)_
+- [x] Accepting one request accepts every other one pending between the two.
+      _(R-CONN-11)_
 
 ## M5 — Supporting features _(Should-haves)_
 

@@ -450,6 +450,11 @@ connect.")_
   its challenge and trend, whether it was same boat or been there, and the note
   sent. The newest SHALL come first, those the viewer has not opened yet above
   the rest and outlined.
+- **R-CONN-11** — WHEN the target accepts a request THE SYSTEM SHALL accept with
+  it every other request pending between the same two members, whichever side
+  sent it, since they are then connected (R-CONN-8). Those requests SHALL leave
+  the waiting list and show under _Connected over_ (R-CONN-10); the requester
+  SHALL be told once, as for the one accepted (R-CONN-7).
 
 ---
 
@@ -956,6 +961,8 @@ fixtures. `design.md` §6 lists the exact records and the profile mechanism.
   already connected was listed as a second connection, once per challenge.
   Now it is accepted at once and listed under the one connection, as what they
   are connected over, with the target told (R-CONN-8..10, R-MINE-5,6, ADR 0035).
+  Accepting one of several requests pending between two members accepts them
+  all (R-CONN-11).
 - **Seed data** (2026-10-01) — split by environment rather than chosen between:
   prototype fixtures for dev, real whitelist + collected challenges for
   production. See §10 (R-SEED-1..7) and `design.md` §6.
