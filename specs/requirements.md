@@ -824,8 +824,8 @@ fixtures. `design.md` §6 lists the exact records and the profile mechanism.
 1. **Consent text** — who owns the legal/data-usage copy and its versioning?
 2. **Admin UI depth** — is a minimal approvals list enough for beta, or is a
    fuller admin screen needed?
-3. **Notifications** — are email notifications for incoming requests required at
-   launch, or is in-app only acceptable for the summit (everyone is in the room)?
+3. **Notifications** — _(Resolved; see below. The number is kept because other
+   documents cite question 4.)_
 4. **Sending domain / deliverability** — which from-address does the SMTP server
    send as, and are SPF/DKIM/DMARC set up for it? This is the open part of the
    email question: the magic link must reach a phone inbox within ~30 s to hold
@@ -846,6 +846,10 @@ fixtures. `design.md` §6 lists the exact records and the profile mechanism.
   needed for the beta. The app connects via nodemailer using `SMTP_*`
   environment configuration (R-NFR-5, design §1). Remaining sub-question: the
   sending domain, tracked as open question 4 above.
+- **Notifications** (2026-10-05) — the target of a connection request is
+  emailed at launch, not only badged in the app: hosts need to see the message
+  in the outbound log to test matching on staging, and the email is what brings
+  members back after the summit. The email follows R-NAV-9 (R-CONN-2, S4).
 - **Seed data** (2026-10-01) — split by environment rather than chosen between:
   prototype fixtures for dev, real whitelist + collected challenges for
   production. See §10 (R-SEED-1..7) and `design.md` §6.
