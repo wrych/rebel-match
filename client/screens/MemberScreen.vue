@@ -4,15 +4,18 @@ import { useRoute } from 'vue-router'
 import { rolePermissions } from '../../src/access'
 import { peerLine } from '../lib/challenges'
 import {
-  eraseMember,
+  deleteMember,
+  eraseNow,
   fetchMember,
   grantRole,
+  restoreMember,
   revokeRole,
   type EraseOutcome,
   type MemberDetail,
 } from '../lib/members'
+import { fetchConfig } from '../lib/api'
 import { loadMe } from '../lib/session'
-import { when } from '../lib/when'
+import { day, graceSpan, when } from '../lib/when'
 
 const route = useRoute()
 const id = String(route.params.id)
@@ -22,6 +25,8 @@ const problem = ref<string | null>(null)
 const notice = ref<string | null>(null)
 const canGrant = ref(false)
 const confirming = ref(false)
+const confirmingNow = ref(false)
+const graceDays = ref<number | null>(null)
 const busy = ref(false)
 const erased = ref(false)
 const roles = Object.keys(rolePermissions)
@@ -42,7 +47,8 @@ async function load(): Promise<void> {
 
 onMounted(async () => {
   try {
-    const [me] = await Promise.all([loadMe(), load()])
+    const [me, config] = await Promise.all([loadMe(), fetchConfig(), load()])
+    graceDays.value = config.limits.erasureGraceDays
     canGrant.value = me?.permissions.includes('role:grant') ?? false
   } catch {
     problem.value = 'This member could not be loaded.'
@@ -72,17 +78,46 @@ async function toggle(role: string, event: Event): Promise<void> {
   box.checked = member.value?.roles.includes(role) ?? !give
 }
 
-async function erase(): Promise<void> {
+// Each change ends by reading the member again, so the page shows what the
+// server now holds.
+async function act(change: () => Promise<string | null>): Promise<void> {
   busy.value = true
+  notice.value = null
   try {
-    const outcome = await eraseMember(id)
-    if (outcome === 'erased') erased.value = true
-    else notice.value = eraseNotice[outcome]
-    confirming.value = false
+    notice.value = await change()
   } catch {
     notice.value = 'That did not go through. Try again.'
   }
+  confirming.value = false
+  confirmingNow.value = false
   busy.value = false
+  if (!erased.value) await load()
+}
+
+async function remove(): Promise<void> {
+  await act(async () => {
+    const outcome = await deleteMember(id)
+    return outcome.result === 'deleted'
+      ? `Deleted. They are hidden from everyone and will be erased on ${day(outcome.eraseAfter)} unless restored.`
+      : eraseNotice[outcome.result]
+  })
+}
+
+async function restore(): Promise<void> {
+  await act(async () =>
+    (await restoreMember(id)) === 'restored'
+      ? 'Restored. They can sign in and are seen again.'
+      : 'There was nothing to restore.',
+  )
+}
+
+async function erase(): Promise<void> {
+  await act(async () => {
+    const outcome = await eraseNow(id)
+    if (outcome !== 'erased') return eraseNotice[outcome]
+    erased.value = true
+    return null
+  })
 }
 </script>
 
@@ -96,7 +131,7 @@ async function erase(): Promise<void> {
     <div v-else-if="erased" class="stack">
       <h1 class="display display-lg">Deleted</h1>
       <p class="notice notice-solid" role="status">
-        {{ member?.email }} and everything attached to them are gone.
+        {{ member?.email }} and everything attached to them are gone for good.
       </p>
     </div>
 
@@ -200,12 +235,23 @@ async function erase(): Promise<void> {
         </p>
       </article>
 
-      <article class="card">
-        <h2 class="card-title">Delete</h2>
-        <div v-if="confirming" class="stack-tight">
+      <article v-if="member.status === 'deleted'" class="card deleted">
+        <h2 class="card-title">Set to be deleted</h2>
+        <p class="small">
+          Hidden from everyone and erased for good on
+          <time v-if="member.eraseAfter" :datetime="member.eraseAfter">{{
+            day(member.eraseAfter)
+          }}</time
+          >{{
+            member.deletedBySelf
+              ? ', as they asked. They can still keep it with the link we email them when they ask to sign in.'
+              : ', as a host deleted them. Only a host can restore them.'
+          }}
+        </p>
+        <div v-if="confirmingNow" class="stack-tight">
           <p class="alert" role="alert">
-            Delete {{ member.email }} for good? Everything they wrote goes with
-            them. This cannot be undone.
+            Erase {{ member.email }} now? Everything about them goes for good,
+            and nobody can restore it.
           </p>
           <div class="actions">
             <button
@@ -214,7 +260,54 @@ async function erase(): Promise<void> {
               :disabled="busy"
               @click="erase"
             >
-              Delete for good
+              Erase now
+            </button>
+            <button
+              type="button"
+              class="btn btn-ghost btn-small"
+              :disabled="busy"
+              @click="confirmingNow = false"
+            >
+              Keep for now
+            </button>
+          </div>
+        </div>
+        <div v-else class="actions">
+          <button
+            type="button"
+            class="btn btn-primary btn-small"
+            :disabled="busy"
+            @click="restore"
+          >
+            Restore
+          </button>
+          <button
+            type="button"
+            class="btn btn-ghost btn-small"
+            :disabled="busy"
+            @click="confirmingNow = true"
+          >
+            Erase now…
+          </button>
+        </div>
+      </article>
+
+      <article v-else class="card">
+        <h2 class="card-title">Delete</h2>
+        <div v-if="confirming" class="stack-tight">
+          <p class="alert" role="alert">
+            Delete {{ member.email }}? They are hidden from everyone at once and
+            erased with everything they wrote after {{ graceSpan(graceDays) }},
+            unless restored.
+          </p>
+          <div class="actions">
+            <button
+              type="button"
+              class="btn btn-dark btn-small"
+              :disabled="busy"
+              @click="remove"
+            >
+              Delete
             </button>
             <button
               type="button"
@@ -228,8 +321,9 @@ async function erase(): Promise<void> {
         </div>
         <div v-else class="stack-tight">
           <p class="small">
-            Removes them with their challenges, requests, swipes, follows and
-            messages (GDPR erasure).
+            Hides them at once and erases them with their challenges, requests,
+            swipes, follows and messages after {{ graceSpan(graceDays) }} (GDPR
+            erasure). Until then you can restore them.
           </p>
           <button
             type="button"
@@ -245,6 +339,10 @@ async function erase(): Promise<void> {
 </template>
 
 <style scoped>
+.deleted {
+  border: 2px solid var(--accent);
+}
+
 .back {
   color: var(--muted);
 }

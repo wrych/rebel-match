@@ -106,6 +106,7 @@ describe('verifyToken', () => {
 
     expect(await auth.verifyToken(raw)).toEqual({
       ok: true,
+      kind: 'self_service',
       memberId: 'm-ada',
       next: '/',
     })

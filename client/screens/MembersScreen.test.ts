@@ -39,6 +39,8 @@ const HOLD_MS = 400
 
 type Reply = { status: number; body?: unknown }
 
+const GRACE = { eraseAfter: '2026-11-04T10:00:00.000Z' }
+
 /** Serves the roster and answers each change by method, recording it. */
 function server(
   replies: Partial<Record<'POST' | 'DELETE', Reply>> = {},
@@ -52,7 +54,12 @@ function server(
       if (method !== 'GET') calls.push(`${method} ${url}`)
       const reply =
         url === '/api/config'
-          ? { status: 200, body: { limits: { holdToSelectMs: HOLD_MS } } }
+          ? {
+              status: 200,
+              body: {
+                limits: { holdToSelectMs: HOLD_MS, erasureGraceDays: 30 },
+              },
+            }
           : method === 'GET'
             ? { status: ok ? 200 : 500, body: { members: [ben, mia] } }
             : (replies[method as 'POST' | 'DELETE'] ?? { status: 204 })
@@ -223,7 +230,7 @@ describe('MembersScreen, selecting several (R-MEM-3)', () => {
   })
 
   it('deletes everyone selected after one confirmation that counts them', async () => {
-    const { calls } = server()
+    const { calls } = server({ DELETE: { status: 200, body: GRACE } })
     const screen = await shown()
     await selectAll(screen)
 
@@ -232,7 +239,7 @@ describe('MembersScreen, selecting several (R-MEM-3)', () => {
       .find((b) => b.text() === 'Delete…')
       ?.trigger('click')
     expect(screen.find('[role="alert"]').text()).toContain(
-      'Delete 2 members for good?',
+      'Delete 2 members? They are hidden from everyone at once and erased with everything they wrote after 30 days',
     )
     expect(calls).toEqual([])
 
@@ -243,7 +250,9 @@ describe('MembersScreen, selecting several (R-MEM-3)', () => {
       'DELETE /api/admin/members/m-ben',
       'DELETE /api/admin/members/m-mia',
     ])
-    expect(screen.find('[role="status"]').text()).toContain('Deleted')
+    const text = screen.find('[role="status"]').text()
+    expect(text).toContain('Deleted, hidden from everyone')
+    expect(text).toContain('4 November 2026')
   })
 
   it('puts the actions above the list, where they stay in reach', async () => {
@@ -290,12 +299,14 @@ describe('MembersScreen, selecting several (R-MEM-3)', () => {
       vi.fn((_url: string, init?: { method?: string }) =>
         Promise.resolve(
           init?.method === 'DELETE'
-            ? { ok: true, status: 204, json: async () => undefined }
+            ? { ok: true, status: 200, json: async () => GRACE }
             : _url === '/api/config'
               ? {
                   ok: true,
                   status: 200,
-                  json: async () => ({ limits: { holdToSelectMs: HOLD_MS } }),
+                  json: async () => ({
+                    limits: { holdToSelectMs: HOLD_MS, erasureGraceDays: 30 },
+                  }),
                 }
               : { ok: false, status: 500, json: async () => ({}) },
         ),
@@ -315,7 +326,7 @@ describe('MembersScreen, selecting several (R-MEM-3)', () => {
   })
 
   it('acts only on selected members still in view', async () => {
-    const { calls } = server()
+    const { calls } = server({ DELETE: { status: 200, body: GRACE } })
     const screen = await shown()
     await selectAll(screen)
     await screen.find('#member-search').setValue('mia')

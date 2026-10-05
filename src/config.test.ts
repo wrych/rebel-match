@@ -60,6 +60,13 @@ describe('loadConfig', () => {
     ).toBe(6)
   })
 
+  it('erases due accounts hourly, on its own interval (ADR 0032)', () => {
+    expect(loadConfig(valid).erasureSweepIntervalHours).toBe(1)
+    const config = loadConfig({ ...valid, ERASURE_SWEEP_INTERVAL_HOURS: '6' })
+    expect(config.erasureSweepIntervalHours).toBe(6)
+    expect(config.outboxPurgeIntervalHours).toBe(1)
+  })
+
   it('refuses a purge interval too long for a Node timer', () => {
     expect(
       loadConfig({ ...valid, OUTBOX_PURGE_INTERVAL_HOURS: '596' })

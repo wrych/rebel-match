@@ -383,6 +383,20 @@ const catalogue: Group[] = [
     explanation: 'The wording members agree to, and usage analytics.',
     entries: [
       {
+        name: 'Deleted accounts are erased after',
+        explanation:
+          'A deleted account is hidden at once and erased after this long, ' +
+          'so the member or a host can still undo it until then.',
+        read: (c) => c.limits.erasureGraceDays,
+        unit: DAYS,
+      },
+      {
+        name: 'Erase due accounts every',
+        explanation: 'How often the server erases accounts past that period.',
+        read: (c) => c.erasureSweepIntervalHours,
+        unit: HOURS,
+      },
+      {
         name: 'Consent wording in force',
         explanation:
           'The version of the consent members accept; a new version asks ' +

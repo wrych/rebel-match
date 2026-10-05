@@ -26,6 +26,8 @@ const listed = {
   companySize: companySizeLabel,
   status: members.status,
   createdAt: members.createdAt,
+  eraseAfter: members.eraseAfter,
+  deletedBySelf: members.deletedBySelf,
   role: memberRoles.roleKey,
 }
 
@@ -39,6 +41,8 @@ interface ListedRow {
   companySize: string | null
   status: RosterMember['status']
   createdAt: Date
+  eraseAfter: Date | null
+  deletedBySelf: boolean | null
   role: string | null
 }
 
@@ -56,6 +60,8 @@ function oneMemberPerId(rows: ListedRow[]): RosterMember[] {
       status: row.status,
       roles: [],
       joinedAt: row.createdAt.toISOString(),
+      eraseAfter: row.eraseAfter?.toISOString() ?? null,
+      deletedBySelf: row.deletedBySelf,
     }
     if (row.role !== null) member.roles.push(row.role)
     byId.set(member.id, member)

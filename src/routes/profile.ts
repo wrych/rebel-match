@@ -2,9 +2,11 @@ import { Router } from 'express'
 import { z } from 'zod'
 import type { AuthProvider } from '../auth/index.js'
 import type { Limits } from '../config.js'
+import type { ErasureService } from '../services/erasure.js'
 import type { ProfileEdit, ProfileStore } from '../services/profile.js'
 import { companySizeKeys, sectorKeys } from '../profile-options.js'
 import { displayName, optionalChoice, optionalText } from './profile-fields.js'
+import { setCookie } from './auth.js'
 import { requireSession, type GuardedLocals } from './require-permission.js'
 
 type TextLimits = Pick<
@@ -22,11 +24,13 @@ function editBody(limits: TextLimits): z.ZodType<ProfileEdit> {
   })
 }
 
-/** `GET` and `PUT /api/profile` (design §3): the member's own profile and
- * privacy, and edits to it within the onboarding limits (R-PROF-1,2). */
+/** `GET`, `PUT` and `DELETE /api/profile` (design §3): the member's own
+ * profile and privacy, edits within the onboarding limits, and erasing their
+ * own account (R-PROF-1,2). */
 export function profileRoutes(deps: {
   auth: AuthProvider
   profile: ProfileStore
+  erasure: ErasureService
   config: { limits: TextLimits }
 }): Router {
   const router = Router()
@@ -52,6 +56,27 @@ export function profileRoutes(deps: {
     const member = (response.locals as GuardedLocals).member
     await deps.profile.update(member.id, edit.data)
     response.status(204).end()
+  })
+
+  // Deleting as a host does, refused for the same reasons, but marked as the
+  // member's own so their emailed link can undo it (ADR 0032). The session
+  // has ended, so its cookie is cleared too.
+  router.delete('/api/profile', guard, async (request, response) => {
+    const member = (response.locals as GuardedLocals).member
+    const outcome = await deps.erasure.delete(member.id, true)
+    if (
+      outcome.result === 'last_admin' ||
+      outcome.result === 'created_invites'
+    ) {
+      response.status(409).json({ result: outcome.result })
+      return
+    }
+    setCookie(response, await deps.auth.endSession(request))
+    response.json(
+      outcome.result === 'scheduled'
+        ? { eraseAfter: outcome.eraseAfter.toISOString() }
+        : {},
+    )
   })
 
   return router

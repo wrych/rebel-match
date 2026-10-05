@@ -118,6 +118,21 @@ describe('LoginScreen', () => {
     expect(screen.find('[role="alert"]').text()).toContain('has expired')
   })
 
+  it('confirms a deleted account (R-PROF-2)', () => {
+    respondWith({ limits: {}, consentVersion: '2026-11-01' })
+    window.history.replaceState(
+      null,
+      '',
+      '/login?account=deleted&until=2026-11-04T10:00:00.000Z',
+    )
+
+    const text = mount(LoginScreen).find('[role="status"]').text()
+
+    expect(text).toContain('hidden from everyone')
+    expect(text).toContain('4 November 2026')
+    expect(text).toContain('Changed your mind?')
+  })
+
   it('shows no alert on an ordinary visit', () => {
     respondWith({ limits: {}, consentVersion: '2026-11-01' })
 

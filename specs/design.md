@@ -81,6 +81,7 @@ thresholds have sane defaults in the file and may be overridden by env.
 | `limits.outboxRetentionDays`   | `30`                          | R-MSG-6                   |
 | `limits.erasureGraceDays`      | `30`                          | R-NFR-7                   |
 | `outboxPurgeIntervalHours`     | `1`                           | R-MSG-6                   |
+| `erasureSweepIntervalHours`    | `1`                           | R-NFR-7                   |
 | `limits.outboxPageSize`        | `100`                         | R-MSG-5                   |
 | `limits.deckPageSize`          | `20`                          | R-OFF-1                   |
 | `limits.whitelistBatchMax`     | `1000`                        | R-AUTH-1                  |

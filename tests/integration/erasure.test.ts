@@ -33,6 +33,8 @@ const person = (): Person => ({
 
 let db: TestDatabase
 let erasure: ErasureService
+let clock = new Date()
+const DAY_MS = 86_400_000
 const guard = `erasure-${randomUUID().slice(0, 8)}`
 const created: string[] = []
 
@@ -146,6 +148,8 @@ beforeAll(async () => {
   erasure = createErasureService({
     store: createErasureStore(db.drizzle),
     policy: { ...configPolicy, rolesGranting: () => [guard] },
+    graceDays: () => 30,
+    now: () => clock,
   })
 })
 
@@ -234,5 +238,113 @@ describe('erasing a member over Postgres (R-NFR-7, R-MSG-6)', () => {
     ])
 
     expect(outcomes.sort()).toEqual(['erased', 'last_admin'])
+  })
+})
+
+async function statusOf(member: Person): Promise<Record<string, unknown>> {
+  const [row] = await db.query(
+    'SELECT status, status_before_deletion, deleted_by_self, erase_after ' +
+      'FROM members WHERE id = ?',
+    [member.id],
+  )
+  return row ?? {}
+}
+
+describe('deleting with a grace period over Postgres (ADR 0032)', () => {
+  beforeEach(() => {
+    clock = new Date()
+  })
+
+  it('deactivates now, ends their sessions, and keeps everything else', async () => {
+    const ana = person()
+    const ben = person()
+    await addMember(ana)
+    await addMember(ben)
+    await fillIn(ana, ben)
+
+    const outcome = await erasure.delete(ana.id, true)
+
+    expect(outcome).toEqual({
+      result: 'scheduled',
+      eraseAfter: new Date(clock.getTime() + 30 * DAY_MS),
+    })
+    expect(await statusOf(ana)).toMatchObject({
+      status: 'deleted',
+      status_before_deletion: 'active',
+      deleted_by_self: true,
+    })
+    const left = await traces(ana)
+    expect(left.sessions).toBe(0)
+    expect(left.challenges).toBe(1)
+    expect(left.members).toBe(1)
+  })
+
+  it('keeps the first date when deleted again', async () => {
+    const ana = person()
+    await addMember(ana)
+    const first = await erasure.delete(ana.id, false)
+
+    clock = new Date(clock.getTime() + DAY_MS)
+    expect(await erasure.delete(ana.id, true)).toEqual(first)
+  })
+
+  it('refuses the last admin, and a deleted admin no longer counts (R-ROLE-9)', async () => {
+    const ana = person()
+    const ben = person()
+    await addMember(ana)
+    await addMember(ben)
+    await db.query(
+      'INSERT INTO member_roles (member_id, role_key) VALUES (?, ?), (?, ?)',
+      [ana.id, guard, ben.id, guard],
+    )
+
+    expect((await erasure.delete(ana.id, false)).result).toBe('scheduled')
+    expect(await erasure.delete(ben.id, false)).toEqual({
+      result: 'last_admin',
+    })
+  })
+
+  it('lets a host undo any deletion, back to the former status', async () => {
+    const ana = person()
+    await addMember(ana)
+    await erasure.delete(ana.id, false)
+
+    expect(await erasure.restore(ana.id)).toBe(true)
+    expect(await statusOf(ana)).toMatchObject({
+      status: 'active',
+      status_before_deletion: null,
+      erase_after: null,
+    })
+    expect(await erasure.restore(ana.id)).toBe(false)
+  })
+
+  it("lets the member undo only their own deletion, not a host's", async () => {
+    const ana = person()
+    const ben = person()
+    await addMember(ana)
+    await addMember(ben)
+    await erasure.delete(ana.id, true)
+    await erasure.delete(ben.id, false)
+
+    expect(await erasure.restoreOwn(ana.id)).toBe(true)
+    expect(await erasure.restoreOwn(ben.id)).toBe(false)
+    expect((await statusOf(ben)).status).toBe('deleted')
+  })
+
+  it('erases a deleted account only once its time has come', async () => {
+    const ana = person()
+    const ben = person()
+    await addMember(ana)
+    await addMember(ben)
+    await fillIn(ana, ben)
+    await erasure.delete(ana.id, true)
+
+    clock = new Date(clock.getTime() + 29 * DAY_MS)
+    await erasure.eraseDue()
+    expect((await traces(ana)).members).toBe(1)
+
+    clock = new Date(clock.getTime() + 2 * DAY_MS)
+    expect(await erasure.eraseDue()).toBeGreaterThanOrEqual(1)
+    expect(Object.values(await traces(ana)).every((n) => n === 0)).toBe(true)
   })
 })

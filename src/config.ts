@@ -108,7 +108,16 @@ const envSchema = z
     DECK_PAGE_SIZE: z.coerce.number().int().positive().default(20),
     WHITELIST_BATCH_MAX: z.coerce.number().int().positive().default(1000),
     OUTBOX_RETENTION_DAYS: z.coerce.number().int().positive().default(30),
+    // How long a deleted account waits before it is erased (ADR 0032).
+    ERASURE_GRACE_DAYS: z.coerce.number().int().positive().default(30),
     OUTBOX_PURGE_INTERVAL_HOURS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .max(MAX_TIMER_HOURS)
+      .default(1),
+    // How often the server erases the deleted accounts that are due (ADR 0032).
+    ERASURE_SWEEP_INTERVAL_HOURS: z.coerce
       .number()
       .int()
       .positive()
@@ -193,6 +202,7 @@ export interface Limits {
   inviteDefaultMaxUses: number
   inviteDefaultHours: number
   outboxRetentionDays: number
+  erasureGraceDays: number
   outboxPageSize: number
   deckPageSize: number
   whitelistBatchMax: number
@@ -255,6 +265,7 @@ export interface Config {
   sessionSecret: string
   sessionTtlDays: number
   outboxPurgeIntervalHours: number
+  erasureSweepIntervalHours: number
   settingsRefreshSeconds: number
   mail: {
     delivery: Env['MAIL_DELIVERY']
@@ -282,6 +293,7 @@ function limitsFrom(env: Env): Limits {
     inviteDefaultMaxUses: env.INVITE_DEFAULT_MAX_USES,
     inviteDefaultHours: env.INVITE_DEFAULT_HOURS,
     outboxRetentionDays: env.OUTBOX_RETENTION_DAYS,
+    erasureGraceDays: env.ERASURE_GRACE_DAYS,
     outboxPageSize: env.OUTBOX_PAGE_SIZE,
     deckPageSize: env.DECK_PAGE_SIZE,
     whitelistBatchMax: env.WHITELIST_BATCH_MAX,
@@ -329,6 +341,7 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): Config {
     sessionSecret: env.SESSION_SECRET,
     sessionTtlDays: env.SESSION_TTL_DAYS,
     outboxPurgeIntervalHours: env.OUTBOX_PURGE_INTERVAL_HOURS,
+    erasureSweepIntervalHours: env.ERASURE_SWEEP_INTERVAL_HOURS,
     settingsRefreshSeconds: env.SETTINGS_REFRESH_SECONDS,
     mail: {
       delivery: env.MAIL_DELIVERY,

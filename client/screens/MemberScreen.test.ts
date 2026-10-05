@@ -35,10 +35,12 @@ const mia = {
 
 type Reply = { status: number; body?: unknown }
 
-/** Serves the member and answers each change with `replies[method]`. */
-function server(replies: Partial<Record<'POST' | 'DELETE', Reply>> = {}): {
-  calls: string[]
-} {
+/** Serves the member, as `shown` holds them, and the settings, and answers
+ * each change with `replies[method]`. */
+function server(
+  replies: Partial<Record<'POST' | 'DELETE', Reply>> = {},
+  shown: object = mia,
+): { calls: string[] } {
   const calls: string[] = []
   vi.stubGlobal(
     'fetch',
@@ -46,9 +48,11 @@ function server(replies: Partial<Record<'POST' | 'DELETE', Reply>> = {}): {
       const method = init?.method ?? 'GET'
       if (method !== 'GET') calls.push(`${method} ${url}`)
       const reply =
-        method === 'GET'
-          ? { status: 200, body: { member: mia } }
-          : (replies[method as 'POST' | 'DELETE'] ?? { status: 204 })
+        method !== 'GET'
+          ? (replies[method as 'POST' | 'DELETE'] ?? { status: 204 })
+          : url === '/api/config'
+            ? { status: 200, body: { limits: { erasureGraceDays: 30 } } }
+            : { status: 200, body: { member: shown } }
       return Promise.resolve({
         ok: reply.status < 300,
         status: reply.status,
@@ -57,6 +61,13 @@ function server(replies: Partial<Record<'POST' | 'DELETE', Reply>> = {}): {
     }),
   )
   return { calls }
+}
+
+const deletedMia = {
+  ...mia,
+  status: 'deleted',
+  eraseAfter: '2026-11-04T10:00:00.000Z',
+  deletedBySelf: true,
 }
 
 async function shown(): Promise<ReturnType<typeof mount>> {
@@ -126,19 +137,54 @@ describe('MemberScreen (R-MEM-2)', () => {
     expect((member?.element as HTMLInputElement).checked).toBe(true)
   })
 
-  it('asks before deleting, and deletes on confirmation (R-NFR-7)', async () => {
+  it('asks before deleting, and deletes on confirmation (ADR 0032)', async () => {
     permissions.mockReturnValue(['member:delete'])
-    const { calls } = server()
+    const { calls } = server({
+      DELETE: { status: 200, body: { eraseAfter: deletedMia.eraseAfter } },
+    })
     const screen = await shown()
 
     await screen.find('button.btn-ghost').trigger('click')
-    expect(screen.find('[role="alert"]').text()).toContain('cannot be undone')
+    expect(screen.find('[role="alert"]').text()).toContain(
+      'erased with everything they wrote after 30 days, unless restored',
+    )
     expect(calls).toEqual([])
 
     await screen.find('button.btn-dark').trigger('click')
     await flushPromises()
 
     expect(calls).toEqual(['DELETE /api/admin/members/m-mia'])
+    expect(screen.find('[role="status"]').text()).toContain(
+      'will be erased on 4 November 2026 unless restored',
+    )
+  })
+
+  it('shows when a deleted member goes, and restores them', async () => {
+    permissions.mockReturnValue(['member:delete'])
+    const { calls } = server({}, deletedMia)
+    const screen = await shown()
+
+    expect(screen.find('.deleted').text()).toContain('4 November 2026')
+    expect(screen.find('.deleted').text()).toContain('as they asked')
+    await screen.find('.deleted button.btn-primary').trigger('click')
+    await flushPromises()
+
+    expect(calls).toEqual(['POST /api/admin/members/m-mia/restore'])
+    expect(screen.find('[role="status"]').text()).toContain('Restored')
+  })
+
+  it('erases a deleted member at once after asking', async () => {
+    permissions.mockReturnValue(['member:delete'])
+    const { calls } = server({}, deletedMia)
+    const screen = await shown()
+
+    await screen.find('.deleted button.btn-ghost').trigger('click')
+    expect(screen.find('[role="alert"]').text()).toContain('nobody can restore')
+    expect(calls).toEqual([])
+    await screen.find('.deleted button.btn-dark').trigger('click')
+    await flushPromises()
+
+    expect(calls).toEqual(['DELETE /api/admin/members/m-mia?now=true'])
     expect(screen.find('h1').text()).toBe('Deleted')
   })
 

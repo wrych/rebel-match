@@ -12,6 +12,10 @@ export interface RosterMember {
   status: 'applicant' | 'active' | 'rejected' | 'deleted'
   roles: string[]
   joinedAt: string
+  /** For a deleted account: when it will be erased, and whether its member
+   * deleted it, so only a host can undo it otherwise (ADR 0032). */
+  eraseAfter: string | null
+  deletedBySelf: boolean | null
 }
 
 /** Everything held about one member, for their page (R-MEM-2). */

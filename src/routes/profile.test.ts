@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 import { createAuth, createMemoryAuthStore } from '../auth/index.js'
 import { loadConfig } from '../config.js'
 import { configPolicy } from '../permissions.js'
+import type { EraseOutcome } from '../services/erasure.js'
 import type { OwnProfile, ProfileEdit } from '../services/profile.js'
 import { profileRoutes } from './profile.js'
 
@@ -31,11 +32,13 @@ const own: OwnProfile = {
   analyticsOptIn: false,
 }
 
-function setup(): {
+function setup(outcome: EraseOutcome = 'erased'): {
   app: Express
   edits: { memberId: string; edit: ProfileEdit }[]
+  erased: string[]
 } {
   const edits: { memberId: string; edit: ProfileEdit }[] = []
+  const erased: string[] = []
   const app = express()
   app.use(express.json())
   app.use(
@@ -49,9 +52,26 @@ function setup(): {
           return Promise.resolve()
         },
       },
+      erasure: {
+        erase: () => Promise.reject(new Error('not erased at once')),
+        delete: (memberId, bySelf) => {
+          erased.push(`${memberId}${bySelf ? ' by self' : ''}`)
+          return Promise.resolve(
+            outcome === 'erased'
+              ? {
+                  result: 'scheduled',
+                  eraseAfter: new Date('2026-11-04T10:00:00.000Z'),
+                }
+              : { result: outcome },
+          )
+        },
+        restore: () => Promise.resolve(false),
+        restoreOwn: () => Promise.resolve(false),
+        eraseDue: () => Promise.resolve(0),
+      },
     }),
   )
-  return { app, edits }
+  return { app, edits, erased }
 }
 
 async function cookie(): Promise<string> {
@@ -138,5 +158,44 @@ describe('PUT /api/profile', () => {
       .send({ name: 'Ada' })
 
     expect(response.status).toBe(401)
+  })
+})
+
+describe('DELETE /api/profile', () => {
+  it("deletes the member's own account as theirs, and clears the cookie (R-PROF-2, ADR 0032)", async () => {
+    const { app, erased } = setup()
+
+    const response = await request(app)
+      .delete('/api/profile')
+      .set('Cookie', await cookie())
+
+    expect(response.status).toBe(200)
+    expect(response.body).toEqual({ eraseAfter: '2026-11-04T10:00:00.000Z' })
+    expect(erased).toEqual(['m-ada by self'])
+    expect(String(response.headers['set-cookie'])).toMatch(
+      /Expires=Thu, 01 Jan 1970|Max-Age=0/,
+    )
+  })
+
+  it.each(['last_admin', 'created_invites'] as const)(
+    'refuses with 409 %s and keeps the session',
+    async (outcome) => {
+      const { app } = setup(outcome)
+
+      const response = await request(app)
+        .delete('/api/profile')
+        .set('Cookie', await cookie())
+
+      expect(response.status).toBe(409)
+      expect(response.body).toEqual({ result: outcome })
+      expect(response.headers['set-cookie']).toBeUndefined()
+    },
+  )
+
+  it('is 401 for nobody', async () => {
+    const { app, erased } = setup()
+
+    expect((await request(app).delete('/api/profile')).status).toBe(401)
+    expect(erased).toEqual([])
   })
 })

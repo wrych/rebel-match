@@ -47,6 +47,24 @@ describe('mailLinks', () => {
     expect(mailer.sent[0]?.text).toMatch(/approved/)
   })
 
+  it('sends a keep-it link with the erasure date (ADR 0032)', async () => {
+    const mailer = recordingMailer('sent')
+
+    await mailLinks(mailer)({
+      ...link,
+      kind: 'restore',
+      eraseAfter: new Date('2026-11-04T10:00:00Z'),
+    })
+
+    expect(mailer.sent[0]).toMatchObject({
+      kind: 'magic_link',
+      subject: 'Keep your Rebel Match account?',
+      credential: link.url,
+    })
+    expect(mailer.sent[0]?.text).toContain('erased for good on 4 November 2026')
+    expect(mailer.sent[0]?.text).toContain(link.url)
+  })
+
   it('accepts a suppressed send, as in development', async () => {
     await expect(
       mailLinks(recordingMailer('suppressed'))(link),

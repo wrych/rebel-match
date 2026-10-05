@@ -1,4 +1,4 @@
-import type { AuthProvider } from '../auth/index.js'
+import type { AuthProvider, LinkOptions } from '../auth/index.js'
 import type { Client, PacedGate } from './paced-gate.js'
 import type { ApplicantHandles } from './applicant-handle.js'
 import type { Challenge } from './human-check.js'
@@ -7,7 +7,11 @@ import type { RedeemInvite } from './invite-redemption.js'
 export type MemberStatus = 'applicant' | 'active' | 'rejected' | 'deleted'
 
 export type Admission =
-  'send-link' | 'record-applicant' | 'already-asked' | 'not-approved'
+  | 'send-link'
+  | 'record-applicant'
+  | 'already-asked'
+  | 'not-approved'
+  | 'set-to-be-deleted'
 
 /** What a request for a link does, by the address's status (R-AUTH-1,2,4):
  * an active member gets a link; an unknown address becomes an applicant; a
@@ -17,6 +21,7 @@ export function admissionFor(status: MemberStatus | null): Admission {
   if (status === 'active') return 'send-link'
   if (status === null) return 'record-applicant'
   if (status === 'rejected') return 'not-approved'
+  if (status === 'deleted') return 'set-to-be-deleted'
   return 'already-asked'
 }
 
@@ -29,6 +34,9 @@ export interface AdmissionStore {
   /** Adds what the applicant said about themselves, keeping any part they
    * leave out; false when the address is not a pending applicant. */
   describeApplicant(email: string, details: ApplicantDetails): Promise<boolean>
+  /** When an account its own member deleted will be erased; null when a host
+   * deleted it, or it is not deleted (ADR 0032). */
+  ownDeletion(email: string): Promise<Date | null>
 }
 
 export interface ApplicantDetails {
@@ -96,6 +104,7 @@ export function createAdmission(deps: AdmissionDeps): AdmissionService {
     if (admission === 'send-link') return sendLink(deps, email, opts)
     if (admission === 'not-approved') return { state: 'not-approved' }
     if (admission === 'already-asked') return { state: 'access-requested' }
+    if (admission === 'set-to-be-deleted') return keepItLink(deps, email, opts)
     if (opts.invite === undefined)
       return queueApplicant(deps, email, opts.client, {})
 
@@ -120,27 +129,44 @@ export function createAdmission(deps: AdmissionDeps): AdmissionService {
 }
 
 // Past the address's ceiling the answer is the same and nothing is sent, so
-// the limit tells a caller nothing more about the address (R-NFR-8).
+// the limit tells a caller nothing more about the address (R-NFR-8). A null
+// `link` is paced the same way and sends nothing, for an address that must
+// answer as a member's without hearing anything (ADR 0032).
 async function sendLink(
   deps: AdmissionDeps,
   email: string,
   opts: LinkRequestOptions,
+  link: LinkOptions | null = { kind: 'self_service', next: opts.next },
 ): Promise<LinkRequest> {
   const decision = await deps.linkEmails.admit(email, opts.client.altcha)
   if (decision.result === 'human-check')
     return { state: 'human-check', challenge: decision.challenge }
-  if (decision.result === 'admit') {
+  if (decision.result === 'admit' && link !== null) {
     try {
-      await deps.auth.issueLink(email, {
-        kind: 'self_service',
-        next: opts.next,
-      })
+      await deps.auth.issueLink(email, link)
     } catch (error) {
       deps.linkEmails.release(email)
       throw error
     }
   }
   return { state: 'check-email' }
+}
+
+// A deleted account answers as an active one does, so the screen reveals
+// nothing; only its member's inbox hears of the deletion, with a link to keep
+// it, and a host's deletion sends nothing at all (ADR 0032).
+async function keepItLink(
+  deps: AdmissionDeps,
+  email: string,
+  opts: LinkRequestOptions,
+): Promise<LinkRequest> {
+  const eraseAfter = await deps.store.ownDeletion(email)
+  return sendLink(
+    deps,
+    email,
+    opts,
+    eraseAfter === null ? null : { kind: 'restore', eraseAfter },
+  )
 }
 
 // Anyone can ask again for an address, so only the request that recorded the

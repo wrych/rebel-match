@@ -9,6 +9,7 @@ import {
   sectors,
 } from '../../src/profile-options'
 import AnalyticsToggle from '../components/AnalyticsToggle.vue'
+import DeleteAccount from '../components/DeleteAccount.vue'
 import SavedTick from '../components/SavedTick.vue'
 import { fetchConfig, type ClientConfig } from '../lib/api'
 import { fetchProfile, saveProfile, type OwnProfile } from '../lib/profile'
@@ -20,7 +21,6 @@ type Field = (typeof fields)[number]
 
 const profile = ref<OwnProfile | null>(null)
 const limits = ref<ClientConfig['limits'] | null>(null)
-const leaveTo = ref<string | null>(null)
 const problem = ref<string | null>(null)
 const blank = (): Record<Field, string> => ({
   name: '',
@@ -56,18 +56,12 @@ const consentWords = computed(() =>
     ? consentWordsOf(profile.value.consentVersion)
     : [],
 )
-const leaveMail = computed(() =>
-  leaveTo.value === null
-    ? null
-    : `mailto:${leaveTo.value}?subject=${encodeURIComponent('Please delete my Rebel Match account')}`,
-)
 
 onMounted(async () => {
   try {
     const [own, config] = await Promise.all([fetchProfile(), fetchConfig()])
     profile.value = own
     limits.value = config.limits
-    leaveTo.value = config.feedbackTo
     for (const field of fields) form[field] = own[field] ?? ''
     form.sector = pickedOrBlank(own.sector, sectorKeys)
     form.companySize = pickedOrBlank(own.companySize, companySizeKeys)
@@ -246,15 +240,7 @@ function save(field: Field): Promise<void> {
         </div>
       </section>
 
-      <section class="stack-tight rule" aria-labelledby="leave-heading">
-        <h2 id="leave-heading" class="kicker">Leaving</h2>
-        <p class="small">
-          To leave Rebel Match and have everything about you deleted,
-          <a v-if="leaveMail" :href="leaveMail">email the host</a
-          ><template v-else>email the host</template>. They delete your account
-          together with your challenges and connection requests.
-        </p>
-      </section>
+      <DeleteAccount :grace-days="limits?.erasureGraceDays ?? null" />
     </template>
   </section>
 </template>

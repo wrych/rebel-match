@@ -204,7 +204,7 @@ printed dev link (R-DEV-6).
 - [x] Select several members by holding a card; give or take a role, or delete
       them. _(R-MEM-3)_
 - [ ] Delete your own account from the profile screen. _(R-PROF-2, C4)_
-- [ ] Erasure waits 30 days: deactivate now, undo by emailed link or host,
+- [x] Erasure waits 30 days: deactivate now, undo by emailed link or host,
       sweep after the grace period. _(R-NFR-7, ADR 0032)_
 
 ## M6 — Hardening & pilot _(by 2026-11-01)_

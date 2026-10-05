@@ -58,6 +58,8 @@ describe('the member roster over Postgres (R-NFR-7)', () => {
         status: 'active',
         roles: ['admin', 'member'],
         joinedAt: expect.any(String) as string,
+        eraseAfter: null,
+        deletedBySelf: null,
       },
       {
         id: asker.id,
@@ -70,6 +72,8 @@ describe('the member roster over Postgres (R-NFR-7)', () => {
         status: 'applicant',
         roles: [],
         joinedAt: expect.any(String) as string,
+        eraseAfter: null,
+        deletedBySelf: null,
       },
     ])
   })
