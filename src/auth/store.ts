@@ -31,4 +31,12 @@ export interface AuthStore {
   findSession(idHash: string): Promise<SessionRecord | null>
   extendSession(idHash: string, expiresAt: Date): Promise<void>
   deleteSession(idHash: string): Promise<void>
+  /** Deletes the sessions whose lifetime ended before `now`, and the tokens
+   * that expired or were used (ADR 0034). */
+  deleteExpired(now: Date): Promise<Purged>
+}
+
+export interface Purged {
+  sessions: number
+  tokens: number
 }

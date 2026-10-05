@@ -5,6 +5,7 @@ import { composeApp } from './compose.js'
 import { loadRuntimeConfig } from './runtime-config.js'
 import { openDatabase } from './db/open.js'
 import { startOutboxRetention } from './services/outbox-retention.js'
+import { startTokenPurge } from './services/token-purge.js'
 import { startErasureSweep } from './services/erasure-sweep.js'
 import { startSettingsRefresh } from './services/settings-refresh.js'
 
@@ -32,6 +33,14 @@ startErasureSweep({
   intervalHours: config.erasureSweepIntervalHours,
   onError: () => {
     console.warn('erasure sweep: failed, will retry next interval')
+  },
+})
+
+startTokenPurge({
+  auth: deps.auth,
+  intervalHours: config.tokenPurgeIntervalHours,
+  onError: () => {
+    console.warn('token purge: failed, will retry next interval')
   },
 })
 

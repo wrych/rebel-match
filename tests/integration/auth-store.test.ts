@@ -171,4 +171,43 @@ describe('the auth seam over Postgres', () => {
 
     expect(results.filter((r) => r.ok)).toHaveLength(1)
   })
+
+  it('purges expired sessions and tokens, keeping live ones (ADR 0034)', async () => {
+    const expireAll = async (): Promise<void> => {
+      await db.query(
+        'UPDATE sessions SET expires = extract(epoch FROM now())::bigint - 60 ' +
+          "WHERE data::jsonb ->> 'memberId' = ?",
+        [active.id],
+      )
+      await db.query(
+        "UPDATE magic_tokens SET expires_at = now() - interval '1 minute' " +
+          'WHERE member_id = ?',
+        [active.id],
+      )
+    }
+    const count = async (sql: string): Promise<number> =>
+      Number((await db.query(sql, [active.id]))[0]!['n'])
+    await auth.createSession(active.id)
+    await issueAndTake()
+    await expireAll()
+    const live = await auth.createSession(active.id)
+    const used = await issueAndTake()
+    expect((await auth.verifyToken(used)).ok).toBe(true)
+    const fresh = await issueAndTake()
+
+    const purged = await auth.purgeExpired()
+
+    expect(purged.sessions).toBeGreaterThanOrEqual(1)
+    expect(purged.tokens).toBeGreaterThanOrEqual(2)
+    expect(
+      await count(
+        "SELECT count(*) AS n FROM sessions WHERE data::jsonb ->> 'memberId' = ?",
+      ),
+    ).toBe(1)
+    expect(
+      await count('SELECT count(*) AS n FROM magic_tokens WHERE member_id = ?'),
+    ).toBe(1)
+    expect(await auth.currentMember(asRequest(live))).not.toBeNull()
+    expect((await auth.verifyToken(fresh)).ok).toBe(true)
+  })
 })

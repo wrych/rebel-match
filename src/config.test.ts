@@ -67,6 +67,14 @@ describe('loadConfig', () => {
     expect(config.outboxPurgeIntervalHours).toBe(1)
   })
 
+  it('purges expired sign-ins hourly, on its own interval (ADR 0034)', () => {
+    expect(loadConfig(valid).tokenPurgeIntervalHours).toBe(1)
+    expect(
+      loadConfig({ ...valid, TOKEN_PURGE_INTERVAL_HOURS: '3' })
+        .tokenPurgeIntervalHours,
+    ).toBe(3)
+  })
+
   it('refuses a purge interval too long for a Node timer', () => {
     expect(
       loadConfig({ ...valid, OUTBOX_PURGE_INTERVAL_HOURS: '596' })

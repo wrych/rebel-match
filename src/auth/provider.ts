@@ -205,5 +205,6 @@ export function createAuth(deps: AuthDeps): AuthProvider {
     currentMember: (request) => currentMember(ctx, request),
     renewSession: (request) => renewSession(ctx, request),
     endSession: (request) => endSession(ctx, request),
+    purgeExpired: () => ctx.store.deleteExpired(ctx.now()),
   }
 }

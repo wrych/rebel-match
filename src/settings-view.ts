@@ -411,6 +411,14 @@ const catalogue: Group[] = [
         unit: HOURS,
       },
       {
+        name: 'Delete expired sign-ins every',
+        explanation:
+          'How often the server deletes sessions and sign-in links past ' +
+          'their lifetime.',
+        read: (c) => c.tokenPurgeIntervalHours,
+        unit: HOURS,
+      },
+      {
         name: 'Consent wording in force',
         explanation:
           'The version of the consent members accept; a new version asks ' +

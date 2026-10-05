@@ -1,4 +1,4 @@
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, isNotNull, isNull, lt, or } from 'drizzle-orm'
 import type { Database } from '../db/connect.js'
 import { magicTokens, memberRoles, members, sessions } from '../db/schema.js'
 import type { AuthStore, SessionRecord, TokenRecord } from './store.js'
@@ -110,6 +110,19 @@ export function createAuthStore(db: Database): AuthStore {
       return row?.id ?? null
     },
     activeMemberRoles: (memberId) => activeMemberRoles(db, memberId),
+    deleteExpired: async (now) => {
+      const gone = await db
+        .delete(sessions)
+        .where(lt(sessions.expires, toSeconds(now)))
+        .returning({ id: sessions.sessionId })
+      const spent = await db
+        .delete(magicTokens)
+        .where(
+          or(lt(magicTokens.expiresAt, now), isNotNull(magicTokens.usedAt)),
+        )
+        .returning({ id: magicTokens.id })
+      return { sessions: gone.length, tokens: spent.length }
+    },
     ...tokenQueries(db),
     ...sessionQueries(db),
   }

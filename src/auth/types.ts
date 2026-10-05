@@ -1,3 +1,4 @@
+import type { Purged } from './store.js'
 import type { Permission } from '../access.js'
 
 /** `restore` keeps an account its member deleted, before signing in
@@ -69,4 +70,6 @@ export interface AuthProvider {
    * when it was extended, null when nothing changed. */
   renewSession(request: CallerRequest): Promise<SessionCookie | null>
   endSession(request: CallerRequest): Promise<SessionCookie>
+  /** Removes expired sessions and tokens from the store (ADR 0034). */
+  purgeExpired(): Promise<Purged>
 }
