@@ -17,7 +17,10 @@ function serve(pendingIncoming: number | null): ReturnType<typeof vi.fn> {
       return Promise.resolve({
         ok: true,
         status: 200,
-        json: async () => ({ feedbackTo: 'owner@example.org' }),
+        json: async () => ({
+          feedbackTo: 'owner@example.org',
+          limits: { matchesPollSeconds: 30 },
+        }),
       })
     return Promise.resolve(
       pendingIncoming === null
@@ -64,6 +67,53 @@ describe('TabBar', () => {
       'Matches, 2 requests waiting',
     )
     expect(matches?.attributes('aria-current')).toBe('page')
+  })
+
+  it('picks up a new request on its own, while the page is visible (R-MINE-4)', async () => {
+    vi.useFakeTimers()
+    let pending = 0
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () =>
+            url === '/api/config'
+              ? {
+                  feedbackTo: 'owner@example.org',
+                  limits: { matchesPollSeconds: 30 },
+                }
+              : { challenges: [], following: [], pendingIncoming: pending },
+        }),
+      ),
+    )
+    const bar = await mountBar()
+    expect(bar.find('.badge').exists()).toBe(false)
+
+    pending = 1
+    await vi.advanceTimersByTimeAsync(30_000)
+    await flushPromises()
+
+    expect(bar.find('.badge').text()).toBe('1')
+    bar.unmount()
+    vi.useRealTimers()
+  })
+
+  it('starts no timer when gone before the config arrived', async () => {
+    vi.useFakeTimers()
+    const fetchMock = serve(0)
+    const bar = mount(TabBar, {
+      global: { stubs: { RouterLink: RouterLinkStub } },
+    })
+    bar.unmount()
+    await flushPromises()
+    fetchMock.mockClear()
+
+    await vi.advanceTimersByTimeAsync(90_000)
+
+    expect(fetchMock).not.toHaveBeenCalled()
+    vi.useRealTimers()
   })
 
   it('shows no badge when nothing waits, or the count cannot be read', async () => {
