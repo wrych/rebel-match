@@ -26,18 +26,22 @@ interface Reply {
   body?: unknown
 }
 
-/** Serves the list and config, and answers each POST with `post`. */
+/** Serves the list and config, and answers each POST with `post` and each
+ * PATCH with `patch`. */
 function server(
   post: Reply = { status: 201, body: { invite } },
+  patch: Reply = { status: 200, body: { invite: { ...invite, maxUses: 600 } } },
 ): ReturnType<typeof vi.fn> {
   const fetchMock = vi.fn((url: string, init?: RequestInit) => {
     const reply: Reply =
       init?.method === 'POST'
         ? post
-        : {
-            status: 200,
-            body: url === '/api/config' ? { limits } : { invites: [invite] },
-          }
+        : init?.method === 'PATCH'
+          ? patch
+          : {
+              status: 200,
+              body: url === '/api/config' ? { limits } : { invites: [invite] },
+            }
     return Promise.resolve({
       ok: reply.status < 300,
       status: reply.status,
@@ -145,5 +149,42 @@ describe('InvitesScreen', () => {
     expect(screen.find('[role="alert"]').text()).toContain(
       'could not be loaded',
     )
+  })
+
+  it('raises a cap from the card, keeping the same code (R-INV-4)', async () => {
+    const fetchMock = server()
+    const screen = await mountScreen()
+
+    await screen
+      .findAll('button')
+      .find((b) => b.text() === 'Raise cap…')
+      ?.trigger('click')
+    await screen.find('input[type="number"][id^="cap-"]').setValue('600')
+    await screen.find('form.raise').trigger('submit')
+    await flushPromises()
+
+    const [url, init] = fetchMock.mock.calls.find(
+      ([, options]) => (options as RequestInit | undefined)?.method === 'PATCH',
+    ) as [string, RequestInit]
+    expect(url).toBe('/api/admin/invites/i-1')
+    expect(JSON.parse(String(init.body))).toEqual({ maxUses: 600 })
+    expect(screen.find('[role="status"]').text()).toContain(
+      'now admits up to 600',
+    )
+  })
+
+  it('says what a cap must be when the server refuses it', async () => {
+    server(undefined, { status: 400, body: { error: 'bad_cap' } })
+    const screen = await mountScreen()
+
+    await screen
+      .findAll('button')
+      .find((b) => b.text() === 'Raise cap…')
+      ?.trigger('click')
+    await screen.find('input[type="number"][id^="cap-"]').setValue('300')
+    await screen.find('form.raise').trigger('submit')
+    await flushPromises()
+
+    expect(screen.find('[role="status"]').text()).toContain('more than 400')
   })
 })

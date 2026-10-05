@@ -268,7 +268,7 @@ printed dev link (R-DEV-6).
       on the access-requested screen. _(R-INV-3,5)_
 - [x] `onboarding_completed` carries `seconds_to_onboard`, from the sign-in
       email to the consent, so R-NFR-3 is watched in Mixpanel. _(R-NFR-3)_
-- [ ] Raise an invite's cap from its card on the invite links screen.
+- [x] Raise an invite's cap from its card on the invite links screen.
       _(R-INV-4, R-INV-9)_
 - [ ] Record invite opens: `POST /auth/invite-opened` from the entry screen
       into `invite_opens`. _(R-STAT-6, ADR 0038)_
