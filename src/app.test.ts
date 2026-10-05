@@ -91,6 +91,7 @@ function deps(
     connections: {
       request: () => Promise.resolve({ result: 'not_found' }),
       incoming: () => Promise.resolve([]),
+      connected: () => Promise.resolve([]),
       get: () => Promise.resolve(null),
       respond: () => Promise.resolve('not_found'),
       contact: () => Promise.resolve(null),

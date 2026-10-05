@@ -6,6 +6,7 @@ import { loadConfig } from '../config.js'
 import { configPolicy } from '../permissions.js'
 import type {
   ConnectionService,
+  ConnectionView,
   NewConnection,
 } from '../services/connections.js'
 import { connectionRoutes } from './connections.js'
@@ -38,6 +39,10 @@ function setup(): { app: Express; requests: NewConnection[] } {
       return Promise.resolve({ result: 'created', id: 'r-1' })
     },
     incoming: () => Promise.resolve([]),
+    connected: (memberId) =>
+      Promise.resolve(
+        memberId === 'm-ada' ? [{ id: 'r-1' } as ConnectionView] : [],
+      ),
     get: (_m, id) => Promise.resolve(id === 'r-1' ? ({ id } as never) : null),
     respond: (_m, id) => Promise.resolve(id === 'r-1' ? 'done' : 'not_found'),
     contact: (_m, id) =>
@@ -117,6 +122,15 @@ describe('connection routes', () => {
       expect(response.status).toBe(404)
     },
   )
+
+  it('lists the caller’s own connections, not the path of one request (R-MINE-5)', async () => {
+    const response = await request(setup().app)
+      .get('/api/connections/connected')
+      .set('Cookie', await cookieFor('m-ada'))
+
+    expect(response.status).toBe(200)
+    expect(response.body).toEqual({ connections: [{ id: 'r-1' }] })
+  })
 
   it('returns the contact when the service allows it (R-CONN-3)', async () => {
     const response = await request(setup().app)

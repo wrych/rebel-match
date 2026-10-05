@@ -38,16 +38,20 @@ const request: ConnectionView = {
   challenge: null,
 }
 
-function serve(mine: Cockpit, waiting: ConnectionView[]): void {
+function serve(
+  mine: Cockpit,
+  waiting: ConnectionView[],
+  people: ConnectionView[] = [],
+): void {
+  const bodies: Record<string, unknown> = {
+    '/api/cockpit': mine,
+    '/api/connections/incoming': { requests: waiting },
+    '/api/connections/connected': { connections: people },
+  }
   vi.stubGlobal(
     'fetch',
     vi.fn((url: string) =>
-      Promise.resolve({
-        ok: true,
-        status: 200,
-        json: async () =>
-          url === '/api/cockpit' ? mine : { requests: waiting },
-      }),
+      Promise.resolve({ ok: true, status: 200, json: async () => bodies[url] }),
     ),
   )
 }
@@ -81,6 +85,28 @@ describe('CockpitScreen', () => {
     expect(paths(screen)).toContain('/matches/requests/r1')
   })
 
+  it('lists connections made on either side, each opening its contact (R-MINE-5)', async () => {
+    const connection: ConnectionView = {
+      ...request,
+      id: 'r7',
+      direction: 'outgoing',
+      status: 'accepted',
+      other: {
+        ...request.other,
+        name: 'Cas Nected',
+        jobTitle: 'Coach',
+        org: 'Acme',
+      },
+    }
+    serve(cockpit, [], [connection])
+    const screen = await mountScreen()
+
+    expect(screen.text()).toContain('Your connections')
+    expect(screen.text()).toContain('Cas Nected')
+    expect(screen.text()).toContain('Coach · Acme')
+    expect(paths(screen)).toContain('/matches/requests/r7/contact')
+  })
+
   it('shows each challenge with its counts and reopens its matches (R-MINE-1)', async () => {
     serve(cockpit, [])
     const screen = await mountScreen()
@@ -107,6 +133,7 @@ describe('CockpitScreen', () => {
 
     expect(screen.findAll('.empty').map((each) => each.text())).toEqual([
       'No requests waiting.',
+      'No connections yet. They show here once a request is accepted.',
       'You have not asked for help yet.',
       'You follow no trends yet.',
     ])

@@ -167,6 +167,29 @@ describe('connecting over Postgres: the double opt-in (F7, ADR 0004)', () => {
     expect(forBob.body).toMatchObject({ contact: { email: people.ada } })
   })
 
+  it('lists the connection for both parties, without an email (R-MINE-5)', async () => {
+    const listed = async (who: string): Promise<ConnectionView[]> =>
+      (
+        (
+          await as(who)(request(app).get('/api/connections/connected')).expect(
+            200,
+          )
+        ).body as { connections: ConnectionView[] }
+      ).connections
+
+    const forAda = await listed('ada')
+    const forBob = await listed('bob')
+
+    expect(forAda.map((c) => [c.id, c.direction, c.other.memberId])).toEqual([
+      [accepted, 'outgoing', ids['bob']],
+    ])
+    expect(forBob.map((c) => [c.id, c.direction, c.other.memberId])).toEqual([
+      [accepted, 'incoming', ids['ada']],
+    ])
+    expect(await listed('eve')).toEqual([])
+    expect(JSON.stringify([forAda, forBob])).not.toContain('@')
+  })
+
   it('never shows a third party the request or a contact (R-CONN-6)', async () => {
     await as('eve')(request(app).get(`/api/connections/${accepted}`)).expect(
       404,
@@ -191,6 +214,16 @@ describe('connecting over Postgres: the double opt-in (F7, ADR 0004)', () => {
         request(app).get(`/api/connections/${declined}/contact`),
       ).expect(404)
     }
+  })
+
+  it('lists no declined request as a connection (R-MINE-5)', async () => {
+    const response = await as('eve')(
+      request(app).get('/api/connections/connected'),
+    )
+
+    expect(
+      (response.body as { connections: ConnectionView[] }).connections,
+    ).toEqual([])
   })
 
   it('lets a declined request be followed by a new one (R-CONN-5)', async () => {

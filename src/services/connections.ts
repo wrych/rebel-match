@@ -75,6 +75,8 @@ export interface ConnectionStore {
   /** The request as `viewerId` sees it, or null when they are no party. */
   view(id: string, viewerId: string): Promise<ConnectionView | null>
   incoming(targetId: string): Promise<ConnectionView[]>
+  /** Accepted requests `memberId` is a party to, either side (R-MINE-5). */
+  connected(memberId: string): Promise<ConnectionView[]>
   /** Moves a pending request addressed to `targetId`; false otherwise. */
   respond(
     id: string,
@@ -97,6 +99,7 @@ export type RequestOutcome =
 export interface ConnectionService {
   request(requesterId: string, input: NewConnection): Promise<RequestOutcome>
   incoming(memberId: string): Promise<ConnectionView[]>
+  connected(memberId: string): Promise<ConnectionView[]>
   get(memberId: string, id: string): Promise<ConnectionView | null>
   respond(
     memberId: string,
@@ -198,6 +201,7 @@ export function createConnections(deps: {
       return outcome
     },
     incoming: (memberId) => store.incoming(memberId),
+    connected: (memberId) => store.connected(memberId),
     get: (memberId, id) => store.view(id, memberId),
     respond: async (memberId, id, answer) => {
       if (!(await store.respond(id, memberId, answer))) return 'not_found'

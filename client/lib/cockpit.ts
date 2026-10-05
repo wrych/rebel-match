@@ -12,6 +12,15 @@ export async function fetchCockpit(): Promise<Cockpit> {
   return (await response.json()) as Cockpit
 }
 
+/** Accepted requests the member is a party to, either side (R-MINE-5). */
+export async function fetchConnected(): Promise<ConnectionView[]> {
+  const response = await fetch('/api/connections/connected')
+  if (!response.ok)
+    throw new Error(`connections unavailable (${String(response.status)})`)
+  return ((await response.json()) as { connections: ConnectionView[] })
+    .connections
+}
+
 /** Requests waiting for the member's answer (R-MINE-2). */
 export async function fetchIncoming(): Promise<ConnectionView[]> {
   const response = await fetch('/api/connections/incoming')
