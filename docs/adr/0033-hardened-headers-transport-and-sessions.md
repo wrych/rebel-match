@@ -65,6 +65,6 @@ missing sits around that design:
 
 ## References
 
-Requirements: R-NFR-5, R-NFR-8, R-AUTH-5, R-AUTH-7, R-NAV-6. Builds on
-ADR 0018 (sessions), ADR 0027 (token in the fragment) and ADR 0029 (per-IP
-limits).
+Requirements: R-NFR-5, R-NFR-8, R-AUTH-5, R-AUTH-7, R-NAV-4, R-NAV-6.
+Amends ADR 0027, which kept `GET /auth/verify` as a redirect for older links.
+Builds on ADR 0018 (sessions) and ADR 0029 (per-IP limits).
