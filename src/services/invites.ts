@@ -69,15 +69,24 @@ export interface InviteStore {
   ): Promise<void>
   /** Sets `revoked_at` once; false when no invite has that id. */
   revoke(id: string, at: Date): Promise<boolean>
+  /** Sets a higher cap on an invite that is not revoked, in one statement;
+   * false when nothing was changed. */
+  raiseCap(id: string, maxUses: number): Promise<boolean>
 }
 
 export type CreateOutcome =
   { result: 'created'; invite: InviteView } | { result: 'bad_window' }
 
+export type RaiseOutcome =
+  | { result: 'raised'; invite: InviteView }
+  | { result: 'not_found' | 'revoked' | 'not_higher' }
+
 export interface InviteService {
   list(): Promise<InviteView[]>
   create(input: NewInvite, createdBy: string): Promise<CreateOutcome>
   revoke(id: string): Promise<'revoked' | 'not_found'>
+  /** Raises the cap, so a printed code keeps admitting (R-INV-4). */
+  raiseCap(id: string, maxUses: number): Promise<RaiseOutcome>
 }
 
 const MS_PER_HOUR = 3_600_000
@@ -161,5 +170,13 @@ export function createInvites(deps: {
     },
     revoke: async (id) =>
       (await deps.store.revoke(id, now())) ? 'revoked' : 'not_found',
+    raiseCap: async (id, maxUses) => {
+      const raised = await deps.store.raiseCap(id, maxUses)
+      const invite = await deps.store.find(id)
+      if (invite === null) return { result: 'not_found' }
+      if (raised)
+        return { result: 'raised', invite: view(invite, deps.publicUrl, now()) }
+      return { result: invite.revokedAt === null ? 'not_higher' : 'revoked' }
+    },
   }
 }

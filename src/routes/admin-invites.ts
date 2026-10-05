@@ -1,4 +1,4 @@
-import { Router } from 'express'
+import { Router, type RequestHandler } from 'express'
 import { z } from 'zod'
 import type { AuthProvider } from '../auth/index.js'
 import type { Limits } from '../config.js'
@@ -23,8 +23,43 @@ function createBody(limits: InviteLimits): z.ZodType<NewInvite> {
 
 const inviteParams = z.object({ id: z.string().min(1) })
 
-/** F16 (design §3): list, create and revoke invite links, behind
- * `invite:manage` (R-INV-9). */
+function capBody(limits: InviteLimits): z.ZodType<{ maxUses: number }> {
+  return z.object({
+    maxUses: z.number().int().positive().max(limits.inviteMaxUsesCeiling),
+  })
+}
+
+const raiseStatus = { not_found: 404, revoked: 409, not_higher: 400 } as const
+const raiseError = {
+  not_found: 'not_found',
+  revoked: 'revoked',
+  not_higher: 'bad_cap',
+} as const
+
+function raise(
+  invites: InviteService,
+  cap: z.ZodType<{ maxUses: number }>,
+): RequestHandler {
+  return async (request, response) => {
+    const params = inviteParams.safeParse(request.params)
+    const input = cap.safeParse(request.body)
+    if (!params.success || !input.success) {
+      response.status(400).json({ error: 'bad_cap' })
+      return
+    }
+    const outcome = await invites.raiseCap(params.data.id, input.data.maxUses)
+    if (outcome.result === 'raised') {
+      response.json({ invite: outcome.invite })
+      return
+    }
+    response
+      .status(raiseStatus[outcome.result])
+      .json({ error: raiseError[outcome.result] })
+  }
+}
+
+/** F16 (design §3): list, create, revoke invite links and raise their caps,
+ * behind `invite:manage` (R-INV-4, R-INV-9). */
 export function adminInviteRoutes(deps: {
   auth: AuthProvider
   invites: InviteService
@@ -33,6 +68,7 @@ export function adminInviteRoutes(deps: {
   const router = Router()
   const guard = requirePermission(deps.auth, 'invite:manage')
   const body = createBody(deps.config.limits)
+  const cap = capBody(deps.config.limits)
 
   router.get('/api/admin/invites', guard, async (_request, response) => {
     response.json({ invites: await deps.invites.list() })
@@ -66,6 +102,8 @@ export function adminInviteRoutes(deps: {
       response.status(outcome === 'revoked' ? 204 : 404).end()
     },
   )
+
+  router.patch('/api/admin/invites/:id', guard, raise(deps.invites, cap))
 
   return router
 }

@@ -4,6 +4,7 @@ import { fetchConfig, type ClientConfig } from '../lib/api'
 import {
   createInvite,
   fetchInvites,
+  raiseCap,
   revokeInvite,
   type Invite,
 } from '../lib/invites'
@@ -17,6 +18,8 @@ const draft = reactive({
   validUntil: '',
   maxUses: '',
 })
+const raising = ref<string | null>(null)
+const newCap = ref('')
 const problem = ref<string | null>(null)
 const notice = ref<string | null>(null)
 const busy = ref(false)
@@ -56,6 +59,36 @@ async function create(): Promise<void> {
     await load()
   } catch {
     notice.value = 'The invite was not created. Try again.'
+  } finally {
+    busy.value = false
+  }
+}
+
+function startRaising(invite: Invite): void {
+  raising.value = invite.id
+  newCap.value = ''
+}
+
+async function raise(invite: Invite): Promise<void> {
+  busy.value = true
+  try {
+    const outcome = await raiseCap(invite.id, Number(newCap.value))
+    if (outcome === 'bad-cap') {
+      notice.value = `The new cap must be more than ${String(invite.maxUses)}${
+        limits.value === null
+          ? ''
+          : ` and at most ${String(limits.value.inviteMaxUsesCeiling)}`
+      }.`
+      return
+    }
+    notice.value =
+      outcome === 'revoked'
+        ? `“${invite.label}” is revoked, so its cap stays.`
+        : `“${invite.label}” now admits up to ${String(outcome.maxUses)}. The same code keeps working.`
+    raising.value = null
+    await load()
+  } catch {
+    notice.value = `The cap of “${invite.label}” was not raised. Try again.`
   } finally {
     busy.value = false
   }
@@ -180,20 +213,68 @@ onMounted(async () => {
       <p class="join">
         <span class="label">Join URL</span> {{ invite.joinUrl }}
       </p>
-      <button
-        v-if="invite.state !== 'revoked'"
-        type="button"
-        class="btn btn-ghost btn-small"
-        :disabled="busy"
-        @click="revoke(invite)"
+      <form
+        v-if="raising === invite.id"
+        class="raise"
+        @submit.prevent="raise(invite)"
       >
-        Revoke
-      </button>
+        <label :for="`cap-${invite.id}`">New cap</label>
+        <input
+          :id="`cap-${invite.id}`"
+          v-model="newCap"
+          class="input"
+          type="number"
+          inputmode="numeric"
+          :min="invite.maxUses + 1"
+          :max="limits?.inviteMaxUsesCeiling"
+          :placeholder="`more than ${String(invite.maxUses)}`"
+          required
+        />
+        <button type="submit" class="btn btn-small" :disabled="busy">
+          Raise
+        </button>
+        <button
+          type="button"
+          class="btn btn-ghost btn-small"
+          @click="raising = null"
+        >
+          Cancel
+        </button>
+      </form>
+      <div v-else-if="invite.state !== 'revoked'" class="actions">
+        <button
+          type="button"
+          class="btn btn-ghost btn-small"
+          :disabled="busy"
+          @click="startRaising(invite)"
+        >
+          Raise cap…
+        </button>
+        <button
+          type="button"
+          class="btn btn-ghost btn-small"
+          :disabled="busy"
+          @click="revoke(invite)"
+        >
+          Revoke
+        </button>
+      </div>
     </article>
   </section>
 </template>
 
 <style scoped>
+.raise {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.raise .input {
+  width: 11rem;
+}
+
 .pair {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

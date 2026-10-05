@@ -59,6 +59,25 @@ export async function createInvite(
   return ((await response.json()) as { invite: Invite }).invite
 }
 
+/** Raises an invite's cap so its printed code keeps admitting (R-INV-4):
+ * 'bad-cap' for a cap that is not higher or over the ceiling, 'revoked' for
+ * a revoked invite. */
+export async function raiseCap(
+  id: string,
+  maxUses: number,
+): Promise<Invite | 'bad-cap' | 'revoked'> {
+  const response = await fetch(`/api/admin/invites/${encodeURIComponent(id)}`, {
+    method: 'PATCH',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ maxUses }),
+  })
+  if (response.status === 400) return 'bad-cap'
+  if (response.status === 409) return 'revoked'
+  if (!response.ok)
+    throw new Error(`cap not raised (${String(response.status)})`)
+  return ((await response.json()) as { invite: Invite }).invite
+}
+
 export async function revokeInvite(id: string): Promise<void> {
   const response = await fetch(
     `/api/admin/invites/${encodeURIComponent(id)}/revoke`,

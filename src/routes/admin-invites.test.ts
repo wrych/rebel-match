@@ -37,8 +37,13 @@ const listed: InviteView = {
   createdAt: '2026-11-08T08:00:00.000Z',
 }
 
-function setup(): { app: Express; created: [NewInvite, string][] } {
+function setup(): {
+  app: Express
+  created: [NewInvite, string][]
+  raised: [string, number][]
+} {
   const created: [NewInvite, string][] = []
+  const raised: [string, number][] = []
   const invites: InviteService = {
     list: () => Promise.resolve([listed]),
     create: (input, by) => {
@@ -50,11 +55,21 @@ function setup(): { app: Express; created: [NewInvite, string][] } {
       )
     },
     revoke: (id) => Promise.resolve(id === 'i-1' ? 'revoked' : 'not_found'),
+    raiseCap: (id, maxUses) => {
+      raised.push([id, maxUses])
+      if (id === 'i-gone') return Promise.resolve({ result: 'revoked' })
+      if (id !== 'i-1') return Promise.resolve({ result: 'not_found' })
+      return Promise.resolve(
+        maxUses > listed.maxUses
+          ? { result: 'raised', invite: { ...listed, maxUses } }
+          : { result: 'not_higher' },
+      )
+    },
   }
   const app = express()
   app.use(express.json())
   app.use(adminInviteRoutes({ auth, invites, config }))
-  return { app, created }
+  return { app, created, raised }
 }
 
 async function cookieFor(memberId: string): Promise<string> {
@@ -161,4 +176,51 @@ describe('admin invite routes', () => {
       expect(created).toEqual([])
     },
   )
+
+  it('raises a cap and answers the invite as listed (R-INV-4)', async () => {
+    const { app } = setup()
+
+    const response = await request(app)
+      .patch('/api/admin/invites/i-1')
+      .set('Cookie', await cookieFor('m-admin'))
+      .send({ maxUses: 600 })
+
+    expect(response.status).toBe(200)
+    expect(response.body).toEqual({ invite: { ...listed, maxUses: 600 } })
+  })
+
+  it.each([
+    ['i-1', { maxUses: 400 }, 400, 'bad_cap'],
+    [
+      'i-1',
+      { maxUses: config.limits.inviteMaxUsesCeiling + 1 },
+      400,
+      'bad_cap',
+    ],
+    ['i-1', { maxUses: 'lots' }, 400, 'bad_cap'],
+    ['i-gone', { maxUses: 600 }, 409, 'revoked'],
+    ['i-9', { maxUses: 600 }, 404, 'not_found'],
+  ])('refuses raising %s to %j with %i %s', async (id, body, status, error) => {
+    const { app } = setup()
+
+    const response = await request(app)
+      .patch(`/api/admin/invites/${id}`)
+      .set('Cookie', await cookieFor('m-admin'))
+      .send(body)
+
+    expect(response.status).toBe(status)
+    expect(response.body).toEqual({ error })
+  })
+
+  it('answers 404 to a member without invite:manage (R-ROLE-5)', async () => {
+    const { app, raised } = setup()
+
+    const response = await request(app)
+      .patch('/api/admin/invites/i-1')
+      .set('Cookie', await cookieFor('m-member'))
+      .send({ maxUses: 600 })
+
+    expect(response.status).toBe(404)
+    expect(raised).toEqual([])
+  })
 })

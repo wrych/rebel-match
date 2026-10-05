@@ -73,6 +73,13 @@ function setup(): {
       row.revokedAt ??= at
       return Promise.resolve(true)
     },
+    raiseCap: (id, maxUses) => {
+      const row = rows.get(id)
+      if (row?.revokedAt !== null || row.maxUses >= maxUses)
+        return Promise.resolve(false)
+      row.maxUses = maxUses
+      return Promise.resolve(true)
+    },
   }
   const invites = createInvites({
     store,
@@ -157,5 +164,19 @@ describe('createInvites', () => {
     expect(await invites.revoke('i-9')).toBe('not_found')
     expect((await invites.list())[0]?.state).toBe('revoked')
     expect(rows.get('i-1')?.revokedAt).toEqual(now)
+  })
+
+  it('raises a cap, never lowers it, and leaves a revoked invite (R-INV-4)', async () => {
+    const { invites } = setup()
+    await invites.create({ label: 'A', maxUses: 100 }, 'm-host')
+
+    const raised = await invites.raiseCap('i-1', 250)
+    expect(raised.result).toBe('raised')
+    expect(raised.result === 'raised' && raised.invite.maxUses).toBe(250)
+    expect(await invites.raiseCap('i-1', 250)).toEqual({ result: 'not_higher' })
+    expect(await invites.raiseCap('i-1', 90)).toEqual({ result: 'not_higher' })
+    expect(await invites.raiseCap('i-9', 500)).toEqual({ result: 'not_found' })
+    await invites.revoke('i-1')
+    expect(await invites.raiseCap('i-1', 500)).toEqual({ result: 'revoked' })
   })
 })
