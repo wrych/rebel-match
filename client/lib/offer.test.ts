@@ -20,14 +20,14 @@ describe('noticeFor', () => {
     expect(
       noticeFor(card, 'same_boat', { result: 'recorded', request: 'created' }),
     ).toBe(
-      'We let Ola know you are in the same boat. Nothing is shared until they accept.',
+      'We let Ola Nyberg know you are in the same boat on the challenge you just answered. Nothing is shared until they accept.',
     )
   })
 
   it('says when the member already asked (R-CONN-5)', () => {
     expect(
       noticeFor(card, 'same_boat', { result: 'recorded', request: 'exists' }),
-    ).toContain('You already asked Ola')
+    ).toContain('You already asked Ola Nyberg')
   })
 
   it('confirms a follow by the trend', () => {
