@@ -15,7 +15,7 @@ import {
 } from '../lib/members'
 import { fetchConfig } from '../lib/api'
 import { loadMe } from '../lib/session'
-import { day, when } from '../lib/when'
+import { day, graceSpan, when } from '../lib/when'
 
 const route = useRoute()
 const id = String(route.params.id)
@@ -26,7 +26,7 @@ const notice = ref<string | null>(null)
 const canGrant = ref(false)
 const confirming = ref(false)
 const confirmingNow = ref(false)
-const graceDays = ref(30)
+const graceDays = ref<number | null>(null)
 const busy = ref(false)
 const erased = ref(false)
 const roles = Object.keys(rolePermissions)
@@ -295,8 +295,8 @@ async function erase(): Promise<void> {
         <div v-if="confirming" class="stack-tight">
           <p class="alert" role="alert">
             Delete {{ member.email }}? They are hidden from everyone at once and
-            erased with everything they wrote after {{ graceDays }} days, unless
-            restored.
+            erased with everything they wrote after {{ graceSpan(graceDays) }},
+            unless restored.
           </p>
           <div class="actions">
             <button
@@ -320,7 +320,7 @@ async function erase(): Promise<void> {
         <div v-else class="stack-tight">
           <p class="small">
             Hides them at once and erases them with their challenges, requests,
-            swipes, follows and messages after {{ graceDays }} days (GDPR
+            swipes, follows and messages after {{ graceSpan(graceDays) }} (GDPR
             erasure). Until then you can restore them.
           </p>
           <button

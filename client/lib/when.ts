@@ -23,3 +23,9 @@ export function day(iso: string): string {
   const date = new Date(iso)
   return Number.isNaN(date.getTime()) ? iso : dayFormat.format(date)
 }
+
+/** How long a deletion waits, as the server's settings say: "30 days". Until
+ * those are read it names the wait without a number, never a guessed one. */
+export function graceSpan(days: number | null): string {
+  return days === null ? 'the grace period' : `${days} days`
+}

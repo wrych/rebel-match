@@ -39,7 +39,9 @@ describe('DeleteAccount (R-PROF-2)', () => {
     expect(screen.text()).toContain('keep your account')
     await screen.find('button').trigger('click')
 
-    expect(screen.find('[role="alert"]').text()).toContain('erased in 30 days')
+    expect(screen.find('[role="alert"]').text()).toContain(
+      'erased after 30 days',
+    )
     expect(fetchMock).not.toHaveBeenCalled()
   })
 

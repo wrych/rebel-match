@@ -16,7 +16,7 @@ import {
 } from '../lib/members'
 import { fetchConfig } from '../lib/api'
 import { loadMe } from '../lib/session'
-import { day } from '../lib/when'
+import { day, graceSpan } from '../lib/when'
 
 const router = useRouter()
 const members = ref<RosterMember[]>([])
@@ -26,7 +26,7 @@ const problem = ref<string | null>(null)
 const canGrant = ref(false)
 const canDelete = ref(false)
 const holdMs = ref(0)
-const graceDays = ref(30)
+const graceDays = ref<number | null>(null)
 const selecting = ref(false)
 const selected = reactive(new Set<string>())
 const role = ref<string>(Object.keys(rolePermissions)[0] ?? '')
@@ -332,7 +332,7 @@ async function erase(): Promise<void> {
           Delete {{ chosen.length }}
           {{ chosen.length === 1 ? 'member' : 'members' }}? They are hidden from
           everyone at once and erased with everything they wrote after
-          {{ graceDays }} days, unless restored.
+          {{ graceSpan(graceDays) }}, unless restored.
         </p>
         <div class="actions">
           <button

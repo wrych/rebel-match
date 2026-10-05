@@ -3,8 +3,9 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { deleteAccount, type DeleteOutcome } from '../lib/profile'
 import { forgetMe } from '../lib/session'
+import { graceSpan } from '../lib/when'
 
-defineProps<{ graceDays: number }>()
+defineProps<{ graceDays: number | null }>()
 
 const router = useRouter()
 const confirming = ref(false)
@@ -44,7 +45,7 @@ async function erase(): Promise<void> {
     <h2 id="delete-heading" class="kicker">Delete your account</h2>
     <p class="small">
       You are signed out and hidden from everyone at once. After
-      {{ graceDays }} days your profile, your challenges, your connection
+      {{ graceSpan(graceDays) }} your profile, your challenges, your connection
       requests, what you swiped and followed, and the emails we sent you are
       erased for good. Until then, ask for a sign-in link with your email and
       the email lets you keep your account.
@@ -52,8 +53,8 @@ async function erase(): Promise<void> {
     <p v-if="problem" class="alert" role="alert">{{ problem }}</p>
     <div v-if="confirming" class="stack-tight">
       <p class="alert" role="alert">
-        Delete your account? You are signed out now, and it is erased in
-        {{ graceDays }} days unless you keep it.
+        Delete your account? You are signed out now, and it is erased after
+        {{ graceSpan(graceDays) }} unless you keep it.
       </p>
       <div class="actions">
         <button

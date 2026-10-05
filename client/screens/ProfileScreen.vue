@@ -172,7 +172,7 @@ function save(field: Field): Promise<void> {
         </div>
       </section>
 
-      <DeleteAccount :grace-days="limits?.erasureGraceDays ?? 30" />
+      <DeleteAccount :grace-days="limits?.erasureGraceDays ?? null" />
     </template>
   </section>
 </template>
