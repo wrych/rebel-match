@@ -103,7 +103,6 @@ thresholds have sane defaults in the file and may be overridden by env.
 | `settingsRefreshSeconds`       | `60`                          | R-CFG-6                   |
 | `seed.profile`                 | `dev` \| `prod`               | R-SEED-4                  |
 | `analytics.apiHost`            | `api-eu.mixpanel.com`         | R-ANA-5                   |
-| `analytics.inviteMinUses`      | `20`                          | R-ANA-3                   |
 | `rolePermissions`              | role → permission matrix (§2) | R-ROLE-3, R-ROLE-6        |
 
 - `GET /api/config` returns the **client-relevant subset** (`limits`,
@@ -557,7 +556,8 @@ again (R-OFF-2).
 ### invite_opens (activity record — R-STAT-6, ADR 0035)
 
 One row per load of the entry screen with an invite token that names an invite.
-Nothing about who opened it. Never read back by any endpoint (R-STAT-2).
+Nothing about who opened it. Read back only as a count per invite for the
+invite links screen (R-STAT-6).
 
 ```sql
 CREATE TABLE invite_opens (
@@ -764,7 +764,7 @@ or unfollowing what is not followed changes nothing.
 | GET    | `/api/admin/settings`                | The configuration in groups, each value with its name, explanation, unit, and whether it differs from the default or is fixed in code; no secret (R-CFG-5). Each changeable setting also carries its bounds and, when set in the app, who set it, when, and the deployment value (R-CFG-6). _Requires `settings:read`._                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | PUT    | `/api/admin/settings/:key`           | Set a changeable setting: `{value}`, an integer. Out of bounds or out of order with its pair → 400; a key not changeable → 404. Takes effect at once here and on other servers within `settingsRefreshSeconds` (ADR 0031). _Requires `settings:manage`._                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | DELETE | `/api/admin/settings/:key`           | Go back to the deployment value: deletes the override. _Requires `settings:manage`._                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| GET    | `/api/admin/invites`                 | List invites with label, window, uses/cap, state, creator, and each one's join URL, so the QR can be re-rendered (R-INV-9). _Requires `invite:manage`._                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| GET    | `/api/admin/invites`                 | List invites with label, window, uses/cap, opens (R-STAT-6), state, creator, and each one's join URL, so the QR can be re-rendered (R-INV-9). _Requires `invite:manage`._                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 | POST   | `/api/admin/invites`                 | Create an invite: `{label, validFrom?, validUntil?, maxUses?}`; a missing window or cap takes `limits.inviteDefaultHours` / `inviteDefaultMaxUses` from now. Returns it with its join URL, for the QR (R-INV-9,10). A window that ends before it starts → `400 bad_window`. _Requires `invite:manage`._                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | POST   | `/api/admin/invites/:id/revoke`      | Set `revoked_at`; effective on next use (R-INV-3). _Requires `invite:manage`._                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 
@@ -1051,28 +1051,23 @@ Alternatives considered (kept only as fallbacks):
   or name.
 - Capture these events with non-identifying properties only:
 
-  | event                  | properties                                             |
-  | ---------------------- | ------------------------------------------------------ |
-  | `login_completed`      | —                                                      |
-  | `onboarding_completed` | `consent_version`, `seconds_to_onboard`?, `invite_id`? |
-  | `journey_chosen`       | `journey: ask\|offer`                                  |
-  | `challenge_submitted`  | `char_count`                                           |
-  | `trend_assigned`       | `trend_id`, `overridden: bool`                         |
-  | `swipe`                | `action`, `trend_id`                                   |
-  | `connection_requested` | `kind`                                                 |
-  | `connection_responded` | `status: accepted\|declined`                           |
-  | `feedback_opened`      | `screen`                                               |
+  | event                  | properties                               |
+  | ---------------------- | ---------------------------------------- |
+  | `login_completed`      | —                                        |
+  | `onboarding_completed` | `consent_version`, `seconds_to_onboard`? |
+  | `journey_chosen`       | `journey: ask\|offer`                    |
+  | `challenge_submitted`  | `char_count`                             |
+  | `trend_assigned`       | `trend_id`, `overridden: bool`           |
+  | `swipe`                | `action`, `trend_id`                     |
+  | `connection_requested` | `kind`                                   |
+  | `connection_responded` | `status: accepted\|declined`             |
+  | `feedback_opened`      | `screen`                                 |
 
 - `seconds_to_onboard` is `consent_at` minus the time the latest sign-in email
   (`outbox` kind `magic_link`) to the member was recorded, in whole seconds
   (R-NFR-3). It covers email delivery, signing in and the onboarding screen; the
   scan and typing the address come before it and are timed by hand. It is left
   out when no such email is in the log, for instance after its retention.
-- `invite_id` is the invite a member joined through (`joined_via_invite_id`),
-  sent only once that invite has admitted at least `analytics.inviteMinUses`
-  (20) people (`uses`), so an invite used by a few named people never reaches
-  the analytics tool; the first joiners of a code go without it. Never its
-  label, which a host types (R-ANA-3, ADR 0035).
 - **Never** send challenge `body`, member `name`, `email`, `org`.
 - **Opt-in only** (R-ANA-4, ADR 0026). Onboarding shows an unticked checkbox
   under the consent, with its own versioned words (`analyticsTexts`, like

@@ -239,7 +239,7 @@ capability, not a secret** — and every requirement below exists because of tha
   when. A bad batch must be identifiable after the fact, and removable (R-NFR-7).
 - **R-INV-9 (Admin screen)** — The admin interface SHALL include an **invite
   screen** of its own that lists every invite with its label, window, uses against
-  cap, and state (active / scheduled / expired / revoked / exhausted), and allows
+  cap, opens (R-STAT-6), and state (active / scheduled / expired / revoked / exhausted), and allows
   creating and revoking. Each invite SHALL show its join URL so the host can
   render or re-render the QR code; it MAY render the QR itself.
 - **R-INV-10 (Labelled)** — Every invite SHALL carry a human label (for example
@@ -485,8 +485,7 @@ fallback).
   into the analytics tool.
 - **R-ANA-3** — The system SHALL NOT send challenge text, names, or email
   addresses to the analytics tool. Event properties SHALL be limited to
-  non-identifying metadata (trend id, action type, screen, counts, timestamps,
-  and the id of an invite that has admitted at least 20 people, ADR 0035).
+  non-identifying metadata (trend id, action type, screen, counts, timestamps).
 - **R-ANA-4** — Analytics SHALL be **opt-in** (ADR 0026): onboarding SHALL
   offer a separate, unticked choice with its own versioned words, apart from
   the data-usage consent (§3.3). Ticking it SHALL record the analytics consent
@@ -788,9 +787,10 @@ records, and nothing here shows a number to anyone (ADR 0033).
   feature needs it, and that the history can be deleted (R-ONB-5).
 - **R-STAT-6 (Invite opens)** — WHEN the entry screen loads with an invite
   token THE SYSTEM SHALL record an **open** of that invite: the invite and the
-  time, and nothing about who opened it. Opens SHALL NOT be shown or returned
-  by any endpoint until a later decision (R-STAT-2), and SHALL go with their
-  invite (ADR 0035).
+  time, and nothing about who opened it. The invite links screen SHALL show
+  each invite's count of opens beside its uses (R-INV-9); no other screen or
+  endpoint SHALL show or return opens (R-STAT-2). Opens SHALL go with their
+  invite and SHALL NOT be sent to the analytics tool (ADR 0035).
 
 ---
 
