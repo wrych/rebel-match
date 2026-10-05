@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createConnectionNotice, type NewRequest } from './connection-notice.js'
-import type { Mailer, OutboundMessage } from './mailer.js'
+import type { OutboundMessage } from './mailer.js'
 
 const emails: Record<string, string> = {
   'm-ada': 'ada@example.invalid',
@@ -8,25 +8,30 @@ const emails: Record<string, string> = {
 }
 const names: Record<string, string> = { 'm-ada': 'Ada  Lovelace\n' }
 
-function setup(): {
-  notify: ReturnType<typeof createConnectionNotice>
-  sent: OutboundMessage[]
-} {
-  const sent: OutboundMessage[] = []
-  const mailer: Mailer = {
-    send: (message) => {
-      sent.push(message)
-      return Promise.resolve('suppressed')
+function deps(
+  sent: OutboundMessage[],
+): Parameters<typeof createConnectionNotice>[0] {
+  return {
+    mailer: {
+      send: (message) => {
+        sent.push(message)
+        return Promise.resolve('suppressed')
+      },
     },
-  }
-  const notify = createConnectionNotice({
-    mailer,
     members: {
       emailOf: (id) => Promise.resolve(emails[id] ?? null),
       nameOf: (id) => Promise.resolve(names[id] ?? null),
     },
     publicUrl: 'https://match.example.invalid',
-  })
+  }
+}
+
+function setup(): {
+  notify: ReturnType<typeof createConnectionNotice>
+  sent: OutboundMessage[]
+} {
+  const sent: OutboundMessage[] = []
+  const notify = createConnectionNotice(deps(sent))
   return { notify, sent }
 }
 

@@ -27,21 +27,35 @@ function bodyOf(name: string, message: string | null, link: string): string {
   )
 }
 
-/** Emails the target of a new connection request the requester's name, their
- * note and a link to the request; never an address or challenge text
- * (R-CONN-2, R-NAV-9). The entry is erased with either member (R-MSG-6). */
-export function createConnectionNotice(deps: {
+interface NoticeDeps {
   mailer: Mailer
   members: MemberDirectory
   publicUrl: string
-}): (request: NewRequest) => Promise<void> {
+}
+
+async function displayName(
+  members: MemberDirectory,
+  memberId: string,
+): Promise<string> {
+  const name = oneLine((await members.nameOf(memberId)) ?? '')
+  return name === '' ? 'A Rebel Match member' : name
+}
+
+function linkTo(deps: NoticeDeps, id: string): string {
+  const path = `/matches/requests/${encodeURIComponent(id)}`
+  return new URL(path, deps.publicUrl).toString()
+}
+
+/** Emails the target of a new connection request the requester's name, their
+ * note and a link to the request; never an address or challenge text
+ * (R-CONN-2, R-NAV-9). The entry is erased with either member (R-MSG-6). */
+export function createConnectionNotice(
+  deps: NoticeDeps,
+): (request: NewRequest) => Promise<void> {
   return async (request) => {
     const to = await deps.members.emailOf(request.targetId)
     if (to === null) return
-    const name = oneLine((await deps.members.nameOf(request.requesterId)) ?? '')
-    const from = name === '' ? 'A Rebel Match member' : name
-    const path = `/matches/requests/${encodeURIComponent(request.id)}`
-    const link = new URL(path, deps.publicUrl).toString()
+    const from = await displayName(deps.members, request.requesterId)
 
     await deps.mailer.send({
       memberId: request.targetId,
@@ -49,7 +63,7 @@ export function createConnectionNotice(deps: {
       to,
       kind: 'connection_request',
       subject: `${from} wants to connect with you on Rebel Match`,
-      text: bodyOf(from, request.message, link),
+      text: bodyOf(from, request.message, linkTo(deps, request.id)),
     })
   }
 }
