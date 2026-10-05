@@ -220,6 +220,14 @@ printed dev link (R-DEV-6).
       ADR 0031)_
 - [x] Rate-limit auth, verify token hashing, session flags, permission + party
       checks on every read. _(R-NFR-5, R-ROLE-5, design §8)_
+- [ ] Resolve the caller once per request: `guardApi` keeps the `MemberRef`
+      and profile it already reads in `response.locals`; `requirePermission`
+      and `requireSession` read them there and ask the seam only where
+      `guardApi` does not run (`/auth/*`). Today a guarded `/api` request
+      resolves the same cookie three times (`renewSessions`, `guardApi`,
+      `requirePermission`), five or six queries before the handler. Refactor
+      only: behaviour and tests unchanged, one pull request. _(R-ROLE-5,
+      R-NAV-7, constitution §4, design §8)_
 - [ ] Security headers through `helmet`, with a CSP the human-check widget is
       checked against. _(ADR 0034)_
 - [x] Production refuses an http `PUBLIC_URL` or `TRUST_PROXY=0`. _(ADR 0034)_
