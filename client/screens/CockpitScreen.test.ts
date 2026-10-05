@@ -38,20 +38,27 @@ const request: ConnectionView = {
   challenge: null,
 }
 
+const config = { limits: { matchesPollSeconds: 30 } }
+
 function serve(
   mine: Cockpit,
-  waiting: ConnectionView[],
-  people: ConnectionView[] = [],
+  waiting: () => ConnectionView[],
+  people: () => ConnectionView[] = () => [],
 ): void {
-  const bodies: Record<string, unknown> = {
-    '/api/cockpit': mine,
-    '/api/connections/incoming': { requests: waiting },
-    '/api/connections/connected': { connections: people },
+  const bodies: Record<string, () => unknown> = {
+    '/api/config': () => config,
+    '/api/cockpit': () => mine,
+    '/api/connections/incoming': () => ({ requests: waiting() }),
+    '/api/connections/connected': () => ({ connections: people() }),
   }
   vi.stubGlobal(
     'fetch',
     vi.fn((url: string) =>
-      Promise.resolve({ ok: true, status: 200, json: async () => bodies[url] }),
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => bodies[url]?.(),
+      }),
     ),
   )
 }
@@ -76,7 +83,7 @@ afterEach(() => {
 
 describe('CockpitScreen', () => {
   it('lists requests waiting for the member, each opening its screen (R-MINE-2)', async () => {
-    serve(cockpit, [request])
+    serve(cockpit, () => [request])
     const screen = await mountScreen()
 
     expect(screen.text()).toContain('Bea There')
@@ -98,7 +105,11 @@ describe('CockpitScreen', () => {
         org: 'Acme',
       },
     }
-    serve(cockpit, [], [connection])
+    serve(
+      cockpit,
+      () => [],
+      () => [connection],
+    )
     const screen = await mountScreen()
 
     expect(screen.text()).toContain('Your connections')
@@ -107,8 +118,40 @@ describe('CockpitScreen', () => {
     expect(paths(screen)).toContain('/matches/requests/r7/contact')
   })
 
+  it('shows a new request without a reload (R-MINE-4)', async () => {
+    vi.useFakeTimers()
+    let waiting: ConnectionView[] = []
+    serve(cockpit, () => waiting)
+    const screen = await mountScreen()
+    expect(screen.text()).toContain('No requests waiting.')
+
+    waiting = [request]
+    await vi.advanceTimersByTimeAsync(30_000)
+    await flushPromises()
+
+    expect(screen.text()).toContain('Bea There')
+    screen.unmount()
+    vi.useRealTimers()
+  })
+
+  it('starts no timer when left before it loaded', async () => {
+    vi.useFakeTimers()
+    serve(cockpit, () => [])
+    const screen = mount(CockpitScreen, {
+      global: { stubs: { RouterLink: RouterLinkStub } },
+    })
+    screen.unmount()
+    await flushPromises()
+    vi.mocked(fetch).mockClear()
+
+    await vi.advanceTimersByTimeAsync(90_000)
+
+    expect(fetch).not.toHaveBeenCalled()
+    vi.useRealTimers()
+  })
+
   it('shows each challenge with its counts and reopens its matches (R-MINE-1)', async () => {
-    serve(cockpit, [])
+    serve(cockpit, () => [])
     const screen = await mountScreen()
 
     expect(screen.text()).toContain('Nobody knows who can decide what.')
@@ -120,7 +163,7 @@ describe('CockpitScreen', () => {
   })
 
   it('shows the trends the member follows, each opening its screen (R-MINE-3)', async () => {
-    serve(cockpit, [])
+    serve(cockpit, () => [])
     const screen = await mountScreen()
 
     expect(screen.find('.follow-list').text()).toBe('Radical Transparency')
@@ -128,7 +171,7 @@ describe('CockpitScreen', () => {
   })
 
   it('says what is empty, and offers to ask when there is no challenge', async () => {
-    serve({ challenges: [], following: [], pendingIncoming: 0 }, [])
+    serve({ challenges: [], following: [], pendingIncoming: 0 }, () => [])
     const screen = await mountScreen()
 
     expect(screen.findAll('.empty').map((each) => each.text())).toEqual([

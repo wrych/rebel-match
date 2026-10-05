@@ -271,6 +271,13 @@ const catalogue: Group[] = [
         unit: ['challenge', 'challenges'],
       },
       {
+        name: 'How often the matches badge checks for new requests',
+        explanation:
+          'While the app is open, the badge and the waiting requests refresh this often.',
+        read: (c) => c.limits.matchesPollSeconds,
+        unit: ['second', 'seconds'],
+      },
+      {
         name: 'Longest message with a connection request',
         explanation: 'Fixed by the database.',
         fixed: true,

@@ -9,6 +9,8 @@ export type DeliveryStatus = 'sent' | 'suppressed' | 'failed'
  * someone in; it is what redaction removes (R-MSG-4). */
 export interface OutboundMessage {
   memberId: string | null
+  /** A member the body quotes, erased with them (R-MSG-6). */
+  aboutMemberId?: string
   to: string
   kind: OutboxKind
   subject: string
@@ -20,6 +22,7 @@ export interface OutboundMessage {
 export interface OutboxEntry {
   id: string
   memberId: string | null
+  aboutMemberId: string | null
   to: string
   kind: OutboxKind
   subject: string
@@ -108,6 +111,7 @@ export function createMailer(deps: MailerDeps): Mailer {
       await deps.store.record({
         id,
         memberId: message.memberId,
+        aboutMemberId: message.aboutMemberId ?? null,
         to: message.to,
         kind: message.kind,
         subject: message.subject,

@@ -136,7 +136,9 @@ describe('telling the target (R-CONN-2)', () => {
     await service.request('m-ada', sameBoat)
     await service.request('m-ada', { targetId: 'm-ghost', kind: 'same_boat' })
 
-    expect(notified).toEqual([{ id: 'r-1', targetId: 'm-bob' }])
+    expect(notified).toEqual([
+      { id: 'r-1', requesterId: 'm-ada', targetId: 'm-bob', message: null },
+    ])
   })
 
   it('keeps no request its target could not be told of, so a retry tells them', async () => {

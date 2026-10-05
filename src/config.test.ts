@@ -270,6 +270,17 @@ describe('deck page size', () => {
   })
 })
 
+describe('matches refresh', () => {
+  it('re-reads waiting requests every 30 seconds unless told otherwise (R-MINE-4)', () => {
+    expect(loadConfig(valid).limits.matchesPollSeconds).toBe(30)
+    expect(
+      loadConfig({ ...valid, MATCHES_POLL_SECONDS: '10' }).limits
+        .matchesPollSeconds,
+    ).toBe(10)
+    expect(() => loadConfig({ ...valid, MATCHES_POLL_SECONDS: '0' })).toThrow()
+  })
+})
+
 describe('whitelist batch size', () => {
   it('takes up to 1000 addresses per request unless told otherwise (R-AUTH-1)', () => {
     expect(loadConfig(valid).limits.whitelistBatchMax).toBe(1000)

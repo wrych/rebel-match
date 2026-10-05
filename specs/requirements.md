@@ -411,8 +411,9 @@ connect.")_
   THE SYSTEM SHALL create a **pending connection request** to the target member
   and SHALL NOT reveal either party's email at this point.
 - **R-CONN-2** — The system SHALL notify the target member (in-app and by email)
-  that someone wants to connect, including the requester's message/offer note and
-  the relevant challenge/trend, but **not** the requester's email address.
+  that someone wants to connect, including the requester's name and
+  message/offer note, and in-app the relevant challenge/trend, but **not** the
+  requester's email address.
 - **R-CONN-3** — WHEN the target member **accepts** THE SYSTEM SHALL mark the
   request accepted and reveal **each party's email address to the other**, and
   SHALL offer a pre-filled mailto so either side can write the first message.
@@ -436,7 +437,9 @@ connect.")_
   / R-CONN-4 are triggered).
 - **R-MINE-3** — The system SHALL show which trends the member is following.
 - **R-MINE-4** — The navigation SHALL badge the "Matches" tab when there are
-  pending incoming requests or new matches.
+  pending incoming requests or new matches. While the app is open and visible,
+  the badge and the list of waiting requests SHALL refresh on their own, at most
+  `limits.matchesPollSeconds` apart, so a new request shows without a reload.
 - **R-MINE-5** — The "Matches" screen SHALL list the member's **connections** —
   accepted requests, whichever side sent them — below the requests waiting for
   them, each as a member card. Each SHALL open that connection's contact screen
@@ -551,9 +554,10 @@ at a screen instead of at the front door.
   (R-NFR-1).
 - **R-NAV-9** — Notification emails SHALL link directly to the relevant in-app
   URL (e.g. `/matches/requests/:id` for an incoming request). Email bodies SHALL
-  NOT contain challenge text, member names beyond the recipient's own, or contact
-  details — the link leads to the app, where the normal privacy rules apply
-  (R-CONN-2, R-NFR-1).
+  NOT contain challenge text or contact details — the link leads to the app,
+  where the normal privacy rules apply (R-CONN-2, R-NFR-1). The one exception is
+  the request email, which carries the requester's name and note: the same the
+  target sees on the request in the app, and what makes them answer it.
 - **R-NAV-10** — The summit QR code SHALL point at the app root, optionally with a
   non-identifying campaign parameter for analytics and an **invite token**
   (R-INV-1), and follow the same routing. The invite token SHALL survive the trip
@@ -595,7 +599,9 @@ What differs by environment is only whether mail **leaves the machine**.
   (`outbox:read`), never by environment.
 - **R-MSG-6 (It holds personal data)** — Log entries contain email addresses and
   message content, so they SHALL be included in erasure (R-NFR-7) and SHALL be
-  retained for a bounded, configurable period rather than forever.
+  retained for a bounded, configurable period rather than forever. An entry that
+  quotes another member (a request email carrying the requester's name and note)
+  SHALL be erased with that member too.
 - **R-MSG-7 (Delivery failures are visible without reading bodies)** — A `failed`
   entry SHALL retain enough of the transport's error to diagnose a deliverability
   problem (R-NFR-3), and that error SHALL NOT contain the credential.

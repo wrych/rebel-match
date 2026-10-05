@@ -262,7 +262,8 @@ before both sides agree.**
    detail (R-CONN-1).
 4. Target sees it in their cockpit (**F8**) and, optionally, by an email that
    deep-links to **S15** `/matches/requests/:id` (R-CONN-2, R-MINE-2, **F13**).
-   That email carries no challenge text and no address (R-NAV-9).
+   That email carries the requester's name and note, but no challenge text and
+   no address (R-NAV-9).
 5. Target chooses:
    - **Accept** → `POST /api/connections/:id/accept`. The request becomes
      accepted and _both_ parties may now read the other's email via
