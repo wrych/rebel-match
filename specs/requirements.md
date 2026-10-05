@@ -437,6 +437,11 @@ connect.")_
 - **R-MINE-3** — The system SHALL show which trends the member is following.
 - **R-MINE-4** — The navigation SHALL badge the "Matches" tab when there are
   pending incoming requests or new matches.
+- **R-MINE-5** — The "Matches" screen SHALL list the member's **connections** —
+  accepted requests, whichever side sent them — below the requests waiting for
+  them, each as a member card. Each SHALL open that connection's contact screen
+  (R-CONN-3). The list itself SHALL carry no email address; only the contact
+  screen reads it (R-CONN-6).
 
 ---
 
