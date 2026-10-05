@@ -33,6 +33,8 @@ import { createChallengeStore } from './services/challenge-store.js'
 import { createChallenges } from './services/challenges.js'
 import { createConnectionStore } from './services/connection-store.js'
 import { createConnections } from './services/connections.js'
+import { createConnectionNotice } from './services/connection-notice.js'
+import { createMemberAddresses } from './services/member-address-store.js'
 import { createSwipeStore } from './services/swipe-store.js'
 import { createSwipes } from './services/swipes.js'
 import {
@@ -109,6 +111,7 @@ function composeJourneys(
   config: Config,
   db: Database,
   track: Track,
+  mailer: Mailer,
 ): Pick<
   AppDeps,
   'challenges' | 'deck' | 'connections' | 'swipes' | 'follows' | 'cockpit'
@@ -125,6 +128,11 @@ function composeJourneys(
     store: createConnectionStore(db),
     newId: randomUUID,
     track,
+    notify: createConnectionNotice({
+      mailer,
+      addresses: createMemberAddresses(db),
+      publicUrl: config.publicUrl,
+    }),
   })
   return {
     challenges,
@@ -297,6 +305,6 @@ export function composeApp(
       defaults: () => settings.limits(),
       newId: randomUUID,
     }),
-    ...composeJourneys(config, db, track),
+    ...composeJourneys(config, db, track, mailer),
   }
 }

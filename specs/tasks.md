@@ -190,7 +190,7 @@ printed dev link (R-DEV-6).
       with EU residency), pseudonymous id, the event set from design §7 with
       `POST /api/events` for the two UI events, opted-in members only.
       _(S3, R-ANA-1..3,5, ADR 0026)_
-- [ ] Email notification on incoming connection request, deep-linking to
+- [x] Email notification on incoming connection request, deep-linking to
       `/matches/requests/:id` with no challenge text or contact detail.
       _(S4, R-CONN-2, R-NAV-9)_
 - [x] Feedback mailto. _(S5, R-FB-1)_ To `FEEDBACK_TO`, required in production.
