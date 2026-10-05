@@ -837,6 +837,13 @@ records, and nothing here shows a number to anyone (ADR 0033).
   (configurable), during which a host can undo it, and so can the person, by a
   link emailed to their address, when they deleted the account themselves; a
   host MAY erase at once (ADR 0032).
+- **R-NFR-10 (Availability monitoring)** — Production SHALL be watched from
+  outside the application: a check of `GET /api/health` expecting the
+  database up, at least every five minutes, and an alert to the hosts when
+  it fails twice in a row, when the share of requests answered with a 5xx
+  rises above a configured threshold over five minutes, or when a scheduled
+  job fails. An alert names the deployment and the failing check, and
+  nothing about any member.
 
 ---
 
