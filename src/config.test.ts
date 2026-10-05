@@ -100,6 +100,44 @@ describe('loadConfig', () => {
     ).toThrow(/nobody can log in/)
   })
 
+  describe('in production (ADR 0034)', () => {
+    const production = {
+      ...valid,
+      NODE_ENV: 'production',
+      MAIL_DELIVERY: 'smtp',
+      SMTP_HOST: 'mail.example.org',
+      FEEDBACK_TO: 'owner@example.org',
+      PUBLIC_URL: 'https://match.example.org',
+      TRUST_PROXY: '1',
+    }
+
+    it('starts with an https address behind one proxy', () => {
+      expect(loadConfig(production).trustProxy).toBe(1)
+    })
+
+    it('refuses an http PUBLIC_URL, which would drop Secure', () => {
+      expect(() =>
+        loadConfig({ ...production, PUBLIC_URL: 'http://match.example.org' }),
+      ).toThrow(/https PUBLIC_URL/)
+    })
+
+    it('refuses TRUST_PROXY=0, which would share one per-IP budget', () => {
+      expect(() => loadConfig({ ...production, TRUST_PROXY: '0' })).toThrow(
+        /TRUST_PROXY/,
+      )
+    })
+
+    it('leaves development deployments as they are', () => {
+      expect(
+        loadConfig({
+          ...valid,
+          NODE_ENV: 'development',
+          PUBLIC_URL: 'http://localhost:5173',
+        }).trustProxy,
+      ).toBe(0)
+    })
+  })
+
   it('connects to the Postgres DATABASE_URL names (ADR 0024)', () => {
     expect(loadConfig(valid).database).toEqual({
       kind: 'postgres',
@@ -327,6 +365,7 @@ describe('PUBLIC_URL in development', () => {
       PUBLIC_URL: 'https://match.example.org',
       PORT: '443',
       FEEDBACK_TO: 'owner@example.org',
+      TRUST_PROXY: '1',
     }
 
     expect(loadConfig(production).publicUrl).toBe('https://match.example.org')
@@ -369,6 +408,8 @@ describe('isDevelopmentDeployment', () => {
           ...smtp,
           NODE_ENV: 'production',
           FEEDBACK_TO: 'owner@example.org',
+          PUBLIC_URL: 'https://match.example.org',
+          TRUST_PROXY: '1',
         }),
       ),
     ).toBe(false)

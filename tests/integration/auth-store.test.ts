@@ -160,4 +160,15 @@ describe('the auth seam over Postgres', () => {
 
     expect(await auth.currentMember(asRequest(cookie))).toBeNull()
   })
+
+  it('lets only one of two simultaneous verifications win (R-AUTH-5)', async () => {
+    const raw = await issueAndTake()
+
+    const results = await Promise.all([
+      auth.verifyToken(raw),
+      auth.verifyToken(raw),
+    ])
+
+    expect(results.filter((r) => r.ok)).toHaveLength(1)
+  })
 })

@@ -6,7 +6,6 @@ import type { ErasureService } from '../services/erasure.js'
 import type { MemberProfiles } from '../services/member-profiles.js'
 import { safeNextPath } from '../routes.js'
 
-const verifyQuery = z.object({ token: z.string().min(1) })
 const verifyBody = z.object({ token: z.string().min(1) })
 
 /** Sets or clears the session cookie the seam describes. */
@@ -46,6 +45,9 @@ function verify(
     // are signed in, or the new session would find nobody active (ADR 0032).
     if (result.kind === 'restore')
       await deps.erasure.restoreOwn(result.memberId)
+    // A browser someone else used, or one handed a planted cookie, must not
+    // carry that session past the moment its new owner signs in.
+    await deps.auth.endSession(request)
     setCookie(response, await deps.auth.createSession(result.memberId))
     void track(result.memberId, { name: 'login_completed' })
     response.json({ next: safeNextPath(result.next) })
@@ -63,16 +65,6 @@ export function authRoutes(deps: {
 }): Router {
   const track = deps.track ?? trackNothing
   const router = Router()
-
-  // Links sent before ADR 0027 point here. Opening one must not use it, so
-  // the token only moves into the sign-in screen's fragment.
-  router.get('/auth/verify', (request, response) => {
-    const query = verifyQuery.safeParse(request.query)
-    const fragment = query.success
-      ? `#token=${encodeURIComponent(query.data.token)}`
-      : ''
-    response.redirect(303, `/sign-in${fragment}`)
-  })
 
   router.post('/auth/verify', verify(deps, track))
 

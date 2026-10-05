@@ -18,6 +18,7 @@ const cockpit: Cockpit = {
     { id: '05', short: 'Radical Transparency', from: 'Secrecy', peers: 4 },
   ],
   pendingIncoming: 1,
+  newConnections: 0,
 }
 
 const request: ConnectionView = {
@@ -36,6 +37,7 @@ const request: ConnectionView = {
     companySize: null,
   },
   challenge: null,
+  unseen: false,
 }
 
 const config = { limits: { matchesPollSeconds: 30 } }
@@ -61,6 +63,13 @@ function serve(
       }),
     ),
   )
+}
+
+function answerWith(status: number): void {
+  vi.mocked(fetch).mockResolvedValueOnce({
+    ok: status < 400,
+    status,
+  } as Response)
 }
 
 async function mountScreen(): Promise<ReturnType<typeof mount>> {
@@ -92,6 +101,78 @@ describe('CockpitScreen', () => {
     expect(paths(screen)).toContain('/matches/requests/r1')
   })
 
+  it('accepts a request from the list, which then shows as a connection (R-MINE-2)', async () => {
+    let waiting = [request]
+    let people: ConnectionView[] = []
+    serve(
+      cockpit,
+      () => waiting,
+      () => people,
+    )
+    const screen = await mountScreen()
+    answerWith(204)
+    waiting = []
+    people = [{ ...request, status: 'accepted' }]
+
+    await screen.get('[aria-label="Accept Bea There"]').trigger('click')
+    await flushPromises()
+
+    expect(fetch).toHaveBeenCalledWith('/api/connections/r1/accept', {
+      method: 'POST',
+    })
+    expect(screen.get('[role="status"]').text()).toBe(
+      'You are connected with Bea There.',
+    )
+    expect(screen.text()).toContain('No requests waiting.')
+    expect(paths(screen)).toContain('/matches/requests/r1/contact')
+  })
+
+  it('declines a request from the list, sharing nothing (R-MINE-2)', async () => {
+    let waiting = [request]
+    serve(cockpit, () => waiting)
+    const screen = await mountScreen()
+    answerWith(204)
+    waiting = []
+
+    await screen.get('[aria-label="Decline Bea There"]').trigger('click')
+    await flushPromises()
+
+    expect(fetch).toHaveBeenCalledWith('/api/connections/r1/decline', {
+      method: 'POST',
+    })
+    expect(screen.get('[role="status"]').text()).toBe(
+      'You declined Bea There. Nothing was shared.',
+    )
+    expect(paths(screen)).not.toContain('/matches/requests/r1')
+  })
+
+  it('says so when a request stopped waiting before the answer', async () => {
+    serve(cockpit, () => [request])
+    const screen = await mountScreen()
+    answerWith(404)
+
+    await screen.get('[aria-label="Accept Bea There"]').trigger('click')
+    await flushPromises()
+
+    expect(screen.get('[role="status"]').text()).toBe(
+      'That request is no longer waiting for you.',
+    )
+  })
+
+  it('keeps the request, and says so, when an answer does not save', async () => {
+    serve(cockpit, () => [request])
+    const screen = await mountScreen()
+    answerWith(500)
+
+    await screen.get('[aria-label="Accept Bea There"]').trigger('click')
+    await flushPromises()
+
+    expect(screen.get('[role="alert"]').text()).toBe(
+      'That did not save. Try again.',
+    )
+    expect(paths(screen)).toContain('/matches/requests/r1')
+  })
+
   it('lists connections made on either side, each opening its contact (R-MINE-5)', async () => {
     const connection: ConnectionView = {
       ...request,
@@ -116,6 +197,29 @@ describe('CockpitScreen', () => {
     expect(screen.text()).toContain('Cas Nected')
     expect(screen.text()).toContain('Coach · Acme')
     expect(paths(screen)).toContain('/matches/requests/r7/contact')
+  })
+
+  it('marks a connection the member has not opened yet as new (R-CONN-7)', async () => {
+    const accepted: ConnectionView = {
+      ...request,
+      direction: 'outgoing',
+      status: 'accepted',
+    }
+    serve(
+      cockpit,
+      () => [],
+      () => [
+        { ...accepted, id: 'r8', unseen: true },
+        { ...accepted, id: 'r9', other: { ...request.other, name: 'Old Pal' } },
+      ],
+    )
+    const screen = await mountScreen()
+
+    const rows = screen
+      .findAllComponents(RouterLinkStub)
+      .filter((link) => String(link.props('to')).endsWith('/contact'))
+    expect(rows.map((row) => row.find('.chip').exists())).toEqual([true, false])
+    expect(rows[0]?.find('.chip').text()).toBe('New')
   })
 
   it('shows a new request without a reload (R-MINE-4)', async () => {
@@ -190,7 +294,10 @@ describe('CockpitScreen', () => {
   })
 
   it('says what is empty, and offers to ask when there is no challenge', async () => {
-    serve({ challenges: [], following: [], pendingIncoming: 0 }, () => [])
+    serve(
+      { challenges: [], following: [], pendingIncoming: 0, newConnections: 0 },
+      () => [],
+    )
     const screen = await mountScreen()
 
     expect(screen.findAll('.empty').map((each) => each.text())).toEqual([

@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { createConnectionNotice, type NewRequest } from './connection-notice.js'
-import type { Mailer, OutboundMessage } from './mailer.js'
+import {
+  createAcceptNotice,
+  createConnectionNotice,
+  type NewRequest,
+} from './connection-notice.js'
+import type { OutboundMessage } from './mailer.js'
 
 const emails: Record<string, string> = {
   'm-ada': 'ada@example.invalid',
@@ -8,25 +12,30 @@ const emails: Record<string, string> = {
 }
 const names: Record<string, string> = { 'm-ada': 'Ada  Lovelace\n' }
 
-function setup(): {
-  notify: ReturnType<typeof createConnectionNotice>
-  sent: OutboundMessage[]
-} {
-  const sent: OutboundMessage[] = []
-  const mailer: Mailer = {
-    send: (message) => {
-      sent.push(message)
-      return Promise.resolve('suppressed')
+function deps(
+  sent: OutboundMessage[],
+): Parameters<typeof createAcceptNotice>[0] {
+  return {
+    mailer: {
+      send: (message) => {
+        sent.push(message)
+        return Promise.resolve('suppressed')
+      },
     },
-  }
-  const notify = createConnectionNotice({
-    mailer,
     members: {
       emailOf: (id) => Promise.resolve(emails[id] ?? null),
       nameOf: (id) => Promise.resolve(names[id] ?? null),
     },
     publicUrl: 'https://match.example.invalid',
-  })
+  }
+}
+
+function setup(): {
+  notify: ReturnType<typeof createConnectionNotice>
+  sent: OutboundMessage[]
+} {
+  const sent: OutboundMessage[] = []
+  const notify = createConnectionNotice(deps(sent))
   return { notify, sent }
 }
 
@@ -89,6 +98,54 @@ describe('createConnectionNotice', () => {
     const { notify, sent } = setup()
 
     await notify({ ...request, targetId: 'm-gone' })
+
+    expect(sent).toEqual([])
+  })
+})
+
+describe('createAcceptNotice', () => {
+  const accepted = { id: 'r-1', requesterId: 'm-bob', targetId: 'm-ada' }
+
+  it('emails the requester who accepted and a link to the contact (R-CONN-7, R-NAV-9)', async () => {
+    const sent: OutboundMessage[] = []
+
+    await createAcceptNotice(deps(sent))(accepted)
+
+    expect(sent).toHaveLength(1)
+    expect(sent[0]).toMatchObject({
+      memberId: 'm-bob',
+      aboutMemberId: 'm-ada',
+      to: 'bob@example.invalid',
+      kind: 'connection_accepted',
+      subject: 'Ada Lovelace accepted your request on Rebel Match',
+    })
+    expect(sent[0]?.text).toContain(
+      'https://match.example.invalid/matches/requests/r-1/contact',
+    )
+  })
+
+  it('carries no address, the link leads to it (R-NAV-9)', async () => {
+    const sent: OutboundMessage[] = []
+
+    await createAcceptNotice(deps(sent))(accepted)
+
+    expect(`${sent[0]?.subject ?? ''}${sent[0]?.text ?? ''}`).not.toContain('@')
+  })
+
+  it('still sends when the target has no name', async () => {
+    const sent: OutboundMessage[] = []
+
+    await createAcceptNotice(deps(sent))({ ...accepted, targetId: 'm-x' })
+
+    expect(sent[0]?.subject).toBe(
+      'A Rebel Match member accepted your request on Rebel Match',
+    )
+  })
+
+  it('sends nothing when the requester has no active address', async () => {
+    const sent: OutboundMessage[] = []
+
+    await createAcceptNotice(deps(sent))({ ...accepted, requesterId: 'm-gone' })
 
     expect(sent).toEqual([])
   })

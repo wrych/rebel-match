@@ -30,6 +30,7 @@ const incoming: ConnectionView = {
     body: 'Nobody knows who can decide what.',
     trendShort: 'Network of Teams',
   },
+  unseen: false,
 }
 
 /** Serves `views` in turn for each read, and answers with `status`. */

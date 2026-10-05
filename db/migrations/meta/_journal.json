@@ -50,6 +50,13 @@
       "when": 1791194806817,
       "tag": "0006_deck_views",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1791202848213,
+      "tag": "0007_accept_notice",
+      "breakpoints": true
     }
   ]
 }

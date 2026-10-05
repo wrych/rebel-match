@@ -1,4 +1,4 @@
-import { and, count, desc, eq, sql } from 'drizzle-orm'
+import { and, count, desc, eq, isNull, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 import type { Database } from '../db/connect.js'
 import {
@@ -61,6 +61,29 @@ async function pendingIncoming(
   return row?.n ?? 0
 }
 
+// Accepted requests the member sent and has not opened, from targets still
+// active, as the connections list shows them (R-CONN-7, ADR 0032).
+async function newConnections(db: Database, memberId: string): Promise<number> {
+  const [row] = await db
+    .select({ n: count() })
+    .from(connectionRequests)
+    .innerJoin(
+      members,
+      and(
+        eq(members.id, connectionRequests.targetId),
+        eq(members.status, 'active'),
+      ),
+    )
+    .where(
+      and(
+        eq(connectionRequests.requesterId, memberId),
+        eq(connectionRequests.status, 'accepted'),
+        isNull(connectionRequests.requesterSeenAt),
+      ),
+    )
+  return row?.n ?? 0
+}
+
 /** The cockpit over Postgres (design §2). */
 export function createCockpitStore(db: Database): CockpitStore {
   return {
@@ -99,6 +122,7 @@ export function createCockpitStore(db: Database): CockpitStore {
       }))
     },
     pendingIncoming: (memberId) => pendingIncoming(db, memberId),
+    newConnections: (memberId) => newConnections(db, memberId),
   }
 }
 

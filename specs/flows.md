@@ -268,7 +268,9 @@ before both sides agree.**
    - **Accept** → `POST /api/connections/:id/accept`. The request becomes
      accepted and _both_ parties may now read the other's email via
      **S16** (`/matches/requests/:id/contact`), which also offers a prefilled
-     `mailto:` (R-CONN-3, R-CONN-6).
+     `mailto:` (R-CONN-3, R-CONN-6). The requester is told by a badge and by an
+     email that deep-links to S16; the badge stays until they open it
+     (R-CONN-7, R-MINE-4).
    - **Decline** → `POST /api/connections/:id/decline`. Emails stay private on
      both sides, permanently (R-CONN-4).
 6. Both parties continue by email outside the app.
@@ -294,7 +296,9 @@ before both sides agree.**
 2. Screen shows: their own challenge(s) with same-boat / been-there counts
    (R-MINE-1), **incoming requests** with Accept / Decline (R-MINE-2 → **F7**
    step 5), and their followed trends (R-MINE-3).
-3. The nav badge reflects the number of pending incoming requests (R-MINE-4).
+3. The nav badge reflects the number of pending incoming requests and of
+   connections accepted that the member has not opened yet (R-MINE-4,
+   R-CONN-7).
 
 ---
 
