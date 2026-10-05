@@ -1,5 +1,6 @@
 import { Router } from 'express'
 import { z } from 'zod'
+import { EMAIL_MAX } from '../db/schema.js'
 import type { AuthProvider } from '../auth/index.js'
 import type { Limits } from '../config.js'
 import type { WhitelistService } from '../services/whitelist.js'
@@ -10,7 +11,7 @@ function whitelistBody(
 ): z.ZodType<{ emails: string[] }> {
   return z.object({
     emails: z
-      .array(z.string().trim().toLowerCase().pipe(z.email()))
+      .array(z.string().trim().toLowerCase().pipe(z.email().max(EMAIL_MAX)))
       .min(1)
       .max(limits.whitelistBatchMax),
   })

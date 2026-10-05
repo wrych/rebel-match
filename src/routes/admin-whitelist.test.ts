@@ -75,6 +75,14 @@ describe('POST /api/admin/whitelist', () => {
     ['an empty list', { emails: [] }],
     ['a bad address', { emails: ['ada@example.invalid', 'not-an-email'] }],
     [
+      'an address too long to store',
+      {
+        emails: [
+          `${'a'.repeat(64)}@${Array(5).fill('b'.repeat(50)).join('.')}.test`,
+        ],
+      },
+    ],
+    [
       'too many addresses',
       {
         emails: ['a', 'b', 'c', 'd'].map((p) => `${p}@example.invalid`),

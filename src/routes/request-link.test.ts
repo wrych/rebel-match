@@ -50,6 +50,9 @@ function setup(state: LinkRequestState = 'check-email'): {
   return { app, calls, described, invites, clients }
 }
 
+// 324 characters, longer than any email column holds.
+const TOO_LONG = `${'a'.repeat(64)}@${Array(5).fill('b'.repeat(50)).join('.')}.test`
+
 const challenge = { parameters: { nonce: 'n' }, signature: 'sig' } as never
 
 describe('POST /auth/request-link', () => {
@@ -131,17 +134,19 @@ describe('POST /auth/request-link', () => {
     expect(calls).toEqual([{ email: 'ada@example.invalid', next: '/matches' }])
   })
 
-  it.each([{}, { email: 'not-an-address' }, { email: 42 }])(
-    'rejects %j without asking admission',
-    async (body) => {
-      const { app, calls } = setup()
+  it.each([
+    {},
+    { email: 'not-an-address' },
+    { email: 42 },
+    { email: TOO_LONG },
+  ])('rejects %j without asking admission', async (body) => {
+    const { app, calls } = setup()
 
-      const response = await request(app).post('/auth/request-link').send(body)
+    const response = await request(app).post('/auth/request-link').send(body)
 
-      expect(response.status).toBe(400)
-      expect(calls).toEqual([])
-    },
-  )
+    expect(response.status).toBe(400)
+    expect(calls).toEqual([])
+  })
 })
 
 describe('POST /auth/applicant', () => {

@@ -26,6 +26,9 @@ import {
   type PgVarcharBuilderInitial,
 } from 'drizzle-orm/pg-core'
 
+/** The longest email address a column holds (RFC 5321's 320 octets). */
+export const EMAIL_MAX = 320
+
 type Enum = [string, ...string[]]
 
 /** Member, challenge, request and token ids: UUID text. */
@@ -67,7 +70,7 @@ export const members = pgTable(
   'members',
   {
     id: id('id').primaryKey(),
-    email: varchar('email', { length: 320 }).notNull(),
+    email: varchar('email', { length: EMAIL_MAX }).notNull(),
     name: varchar('name', { length: 120 }),
     jobTitle: varchar('job_title', { length: 120 }),
     org: varchar('org', { length: 160 }),
@@ -209,7 +212,7 @@ export const outbox = pgTable(
     aboutMemberId: id('about_member_id').references(() => members.id, {
       onDelete: 'cascade',
     }),
-    toEmail: varchar('to_email', { length: 320 }).notNull(),
+    toEmail: varchar('to_email', { length: EMAIL_MAX }).notNull(),
     kind: outboxKind('kind').notNull(),
     subject: varchar('subject', { length: 255 }).notNull(),
     bodyText: text('body_text').notNull(),
