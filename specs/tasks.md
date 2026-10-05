@@ -222,7 +222,7 @@ printed dev link (R-DEV-6).
       checks on every read. _(R-NFR-5, R-ROLE-5, design §8)_
 - [ ] Security headers through `helmet`, with a CSP the human-check widget is
       checked against. _(ADR 0034)_
-- [ ] Production refuses an http `PUBLIC_URL` or `TRUST_PROXY=0`. _(ADR 0034)_
+- [x] Production refuses an http `PUBLIC_URL` or `TRUST_PROXY=0`. _(ADR 0034)_
 - [ ] Signing in rotates the session; expired sessions and tokens are purged;
       the legacy `GET /auth/verify` is removed. _(ADR 0034)_
 - [ ] Production seed: attendee whitelist + the ~15 real collected challenges

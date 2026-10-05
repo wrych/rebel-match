@@ -1,6 +1,6 @@
 # 0034. Hardened headers, transport and sessions
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-10-05
 - **Deciders:** Andy Moesch
 

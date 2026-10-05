@@ -430,7 +430,11 @@ echo "GCP_SQL_INSTANCE=$PROD:$REGION:rebel-match"
 ```
 
 Plus `SMTP_HOST`, `SMTP_PORT` (587), `SMTP_USER` and `MAIL_FROM`, from
-`docs/email-setup.md`. If the SMTP server accepts relaying by sender IP rather
+`docs/email-setup.md`, and `TRUST_PROXY=1`. Production refuses to start with
+`TRUST_PROXY=0` or an http `PUBLIC_URL` (ADR 0034): without the first, every
+visitor shares the proxy's per-IP limits; without the second, the session
+cookie loses `Secure`. Behind the load balancer of step 20 there is one more
+hop; if the per-IP limits then count everyone together, raise it to `2`. If the SMTP server accepts relaying by sender IP rather
 than by login, it needs a fixed address to allow; that is Cloud NAT, and a
 separate step (ADR 0025, consequences).
 
