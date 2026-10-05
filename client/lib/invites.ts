@@ -9,6 +9,8 @@ export interface Invite {
   validUntil: string
   maxUses: number
   uses: number
+  /** Times its link was opened (R-STAT-6). */
+  opens: number
   state: InviteState
   joinUrl: string
   createdBy: string

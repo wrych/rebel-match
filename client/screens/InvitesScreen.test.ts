@@ -10,6 +10,7 @@ const invite = {
   validUntil: '2026-11-08T21:00:00.000Z',
   maxUses: 400,
   uses: 3,
+  opens: 7,
   state: 'active',
   joinUrl: 'http://localhost:5173/?invite=abc',
   createdBy: 'host@example.invalid',
@@ -76,7 +77,7 @@ describe('InvitesScreen', () => {
 
     expect(text).toContain('Main stage')
     expect(text).toContain('active')
-    expect(text).toContain('3 of 400 used')
+    expect(text).toContain('7 opened · 3 of 400 used')
     expect(text).toContain('http://localhost:5173/?invite=abc')
   })
 

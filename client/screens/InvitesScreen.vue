@@ -204,7 +204,8 @@ onMounted(async () => {
         ></span>
       </div>
       <p class="mono meta">
-        {{ invite.uses }} of {{ invite.maxUses }} used ·
+        {{ invite.opens }} opened · {{ invite.uses }} of
+        {{ invite.maxUses }} used ·
         <time :datetime="invite.validFrom">{{ when(invite.validFrom) }}</time>
         to
         <time :datetime="invite.validUntil">{{ when(invite.validUntil) }}</time>

@@ -18,6 +18,8 @@ export interface Invite {
 /** An invite as listed, with who created it (R-INV-8). */
 export interface ListedInvite extends Invite {
   creatorEmail: string
+  /** Times its link was opened, with nothing about who (R-STAT-6). */
+  opens: number
 }
 
 export type InviteState =
@@ -47,6 +49,7 @@ export interface InviteView {
   validUntil: string
   maxUses: number
   uses: number
+  opens: number
   state: InviteState
   joinUrl: string
   createdBy: string
@@ -120,6 +123,7 @@ function view(invite: ListedInvite, publicUrl: string, now: Date): InviteView {
     validUntil: invite.validUntil.toISOString(),
     maxUses: invite.maxUses,
     uses: invite.uses,
+    opens: invite.opens,
     state: inviteState(invite, now),
     joinUrl: joinUrl(publicUrl, invite.token),
     createdBy: invite.creatorEmail,

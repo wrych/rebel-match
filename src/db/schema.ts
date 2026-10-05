@@ -182,8 +182,8 @@ export const invites = pgTable(
 )
 
 // One row per load of the entry screen with a token that names an invite, and
-// nothing about who opened it (R-STAT-6, ADR 0038). Never read back by any
-// endpoint (R-STAT-2); it goes with the invite.
+// nothing about who opened it (R-STAT-6, ADR 0038). Read back only as a count
+// per invite for the invite links screen; it goes with the invite.
 export const inviteOpens = pgTable(
   'invite_opens',
   {
