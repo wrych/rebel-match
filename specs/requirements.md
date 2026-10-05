@@ -873,11 +873,19 @@ notifications: they go out at once, whatever is chosen here (R-NFR-3).
 - **R-NOTE-5 (The notifications screen)** — The member's notifications SHALL
   be listed, newest first, on their own screen (`/notifications`). Each entry
   SHALL say in one line what happened, naming the member it is about but
-  quoting no challenge text or note, with its time, and SHALL link to the
-  screen it concerns (R-NAV-9). An entry SHALL be **new** until the member has
-  opened this screen while it was listed, or the screen it links to. An entry
-  about a member whose account is deleted, or about anything the member may no
-  longer open, SHALL NOT be shown (R-NAV-8, R-NFR-7).
+  quoting no challenge text or note, with its time (R-NAV-9).
+  - **Tapping an entry**, anywhere on it, SHALL open the screen the
+    notification comes from: a connection request its request
+    (`/matches/requests/:id`), a new connection its contact screen
+    (`/matches/requests/:id/contact`), a new challenge in a followed trend the
+    deck opened at its card (`/offer?challenge=:id`, R-OFF-7), and a new
+    applicant the applicants list (`/admin/applicants`). The email for the same
+    notification SHALL link to the same screen (R-NOTE-8). Back SHALL return to
+    the notifications screen (R-NAV-1).
+  - An entry SHALL be **new** until the member has opened this screen while it
+    was listed, or the screen it opens. An entry about a member whose account
+    is deleted, or about anything the member may no longer open, SHALL NOT be
+    shown (R-NAV-8, R-NFR-7).
 - **R-NOTE-6 (In the menu)** — WHILE the member has new notifications the
   header's menu button SHALL carry a badge with their number, and the menu
   item SHALL read **Notifications (n new)**; without any it SHALL read
