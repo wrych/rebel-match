@@ -20,7 +20,8 @@ once a day, and some want no word of trends at all.
 
 ## Decision
 
-- **Every notification is stored** in a `notifications` table: one row per
+- **Every notification is stored**, unless its type is set to _Off_, in a
+  `notifications` table: one row per
   recipient and event, holding references (the request, the challenge, the
   member it is about), never rendered text. The app lists them; mail is one
   way of delivering them.
