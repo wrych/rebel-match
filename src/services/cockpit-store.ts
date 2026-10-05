@@ -37,6 +37,30 @@ const beenThere = sql<number>`(SELECT count(*)::int FROM ${memberExpertise}
 const caseCount = sql<number>`(SELECT count(*)::int FROM ${cases}
   WHERE ${cases.trendId} = ${trends.id})`
 
+// Requests from members deleted since are hidden, as in the list (ADR 0032).
+async function pendingIncoming(
+  db: Database,
+  memberId: string,
+): Promise<number> {
+  const [row] = await db
+    .select({ n: count() })
+    .from(connectionRequests)
+    .innerJoin(
+      members,
+      and(
+        eq(members.id, connectionRequests.requesterId),
+        eq(members.status, 'active'),
+      ),
+    )
+    .where(
+      and(
+        eq(connectionRequests.targetId, memberId),
+        eq(connectionRequests.status, 'pending'),
+      ),
+    )
+  return row?.n ?? 0
+}
+
 /** The cockpit over Postgres (design §2). */
 export function createCockpitStore(db: Database): CockpitStore {
   return {
@@ -74,18 +98,7 @@ export function createCockpitStore(db: Database): CockpitStore {
         },
       }))
     },
-    pendingIncoming: async (memberId) => {
-      const [row] = await db
-        .select({ n: count() })
-        .from(connectionRequests)
-        .where(
-          and(
-            eq(connectionRequests.targetId, memberId),
-            eq(connectionRequests.status, 'pending'),
-          ),
-        )
-      return row?.n ?? 0
-    },
+    pendingIncoming: (memberId) => pendingIncoming(db, memberId),
   }
 }
 

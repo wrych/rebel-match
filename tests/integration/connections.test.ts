@@ -256,3 +256,60 @@ describe('connecting over Postgres: the double opt-in (F7, ADR 0004)', () => {
     expect(response.status).toBe(404)
   })
 })
+
+describe('a member set to be deleted, over Postgres (ADR 0032)', () => {
+  const insert = async (
+    from: string,
+    to: string,
+    status: string,
+  ): Promise<string> => {
+    const rows = await db.query(
+      'INSERT INTO connection_requests (id, requester_id, target_id, kind, status) ' +
+        "VALUES (gen_random_uuid()::text, ?, ?, 'same_boat', ?) RETURNING id",
+      [ids[from], ids[to], status],
+    )
+    return String(rows[0]?.['id'])
+  }
+  const setStatus = (who: string, status: string): Promise<unknown> =>
+    db.query('UPDATE members SET status = ? WHERE id = ?', [status, ids[who]])
+  const pendingFor = async (who: string): Promise<number> =>
+    (
+      (await as(who)(request(app).get('/api/cockpit'))).body as {
+        pendingIncoming: number
+      }
+    ).pendingIncoming
+
+  it('hides them from every connection view, their email above all', async () => {
+    await db.query(
+      'DELETE FROM connection_requests WHERE requester_id IN (?) OR target_id IN (?)',
+      [[ids['dee']], [ids['dee']]],
+    )
+    const connected = await insert('eve', 'dee', 'accepted')
+    const pending = await insert('dee', 'ada', 'pending')
+    const before = await pendingFor('ada')
+
+    await setStatus('dee', 'deleted')
+    try {
+      await as('eve')(
+        request(app).get(`/api/connections/${connected}/contact`),
+      ).expect(404)
+      await as('eve')(request(app).get(`/api/connections/${connected}`)).expect(
+        404,
+      )
+      const list = await as('eve')(
+        request(app).get('/api/connections/connected'),
+      )
+      expect(JSON.stringify(list.body)).not.toContain(ids['dee'])
+      const incoming = await as('ada')(
+        request(app).get('/api/connections/incoming'),
+      )
+      expect(JSON.stringify(incoming.body)).not.toContain(pending)
+      expect(await pendingFor('ada')).toBe(before - 1)
+      await as('ada')(
+        request(app).post(`/api/connections/${pending}/accept`),
+      ).expect(404)
+    } finally {
+      await setStatus('dee', 'active')
+    }
+  })
+})
