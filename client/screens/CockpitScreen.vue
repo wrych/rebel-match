@@ -168,7 +168,10 @@ onUnmounted(() => {
           :to="contactPath(connection.id)"
           class="card request-row"
         >
-          <span class="card-title">{{ connection.other.name }}</span>
+          <span class="card-head">
+            <span class="card-title">{{ connection.other.name }}</span>
+            <span v-if="connection.unseen" class="chip chip-accent">New</span>
+          </span>
           <span v-if="peerLine(connection.other)" class="mono peer-meta">{{
             peerLine(connection.other)
           }}</span>

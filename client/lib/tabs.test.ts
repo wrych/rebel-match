@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { activeTab, matchesLabel, showsTabs } from './tabs'
+import { activeTab, matchesBadge, matchesLabel, showsTabs } from './tabs'
 
 describe('showsTabs', () => {
   it.each([
@@ -30,10 +30,21 @@ describe('activeTab', () => {
 
 describe('matchesLabel', () => {
   it.each([
-    [0, 'Matches'],
-    [1, 'Matches, 1 request waiting'],
-    [3, 'Matches, 3 requests waiting'],
-  ])('reads %i waiting as %s (R-MINE-4)', (waiting, label) => {
-    expect(matchesLabel(waiting)).toBe(label)
+    [0, 0, 'Matches'],
+    [1, 0, 'Matches, 1 request waiting'],
+    [3, 0, 'Matches, 3 requests waiting'],
+    [0, 1, 'Matches, 1 new connection'],
+    [2, 2, 'Matches, 2 requests waiting, 2 new connections'],
+  ])(
+    'reads %i waiting and %i connected as %s (R-MINE-4, R-CONN-7)',
+    (waiting, connected, label) => {
+      expect(matchesLabel({ waiting, connected })).toBe(label)
+    },
+  )
+})
+
+describe('matchesBadge', () => {
+  it('counts waiting requests and new connections together (R-CONN-7)', () => {
+    expect(matchesBadge({ waiting: 2, connected: 1 })).toBe(3)
   })
 })

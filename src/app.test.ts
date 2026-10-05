@@ -108,7 +108,12 @@ function deps(
     },
     cockpit: {
       cockpit: () =>
-        Promise.resolve({ challenges: [], following: [], pendingIncoming: 0 }),
+        Promise.resolve({
+          challenges: [],
+          following: [],
+          pendingIncoming: 0,
+          newConnections: 0,
+        }),
     },
   }
 }

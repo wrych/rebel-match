@@ -11,7 +11,10 @@ const route = {
 }
 vi.mock('vue-router', () => ({ useRoute: () => route }))
 
-function serve(pendingIncoming: number | null): ReturnType<typeof vi.fn> {
+function serve(
+  pendingIncoming: number | null,
+  newConnections = 0,
+): ReturnType<typeof vi.fn> {
   const fetchMock = vi.fn((url: string) => {
     if (url === '/api/config')
       return Promise.resolve({
@@ -32,6 +35,7 @@ function serve(pendingIncoming: number | null): ReturnType<typeof vi.fn> {
               challenges: [],
               following: [],
               pendingIncoming,
+              newConnections,
             }),
           },
     )
@@ -67,6 +71,18 @@ describe('TabBar', () => {
       'Matches, 2 requests waiting',
     )
     expect(matches?.attributes('aria-current')).toBe('page')
+  })
+
+  it('counts a request of theirs accepted but not opened yet (R-CONN-7)', async () => {
+    serve(1, 1)
+    const matches = (await mountBar())
+      .findAllComponents(RouterLinkStub)
+      .find((link) => link.props('to') === '/matches')
+
+    expect(matches?.find('.badge').text()).toBe('2')
+    expect(matches?.attributes('aria-label')).toBe(
+      'Matches, 1 request waiting, 1 new connection',
+    )
   })
 
   it('picks up a new request on its own, while the page is visible (R-MINE-4)', async () => {
