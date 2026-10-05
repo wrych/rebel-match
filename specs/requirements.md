@@ -845,6 +845,22 @@ records, and nothing here shows a number to anyone (ADR 0033).
   (configurable), during which a host can undo it, and so can the person, by a
   link emailed to their address, when they deleted the account themselves; a
   host MAY erase at once (ADR 0032).
+- **R-NFR-9 (Operability)** — THE SYSTEM SHALL record every request it
+  answers with a 500 and every failed background run with enough to find the
+  cause: the error's name, its message and stack with anything shaped like an
+  email address removed from both, the request's method and path without its
+  query string, the status, and a request id that the 500 response also
+  carries, so a member's screenshot can be matched to one log line. It SHALL NOT record a
+  header, a body, a cookie, a token, an email address, a name or a challenge's
+  words (R-ANA-3, constitution §5). Log lines SHALL be structured, one JSON
+  object each, so the hosting platform can search and alert on them.
+- **R-NFR-10 (Availability monitoring)** — Production SHALL be watched from
+  outside the application: a check of `GET /api/health` expecting the
+  database up, at least every five minutes, and an alert to the hosts when
+  it fails twice in a row, when the share of requests answered with a 5xx
+  rises above a configured threshold over five minutes, or when a scheduled
+  job fails. An alert names the deployment and the failing check, and
+  nothing about any member.
 
 ---
 

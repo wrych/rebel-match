@@ -228,6 +228,11 @@ printed dev link (R-DEV-6).
       `requirePermission`), five or six queries before the handler. Refactor
       only: behaviour and tests unchanged, one pull request. _(R-ROLE-5,
       R-NAV-7, constitution §4, design §8)_
+- [ ] Structured, PII-safe error logging: one logger module (the only place
+      `no-console` lets write) injected through `AppDeps`; `handleErrors` logs
+      the error with a request id and returns the id in the 500 body; the
+      server's `onError` hooks log through it; the email-address redaction of
+      an error message is unit-tested. _(R-NFR-9)_
 - [ ] Security headers through `helmet`, with a CSP the human-check widget is
       checked against. _(ADR 0034)_
 - [x] Production refuses an http `PUBLIC_URL` or `TRUST_PROXY=0`. _(ADR 0034)_
@@ -242,6 +247,11 @@ printed dev link (R-DEV-6).
       staging from `main`. _(ADR 0025, rollout step 1)_
 - [ ] Production on Cloud Run, promoted from staging by a reviewed workflow,
       in time for the pilot. _(ADR 0025, rollout step 2)_
+- [ ] Uptime check and alerts on production: a Cloud Monitoring uptime check
+      on `/api/health` expecting `"database":"up"`, alert policies on the 5xx
+      share and on failed job executions, a notification channel reaching the
+      hosts' phones; added to `docs/cloud-setup.md` part 2 as a numbered step
+      and done once on staging first. _(R-NFR-10, ADR 0025)_
 - [ ] Decide and implement challenge attribution for the production seed.
       _(open question 5)_
 - [ ] Deep-link pass: every email/QR target opens correctly signed out, signed
