@@ -270,7 +270,7 @@ printed dev link (R-DEV-6).
       email to the consent, so R-NFR-3 is watched in Mixpanel. _(R-NFR-3)_
 - [ ] Raise an invite's cap from its card on the invite links screen.
       _(R-INV-4, R-INV-9)_
-- [ ] Record invite opens: `POST /auth/invite-opened` from the entry screen
+- [x] Record invite opens: `POST /auth/invite-opened` from the entry screen
       into `invite_opens`. _(R-STAT-6, ADR 0038)_
 - [ ] Show each invite's opens beside its uses on the invite links screen.
       _(R-STAT-6, R-INV-9, ADR 0038)_

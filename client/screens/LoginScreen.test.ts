@@ -307,4 +307,22 @@ describe('LoginScreen', () => {
       expect(screen.find('form').exists()).toBe(true)
     })
   })
+
+  it('reports an opened invite once, and nothing without one (R-STAT-6)', async () => {
+    const fetchMock = server({ state: 'check-email' })
+    window.history.replaceState(null, '', '/?invite=poster-token')
+    mount(LoginScreen)
+    await flushPromises()
+    window.history.replaceState(null, '', '/login')
+    mount(LoginScreen)
+    await flushPromises()
+
+    const opened = fetchMock.mock.calls.filter(
+      ([url]) => url === '/auth/invite-opened',
+    )
+    expect(opened).toHaveLength(1)
+    expect(JSON.parse(String((opened[0]?.[1] as RequestInit).body))).toEqual({
+      invite: 'poster-token',
+    })
+  })
 })

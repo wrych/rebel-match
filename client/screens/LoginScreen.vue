@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import {
   requestLink,
   keepHandle,
+  noteInviteOpened,
   TooManyRequests,
   type LinkRequest,
 } from '../lib/admission'
@@ -24,6 +25,8 @@ const consentVersion = ref<string | null>(null)
 const problem = ref<string | null>(null)
 
 onMounted(async () => {
+  const invite = new URLSearchParams(window.location.search).get('invite')
+  if (invite !== null && invite !== '') noteInviteOpened(invite)
   try {
     consentVersion.value = (await fetchConfig()).consentVersion
   } catch {

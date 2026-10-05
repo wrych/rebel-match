@@ -181,6 +181,21 @@ export const invites = pgTable(
   (t) => [uniqueIndex('uq_invites_token').on(t.token)],
 )
 
+// One row per load of the entry screen with a token that names an invite, and
+// nothing about who opened it (R-STAT-6, ADR 0038). Never read back by any
+// endpoint (R-STAT-2); it goes with the invite.
+export const inviteOpens = pgTable(
+  'invite_opens',
+  {
+    id: id('id').primaryKey(),
+    inviteId: id('invite_id')
+      .notNull()
+      .references(() => invites.id, { onDelete: 'cascade' }),
+    openedAt: at('opened_at').notNull().defaultNow(),
+  },
+  (t) => [index('ix_open_invite').on(t.inviteId)],
+)
+
 export const outboxKind = pgEnum('outbox_kind', [
   'magic_link',
   'approval',

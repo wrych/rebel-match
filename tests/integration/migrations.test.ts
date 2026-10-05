@@ -49,6 +49,7 @@ describe('migrations', () => {
       'connection_requests',
       'deck_views',
       'follows',
+      'invite_opens',
       'invites',
       'magic_tokens',
       'member_expertise',

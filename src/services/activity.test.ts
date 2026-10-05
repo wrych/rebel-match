@@ -5,12 +5,15 @@ function setup(dealable: boolean): {
   store: ActivityStore
   views: { id: string; memberId: string; challengeId: string }[]
   forgotten: string[]
+  opens: { id: string; token: string }[]
 } {
+  const opens: { id: string; token: string }[] = []
   const views: { id: string; memberId: string; challengeId: string }[] = []
   const forgotten: string[] = []
   return {
     views,
     forgotten,
+    opens,
     store: {
       recordView: (view) => {
         if (dealable) views.push(view)
@@ -18,6 +21,10 @@ function setup(dealable: boolean): {
       },
       forgetViews: (memberId) => {
         forgotten.push(memberId)
+        return Promise.resolve()
+      },
+      recordOpen: (open) => {
+        opens.push(open)
         return Promise.resolve()
       },
     },
@@ -53,5 +60,21 @@ describe('activity (ADR 0033)', () => {
     await activity.forgetHistory('m-ada')
 
     expect(forgotten).toEqual(['m-ada'])
+  })
+})
+
+describe('invite opens (R-STAT-6, ADR 0038)', () => {
+  it('records each open with its own id and the token, nothing else', async () => {
+    const { store, opens } = setup(true)
+    let n = 0
+    const activity = createActivity({ store, newId: () => `o-${String(++n)}` })
+
+    await activity.inviteOpened('poster-token')
+    await activity.inviteOpened('poster-token')
+
+    expect(opens).toEqual([
+      { id: 'o-1', token: 'poster-token' },
+      { id: 'o-2', token: 'poster-token' },
+    ])
   })
 })

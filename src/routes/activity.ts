@@ -8,10 +8,15 @@ import {
   type GuardedLocals,
 } from './require-permission.js'
 
-const seenBody = z.object({ challengeId: z.string().min(1) })
+// The width of invites.token (src/db/schema.ts).
+const INVITE_TOKEN_MAX = 64
 
-/** `POST /api/deck/seen` and `DELETE /api/me/history` (design §3). Neither
- * answers with a record: views are recorded, never read back (R-STAT-2). */
+const seenBody = z.object({ challengeId: z.string().min(1) })
+const openedBody = z.object({ invite: z.string().min(1).max(INVITE_TOKEN_MAX) })
+
+/** `POST /api/deck/seen`, `POST /auth/invite-opened` and
+ * `DELETE /api/me/history` (design §3). None answers with a record: activity
+ * is recorded, never read back (R-STAT-2). */
 export function activityRoutes(deps: {
   auth: AuthProvider
   activity: ActivityService
@@ -39,6 +44,18 @@ export function activityRoutes(deps: {
       response.status(204).end()
     },
   )
+
+  // No session: the visitor has just scanned a code. Every well-formed body
+  // gets the same answer, so it says nothing about which tokens exist.
+  router.post('/auth/invite-opened', async (request, response) => {
+    const body = openedBody.safeParse(request.body)
+    if (!body.success) {
+      response.status(400).json({ error: 'bad_request' })
+      return
+    }
+    await deps.activity.inviteOpened(body.data.invite)
+    response.status(204).end()
+  })
 
   router.delete(
     '/api/me/history',
