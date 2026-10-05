@@ -242,9 +242,15 @@ printed dev link (R-DEV-6).
 - [ ] CI green on `main`. _(R-QA-6)_
 - [ ] Pilot test with 2–3 people; fix blockers. _(Meeting: "ready means we tested
       it… with a couple of people.")_
+- [ ] Record deck views and offer deleting one's activity history, with the
+      consent words that say so. _(R-STAT-1..5, ADR 0033)_
 
 ## Post-beta backlog _(Could / Won't-for-now)_
 
+- [ ] Decide how activity statistics are displayed — end-of-event figures
+      (challenges and their authors, views, "been there" notes) and a host
+      dashboard — including a minimum count below which a figure is not shown,
+      since a small number can point to a person. _(R-STAT-2, ADR 0033)_
 - [ ] LLM trend classifier replacing keywords (same interface). _(C5)_
 - [ ] `moderator` role + moderation screens — a role row plus a permission-matrix
       column, no schema change. _(C2, R-ROLE-6)_

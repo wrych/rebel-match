@@ -551,6 +551,22 @@ CREATE TABLE swipes (
 The deck reads it too: a challenge the viewer has any swipe on is never dealt
 again (R-OFF-2).
 
+### deck_views (activity record — R-STAT-1..4, ADR 0033)
+
+One row per showing of a card in a member's swipe deck. Never read back by any
+endpoint; it exists for statistics decided later (R-STAT-2).
+
+```sql
+CREATE TABLE deck_views (
+  id           CHAR(36) PRIMARY KEY,
+  member_id    CHAR(36) NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+  challenge_id CHAR(36) NOT NULL REFERENCES challenges(id) ON DELETE CASCADE,
+  seen_at      TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+CREATE INDEX ix_view_challenge ON deck_views (challenge_id);
+CREATE INDEX ix_view_member ON deck_views (member_id);
+```
+
 ### outbox (every outbound message, every environment — R-MSG-1..7)
 
 ```sql
@@ -661,6 +677,7 @@ onboarded → `403 {error: 'onboarding_required'}`. Only `/api/health` and
 | PUT    | `/api/me/analytics` | `{optIn: true, version}` or `{optIn: false}`                                        | Give or withdraw the analytics opt-in from the profile screen, as easily as at onboarding. A `version` other than the current analytics words → `409` (R-ANA-4).                                                                                                                                                   |
 | GET    | `/api/profile`      | —                                                                                   | The member's own name, job title, organization, sector, company size, email (read-only), the consent version and time they accepted, and `analyticsOptIn` (R-PROF-1,2).                                                                                                                                            |
 | PUT    | `/api/profile`      | `{name, jobTitle?, org?, sector?, companySize?}`                                    | Update the profile within the onboarding limits and lists; a blank or left-out optional field clears it (R-PROF-1).                                                                                                                                                                                                |
+| DELETE | `/api/me/history`   | —                                                                                   | Delete the member's own deck views, nothing else (R-STAT-4). Answers `204`.                                                                                                                                                                                                                                        |
 | DELETE | `/api/profile`      | —                                                                                   | Delete the member's own account as `DELETE /api/admin/members/:id` does: deactivate now, erase after the grace period; then end the session (R-PROF-2, ADR 0032). Refused with 409 `last_admin` or `created_invites`, as there. Answers `{eraseAfter}`.                                                            |
 | POST   | `/api/events`       | `{event, props}`                                                                    | The UI events of §7 (`journey_chosen`, `feedback_opened`) with their listed properties only; anything else → `400`. Forwarded to Mixpanel only for a member opted in; always `204` otherwise, so the client cannot tell (ADR 0026).                                                                                |
 
@@ -677,10 +694,11 @@ onboarded → `403 {error: 'onboarding_required'}`. Only `/api/health` and
 
 ### Offer journey
 
-| Method | Path         | Body                           | Behavior                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| ------ | ------------ | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| GET    | `/api/deck`  | —                              | Next challenges to swipe (exclude own, exclude already-swiped).                                                                                                                                                                                                                                                                                                                                                                  |
-| POST   | `/api/swipe` | `{challengeId, action, note?}` | Record the swipe on someone else's active challenge (own or gone → `404`). `same_boat`/`been_there` ask its author through the double opt-in (§connect), `been_there` with a note longer than `limits.beenThereNoteMinChars` − 1 characters (R-OFF-4); `follow` follows its trend; `skip` only records. A request already pending comes back as `{connection: {result: 'exists', id}}` (R-CONN-5). _Requires `challenge:swipe`._ |
+| Method | Path             | Body                           | Behavior                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| ------ | ---------------- | ------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/deck`      | —                              | Next challenges to swipe (exclude own, exclude already-swiped).                                                                                                                                                                                                                                                                                                                                                                  |
+| POST   | `/api/swipe`     | `{challengeId, action, note?}` | Record the swipe on someone else's active challenge (own or gone → `404`). `same_boat`/`been_there` ask its author through the double opt-in (§connect), `been_there` with a note longer than `limits.beenThereNoteMinChars` − 1 characters (R-OFF-4); `follow` follows its trend; `skip` only records. A request already pending comes back as `{connection: {result: 'exists', id}}` (R-CONN-5). _Requires `challenge:swipe`._ |
+| POST   | `/api/deck/seen` | `{challengeId}`                | Record that the card became the visible one in the deck (R-STAT-1): `204`. A challenge that is the member's own, inactive or unknown → `404`, nothing recorded. Answers nothing else; no endpoint reads views back (R-STAT-2). _Requires `challenge:swipe`._                                                                                                                                                                     |
 
 ### Connections (double opt-in)
 

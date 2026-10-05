@@ -267,7 +267,8 @@ capability, not a secret** — and every requirement below exists because of tha
 - **R-PROF-2** — The profile screen SHALL show the data-usage consent the member
   accepted, read-only, with its version and the time they accepted it (R-NFR-6),
   and SHALL carry the **analytics opt-in**, given or withdrawn there (R-ANA-4).
-  It SHALL offer **deleting one's own account** (C4): after one confirmation
+  It SHALL offer **deleting one's activity history** (R-STAT-4) and
+  **deleting one's own account** (C4): after one confirmation
   that says what goes, when, and how to change one's mind, the account is
   deactivated and the member signed out; everything R-NFR-7 lists is erased
   after the grace period unless they keep the account (ADR 0032). Deletion SHALL be
@@ -742,6 +743,41 @@ _(Decided by the maintainer after trying the redesign: ADR 0023.)_
 
 ---
 
+## 8g. Activity records
+
+The team wants to know, after the event, how many challenges were posted and
+by how many people, how often challenges were seen and how many "been there"
+notes were given. Most of that is already in the database; what a member was
+shown is not. Recording it and showing it are separate decisions: this section
+records, and nothing here shows a number to anyone (ADR 0033).
+
+- **R-STAT-1 (Deck views)** — WHEN a challenge card becomes the visible card
+  in a member's swipe deck THE SYSTEM SHALL record a **view**: the member, the
+  challenge and the time. Every showing is a view, the same card shown again
+  included, so the records give both total views and how many members saw a
+  challenge. A card sent ahead in a batch but never shown is not a view.
+- **R-STAT-2 (Recorded, not shown)** — Views SHALL NOT be shown, exported or
+  returned by any endpoint, to the member or anyone else, until a later
+  decision says how activity is displayed (`tasks.md`). Any display SHALL show
+  figures that combine many members, never what one person did. Views SHALL
+  NOT be sent to the analytics tool (R-ANA-1..4): they are the app's own record,
+  independent of the analytics opt-in.
+- **R-STAT-3 (Kept with the account)** — Views SHALL be kept as long as the
+  member's account exists, and erased with it (R-NFR-7). A challenge's views go
+  with the challenge.
+- **R-STAT-4 (Delete my history)** — The profile screen SHALL offer **deleting
+  one's activity history**, apart from deleting the account: after one
+  confirmation that says what goes, the member's views SHALL be deleted. Their
+  challenges, "been there" notes, swipes, follows and connections SHALL stay;
+  they are content and decisions, not history, and losing the swipes would
+  deal every answered card again.
+- **R-STAT-5 (Members are told)** — The data-usage consent SHALL say that
+  activity is recorded and kept with the account, that the app may show
+  combined figures, that personal data reaches another member only where a
+  feature needs it, and that the history can be deleted (R-ONB-5).
+
+---
+
 ## 9. Non-functional requirements
 
 - **R-NFR-1 (Privacy)** — Challenge text and member contact details SHALL be
@@ -791,7 +827,8 @@ _(Decided by the maintainer after trying the redesign: ADR 0023.)_
   the consent version and acceptance timestamp.
 - **R-NFR-7 (Deletion)** — The system SHALL support deleting a member and the
   personal data attached to them — challenges, connection requests, swipes,
-  follows, role grants, and their **outbound message log entries** (R-MSG-6) — on
+  deck views (R-STAT-3), follows, role grants, and their **outbound message log
+  entries** (R-MSG-6) — on
   request (GDPR erasure), at minimum via an admin action. Deleting SHALL first
   **deactivate** the account at once: no sign-in, and nothing of theirs shown
   to anyone. The erasure SHALL follow after a **grace period** of 30 days
