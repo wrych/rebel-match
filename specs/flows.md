@@ -525,7 +525,11 @@ challenge text, names, or email addresses (R-ANA-1, R-ANA-2, R-ANA-3). Capture i
 gated on the **separate analytics opt-in** ticked in **F2**, never on the
 data-usage consent itself (R-ANA-4, ADR 0026), so a member who leaves the box
 unticked is never counted. Mixpanel therefore cannot see the first F1 → F2 run:
-nobody has opted in before onboarding. The 2-minute budget of R-NFR-3 is timed by
-hand on a phone (tasks.md, M6) and watched in Mixpanel from the events members
-send once they have opted in. The database keeps no sign-in tokens for it: used
+nobody has opted in before onboarding. The event that finishes **F2** carries
+`seconds_to_onboard`, from the sign-in email to the consent, for a whitelisted
+attendee and an invite joiner alike, so Mixpanel watches the part of the
+2-minute budget of R-NFR-3 the server can see, across everyone who ticks the
+box. The part before the email, from the scan to typing the address, happens in
+a browser the app stores nothing in before consent, so the whole path is timed
+by hand on a phone (tasks.md, M6). The database keeps no sign-in tokens for it: used
 and expired ones are purged (ADR 0034).
