@@ -220,6 +220,11 @@ printed dev link (R-DEV-6).
       ADR 0031)_
 - [x] Rate-limit auth, verify token hashing, session flags, permission + party
       checks on every read. _(R-NFR-5, R-ROLE-5, design §8)_
+- [ ] Uptime check and alerts on production: a Cloud Monitoring uptime check
+      on `/api/health` expecting `"database":"up"`, alert policies on the 5xx
+      share and on failed job executions, a notification channel reaching the
+      hosts' phones; added to `docs/cloud-setup.md` part 2 as a numbered step
+      and done once on staging first. _(R-NFR-10, ADR 0025)_
 - [ ] Security headers through `helmet`, with a CSP the human-check widget is
       checked against. _(ADR 0034)_
 - [ ] Production refuses an http `PUBLIC_URL` or `TRUST_PROXY=0`. _(ADR 0034)_
