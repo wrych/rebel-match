@@ -39,9 +39,18 @@ async function load(): Promise<void> {
   }
 }
 
+// What was said about one card would read as about the next, so it goes when
+// the member moves on.
+function clearMessages(): void {
+  notice.value = null
+  problem.value = null
+}
+
 function browse(step: -1 | 1): void {
   const next = index.value + step
-  if (next >= 0 && next < cards.value.length) index.value = next
+  if (next < 0 || next >= cards.value.length) return
+  index.value = next
+  clearMessages()
 }
 
 // Arrow keys browse, as the prototype's arrow buttons do (R-OFF-1).
@@ -63,7 +72,7 @@ async function answer(action: 'same_boat' | 'follow' | 'skip'): Promise<void> {
   const answered = card.value
   if (answered === undefined) return
   sending.value = true
-  problem.value = null
+  clearMessages()
   try {
     const result = await answerCard(answered.challengeId, action)
     notice.value = noticeFor(answered, action, result)

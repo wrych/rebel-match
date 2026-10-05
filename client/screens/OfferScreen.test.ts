@@ -133,6 +133,29 @@ describe('OfferScreen', () => {
     expect(screen.find('.deck-text').text()).toContain('salary model')
   })
 
+  it('drops what it said about one card when the member browses to another', async () => {
+    server([[...cards, { ...cards[0]!, challengeId: 'c3' }]], {
+      status: 201,
+      body: { result: 'recorded', connection: { result: 'created', id: 'r1' } },
+    })
+    const screen = await mountScreen()
+    await click(screen, 'Same boat')
+    expect(screen.find('[role="status"]').text()).toContain('Ola Nyberg')
+
+    await screen.find('[aria-label="Next challenge"]').trigger('click')
+    expect(screen.find('[role="status"]').exists()).toBe(false)
+  })
+
+  it('drops a failed save when the member browses to another card', async () => {
+    server([cards], { status: 500 })
+    const screen = await mountScreen()
+    await click(screen, 'Skip')
+    expect(screen.find('[role="alert"]').exists()).toBe(true)
+
+    await screen.find('[aria-label="Next challenge"]').trigger('click')
+    expect(screen.find('[role="alert"]').exists()).toBe(false)
+  })
+
   it('opens the note screen for been there (R-OFF-4)', async () => {
     server([cards])
     await click(await mountScreen(), 'Been there')
