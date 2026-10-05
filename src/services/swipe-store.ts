@@ -1,6 +1,6 @@
 import { and, eq, ne } from 'drizzle-orm'
 import type { Database } from '../db/connect.js'
-import { challenges, follows, swipes } from '../db/schema.js'
+import { challenges, follows, members, swipes } from '../db/schema.js'
 import { challengeTrend } from './challenge-store.js'
 import type { SwipeStore } from './swipes.js'
 
@@ -12,6 +12,13 @@ export function createSwipeStore(db: Database): SwipeStore {
       const [row] = await db
         .select({ authorId: challenges.memberId, trendId: challengeTrend })
         .from(challenges)
+        .innerJoin(
+          members,
+          and(
+            eq(members.id, challenges.memberId),
+            eq(members.status, 'active'),
+          ),
+        )
         .where(
           and(
             eq(challenges.id, challengeId),

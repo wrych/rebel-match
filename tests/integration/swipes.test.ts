@@ -124,4 +124,18 @@ describe('swiping over Postgres (F6)', () => {
       404,
     )
   })
+
+  it('refuses a card whose author is set to be deleted (ADR 0032)', async () => {
+    const card = cards[2]!
+    await db.query("UPDATE members SET status = 'deleted' WHERE id = ?", [
+      card.author,
+    ])
+    try {
+      await swipe({ challengeId: card.id, action: 'skip' }).expect(404)
+    } finally {
+      await db.query("UPDATE members SET status = 'active' WHERE id = ?", [
+        card.author,
+      ])
+    }
+  })
 })

@@ -37,6 +37,11 @@ const otherParty = (viewerId: string): SQL =>
 const isParty = (viewerId: string): SQL | undefined =>
   or(eq(r.requesterId, viewerId), eq(r.targetId, viewerId))
 
+// The other party only while they are an active member: a deleted one is
+// hidden everywhere during their grace period, email included (ADR 0032).
+const activeOtherParty = (viewerId: string): SQL | undefined =>
+  and(otherParty(viewerId), eq(members.status, 'active'))
+
 // No email column is selected for a view, whatever the status (R-CONN-1).
 async function views(
   db: Database,
@@ -58,8 +63,11 @@ async function views(
       trendShort: trends.short,
     })
     .from(r)
-    .innerJoin(members, otherParty(viewerId))
-    .leftJoin(challenges, eq(challenges.id, r.challengeId))
+    .innerJoin(members, activeOtherParty(viewerId))
+    .leftJoin(
+      challenges,
+      and(eq(challenges.id, r.challengeId), eq(challenges.status, 'active')),
+    )
     .leftJoin(trends, eq(trends.id, challengeTrend))
     .where(where)
     .orderBy(desc(r.createdAt), r.id)
@@ -91,10 +99,13 @@ async function contactFor(
   const [row] = await db
     .select({ name: members.name, email: members.email })
     .from(r)
-    .innerJoin(members, otherParty(viewerId))
+    .innerJoin(members, activeOtherParty(viewerId))
     .where(and(eq(r.id, id), eq(r.status, 'accepted'), isParty(viewerId)))
   return row === undefined ? null : { name: row.name ?? '', email: row.email }
 }
+
+// A request from someone deleted since cannot be answered (ADR 0032).
+const requesterActive = sql`exists (select 1 from ${members} where ${members.id} = ${r.requesterId} and ${members.status} = 'active')`
 
 // What a request is checked against before it is made.
 function lookups(
@@ -180,7 +191,12 @@ export function createConnectionStore(db: Database): ConnectionStore {
         .update(r)
         .set({ status, respondedAt: sql`now()` })
         .where(
-          and(eq(r.id, id), eq(r.targetId, targetId), eq(r.status, 'pending')),
+          and(
+            eq(r.id, id),
+            eq(r.targetId, targetId),
+            eq(r.status, 'pending'),
+            requesterActive,
+          ),
         )
         .returning({ id: r.id })
       return answered.length === 1
