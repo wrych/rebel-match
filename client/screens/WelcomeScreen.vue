@@ -1,12 +1,46 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
+import { fetchConfig } from '../lib/api'
+import { fetchCockpit } from '../lib/cockpit'
 import { reportEvent } from '../lib/events'
+import { poll } from '../lib/poll'
 import { loadMe, type Me } from '../lib/session'
+import { matchesLabel } from '../lib/tabs'
 
+const MS_PER_SECOND = 1000
 const me = ref<Me | null>(null)
+const waiting = ref(0)
+let stopPolling: (() => void) | undefined
+let gone = false
+
+// This screen has no tab bar, so its matches link carries the badge, read now
+// and on the same timer as the tab's (R-MINE-4). A failed read shows none.
+async function countWaiting(): Promise<void> {
+  try {
+    const count = (await fetchCockpit()).pendingIncoming
+    waiting.value = Number.isInteger(count) && count > 0 ? count : 0
+  } catch {
+    waiting.value = 0
+  }
+}
+
+async function startPolling(): Promise<void> {
+  const config = await fetchConfig().catch(() => null)
+  if (config === null || gone) return
+  stopPolling = poll(() => {
+    void countWaiting()
+  }, config.limits.matchesPollSeconds * MS_PER_SECOND)
+}
 
 onMounted(async () => {
+  void countWaiting()
+  void startPolling()
   me.value = await loadMe()
+})
+
+onUnmounted(() => {
+  gone = true
+  stopPolling?.()
 })
 
 function chose(journey: 'ask' | 'offer'): void {
@@ -43,6 +77,17 @@ function chose(journey: 'ask' | 'offer'): void {
       </RouterLink>
     </div>
 
-    <RouterLink to="/matches" class="row-link">Your matches</RouterLink>
+    <RouterLink
+      to="/matches"
+      class="row-link"
+      :aria-label="`Your ${matchesLabel(waiting).toLowerCase()}`"
+    >
+      <span class="row-link-label">
+        Your matches
+        <span v-if="waiting > 0" class="badge" aria-hidden="true">{{
+          waiting
+        }}</span>
+      </span>
+    </RouterLink>
   </section>
 </template>

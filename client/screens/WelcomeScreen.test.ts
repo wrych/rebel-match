@@ -2,20 +2,31 @@
 import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-function signedIn(permissions: string[]): ReturnType<typeof vi.fn> {
-  const fetchMock = vi.fn().mockResolvedValue({
-    ok: true,
-    status: 200,
-    json: () =>
-      Promise.resolve({
-        id: 'a',
-        name: 'Ada',
-        onboarded: true,
-        analyticsOptIn: false,
-        roles: [],
-        permissions,
-      }),
-  })
+function signedIn(
+  permissions: string[],
+  pendingIncoming = 0,
+): ReturnType<typeof vi.fn> {
+  const bodies: Record<string, unknown> = {
+    '/api/cockpit': { pendingIncoming },
+    '/api/config': { limits: { matchesPollSeconds: 60 } },
+  }
+  const fetchMock = vi.fn((url: string) =>
+    Promise.resolve({
+      ok: true,
+      status: 200,
+      json: () =>
+        Promise.resolve(
+          bodies[url] ?? {
+            id: 'a',
+            name: 'Ada',
+            onboarded: true,
+            analyticsOptIn: false,
+            roles: [],
+            permissions,
+          },
+        ),
+    }),
+  )
   vi.stubGlobal('fetch', fetchMock)
   return fetchMock
 }
@@ -79,6 +90,28 @@ describe('WelcomeScreen', () => {
     expect(links.map((link) => link.props('to') as unknown)).toContain(
       '/matches',
     )
+  })
+
+  it('badges the matches link with the requests waiting (R-MINE-4)', async () => {
+    signedIn([], 2)
+    const link = (await mountWelcome())
+      .findAllComponents(RouterLinkStub)
+      .find((each) => each.props('to') === '/matches')
+
+    expect(link?.find('.badge').text()).toBe('2')
+    expect(link?.attributes('aria-label')).toBe(
+      'Your matches, 2 requests waiting',
+    )
+  })
+
+  it('shows no badge when nothing is waiting (R-MINE-4)', async () => {
+    signedIn([])
+    const link = (await mountWelcome())
+      .findAllComponents(RouterLinkStub)
+      .find((each) => each.props('to') === '/matches')
+
+    expect(link?.find('.badge').exists()).toBe(false)
+    expect(link?.attributes('aria-label')).toBe('Your matches')
   })
 
   it('opens the Offer door onto the deck (F6)', async () => {
