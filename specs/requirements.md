@@ -519,7 +519,7 @@ at a screen instead of at the front door.
   | `/login`                             | login / "check your email"                     |
   | `/access-requested`                  | applicant: what happens next (R-AUTH-9)        |
   | `/access-requested?invite=invalid`   | same, with the invalid-invite notice (R-INV-5) |
-  | `/auth/verify?token=…`               | magic-link landing                             |
+  | `/sign-in#token=…`                   | magic-link landing: a button signs in          |
   | `/onboarding`                        | name + consent                                 |
   | `/welcome`                           | two doors                                      |
   | `/ask`                               | submit a challenge                             |

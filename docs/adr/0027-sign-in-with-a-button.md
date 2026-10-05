@@ -1,6 +1,6 @@
 # 0027. Sign in with a button, never by opening the link
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by 0034
 - **Date:** 2026-10-04
 - **Deciders:** Andy Moesch
 

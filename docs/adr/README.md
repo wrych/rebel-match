@@ -63,10 +63,11 @@ still holds except where the later ADR says otherwise.
 | [0024](0024-postgres-via-drizzle-with-pglite-for-dev.md)   | Postgres through Drizzle, with PGlite for development and tests   | Accepted                  |
 | [0025](0025-cloud-run-promote-staging.md)                  | Cloud Run from GitHub; production promoted from staging           | Accepted, amended by 0028 |
 | [0026](0026-analytics-opt-in-sent-from-the-server.md)      | Analytics is opt-in, and every event goes from the server         | Accepted                  |
-| [0027](0027-sign-in-with-a-button.md)                      | Sign in with a button, never by opening the link                  | Accepted                  |
+| [0027](0027-sign-in-with-a-button.md)                      | Sign in with a button, never by opening the link                  | Accepted, amended by 0034 |
 | [0028](0028-merge-without-updating.md)                     | Merge without updating the branch; previews on request            | Accepted                  |
 | [0029](0029-rate-limits-with-a-self-hosted-human-check.md) | Rate-limit sign-in, with a self-hosted human check                | Accepted, amended by 0030 |
 | [0030](0030-human-check-before-more-link-emails.md)        | Ask for the human check before more link emails to one address    | Accepted                  |
 | [0031](0031-hosts-change-selected-settings.md)             | Hosts change selected settings in the app, stored in the database | Accepted                  |
 | [0032](0032-erasure-waits-30-days.md)                      | Erasure waits 30 days, during which it can be undone              | Accepted                  |
 | [0033](0033-record-activity-show-it-later.md)              | Record activity in our own tables; showing it is separate         | Accepted                  |
+| [0034](0034-hardened-headers-transport-and-sessions.md)    | Hardened headers, transport and sessions                          | Proposed                  |
