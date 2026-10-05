@@ -260,6 +260,8 @@ printed dev link (R-DEV-6).
 - [ ] Invite-link dry run: create one, scan it on a phone as an unknown address,
       revoke it, confirm the next scan shows the invalid-invite notice and lands
       on the access-requested screen. _(R-INV-3,5)_
+- [ ] `onboarding_completed` carries `seconds_to_onboard`, from the sign-in
+      email to the consent, so R-NFR-3 is watched in Mixpanel. _(R-NFR-3)_
 - [ ] QR-code entry flow validated end-to-end on a phone; time scan → onboarding
       complete (<2 min). _(R-NFR-3)_
 - [ ] CI green on `main`. _(R-QA-6)_

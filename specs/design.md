@@ -1035,18 +1035,23 @@ Alternatives considered (kept only as fallbacks):
   or name.
 - Capture these events with non-identifying properties only:
 
-  | event                  | properties                     |
-  | ---------------------- | ------------------------------ |
-  | `login_completed`      | —                              |
-  | `onboarding_completed` | `consent_version`              |
-  | `journey_chosen`       | `journey: ask\|offer`          |
-  | `challenge_submitted`  | `char_count`                   |
-  | `trend_assigned`       | `trend_id`, `overridden: bool` |
-  | `swipe`                | `action`, `trend_id`           |
-  | `connection_requested` | `kind`                         |
-  | `connection_responded` | `status: accepted\|declined`   |
-  | `feedback_opened`      | `screen`                       |
+  | event                  | properties                               |
+  | ---------------------- | ---------------------------------------- |
+  | `login_completed`      | —                                        |
+  | `onboarding_completed` | `consent_version`, `seconds_to_onboard`? |
+  | `journey_chosen`       | `journey: ask\|offer`                    |
+  | `challenge_submitted`  | `char_count`                             |
+  | `trend_assigned`       | `trend_id`, `overridden: bool`           |
+  | `swipe`                | `action`, `trend_id`                     |
+  | `connection_requested` | `kind`                                   |
+  | `connection_responded` | `status: accepted\|declined`             |
+  | `feedback_opened`      | `screen`                                 |
 
+- `seconds_to_onboard` is `consent_at` minus the time the latest sign-in email
+  (`outbox` kind `magic_link`) to the member was recorded, in whole seconds
+  (R-NFR-3). It covers email delivery, signing in and the onboarding screen; the
+  scan and typing the address come before it and are timed by hand. It is left
+  out when no such email is in the log, for instance after its retention.
 - **Never** send challenge `body`, member `name`, `email`, `org`.
 - **Opt-in only** (R-ANA-4, ADR 0026). Onboarding shows an unticked checkbox
   under the consent, with its own versioned words (`analyticsTexts`, like
