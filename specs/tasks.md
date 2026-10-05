@@ -218,7 +218,7 @@ printed dev link (R-DEV-6).
 - [x] Hosts change the spam-protection numbers, invite defaults and minimum
       lengths from the settings screen, stored in the database. _(R-CFG-6,
       ADR 0031)_
-- [ ] Rate-limit auth, verify token hashing, session flags, permission + party
+- [x] Rate-limit auth, verify token hashing, session flags, permission + party
       checks on every read. _(R-NFR-5, R-ROLE-5, design §8)_
 - [ ] Security headers through `helmet`, with a CSP the human-check widget is
       checked against. _(ADR 0034)_
