@@ -18,7 +18,12 @@ const auth = createAuth({
   deliver: () => Promise.resolve(),
   config,
 })
-const cockpit = { challenges: [], following: [], pendingIncoming: 2 }
+const cockpit = {
+  challenges: [],
+  following: [],
+  pendingIncoming: 2,
+  newConnections: 1,
+}
 
 function setup(): { app: Express; calls: string[] } {
   const calls: string[] = []

@@ -2,15 +2,22 @@
 import { computed, onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { fetchConfig } from '../lib/api'
-import { fetchCockpit } from '../lib/cockpit'
+import { fetchMatchesNews, NO_NEWS, type MatchesNews } from '../lib/cockpit'
 import { reportEvent } from '../lib/events'
 import { feedbackMailto } from '../lib/feedback'
 import { poll } from '../lib/poll'
-import { activeTab, matchesLabel, showsTabs, tabs } from '../lib/tabs'
+import {
+  activeTab,
+  matchesBadge,
+  matchesLabel,
+  showsTabs,
+  tabs,
+} from '../lib/tabs'
 
 const MS_PER_SECOND = 1000
 const route = useRoute()
-const waiting = ref(0)
+const news = ref<MatchesNews>(NO_NEWS)
+const badge = computed(() => matchesBadge(news.value))
 const feedbackTo = ref<string | null>(null)
 let stopPolling: (() => void) | undefined
 let starting: Promise<void> | undefined
@@ -29,11 +36,11 @@ function feedbackOpened(): void {
   reportEvent({ event: 'feedback_opened', props: { screen: screen.value } })
 }
 
-async function countWaiting(): Promise<void> {
+async function readNews(): Promise<void> {
   try {
-    waiting.value = (await fetchCockpit()).pendingIncoming
+    news.value = await fetchMatchesNews()
   } catch {
-    waiting.value = 0
+    news.value = NO_NEWS
   }
 }
 
@@ -47,20 +54,21 @@ async function startPolling(): Promise<void> {
   if (gone) return
   feedbackTo.value = config.feedbackTo
   stopPolling = poll(() => {
-    if (visible.value) void countWaiting()
+    if (visible.value) void readNews()
   }, config.limits.matchesPollSeconds * MS_PER_SECOND)
 }
 
-// Re-read on every move, so an answered request leaves the badge as soon as
-// the member navigates on, and on a timer, so a new one shows without a move
-// (R-MINE-4). A failed read just shows no badge.
+// Re-read on every move, so an answered request or an opened connection
+// leaves the badge as soon as the member navigates on, and on a timer, so a
+// new one shows without a move (R-MINE-4, R-CONN-7). A failed read just shows
+// no badge.
 watch(
   () => [route.fullPath, visible.value] as const,
   async ([, show]) => {
     if (!show) return
     starting ??= startPolling()
     await starting
-    await countWaiting()
+    await readNews()
   },
   { immediate: true },
 )
@@ -80,14 +88,14 @@ onUnmounted(() => {
       class="tab"
       :class="{ on: active?.to === tab.to }"
       :aria-current="active?.to === tab.to ? 'page' : undefined"
-      :aria-label="tab.to === '/matches' ? matchesLabel(waiting) : undefined"
+      :aria-label="tab.to === '/matches' ? matchesLabel(news) : undefined"
     >
       {{ tab.label }}
       <span
-        v-if="tab.to === '/matches' && waiting > 0"
+        v-if="tab.to === '/matches' && badge > 0"
         class="badge"
         aria-hidden="true"
-        >{{ waiting }}</span
+        >{{ badge }}</span
       >
     </RouterLink>
     <a

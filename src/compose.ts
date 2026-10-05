@@ -33,7 +33,10 @@ import { createChallengeStore } from './services/challenge-store.js'
 import { createChallenges } from './services/challenges.js'
 import { createConnectionStore } from './services/connection-store.js'
 import { createConnections } from './services/connections.js'
-import { createConnectionNotice } from './services/connection-notice.js'
+import {
+  createAcceptNotice,
+  createConnectionNotice,
+} from './services/connection-notice.js'
 import { createMemberDirectory } from './services/member-directory-store.js'
 import { createSwipeStore } from './services/swipe-store.js'
 import { createSwipes } from './services/swipes.js'
@@ -126,15 +129,17 @@ function composeJourneys(
     store: createFollowStore(db),
     trends: () => challenges.trends(),
   })
+  const notices = {
+    mailer,
+    members: createMemberDirectory(db),
+    publicUrl: config.publicUrl,
+  }
   const connections = createConnections({
     store: createConnectionStore(db),
     newId: randomUUID,
     track,
-    notify: createConnectionNotice({
-      mailer,
-      members: createMemberDirectory(db),
-      publicUrl: config.publicUrl,
-    }),
+    notify: createConnectionNotice(notices),
+    notifyAccepted: createAcceptNotice(notices),
   })
   return {
     challenges,

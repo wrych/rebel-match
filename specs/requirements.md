@@ -425,6 +425,12 @@ connect.")_
 - **R-CONN-6** — Email addresses SHALL only ever be exchanged between two
   whitelisted members who have both opted in. The system SHALL NOT expose a
   member directory or bulk contact export.
+- **R-CONN-7** — WHEN the target member **accepts** THE SYSTEM SHALL notify the
+  requester, in-app and by email, that they are now connected. The email
+  carries the target's name and a link to the connection's contact screen, but
+  no address and no challenge text (R-NAV-9). The in-app notice SHALL last until
+  the requester first opens that contact screen. A decline is not announced
+  (R-CONN-4).
 
 ---
 
@@ -438,7 +444,8 @@ connect.")_
   / R-CONN-4 are triggered).
 - **R-MINE-3** — The system SHALL show which trends the member is following.
 - **R-MINE-4** — The navigation SHALL badge the "Matches" tab when there are
-  pending incoming requests or new matches, and the welcome screen SHALL badge
+  pending incoming requests, connections accepted that the member has not
+  opened yet (R-CONN-7), or new matches, and the welcome screen SHALL badge
   its "Your matches" link the same way, since it shows no tab bar. While the app
   is open and visible, the badges and the list of waiting requests SHALL refresh
   on their own, at most `limits.matchesPollSeconds` apart, so a new request
@@ -448,7 +455,8 @@ connect.")_
   them, each as a member card. Each SHALL open that connection's contact screen
   (R-CONN-3). The list itself SHALL carry no email address; only the contact
   screen reads it (R-CONN-6). It SHALL refresh with the waiting list (R-MINE-4),
-  so a request accepted on the other side shows without a reload.
+  so a request accepted on the other side shows without a reload, and SHALL
+  mark a connection as new until the member first opens it (R-CONN-7).
 
 ---
 
@@ -910,6 +918,9 @@ fixtures. `design.md` §6 lists the exact records and the profile mechanism.
   emailed at launch, not only badged in the app: hosts need to see the message
   in the outbound log to test matching on staging, and the email is what brings
   members back after the summit. The email follows R-NAV-9 (R-CONN-2, S4).
+- **Accept notice** (2026-10-05) — the requester is told when their request is
+  accepted, by a badge and by email; until then they had to look. A decline
+  stays silent, as a request ignored does (R-CONN-7, R-CONN-4).
 - **Seed data** (2026-10-01) — split by environment rather than chosen between:
   prototype fixtures for dev, real whitelist + collected challenges for
   production. See §10 (R-SEED-1..7) and `design.md` §6.

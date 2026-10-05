@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { fetchCockpit, fetchIncoming } from './cockpit'
+import { fetchCockpit, fetchIncoming, fetchMatchesNews } from './cockpit'
 
 function answer(status: number, body: unknown = {}): ReturnType<typeof vi.fn> {
   const fetchMock = vi.fn().mockResolvedValue({
@@ -17,11 +17,24 @@ afterEach(() => {
 
 describe('cockpit reads', () => {
   it('reads the cockpit (R-MINE-1,3)', async () => {
-    const cockpit = { challenges: [], following: [], pendingIncoming: 0 }
+    const cockpit = {
+      challenges: [],
+      following: [],
+      pendingIncoming: 0,
+      newConnections: 0,
+    }
     const fetchMock = answer(200, cockpit)
 
     expect(await fetchCockpit()).toEqual(cockpit)
     expect(fetchMock).toHaveBeenCalledWith('/api/cockpit')
+  })
+
+  it('reads the badge counts, anything odd as none (R-MINE-4, R-CONN-7)', async () => {
+    answer(200, { pendingIncoming: 2, newConnections: 1 })
+    expect(await fetchMatchesNews()).toEqual({ waiting: 2, connected: 1 })
+
+    answer(200, { pendingIncoming: -1, newConnections: 1.5 })
+    expect(await fetchMatchesNews()).toEqual({ waiting: 0, connected: 0 })
   })
 
   it('reads the requests waiting for the member (R-MINE-2)', async () => {

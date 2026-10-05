@@ -18,6 +18,7 @@ const cockpit: Cockpit = {
     { id: '05', short: 'Radical Transparency', from: 'Secrecy', peers: 4 },
   ],
   pendingIncoming: 1,
+  newConnections: 0,
 }
 
 const request: ConnectionView = {
@@ -36,6 +37,7 @@ const request: ConnectionView = {
     companySize: null,
   },
   challenge: null,
+  unseen: false,
 }
 
 const config = { limits: { matchesPollSeconds: 30 } }
@@ -118,6 +120,29 @@ describe('CockpitScreen', () => {
     expect(paths(screen)).toContain('/matches/requests/r7/contact')
   })
 
+  it('marks a connection the member has not opened yet as new (R-CONN-7)', async () => {
+    const accepted: ConnectionView = {
+      ...request,
+      direction: 'outgoing',
+      status: 'accepted',
+    }
+    serve(
+      cockpit,
+      () => [],
+      () => [
+        { ...accepted, id: 'r8', unseen: true },
+        { ...accepted, id: 'r9', other: { ...request.other, name: 'Old Pal' } },
+      ],
+    )
+    const screen = await mountScreen()
+
+    const rows = screen
+      .findAllComponents(RouterLinkStub)
+      .filter((link) => String(link.props('to')).endsWith('/contact'))
+    expect(rows.map((row) => row.find('.chip').exists())).toEqual([true, false])
+    expect(rows[0]?.find('.chip').text()).toBe('New')
+  })
+
   it('shows a new request without a reload (R-MINE-4)', async () => {
     vi.useFakeTimers()
     let waiting: ConnectionView[] = []
@@ -190,7 +215,10 @@ describe('CockpitScreen', () => {
   })
 
   it('says what is empty, and offers to ask when there is no challenge', async () => {
-    serve({ challenges: [], following: [], pendingIncoming: 0 }, () => [])
+    serve(
+      { challenges: [], following: [], pendingIncoming: 0, newConnections: 0 },
+      () => [],
+    )
     const screen = await mountScreen()
 
     expect(screen.findAll('.empty').map((each) => each.text())).toEqual([
