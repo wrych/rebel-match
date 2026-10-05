@@ -404,6 +404,11 @@ capability, not a secret** — and every requirement below exists because of tha
     readers like any other card (R-NFR-2).
   - It MAY emit a single non-identifying analytics event (`easter_egg_found`) and
     nothing else (R-ANA-3).
+- **R-OFF-7 (Opened at a card)** — WHEN the deck is opened at a challenge
+  (`/offer?challenge=:id`), as a notification links it (R-NOTE-1), THE SYSTEM
+  SHALL show that challenge's card first, then the deck as usual. IF the member
+  has already answered it, or it is their own, or no longer shown, THEN the deck
+  SHALL open as usual, revealing nothing about it (R-NAV-8).
 
 ---
 
@@ -575,6 +580,7 @@ at a screen instead of at the front door.
   | `/challenges/:cid/connect/:memberId` | connection request                             |
   | `/trends/:trendId`                   | trend detail + case studies                    |
   | `/offer`                             | swipe deck                                     |
+  | `/offer?challenge=:id`               | swipe deck, opened at that card (R-OFF-7)      |
   | `/offer/:challengeId/note`           | write a "been there" note                      |
   | `/offer/done`                        | empty deck / session summary                   |
   | `/matches`                           | cockpit                                        |
@@ -843,7 +849,8 @@ notifications: they go out at once, whatever is chosen here (R-NFR-3).
     (R-CONN-7), and the target, when a member already connected with them
     connects over another challenge (R-CONN-9);
   - **New challenge in a followed trend** — every member following the trend,
-    except its author, when a challenge is posted in it (R-ASK-9);
+    except its author, when a challenge is posted in it, linking to the deck
+    opened at its card (R-ASK-9, R-OFF-7);
   - **New applicant** — every member who can review applicants, when one is
     recorded (R-AUTH-2, R-AUTH-11).
 - **R-NOTE-2 (Cadences)** — For each type a member can receive, they SHALL

@@ -318,8 +318,8 @@ before both sides agree.**
 1. From a match card, the trend sheet, or the cockpit, the member taps Follow →
    `POST /api/follows/:trendId`; unfollow → `DELETE` (R-ASK-9).
 2. Followed trends are listed in the cockpit (**F8**, R-MINE-3).
-3. A challenge posted later in the trend notifies the member, daily by default
-   (**F17**, R-NOTE-1).
+3. A challenge posted later in the trend notifies the member, daily by default,
+   with a link to the deck opened at its card (**F17**, R-NOTE-1, R-OFF-7).
 
 ---
 
