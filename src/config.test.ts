@@ -280,7 +280,6 @@ describe('profile text limits', () => {
     expect(limits.nameMaxChars).toBe(120)
     expect(limits.jobTitleMaxChars).toBe(120)
     expect(limits.orgMaxChars).toBe(160)
-    expect(limits.sectorMaxChars).toBe(160)
     expect(limits.inviteLabelMaxChars).toBe(120)
     expect(limits.inviteMaxUsesCeiling).toBe(4_294_967_295)
     expect(limits.connectionMessageMaxChars).toBe(600)

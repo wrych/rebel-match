@@ -122,6 +122,8 @@ async function erase(): Promise<void> {
           <dd>{{ member.org ?? '—' }}</dd>
           <dt>Sector</dt>
           <dd>{{ member.sector ?? '—' }}</dd>
+          <dt>Company size</dt>
+          <dd>{{ member.companySize ?? '—' }}</dd>
           <dt>Email</dt>
           <dd>{{ member.email }}</dd>
         </dl>

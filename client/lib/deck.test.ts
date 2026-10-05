@@ -10,6 +10,7 @@ const card: DeckCard = {
     jobTitle: 'Site manager',
     org: 'Björk',
     sector: null,
+    companySize: null,
   },
 }
 
@@ -83,13 +84,23 @@ describe('answerCard', () => {
 })
 
 describe('authorLine', () => {
-  it('joins organization and sector, leaving out what is missing', () => {
+  it('joins organization, sector and company size, leaving out what is missing', () => {
     expect(authorLine(card)).toBe('Björk')
     expect(
       authorLine({
         ...card,
-        author: { ...card.author, sector: 'Manufacturing' },
+        author: { ...card.author, sector: 'Manufacturing', companySize: null },
       }),
     ).toBe('Björk · Manufacturing')
+    expect(
+      authorLine({
+        ...card,
+        author: {
+          ...card.author,
+          sector: 'Software & technology',
+          companySize: '251–1,000 employees',
+        },
+      }),
+    ).toBe('Björk · Software & technology · 251–1,000 employees')
   })
 })

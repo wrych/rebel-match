@@ -6,7 +6,13 @@ const card: DeckCard = {
   challengeId: 'c1',
   body: 'Two shifts, two cultures.',
   trend: { id: '02', short: 'Network of Teams' },
-  author: { name: 'Ola Nyberg', jobTitle: null, org: null, sector: null },
+  author: {
+    name: 'Ola Nyberg',
+    jobTitle: null,
+    org: null,
+    sector: null,
+    companySize: null,
+  },
 }
 
 describe('noticeFor', () => {

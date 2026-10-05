@@ -3,7 +3,8 @@ import { z } from 'zod'
 import type { AuthProvider } from '../auth/index.js'
 import type { Limits } from '../config.js'
 import type { ProfileEdit, ProfileStore } from '../services/profile.js'
-import { displayName, optionalText } from './profile-fields.js'
+import { companySizeKeys, sectorKeys } from '../profile-options.js'
+import { displayName, optionalChoice, optionalText } from './profile-fields.js'
 import { requireSession, type GuardedLocals } from './require-permission.js'
 
 type TextLimits = Pick<
@@ -16,6 +17,8 @@ function editBody(limits: TextLimits): z.ZodType<ProfileEdit> {
     name: displayName(limits.nameMaxChars),
     jobTitle: optionalText(limits.jobTitleMaxChars),
     org: optionalText(limits.orgMaxChars),
+    sector: optionalChoice(sectorKeys),
+    companySize: optionalChoice(companySizeKeys),
   })
 }
 

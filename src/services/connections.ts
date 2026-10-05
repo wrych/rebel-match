@@ -9,7 +9,9 @@ export interface MemberCard {
   name: string
   jobTitle: string | null
   org: string | null
+  /** Labels, as a card shows them, not the stored keys. */
   sector: string | null
+  companySize: string | null
 }
 
 export interface ConnectionRecord {

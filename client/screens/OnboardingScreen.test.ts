@@ -15,7 +15,8 @@ const draft = {
   name: 'Door Name',
   jobTitle: null,
   org: 'Door Org',
-  sector: 'Health',
+  sector: 'healthcare',
+  companySize: null,
   consentVersion: latestConsentVersion,
   analyticsVersion: latestAnalyticsVersion,
   analyticsOptIn: false,
@@ -24,7 +25,6 @@ const limits = {
   nameMaxChars: 120,
   jobTitleMaxChars: 120,
   orgMaxChars: 160,
-  sectorMaxChars: 160,
 }
 
 /** Serves the draft and config, and answers the submission with `status`. */
@@ -98,6 +98,7 @@ describe('OnboardingScreen', () => {
     window.history.replaceState(null, '', '/onboarding?next=%2Fmatches')
     const screen = await mountScreen()
     await screen.find('#job-title').setValue('Coach')
+    await screen.find('#company-size').setValue('51-250')
 
     await acceptAndSubmit(screen)
 
@@ -108,10 +109,29 @@ describe('OnboardingScreen', () => {
       name: 'Door Name',
       jobTitle: 'Coach',
       org: 'Door Org',
-      sector: 'Health',
+      sector: 'healthcare',
+      companySize: '51-250',
       consentVersion: latestConsentVersion,
     })
     expect(push).toHaveBeenCalledWith('/matches')
+  })
+
+  it('offers sector and company size as optional picks, pre-filled (R-ONB-2)', async () => {
+    server()
+    const screen = await mountScreen()
+
+    const sector = screen.find('#sector').element as HTMLSelectElement
+    const size = screen.find('#company-size').element as HTMLSelectElement
+    expect(sector.value).toBe('healthcare')
+    expect(size.value).toBe('')
+    expect([...size.options].map((option) => option.text)).toEqual([
+      'Not given',
+      '1–10 employees',
+      '11–50 employees',
+      '51–250 employees',
+      '251–1,000 employees',
+      '1,001+ employees',
+    ])
   })
 
   it('asks them to read again when the terms changed meanwhile, keeping their edits (R-ONB-4)', async () => {

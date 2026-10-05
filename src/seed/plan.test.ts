@@ -14,6 +14,14 @@ describe('planSeed', () => {
     }
   })
 
+  it('seeds the sector and company size lists in every profile (R-SEED-1)', () => {
+    for (const seedProfile of ['dev', 'prod'] as const) {
+      const plan = planSeed({ seedProfile, env: 'development', mail: SMTP })
+      expect(plan.sectors.map((sector) => sector.key)).toContain('healthcare')
+      expect(plan.companySizes).toHaveLength(5)
+    }
+  })
+
   it('seeds the fictional roster and the dev admin for dev (R-SEED-2)', () => {
     const plan = planSeed({
       seedProfile: 'dev',

@@ -20,7 +20,8 @@ const peer: PeerCard = {
   name: 'Marieke de Wit',
   jobTitle: 'People lead',
   org: 'Kade Collectief',
-  sector: 'Agency · 90',
+  sector: 'Agency & consulting',
+  companySize: '51-250',
   note: 'Ran a decision-mapping sprint.',
 }
 

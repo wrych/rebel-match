@@ -19,6 +19,7 @@ export function createOnboardingStore(db: Database): OnboardingStore {
         jobTitle: row.jobTitle,
         org: row.org ?? row.requestedOrg,
         sector: row.sector,
+        companySize: row.companySize,
         analyticsVersion:
           row.analyticsConsentAt === null ? null : row.analyticsConsentVersion,
       }
@@ -31,6 +32,7 @@ export function createOnboardingStore(db: Database): OnboardingStore {
           jobTitle: input.jobTitle ?? null,
           org: input.org ?? null,
           sector: input.sector ?? null,
+          companySize: input.companySize ?? null,
           consentVersion: input.consentVersion,
           consentAt: acceptedAt,
           analyticsConsentVersion: input.analyticsVersion ?? null,

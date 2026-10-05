@@ -18,13 +18,20 @@ const cards: DeckCard[] = [
       jobTitle: null,
       org: 'Björk',
       sector: 'Manufacturing',
+      companySize: null,
     },
   },
   {
     challengeId: 'c2',
     body: 'Our salary model still reflects the old hierarchy.',
     trend: { id: '08', short: 'Talents & Mastery' },
-    author: { name: 'Tobias Renner', jobTitle: null, org: null, sector: null },
+    author: {
+      name: 'Tobias Renner',
+      jobTitle: null,
+      org: null,
+      sector: null,
+      companySize: null,
+    },
   },
 ]
 

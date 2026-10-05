@@ -6,6 +6,7 @@ export interface OnboardingDraft {
   jobTitle: string | null
   org: string | null
   sector: string | null
+  companySize: string | null
   consentVersion: string
   /** The analytics words in force, and whether the box starts ticked. */
   analyticsVersion: string
@@ -17,6 +18,7 @@ export interface OnboardingAnswers {
   jobTitle: string
   org: string
   sector: string
+  companySize: string
   consentVersion: string
   /** Sent only when the analytics box is ticked (R-ANA-4). */
   analyticsVersion?: string

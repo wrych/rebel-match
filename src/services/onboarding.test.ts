@@ -19,6 +19,7 @@ function setup(draftAnalytics: string | null = null): {
         jobTitle: null,
         org: null,
         sector: null,
+        companySize: null,
         analyticsVersion: draftAnalytics,
       }),
     save: (memberId, input, acceptedAt) => {
@@ -66,6 +67,7 @@ describe('createOnboarding', () => {
       jobTitle: null,
       org: null,
       sector: null,
+      companySize: null,
       analyticsOptIn: false,
     })
   })

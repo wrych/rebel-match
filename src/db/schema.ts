@@ -38,6 +38,19 @@ const at = (name: string): PgTimestampBuilderInitial<string> =>
 const trendRef = (name: string): PgCharBuilderInitial<string, Enum, 2> =>
   char(name, { length: 2 })
 
+// The lists a member picks sector and company size from (R-ONB-2). The
+// code in src/profile-options.ts is the source; seeds copy it here, so the
+// database refuses a value off the list and cards read the label by key.
+export const sectors = pgTable('sectors', {
+  key: varchar('key', { length: 40 }).primaryKey(),
+  label: varchar('label', { length: 80 }).notNull(),
+})
+
+export const companySizes = pgTable('company_sizes', {
+  key: varchar('key', { length: 20 }).primaryKey(),
+  label: varchar('label', { length: 40 }).notNull(),
+})
+
 export const memberStatus = pgEnum('member_status', [
   'applicant',
   'active',
@@ -58,7 +71,13 @@ export const members = pgTable(
     name: varchar('name', { length: 120 }),
     jobTitle: varchar('job_title', { length: 120 }),
     org: varchar('org', { length: 160 }),
-    sector: varchar('sector', { length: 160 }),
+    sector: varchar('sector', { length: 40 }).references(() => sectors.key, {
+      onDelete: 'set null',
+    }),
+    companySize: varchar('company_size', { length: 20 }).references(
+      () => companySizes.key,
+      { onDelete: 'set null' },
+    ),
     status: memberStatus('status').notNull().default('applicant'),
     requestedName: varchar('requested_name', { length: 120 }),
     requestedOrg: varchar('requested_org', { length: 160 }),

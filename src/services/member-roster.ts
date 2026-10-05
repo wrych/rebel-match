@@ -6,7 +6,9 @@ export interface RosterMember {
   name: string | null
   jobTitle: string | null
   org: string | null
+  /** Labels, as the app shows them, not the stored keys. */
   sector: string | null
+  companySize: string | null
   status: 'applicant' | 'active' | 'rejected' | 'deleted'
   roles: string[]
   joinedAt: string

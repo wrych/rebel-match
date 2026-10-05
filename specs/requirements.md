@@ -163,8 +163,11 @@ Requirements:
   current consent version are both recorded — a name alone SHALL NOT satisfy it
   (R-ONB-4, R-NFR-6).
 - **R-ONB-2** — The onboarding screen SHALL collect the member's **display name**
-  (required) and MAY collect **job title** and organization (optional, used in
-  match cards). "Job title" is profile text and is unrelated to access roles
+  (required) and MAY collect **job title**, organization, **sector** and
+  **company size** (optional, used in match cards). Sector and company size are
+  each picked from a fixed list, never typed: sector from the list in design §2,
+  company size from at most five headcount bands, shown on cards as "_n_
+  employees". "Job title" is profile text and is unrelated to access roles
   (R-ROLE-8).
 - **R-ONB-3** — The onboarding screen SHALL present the **data-usage consent**
   and require explicit acceptance before continuing. THE SYSTEM SHALL record the
@@ -174,7 +177,10 @@ Requirements:
 - **R-ONB-5** — The consent copy SHALL state plainly that **email addresses are
   shared with another member only when both sides accept a connection**, and that
   the app is **closed: membership is by invitation**, whether from the whitelist
-  or an event invite link (R-INV-1). _(Meeting: "we need to make it very explicit
+  or an event invite link (R-INV-1). It SHALL also say that the member's
+  **name, organization and other profile information may be seen by other
+  members** — wherever the app shows them, not only on match cards — while the
+  email address stays private until a connection is accepted. _(Meeting: "we need to make it very explicit
   that the emails will be shared when you connect.")_
 
 ---
@@ -249,8 +255,9 @@ capability, not a secret** — and every requirement below exists because of tha
 ### 3.5 Profile, privacy and the menu
 
 - **R-PROF-1** — An onboarded member SHALL be able to edit their **display name**
-  (required), **job title** and **organization** after onboarding, within the
-  same limits as onboarding (R-ONB-2, R-CFG-2). The email address is how they
+  (required), **job title**, **organization**, **sector** and **company size**
+  after onboarding, within the same limits and lists as onboarding (R-ONB-2,
+  R-CFG-2). The email address is how they
   sign in and SHALL NOT be editable here.
   - Every setting on the profile screen SHALL **save on change**, with no save
     button, and SHALL confirm each save beside the field with a small, quiet
@@ -363,7 +370,8 @@ capability, not a secret** — and every requirement below exists because of tha
   deck (one card at a time, swipe or arrow navigation), excluding the viewer's
   own challenges.
 - **R-OFF-2** — Each card SHALL show the challenge text, its trend, author, and
-  organization/sector.
+  organization, sector and company size, leaving out what the author did not
+  give.
 - **R-OFF-3** — For each card the member SHALL be able to:
   - **Same boat** — "I'm facing this too" (a same-boat connection request).
   - **Been there** — "I can share experience" (an offer-help connection request,
@@ -789,8 +797,9 @@ fixtures. `design.md` §6 lists the exact records and the profile mechanism.
 - **R-SEED-1 (Shared content)** — Both environments SHALL be seeded with the
   **role records** (`member`, `admin`) and the curated product content: the **8
   trends** (number, short name, "from" label, peer count, keywords) and the
-  per-trend **case studies** (organization, Corporate Rebels URL, takeaway), so
-  the app is demonstrable without user-generated data.
+  per-trend **case studies** (organization, Corporate Rebels URL, takeaway), and
+  the **sector** and **company size** lists (R-ONB-2), so the app is
+  demonstrable without user-generated data.
 - **R-SEED-2 (Dev seed)** — A dev deployment SHALL be seeded from the prototype
   (`prototype/rebel-match-beta.html`): the fictional roster, their experience
   notes and challenges, and the example challenges — enough for a non-empty

@@ -9,6 +9,7 @@ import {
   members,
 } from '../db/schema.js'
 import { isOptedIn } from './analytics-consent.js'
+import { companySizeLabel, sectorLabel } from './profile-labels.js'
 import type {
   MemberDetail,
   MemberRoster,
@@ -21,7 +22,8 @@ const listed = {
   name: members.name,
   jobTitle: members.jobTitle,
   org: members.org,
-  sector: members.sector,
+  sector: sectorLabel,
+  companySize: companySizeLabel,
   status: members.status,
   createdAt: members.createdAt,
   role: memberRoles.roleKey,
@@ -34,6 +36,7 @@ interface ListedRow {
   jobTitle: string | null
   org: string | null
   sector: string | null
+  companySize: string | null
   status: RosterMember['status']
   createdAt: Date
   role: string | null
@@ -49,6 +52,7 @@ function oneMemberPerId(rows: ListedRow[]): RosterMember[] {
       jobTitle: row.jobTitle,
       org: row.org,
       sector: row.sector,
+      companySize: row.companySize,
       status: row.status,
       roles: [],
       joinedAt: row.createdAt.toISOString(),

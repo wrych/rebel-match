@@ -39,9 +39,9 @@ export async function answerCard(
     : { result: 'recorded', request: outcome.connection.result }
 }
 
-/** Who wrote a card, as one line: name, then organization and sector. */
+/** Who wrote a card, as one line: organization, sector and company size. */
 export function authorLine(card: DeckCard): string {
-  return [card.author.org, card.author.sector]
+  return [card.author.org, card.author.sector, card.author.companySize]
     .filter((part): part is string => part !== null && part !== '')
     .join(' · ')
 }

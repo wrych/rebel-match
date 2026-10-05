@@ -4,10 +4,12 @@ import type { Database } from '../db/connect.js'
 import {
   cases,
   challenges,
+  companySizes,
   memberExpertise,
   memberRoles,
   members,
   roles,
+  sectors,
   trends,
 } from '../db/schema.js'
 import type {
@@ -15,12 +17,29 @@ import type {
   SeedChallenge,
   SeedExpertise,
   SeedMember,
+  SeedOption,
   SeedPlan,
 } from './types.js'
 
 // The value an upsert would have written: Postgres calls that row `excluded`.
 const excluded = (column: string): ReturnType<typeof sql> =>
   sql.raw(`excluded.${column}`)
+
+async function upsertOptions(
+  db: Database,
+  table: typeof sectors | typeof companySizes,
+  options: readonly SeedOption[],
+): Promise<void> {
+  for (const option of options) {
+    await db
+      .insert(table)
+      .values(option)
+      .onConflictDoUpdate({
+        target: table.key,
+        set: { label: excluded('label') },
+      })
+  }
+}
 
 async function memberIdOf(db: Database, email: string): Promise<string | null> {
   const [row] = await db
@@ -44,6 +63,7 @@ async function upsertMember(
       jobTitle: member.jobTitle,
       org: member.org,
       sector: member.sector,
+      companySize: member.companySize,
       status: 'active',
       consentVersion,
       consentAt: new Date(),
@@ -56,6 +76,7 @@ async function upsertMember(
         jobTitle: excluded('job_title'),
         org: excluded('org'),
         sector: excluded('sector'),
+        companySize: excluded('company_size'),
         status: 'active',
       },
     })
@@ -155,6 +176,8 @@ async function applyPlan(
       })
   }
   for (const item of plan.cases) await upsertCase(db, item)
+  await upsertOptions(db, sectors, plan.sectors)
+  await upsertOptions(db, companySizes, plan.companySizes)
   for (const member of plan.members) {
     await upsertMember(db, member, consentVersion)
   }

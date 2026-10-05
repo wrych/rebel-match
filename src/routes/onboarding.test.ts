@@ -28,6 +28,7 @@ const draft = {
   jobTitle: null,
   org: 'Rebels',
   sector: null,
+  companySize: null,
   analyticsOptIn: false,
 }
 
@@ -94,6 +95,8 @@ describe('POST /api/onboarding', () => {
         name: '  Ada  ',
         jobTitle: '',
         org: 'Rebels',
+        sector: 'healthcare',
+        companySize: '51-250',
         consentVersion: config.consentVersion,
       })
 
@@ -105,11 +108,31 @@ describe('POST /api/onboarding', () => {
           name: 'Ada',
           jobTitle: undefined,
           org: 'Rebels',
-          sector: undefined,
+          sector: 'healthcare',
+          companySize: '51-250',
           consentVersion: config.consentVersion,
         },
       },
     ])
+  })
+
+  it('takes a blank sector and company size as left out (R-ONB-2)', async () => {
+    const { app, completed } = setup()
+
+    await request(app)
+      .post('/api/onboarding')
+      .set('Cookie', await cookie())
+      .send({
+        name: 'Ada',
+        sector: '',
+        companySize: '',
+        consentVersion: config.consentVersion,
+      })
+
+    expect(completed[0]?.input).toMatchObject({
+      sector: undefined,
+      companySize: undefined,
+    })
   })
 
   it('reports onboarding with the consent version, and not a refused one (R-ANA-1)', async () => {
@@ -153,7 +176,8 @@ describe('POST /api/onboarding', () => {
     { name: 'Ada' },
     { name: 'x'.repeat(121), consentVersion: '2026-11-01' },
     { name: 'Ada', jobTitle: 'x'.repeat(121), consentVersion: '2026-11-01' },
-    { name: 'Ada', sector: 'x'.repeat(161), consentVersion: '2026-11-01' },
+    { name: 'Ada', sector: 'Health', consentVersion: '2026-11-01' },
+    { name: 'Ada', companySize: '260', consentVersion: '2026-11-01' },
   ])('refuses %j without completing anything', async (body) => {
     const { app, completed } = setup()
 

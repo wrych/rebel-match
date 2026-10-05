@@ -2,6 +2,13 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { consentWordsOf } from '../../src/consent'
+import {
+  companySizeKeys,
+  companySizes,
+  pickedOrBlank,
+  sectorKeys,
+  sectors,
+} from '../../src/profile-options'
 import AnalyticsWords from '../components/AnalyticsWords.vue'
 import { fetchConfig, type ClientConfig } from '../lib/api'
 import {
@@ -15,8 +22,8 @@ const router = useRouter()
 const name = ref('')
 const jobTitle = ref('')
 const org = ref('')
-// Not asked here, but sent back as given so saving never erases it.
 const sector = ref('')
+const companySize = ref('')
 const accepted = ref(false)
 const consentVersion = ref<string | null>(null)
 // Optional and unticked unless they already opted in (R-ANA-4, ADR 0026).
@@ -43,7 +50,8 @@ async function load(): Promise<void> {
     name.value = draft.name ?? ''
     jobTitle.value = draft.jobTitle ?? ''
     org.value = draft.org ?? ''
-    sector.value = draft.sector ?? ''
+    sector.value = pickedOrBlank(draft.sector, sectorKeys)
+    companySize.value = pickedOrBlank(draft.companySize, companySizeKeys)
     consentVersion.value = draft.consentVersion
     analyticsVersion.value = draft.analyticsVersion
     analytics.value = draft.analyticsOptIn
@@ -74,6 +82,7 @@ async function submit(): Promise<void> {
       jobTitle: jobTitle.value,
       org: org.value,
       sector: sector.value,
+      companySize: companySize.value,
       consentVersion: consentVersion.value,
       ...(analytics.value && analyticsVersion.value !== null
         ? { analyticsVersion: analyticsVersion.value }
@@ -141,9 +150,34 @@ onMounted(load)
           :maxlength="limits?.orgMaxChars"
         />
       </div>
+      <div class="field">
+        <label for="sector">Sector (optional)</label>
+        <select id="sector" v-model="sector" class="input">
+          <option value="">Not given</option>
+          <option
+            v-for="choice in sectors"
+            :key="choice.key"
+            :value="choice.key"
+          >
+            {{ choice.label }}
+          </option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="company-size">Company size (optional)</label>
+        <select id="company-size" v-model="companySize" class="input">
+          <option value="">Not given</option>
+          <option
+            v-for="size in companySizes"
+            :key="size.key"
+            :value="size.key"
+          >
+            {{ size.label }}
+          </option>
+        </select>
+      </div>
       <p class="small">
-        Your name, job title and organization appear on the cards other members
-        see.
+        Your name and profile information may be seen by other members.
       </p>
 
       <section class="card-solid consent" aria-labelledby="consent-heading">
