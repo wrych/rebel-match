@@ -233,10 +233,10 @@ printed dev link (R-DEV-6).
       the error with a request id and returns the id in the 500 body; the
       server's `onError` hooks log through it; the email-address redaction of
       an error message is unit-tested. _(R-NFR-9)_
-- [ ] Security headers through `helmet`, with a CSP the human-check widget is
+- [x] Security headers through `helmet`, with a CSP the human-check widget is
       checked against. _(ADR 0034)_
 - [x] Production refuses an http `PUBLIC_URL` or `TRUST_PROXY=0`. _(ADR 0034)_
-- [ ] Signing in rotates the session; expired sessions and tokens are purged;
+- [x] Signing in rotates the session; expired sessions and tokens are purged;
       the legacy `GET /auth/verify` is removed. _(ADR 0034)_
 - [ ] Production seed: attendee whitelist + the ~15 real collected challenges
       from env-pointed private files; admins granted the `admin` role.
