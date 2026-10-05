@@ -515,8 +515,9 @@ they wait for a human (**F4**).
 - _Window ends mid-session_ → the invite goes inert on its own; scans fall to
   **F4**. Extending means creating a new invite, which is deliberate: an invite's
   window is a promise, not a setting to nudge.
-- _Cap reached with people still queuing_ → raise it by creating a second invite,
-  or approve the stragglers through **F10**.
+- _Cap reached, or close to it, with people still queuing_ → the host raises
+  the invite's cap on the invite screen, and the printed code keeps admitting.
+  Stragglers who already fell to **F4** are approved through **F10**.
 
 ---
 
