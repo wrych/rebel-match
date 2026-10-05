@@ -7,7 +7,12 @@ import {
 } from './auth/index.js'
 import { admittedRole } from './access.js'
 import type { AppDeps } from './app.js'
-import { isDevelopmentDeployment, type Config } from './config.js'
+import {
+  isDevelopmentDeployment,
+  type AbuseLimits,
+  type Config,
+  type LiveSettings,
+} from './config.js'
 import type { Database } from './db/connect.js'
 import {
   createAdmissionStore,
@@ -16,7 +21,9 @@ import {
 import { createAdmission } from './services/admission.js'
 import { createApplicantHandles } from './services/applicant-handle.js'
 import { createHumanCheck } from './services/human-check.js'
-import { createPacedGate } from './services/paced-gate.js'
+import { createPacedGate, type PacedGate } from './services/paced-gate.js'
+import { createSettingOverrideStore } from './services/setting-override-store.js'
+import { createSettings } from './services/settings.js'
 import { createWindowCounter } from './services/rate-limit.js'
 import { createApplicantNotice } from './services/applicant-notice.js'
 import { createApprovalStore } from './services/approval-store.js'
@@ -136,6 +143,7 @@ function composeJourneys(
 }
 
 function composeMembershipAdmin(
+  config: Config,
   db: Database,
   auth: AuthProvider,
 ): Pick<AppDeps, 'roles' | 'erasure' | 'roster' | 'whitelist'> {
@@ -148,7 +156,7 @@ function composeMembershipAdmin(
       store: createErasureStore(db),
       policy: configPolicy,
     }),
-    roster: createMemberRoster(db),
+    roster: createMemberRoster(db, config.analyticsVersion),
     whitelist: createWhitelist({
       store: createWhitelistStore(db),
       auth,
@@ -157,41 +165,59 @@ function composeMembershipAdmin(
   }
 }
 
+// The pace of sign-in emails per address and of applicants per network
+// (R-NFR-8, ADR 0029), read from the settings on every use (ADR 0031).
+function composeGates(
+  config: Config,
+  settings: LiveSettings,
+): { applicants: PacedGate; linkEmails: PacedGate } {
+  const abuse = (): AbuseLimits => settings.abuse()
+  const humanCheck = createHumanCheck({
+    secret: config.sessionSecret,
+    limits: () => ({
+      cost: abuse().humanCheckCost,
+      lifetimeMinutes: abuse().humanCheckMinutes,
+    }),
+  })
+  return {
+    applicants: createPacedGate({
+      counter: createWindowCounter({
+        windowMinutes: () => abuse().applicantWindowMinutes,
+      }),
+      humanCheck,
+      limits: () => ({
+        freeUses: abuse().applicantsBeforeCheck,
+        ceiling: abuse().applicantsCeiling,
+      }),
+    }),
+    linkEmails: createPacedGate({
+      counter: createWindowCounter({
+        windowMinutes: () => abuse().linkEmailWindowMinutes,
+      }),
+      humanCheck,
+      limits: () => ({
+        freeUses: abuse().linkEmailsBeforeCheck,
+        ceiling: abuse().linkEmailsCeiling,
+      }),
+    }),
+  }
+}
+
 // Who gets in: applicants at the door, invites, and the hosts' approvals
 // (F4, F10, F15).
 function composeAdmission(
   config: Config,
+  settings: LiveSettings,
   db: Database,
   auth: AuthProvider,
   mailer: Mailer,
 ): Pick<AppDeps, 'admission' | 'approvals'> {
-  const { abuse } = config
-  const humanCheck = createHumanCheck({
-    secret: config.sessionSecret,
-    cost: abuse.humanCheckCost,
-    lifetimeMinutes: abuse.humanCheckMinutes,
-  })
   return {
     admission: createAdmission({
       store: createAdmissionStore(db),
       auth,
       handles: createApplicantHandles(config.sessionSecret),
-      applicants: createPacedGate({
-        counter: createWindowCounter({
-          windowMinutes: abuse.applicantWindowMinutes,
-        }),
-        humanCheck,
-        freeUses: abuse.applicantsBeforeCheck,
-        ceiling: abuse.applicantsCeiling,
-      }),
-      linkEmails: createPacedGate({
-        counter: createWindowCounter({
-          windowMinutes: abuse.linkEmailWindowMinutes,
-        }),
-        humanCheck,
-        freeUses: abuse.linkEmailsBeforeCheck,
-        ceiling: abuse.linkEmailsCeiling,
-      }),
+      ...composeGates(config, settings),
       redeemInvite: createInviteRedemption(db, admittedRole),
       notifyReviewers: createApplicantNotice({
         mailer,
@@ -237,9 +263,14 @@ export function composeApp(
   const mailer = composeMailer(config, db)
   const auth = composeAuth(config, db, mailer)
   const track = composeTrack(config, db, hooks.onAnalyticsError ?? ignoreError)
+  const settings = createSettings({
+    config,
+    store: createSettingOverrideStore(db),
+  })
 
   return {
     config,
+    settings,
     db,
     track,
     auth,
@@ -248,9 +279,9 @@ export function composeApp(
       analyticsVersion: config.analyticsVersion,
     }),
     profile: createProfileStore(db, config.analyticsVersion),
-    ...composeMembershipAdmin(db, auth),
+    ...composeMembershipAdmin(config, db, auth),
     outbox: createOutboxLog(db),
-    ...composeAdmission(config, db, auth, mailer),
+    ...composeAdmission(config, settings, db, auth, mailer),
     onboarding: createOnboarding({
       store: createOnboardingStore(db),
       currentConsentVersion: config.consentVersion,
@@ -263,7 +294,7 @@ export function composeApp(
     invites: createInvites({
       store: createInviteStore(db),
       publicUrl: config.publicUrl,
-      defaults: config.limits,
+      defaults: () => settings.limits(),
       newId: randomUUID,
     }),
     ...composeJourneys(config, db, track),

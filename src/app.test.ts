@@ -7,6 +7,8 @@ import { describe, expect, it, vi } from 'vitest'
 import { createApp, handleErrors, type AppDeps } from './app.js'
 import { createAuth, createMemoryAuthStore } from './auth/index.js'
 import { loadConfig } from './config.js'
+import { createMemorySettingOverrideStore } from './services/memory-setting-override-store.js'
+import { createSettings } from './services/settings.js'
 import type { Database } from './db/connect.js'
 import { configPolicy } from './permissions.js'
 
@@ -21,6 +23,10 @@ function deps(
 ): AppDeps {
   return {
     config,
+    settings: createSettings({
+      config,
+      store: createMemorySettingOverrideStore(),
+    }),
     db: { execute } as unknown as Database,
     auth: createAuth({
       policy: configPolicy,
@@ -36,7 +42,10 @@ function deps(
     erasure: { erase: () => Promise.resolve('not_found') },
     analyticsConsent: { choose: () => Promise.resolve('done') },
     track: () => Promise.resolve(),
-    roster: { list: () => Promise.resolve([]) },
+    roster: {
+      list: () => Promise.resolve([]),
+      detail: () => Promise.resolve(null),
+    },
     profile: {
       own: () => Promise.resolve(null),
       update: () => Promise.resolve(),
@@ -144,13 +153,18 @@ describe('GET /api/config', () => {
 
 describe('the per-IP backstop on sign-in (R-NFR-8)', () => {
   function limited(trustProxy = 0): Express {
+    const narrowed = {
+      ...config,
+      trustProxy,
+      abuse: { ...config.abuse, authRequestsPerIp: 2 },
+    }
     return createApp({
       ...deps(),
-      config: {
-        ...config,
-        trustProxy,
-        abuse: { ...config.abuse, authRequestsPerIp: 2 },
-      },
+      config: narrowed,
+      settings: createSettings({
+        config: narrowed,
+        store: createMemorySettingOverrideStore(),
+      }),
     })
   }
 

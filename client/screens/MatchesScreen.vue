@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import AskSteps from '../components/AskSteps.vue'
 import CaseList from '../components/CaseList.vue'
 import FollowButton from '../components/FollowButton.vue'
@@ -13,13 +13,24 @@ import {
 } from '../lib/challenges'
 
 const route = useRoute()
+const router = useRouter()
 const id = String(route.params.id)
+const posted = route.query.posted === '1'
 const challenge = ref<Challenge | null>(null)
 const matches = ref<Matches | null>(null)
 const missing = ref(false)
 const problem = ref<string | null>(null)
+const nobodyYet = computed(
+  () =>
+    matches.value !== null &&
+    matches.value.sameBoat.length === 0 &&
+    matches.value.beenThere.length === 0,
+)
 
 onMounted(async () => {
+  // Dropped from the URL at once, so going back, reloading or bookmarking
+  // never announces the post a second time.
+  if (posted) void router.replace({ query: {} })
   try {
     const [found, matched] = await Promise.all([
       fetchChallenge(id),
@@ -35,47 +46,73 @@ onMounted(async () => {
 </script>
 
 <template>
-  <AskSteps :current="3" />
+  <AskSteps v-if="!posted" :current="3" />
   <section class="screen">
     <p v-if="missing" class="empty">There is no challenge of yours here.</p>
 
     <template v-else-if="challenge && matches">
+      <p v-if="posted" class="notice notice-ok" role="status">
+        <span class="tick" aria-hidden="true">✓</span>
+        <span
+          ><strong>Your challenge is live.</strong> Rebels who can help will now
+          see it.</span
+        >
+      </p>
+
       <div class="stack-tight">
-        <p class="mine">{{ challenge.body }}</p>
+        <h1 class="display display-lg">Rebels who can help</h1>
         <p class="kicker">{{ matches.trend.short }}</p>
+        <p class="mine">{{ challenge.body }}</p>
       </div>
 
       <section class="stack rule" aria-labelledby="same-boat">
-        <h2 id="same-boat" class="display display-md kicker-accent">
-          Same boat
-        </h2>
+        <div class="stack-tight">
+          <h2 id="same-boat" class="display display-md kicker-accent">
+            Rebels facing this now
+          </h2>
+          <p class="small purpose">Connect and compare notes.</p>
+        </div>
         <PeerCards
           :peers="matches.sameBoat"
           :challenge-id="id"
           kind="same_boat"
           action="Connect"
-          nobody="Nobody else is facing this yet."
+          nobody="You’re the first rebel here. Others will find your challenge in their deck."
         />
       </section>
 
       <section class="stack rule" aria-labelledby="been-there">
-        <h2 id="been-there" class="display display-md">Been there</h2>
+        <div class="stack-tight">
+          <h2 id="been-there" class="display display-md">
+            Rebels who’ve been there
+          </h2>
+          <p class="small purpose">Ask how they solved it.</p>
+        </div>
         <PeerCards
           :peers="matches.beenThere"
           :challenge-id="id"
           kind="been_there"
           action="Ask them"
-          nobody="Nobody has offered experience here yet."
+          nobody="No one has shared experience here yet. Rebels who have will see your challenge."
         />
       </section>
 
+      <RouterLink v-if="nobodyYet" to="/offer" class="btn btn-dark"
+        >Help another rebel meanwhile</RouterLink
+      >
+
       <section class="stack rule" aria-labelledby="cases">
-        <h2 id="cases" class="display display-md">Case studies</h2>
+        <div class="stack-tight">
+          <h2 id="cases" class="display display-md">
+            Rebel organizations that did it
+          </h2>
+          <p class="small purpose">Read how they made the shift.</p>
+        </div>
         <CaseList :cases="matches.cases" />
         <RouterLink
           :to="`/trends/${encodeURIComponent(matches.trend.id)}`"
           class="row-link"
-          >About {{ matches.trend.short }}</RouterLink
+          >More on {{ matches.trend.short }}</RouterLink
         >
       </section>
 
@@ -87,3 +124,21 @@ onMounted(async () => {
     <p v-if="problem" class="alert" role="alert">{{ problem }}</p>
   </section>
 </template>
+
+<style scoped>
+.notice-ok {
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+}
+
+.tick {
+  flex: none;
+  font-size: 1rem;
+}
+
+.purpose {
+  margin: 0;
+  color: var(--muted);
+}
+</style>

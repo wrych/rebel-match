@@ -64,6 +64,12 @@ export const routeTable: readonly RouteDef[] = [
     permission: 'member:delete',
   },
   {
+    path: '/admin/members/:id',
+    name: 'admin-member',
+    access: 'onboarded',
+    permission: 'member:delete',
+  },
+  {
     path: '/admin/outbox',
     name: 'admin-outbox',
     access: 'onboarded',

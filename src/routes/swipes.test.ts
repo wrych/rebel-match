@@ -2,7 +2,7 @@ import express, { type Express } from 'express'
 import request from 'supertest'
 import { describe, expect, it } from 'vitest'
 import { createAuth, createMemoryAuthStore } from '../auth/index.js'
-import { loadConfig } from '../config.js'
+import { fixedSettings, loadConfig } from '../config.js'
 import { configPolicy } from '../permissions.js'
 import type { SwipeInput } from '../services/swipes.js'
 import { swipeRoutes } from './swipes.js'
@@ -27,7 +27,7 @@ function setup(): { app: Express; swiped: SwipeInput[] } {
   app.use(
     swipeRoutes({
       auth,
-      config,
+      settings: fixedSettings(config),
       swipes: {
         swipe: (_m, input) => {
           swiped.push(input)

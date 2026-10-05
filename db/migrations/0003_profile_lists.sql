@@ -35,7 +35,7 @@ INSERT INTO "company_sizes" ("key", "label") VALUES
 	('1001+', '1,001+ employees');--> statement-breakpoint
 UPDATE "members" SET "sector" = "sectors"."key" FROM "sectors" WHERE "members"."sector" = "sectors"."label";--> statement-breakpoint
 UPDATE "members" SET "sector" = NULL WHERE "sector" NOT IN (SELECT "key" FROM "sectors");--> statement-breakpoint
-UPDATE "members" SET "company_size" = NULL WHERE "company_size" NOT IN (SELECT "key" FROM "company_sizes");--> statement-breakpoint
 ALTER TABLE "members" ALTER COLUMN "sector" SET DATA TYPE varchar(40);--> statement-breakpoint
+ALTER TABLE "members" ADD COLUMN "company_size" varchar(20);--> statement-breakpoint
 ALTER TABLE "members" ADD CONSTRAINT "members_sector_sectors_key_fk" FOREIGN KEY ("sector") REFERENCES "public"."sectors"("key") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "members" ADD CONSTRAINT "members_company_size_company_sizes_key_fk" FOREIGN KEY ("company_size") REFERENCES "public"."company_sizes"("key") ON DELETE set null ON UPDATE no action;

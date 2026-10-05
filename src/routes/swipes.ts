@@ -1,7 +1,7 @@
 import { Router } from 'express'
 import { z } from 'zod'
 import type { AuthProvider } from '../auth/index.js'
-import type { Limits } from '../config.js'
+import type { Limits, LiveSettings } from '../config.js'
 import type { SwipeInput, SwipeService } from '../services/swipes.js'
 import { requirePermission, type GuardedLocals } from './require-permission.js'
 
@@ -30,16 +30,15 @@ function swipeBody(limits: NoteLimits): z.ZodType<SwipeInput> {
 export function swipeRoutes(deps: {
   auth: AuthProvider
   swipes: SwipeService
-  config: { limits: NoteLimits }
+  settings: Pick<LiveSettings, 'limits'>
 }): Router {
   const router = Router()
-  const body = swipeBody(deps.config.limits)
 
   router.post(
     '/api/swipe',
     requirePermission(deps.auth, 'challenge:swipe'),
     async (request, response) => {
-      const input = body.safeParse(request.body)
+      const input = swipeBody(deps.settings.limits()).safeParse(request.body)
       if (!input.success) {
         response.status(400).json({ error: 'bad_request' })
         return

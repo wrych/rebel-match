@@ -77,7 +77,7 @@ function setup(): {
   const invites = createInvites({
     store,
     publicUrl: 'https://match.example.org',
-    defaults: { inviteDefaultMaxUses: 400, inviteDefaultHours: 12 },
+    defaults: () => ({ inviteDefaultMaxUses: 400, inviteDefaultHours: 12 }),
     now: () => now,
     newId: () => `i-${String(rows.size + 1)}`,
   })

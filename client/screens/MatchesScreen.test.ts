@@ -4,7 +4,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Challenge, Matches, Trend } from '../lib/challenges'
 import MatchesScreen from './MatchesScreen.vue'
 
-vi.mock('vue-router', () => ({ useRoute: () => ({ params: { id: 'c1' } }) }))
+const route = { params: { id: 'c1' }, query: {} as Record<string, string> }
+const replace = vi.fn()
+vi.mock('vue-router', () => ({
+  useRoute: () => route,
+  useRouter: () => ({ replace }),
+}))
 
 const trend: Trend = {
   id: '02',
@@ -97,6 +102,8 @@ function followButton(
 
 afterEach(() => {
   vi.unstubAllGlobals()
+  route.query = {}
+  replace.mockClear()
 })
 
 describe('MatchesScreen', () => {
@@ -105,12 +112,47 @@ describe('MatchesScreen', () => {
     const text = (await mountScreen()).text()
 
     expect(text).toContain(challenge.body)
-    expect(text).toContain('Same boat')
     expect(text).toContain('Sam Boat')
-    expect(text).toContain('Been there')
     expect(text).toContain('Buurtzorg · Care')
-    expect(text).toContain('Case studies')
     expect(text).toContain('Haier')
+  })
+
+  it('names each section by its people and what to do (R-ASK-12)', async () => {
+    server()
+    const screen = await mountScreen()
+
+    expect(screen.find('h1').text()).toBe('Rebels who can help')
+    expect(screen.findAll('h2').map((heading) => heading.text())).toEqual([
+      'Rebels facing this now',
+      'Rebels who’ve been there',
+      'Rebel organizations that did it',
+    ])
+    expect(screen.findAll('.purpose').map((line) => line.text())).toEqual([
+      'Connect and compare notes.',
+      'Ask how they solved it.',
+      'Read how they made the shift.',
+    ])
+  })
+
+  it('confirms the post on arrival from the trend step (R-ASK-11)', async () => {
+    server()
+    route.query = { posted: '1' }
+    const screen = await mountScreen()
+
+    expect(screen.find('[role="status"]').text()).toContain(
+      'Your challenge is live.',
+    )
+    expect(screen.find('.steps').exists()).toBe(false)
+    expect(replace).toHaveBeenCalledWith({ query: {} })
+  })
+
+  it('shows no banner when the member comes back later (R-ASK-11)', async () => {
+    server()
+    const screen = await mountScreen()
+
+    expect(screen.find('[role="status"]').exists()).toBe(false)
+    expect(screen.text()).not.toContain('Your challenge is live')
+    expect(replace).not.toHaveBeenCalled()
   })
 
   it('connects through the double opt-in screen, never by email (R-ASK-10)', async () => {
@@ -131,10 +173,10 @@ describe('MatchesScreen', () => {
     server()
     const about = (await mountScreen())
       .findAllComponents(RouterLinkStub)
-      .find((link) => link.text().startsWith('About'))
+      .find((link) => link.text().startsWith('More on'))
 
     expect(about?.props('to')).toBe('/trends/02')
-    expect(about?.text()).toBe('About Network of Teams')
+    expect(about?.text()).toBe('More on Network of Teams')
   })
 
   it('opens case studies in a new tab without handing over the page', async () => {
@@ -146,11 +188,26 @@ describe('MatchesScreen', () => {
     expect(link.attributes('rel')).toContain('noopener')
   })
 
-  it('says when a section has nobody yet', async () => {
+  it('points onward when nobody is here yet (R-ASK-13)', async () => {
     server({ found: { ...matches, sameBoat: [], beenThere: [], cases: [] } })
-    const empties = (await mountScreen()).findAll('.empty')
+    const screen = await mountScreen()
+    const empties = screen.findAll('.empty').map((empty) => empty.text())
+    const onward = screen
+      .findAllComponents(RouterLinkStub)
+      .find((link) => link.props('to') === '/offer')
 
     expect(empties).toHaveLength(3)
+    expect(empties[0]).toContain('Others will find your challenge')
+    expect(empties[1]).toContain('Rebels who have will see your challenge')
+    expect(onward?.text()).toBe('Help another rebel meanwhile')
+    expect(screen.text()).not.toMatch(/notif|we.ll tell you/i)
+  })
+
+  it('offers no detour while there are rebels to meet', async () => {
+    server()
+    const links = (await mountScreen()).findAllComponents(RouterLinkStub)
+
+    expect(links.some((link) => link.props('to') === '/offer')).toBe(false)
   })
 
   it('follows the trend, then unfollows it (R-ASK-9)', async () => {
@@ -197,7 +254,7 @@ describe('MatchesScreen', () => {
     const screen = await mountScreen()
 
     expect(screen.find('.empty').text()).toContain('no challenge of yours')
-    expect(screen.text()).not.toContain('Same boat')
+    expect(screen.text()).not.toContain('Rebels facing this now')
   })
 
   it('says so when the matches cannot be loaded', async () => {

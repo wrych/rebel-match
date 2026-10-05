@@ -58,6 +58,7 @@ describe('migrations', () => {
       'schema_migrations',
       'sectors',
       'sessions',
+      'setting_overrides',
       'swipes',
       'trends',
     ])

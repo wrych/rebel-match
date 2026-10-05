@@ -1,6 +1,6 @@
 {
-  "id": "f8e6ad36-2739-4e4b-a50f-189e5f6c2d88",
-  "prevId": "912bd8d8-b97d-49cf-9bb9-23e5f89bfa54",
+  "id": "af1c4256-5b75-42ce-9e53-8d724f874bb2",
+  "prevId": "d7e5c7be-6dd5-4334-8a41-26d750f07cef",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1324,6 +1324,58 @@
         }
       },
       "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.setting_overrides": {
+      "name": "setting_overrides",
+      "schema": "",
+      "columns": {
+        "key": {
+          "name": "key",
+          "type": "varchar(64)",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "changed_by": {
+          "name": "changed_by",
+          "type": "varchar(36)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "changed_at": {
+          "name": "changed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "setting_overrides_changed_by_members_id_fk": {
+          "name": "setting_overrides_changed_by_members_id_fk",
+          "tableFrom": "setting_overrides",
+          "tableTo": "members",
+          "columnsFrom": [
+            "changed_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},

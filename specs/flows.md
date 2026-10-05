@@ -335,12 +335,22 @@ before both sides agree.**
 
 ---
 
-## F11 — Admin: GDPR deletion
+## F11 — GDPR deletion
 
-1. A member asks to be removed (by email; self-service is post-beta).
-2. Admin finds them on `/admin/members` (S23) and confirms the delete, which
-   calls `DELETE /api/admin/members/:id`. It deletes the member
-   together with their challenges, connection requests, swipes, follows, role
+1. A member deletes their own account on the profile screen (S24) after one
+   confirmation, which calls `DELETE /api/profile` and signs them out
+   (R-PROF-2). Or they ask the host to remove them.
+2. Asked, the admin finds them on `/admin/members` (S23), opens their page
+   (S26) and confirms the delete, which calls `DELETE /api/admin/members/:id`.
+3. Either way the account is deactivated at once and hidden from everyone, and
+   erased 30 days later by the sweep (ADR 0032). Until then:
+   - if they deleted it themselves, the member asks for a sign-in link; the
+     screen answers as for any member, and the email says the account is set
+     to be deleted and carries a link to keep it, which restores it and signs
+     them in (a host's deletion sends nothing);
+   - or a host restores it on the member's page;
+   - or, when the person insists, a host erases it at once there.
+4. The erasure deletes the member together with their challenges, connection requests, swipes, follows, role
    grants, sessions and outbound log entries, in one transaction (R-NFR-7,
    R-MSG-6).
 

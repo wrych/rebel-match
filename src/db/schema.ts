@@ -381,3 +381,15 @@ export const connectionRequests = pgTable(
       .where(sql`${t.status} = 'pending'`),
   ],
 )
+
+// One row per setting a host changed in the app (R-CFG-6, ADR 0031); no row
+// means the deployment's value. Only the last change is kept, and erasing the
+// member who made it leaves the value with nobody named.
+export const settingOverrides = pgTable('setting_overrides', {
+  key: varchar('key', { length: 64 }).primaryKey(),
+  value: integer('value').notNull(),
+  changedBy: id('changed_by').references(() => members.id, {
+    onDelete: 'set null',
+  }),
+  changedAt: at('changed_at').notNull().defaultNow(),
+})

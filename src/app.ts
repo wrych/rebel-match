@@ -44,9 +44,11 @@ import type { MemberRoster } from './services/member-roster.js'
 import type { ProfileStore } from './services/profile.js'
 import type { RoleService } from './services/roles.js'
 import type { WhitelistService } from './services/whitelist.js'
+import type { SettingsService } from './services/settings.js'
 
 export interface AppDeps {
   config: Config
+  settings: SettingsService
   db: Database
   auth: AuthProvider
   profiles: MemberProfiles
@@ -113,9 +115,9 @@ export function createApp(deps: AppDeps): Express {
     [...SIGN_IN_POSTS],
     limitPerIp(
       createWindowCounter({
-        windowMinutes: deps.config.abuse.ipWindowMinutes,
+        windowMinutes: () => deps.settings.abuse().ipWindowMinutes,
       }),
-      deps.config.abuse.authRequestsPerIp,
+      () => deps.settings.abuse().authRequestsPerIp,
     ),
   )
   app.use(express.json({ limit: '64kb' }))
@@ -147,7 +149,7 @@ export function createApp(deps: AppDeps): Express {
   })
 
   app.get('/api/config', (_request, response) => {
-    response.json(clientConfig(deps.config))
+    response.json(clientConfig(deps.config, deps.settings.limits()))
   })
 
   app.use('/api', (_request, response) => {

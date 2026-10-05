@@ -38,7 +38,7 @@ describe('applyMigrations on Postgres (ADR 0024)', () => {
     expect(await applyMigrations(connection, MIGRATIONS)).toEqual([
       '0000_baseline.sql',
       '0001_analytics_opt_in.sql',
-      '0002_company_size.sql',
+      '0002_setting_overrides.sql',
       '0003_profile_lists.sql',
     ])
     expect(await applyMigrations(connection, MIGRATIONS)).toEqual([])
@@ -75,19 +75,19 @@ describe('the profile lists migration (R-ONB-2)', () => {
     return files
   }
 
-  it('keeps listed values as keys and clears everything off the lists', async () => {
+  it('turns a listed sector into its key and clears one off the list', async () => {
     const before = await copied([
       '0000_baseline.sql',
       '0001_analytics_opt_in.sql',
-      '0002_company_size.sql',
+      '0002_setting_overrides.sql',
     ])
     const dir = await scratchDir(before)
     await applyMigrations(connection, dir)
     await connection.db.execute(sql`
-      INSERT INTO members (id, email, analytics_id, sector, company_size) VALUES
-        ('a', 'a@example.invalid', 'aa', 'Software & technology', '251-1000'),
-        ('b', 'b@example.invalid', 'bb', 'Software · 260', '260'),
-        ('c', 'c@example.invalid', 'cc', NULL, NULL)`)
+      INSERT INTO members (id, email, analytics_id, sector) VALUES
+        ('a', 'a@example.invalid', 'aa', 'Software & technology'),
+        ('b', 'b@example.invalid', 'bb', 'Software · 260'),
+        ('c', 'c@example.invalid', 'cc', NULL)`)
     await writeFile(
       join(dir, '0003_profile_lists.sql'),
       (await copied(['0003_profile_lists.sql']))['0003_profile_lists.sql']!,
@@ -100,7 +100,7 @@ describe('the profile lists migration (R-ONB-2)', () => {
         sql`SELECT id, sector, company_size FROM members ORDER BY id`,
       ),
     ).toEqual([
-      { id: 'a', sector: 'software-technology', company_size: '251-1000' },
+      { id: 'a', sector: 'software-technology', company_size: null },
       { id: 'b', sector: null, company_size: null },
       { id: 'c', sector: null, company_size: null },
     ])

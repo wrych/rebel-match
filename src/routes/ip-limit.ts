@@ -14,15 +14,15 @@ export const SIGN_IN_POSTS = [
   '/auth/verify',
 ] as const
 
-/** Answers `429` once an address has made `limit` requests in the counter's
+/** Answers `429` once an address has made `limit()` requests in the counter's
  * window; mounted on `SIGN_IN_POSTS`, so Express's own path matching decides
  * what counts. */
 export function limitPerIp(
   counter: WindowCounter,
-  limit: number,
+  limit: () => number,
 ): RequestHandler {
   return (request, response, next) => {
-    if (!counter.take(clientIp(request), limit)) {
+    if (!counter.take(clientIp(request), limit())) {
       response.status(429).json({ error: 'too_many_requests' })
       return
     }

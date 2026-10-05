@@ -1,1 +1,0 @@
-ALTER TABLE "members" ADD COLUMN "company_size" varchar(20);

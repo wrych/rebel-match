@@ -1,10 +1,19 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { eraseMember, matchesSearch, type RosterMember } from './members'
+import {
+  eraseMember,
+  forEachMember,
+  matchesSearch,
+  type RosterMember,
+} from './members'
 
 const mia: RosterMember = {
   id: 'm-mia',
   email: 'mia@example.invalid',
   name: 'Mia Rebel',
+  jobTitle: null,
+  org: null,
+  sector: null,
+  companySize: null,
   status: 'active',
   roles: ['member'],
   joinedAt: '2026-10-01T09:00:00.000Z',
@@ -54,5 +63,22 @@ describe('matchesSearch', () => {
     ['ada', false],
   ])('%j matches: %s', (search, expected) => {
     expect(matchesSearch(mia, search)).toBe(expected)
+  })
+})
+
+describe('forEachMember (R-MEM-3)', () => {
+  it('runs for each member in turn, and a failure does not stop the rest', async () => {
+    const ben = { ...mia, id: 'm-ben', name: 'Ben' }
+    const order: string[] = []
+
+    const outcomes = await forEachMember([mia, ben], (id) => {
+      order.push(id)
+      return id === 'm-mia'
+        ? Promise.reject(new Error('network'))
+        : Promise.resolve('done')
+    })
+
+    expect(order).toEqual(['m-mia', 'm-ben'])
+    expect(outcomes.map((each) => each.outcome)).toEqual(['failed', 'done'])
   })
 })
