@@ -51,7 +51,8 @@ function toggleMood(): void {
     min-height: min(860px, calc(100dvh - 5rem));
     margin: 0 auto;
     border-radius: 38px;
-    overflow: hidden;
+    /* Clip rather than hide, so sticky bars still follow the page scroll. */
+    overflow: clip;
     box-shadow:
       0 40px 80px -20px rgb(0 0 0 / 60%),
       0 0 0 1px #2e2c28;

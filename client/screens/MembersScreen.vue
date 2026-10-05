@@ -217,52 +217,6 @@ async function erase(): Promise<void> {
       Nobody matches.
     </p>
 
-    <ul class="stack members">
-      <li
-        v-for="member in shown"
-        :key="member.id"
-        class="card member"
-        :class="{ selected: selected.has(member.id) }"
-      >
-        <button
-          type="button"
-          class="selector"
-          role="checkbox"
-          :aria-checked="selected.has(member.id)"
-          :aria-label="`Select ${who(member)}`"
-          @click="select(member)"
-        >
-          <span aria-hidden="true">✓</span>
-        </button>
-        <a
-          :href="pathOf(member)"
-          class="member-link"
-          @click="open($event, member)"
-          @pointerdown="hold(member)"
-          @pointerup="press.release()"
-          @pointerleave="press.abandon()"
-          @pointercancel="press.abandon()"
-          @contextmenu="selecting && $event.preventDefault()"
-        >
-          <span class="card-head">
-            <span class="stack-tight">
-              <span class="card-title">{{ who(member) }}</span>
-              <span v-if="peerLine(member)" class="mono line">{{
-                peerLine(member)
-              }}</span>
-            </span>
-            <span class="chip chip-dashed">{{ member.status }}</span>
-          </span>
-          <span v-if="member.name" class="small email">{{ member.email }}</span>
-          <span v-if="member.roles.length > 0" class="roles">
-            <span v-for="held in member.roles" :key="held" class="chip">{{
-              held
-            }}</span>
-          </span>
-        </a>
-      </li>
-    </ul>
-
     <div
       v-if="selecting"
       class="card action-bar stack-tight"
@@ -345,6 +299,52 @@ async function erase(): Promise<void> {
         Delete…
       </button>
     </div>
+
+    <ul class="stack members">
+      <li
+        v-for="member in shown"
+        :key="member.id"
+        class="card member"
+        :class="{ selected: selected.has(member.id) }"
+      >
+        <button
+          type="button"
+          class="selector"
+          role="checkbox"
+          :aria-checked="selected.has(member.id)"
+          :aria-label="`Select ${who(member)}`"
+          @click="select(member)"
+        >
+          <span aria-hidden="true">✓</span>
+        </button>
+        <a
+          :href="pathOf(member)"
+          class="member-link"
+          @click="open($event, member)"
+          @pointerdown="hold(member)"
+          @pointerup="press.release()"
+          @pointerleave="press.abandon()"
+          @pointercancel="press.abandon()"
+          @contextmenu="selecting && $event.preventDefault()"
+        >
+          <span class="card-head">
+            <span class="stack-tight">
+              <span class="card-title">{{ who(member) }}</span>
+              <span v-if="peerLine(member)" class="mono line">{{
+                peerLine(member)
+              }}</span>
+            </span>
+            <span class="chip chip-dashed">{{ member.status }}</span>
+          </span>
+          <span v-if="member.name" class="small email">{{ member.email }}</span>
+          <span v-if="member.roles.length > 0" class="roles">
+            <span v-for="held in member.roles" :key="held" class="chip">{{
+              held
+            }}</span>
+          </span>
+        </a>
+      </li>
+    </ul>
   </section>
 </template>
 
@@ -358,7 +358,7 @@ async function erase(): Promise<void> {
 .member {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  gap: 0.8rem;
+  gap: 0.5rem;
   align-items: start;
 }
 
@@ -370,15 +370,25 @@ async function erase(): Promise<void> {
 .selector {
   display: grid;
   place-items: center;
-  width: 1.6rem;
-  height: 1.6rem;
-  margin-top: 0.1rem;
-  border: 2px solid var(--line-strong);
+  position: relative;
+  width: 1.1rem;
+  height: 1.1rem;
+  margin-top: 0.15rem;
+  padding: 0;
+  border: 1.5px solid var(--line-strong);
   border-radius: 50%;
   background: transparent;
   color: transparent;
-  font-size: 0.9rem;
+  font-size: 0.65rem;
+  line-height: 1;
   cursor: pointer;
+}
+
+/* The circle is drawn small, but a finger still gets a full-size target. */
+.selector::before {
+  content: '';
+  position: absolute;
+  inset: -0.6rem;
 }
 
 .selected .selector {
@@ -417,7 +427,7 @@ async function erase(): Promise<void> {
 
 .action-bar {
   position: sticky;
-  bottom: 0.75rem;
+  top: 0.5rem;
   z-index: 5;
   border: 2px solid var(--accent);
   box-shadow: 0 8px 24px rgb(0 0 0 / 18%);
