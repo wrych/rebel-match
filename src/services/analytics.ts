@@ -3,7 +3,11 @@
  * field for a name, an email address or a challenge's words. */
 export type AnalyticsEvent =
   | { name: 'login_completed' }
-  | { name: 'onboarding_completed'; consent_version: string }
+  | {
+      name: 'onboarding_completed'
+      consent_version: string
+      seconds_to_onboard?: number
+    }
   | { name: 'journey_chosen'; journey: 'ask' | 'offer' }
   | { name: 'challenge_submitted'; char_count: number }
   | { name: 'trend_assigned'; trend_id: string; overridden: boolean }

@@ -7,7 +7,10 @@ import {
 
 const at = new Date('2026-11-08T10:00:00Z')
 
-function setup(draftAnalytics: string | null = null): {
+function setup(
+  draftAnalytics: string | null = null,
+  emailedAt: Date | null = new Date(at.getTime() - 90_000),
+): {
   onboarding: ReturnType<typeof createOnboarding>
   saved: { memberId: string; input: OnboardingInput; at: Date }[]
 } {
@@ -26,6 +29,7 @@ function setup(draftAnalytics: string | null = null): {
       saved.push({ memberId, input, at: acceptedAt })
       return Promise.resolve()
     },
+    signInEmailAt: () => Promise.resolve(emailedAt),
   }
   const onboarding = createOnboarding({
     store,
@@ -45,7 +49,10 @@ describe('createOnboarding', () => {
       consentVersion: '2026-11-01',
     }
 
-    expect(await onboarding.complete('m-ada', input)).toBe('done')
+    expect(await onboarding.complete('m-ada', input)).toEqual({
+      result: 'done',
+      secondsToOnboard: 90,
+    })
     expect(saved).toEqual([{ memberId: 'm-ada', input, at }])
   })
 
@@ -57,7 +64,7 @@ describe('createOnboarding', () => {
         name: 'Ada',
         consentVersion: '2026-01-01',
       }),
-    ).toBe('stale_consent')
+    ).toEqual({ result: 'stale_consent' })
     expect(saved).toEqual([])
   })
 
@@ -89,7 +96,10 @@ describe('createOnboarding', () => {
       analyticsVersion: '2026-10-04',
     }
 
-    expect(await onboarding.complete('m-ada', input)).toBe('done')
+    expect(await onboarding.complete('m-ada', input)).toEqual({
+      result: 'done',
+      secondsToOnboard: 90,
+    })
     expect(saved).toEqual([{ memberId: 'm-ada', input, at }])
   })
 
@@ -102,7 +112,7 @@ describe('createOnboarding', () => {
         consentVersion: '2026-11-01',
         analyticsVersion: '2025-01-01',
       }),
-    ).toBe('stale_consent')
+    ).toEqual({ result: 'stale_consent' })
     expect(saved).toEqual([])
   })
 
@@ -117,6 +127,7 @@ describe('createOnboarding', () => {
           stamped.push(acceptedAt)
           return Promise.resolve()
         },
+        signInEmailAt: () => Promise.resolve(null),
       },
     })
     const before = Date.now()
@@ -128,5 +139,27 @@ describe('createOnboarding', () => {
 
     expect(stamped[0]?.getTime()).toBeGreaterThanOrEqual(before)
     expect(stamped[0]?.getTime()).toBeLessThanOrEqual(Date.now())
+  })
+
+  it('says how long it took from the sign-in email (R-NFR-3)', async () => {
+    const { onboarding } = setup(null, new Date(at.getTime() - 74_400))
+
+    expect(
+      await onboarding.complete('m-ada', {
+        name: 'Ada',
+        consentVersion: '2026-11-01',
+      }),
+    ).toEqual({ result: 'done', secondsToOnboard: 74 })
+  })
+
+  it('leaves the time out when no sign-in email is kept', async () => {
+    const { onboarding } = setup(null, null)
+
+    expect(
+      await onboarding.complete('m-ada', {
+        name: 'Ada',
+        consentVersion: '2026-11-01',
+      }),
+    ).toEqual({ result: 'done', secondsToOnboard: null })
   })
 })

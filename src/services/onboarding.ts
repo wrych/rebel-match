@@ -35,9 +35,18 @@ export interface OnboardingStore {
     input: OnboardingInput,
     acceptedAt: Date,
   ): Promise<void>
+  /** When the latest sign-in email to the member was recorded in the outbound
+   * log, or null when none is kept (R-NFR-3). */
+  signInEmailAt(memberId: string): Promise<Date | null>
 }
 
-export type OnboardingOutcome = 'done' | 'stale_consent'
+/** A finished onboarding carries how long it took from the sign-in email,
+ * for analytics (R-NFR-3); null when no such email is in the log. */
+export type OnboardingOutcome =
+  | { result: 'done'; secondsToOnboard: number | null }
+  | { result: 'stale_consent' }
+
+const MS_PER_SECOND = 1000
 
 /** The form's pre-fill, with whether the analytics box starts ticked: only
  * when the member already opted in to the words in force. */
@@ -72,14 +81,24 @@ export function createOnboarding(deps: {
     },
     complete: async (memberId, input) => {
       if (input.consentVersion !== deps.currentConsentVersion)
-        return 'stale_consent'
+        return { result: 'stale_consent' }
       if (
         input.analyticsVersion !== undefined &&
         input.analyticsVersion !== deps.currentAnalyticsVersion
       )
-        return 'stale_consent'
-      await deps.store.save(memberId, input, now())
-      return 'done'
+        return { result: 'stale_consent' }
+      const acceptedAt = now()
+      await deps.store.save(memberId, input, acceptedAt)
+      const emailedAt = await deps.store.signInEmailAt(memberId)
+      return {
+        result: 'done',
+        secondsToOnboard:
+          emailedAt === null
+            ? null
+            : Math.round(
+                (acceptedAt.getTime() - emailedAt.getTime()) / MS_PER_SECOND,
+              ),
+      }
     },
   }
 }
