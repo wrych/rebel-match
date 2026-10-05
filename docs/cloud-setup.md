@@ -279,6 +279,10 @@ Nothing more to set up: from here the workflows do it.
 Magic links in the outbox point at the addresses above. A `PUBLIC_URL`
 variable on an environment overrides that, for a custom domain later.
 
+Analytics is off until an environment has a `MIXPANEL_TOKEN` variable, the
+token of the EU-residency Mixpanel project (ADR 0005); the next deploy passes
+it to the service. It is not a secret: it can only send events.
+
 The `db-f1-micro` instance allows about 25 connections. Each preview runs at
 most one instance, which lets go of its connections when it scales to zero,
 so a handful of open pull requests is fine; dozens at once are not.
