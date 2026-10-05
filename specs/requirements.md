@@ -441,9 +441,10 @@ connect.")_
   requester, in the app and by email at the cadence they chose (R-NOTE-2),
   that they are now connected. The email carries the target's name and a link
   to the connection's contact screen, but no address and no challenge text
-  (R-NAV-9). The in-app notice SHALL last until
-  the requester first opens that contact screen. A decline is not announced
-  (R-CONN-4).
+  (R-NAV-9). The connection SHALL stay marked new in the cockpit and its badge
+  (R-MINE-4) until the requester first opens that contact screen, however the
+  entry on the notifications screen is marked (R-NOTE-5). A decline is not
+  announced (R-CONN-4).
 - **R-CONN-8 (Already connected)** — IF the two members already share an
   accepted request, whichever side sent it, WHEN one of them initiates a
   connection THE SYSTEM SHALL record it as accepted at once, with nothing left
@@ -457,8 +458,9 @@ connect.")_
   (R-NOTE-2), that the requester connected with
   them over another challenge. The email carries the requester's name, their
   note and a link to the contact screen, but no address and no challenge text
-  (R-NAV-9). The in-app notice SHALL last until the target first opens that
-  contact screen.
+  (R-NAV-9). The connection SHALL stay marked new in the cockpit and its badge
+  (R-MINE-4) until the target first opens that contact screen, however the
+  entry on the notifications screen is marked (R-NOTE-5).
 - **R-CONN-10 (Connected over)** — The contact screen SHALL list, under
   _Connected over_, every accepted request between the two members, each with
   its challenge and trend, whether it was same boat or been there, and the note
