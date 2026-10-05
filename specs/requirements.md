@@ -209,6 +209,10 @@ capability, not a secret** — and every requirement below exists because of tha
 - **R-INV-4 (Capped)** — Every invite SHALL carry a **maximum number of uses**,
   defaulted sensibly and settable by the admin. At the cap the token SHALL be
   inert. A link that leaks must not be able to admit an unbounded crowd.
+  - An admin SHALL be able to **raise** the cap of an invite that is not
+    revoked, from the invite screen, so a printed code keeps admitting once it
+    fills up. The new cap SHALL be higher than the current one and within the
+    ceiling; a cap is never lowered.
 - **R-INV-5 (Graceful fallback)** — IF a token is unknown, not yet valid, expired,
   revoked, or at its cap THEN THE SYSTEM SHALL continue into the ordinary
   applicant flow (R-AUTH-2) and present the **access-requested screen**
