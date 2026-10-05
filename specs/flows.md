@@ -38,6 +38,7 @@ Conventions:
                    ▼
             F8 Matches cockpit  ──►  F7 (accept / decline)
                    ├──►  F9 Follow a trend
+                   ├──►  F17 Notifications
                    └──►  F12 Feedback
 
    Admin only: F10 Approvals · F16 Invite links · F11 GDPR deletion
@@ -317,6 +318,8 @@ before both sides agree.**
 1. From a match card, the trend sheet, or the cockpit, the member taps Follow →
    `POST /api/follows/:trendId`; unfollow → `DELETE` (R-ASK-9).
 2. Followed trends are listed in the cockpit (**F8**, R-MINE-3).
+3. A challenge posted later in the trend notifies the member, daily by default
+   (**F17**, R-NOTE-1).
 
 ---
 
@@ -544,3 +547,36 @@ box. The part before the email, from the scan to typing the address, happens in
 a browser the app stores nothing in before consent, so the whole path is timed
 by hand on a phone (tasks.md, M6). The database keeps no sign-in tokens for it: used
 and expired ones are purged (ADR 0034).
+
+---
+
+## F17 — Notifications
+
+**Screens:** S27 Notifications, S24 Profile & privacy (ADR 0037).
+
+1. Something happens for the member: a request to them, a new connection, a
+   challenge in a trend they follow, or, for hosts, a new applicant
+   (R-NOTE-1). Unless the type is _Off_, it is stored with the event
+   (R-NOTE-4, R-NOTE-10).
+2. The header's menu button shows a badge with the number of new
+   notifications, and the menu reads **Notifications (n new)**; with none new,
+   just **Notifications** (R-NOTE-6).
+3. The member opens it → **S27** `/notifications`, newest first. What was new
+   is outlined on this visit and counts as seen from now on (R-NOTE-5). Each
+   entry links to its screen (**F13**).
+4. Meanwhile the worker mails what the member has not seen, at the cadence
+   chosen for its type: every type on the same cadence in one mail
+   (R-NOTE-7, R-NOTE-8, R-NOTE-9).
+5. On **S24** the member picks, per type, _Immediately_, _Hourly_, _Daily_,
+   _In the app only_ or _Off_; hosts also _Every 15 minutes_ for applicants
+   (R-NOTE-2, R-NOTE-3).
+
+**Branches**
+
+- _Seen in the app before the mail is due_ → it is left out of the mail; with
+  nothing left, no mail goes (R-NOTE-9).
+- _The request was answered, or the member it is about left_ → it is left out
+  of the mail, and of the list if the member can no longer open it (R-NOTE-5,
+  R-NOTE-9).
+- _The mail fails_ → it is tried again, longer apart each time; the request it
+  announces stands regardless (R-NOTE-10).

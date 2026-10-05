@@ -67,43 +67,49 @@ Postgres** (ADR 0024), single-page mobile-first client served by the Node app.
 One module owns every tunable (R-CFG-1..4). Secrets come from env; product
 thresholds have sane defaults in the file and may be overridden by env.
 
-| Key                            | Default                       | Serves                    |
-| ------------------------------ | ----------------------------- | ------------------------- |
-| `limits.challengeMinChars`     | `31` (i.e. "more than 30")    | R-ASK-3                   |
-| `limits.beenThereNoteMinChars` | `31`                          | R-OFF-4                   |
-| `limits.magicLinkTtlMinutes`   | `15`                          | R-AUTH-5                  |
-| `limits.approvalLinkTtlHours`  | `24`                          | R-AUTH-10                 |
-| `sessionTtlDays` (idle)        | `30`                          | R-AUTH-7                  |
-| `limits.inviteDefaultMaxUses`  | `400`                         | R-INV-4                   |
-| `limits.inviteDefaultHours`    | `12`                          | R-INV-2                   |
-| `consent.currentVersion`       | e.g. `"2026-11-01"`           | R-ONB-3, R-ONB-4          |
-| `mail.delivery`                | `smtp` \| `none`              | R-DEV-1, R-DEV-4, R-DEV-5 |
-| `limits.outboxRetentionDays`   | `30`                          | R-MSG-6                   |
-| `limits.erasureGraceDays`      | `30`                          | R-NFR-7                   |
-| `outboxPurgeIntervalHours`     | `1`                           | R-MSG-6                   |
-| `erasureSweepIntervalHours`    | `1`                           | R-NFR-7                   |
-| `tokenPurgeIntervalHours`      | `1`                           | R-NFR-5                   |
-| `limits.outboxPageSize`        | `100`                         | R-MSG-5                   |
-| `limits.deckPageSize`          | `20`                          | R-OFF-1                   |
-| `limits.matchesPollSeconds`    | `30`                          | R-MINE-4                  |
-| `limits.whitelistBatchMax`     | `1000`                        | R-AUTH-1                  |
-| `limits.savedTickMs`           | `2500`                        | R-PROF-1                  |
-| `limits.holdToSelectMs`        | `500`                         | R-MEM-3                   |
-| `abuse.linkEmailsBeforeCheck`  | `3`                           | R-NFR-8                   |
-| `abuse.linkEmailsCeiling`      | `10`                          | R-NFR-8                   |
-| `abuse.linkEmailWindowMinutes` | `15`                          | R-NFR-8                   |
-| `abuse.authRequestsPerIp`      | `1000`                        | R-NFR-8                   |
-| `abuse.ipWindowMinutes`        | `15`                          | R-NFR-8                   |
-| `abuse.applicantsBeforeCheck`  | `30`                          | R-NFR-8                   |
-| `abuse.applicantsCeiling`      | `300`                         | R-NFR-8                   |
-| `abuse.applicantWindowMinutes` | `60`                          | R-NFR-8                   |
-| `abuse.humanCheckCost`         | `1000`                        | R-NFR-8                   |
-| `abuse.humanCheckMinutes`      | `5`                           | R-NFR-8                   |
-| `trustProxy` (`TRUST_PROXY`)   | `0`; `1` on Cloud Run         | R-NFR-8                   |
-| `settingsRefreshSeconds`       | `60`                          | R-CFG-6                   |
-| `seed.profile`                 | `dev` \| `prod`               | R-SEED-4                  |
-| `analytics.apiHost`            | `api-eu.mixpanel.com`         | R-ANA-5                   |
-| `rolePermissions`              | role → permission matrix (§2) | R-ROLE-3, R-ROLE-6        |
+| Key                                   | Default                       | Serves                    |
+| ------------------------------------- | ----------------------------- | ------------------------- |
+| `limits.challengeMinChars`            | `31` (i.e. "more than 30")    | R-ASK-3                   |
+| `limits.beenThereNoteMinChars`        | `31`                          | R-OFF-4                   |
+| `limits.magicLinkTtlMinutes`          | `15`                          | R-AUTH-5                  |
+| `limits.approvalLinkTtlHours`         | `24`                          | R-AUTH-10                 |
+| `sessionTtlDays` (idle)               | `30`                          | R-AUTH-7                  |
+| `limits.inviteDefaultMaxUses`         | `400`                         | R-INV-4                   |
+| `limits.inviteDefaultHours`           | `12`                          | R-INV-2                   |
+| `consent.currentVersion`              | e.g. `"2026-11-01"`           | R-ONB-3, R-ONB-4          |
+| `mail.delivery`                       | `smtp` \| `none`              | R-DEV-1, R-DEV-4, R-DEV-5 |
+| `limits.outboxRetentionDays`          | `30`                          | R-MSG-6                   |
+| `limits.erasureGraceDays`             | `30`                          | R-NFR-7                   |
+| `outboxPurgeIntervalHours`            | `1`                           | R-MSG-6                   |
+| `erasureSweepIntervalHours`           | `1`                           | R-NFR-7                   |
+| `tokenPurgeIntervalHours`             | `1`                           | R-NFR-5                   |
+| `limits.outboxPageSize`               | `100`                         | R-MSG-5                   |
+| `limits.deckPageSize`                 | `20`                          | R-OFF-1                   |
+| `limits.matchesPollSeconds`           | `30`                          | R-MINE-4                  |
+| `limits.notificationsPageSize`        | `50`                          | R-NOTE-5                  |
+| `limits.notificationRetentionDays`    | `90`                          | R-NOTE-11                 |
+| `notifications.dailyAt`               | `08:00`                       | R-NOTE-7                  |
+| `notifications.timeZone`              | `Europe/Zurich`               | R-NOTE-7                  |
+| `notifications.workerIntervalSeconds` | `60`                          | R-NOTE-7                  |
+| `notifications.maxAttempts`           | `5`                           | R-NOTE-10                 |
+| `limits.whitelistBatchMax`            | `1000`                        | R-AUTH-1                  |
+| `limits.savedTickMs`                  | `2500`                        | R-PROF-1                  |
+| `limits.holdToSelectMs`               | `500`                         | R-MEM-3                   |
+| `abuse.linkEmailsBeforeCheck`         | `3`                           | R-NFR-8                   |
+| `abuse.linkEmailsCeiling`             | `10`                          | R-NFR-8                   |
+| `abuse.linkEmailWindowMinutes`        | `15`                          | R-NFR-8                   |
+| `abuse.authRequestsPerIp`             | `1000`                        | R-NFR-8                   |
+| `abuse.ipWindowMinutes`               | `15`                          | R-NFR-8                   |
+| `abuse.applicantsBeforeCheck`         | `30`                          | R-NFR-8                   |
+| `abuse.applicantsCeiling`             | `300`                         | R-NFR-8                   |
+| `abuse.applicantWindowMinutes`        | `60`                          | R-NFR-8                   |
+| `abuse.humanCheckCost`                | `1000`                        | R-NFR-8                   |
+| `abuse.humanCheckMinutes`             | `5`                           | R-NFR-8                   |
+| `trustProxy` (`TRUST_PROXY`)          | `0`; `1` on Cloud Run         | R-NFR-8                   |
+| `settingsRefreshSeconds`              | `60`                          | R-CFG-6                   |
+| `seed.profile`                        | `dev` \| `prod`               | R-SEED-4                  |
+| `analytics.apiHost`                   | `api-eu.mixpanel.com`         | R-ANA-5                   |
+| `rolePermissions`                     | role → permission matrix (§2) | R-ROLE-3, R-ROLE-6        |
 
 - `GET /api/config` returns the **client-relevant subset** (`limits`,
   `consent.currentVersion`) so the submit button, the note counter, and the
@@ -190,6 +196,41 @@ whether it then leaves the machine (R-DEV-4).
   should fail at boot rather than at the first scan of the QR code.
 
 ---
+
+### Notification delivery
+
+Notifications are stored first and mailed by a worker (R-NOTE-1..11,
+ADR 0037). The event and its `notifications` rows are written in one
+transaction, so a request stands even if its mail fails (R-NOTE-10).
+
+The worker runs in the server process every
+`notifications.workerIntervalSeconds`, as the purge jobs do (ADR 0025). Each
+run:
+
+1. **Claims** the rows waiting to be mailed whose recipient is due, with
+   `FOR UPDATE SKIP LOCKED`, so a second server never mails the same row.
+2. **Reads each recipient's cadence** for each row's type, as it is now
+   (R-NOTE-3). _In the app only_ and _Off_ mark the row `skipped`.
+3. **Leaves out what is stale** (R-NOTE-9): seen in the app, a request no
+   longer pending, an applicant already decided, a challenge no longer shown,
+   a member no longer active. Those rows are `skipped` with the reason.
+4. **Groups by recipient and cadence**, and mails a group when it is due
+   (R-NOTE-7): _Immediately_ at once, one mail per row; _Every 15 minutes_ and
+   _Hourly_ when no mail of that cadence went to the member within the window,
+   else once the window after that mail has passed; _Daily_ once
+   `notifications.dailyAt` in `notifications.timeZone` has passed since the
+   last daily mail. The last mail of a cadence is the newest `mailed_at` among
+   the member's rows with that `mailed_cadence`.
+5. **Sends through the mailer**, so every mail is in the outbound log
+   (R-MSG-1). One row uses its type's own email; several use one digest
+   (R-NOTE-8). A refused mail leaves its rows waiting, with `attempts` up by
+   one and `next_attempt_at` doubling from one minute; after
+   `notifications.maxAttempts` they are `failed`.
+
+The windows (15 and 60 minutes) are fixed in code, since the options name
+them. Rows older than `limits.notificationRetentionDays` are deleted by the
+outbox purge job (R-NOTE-11). Dev and staging scale to zero, so there the
+worker delivers while an instance is up and on every start.
 
 ### Look and colour modes
 
@@ -579,7 +620,8 @@ CREATE TABLE outbox (
   about_member_id CHAR(36) NULL,                 -- a member the body quotes (R-MSG-6)
   to_email    VARCHAR(320) NOT NULL,
   kind        ENUM('magic_link','approval','connection_request',
-                   'admin_notice','connection_accepted','connection_added')
+                   'admin_notice','connection_accepted','connection_added',
+                   'trend_challenge','notification_digest')
                            NOT NULL,
   subject     VARCHAR(255) NOT NULL,
   body_text   TEXT         NOT NULL,             -- credential redacted outside dev
@@ -632,6 +674,60 @@ status `deleted` whose `erase_after` has passed is erased as
 invite link made since, say) stays deleted and is tried again next time.
 
 ---
+
+### notifications (kept in the app, mailed at a cadence — R-NOTE-1..11, ADR 0037)
+
+```sql
+CREATE TABLE notifications (
+  id               CHAR(36)    NOT NULL PRIMARY KEY,
+  recipient_id     CHAR(36)    NOT NULL,
+  type             ENUM('connection_request','new_connection',
+                        'trend_challenge','applicant') NOT NULL,
+  about_member_id  CHAR(36)    NULL,               -- requester, target, author or applicant
+  connection_id    CHAR(36)    NULL,
+  challenge_id     CHAR(36)    NULL,
+  created_at       DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  seen_at          DATETIME    NULL,               -- listed or its screen opened (R-NOTE-5)
+  mail_status      ENUM('waiting','mailed','skipped','failed')
+                               NOT NULL DEFAULT 'waiting',
+  skipped_reason   VARCHAR(20) NULL,               -- 'seen' | 'stale' | 'in_app' | 'off'
+  mailed_at        DATETIME    NULL,
+  mailed_cadence   VARCHAR(20) NULL,               -- starts that cadence's window (R-NOTE-7)
+  outbox_id        CHAR(36)    NULL,
+  attempts         SMALLINT    NOT NULL DEFAULT 0,
+  next_attempt_at  DATETIME    NULL,
+  INDEX ix_note_recipient (recipient_id, created_at),
+  INDEX ix_note_waiting (mail_status, next_attempt_at),
+  FOREIGN KEY (recipient_id)    REFERENCES members(id) ON DELETE CASCADE,
+  FOREIGN KEY (about_member_id) REFERENCES members(id) ON DELETE CASCADE,
+  FOREIGN KEY (connection_id)   REFERENCES connection_requests(id) ON DELETE CASCADE,
+  FOREIGN KEY (challenge_id)    REFERENCES challenges(id) ON DELETE CASCADE,
+  FOREIGN KEY (outbox_id)       REFERENCES outbox(id) ON DELETE SET NULL
+);
+
+CREATE TABLE notification_settings (
+  member_id CHAR(36)    NOT NULL,
+  type      VARCHAR(30) NOT NULL,                  -- as notifications.type
+  cadence   ENUM('immediately','every_15_minutes','hourly','daily',
+                 'in_app','off') NOT NULL,
+  PRIMARY KEY (member_id, type),
+  FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE
+);
+```
+
+A row holds references, never words: the screen and the mail word it when
+they show it, from the current names (R-NOTE-4). _Off_ writes no row at all.
+No `notification_settings` row means the type's default (R-NOTE-2); choosing
+the default again deletes the row. `every_15_minutes` is accepted for
+`applicant` only.
+
+The cascades erase a row with its recipient, the member it is about, and the
+request or challenge it refers to (R-NOTE-11, R-NFR-7).
+
+A digest quotes several members, which `outbox.about_member_id` cannot hold,
+so `outbox_quotes (outbox_id, member_id)` lists them, each cascading from both
+sides, and erasing a member deletes every outbox entry it lists them on
+(R-MSG-6).
 
 ### setting_overrides (values hosts set in the app — R-CFG-6, ADR 0031)
 
@@ -725,6 +821,20 @@ onboarded → `403 {error: 'onboarding_required'}`. Only `/api/health` and
 Follow returns `204`, or `404` for a trend that does not exist; following twice
 or unfollowing what is not followed changes nothing.
 
+### Notifications
+
+| Method | Path                                  | Body        | Behavior                                                                                                                                                                                   |
+| ------ | ------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| GET    | `/api/notifications?before=`          | —           | My notifications, newest first, `limits.notificationsPageSize` at a time: type, time, `new`, the member it is about (name only), and the in-app link. Entries R-NOTE-5 hides are left out. |
+| POST   | `/api/notifications/seen`             | `{ids[]}`   | Mark those of mine listed on the screen as seen; others' ids are ignored. Answers `204` (R-NOTE-5).                                                                                        |
+| GET    | `/api/notifications/new`              | —           | `{count}` of new ones, for the menu badge (R-NOTE-6), polled every `limits.matchesPollSeconds`.                                                                                            |
+| GET    | `/api/me/notification-settings`       | —           | Each type I can receive, with its cadence, its default and the cadences it offers (R-NOTE-2,3).                                                                                            |
+| PUT    | `/api/me/notification-settings/:type` | `{cadence}` | Choose a cadence; a type I cannot receive → `404`, a cadence it does not offer → `400`.                                                                                                    |
+
+Opening the screen an entry links to marks it seen as well: reading a request,
+its contact screen, or the applicants list marks the reader's notifications
+about it (R-NOTE-5).
+
 ### Cockpit
 
 | Method | Path           | Behavior                                                                                                                                                                                                                                                                                                                                                                                                      |
@@ -796,7 +906,8 @@ deep link reloads cleanly.
 | S22 | **Admin invites** — invite links with label, window, uses/cap, state; create, revoke, and the join URL / QR to display (R-INV-9)                                                                                                                                                                                  | `/admin/invites`                                        |
 | S23 | **Admin members** — member cards (name; job title · organization · sector; email, roles, status), searchable; tap a card's selector or hold the card to choose several; selected cards are outlined; a bar above the list, staying at the top while scrolling, gives or takes a role, or deletes them (R-MEM-1,3) | `/admin/members`                                        |
 | S26 | **A member's page** — everything held about one member; change their roles, delete them, and for a deleted account the erasure date with restore and erase-now (R-MEM-2, ADR 0032)                                                                                                                                | `/admin/members/:id`                                    |
-| S24 | **Profile & privacy** — edit name, job title, organization, sector and company size, each saved on change with a tick; the accepted consent, read-only with version and date; the analytics opt-in; how to leave (R-PROF-1,2)                                                                                     | `/profile`                                              |
+| S24 | **Profile & privacy** — edit name, job title, organization, sector and company size, each saved on change with a tick; the accepted consent, read-only with version and date; the analytics opt-in; how each notification arrives (R-NOTE-3); how to leave (R-PROF-1,2)                                           | `/profile`                                              |
+| S27 | **Notifications** — newest first, each one line naming who it is about, its time and a link; new ones outlined (R-NOTE-5)                                                                                                                                                                                         | `/notifications`                                        |
 | S25 | **Settings** — every configured value in named groups such as Spam protection, marking what differs from the default; the values R-CFG-6 allows are fields saved on change with a tick, with who changed them and a way back to the deployment value (R-CFG-5,6)                                                  | `/admin/settings`                                       |
 
 Remaining overlays, deliberately: the "really decline this request?" confirm, the
@@ -834,8 +945,11 @@ validator, so neither side can develop a private opinion about which paths exist
   (R-NAV-8).
 - **The shell** is served `200` for any in-table path; unknown paths render the
   client's not-found screen.
-- **Email links** point at `/matches/requests/:id` (incoming request) or
-  `/matches`; never at a contact detail (R-NAV-9).
+- **Email links** point at `/matches/requests/:id` (incoming request),
+  `/matches`, `/trends/:trendId` (a new challenge in a followed trend) or
+  `/admin/applicants`, or at `/matches/requests/:id/contact` for a new
+  connection (R-CONN-7, R-CONN-9), which shows the address only to its two
+  parties. The mail itself never carries a contact detail (R-NAV-9).
 - The **QR code** encodes the app root, optionally with `?src=summit-qr` for the
   analytics funnel and `?invite=…` for auto-approval (R-NAV-10, R-INV-1; R-ANA-3 —
   no identifying data in either parameter).

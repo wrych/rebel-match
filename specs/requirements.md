@@ -88,9 +88,10 @@ Requirements:
   are joining through a **valid invite link** (R-INV-1). No other address can
   obtain a session.
 - **R-AUTH-2** — WHEN a non-whitelisted email requests access **without a valid
-  invite** THE SYSTEM SHALL record it as a pending **applicant**, notify an admin,
-  and show the **access-requested screen** (R-AUTH-9) — rather than granting
-  access or showing the "check your email" state.
+  invite** THE SYSTEM SHALL record it as a pending **applicant**, notify the
+  members who review applicants (R-NOTE-1), and show the **access-requested
+  screen** (R-AUTH-9) — rather than granting access or showing the "check your
+  email" state.
 - **R-AUTH-3** — WHEN an admin approves an applicant THE SYSTEM SHALL move them
   to active, grant the `member` role, and immediately email them a working magic
   link (R-AUTH-10). WHEN an admin rejects an applicant THE SYSTEM SHALL prevent
@@ -270,7 +271,8 @@ capability, not a secret** — and every requirement below exists because of tha
     save SHALL say so and keep what the member typed.
 - **R-PROF-2** — The profile screen SHALL show the data-usage consent the member
   accepted, read-only, with its version and the time they accepted it (R-NFR-6),
-  and SHALL carry the **analytics opt-in**, given or withdrawn there (R-ANA-4).
+  and SHALL carry the **analytics opt-in**, given or withdrawn there (R-ANA-4),
+  and the choice of how each notification arrives (R-NOTE-3).
   It SHALL offer **deleting one's activity history** (R-STAT-4) and
   **deleting one's own account** (C4): after one confirmation
   that says what goes, when, and how to change one's mind, the account is
@@ -302,8 +304,9 @@ capability, not a secret** — and every requirement below exists because of tha
   member's outcome SHALL be reported, and one refused (the last admin, say)
   SHALL NOT stop the rest.
 - **R-PROF-3** — The header SHALL carry a **menu** in place of the "CR" mark,
-  offering: the colour mode switch (R-LOOK-2), the profile screen, the host tools
-  the member's permissions allow (R-ROLE-4), and sign out. The menu holds links
+  offering: the colour mode switch (R-LOOK-2), the member's notifications
+  (R-NOTE-5, R-NOTE-6), the profile screen, the host tools the member's
+  permissions allow (R-ROLE-4), and sign out. The menu holds links
   and one switch only, so it is navigation, not a screen (R-NAV-1); every item it
   leads to has its own URL.
 
@@ -349,7 +352,7 @@ capability, not a secret** — and every requirement below exists because of tha
   - **Been there** — members who offer experience in that trend.
   - **Case studies** — curated Corporate Rebels case links for that trend.
 - **R-ASK-9** — The system SHALL let the member **follow** the trend to be
-  notified of future challenges in it.
+  notified of future challenges in it (R-NOTE-1).
 - **R-ASK-10** — Each "same boat" and "been there" peer card SHALL expose a
   **Connect** action governed by the double opt-in flow (§6), not a direct email.
 - **R-ASK-11 (Posting is confirmed)** — WHEN the member confirms the trend THE
@@ -415,10 +418,10 @@ connect.")_
 - **R-CONN-1** — WHEN a member initiates a connection (same boat or been there)
   THE SYSTEM SHALL create a **pending connection request** to the target member
   and SHALL NOT reveal either party's email at this point.
-- **R-CONN-2** — The system SHALL notify the target member (in-app and by email)
-  that someone wants to connect, including the requester's name and
-  message/offer note, and in-app the relevant challenge/trend, but **not** the
-  requester's email address.
+- **R-CONN-2** — The system SHALL notify the target member, in the app and by
+  email at the cadence they chose (R-NOTE-2), that someone wants to connect,
+  including the requester's name and message/offer note, and in-app the
+  relevant challenge/trend, but **not** the requester's email address.
 - **R-CONN-3** — WHEN the target member **accepts** THE SYSTEM SHALL mark the
   request accepted and reveal **each party's email address to the other**, and
   SHALL offer a pre-filled mailto so either side can write the first message.
@@ -430,9 +433,10 @@ connect.")_
   whitelisted members who have both opted in. The system SHALL NOT expose a
   member directory or bulk contact export.
 - **R-CONN-7** — WHEN the target member **accepts** THE SYSTEM SHALL notify the
-  requester, in-app and by email, that they are now connected. The email
-  carries the target's name and a link to the connection's contact screen, but
-  no address and no challenge text (R-NAV-9). The in-app notice SHALL last until
+  requester, in the app and by email at the cadence they chose (R-NOTE-2),
+  that they are now connected. The email carries the target's name and a link
+  to the connection's contact screen, but no address and no challenge text
+  (R-NAV-9). The in-app notice SHALL last until
   the requester first opens that contact screen. A decline is not announced
   (R-CONN-4).
 - **R-CONN-8 (Already connected)** — IF the two members already share an
@@ -444,7 +448,8 @@ connect.")_
   connected over SHALL add nothing, and SHALL take the requester to the contact
   screen the same way.
 - **R-CONN-9** — WHEN a connection is recorded under R-CONN-8 THE SYSTEM SHALL
-  notify the target, in-app and by email, that the requester connected with
+  notify the target, in the app and by email at the cadence they chose
+  (R-NOTE-2), that the requester connected with
   them over another challenge. The email carries the requester's name, their
   note and a link to the contact screen, but no address and no challenge text
   (R-NAV-9). The in-app notice SHALL last until the target first opens that
@@ -575,6 +580,7 @@ at a screen instead of at the front door.
   | `/matches`                           | cockpit                                        |
   | `/matches/requests/:id`              | one request (pending, or accept/decline)       |
   | `/matches/requests/:id/contact`      | contact detail, accepted requests only         |
+  | `/notifications`                     | the member's notifications (R-NOTE-5)          |
   | `/profile`                           | profile & privacy (R-PROF-1,2)                 |
   | `/admin/applicants`                  | admin approvals                                |
   | `/admin/invites`                     | invite links (R-INV-9)                         |
@@ -621,7 +627,8 @@ What differs by environment is only whether mail **leaves the machine**.
 - **R-MSG-1 (Record everything, everywhere)** — WHEN the system sends or attempts
   to send a message THE SYSTEM SHALL record it in an **outbound message log**,
   regardless of environment. The record SHALL carry the recipient address, the
-  message type (magic link, approval, connection request, admin notice), the
+  message type (magic link, approval, connection request, admin notice,
+  several notifications in one mail — R-NOTE-8), the
   subject, the status, and the times it was recorded and sent.
 - **R-MSG-2 (Record before sending)** — THE SYSTEM SHALL write the record
   **before** handing the message to the transport, then update its status. A
@@ -646,7 +653,8 @@ What differs by environment is only whether mail **leaves the machine**.
   message content, so they SHALL be included in erasure (R-NFR-7) and SHALL be
   retained for a bounded, configurable period rather than forever. An entry that
   quotes another member (a request email carrying the requester's name and note)
-  SHALL be erased with that member too.
+  SHALL be erased with that member too, and one quoting several members with
+  each of them.
 - **R-MSG-7 (Delivery failures are visible without reading bodies)** — A `failed`
   entry SHALL retain enough of the transport's error to diagnose a deliverability
   problem (R-NFR-3), and that error SHALL NOT contain the credential.
@@ -821,6 +829,84 @@ records, and nothing here shows a number to anyone (ADR 0033).
 
 ---
 
+## 8h. Notifications
+
+At the summit one member can receive many requests within an hour, and every
+host receives a notice per applicant. Every notification is therefore kept in
+the app, and each member decides per type whether and how often it also comes by
+email (ADR 0037). Sign-in emails — magic links and approval links — are not
+notifications: they go out at once, whatever is chosen here (R-NFR-3).
+
+- **R-NOTE-1 (Types)** — THE SYSTEM SHALL notify:
+  - **Connection request** — the target, when a request is made (R-CONN-2);
+  - **New connection** — the requester, when their request is accepted
+    (R-CONN-7), and the target, when a member already connected with them
+    connects over another challenge (R-CONN-9);
+  - **New challenge in a followed trend** — every member following the trend,
+    except its author, when a challenge is posted in it (R-ASK-9);
+  - **New applicant** — every member who can review applicants, when one is
+    recorded (R-AUTH-2, R-AUTH-11).
+- **R-NOTE-2 (Cadences)** — For each type a member can receive, they SHALL
+  choose one of: **Immediately**, **Hourly**, **Daily**, **In the app only**,
+  **Off**. New applicant notices SHALL also offer **Every 15 minutes**. Until
+  a member chooses, connection requests and new connections SHALL be
+  **Hourly**, new challenges in a followed trend **Daily**, and new applicants
+  **Every 15 minutes**.
+- **R-NOTE-3 (Choosing)** — The profile screen SHALL offer the choice for each
+  type the member can receive, and only those, saved on change like every
+  setting there (R-PROF-1). A change SHALL apply to every notification still
+  waiting to be mailed.
+- **R-NOTE-4 (Kept in the app)** — WHEN a notification arises for a type that
+  is not **Off** THE SYSTEM SHALL store it for its recipient; for **Off** it
+  SHALL store nothing. A notification SHALL refer to what it is about — the
+  request, the challenge, the member — and SHALL be worded when shown, so it
+  never repeats a name or words that have since changed or gone.
+- **R-NOTE-5 (The notifications screen)** — The member's notifications SHALL
+  be listed, newest first, on their own screen (`/notifications`). Each entry
+  SHALL say in one line what happened, naming the member it is about but
+  quoting no challenge text or note, with its time, and SHALL link to the
+  screen it concerns (R-NAV-9). An entry SHALL be **new** until the member has
+  opened this screen while it was listed, or the screen it links to. An entry
+  about a member who is no longer active, or about anything the member may no
+  longer open, SHALL NOT be shown (R-NAV-8, R-NFR-7).
+- **R-NOTE-6 (In the menu)** — WHILE the member has new notifications the
+  header's menu button SHALL carry a badge with their number, and the menu
+  item SHALL read **Notifications (n new)**; without any it SHALL read
+  **Notifications**, with no badge and no number. Both SHALL refresh as the
+  navigation badge does (R-MINE-4).
+- **R-NOTE-7 (When mail goes out)** — A member's mail SHALL be grouped by
+  cadence, never by type: every type on the same cadence goes out in one mail.
+  - **Immediately** — each notification in its own mail, within a minute.
+  - **Every 15 minutes** and **Hourly** — WHEN a notification arises and no
+    mail of that cadence went to the member within the window (15 or 60
+    minutes) THE SYSTEM SHALL mail it within a minute; otherwise it SHALL wait
+    and go out with everything gathered since, one window after that last mail.
+    Only mail of the same cadence starts the window.
+  - **Daily** — one mail a day at the configured time, with everything gathered
+    since the last.
+  - **In the app only** and **Off** — no mail.
+- **R-NOTE-8 (What the mail says)** — A mail carrying one notification SHALL be
+  that type's own email (R-CONN-2, R-CONN-7, R-CONN-9). A mail carrying several SHALL say
+  how many in its subject and list each with its own link, under the same
+  rules as the single email (R-NAV-9).
+- **R-NOTE-9 (Nothing stale)** — Before mailing THE SYSTEM SHALL leave out
+  every notification the member has seen in the app (R-NOTE-5), a request no
+  longer pending, an applicant already decided, a challenge no longer shown,
+  and anything about a member who is no longer active. IF nothing is left THEN
+  no mail SHALL go out.
+- **R-NOTE-10 (Delivered once, despite failures)** — A notification SHALL be
+  stored with the event that causes it, so the event stands even when the mail
+  fails. A mail the transport refuses SHALL be tried again, waiting longer each
+  time, up to a configured number of attempts; every attempt is recorded in the
+  outbound log (R-MSG-1). No notification SHALL be mailed twice, however many
+  servers run.
+- **R-NOTE-11 (Kept for a while)** — Notifications SHALL be deleted after a
+  configured number of days, and SHALL be erased with their recipient, with
+  the member they are about, and with the request or challenge they refer to
+  (R-NFR-7).
+
+---
+
 ## 9. Non-functional requirements
 
 - **R-NFR-1 (Privacy)** — Challenge text and member contact details SHALL be
@@ -870,8 +956,8 @@ records, and nothing here shows a number to anyone (ADR 0033).
   the consent version and acceptance timestamp.
 - **R-NFR-7 (Deletion)** — The system SHALL support deleting a member and the
   personal data attached to them — challenges, connection requests, swipes,
-  deck views (R-STAT-3), follows, role grants, and their **outbound message log
-  entries** (R-MSG-6) — on
+  deck views (R-STAT-3), follows, role grants, notifications (R-NOTE-11), and
+  their **outbound message log entries** (R-MSG-6) — on
   request (GDPR erasure), at minimum via an admin action. Deleting SHALL first
   **deactivate** the account at once: no sign-in, and nothing of theirs shown
   to anyone. The erasure SHALL follow after a **grace period** of 30 days
@@ -976,6 +1062,11 @@ fixtures. `design.md` §6 lists the exact records and the profile mechanism.
   are connected over, with the target told (R-CONN-8..10, R-MINE-5,6, ADR 0035).
   Accepting one of several requests pending between two members accepts them
   all (R-CONN-11).
+- **Notification cadences** (2026-10-05) — every notification is kept in the
+  app, and each member picks per type how it arrives by email: immediately,
+  hourly, daily, in the app only, or not at all; applicant notices also every
+  15 minutes. Types on the same cadence share one mail (R-NOTE-1..11,
+  ADR 0037).
 - **Seed data** (2026-10-01) — split by environment rather than chosen between:
   prototype fixtures for dev, real whitelist + collected challenges for
   production. See §10 (R-SEED-1..7) and `design.md` §6.
