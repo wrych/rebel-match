@@ -75,6 +75,19 @@ export function createMemoryAuthStore(
       if (token !== undefined) token.usedAt = at
       return Promise.resolve(token !== undefined)
     },
+    deleteExpired: (now) => {
+      const before = { sessions: sessions.length, tokens: tokens.length }
+      const live = sessions.filter((s) => s.expiresAt >= now)
+      sessions.splice(0, sessions.length, ...live)
+      const usable = tokens.filter(
+        (t) => t.expiresAt >= now && t.usedAt === null,
+      )
+      tokens.splice(0, tokens.length, ...usable)
+      return Promise.resolve({
+        sessions: before.sessions - sessions.length,
+        tokens: before.tokens - tokens.length,
+      })
+    },
     ...sessionMethods(sessions),
   }
 }

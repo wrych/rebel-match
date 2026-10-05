@@ -327,3 +327,25 @@ describe('sessions', () => {
     expect((me.body as { id: string }).id).toBe('m-ada')
   })
 })
+
+describe('purgeExpired (ADR 0034)', () => {
+  it('drops expired sessions and used or expired tokens, keeping the rest', async () => {
+    const { auth, store, advance, sent, tokenOf } = setup()
+    await auth.createSession('m-ada')
+    await auth.issueLink(ada.email, { kind: 'self_service' })
+    advance(31 * DAY)
+    const live = await auth.createSession('m-ada')
+    await auth.issueLink(ada.email, { kind: 'self_service' })
+    await auth.verifyToken(tokenOf(sent.at(-1)!))
+    await auth.issueLink(ada.email, { kind: 'self_service' })
+
+    expect(await auth.purgeExpired()).toEqual({ sessions: 1, tokens: 2 })
+    expect(store.sessions).toHaveLength(1)
+    expect(store.tokens).toHaveLength(1)
+    expect(
+      await auth.currentMember({
+        headers: { cookie: `${live.name}=${live.value}` },
+      }),
+    ).not.toBeNull()
+  })
+})
