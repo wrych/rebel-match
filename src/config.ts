@@ -56,6 +56,53 @@ export const IMMUTABLE_ASSET_MAX_AGE_MS = 365 * 24 * 60 * 60 * 1000
 
 const FEEDBACK_NOWHERE = 'feedback@rebel-match.invalid'
 
+/** What production refuses to start without, each with why. */
+const productionRules: {
+  path: string
+  broken: (env: {
+    DATABASE_URL?: string | undefined
+    FEEDBACK_TO: string
+    PUBLIC_URL: string
+    TRUST_PROXY: number
+    MAIL_DELIVERY: string
+  }) => boolean
+  message: string
+}[] = [
+  {
+    path: 'DATABASE_URL',
+    broken: (env) => env.DATABASE_URL === undefined,
+    message:
+      'production needs DATABASE_URL: it never falls back to a local ' +
+      'PGlite folder (ADR 0024)',
+  },
+  {
+    path: 'FEEDBACK_TO',
+    broken: (env) => env.FEEDBACK_TO === FEEDBACK_NOWHERE,
+    message: 'production needs FEEDBACK_TO, or feedback reaches nobody',
+  },
+  {
+    path: 'PUBLIC_URL',
+    broken: (env) => !env.PUBLIC_URL.startsWith('https:'),
+    message:
+      'production needs an https PUBLIC_URL, or the session cookie is ' +
+      'sent without Secure (ADR 0034)',
+  },
+  {
+    path: 'TRUST_PROXY',
+    broken: (env) => env.TRUST_PROXY < 1,
+    message:
+      'production needs TRUST_PROXY of at least 1, or every visitor ' +
+      "shares the proxy's per-IP limits (ADR 0034)",
+  },
+  {
+    path: 'MAIL_DELIVERY',
+    broken: (env) => env.MAIL_DELIVERY === 'none',
+    message:
+      'production must deliver over SMTP: recording magic links ' +
+      'without sending them means nobody can log in (R-DEV-5)',
+  },
+]
+
 const envSchema = z
   .object({
     NODE_ENV: z
@@ -157,30 +204,15 @@ const envSchema = z
         message: 'SMTP_HOST is required when MAIL_DELIVERY=smtp',
       })
     }
-    if (env.NODE_ENV === 'production' && env.DATABASE_URL === undefined) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['DATABASE_URL'],
-        message:
-          'production needs DATABASE_URL: it never falls back to a local ' +
-          'PGlite folder (ADR 0024)',
-      })
-    }
-    if (env.NODE_ENV === 'production' && env.FEEDBACK_TO === FEEDBACK_NOWHERE) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['FEEDBACK_TO'],
-        message: 'production needs FEEDBACK_TO, or feedback reaches nobody',
-      })
-    }
-    if (env.NODE_ENV === 'production' && env.MAIL_DELIVERY === 'none') {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['MAIL_DELIVERY'],
-        message:
-          'production must deliver over SMTP: recording magic links ' +
-          'without sending them means nobody can log in (R-DEV-5)',
-      })
+    if (env.NODE_ENV === 'production') {
+      for (const rule of productionRules) {
+        if (rule.broken(env))
+          ctx.addIssue({
+            code: 'custom',
+            path: [rule.path],
+            message: rule.message,
+          })
+      }
     }
     if (linksMissTheApp(env)) {
       ctx.addIssue({
