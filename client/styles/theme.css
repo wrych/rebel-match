@@ -824,8 +824,15 @@ textarea.input {
 }
 
 .request-row:hover,
-.challenge-row:hover {
+.challenge-row:hover,
+.card:has(> .request-row:hover) {
   border-color: var(--ink);
+}
+
+/* A waiting request: the link to it, then its answer buttons, in one card. */
+.card > .request-row {
+  display: grid;
+  gap: 0.7rem;
 }
 
 .request-note {

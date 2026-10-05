@@ -63,6 +63,13 @@ function serve(
   )
 }
 
+function answerWith(status: number): void {
+  vi.mocked(fetch).mockResolvedValueOnce({
+    ok: status < 400,
+    status,
+  } as Response)
+}
+
 async function mountScreen(): Promise<ReturnType<typeof mount>> {
   const screen = mount(CockpitScreen, {
     global: { stubs: { RouterLink: RouterLinkStub } },
@@ -89,6 +96,78 @@ describe('CockpitScreen', () => {
     expect(screen.text()).toContain('Bea There')
     expect(screen.text()).toContain('Been there')
     expect(screen.text()).toContain('We ran into exactly this.')
+    expect(paths(screen)).toContain('/matches/requests/r1')
+  })
+
+  it('accepts a request from the list, which then shows as a connection (R-MINE-2)', async () => {
+    let waiting = [request]
+    let people: ConnectionView[] = []
+    serve(
+      cockpit,
+      () => waiting,
+      () => people,
+    )
+    const screen = await mountScreen()
+    answerWith(204)
+    waiting = []
+    people = [{ ...request, status: 'accepted' }]
+
+    await screen.get('[aria-label="Accept Bea There"]').trigger('click')
+    await flushPromises()
+
+    expect(fetch).toHaveBeenCalledWith('/api/connections/r1/accept', {
+      method: 'POST',
+    })
+    expect(screen.get('[role="status"]').text()).toBe(
+      'You are connected with Bea There.',
+    )
+    expect(screen.text()).toContain('No requests waiting.')
+    expect(paths(screen)).toContain('/matches/requests/r1/contact')
+  })
+
+  it('declines a request from the list, sharing nothing (R-MINE-2)', async () => {
+    let waiting = [request]
+    serve(cockpit, () => waiting)
+    const screen = await mountScreen()
+    answerWith(204)
+    waiting = []
+
+    await screen.get('[aria-label="Decline Bea There"]').trigger('click')
+    await flushPromises()
+
+    expect(fetch).toHaveBeenCalledWith('/api/connections/r1/decline', {
+      method: 'POST',
+    })
+    expect(screen.get('[role="status"]').text()).toBe(
+      'You declined Bea There. Nothing was shared.',
+    )
+    expect(paths(screen)).not.toContain('/matches/requests/r1')
+  })
+
+  it('says so when a request stopped waiting before the answer', async () => {
+    serve(cockpit, () => [request])
+    const screen = await mountScreen()
+    answerWith(404)
+
+    await screen.get('[aria-label="Accept Bea There"]').trigger('click')
+    await flushPromises()
+
+    expect(screen.get('[role="status"]').text()).toBe(
+      'That request is no longer waiting for you.',
+    )
+  })
+
+  it('keeps the request, and says so, when an answer does not save', async () => {
+    serve(cockpit, () => [request])
+    const screen = await mountScreen()
+    answerWith(500)
+
+    await screen.get('[aria-label="Accept Bea There"]').trigger('click')
+    await flushPromises()
+
+    expect(screen.get('[role="alert"]').text()).toBe(
+      'That did not save. Try again.',
+    )
     expect(paths(screen)).toContain('/matches/requests/r1')
   })
 
