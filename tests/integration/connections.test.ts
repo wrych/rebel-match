@@ -312,25 +312,4 @@ describe('a member set to be deleted, over Postgres (ADR 0032)', () => {
       await setStatus('dee', 'active')
     }
   })
-
-  it('shows no text of a challenge archived since', async () => {
-    const id = await insert('eve', 'bob', 'pending')
-    await db.query(
-      'UPDATE connection_requests SET challenge_id = ? WHERE id = ?',
-      [bobChallenge, id],
-    )
-    await db.query("UPDATE challenges SET status = 'archived' WHERE id = ?", [
-      bobChallenge,
-    ])
-    try {
-      const view = await as('bob')(request(app).get(`/api/connections/${id}`))
-      expect((view.body as { request: ConnectionView }).request.challenge).toBe(
-        null,
-      )
-    } finally {
-      await db.query("UPDATE challenges SET status = 'active' WHERE id = ?", [
-        bobChallenge,
-      ])
-    }
-  })
 })

@@ -64,10 +64,7 @@ async function views(
     })
     .from(r)
     .innerJoin(members, activeOtherParty(viewerId))
-    .leftJoin(
-      challenges,
-      and(eq(challenges.id, r.challengeId), eq(challenges.status, 'active')),
-    )
+    .leftJoin(challenges, eq(challenges.id, r.challengeId))
     .leftJoin(trends, eq(trends.id, challengeTrend))
     .where(where)
     .orderBy(desc(r.createdAt), r.id)
