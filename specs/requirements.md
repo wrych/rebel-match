@@ -867,7 +867,7 @@ notifications: they go out at once, whatever is chosen here (R-NFR-3).
   quoting no challenge text or note, with its time, and SHALL link to the
   screen it concerns (R-NAV-9). An entry SHALL be **new** until the member has
   opened this screen while it was listed, or the screen it links to. An entry
-  about a member who is no longer active, or about anything the member may no
+  about a member whose account is deleted, or about anything the member may no
   longer open, SHALL NOT be shown (R-NAV-8, R-NFR-7).
 - **R-NOTE-6 (In the menu)** — WHILE the member has new notifications the
   header's menu button SHALL carry a badge with their number, and the menu
@@ -892,8 +892,8 @@ notifications: they go out at once, whatever is chosen here (R-NFR-3).
 - **R-NOTE-9 (Nothing stale)** — Before mailing THE SYSTEM SHALL leave out
   every notification the member has seen in the app (R-NOTE-5), a request no
   longer pending, an applicant already decided, a challenge no longer shown,
-  and anything about a member who is no longer active. IF nothing is left THEN
-  no mail SHALL go out.
+  and anything about a member whose account is deleted. IF nothing is left
+  THEN no mail SHALL go out.
 - **R-NOTE-10 (Delivered once, despite failures)** — A notification SHALL be
   stored with the event that causes it, so the event stands even when the mail
   fails. A mail the transport refuses SHALL be tried again, waiting longer each

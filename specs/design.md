@@ -213,7 +213,8 @@ run:
    (R-NOTE-3). _In the app only_ and _Off_ mark the row `skipped`.
 3. **Leaves out what is stale** (R-NOTE-9): seen in the app, a request no
    longer pending, an applicant already decided, a challenge no longer shown,
-   a member no longer active. Those rows are `skipped` with the reason.
+   a member whose account is deleted. Those rows are `skipped` with the
+   reason.
 4. **Groups by recipient and cadence**, and mails a group when it is due
    (R-NOTE-7): _Immediately_ at once, one mail per row; _Every 15 minutes_ and
    _Hourly_ when no mail of that cadence went to the member within the window,
