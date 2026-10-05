@@ -49,7 +49,7 @@ beforeAll(async () => {
     [Object.values(ids), Object.values(ids)],
   )
   await db.query(
-    "DELETE FROM outbox WHERE kind = 'connection_request' AND member_id IN (?)",
+    "DELETE FROM outbox WHERE kind IN ('connection_request', 'connection_accepted') AND member_id IN (?)",
     [Object.values(ids)],
   )
   const challenge = await db.query(
@@ -69,6 +69,11 @@ afterAll(async () => {
 
 function as(who: string): (r: request.Test) => request.Test {
   return (r) => r.set('Cookie', cookies[who]!)
+}
+
+async function newConnections(who: string): Promise<number> {
+  const response = await as(who)(request(app).get('/api/cockpit')).expect(200)
+  return (response.body as { newConnections: number }).newConnections
 }
 
 async function connect(
@@ -152,6 +157,30 @@ describe('connecting over Postgres: the double opt-in (F7, ADR 0004)', () => {
     ).expect(204)
   })
 
+  it('tells the requester by email and badge, with no address (R-CONN-7, R-NAV-9)', async () => {
+    const logged = await db.query(
+      "SELECT to_email, about_member_id, subject, body_text FROM outbox WHERE kind = 'connection_accepted' AND member_id = ?",
+      [ids['ada']],
+    )
+    const connected = await as('ada')(
+      request(app).get('/api/connections/connected'),
+    )
+
+    expect(logged).toHaveLength(1)
+    expect(logged[0]?.['to_email']).toBe(people.ada)
+    expect(logged[0]?.['about_member_id']).toBe(ids['bob'])
+    const mail = `${String(logged[0]?.['subject'])}\n${String(logged[0]?.['body_text'])}`
+    expect(mail).toContain(`/matches/requests/${accepted}/contact`)
+    expect(mail).not.toContain(people.bob)
+    expect(await newConnections('ada')).toBe(1)
+    expect(await newConnections('bob')).toBe(0)
+    expect(
+      (connected.body as { connections: ConnectionView[] }).connections.map(
+        (c) => [c.id, c.unseen],
+      ),
+    ).toEqual([[accepted, true]])
+  })
+
   it('gives each party the other’s email once accepted (R-CONN-3)', async () => {
     const forAda = await as('ada')(
       request(app).get(`/api/connections/${accepted}/contact`),
@@ -162,6 +191,10 @@ describe('connecting over Postgres: the double opt-in (F7, ADR 0004)', () => {
 
     expect(forAda.body).toMatchObject({ contact: { email: people.bob } })
     expect(forBob.body).toMatchObject({ contact: { email: people.ada } })
+  })
+
+  it('ends the requester’s notice once they opened the contact (R-CONN-7)', async () => {
+    expect(await newConnections('ada')).toBe(0)
   })
 
   it('lists the connection for both parties, without an email (R-MINE-5)', async () => {
@@ -211,6 +244,13 @@ describe('connecting over Postgres: the double opt-in (F7, ADR 0004)', () => {
         request(app).get(`/api/connections/${declined}/contact`),
       ).expect(404)
     }
+    expect(
+      await db.query(
+        "SELECT id FROM outbox WHERE kind = 'connection_accepted' AND member_id = ?",
+        [ids['dee']],
+      ),
+    ).toEqual([])
+    expect(await newConnections('dee')).toBe(0)
   })
 
   it('lists no declined request as a connection (R-MINE-5)', async () => {

@@ -15,6 +15,13 @@ export interface NewRequest {
   message: string | null
 }
 
+/** A request its target just accepted. */
+export interface AcceptedRequest {
+  id: string
+  requesterId: string
+  targetId: string
+}
+
 const oneLine = (text: string): string => text.replace(/\s+/g, ' ').trim()
 
 function bodyOf(name: string, message: string | null, link: string): string {
@@ -41,8 +48,8 @@ async function displayName(
   return name === '' ? 'A Rebel Match member' : name
 }
 
-function linkTo(deps: NoticeDeps, id: string): string {
-  const path = `/matches/requests/${encodeURIComponent(id)}`
+function linkTo(deps: NoticeDeps, id: string, tail = ''): string {
+  const path = `/matches/requests/${encodeURIComponent(id)}${tail}`
   return new URL(path, deps.publicUrl).toString()
 }
 
@@ -64,6 +71,32 @@ export function createConnectionNotice(
       kind: 'connection_request',
       subject: `${from} wants to connect with you on Rebel Match`,
       text: bodyOf(from, request.message, linkTo(deps, request.id)),
+    })
+  }
+}
+
+/** Emails the requester of a just-accepted request the target's name and a
+ * link to the contact screen; never an address or challenge text (R-CONN-7,
+ * R-NAV-9). The entry is erased with either member (R-MSG-6). */
+export function createAcceptNotice(
+  deps: NoticeDeps,
+): (request: AcceptedRequest) => Promise<void> {
+  return async (request) => {
+    const to = await deps.members.emailOf(request.requesterId)
+    if (to === null) return
+    const by = await displayName(deps.members, request.targetId)
+    const link = linkTo(deps, request.id, '/contact')
+
+    await deps.mailer.send({
+      memberId: request.requesterId,
+      aboutMemberId: request.targetId,
+      to,
+      kind: 'connection_accepted',
+      subject: `${by} accepted your request on Rebel Match`,
+      text:
+        `${by} accepted your request to connect on Rebel Match.\n\n` +
+        `You can now see each other's email address. Get in touch here:\n` +
+        `${link}\n`,
     })
   }
 }

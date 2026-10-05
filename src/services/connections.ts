@@ -1,5 +1,5 @@
 import { trackNothing, type Track } from './analytics.js'
-import type { NewRequest } from './connection-notice.js'
+import type { AcceptedRequest, NewRequest } from './connection-notice.js'
 
 export type ConnectionKind = 'same_boat' | 'been_there'
 export type ConnectionStatus = 'pending' | 'accepted' | 'declined'
@@ -37,6 +37,9 @@ export interface ConnectionView {
   createdAt: string
   other: MemberCard
   challenge: { id: string; body: string; trendShort: string | null } | null
+  /** True while the viewer sent this request, it was accepted, and they have
+   * not opened its contact yet (R-CONN-7). */
+  unseen: boolean
 }
 
 export interface Contact {
@@ -89,6 +92,9 @@ export interface ConnectionStore {
     id: string,
     viewerId: string,
   ): Promise<{ name: string; email: string } | null>
+  /** Records the requester's first read of an accepted request's contact,
+   * which ends its notice (R-CONN-7). */
+  markSeen(id: string, requesterId: string): Promise<void>
 }
 
 export type RequestOutcome =
@@ -180,18 +186,49 @@ async function notifyOrWithdraw(
 
 const notifyNobody = (): Promise<void> => Promise.resolve()
 
+// The requester learns of an acceptance by email as well as by the badge.
+async function announceAccepted(
+  store: ConnectionStore,
+  notifyAccepted: (request: AcceptedRequest) => Promise<void>,
+  id: string,
+): Promise<void> {
+  const record = await store.find(id)
+  if (record === null) return
+  await notifyAccepted({
+    id,
+    requesterId: record.requesterId,
+    targetId: record.targetId,
+  })
+}
+
+async function readContact(
+  store: ConnectionStore,
+  memberId: string,
+  id: string,
+): Promise<Contact | null> {
+  const record = await store.find(id)
+  if (record?.status !== 'accepted' || !isParty(record, memberId)) return null
+  const other = await store.contactFor(id, memberId)
+  if (other === null) return null
+  if (record.requesterId === memberId) await store.markSeen(id, memberId)
+  return { ...other, mailto: mailtoFor(other.email) }
+}
+
 /** The double opt-in (ADR 0004, F7): a request starts pending, reveals
- * nothing and tells its target; only the target may answer; an email is read
- * only for an accepted request by a party. Hidden reads as not found (R-NAV-8). */
+ * nothing and tells its target; only the target may answer, and an acceptance
+ * tells the requester; an email is read only for an accepted request by a
+ * party. Hidden reads as not found (R-NAV-8). */
 export function createConnections(deps: {
   store: ConnectionStore
   newId: () => string
   track?: Track
   notify?: (request: NewRequest) => Promise<void>
+  notifyAccepted?: (request: AcceptedRequest) => Promise<void>
 }): ConnectionService {
   const { store } = deps
   const track = deps.track ?? trackNothing
   const notify = deps.notify ?? notifyNobody
+  const notifyAccepted = deps.notifyAccepted ?? notifyNobody
   return {
     request: async (requesterId, input) => {
       if (input.targetId === requesterId) return { result: 'not_found' }
@@ -220,15 +257,10 @@ export function createConnections(deps: {
     respond: async (memberId, id, answer) => {
       if (!(await store.respond(id, memberId, answer))) return 'not_found'
       void track(memberId, { name: 'connection_responded', status: answer })
+      if (answer === 'accepted')
+        await announceAccepted(store, notifyAccepted, id)
       return 'done'
     },
-    contact: async (memberId, id) => {
-      const record = await store.find(id)
-      if (record?.status !== 'accepted' || !isParty(record, memberId))
-        return null
-      const other = await store.contactFor(id, memberId)
-      if (other === null) return null
-      return { ...other, mailto: mailtoFor(other.email) }
-    },
+    contact: (memberId, id) => readContact(store, memberId, id),
   }
 }

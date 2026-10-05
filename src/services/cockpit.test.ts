@@ -15,7 +15,7 @@ const trend = {
 }
 
 describe('createCockpit', () => {
-  it("gathers the member's challenges, follows and waiting requests (R-MINE-1,3,4)", async () => {
+  it("gathers the member's challenges, follows, waiting requests and unseen connections (R-MINE-1,3,4, R-CONN-7)", async () => {
     const asked: string[] = []
     const cockpit = createCockpit({
       store: {
@@ -26,6 +26,10 @@ describe('createCockpit', () => {
         pendingIncoming: (m) => {
           asked.push(`pending:${m}`)
           return Promise.resolve(2)
+        },
+        newConnections: (m) => {
+          asked.push(`new:${m}`)
+          return Promise.resolve(1)
         },
       },
       followed: (m) => {
@@ -38,10 +42,12 @@ describe('createCockpit', () => {
       challenges: [challenge],
       following: [trend],
       pendingIncoming: 2,
+      newConnections: 1,
     })
     expect(asked.sort()).toEqual([
       'challenges:m-ada',
       'followed:m-ada',
+      'new:m-ada',
       'pending:m-ada',
     ])
   })

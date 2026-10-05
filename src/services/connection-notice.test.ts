@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { createConnectionNotice, type NewRequest } from './connection-notice.js'
+import {
+  createAcceptNotice,
+  createConnectionNotice,
+  type NewRequest,
+} from './connection-notice.js'
 import type { OutboundMessage } from './mailer.js'
 
 const emails: Record<string, string> = {
@@ -10,7 +14,7 @@ const names: Record<string, string> = { 'm-ada': 'Ada  Lovelace\n' }
 
 function deps(
   sent: OutboundMessage[],
-): Parameters<typeof createConnectionNotice>[0] {
+): Parameters<typeof createAcceptNotice>[0] {
   return {
     mailer: {
       send: (message) => {
@@ -94,6 +98,54 @@ describe('createConnectionNotice', () => {
     const { notify, sent } = setup()
 
     await notify({ ...request, targetId: 'm-gone' })
+
+    expect(sent).toEqual([])
+  })
+})
+
+describe('createAcceptNotice', () => {
+  const accepted = { id: 'r-1', requesterId: 'm-bob', targetId: 'm-ada' }
+
+  it('emails the requester who accepted and a link to the contact (R-CONN-7, R-NAV-9)', async () => {
+    const sent: OutboundMessage[] = []
+
+    await createAcceptNotice(deps(sent))(accepted)
+
+    expect(sent).toHaveLength(1)
+    expect(sent[0]).toMatchObject({
+      memberId: 'm-bob',
+      aboutMemberId: 'm-ada',
+      to: 'bob@example.invalid',
+      kind: 'connection_accepted',
+      subject: 'Ada Lovelace accepted your request on Rebel Match',
+    })
+    expect(sent[0]?.text).toContain(
+      'https://match.example.invalid/matches/requests/r-1/contact',
+    )
+  })
+
+  it('carries no address, the link leads to it (R-NAV-9)', async () => {
+    const sent: OutboundMessage[] = []
+
+    await createAcceptNotice(deps(sent))(accepted)
+
+    expect(`${sent[0]?.subject ?? ''}${sent[0]?.text ?? ''}`).not.toContain('@')
+  })
+
+  it('still sends when the target has no name', async () => {
+    const sent: OutboundMessage[] = []
+
+    await createAcceptNotice(deps(sent))({ ...accepted, targetId: 'm-x' })
+
+    expect(sent[0]?.subject).toBe(
+      'A Rebel Match member accepted your request on Rebel Match',
+    )
+  })
+
+  it('sends nothing when the requester has no active address', async () => {
+    const sent: OutboundMessage[] = []
+
+    await createAcceptNotice(deps(sent))({ ...accepted, requesterId: 'm-gone' })
 
     expect(sent).toEqual([])
   })

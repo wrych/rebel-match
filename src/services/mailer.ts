@@ -1,7 +1,11 @@
 import { randomUUID } from 'node:crypto'
 
 export type OutboxKind =
-  'magic_link' | 'approval' | 'connection_request' | 'admin_notice'
+  | 'magic_link'
+  | 'approval'
+  | 'connection_request'
+  | 'admin_notice'
+  | 'connection_accepted'
 
 export type DeliveryStatus = 'sent' | 'suppressed' | 'failed'
 
