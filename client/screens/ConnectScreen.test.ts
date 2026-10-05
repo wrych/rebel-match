@@ -8,7 +8,11 @@ const route = {
   params: { challengeId: 'c1', memberId: 'm2' },
   query: { kind: 'same_boat' } as Record<string, string>,
 }
-vi.mock('vue-router', () => ({ useRoute: () => route }))
+const replace = vi.fn()
+vi.mock('vue-router', () => ({
+  useRoute: () => route,
+  useRouter: () => ({ replace }),
+}))
 
 const peer = {
   memberId: 'm2',
@@ -28,10 +32,14 @@ const matches: Matches = {
 }
 
 /** Serves the matches and config, and answers the request with `status`. */
-function server(status = 201): ReturnType<typeof vi.fn> {
+function server(status = 201, answer: unknown = {}): ReturnType<typeof vi.fn> {
   const fetchMock = vi.fn((url: string, init?: RequestInit) => {
     if (init?.method === 'POST')
-      return Promise.resolve({ ok: status < 300, status })
+      return Promise.resolve({
+        ok: status < 300,
+        status,
+        json: async () => answer,
+      })
     const body =
       url === '/api/config'
         ? { limits: { connectionMessageMaxChars: 600 } }
@@ -58,6 +66,7 @@ async function send(screen: ReturnType<typeof mount>): Promise<void> {
 
 afterEach(() => {
   vi.unstubAllGlobals()
+  replace.mockReset()
   route.query = { kind: 'same_boat' }
 })
 
@@ -107,6 +116,15 @@ describe('ConnectScreen', () => {
     await send(screen)
 
     expect(screen.text()).toContain('You already asked Sam')
+  })
+
+  it('takes the member to the contact when they are already connected (R-CONN-8)', async () => {
+    server(200, { result: 'joined', id: 'r 9' })
+    const screen = await mountScreen()
+    await send(screen)
+
+    expect(replace).toHaveBeenCalledWith('/matches/requests/r%209/contact')
+    expect(screen.text()).not.toContain('Request sent')
   })
 
   it('says there is nobody when the server refuses the request', async () => {

@@ -6,6 +6,7 @@ export type OutboxKind =
   | 'connection_request'
   | 'admin_notice'
   | 'connection_accepted'
+  | 'connection_added'
 
 export type DeliveryStatus = 'sent' | 'suppressed' | 'failed'
 

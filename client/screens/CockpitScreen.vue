@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { fetchConfig } from '../lib/api'
 import { peerLine } from '../lib/challenges'
 import {
@@ -8,12 +8,19 @@ import {
   fetchIncoming,
   type Cockpit,
 } from '../lib/cockpit'
-import { answerRequest, type ConnectionView } from '../lib/connections'
+import {
+  answerRequest,
+  byMember,
+  contactPath,
+  type ConnectedMember,
+  type ConnectionView,
+} from '../lib/connections'
 import { poll } from '../lib/poll'
 
 const cockpit = ref<Cockpit | null>(null)
 const incoming = ref<ConnectionView[]>([])
 const connected = ref<ConnectionView[]>([])
+const people = computed(() => byMember(connected.value))
 const problem = ref<string | null>(null)
 const answering = ref<string | null>(null)
 const notice = ref<string | null>(null)
@@ -21,8 +28,6 @@ const failed = ref<string | null>(null)
 
 const requestPath = (id: string): string =>
   `/matches/requests/${encodeURIComponent(id)}`
-const contactPath = (id: string): string =>
-  `/matches/requests/${encodeURIComponent(id)}/contact`
 const matchesPath = (id: string): string =>
   `/challenges/${encodeURIComponent(id)}/matches`
 
@@ -39,6 +44,18 @@ async function load(): Promise<void> {
   cockpit.value = mine
   incoming.value = waiting
   connected.value = people
+}
+
+// The badge's count is read out with the name, as the tab bar's is.
+function connectionLabel(person: ConnectedMember): string | undefined {
+  if (person.unseen === 0) return undefined
+  return [
+    person.other.name,
+    `${String(person.unseen)} new`,
+    peerLine(person.other),
+  ]
+    .filter((part) => part !== '')
+    .join(', ')
 }
 
 // A failed refresh keeps what is on screen; the next one tries again.
@@ -163,17 +180,21 @@ onUnmounted(() => {
           No connections yet. They show here once a request is accepted.
         </p>
         <RouterLink
-          v-for="connection in connected"
-          :key="connection.id"
-          :to="contactPath(connection.id)"
+          v-for="person in people"
+          :key="person.other.memberId"
+          :to="contactPath(person.id)"
           class="card request-row"
+          :class="{ 'card-new': person.unseen > 0 }"
+          :aria-label="connectionLabel(person)"
         >
           <span class="card-head">
-            <span class="card-title">{{ connection.other.name }}</span>
-            <span v-if="connection.unseen" class="chip chip-accent">New</span>
+            <span class="card-title">{{ person.other.name }}</span>
+            <span v-if="person.unseen > 0" class="badge" aria-hidden="true">{{
+              person.unseen
+            }}</span>
           </span>
-          <span v-if="peerLine(connection.other)" class="mono peer-meta">{{
-            peerLine(connection.other)
+          <span v-if="peerLine(person.other)" class="mono peer-meta">{{
+            peerLine(person.other)
           }}</span>
         </RouterLink>
       </section>

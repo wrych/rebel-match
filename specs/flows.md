@@ -285,6 +285,14 @@ before both sides agree.**
   R-NFR-1, design §8).
 - _Target never responds_ → the request simply stays pending; nothing is
   revealed.
+- _Already connected_ → when the two already share an accepted request, the new
+  one is accepted at once and the requester lands on **S16**, the new request
+  on top of what they are connected over; the target is told by a badge and an
+  email linking to S16 (R-CONN-8,9,10). About a challenge they are already
+  connected over, nothing is added and the requester lands on S16 all the same.
+- _Several requests pending between the two_ → accepting one accepts them all,
+  either side; they show on S16 as what the two are connected over, and the
+  requester is told once (R-CONN-11).
 
 ---
 
@@ -295,10 +303,12 @@ before both sides agree.**
 1. Member opens Matches from the bottom nav.
 2. Screen shows: their own challenge(s) with same-boat / been-there counts
    (R-MINE-1), **incoming requests** with Accept / Decline (R-MINE-2 → **F7**
-   step 5), and their followed trends (R-MINE-3).
+   step 5), their connections, each member once, those with something new on
+   top, outlined and counted (R-MINE-5,6), and their followed trends
+   (R-MINE-3).
 3. The nav badge reflects the number of pending incoming requests and of
    connections accepted that the member has not opened yet (R-MINE-4,
-   R-CONN-7).
+   R-CONN-7,9).
 
 ---
 

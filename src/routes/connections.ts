@@ -36,6 +36,8 @@ function requestBody(
   })
 }
 
+const statusOf = { created: 201, exists: 409, joined: 200 } as const
+
 function create(deps: Deps): RequestHandler {
   const body = requestBody(deps.config.limits)
   return async (request, response) => {
@@ -52,7 +54,7 @@ function create(deps: Deps): RequestHandler {
       response.status(404).json({ error: 'not_found' })
       return
     }
-    response.status(outcome.result === 'created' ? 201 : 409).json(outcome)
+    response.status(statusOf[outcome.result]).json(outcome)
   }
 }
 

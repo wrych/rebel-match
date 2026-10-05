@@ -100,3 +100,38 @@ export function createAcceptNotice(
     })
   }
 }
+
+function addedBody(name: string, message: string | null, link: string): string {
+  const note = message === null ? '' : `They wrote:\n\n${message}\n\n`
+  return (
+    `${name} connected with you over another challenge on Rebel Match.\n\n` +
+    note +
+    `See what you are connected over here:\n${link}\n`
+  )
+}
+
+/** Emails the target of a request accepted at once, between members already
+ * connected, the requester's name, their note and a link to the contact
+ * screen; never an address or challenge text (R-CONN-9, R-NAV-9). */
+export function createAddedNotice(
+  deps: NoticeDeps,
+): (request: NewRequest) => Promise<void> {
+  return async (request) => {
+    const to = await deps.members.emailOf(request.targetId)
+    if (to === null) return
+    const from = await displayName(deps.members, request.requesterId)
+
+    await deps.mailer.send({
+      memberId: request.targetId,
+      aboutMemberId: request.requesterId,
+      to,
+      kind: 'connection_added',
+      subject: `${from} connected with you over another challenge`,
+      text: addedBody(
+        from,
+        request.message,
+        linkTo(deps, request.id, '/contact'),
+      ),
+    })
+  }
+}

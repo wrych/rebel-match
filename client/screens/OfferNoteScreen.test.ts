@@ -4,7 +4,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import OfferNoteScreen from './OfferNoteScreen.vue'
 
 const route = { params: { challengeId: 'c1' } }
-vi.mock('vue-router', () => ({ useRoute: () => route }))
+const replace = vi.fn()
+vi.mock('vue-router', () => ({
+  useRoute: () => route,
+  useRouter: () => ({ replace }),
+}))
 
 const card = {
   challengeId: 'c1',
@@ -22,7 +26,7 @@ const minChars = 31
 const substantive = 'We ran into exactly this and wrote a shift charter.'
 
 function server(
-  swipe = {
+  swipe: { status: number; body: unknown } = {
     status: 201,
     body: { result: 'recorded', connection: { result: 'created' } },
   },
@@ -63,6 +67,7 @@ function sendButton(screen: ReturnType<typeof mount>): HTMLButtonElement {
 
 afterEach(() => {
   vi.unstubAllGlobals()
+  replace.mockReset()
   route.params = { challengeId: 'c1' }
 })
 
@@ -121,6 +126,20 @@ describe('OfferNoteScreen', () => {
     await flushPromises()
 
     expect(screen.text()).toContain('You already reached out to Ola')
+  })
+
+  it('takes the member to the contact when they are already connected (R-CONN-8)', async () => {
+    server({
+      status: 201,
+      body: { result: 'recorded', connection: { result: 'joined', id: 'r9' } },
+    })
+    const screen = await mountScreen()
+    await screen.find('textarea').setValue(substantive)
+    await screen.find('form').trigger('submit')
+    await flushPromises()
+
+    expect(replace).toHaveBeenCalledWith('/matches/requests/r9/contact')
+    expect(screen.text()).not.toContain('Offer sent')
   })
 
   it('answers nothing for a card no longer in the deck', async () => {

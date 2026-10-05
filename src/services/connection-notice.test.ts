@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   createAcceptNotice,
+  createAddedNotice,
   createConnectionNotice,
   type NewRequest,
 } from './connection-notice.js'
@@ -146,6 +147,44 @@ describe('createAcceptNotice', () => {
     const sent: OutboundMessage[] = []
 
     await createAcceptNotice(deps(sent))({ ...accepted, requesterId: 'm-gone' })
+
+    expect(sent).toEqual([])
+  })
+})
+
+describe('createAddedNotice', () => {
+  it('emails the target who connected, their note and a link to the contact (R-CONN-9, R-NAV-9)', async () => {
+    const sent: OutboundMessage[] = []
+
+    await createAddedNotice(deps(sent))(request)
+
+    expect(sent).toHaveLength(1)
+    expect(sent[0]).toMatchObject({
+      memberId: 'm-bob',
+      aboutMemberId: 'm-ada',
+      to: 'bob@example.invalid',
+      kind: 'connection_added',
+      subject: 'Ada Lovelace connected with you over another challenge',
+    })
+    expect(sent[0]?.text).toContain(request.message)
+    expect(sent[0]?.text).toContain(
+      'https://match.example.invalid/matches/requests/r-1/contact',
+    )
+  })
+
+  it('carries no address (R-NAV-9)', async () => {
+    const sent: OutboundMessage[] = []
+
+    await createAddedNotice(deps(sent))({ ...request, message: null })
+
+    expect(`${sent[0]?.subject ?? ''}${sent[0]?.text ?? ''}`).not.toContain('@')
+    expect(sent[0]?.text).not.toContain('They wrote')
+  })
+
+  it('sends nothing when the target has no active address', async () => {
+    const sent: OutboundMessage[] = []
+
+    await createAddedNotice(deps(sent))({ ...request, targetId: 'm-gone' })
 
     expect(sent).toEqual([])
   })
