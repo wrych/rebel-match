@@ -18,8 +18,10 @@ const challenges: Record<string, string> = {
 
 function fakeStore(): ConnectionStore & {
   rows: Map<string, ConnectionRecord>
+  seen: string[]
 } {
   const rows = new Map<string, ConnectionRecord>()
+  const seen: string[] = []
   const party = (r: ConnectionRecord, m: string): boolean =>
     r.requesterId === m || r.targetId === m
   const pendingId = (
@@ -36,6 +38,7 @@ function fakeStore(): ConnectionStore & {
     )?.id ?? null
   return {
     rows,
+    seen,
     isReachable: (id) => Promise.resolve(id in emails),
     challengeAuthor: (id) => Promise.resolve(challenges[id] ?? null),
     findPending: (req, tgt, ch) => Promise.resolve(pendingId(req, tgt, ch)),
@@ -74,6 +77,7 @@ function fakeStore(): ConnectionStore & {
           companySize: null,
         },
         challenge: null,
+        unseen: false,
       })
     },
     incoming: () => Promise.resolve([]),
@@ -91,6 +95,10 @@ function fakeStore(): ConnectionStore & {
         return Promise.resolve(null)
       const other = r.targetId === viewer ? r.requesterId : r.targetId
       return Promise.resolve({ name: other, email: emails[other] ?? '' })
+    },
+    markSeen: (id, requester) => {
+      seen.push(`${id}:${requester}`)
+      return Promise.resolve()
     },
   }
 }
@@ -161,6 +169,60 @@ describe('telling the target (R-CONN-2)', () => {
       result: 'created',
       id: 'r-2',
     })
+  })
+})
+
+describe('telling the requester (R-CONN-7)', () => {
+  function accepting(): {
+    service: ReturnType<typeof createConnections>
+    store: ReturnType<typeof fakeStore>
+    told: unknown[]
+  } {
+    const told: unknown[] = []
+    const store = fakeStore()
+    const service = createConnections({
+      store,
+      newId: () => 'r-1',
+      notifyAccepted: (request) => {
+        told.push(request)
+        return Promise.resolve()
+      },
+    })
+    return { service, store, told }
+  }
+
+  it('tells the requester once their request is accepted', async () => {
+    const { service, told } = accepting()
+    await service.request('m-ada', sameBoat)
+
+    await service.respond('m-eve', 'r-1', 'accepted')
+    await service.respond('m-bob', 'r-1', 'accepted')
+    await service.respond('m-bob', 'r-1', 'accepted')
+
+    expect(told).toEqual([
+      { id: 'r-1', requesterId: 'm-ada', targetId: 'm-bob' },
+    ])
+  })
+
+  it('says nothing of a decline (R-CONN-4)', async () => {
+    const { service, told } = accepting()
+    await service.request('m-ada', sameBoat)
+
+    await service.respond('m-bob', 'r-1', 'declined')
+
+    expect(told).toEqual([])
+  })
+
+  it('ends the notice when the requester opens the contact, not the target', async () => {
+    const { service, store } = accepting()
+    await service.request('m-ada', sameBoat)
+    expect(await service.contact('m-ada', 'r-1')).toBeNull()
+    await service.respond('m-bob', 'r-1', 'accepted')
+
+    await service.contact('m-bob', 'r-1')
+    expect(store.seen).toEqual([])
+    await service.contact('m-ada', 'r-1')
+    expect(store.seen).toEqual(['r-1:m-ada'])
   })
 })
 

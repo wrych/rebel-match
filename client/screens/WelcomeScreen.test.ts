@@ -5,9 +5,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 function signedIn(
   permissions: string[],
   pendingIncoming = 0,
+  newConnections = 0,
 ): ReturnType<typeof vi.fn> {
   const bodies: Record<string, unknown> = {
-    '/api/cockpit': { pendingIncoming },
+    '/api/cockpit': { pendingIncoming, newConnections },
     '/api/config': { limits: { matchesPollSeconds: 60 } },
   }
   const fetchMock = vi.fn((url: string) =>
@@ -101,6 +102,18 @@ describe('WelcomeScreen', () => {
     expect(link?.find('.badge').text()).toBe('2')
     expect(link?.attributes('aria-label')).toBe(
       'Your matches, 2 requests waiting',
+    )
+  })
+
+  it('badges the matches link with new connections too (R-CONN-7)', async () => {
+    signedIn([], 0, 1)
+    const link = (await mountWelcome())
+      .findAllComponents(RouterLinkStub)
+      .find((each) => each.props('to') === '/matches')
+
+    expect(link?.find('.badge').text()).toBe('1')
+    expect(link?.attributes('aria-label')).toBe(
+      'Your matches, 1 new connection',
     )
   })
 

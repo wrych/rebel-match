@@ -186,6 +186,7 @@ export const outboxKind = pgEnum('outbox_kind', [
   'approval',
   'connection_request',
   'admin_notice',
+  'connection_accepted',
 ])
 
 export const outboxStatus = pgEnum('outbox_status', [
@@ -407,6 +408,9 @@ export const connectionRequests = pgTable(
     status: connectionStatus('status').notNull().default('pending'),
     createdAt: at('created_at').notNull().defaultNow(),
     respondedAt: at('responded_at'),
+    // When the requester first opened an accepted request's contact; until
+    // then it badges their nav (R-CONN-7).
+    requesterSeenAt: at('requester_seen_at'),
   },
   (t) => [
     index('ix_req_target').on(t.targetId, t.status),
