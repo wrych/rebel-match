@@ -29,7 +29,7 @@ startSettingsRefresh({
 
 startErasureSweep({
   erasure: deps.erasure,
-  intervalHours: config.outboxPurgeIntervalHours,
+  intervalHours: config.erasureSweepIntervalHours,
   onError: () => {
     console.warn('erasure sweep: failed, will retry next interval')
   },

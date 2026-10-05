@@ -129,17 +129,19 @@ export function createAdmission(deps: AdmissionDeps): AdmissionService {
 }
 
 // Past the address's ceiling the answer is the same and nothing is sent, so
-// the limit tells a caller nothing more about the address (R-NFR-8).
+// the limit tells a caller nothing more about the address (R-NFR-8). A null
+// `link` is paced the same way and sends nothing, for an address that must
+// answer as a member's without hearing anything (ADR 0032).
 async function sendLink(
   deps: AdmissionDeps,
   email: string,
   opts: LinkRequestOptions,
-  link: LinkOptions = { kind: 'self_service', next: opts.next },
+  link: LinkOptions | null = { kind: 'self_service', next: opts.next },
 ): Promise<LinkRequest> {
   const decision = await deps.linkEmails.admit(email, opts.client.altcha)
   if (decision.result === 'human-check')
     return { state: 'human-check', challenge: decision.challenge }
-  if (decision.result === 'admit') {
+  if (decision.result === 'admit' && link !== null) {
     try {
       await deps.auth.issueLink(email, link)
     } catch (error) {
@@ -159,8 +161,12 @@ async function keepItLink(
   opts: LinkRequestOptions,
 ): Promise<LinkRequest> {
   const eraseAfter = await deps.store.ownDeletion(email)
-  if (eraseAfter === null) return { state: 'check-email' }
-  return sendLink(deps, email, opts, { kind: 'restore', eraseAfter })
+  return sendLink(
+    deps,
+    email,
+    opts,
+    eraseAfter === null ? null : { kind: 'restore', eraseAfter },
+  )
 }
 
 // Anyone can ask again for an address, so only the request that recorded the

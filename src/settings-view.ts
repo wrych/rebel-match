@@ -398,6 +398,12 @@ const catalogue: Group[] = [
         unit: DAYS,
       },
       {
+        name: 'Erase due accounts every',
+        explanation: 'How often the server erases accounts past that period.',
+        read: (c) => c.erasureSweepIntervalHours,
+        unit: HOURS,
+      },
+      {
         name: 'Consent wording in force',
         explanation:
           'The version of the consent members accept; a new version asks ' +

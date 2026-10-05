@@ -117,6 +117,13 @@ const envSchema = z
       .positive()
       .max(MAX_TIMER_HOURS)
       .default(1),
+    // How often the server erases the deleted accounts that are due (ADR 0032).
+    ERASURE_SWEEP_INTERVAL_HOURS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .max(MAX_TIMER_HOURS)
+      .default(1),
     MAGIC_LINK_TTL_MINUTES: z.coerce.number().int().positive().default(15),
     APPROVAL_LINK_TTL_HOURS: z.coerce.number().int().positive().default(24),
     INVITE_DEFAULT_MAX_USES: z.coerce.number().int().positive().default(400),
@@ -260,6 +267,7 @@ export interface Config {
   sessionSecret: string
   sessionTtlDays: number
   outboxPurgeIntervalHours: number
+  erasureSweepIntervalHours: number
   settingsRefreshSeconds: number
   mail: {
     delivery: Env['MAIL_DELIVERY']
@@ -336,6 +344,7 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): Config {
     sessionSecret: env.SESSION_SECRET,
     sessionTtlDays: env.SESSION_TTL_DAYS,
     outboxPurgeIntervalHours: env.OUTBOX_PURGE_INTERVAL_HOURS,
+    erasureSweepIntervalHours: env.ERASURE_SWEEP_INTERVAL_HOURS,
     settingsRefreshSeconds: env.SETTINGS_REFRESH_SECONDS,
     mail: {
       delivery: env.MAIL_DELIVERY,

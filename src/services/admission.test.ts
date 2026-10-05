@@ -539,4 +539,29 @@ describe('createAdmission for an account set to be deleted (ADR 0032)', () => {
     expect(harness.links).toEqual([])
     expect(harness.notified).toEqual([])
   })
+
+  it("paces a host's deletion as any member's address, so it shows nothing", async () => {
+    const challenge = { parameters: {}, signature: 'sig' } as never
+    const asked: string[] = []
+    const harness = setup(
+      [['bo@example.invalid', 'deleted']],
+      false,
+      undefined,
+      {
+        linkEmails: {
+          admit: (key) => {
+            asked.push(key)
+            return Promise.resolve({ result: 'human-check', challenge })
+          },
+          release: () => undefined,
+        },
+      },
+    )
+
+    expect(
+      await harness.admission.requestLink('bo@example.invalid', { client }),
+    ).toEqual({ state: 'human-check', challenge })
+    expect(asked).toEqual(['bo@example.invalid'])
+    expect(harness.links).toEqual([])
+  })
 })
