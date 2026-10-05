@@ -27,7 +27,7 @@ function setup(): { app: Express; calls: unknown[] } {
   app.use(
     adminWhitelistRoutes({
       auth,
-      config: { limits: { whitelistBatchMax: 3 } },
+      config: { limits: { whitelistBatchMax: 3, emailMaxChars: 320 } },
       whitelist: {
         add: (emails, actorId) => {
           calls.push({ emails, actorId })
@@ -74,6 +74,14 @@ describe('POST /api/admin/whitelist', () => {
     ['no list', {}],
     ['an empty list', { emails: [] }],
     ['a bad address', { emails: ['ada@example.invalid', 'not-an-email'] }],
+    [
+      'an address too long to store',
+      {
+        emails: [
+          `${'a'.repeat(64)}@${Array(5).fill('b'.repeat(50)).join('.')}.test`,
+        ],
+      },
+    ],
     [
       'too many addresses',
       {

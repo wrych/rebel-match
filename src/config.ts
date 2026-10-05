@@ -15,6 +15,8 @@ const MAX_TIMER_HOURS = Math.floor(0x7fffffff / 3_600_000)
 const NAME_MAX_CHARS = 120
 const JOB_TITLE_MAX_CHARS = 120
 const ORG_MAX_CHARS = 160
+// members.email and outbox.to_email (src/db/schema.ts): RFC 5321's 320.
+const EMAIL_MAX_CHARS = 320
 // invites.label, and a cap on invites.max_uses (src/db/schema.ts).
 const INVITE_LABEL_MAX_CHARS = 120
 /** How long a "Saved" tick stays beside a setting (R-PROF-1). */
@@ -208,6 +210,7 @@ export interface Limits {
   deckPageSize: number
   matchesPollSeconds: number
   whitelistBatchMax: number
+  emailMaxChars: number
   nameMaxChars: number
   jobTitleMaxChars: number
   orgMaxChars: number
@@ -300,6 +303,7 @@ function limitsFrom(env: Env): Limits {
     deckPageSize: env.DECK_PAGE_SIZE,
     matchesPollSeconds: env.MATCHES_POLL_SECONDS,
     whitelistBatchMax: env.WHITELIST_BATCH_MAX,
+    emailMaxChars: EMAIL_MAX_CHARS,
     nameMaxChars: NAME_MAX_CHARS,
     jobTitleMaxChars: JOB_TITLE_MAX_CHARS,
     orgMaxChars: ORG_MAX_CHARS,

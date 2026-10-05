@@ -291,6 +291,13 @@ const catalogue: Group[] = [
     explanation: 'Profile fields and member lists.',
     entries: [
       {
+        name: 'Longest email address',
+        explanation: 'Fixed by the database.',
+        fixed: true,
+        read: (c) => c.limits.emailMaxChars,
+        unit: CHARACTERS,
+      },
+      {
         name: 'Longest name',
         explanation: 'Fixed by the database.',
         fixed: true,
