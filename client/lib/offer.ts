@@ -10,6 +10,7 @@ export function noticeFor(
 ): string | null {
   const name = card.author.name
   if (result.result === 'gone') return 'That challenge is no longer open.'
+  if (result.result === 'joined') return null
   if (action === 'follow') return `Following “${card.trend.short}”.`
   if (action === 'skip') return null
   return result.request === 'exists'

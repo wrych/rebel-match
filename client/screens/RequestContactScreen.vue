@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { fetchContact, type Contact } from '../lib/connections'
+import { fetchContact, overInOrder, type Contact } from '../lib/connections'
 
 const route = useRoute()
 const id = String(route.params.id)
 const contact = ref<Contact | null>(null)
 const missing = ref(false)
 const problem = ref<string | null>(null)
+const over = computed(() => overInOrder(contact.value?.over ?? []))
 
 onMounted(async () => {
   try {
@@ -44,6 +45,43 @@ onMounted(async () => {
       <a :href="contact.mailto" class="btn btn-primary"
         >Write to {{ contact.name }}</a
       >
+
+      <section v-if="over.length > 0" class="stack rule" aria-labelledby="over">
+        <h2 id="over" class="display display-md">Connected over</h2>
+        <article
+          v-for="each in over"
+          :key="each.id"
+          class="card"
+          :class="{ 'card-new': each.unseen }"
+        >
+          <span class="card-head">
+            <span class="small">{{
+              each.direction === 'outgoing'
+                ? 'You reached out'
+                : `${contact.name} reached out`
+            }}</span>
+            <span class="tags">
+              <span v-if="each.unseen" class="chip chip-accent">New</span>
+              <span
+                class="chip"
+                :class="each.kind === 'same_boat' ? 'chip-accent' : 'chip-ink'"
+                >{{
+                  each.kind === 'same_boat' ? 'Same boat' : 'Been there'
+                }}</span
+              >
+            </span>
+          </span>
+          <div v-if="each.challenge" class="stack-tight">
+            <p class="kicker">
+              About {{ each.challenge.trendShort ?? 'a challenge' }}
+            </p>
+            <p class="mine">{{ each.challenge.body }}</p>
+          </div>
+          <p v-if="each.message" class="small peer-note">
+            “{{ each.message }}”
+          </p>
+        </article>
+      </section>
     </template>
 
     <p v-if="problem" class="alert" role="alert">{{ problem }}</p>
@@ -51,6 +89,13 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.4rem;
+}
+
 .contact-email {
   color: var(--accent);
   overflow-wrap: anywhere;

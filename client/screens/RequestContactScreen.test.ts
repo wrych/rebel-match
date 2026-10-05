@@ -25,12 +25,63 @@ describe('RequestContactScreen', () => {
       name: 'Sam Boat',
       email: 'sam@example.invalid',
       mailto: 'mailto:sam@example.invalid?subject=Rebel%20Match',
+      over: [],
     }
     serve({ ok: true, status: 200, json: async () => ({ contact }) })
     const screen = await mountScreen()
 
     expect(screen.text()).toContain('sam@example.invalid')
     expect(screen.find('a').attributes('href')).toBe(contact.mailto)
+  })
+
+  it('lists what the two are connected over, the unopened first and outlined (R-CONN-10)', async () => {
+    const entry = {
+      direction: 'outgoing',
+      kind: 'same_boat',
+      status: 'accepted',
+      createdAt: '2026-11-08T10:00:00.000Z',
+      other: { memberId: 'm2', name: 'Sam Boat' },
+    }
+    const contact = {
+      name: 'Sam Boat',
+      email: 'sam@example.invalid',
+      mailto: 'mailto:sam@example.invalid',
+      over: [
+        {
+          ...entry,
+          id: 'r1',
+          message: null,
+          challenge: { id: 'c1', body: 'Old news.', trendShort: 'Purpose' },
+          unseen: false,
+        },
+        {
+          ...entry,
+          id: 'r2',
+          direction: 'incoming',
+          kind: 'been_there',
+          message: 'We wrote a shift charter.',
+          challenge: {
+            id: 'c2',
+            body: 'Two shifts, two cultures.',
+            trendShort: 'Network of Teams',
+          },
+          unseen: true,
+        },
+      ],
+    }
+    serve({ ok: true, status: 200, json: async () => ({ contact }) })
+    const screen = await mountScreen()
+
+    expect(screen.find('#over').text()).toBe('Connected over')
+    const cards = screen.findAll('article')
+    expect(cards.map((card) => card.classes('card-new'))).toEqual([true, false])
+    expect(cards[0]?.text()).toContain('Sam Boat reached out')
+    expect(cards[0]?.text()).toContain('Been there')
+    expect(cards[0]?.text()).toContain('About Network of Teams')
+    expect(cards[0]?.text()).toContain('Two shifts, two cultures.')
+    expect(cards[0]?.text()).toContain('“We wrote a shift charter.”')
+    expect(cards[1]?.text()).toContain('You reached out')
+    expect(cards[1]?.text()).toContain('Same boat')
   })
 
   it('shows no contact when the server gives none (R-CONN-6)', async () => {

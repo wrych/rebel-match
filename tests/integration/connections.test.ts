@@ -49,7 +49,7 @@ beforeAll(async () => {
     [Object.values(ids), Object.values(ids)],
   )
   await db.query(
-    "DELETE FROM outbox WHERE kind IN ('connection_request', 'connection_accepted') AND member_id IN (?)",
+    "DELETE FROM outbox WHERE kind IN ('connection_request', 'connection_accepted', 'connection_added') AND member_id IN (?)",
     [Object.values(ids)],
   )
   const challenge = await db.query(
@@ -294,6 +294,79 @@ describe('connecting over Postgres: the double opt-in (F7, ADR 0004)', () => {
     })
 
     expect(response.status).toBe(404)
+  })
+})
+
+describe('connecting again once connected, over Postgres (R-CONN-8..10, ADR 0035)', () => {
+  let first: string
+  let added: string
+
+  const between = async (): Promise<number> => {
+    const rows = await db.query(
+      'SELECT COUNT(*) AS n FROM connection_requests WHERE (requester_id = ? AND target_id = ?) OR (requester_id = ? AND target_id = ?)',
+      [ids['ada'], ids['bob'], ids['bob'], ids['ada']],
+    )
+    return Number(rows[0]?.['n'])
+  }
+
+  it('accepts a further request at once, whichever side sends it (R-CONN-8)', async () => {
+    const [row] = await db.query(
+      "SELECT id FROM connection_requests WHERE requester_id = ? AND target_id = ? AND status = 'accepted'",
+      [ids['ada'], ids['bob']],
+    )
+    first = String(row?.['id'])
+
+    const response = await connect('bob', 'ada', 'been_there')
+    added = (response.body as { id: string }).id
+
+    expect(response.status).toBe(200)
+    expect(response.body).toEqual({ result: 'joined', id: added })
+    const [stored] = await db.query(
+      'SELECT status FROM connection_requests WHERE id = ?',
+      [added],
+    )
+    expect(stored?.['status']).toBe('accepted')
+  })
+
+  it('tells the target by email and badge, with no address (R-CONN-9, R-NAV-9)', async () => {
+    const logged = await db.query(
+      "SELECT to_email, about_member_id, subject, body_text FROM outbox WHERE kind = 'connection_added' AND member_id = ?",
+      [ids['ada']],
+    )
+
+    expect(logged).toHaveLength(1)
+    expect(logged[0]?.['to_email']).toBe(people.ada)
+    expect(logged[0]?.['about_member_id']).toBe(ids['bob'])
+    const mail = `${String(logged[0]?.['subject'])}\n${String(logged[0]?.['body_text'])}`
+    expect(mail).toContain(`/matches/requests/${added}/contact`)
+    expect(mail).toContain('would love to compare notes')
+    expect(mail).not.toContain(people.bob)
+    expect(await newConnections('ada')).toBe(1)
+  })
+
+  it('lists on the contact what the two are connected over, then ends the notice (R-CONN-10)', async () => {
+    const response = await as('ada')(
+      request(app).get(`/api/connections/${first}/contact`),
+    ).expect(200)
+    const over = (response.body as { contact: { over: ConnectionView[] } })
+      .contact.over
+
+    expect(over.map((each) => [each.id, each.direction, each.unseen])).toEqual([
+      [added, 'incoming', true],
+      [first, 'outgoing', false],
+    ])
+    expect(over[1]?.challenge?.body.length).toBeGreaterThan(0)
+    expect(await newConnections('ada')).toBe(0)
+  })
+
+  it('adds nothing about a challenge they are already connected over (R-CONN-8)', async () => {
+    const before = await between()
+
+    const again = await connect('ada', 'bob')
+
+    expect(again.status).toBe(200)
+    expect(again.body).toEqual({ result: 'joined', id: first })
+    expect(await between()).toBe(before)
   })
 })
 

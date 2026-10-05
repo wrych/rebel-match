@@ -35,6 +35,7 @@ import { createConnectionStore } from './services/connection-store.js'
 import { createConnections } from './services/connections.js'
 import {
   createAcceptNotice,
+  createAddedNotice,
   createConnectionNotice,
 } from './services/connection-notice.js'
 import { createMemberDirectory } from './services/member-directory-store.js'
@@ -140,6 +141,7 @@ function composeJourneys(
     track,
     notify: createConnectionNotice(notices),
     notifyAccepted: createAcceptNotice(notices),
+    notifyAdded: createAddedNotice(notices),
   })
   return {
     challenges,

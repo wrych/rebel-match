@@ -64,6 +64,18 @@ describe('answerCard', () => {
     })
   })
 
+  it('reads a request to a member already connected as joined (R-CONN-8)', async () => {
+    answer(201, {
+      result: 'recorded',
+      connection: { result: 'joined', id: 'r9' },
+    })
+
+    expect(await answerCard('c1', 'same_boat')).toEqual({
+      result: 'joined',
+      id: 'r9',
+    })
+  })
+
   it('reads an answer without a request as recorded', async () => {
     answer(201, { result: 'recorded' })
 

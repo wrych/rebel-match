@@ -8,6 +8,7 @@ import {
   reportSeen,
   type DeckCard,
 } from '../lib/deck'
+import { contactPath } from '../lib/connections'
 import { noticeFor } from '../lib/offer'
 import { countAnswer } from '../lib/offer-session'
 
@@ -75,6 +76,11 @@ async function answer(action: 'same_boat' | 'follow' | 'skip'): Promise<void> {
   clearMessages()
   try {
     const result = await answerCard(answered.challengeId, action)
+    if (result.result === 'joined') {
+      countAnswer('sameBoat')
+      await router.push(contactPath(result.id))
+      return
+    }
     notice.value = noticeFor(answered, action, result)
     if (result.result === 'recorded' && result.request === 'created')
       countAnswer('sameBoat')

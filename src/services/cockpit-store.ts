@@ -1,4 +1,4 @@
-import { and, count, desc, eq, isNull, sql } from 'drizzle-orm'
+import { and, count, desc, eq, isNull, or, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 import type { Database } from '../db/connect.js'
 import {
@@ -11,6 +11,7 @@ import {
   trends,
 } from '../db/schema.js'
 import { challengeTrend } from './challenge-store.js'
+import { activeOtherParty } from './connection-store.js'
 import type { CockpitStore } from './cockpit.js'
 import type { FollowStore } from './follows.js'
 
@@ -61,26 +62,20 @@ async function pendingIncoming(
   return row?.n ?? 0
 }
 
-// Accepted requests the member sent and has not opened, from targets still
-// active, as the connections list shows them (R-CONN-7, ADR 0032).
+// Accepted requests the member has not opened, either side, from members
+// still active, as the connections list shows them (R-CONN-7,9, ADR 0032).
 async function newConnections(db: Database, memberId: string): Promise<number> {
+  const r = connectionRequests
+  const unseenByRequester = and(
+    eq(r.requesterId, memberId),
+    isNull(r.requesterSeenAt),
+  )
+  const unseenByTarget = and(eq(r.targetId, memberId), isNull(r.targetSeenAt))
   const [row] = await db
     .select({ n: count() })
-    .from(connectionRequests)
-    .innerJoin(
-      members,
-      and(
-        eq(members.id, connectionRequests.targetId),
-        eq(members.status, 'active'),
-      ),
-    )
-    .where(
-      and(
-        eq(connectionRequests.requesterId, memberId),
-        eq(connectionRequests.status, 'accepted'),
-        isNull(connectionRequests.requesterSeenAt),
-      ),
-    )
+    .from(r)
+    .innerJoin(members, activeOtherParty(memberId))
+    .where(and(eq(r.status, 'accepted'), or(unseenByRequester, unseenByTarget)))
   return row?.n ?? 0
 }
 
