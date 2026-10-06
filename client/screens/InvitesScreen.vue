@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
+import CopyButton from '../components/CopyButton.vue'
 import { fetchConfig, type ClientConfig } from '../lib/api'
 import {
   createInvite,
@@ -23,8 +24,6 @@ const newCap = ref('')
 const problem = ref<string | null>(null)
 const notice = ref<string | null>(null)
 const busy = ref(false)
-const copied = ref<string | null>(null)
-let tickTimer: ReturnType<typeof setTimeout> | undefined
 
 const chipFor: Record<Invite['state'], string> = {
   active: 'chip-accent',
@@ -69,27 +68,6 @@ async function create(): Promise<void> {
     busy.value = false
   }
 }
-
-// The tick shows only on the invite just copied, and only for a moment.
-async function copy(invite: Invite): Promise<void> {
-  clearTimeout(tickTimer)
-  copied.value = null
-  try {
-    await navigator.clipboard.writeText(invite.joinUrl)
-    copied.value = invite.id
-    // Without the configured duration the tick stays until the next copy.
-    if (limits.value !== null)
-      tickTimer = setTimeout(
-        () => (copied.value = null),
-        limits.value.savedTickMs,
-      )
-    notice.value = `Copied the join URL of “${invite.label}”.`
-  } catch {
-    notice.value = 'The join URL was not copied. Select it and copy it by hand.'
-  }
-}
-
-onUnmounted(() => clearTimeout(tickTimer))
 
 function startRaising(invite: Invite): void {
   raising.value = invite.id
@@ -246,28 +224,16 @@ onMounted(async () => {
         <span class="label">Join URL</span>
         <div class="join-row">
           <span class="join-url">{{ invite.joinUrl }}</span>
-          <button
-            type="button"
-            class="btn btn-ghost copy"
-            :aria-label="`Copy the join URL of ${invite.label}`"
-            :title="copied === invite.id ? 'Copied' : 'Copy'"
-            @click="copy(invite)"
-          >
-            <svg
-              class="icon"
-              viewBox="0 0 24 24"
-              width="16"
-              height="16"
-              aria-hidden="true"
-              focusable="false"
-            >
-              <path v-if="copied === invite.id" d="M5 12.5 10 17.5 19 7" />
-              <template v-else>
-                <rect x="9" y="9" width="11" height="11" rx="2" />
-                <path d="M5 15V6a2 2 0 0 1 2-2h8" />
-              </template>
-            </svg>
-          </button>
+          <CopyButton
+            :text="invite.joinUrl"
+            :label="`Copy the join URL of ${invite.label}`"
+            :tick-ms="limits?.savedTickMs ?? null"
+            @copied="notice = `Copied the join URL of “${invite.label}”.`"
+            @failed="
+              notice =
+                'The join URL was not copied. Select it and copy it by hand.'
+            "
+          />
         </div>
       </div>
       <form
@@ -378,20 +344,5 @@ onMounted(async () => {
 .join-url {
   flex: 1;
   min-width: 0;
-}
-
-.copy {
-  flex: none;
-  width: 2.75rem;
-  min-height: 2.75rem;
-  padding: 0;
-}
-
-.copy .icon {
-  fill: none;
-  stroke: currentcolor;
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
 }
 </style>
