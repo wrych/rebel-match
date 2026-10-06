@@ -20,6 +20,8 @@ export interface ClientConfig {
   consentVersion: string
   analyticsVersion: string
   feedbackTo: string
+  /** The running version, `dev` without a link on a local build (R-NFR-11). */
+  build: { commit: string; url: string | null }
 }
 
 /** Reads the limits the server enforces, so a disabled button and a server check

@@ -21,6 +21,10 @@ COPY --from=build /app/package.json ./
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/db ./db
+# The commit this image was built from, which the menu shows (R-NFR-11). Late,
+# so a new commit rebuilds no layer above it.
+ARG GIT_COMMIT=""
+ENV GIT_COMMIT=$GIT_COMMIT
 USER node
 EXPOSE 8080
 # The server. One-off tasks run from the same image with another command:

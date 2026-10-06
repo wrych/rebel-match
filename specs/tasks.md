@@ -296,7 +296,7 @@ printed dev link (R-DEV-6).
       opened at its card. _(R-ASK-9, R-NOTE-1, R-OFF-7)_
 - [x] The Matches badge counts what arrived since Matches was last opened,
       and opening it clears it; cards keep their own marks. _(R-MINE-4)_
-- [ ] Show the running version at the foot of the menu: CI passes the commit
+- [x] Show the running version at the foot of the menu: CI passes the commit
       to the image, `/api/config` returns it. _(R-NFR-11)_
 
 ## Post-beta backlog _(Could / Won't-for-now)_

@@ -187,4 +187,43 @@ describe('HeaderMenu', () => {
 
     expect(menu.find('#main-menu').exists()).toBe(false)
   })
+
+  it.each([
+    [
+      { commit: '110a584', url: 'https://github.com/o/r/commit/110a584f' },
+      'https://github.com/o/r/commit/110a584f',
+    ],
+    [{ commit: 'dev', url: null }, null],
+  ])(
+    'shows the running version %o at its foot (R-NFR-11)',
+    async (build, href) => {
+      const me = signedIn([]) as unknown as (url: string) => Promise<unknown>
+      vi.stubGlobal(
+        'fetch',
+        vi.fn((url: string) =>
+          url === '/api/config'
+            ? Promise.resolve({
+                ok: true,
+                status: 200,
+                json: () => Promise.resolve({ build }),
+              })
+            : me(url),
+        ),
+      )
+      const menu = await opened()
+
+      const line = menu.find('.version')
+      expect(line.text()).toBe(`Version ${build.commit}`)
+      expect(
+        line.find('a').exists() ? line.find('a').attributes('href') : null,
+      ).toBe(href)
+    },
+  )
+
+  it('shows no version when the config cannot be read', async () => {
+    signedIn([])
+    const menu = await opened()
+
+    expect(menu.find('.version').exists()).toBe(false)
+  })
 })
