@@ -47,6 +47,31 @@ describe('changeable settings (R-CFG-6, ADR 0031)', () => {
     expect(checkChange(base, 'abuse.linkEmailsCeiling', 3)).toBe('ok')
   })
 
+  it('refuses a shortest challenge above the longest (R-ASK-3)', () => {
+    const values = {
+      ...base,
+      limits: { ...base.limits, challengeMaxChars: 100 },
+    }
+
+    expect(checkChange(values, 'limits.challengeMinChars', 101)).toBe(
+      'out_of_order',
+    )
+    expect(checkChange(values, 'limits.challengeMinChars', 100)).toBe('ok')
+  })
+
+  it('falls back to the deployment’s shortest challenge above a lowered longest', () => {
+    const deployment = {
+      ...base,
+      limits: { ...base.limits, challengeMaxChars: 100 },
+    }
+
+    const values = withOverrides(deployment, [
+      { key: 'limits.challengeMinChars', value: 150 },
+    ])
+
+    expect(valueOf(values, 'limits.challengeMinChars')).toBe(31)
+  })
+
   it('applies the hosts’ changes over the deployment’s values', () => {
     const values = withOverrides(base, [
       { key: 'limits.challengeMinChars', value: 50 },

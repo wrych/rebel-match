@@ -192,6 +192,29 @@ describe('challenge routes', () => {
     expect(response.status).toBe(400)
   })
 
+  it('accepts a challenge of the longest length, trimmed (R-ASK-3)', async () => {
+    const { app } = setup()
+
+    const response = await request(app)
+      .post('/api/challenges')
+      .set('Cookie', await cookieFor('m-ada'))
+      .send({ body: `  ${'y'.repeat(config.limits.challengeMaxChars)}  ` })
+
+    expect(response.status).toBe(201)
+  })
+
+  it('refuses a challenge longer than the longest (R-ASK-3)', async () => {
+    const { app, calls } = setup()
+
+    const response = await request(app)
+      .post('/api/challenges')
+      .set('Cookie', await cookieFor('m-ada'))
+      .send({ body: 'y'.repeat(config.limits.challengeMaxChars + 1) })
+
+    expect(response.status).toBe(400)
+    expect(calls).toEqual([])
+  })
+
   it.each([{}, { body: 'too short' }, { body: `  ${'z'.repeat(30)}  ` }])(
     'refuses %j: thirty characters or fewer (R-ASK-3)',
     async (body) => {

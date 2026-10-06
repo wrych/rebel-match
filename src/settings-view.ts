@@ -257,6 +257,13 @@ const catalogue: Group[] = [
         unit: CHARACTERS,
       },
       {
+        name: 'Longest challenge',
+        explanation:
+          'A challenge takes at most this many characters, so a peer can read it on one phone screen.',
+        read: (c) => c.limits.challengeMaxChars,
+        unit: CHARACTERS,
+      },
+      {
         name: 'Shortest “been there” note',
         explanation:
           'A member offering help writes at least this many characters.',

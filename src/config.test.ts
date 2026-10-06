@@ -13,6 +13,7 @@ describe('loadConfig', () => {
     const config = loadConfig(valid)
 
     expect(config.limits.challengeMinChars).toBe(31)
+    expect(config.limits.challengeMaxChars).toBe(500)
     expect(config.limits.beenThereNoteMinChars).toBe(31)
     expect(config.limits.magicLinkTtlMinutes).toBe(15)
     expect(config.limits.approvalLinkTtlHours).toBe(24)
@@ -46,6 +47,16 @@ describe('loadConfig', () => {
     const config = loadConfig({ ...valid, CHALLENGE_MIN_CHARS: '50' })
 
     expect(config.limits.challengeMinChars).toBe(50)
+  })
+
+  it('refuses a longest challenge below the shortest (R-ASK-3)', () => {
+    expect(() =>
+      loadConfig({
+        ...valid,
+        CHALLENGE_MIN_CHARS: '50',
+        CHALLENGE_MAX_CHARS: '49',
+      }),
+    ).toThrow(/CHALLENGE_MAX_CHARS/)
   })
 
   it('rejects a session secret too short to sign with', () => {

@@ -12,7 +12,7 @@ import {
 
 const router = useRouter()
 const draft = ref('')
-const minChars = ref<number | null>(null)
+const limits = ref<{ min: number; max: number } | null>(null)
 const sending = ref(false)
 const problem = ref<string | null>(null)
 const inspiration = ref<NewestChallenge[]>([])
@@ -21,7 +21,10 @@ const inspiration = ref<NewestChallenge[]>([])
 const length = computed(() => draft.value.trim().length)
 const ready = computed(
   () =>
-    minChars.value !== null && length.value >= minChars.value && !sending.value,
+    limits.value !== null &&
+    length.value >= limits.value.min &&
+    length.value <= limits.value.max &&
+    !sending.value,
 )
 
 // Inspiration is a nicety: without it the form still works, so a failure
@@ -37,7 +40,11 @@ async function loadInspiration(): Promise<void> {
 onMounted(async () => {
   void loadInspiration()
   try {
-    minChars.value = (await fetchConfig()).limits.challengeMinChars
+    const config = await fetchConfig()
+    limits.value = {
+      min: config.limits.challengeMinChars,
+      max: config.limits.challengeMaxChars,
+    }
   } catch {
     problem.value = 'The form could not be loaded. Reload to try again.'
   }
@@ -77,11 +84,12 @@ async function submit(): Promise<void> {
           v-model="draft"
           class="input"
           rows="8"
+          :maxlength="limits?.max"
           aria-describedby="challenge-hint challenge-count"
         ></textarea>
         <p id="challenge-count" class="footnote" aria-live="polite">
-          {{ length }} characters<template v-if="minChars !== null">
-            · at least {{ minChars }}</template
+          {{ length }} characters<template v-if="limits">
+            · {{ limits.min }} to {{ limits.max }}</template
           >
         </p>
       </div>

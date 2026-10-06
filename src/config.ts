@@ -179,6 +179,8 @@ const envSchema = z
     MIXPANEL_API_HOST: z.string().min(1).default('api-eu.mixpanel.com'),
 
     CHALLENGE_MIN_CHARS: z.coerce.number().int().positive().default(31),
+    // What a peer still reads on one phone screen (R-ASK-3).
+    CHALLENGE_MAX_CHARS: z.coerce.number().int().positive().default(500),
     BEEN_THERE_NOTE_MIN_CHARS: z.coerce.number().int().positive().default(31),
     OUTBOX_PAGE_SIZE: z.coerce.number().int().positive().default(100),
     DECK_PAGE_SIZE: z.coerce.number().int().positive().default(20),
@@ -282,6 +284,14 @@ const envSchema = z
           })
       }
     }
+    if (env.CHALLENGE_MAX_CHARS < env.CHALLENGE_MIN_CHARS) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['CHALLENGE_MAX_CHARS'],
+        message:
+          'CHALLENGE_MAX_CHARS is below CHALLENGE_MIN_CHARS; no challenge could be posted',
+      })
+    }
     if (linksMissTheApp(env)) {
       ctx.addIssue({
         code: 'custom',
@@ -299,6 +309,7 @@ export type Env = z.infer<typeof envSchema>
 
 export interface Limits {
   challengeMinChars: number
+  challengeMaxChars: number
   beenThereNoteMinChars: number
   magicLinkTtlMinutes: number
   approvalLinkTtlHours: number
@@ -408,6 +419,7 @@ export interface Config {
 function limitsFrom(env: Env): Limits {
   return {
     challengeMinChars: env.CHALLENGE_MIN_CHARS,
+    challengeMaxChars: env.CHALLENGE_MAX_CHARS,
     beenThereNoteMinChars: env.BEEN_THERE_NOTE_MIN_CHARS,
     magicLinkTtlMinutes: env.MAGIC_LINK_TTL_MINUTES,
     approvalLinkTtlHours: env.APPROVAL_LINK_TTL_HOURS,
