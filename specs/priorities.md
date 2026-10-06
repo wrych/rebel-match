@@ -59,14 +59,14 @@ that works.")_
 
 ## Won't have (this beta)
 
-| #   | Feature                                                   | Reason                                                                                                                              |
-| --- | --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| W1  | Gamification: standings, badges, ranks, milestone pop-ups | Explicitly cut for beta.                                                                                                            |
-| W3  | "Nominate as frontier" escalation                         | Idea stage; no defined flow.                                                                                                        |
-| W4  | Integration with the Corporate Rebels member platform     | "Significant work… avoid if possible."                                                                                              |
-| W5  | Connect via phone number or LinkedIn                      | Email only for beta.                                                                                                                |
-| W6  | LLM-based case-study matching                             | Beta uses curated per-trend case lists.                                                                                             |
-| W7  | One-tap "insert this example challenge"                   | Invites a deck of identical boilerplate challenges, which would make matching meaningless (R-ASK-2). Examples stay read-only hints. |
+| #   | Feature                                                   | Reason                                                                                                                                                                          |
+| --- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| W1  | Gamification: standings, badges, ranks, milestone pop-ups | Explicitly cut for beta.                                                                                                                                                        |
+| W3  | "Nominate as frontier" escalation                         | Idea stage; no defined flow.                                                                                                                                                    |
+| W4  | Integration with the Corporate Rebels member platform     | "Significant work… avoid if possible."                                                                                                                                          |
+| W5  | Connect via phone number or LinkedIn                      | Email only for beta.                                                                                                                                                            |
+| W6  | LLM-based case-study matching                             | Beta uses curated per-trend case lists.                                                                                                                                         |
+| W7  | One-tap "insert this example challenge"                   | Invites a deck of identical boilerplate challenges, which would make matching meaningless (R-ASK-2). Inspiration stays read-only: the newest real challenges, no insert action. |
 
 ---
 

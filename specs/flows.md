@@ -190,8 +190,9 @@ my challenge.
 
 1. **S5**: member writes one challenge in free text, guided by prompts (what they
    observe, what they want to change, where they struggle) (R-ASK-1).
-2. Read-only example hints sit beside the field as inspiration — there is no
-   "insert this example" action, by design (R-ASK-2).
+2. Under **Inspiration**, the newest challenges other members have posted sit
+   below the field, read-only and without their authors — there is no "insert
+   this" action, by design (R-ASK-2, R-ASK-14).
 3. Submit stays disabled until the text is longer than 30 characters
    (`limits.challengeMinChars`), with a live counter (R-ASK-3, R-CFG-2).
 4. Submit → `POST /api/challenges`; the challenge is persisted and the

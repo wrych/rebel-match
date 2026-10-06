@@ -319,12 +319,14 @@ capability, not a secret** — and every requirement below exists because of tha
 - **R-ASK-1** — The system SHALL let a member write **one challenge in free
   text**, in their own words, with guidance prompts (what they observe, what they
   want to change, where they struggle).
-- **R-ASK-2** — The system SHALL show example challenges as **inspiration only**:
-  short, read-only hints of the kind of thing that belongs here. THE SYSTEM SHALL
-  NOT offer to insert or prefill an example into the member's text, so members
-  describe their own situation instead of submitting boilerplate. _(Rationale: a
-  one-tap "use this example" invites a deck full of identical stock challenges,
-  which would make matching meaningless.)_
+- **R-ASK-2** — The system SHALL show, under the heading **Inspiration**, the
+  newest challenges other members have posted (R-ASK-14), as **inspiration
+  only**: read-only, the text and its trend, never who wrote it. THE SYSTEM
+  SHALL NOT offer to insert or prefill one into the member's text, so members
+  describe their own situation instead of submitting boilerplate; IF there are
+  none yet the section SHALL NOT show. No invented example stands in for them.
+  _(Rationale: a one-tap "use this example" invites a deck full of identical
+  stock challenges, which would make matching meaningless.)_
 - **R-ASK-3** — WHILE the challenge text is **30 characters or shorter** THE
   SYSTEM SHALL keep the submit/analyze action disabled, so the matcher has enough
   words to work with. The screen SHALL show a character counter.
@@ -369,6 +371,13 @@ capability, not a secret** — and every requirement below exists because of tha
   and IF both peer sections are empty THE SYSTEM SHALL offer a way on to the
   Offer help deck. It SHALL NOT promise a notification the system does not
   send.
+- **R-ASK-14 (Newest challenges)** — The trend screen SHALL show the newest
+  challenges other members have in that trend, and IF there are none SHALL say
+  so. Here and in R-ASK-2, newest challenges are at most
+  `limits.newestChallengesShown`, newest first, each shown as its text and
+  trend, as the connection request shows the challenge it is about, never who
+  wrote it. Only an active challenge of an active, onboarded member counts, as
+  for the deck (R-OFF-1), and never the viewer's own.
 
 ---
 
@@ -384,7 +393,9 @@ capability, not a secret** — and every requirement below exists because of tha
   - **Same boat** — "I'm facing this too" (a same-boat connection request).
   - **Been there** — "I can share experience" (an offer-help connection request,
     with an optional note).
-  - **Follow this topic** — follow the card's trend.
+  - **Follow this topic** — follow the card's trend. WHILE the member already
+    follows the card's trend THE SYSTEM SHALL say so on the action and keep it
+    disabled.
   - **Skip** — advance without acting.
 - **R-OFF-4** — WHEN the member chooses "Been there" THE SYSTEM SHALL require a
   note of **more than 30 characters** describing what they can offer before
