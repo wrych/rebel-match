@@ -3,8 +3,6 @@ import { computed, onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { fetchConfig } from '../lib/api'
 import { fetchMatchesNews, NO_NEWS, type MatchesNews } from '../lib/cockpit'
-import { reportEvent } from '../lib/events'
-import { feedbackMailto } from '../lib/feedback'
 import { poll } from '../lib/poll'
 import {
   activeTab,
@@ -17,7 +15,6 @@ import {
 const MS_PER_SECOND = 1000
 const route = useRoute()
 const news = ref<MatchesNews>(NO_NEWS)
-const feedbackTo = ref<string | null>(null)
 let stopPolling: (() => void) | undefined
 let starting: Promise<void> | undefined
 let gone = false
@@ -28,16 +25,6 @@ const active = computed(() => activeTab(route.path))
 // badge; its sub-screens record no visit, so they keep it (R-MINE-4).
 const shown = computed(() => (route.path === '/matches' ? NO_NEWS : news.value))
 const badge = computed(() => matchesBadge(shown.value))
-const screen = computed(() => String(route.name ?? 'unknown'))
-const feedback = computed(() =>
-  feedbackTo.value === null
-    ? null
-    : feedbackMailto(feedbackTo.value, screen.value),
-)
-
-function feedbackOpened(): void {
-  reportEvent({ event: 'feedback_opened', props: { screen: screen.value } })
-}
 
 async function readNews(): Promise<void> {
   try {
@@ -55,7 +42,6 @@ async function startPolling(): Promise<void> {
     return
   }
   if (gone) return
-  feedbackTo.value = config.feedbackTo
   stopPolling = poll(() => {
     if (visible.value) void readNews()
   }, config.limits.matchesPollSeconds * MS_PER_SECOND)
@@ -100,13 +86,5 @@ onUnmounted(() => {
         >{{ badge }}</span
       >
     </RouterLink>
-    <a
-      v-if="feedback"
-      :href="feedback"
-      class="tab tab-feedback"
-      @click="feedbackOpened"
-    >
-      <span aria-hidden="true">✎</span> Feedback
-    </a>
   </nav>
 </template>

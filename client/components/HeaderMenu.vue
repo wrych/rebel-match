@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import { adminLinksFor } from '../lib/admin-screens'
 import { fetchConfig, type ClientConfig } from '../lib/api'
+import { reportEvent } from '../lib/events'
+import { feedbackMailto } from '../lib/feedback'
 import type { Mood } from '../lib/mood'
 import {
   fetchNewNotifications,
@@ -13,10 +16,12 @@ import { forgetMe, loadMe, signOut, type Me } from '../lib/session'
 
 const props = defineProps<{ mood: Mood }>()
 const emit = defineEmits<{ toggleMood: [] }>()
+const route = useRoute()
 
 const open = ref(false)
 const me = ref<Me | null>(null)
 const version = ref<ClientConfig['build'] | null>(null)
+const feedbackTo = ref<string | null>(null)
 const fresh = ref(0)
 let stopPolling: (() => void) | undefined
 let gone = false
@@ -35,7 +40,7 @@ onMounted(async () => {
   void readFresh()
   const config = await fetchConfig().catch(() => null)
   if (config === null || gone) return
-  version.value = config.build
+  remember(config)
   stopPolling = poll(() => {
     void readFresh()
   }, config.limits.matchesPollSeconds * MS_PER_SECOND)
@@ -47,6 +52,22 @@ const button = ref<HTMLButtonElement | null>(null)
 const hostTools = computed(() =>
   me.value === null ? [] : adminLinksFor(me.value.permissions),
 )
+const screen = computed(() => String(route.name ?? 'unknown'))
+const feedback = computed(() =>
+  feedbackTo.value === null || me.value?.onboarded !== true
+    ? null
+    : feedbackMailto(feedbackTo.value, screen.value),
+)
+
+function remember(config: ClientConfig): void {
+  version.value = config.build
+  feedbackTo.value = config.feedbackTo
+}
+
+function feedbackOpened(): void {
+  reportEvent({ event: 'feedback_opened', props: { screen: screen.value } })
+  close(false)
+}
 
 function onOutside(event: MouseEvent): void {
   if (!root.value?.contains(event.target as Node)) close(false)
@@ -68,9 +89,7 @@ async function show(): Promise<void> {
   // failed read shows none and the next opening tries again (R-NFR-11).
   if (version.value === null)
     void fetchConfig()
-      .then((config) => {
-        version.value = config.build
-      })
+      .then(remember)
       .catch(() => undefined)
   void readFresh()
   me.value = await loadMe().catch(() => null)
@@ -153,6 +172,14 @@ onBeforeUnmount(() => {
         class="item"
         @click="close(false)"
         >Profile &amp; privacy</RouterLink
+      >
+
+      <a
+        v-if="feedback"
+        :href="feedback"
+        class="item item-feedback"
+        @click="feedbackOpened"
+        >Feedback</a
       >
 
       <nav v-if="hostTools.length > 0" aria-label="Host tools" class="group">

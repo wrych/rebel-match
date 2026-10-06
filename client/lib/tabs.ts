@@ -9,6 +9,7 @@ export interface Tab {
 }
 
 export const tabs: readonly Tab[] = [
+  { label: 'Home', to: '/welcome', owns: ['/welcome'] },
   { label: 'Submit', to: '/ask', owns: ['/ask', '/challenges/'] },
   { label: 'Swipe', to: '/offer', owns: ['/offer'] },
   { label: 'Matches', to: '/matches', owns: ['/matches'] },

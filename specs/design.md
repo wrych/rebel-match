@@ -264,7 +264,7 @@ out, the menu offers only the colour mode. The welcome screen keeps the two
 doors and "Your matches"; host tools and sign out move into the menu.
 
 The bottom tab bar, on member screens other than the welcome screen, reads Home
-(`/`, the welcome screen), Submit, Swipe and Matches, from left to right.
+(`/welcome`), Submit, Swipe and Matches, from left to right.
 
 ### Key libraries
 
