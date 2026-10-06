@@ -75,3 +75,4 @@ still holds except where the later ADR says otherwise.
 | [0037](0037-notifications-queued-at-a-cadence-per-type.md) | Store every notification; mail it at a cadence chosen per type       | Accepted                  |
 | [0038](0038-count-invite-opens.md)                         | Count the opens of each invite, and show them with its uses          | Accepted, amended by 0039 |
 | [0039](0039-count-an-open-on-first-interaction.md)         | Count an invite open on the visitor's first interaction              | Accepted                  |
+| [0040](0040-reuse-a-component-before-building-one.md)      | Reuse a component before building a new one                          | Accepted                  |
