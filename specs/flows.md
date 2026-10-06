@@ -95,32 +95,54 @@ Conventions:
 ## F2 — First-time onboarding (name + consent)
 
 **Actor:** authenticated member who has not completed onboarding.
-**Screens:** S3 Onboarding.
-**Ends the R-NFR-3 measurement.**
+**Screens:** S3 Onboarding: profile → S28 Onboarding: privacy → S29 Onboarding:
+usage data. S30 Privacy notice is one tap from each of the first two.
+**Ends the R-NFR-3 measurement** at step 5.
 
 1. Any authenticated route detects incomplete onboarding — a missing name, or an
    unaccepted current consent version — and forces **S3** before anything else
-   (R-ONB-1).
-2. Member enters their **display name** (required), pre-filled from what they
-   gave at the door if they came through **F4** (R-AUTH-12). Job title,
-   organization, sector and company size are optional and only feed the match
-   cards; sector and company size are picked from a list (R-ONB-2).
-3. Member reads the data-usage consent, which states plainly that **email
-   addresses are shared only when both sides accept a connection**, and that the
-   app is closed to whitelisted members (R-ONB-5).
-4. Member ticks explicit acceptance and submits → `POST /api/onboarding` with
-   `{name, jobTitle?, org?, sector?, companySize?, consentVersion}`.
-5. Server stores the profile plus the consent version and timestamp (R-ONB-3,
-   R-NFR-6). **Stopwatch for R-NFR-3 stops here.**
-6. Member lands on **F3**.
+   (R-ONB-1). The three screens carry the step header of the Ask journey,
+   reading Profile, Privacy, Usage (R-ONB-6, R-LOOK-4).
+2. On **S3** the member enters their **display name** (required), pre-filled
+   from what they gave at the door if they came through **F4** (R-AUTH-12). Job
+   title, organization, sector and company size are optional and only feed the
+   match cards; sector and company size are picked from a list (R-ONB-2). The
+   screen says that nothing is saved or sent yet and links to **S30**
+   (R-ONB-7). _Continue_ opens **S28**; what was typed stays in the browser.
+3. On **S28** the member reads the summary: who is responsible, what is kept,
+   who sees it, what activity is recorded, and their rights. It states plainly
+   that **email addresses are shared only when both sides accept a
+   connection** (R-ONB-5). While the button is below the visible area, a
+   floating arrow scrolls down a little at a time (R-ONB-10). A link opens
+   **S30**.
+4. Member taps **I have read the privacy notice** → `POST /api/onboarding` with
+   `{name, jobTitle?, org?, sector?, companySize?, consentVersion}` (R-ONB-3,
+   R-ONB-8).
+5. Server stores the profile plus the consent version and timestamp (R-NFR-6).
+   Onboarding is complete. **Stopwatch for R-NFR-3 stops here.**
+6. **S29** opens. It says the profile is saved and links to Profile & privacy,
+   then explains the optional usage data. Two buttons of equal weight
+   (R-ANA-4): _Share usage data_ → `PUT /api/me/analytics` with
+   `{optIn: true, version, from: 'onboarding'}`, and the server sends
+   `onboarding_completed` (R-ANA-6); _No thanks_ → nothing is sent or recorded.
+7. Either way the member lands on **F3**, or on the screen they came for
+   (**F13**, R-ONB-11).
 
 **Branches**
 
-- _Name empty_ → submit stays disabled.
-- _Consent not accepted_ → submit stays disabled; the app remains blocked
-  (R-ONB-4).
-- _Consent version has since changed_ → on a later visit the consent is
-  re-presented and must be re-accepted before the app opens again (R-ONB-4).
+- _Name empty_ → _Continue_ on S3 stays disabled.
+- _S28 opened with no name typed_ (a reload, a pasted link) → back to S3.
+- _Member leaves at S28_ → nothing was stored and the app remains blocked
+  (R-ONB-4, R-ONB-7).
+- _Member leaves at S29_ → they are onboarded and not opted in; the choice
+  stays on the profile screen (R-PROF-2).
+- _Browser back from S28_ → S3 with what was typed still there. The steps have
+  no back control of their own (R-ONB-12).
+- _Consent version has since changed_ → on a later visit a member who already
+  has a name goes straight to S28, confirms the new words, then sees S29 unless
+  they are opted in to the current analytics words (R-ONB-4, R-ONB-11).
+- _Words changed while reading_ → the server answers `409`; the screen loads
+  the new words and asks again (R-ONB-4).
 
 ---
 

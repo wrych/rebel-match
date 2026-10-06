@@ -159,20 +159,22 @@ Requirements:
 ### 3.3 First-time onboarding
 
 - **R-ONB-1** — WHEN an authenticated member has **not completed onboarding** THE
-  SYSTEM SHALL present the first-time onboarding screen before any other screen.
+  SYSTEM SHALL present first-time onboarding (R-ONB-6) before any other screen.
   Onboarding is complete only when a display name **and** an acceptance of the
   current consent version are both recorded — a name alone SHALL NOT satisfy it
   (R-ONB-4, R-NFR-6).
-- **R-ONB-2** — The onboarding screen SHALL collect the member's **display name**
+- **R-ONB-2** — The profile step of onboarding SHALL collect the **display name**
   (required) and MAY collect **job title**, organization, **sector** and
   **company size** (optional, used in match cards). Sector and company size are
   each picked from a fixed list, never typed: sector from the list in design §2,
   company size from at most five headcount bands, shown on cards as "_n_
   employees". "Job title" is profile text and is unrelated to access roles
   (R-ROLE-8).
-- **R-ONB-3** — The onboarding screen SHALL present the **data-usage consent**
-  and require explicit acceptance before continuing. THE SYSTEM SHALL record the
-  consent version and timestamp.
+- **R-ONB-3** — The privacy step of onboarding SHALL present the **data-usage
+  consent** as a short summary and SHALL require the member to confirm having
+  read it, with one button labelled "I have read the privacy notice", before
+  continuing. THE SYSTEM SHALL record the consent version and timestamp
+  (ADR 0041).
 - **R-ONB-4** — IF the user has not accepted the current consent version THEN THE
   SYSTEM SHALL block access to the main app and re-present the consent.
 - **R-ONB-5** — The consent copy SHALL state plainly that **email addresses are
@@ -181,8 +183,42 @@ Requirements:
   or an event invite link (R-INV-1). It SHALL also say that the member's
   **name, organization and other profile information may be seen by other
   members** — wherever the app shows them, not only on match cards — while the
-  email address stays private until a connection is accepted. _(Meeting: "we need to make it very explicit
+  email address stays private until a connection is accepted. It SHALL name
+  **who is responsible** for the data and how to reach them, and SHALL say that
+  the member can ask for a copy, a correction or deletion, with the rest in the
+  full privacy notice (R-ONB-9, ADR 0041).
+  _(Meeting: "we need to make it very explicit
   that the emails will be shared when you connect.")_
+- **R-ONB-6 (Three steps)** — Onboarding SHALL run as three screens in this
+  order, each with its own URL (R-NAV-4): **profile** (R-ONB-2), **privacy**
+  (R-ONB-3) and **usage data** (R-ANA-4). Each SHALL show the step header of
+  the Ask journey, labelled Profile, Privacy and Usage (R-LOOK-4).
+  _(Decided by the maintainer: ADR 0041.)_
+- **R-ONB-7 (Nothing sent before the notice)** — THE SYSTEM SHALL NOT send or
+  store what the member enters on the profile step until they confirm on the
+  privacy step (R-ONB-3). The profile step SHALL say so and SHALL link to the
+  full privacy notice (R-ONB-9).
+- **R-ONB-8 (One confirmation saves)** — WHEN the member confirms on the
+  privacy step THE SYSTEM SHALL store the profile together with the consent
+  version and time, in one request; onboarding is then complete (R-ONB-1). The
+  privacy step SHALL say that this button saves the profile.
+- **R-ONB-9 (Full privacy notice)** — The system SHALL serve the full privacy
+  notice as a screen of its own, readable without signing in and showing its
+  version and date. It SHALL be linked from the profile step, the privacy step
+  and the profile screen (R-PROF-2). _(Its words are open question 7.)_
+- **R-ONB-10 (Scroll hint)** — WHILE the confirm button of the privacy step is
+  outside the visible area THE SYSTEM SHALL show a floating button that scrolls
+  the summary down by part of the visible height, never to its end. The hint
+  SHALL disappear once the confirm button is visible, and the confirm button
+  SHALL work whether or not the member scrolled.
+- **R-ONB-11 (After the privacy step)** — WHEN the member has confirmed on the
+  privacy step THE SYSTEM SHALL show the usage-data step, unless they are
+  already opted in to the current analytics words. That step SHALL say that
+  the profile is saved and where to edit it (R-PROF-1), and either answer
+  there SHALL continue to the screen the member came for (R-NAV-7).
+- **R-ONB-12 (Going back)** — The onboarding steps SHALL carry no back control
+  of their own. WHEN the member goes back from the privacy step with the
+  browser THE SYSTEM SHALL show the profile step with what they typed.
 
 ---
 
@@ -270,7 +306,8 @@ capability, not a secret** — and every requirement below exists because of tha
     invalid, such as an empty name, SHALL NOT save and SHALL say why; a failed
     save SHALL say so and keep what the member typed.
 - **R-PROF-2** — The profile screen SHALL show the data-usage consent the member
-  accepted, read-only, with its version and the time they accepted it (R-NFR-6),
+  accepted, read-only, with its version and the time they accepted it (R-NFR-6)
+  and a link to the full privacy notice (R-ONB-9),
   and SHALL carry the **analytics opt-in**, given or withdrawn there (R-ANA-4),
   and the choice of how each notification arrives (R-NOTE-3).
   It SHALL offer **deleting one's activity history** (R-STAT-4) and
@@ -555,9 +592,13 @@ fallback).
 - **R-ANA-3** — The system SHALL NOT send challenge text, names, or email
   addresses to the analytics tool. Event properties SHALL be limited to
   non-identifying metadata (trend id, action type, screen, counts, timestamps).
-- **R-ANA-4** — Analytics SHALL be **opt-in** (ADR 0026): onboarding SHALL
-  offer a separate, unticked choice with its own versioned words, apart from
-  the data-usage consent (§3.3). Ticking it SHALL record the analytics consent
+- **R-ANA-4** — Analytics SHALL be **opt-in** (ADR 0026, ADR 0041): onboarding
+  SHALL ask on a step of its own (R-ONB-6), with its own versioned words, apart
+  from the data-usage consent (§3.3). The step SHALL offer two buttons of the
+  same colour, size and weight, "Share usage data" and "No thanks", with
+  neither chosen in advance. Its words SHALL say what is recorded, why, that it
+  goes to Mixpanel in the EU, what is never included and where to change the
+  choice. Choosing to share SHALL record the analytics consent
   version and time; the member SHALL be able to withdraw or give it later in
   the app as easily as at onboarding. THE SYSTEM SHALL capture events only for
   a member opted in at that moment, and never for a visitor who has not
@@ -566,6 +607,10 @@ fallback).
   (hundreds of users, thousands of events) and SHALL store event data in the EU.
   _(Resolved: Mixpanel offers EU data residency on the free plan at no extra
   cost — see `design.md` §7.)_
+- **R-ANA-6** — WHEN a member chooses to share on the usage-data step of
+  onboarding THE SYSTEM SHALL send `onboarding completed` (R-ANA-1) for that
+  onboarding. For a member who declines there it SHALL NOT be sent, then or
+  later (ADR 0041).
 
 ---
 
@@ -597,7 +642,10 @@ at a screen instead of at the front door.
   | `/access-requested`                  | applicant: what happens next (R-AUTH-9)        |
   | `/access-requested?invite=invalid`   | same, with the invalid-invite notice (R-INV-5) |
   | `/sign-in#token=…`                   | magic-link landing: a button signs in          |
-  | `/onboarding`                        | name + consent                                 |
+  | `/onboarding`                        | onboarding: profile (R-ONB-2)                  |
+  | `/onboarding/privacy`                | onboarding: privacy summary (R-ONB-3)          |
+  | `/onboarding/usage`                  | onboarding: optional usage data (R-ANA-4)      |
+  | `/privacy`                           | full privacy notice (R-ONB-9)                  |
   | `/welcome`                           | two doors                                      |
   | `/ask`                               | submit a challenge                             |
   | `/challenges/:id`                    | detected trend for that challenge              |
@@ -791,6 +839,10 @@ _(Decided by the maintainer after trying the redesign: ADR 0023.)_
   over one set of components, so a further mode (a dark mode, priorities C7) is a
   new token set rather than new screens. Every mode SHALL keep text readable
   against its background.
+- **R-LOOK-4 (Same thing, same look)** — A thing the app shows in more than one
+  place, such as a step header, a button, a card or a set of versioned words,
+  SHALL be drawn by one component, so that it looks and behaves the same
+  wherever it appears (constitution §4, ADR 0040).
 
 ---
 
@@ -1103,6 +1155,12 @@ fixtures. `design.md` §6 lists the exact records and the profile mechanism.
    **unattributed** (visible as content, not connectable until the author logs in
    and claims them)? Unattributed is the safer default for the privacy model
    (R-NFR-1, R-ONB-3); attributed needs the authors' explicit OK first.
+6. **Controller and contact** — who is named as responsible for the data on the
+   privacy step and in the notice, and at which address? The consent words of
+   ADR 0041 cannot be versioned until this is known (R-ONB-5).
+7. **Full privacy notice** — which template is it written from, and who checks
+   it, and the wording "I have read the privacy notice", against the GDPR
+   before the summit (R-ONB-9)? Related to question 1.
 
 ### Resolved
 
