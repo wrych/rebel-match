@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, ref } from 'vue'
 import { adminLinksFor } from '../lib/admin-screens'
+import { fetchConfig, type ClientConfig } from '../lib/api'
 import type { Mood } from '../lib/mood'
 import { forgetMe, loadMe, signOut, type Me } from '../lib/session'
 
@@ -9,6 +10,7 @@ const emit = defineEmits<{ toggleMood: [] }>()
 
 const open = ref(false)
 const me = ref<Me | null>(null)
+const version = ref<ClientConfig['build'] | null>(null)
 const problem = ref<string | null>(null)
 const root = ref<HTMLElement | null>(null)
 const button = ref<HTMLButtonElement | null>(null)
@@ -33,6 +35,14 @@ async function show(): Promise<void> {
   // Asked afresh on every opening: a session can end in another tab or
   // expire, and the menu must not offer what is no longer there.
   forgetMe()
+  // The version cannot change under an open page, so it is read once; a
+  // failed read shows none and the next opening tries again (R-NFR-11).
+  if (version.value === null)
+    void fetchConfig()
+      .then((config) => {
+        version.value = config.build
+      })
+      .catch(() => undefined)
   me.value = await loadMe().catch(() => null)
 }
 
@@ -115,6 +125,18 @@ onBeforeUnmount(() => {
         <button type="button" class="item" @click="leave">Sign out</button>
         <p v-if="problem" class="alert" role="alert">{{ problem }}</p>
       </div>
+
+      <p v-if="version" class="version">
+        Version
+        <a
+          v-if="version.url"
+          :href="version.url"
+          target="_blank"
+          rel="noopener noreferrer"
+          >{{ version.commit }}</a
+        >
+        <template v-else>{{ version.commit }}</template>
+      </p>
     </div>
   </div>
 </template>
@@ -194,5 +216,16 @@ onBeforeUnmount(() => {
 
 .alert {
   margin: 0.4rem 0.75rem;
+}
+
+.version {
+  margin: 0.4rem 0.75rem 0.2rem;
+  font-size: 0.75em;
+  color: var(--muted);
+}
+
+.version a {
+  color: inherit;
+  font-family: var(--font-mono);
 }
 </style>

@@ -204,6 +204,38 @@ describe('CONSENT_VERSION', () => {
   })
 })
 
+describe('the running version (R-NFR-11)', () => {
+  it('shows the short commit, linked to the full one', () => {
+    const commit = '110a584f0123456789abcdef0123456789abcdef'
+    const forClient = clientConfig(
+      loadConfig({ ...valid, GIT_COMMIT: commit }),
+      loadConfig(valid).limits,
+    )
+
+    expect(forClient.build).toEqual({
+      commit: '110a584',
+      url: `https://github.com/wrych/rebel-match/commit/${commit}`,
+    })
+  })
+
+  it.each([undefined, ''])('is dev without a commit (%o)', (GIT_COMMIT) => {
+    const config = loadConfig(
+      GIT_COMMIT === undefined ? valid : { ...valid, GIT_COMMIT },
+    )
+
+    expect(clientConfig(config, config.limits).build).toEqual({
+      commit: 'dev',
+      url: null,
+    })
+  })
+
+  it('refuses something that is not a commit', () => {
+    expect(() =>
+      loadConfig({ ...valid, GIT_COMMIT: 'javascript:alert(1)' }),
+    ).toThrow()
+  })
+})
+
 describe('clientConfig', () => {
   it('carries the limits and the consent version', () => {
     const config = loadConfig(valid)
@@ -233,7 +265,13 @@ describe('clientConfig', () => {
       Object.keys(
         clientConfig(loadConfig(valid), loadConfig(valid).limits),
       ).sort(),
-    ).toEqual(['analyticsVersion', 'consentVersion', 'feedbackTo', 'limits'])
+    ).toEqual([
+      'analyticsVersion',
+      'build',
+      'consentVersion',
+      'feedbackTo',
+      'limits',
+    ])
   })
 
   it('sends feedback nowhere real by default, and refuses that in production (R-FB-1)', () => {

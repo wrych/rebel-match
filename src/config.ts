@@ -103,6 +103,11 @@ const productionRules: {
   },
 ]
 
+// Where a commit of this repository is shown, and how much of its hash names
+// it to a person (R-NFR-11).
+const COMMIT_URL_BASE = 'https://github.com/wrych/rebel-match/commit/'
+const SHORT_COMMIT_CHARS = 7
+
 const envSchema = z
   .object({
     NODE_ENV: z
@@ -117,6 +122,18 @@ const envSchema = z
       .string()
       .optional()
       .transform((dir) => (dir === '' ? undefined : dir)),
+    // The commit the image was built from, set by CI at build time; absent
+    // or empty on a developer's machine (R-NFR-11).
+    GIT_COMMIT: z
+      .string()
+      .optional()
+      .transform((commit) => (commit === '' ? undefined : commit))
+      .pipe(
+        z
+          .string()
+          .regex(/^[0-9a-f]{7,40}$/)
+          .optional(),
+      ),
 
     // Unset or empty means a local run on PGlite in LOCAL_DATA_DIR (ADR 0024).
     DATABASE_URL: z
@@ -289,6 +306,13 @@ export function fixedSettings(config: Config): LiveSettings {
   return { limits: () => config.limits, abuse: () => config.abuse }
 }
 
+/** The running version as the menu shows it: the short commit and a link to
+ * it, or `dev` and none for a build without a commit (R-NFR-11). */
+export interface BuildVersion {
+  commit: string
+  url: string | null
+}
+
 /** Values the client is allowed to read, so a disabled button and a server
  * check can never disagree (R-CFG-2). Secrets are structurally absent. */
 export interface ClientConfig {
@@ -296,6 +320,7 @@ export interface ClientConfig {
   consentVersion: string
   analyticsVersion: string
   feedbackTo: string
+  build: BuildVersion
 }
 
 export interface Config {
@@ -327,6 +352,8 @@ export interface Config {
   abuse: AbuseLimits
   trustProxy: number
   rolePermissions: typeof rolePermissions
+  /** The commit the build was made from, if it was made from one (R-NFR-11). */
+  build: { commit?: string; commitUrlBase: string }
 }
 
 function limitsFrom(env: Env): Limits {
@@ -417,7 +444,22 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): Config {
     abuse: abuseLimitsFrom(env),
     trustProxy: env.TRUST_PROXY,
     rolePermissions,
+    build: {
+      ...(env.GIT_COMMIT === undefined ? {} : { commit: env.GIT_COMMIT }),
+      commitUrlBase: COMMIT_URL_BASE,
+    },
   }
+}
+
+/** The menu's version line: the short commit linked to the full one, or
+ * `dev` (R-NFR-11). */
+export function buildVersion(build: Config['build']): BuildVersion {
+  return build.commit === undefined
+    ? { commit: 'dev', url: null }
+    : {
+        commit: build.commit.slice(0, SHORT_COMMIT_CHARS),
+        url: build.commitUrlBase + build.commit,
+      }
 }
 
 /** The configuration with nothing set but a placeholder secret: what each
@@ -434,6 +476,7 @@ export function clientConfig(config: Config, limits: Limits): ClientConfig {
     consentVersion: config.consentVersion,
     analyticsVersion: config.analyticsVersion,
     feedbackTo: config.feedbackTo,
+    build: buildVersion(config.build),
   }
 }
 

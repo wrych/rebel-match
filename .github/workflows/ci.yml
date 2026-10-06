@@ -98,6 +98,10 @@ jobs:
         with:
           context: .
           tags: app:${{ github.sha }}
+          # The commit the app reports as its version (R-NFR-11): a pull
+          # request's own head, not the merge commit GitHub tests it as.
+          build-args: |
+            GIT_COMMIT=${{ github.event.pull_request.head.sha || github.sha }}
           outputs: type=docker,dest=${{ runner.temp }}/image.tar
           cache-from: type=gha
           cache-to: type=gha,mode=max
