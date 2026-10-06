@@ -1,8 +1,14 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { adminLinksFor } from '../lib/admin-screens'
 import { fetchConfig, type ClientConfig } from '../lib/api'
 import type { Mood } from '../lib/mood'
+import {
+  fetchNewNotifications,
+  menuLabel,
+  NOTIFICATIONS_SEEN,
+} from '../lib/notifications'
+import { poll } from '../lib/poll'
 import { forgetMe, loadMe, signOut, type Me } from '../lib/session'
 
 const props = defineProps<{ mood: Mood }>()
@@ -11,6 +17,29 @@ const emit = defineEmits<{ toggleMood: [] }>()
 const open = ref(false)
 const me = ref<Me | null>(null)
 const version = ref<ClientConfig['build'] | null>(null)
+const fresh = ref(0)
+let stopPolling: (() => void) | undefined
+let gone = false
+
+const MS_PER_SECOND = 1000
+
+// Nobody signed in, or not yet onboarded, reads as nothing new (R-NOTE-6).
+async function readFresh(): Promise<void> {
+  fresh.value = await fetchNewNotifications().catch(() => 0)
+}
+
+// Refreshed as the matches badge is, and at once when the notifications
+// screen has marked what it listed (R-NOTE-6, R-MINE-4).
+onMounted(async () => {
+  window.addEventListener(NOTIFICATIONS_SEEN, readFresh)
+  void readFresh()
+  const config = await fetchConfig().catch(() => null)
+  if (config === null || gone) return
+  version.value = config.build
+  stopPolling = poll(() => {
+    void readFresh()
+  }, config.limits.matchesPollSeconds * MS_PER_SECOND)
+})
 const problem = ref<string | null>(null)
 const root = ref<HTMLElement | null>(null)
 const button = ref<HTMLButtonElement | null>(null)
@@ -43,6 +72,7 @@ async function show(): Promise<void> {
         version.value = config.build
       })
       .catch(() => undefined)
+  void readFresh()
   me.value = await loadMe().catch(() => null)
 }
 
@@ -69,6 +99,9 @@ async function leave(): Promise<void> {
 }
 
 onBeforeUnmount(() => {
+  gone = true
+  stopPolling?.()
+  window.removeEventListener(NOTIFICATIONS_SEEN, readFresh)
   close(false)
 })
 </script>
@@ -79,12 +112,17 @@ onBeforeUnmount(() => {
       ref="button"
       type="button"
       class="cap"
-      aria-label="Menu"
+      :aria-label="
+        fresh > 0 ? `Menu, ${String(fresh)} new notifications` : 'Menu'
+      "
       aria-controls="main-menu"
       :aria-expanded="open"
       @click="toggle"
     >
       <span class="bars" aria-hidden="true"><span /><span /><span /></span>
+      <span v-if="fresh > 0" class="badge menu-badge" aria-hidden="true">{{
+        fresh
+      }}</span>
     </button>
 
     <div v-if="open" id="main-menu" class="panel">
@@ -100,6 +138,14 @@ onBeforeUnmount(() => {
           props.mood === 'happy' ? 'On' : 'Off'
         }}</span>
       </button>
+
+      <RouterLink
+        v-if="me?.onboarded"
+        to="/notifications"
+        class="item"
+        @click="close(false)"
+        >{{ menuLabel(fresh) }}</RouterLink
+      >
 
       <RouterLink
         v-if="me?.onboarded"
@@ -144,6 +190,16 @@ onBeforeUnmount(() => {
 <style scoped>
 .menu {
   position: relative;
+}
+
+.cap {
+  position: relative;
+}
+
+.menu-badge {
+  position: absolute;
+  top: -0.35rem;
+  right: -0.35rem;
 }
 
 .bars {

@@ -282,7 +282,7 @@ printed dev link (R-DEV-6).
       it… with a couple of people.")_
 - [ ] Record deck views and offer deleting one's activity history, with the
       consent words that say so. _(R-STAT-1..5, ADR 0033)_
-- [ ] Notifications in the app: the `notifications` table, written with each
+- [x] Notifications in the app: the `notifications` table, written with each
       connection request, new connection and applicant; `/notifications`; the
       menu's badge and "Notifications (n new)". Mail still goes as today.
       _(R-NOTE-1,4,5,6, R-PROF-3, ADR 0037)_

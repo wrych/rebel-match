@@ -25,6 +25,13 @@ import { createPacedGate, type PacedGate } from './services/paced-gate.js'
 import { createSettingOverrideStore } from './services/setting-override-store.js'
 import { createSettings } from './services/settings.js'
 import { createWindowCounter } from './services/rate-limit.js'
+import {
+  createNotifications,
+  markingOpened,
+  thenMail,
+  type NotificationService,
+} from './services/notifications.js'
+import { createNotificationStore } from './services/notification-store.js'
 import { createApplicantNotice } from './services/applicant-notice.js'
 import { createApprovalStore } from './services/approval-store.js'
 import { createApprovals } from './services/approvals.js'
@@ -118,6 +125,7 @@ function composeJourneys(
   db: Database,
   track: Track,
   mailer: Mailer,
+  notes: NotificationService,
 ): Pick<
   AppDeps,
   'challenges' | 'deck' | 'connections' | 'swipes' | 'follows' | 'cockpit'
@@ -139,9 +147,9 @@ function composeJourneys(
     store: createConnectionStore(db),
     newId: randomUUID,
     track,
-    notify: createConnectionNotice(notices),
-    notifyAccepted: createAcceptNotice(notices),
-    notifyAdded: createAddedNotice(notices),
+    notify: thenMail(notes.requested, createConnectionNotice(notices)),
+    notifyAccepted: thenMail(notes.accepted, createAcceptNotice(notices)),
+    notifyAdded: thenMail(notes.added, createAddedNotice(notices)),
   })
   return {
     challenges,
@@ -149,7 +157,7 @@ function composeJourneys(
       store: createDeckStore(db),
       pageSize: config.limits.deckPageSize,
     }),
-    connections,
+    connections: markingOpened(connections, notes),
     swipes: createSwipes({ store: createSwipeStore(db), connections, track }),
     follows,
     cockpit: createCockpit({
@@ -229,6 +237,7 @@ function composeAdmission(
   db: Database,
   auth: AuthProvider,
   mailer: Mailer,
+  notes: NotificationService,
 ): Pick<AppDeps, 'admission' | 'approvals'> {
   return {
     admission: createAdmission({
@@ -237,12 +246,15 @@ function composeAdmission(
       handles: createApplicantHandles(config.sessionSecret),
       ...composeGates(config, settings),
       redeemInvite: createInviteRedemption(db, admittedRole),
-      notifyReviewers: createApplicantNotice({
-        mailer,
-        reviewers: createReviewerDirectory(db),
-        reviewerRoles: configPolicy.rolesGranting('applicant:review'),
-        publicUrl: config.publicUrl,
-      }),
+      notifyReviewers: thenMail(
+        notes.applicant,
+        createApplicantNotice({
+          mailer,
+          reviewers: createReviewerDirectory(db),
+          reviewerRoles: configPolicy.rolesGranting('applicant:review'),
+          publicUrl: config.publicUrl,
+        }),
+      ),
     }),
     approvals: createApprovals({
       store: createApprovalStore(db),
@@ -268,6 +280,21 @@ function composeTrack(
   })
 }
 
+// Kept in the app for every member; applicant notices for whoever may review
+// applicants, found by permission (R-NOTE-1, R-ROLE-3).
+function composeNotifications(
+  db: Database,
+  settings: LiveSettings,
+): NotificationService {
+  return createNotifications({
+    store: createNotificationStore(
+      db,
+      configPolicy.rolesGranting('applicant:review'),
+    ),
+    pageSize: () => settings.limits().notificationsPageSize,
+  })
+}
+
 const ignoreError = (): void => undefined
 
 /** Every service the app serves, wired to the database: the server and the
@@ -285,6 +312,7 @@ export function composeApp(
     config,
     store: createSettingOverrideStore(db),
   })
+  const notifications = composeNotifications(db, settings)
 
   return {
     config,
@@ -299,7 +327,7 @@ export function composeApp(
     profile: createProfileStore(db, config.analyticsVersion),
     ...composeMembershipAdmin(config, db, auth),
     outbox: createOutboxLog(db),
-    ...composeAdmission(config, settings, db, auth, mailer),
+    ...composeAdmission(config, settings, db, auth, mailer, notifications),
     onboarding: createOnboarding({
       store: createOnboardingStore(db),
       currentConsentVersion: config.consentVersion,
@@ -319,6 +347,7 @@ export function composeApp(
       store: createActivityStore(db),
       newId: randomUUID,
     }),
-    ...composeJourneys(config, db, track, mailer),
+    ...composeJourneys(config, db, track, mailer, notifications),
+    notifications,
   }
 }

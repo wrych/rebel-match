@@ -46,7 +46,18 @@ function setup(approve: ApproveOutcome = 'approved'): {
   }
   const app = express()
   app.use(express.json())
-  app.use(adminApplicantRoutes({ auth, approvals }))
+  app.use(
+    adminApplicantRoutes({
+      auth,
+      approvals,
+      notifications: {
+        openedApplicants: (memberId) => {
+          calls.push(['opened', memberId])
+          return Promise.resolve()
+        },
+      },
+    }),
+  )
   return { app, calls }
 }
 
@@ -63,6 +74,17 @@ describe('admin applicant routes', () => {
 
     expect(response.status).toBe(200)
     expect(response.body).toEqual({ applicants: [pending] })
+  })
+
+  it('marks the reviewer’s applicant notifications seen, as this is where they lead (R-NOTE-5)', async () => {
+    const { app, calls } = setup()
+
+    await request(app)
+      .get('/api/admin/applicants')
+      .set('Cookie', await cookieFor('m-admin'))
+      .expect(200)
+
+    expect(calls).toEqual([['opened', 'm-admin']])
   })
 
   it('approves as the signed-in reviewer (R-AUTH-3)', async () => {

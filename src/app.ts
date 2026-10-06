@@ -48,6 +48,8 @@ import type { ProfileStore } from './services/profile.js'
 import type { RoleService } from './services/roles.js'
 import type { WhitelistService } from './services/whitelist.js'
 import type { SettingsService } from './services/settings.js'
+import type { NotificationService } from './services/notifications.js'
+import { notificationRoutes } from './routes/notifications.js'
 
 export interface AppDeps {
   config: Config
@@ -74,6 +76,7 @@ export interface AppDeps {
   swipes: SwipeService
   follows: FollowService
   cockpit: CockpitService
+  notifications: NotificationService
 }
 
 /** True when the database answers. Reported rather than thrown, so a dev server
@@ -137,7 +140,7 @@ export function createApp(deps: AppDeps): Express {
   app.use(deckRoutes(deps), activityRoutes(deps))
   app.use(connectionRoutes(deps))
   app.use(swipeRoutes(deps))
-  app.use(cockpitRoutes(deps))
+  app.use(cockpitRoutes(deps), notificationRoutes(deps))
   app.use(adminRoleRoutes(deps))
   app.use(adminMemberRoutes(deps))
   app.use(adminWhitelistRoutes(deps))

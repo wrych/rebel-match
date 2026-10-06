@@ -25,6 +25,7 @@ export const routeTable: readonly RouteDef[] = [
   { path: '/onboarding', name: 'onboarding', access: 'session' },
   { path: '/welcome', name: 'welcome', access: 'onboarded' },
   { path: '/profile', name: 'profile', access: 'onboarded' },
+  { path: '/notifications', name: 'notifications', access: 'onboarded' },
   { path: '/ask', name: 'ask', access: 'onboarded' },
   { path: '/challenges/:id', name: 'challenge', access: 'onboarded' },
   { path: '/challenges/:id/trend', name: 'trend-picker', access: 'onboarded' },

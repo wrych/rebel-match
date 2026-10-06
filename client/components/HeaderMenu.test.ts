@@ -205,7 +205,11 @@ describe('HeaderMenu', () => {
             ? Promise.resolve({
                 ok: true,
                 status: 200,
-                json: () => Promise.resolve({ build }),
+                json: () =>
+                  Promise.resolve({
+                    build,
+                    limits: { matchesPollSeconds: 30 },
+                  }),
               })
             : me(url),
         ),
@@ -225,5 +229,67 @@ describe('HeaderMenu', () => {
     const menu = await opened()
 
     expect(menu.find('.version').exists()).toBe(false)
+  })
+
+  it('badges the menu and names the count while notifications are new (R-NOTE-6)', async () => {
+    const me = signedIn([]) as unknown as (url: string) => Promise<unknown>
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) =>
+        url === '/api/notifications/new'
+          ? Promise.resolve({
+              ok: true,
+              status: 200,
+              json: () => Promise.resolve({ count: 3 }),
+            })
+          : me(url),
+      ),
+    )
+    const menu = await opened()
+
+    expect(menu.find('.menu-badge').text()).toBe('3')
+    expect(menu.find('button.cap').attributes('aria-label')).toBe(
+      'Menu, 3 new notifications',
+    )
+    const item = menu
+      .findAllComponents(RouterLinkStub)
+      .find((link) => link.props('to') === '/notifications')
+    expect(item?.text()).toBe('Notifications (3 new)')
+  })
+
+  it('shows no badge and no number with nothing new (R-NOTE-6)', async () => {
+    signedIn([])
+    const menu = await opened()
+
+    expect(menu.find('.menu-badge').exists()).toBe(false)
+    const item = menu
+      .findAllComponents(RouterLinkStub)
+      .find((link) => link.props('to') === '/notifications')
+    expect(item?.text()).toBe('Notifications')
+  })
+
+  it('reads the count again once the notifications screen marked them', async () => {
+    let count = 2
+    const me = signedIn([]) as unknown as (url: string) => Promise<unknown>
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) =>
+        url === '/api/notifications/new'
+          ? Promise.resolve({
+              ok: true,
+              status: 200,
+              json: () => Promise.resolve({ count }),
+            })
+          : me(url),
+      ),
+    )
+    const menu = await opened()
+    expect(menu.find('.menu-badge').text()).toBe('2')
+
+    count = 0
+    window.dispatchEvent(new Event('notifications-seen'))
+    await flushPromises()
+
+    expect(menu.find('.menu-badge').exists()).toBe(false)
   })
 })

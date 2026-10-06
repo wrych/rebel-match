@@ -55,6 +55,7 @@ describe('migrations', () => {
       'member_expertise',
       'member_roles',
       'members',
+      'notifications',
       'outbox',
       'roles',
       'schema_migrations',

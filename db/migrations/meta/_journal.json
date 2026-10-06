@@ -78,6 +78,13 @@
       "when": 1791258032187,
       "tag": "0010_matches_seen",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1791267482883,
+      "tag": "0011_notifications",
+      "breakpoints": true
     }
   ]
 }
