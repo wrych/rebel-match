@@ -25,9 +25,11 @@ function setup(): {
   app: Express
   viewed: [string, string][]
   forgotten: string[]
+  opened: string[]
 } {
   const viewed: [string, string][] = []
   const forgotten: string[] = []
+  const opened: string[] = []
   const activity: ActivityService = {
     viewed: (memberId, challengeId) => {
       viewed.push([memberId, challengeId])
@@ -39,11 +41,15 @@ function setup(): {
       forgotten.push(memberId)
       return Promise.resolve()
     },
+    inviteOpened: (token) => {
+      opened.push(token)
+      return Promise.resolve()
+    },
   }
   const app = express()
   app.use(express.json())
   app.use(activityRoutes({ auth, activity }))
-  return { app, viewed, forgotten }
+  return { app, viewed, forgotten, opened }
 }
 
 async function cookieFor(memberId: string): Promise<string> {
@@ -128,4 +134,30 @@ describe('DELETE /api/me/history', () => {
     expect(response.status).toBe(401)
     expect(forgotten).toEqual([])
   })
+})
+
+describe('POST /auth/invite-opened (R-STAT-6, ADR 0038)', () => {
+  it('records an open without a session and answers nothing', async () => {
+    const { app, opened } = setup()
+
+    const response = await request(app)
+      .post('/auth/invite-opened')
+      .send({ invite: 'poster-token' })
+
+    expect(response.status).toBe(204)
+    expect(response.body).toEqual({})
+    expect(opened).toEqual(['poster-token'])
+  })
+
+  it.each([{}, { invite: '' }, { invite: 'x'.repeat(65) }, { invite: 7 }])(
+    'refuses %j without recording',
+    async (body) => {
+      const { app, opened } = setup()
+
+      const response = await request(app).post('/auth/invite-opened').send(body)
+
+      expect(response.status).toBe(400)
+      expect(opened).toEqual([])
+    },
+  )
 })

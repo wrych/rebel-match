@@ -64,6 +64,13 @@
       "when": 1791224394376,
       "tag": "0008_added_connection",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791236345250,
+      "tag": "0009_invite_opens",
+      "breakpoints": true
     }
   ]
 }

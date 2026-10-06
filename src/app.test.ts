@@ -92,6 +92,7 @@ function deps(
     activity: {
       viewed: () => Promise.resolve('not_found'),
       forgetHistory: () => Promise.resolve(),
+      inviteOpened: () => Promise.resolve(),
     },
     connections: {
       request: () => Promise.resolve({ result: 'not_found' }),

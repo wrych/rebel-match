@@ -1,7 +1,31 @@
 import { and, eq, isNotNull, ne, notExists, sql } from 'drizzle-orm'
 import type { Database } from '../db/connect.js'
-import { challenges, deckViews, members, swipes } from '../db/schema.js'
+import {
+  challenges,
+  deckViews,
+  inviteOpens,
+  invites,
+  members,
+  swipes,
+} from '../db/schema.js'
 import type { ActivityStore } from './activity.js'
+
+// One statement: an open is written only when the token names an invite.
+async function recordOpen(
+  db: Database,
+  { id, token }: { id: string; token: string },
+): Promise<void> {
+  await db.insert(inviteOpens).select(
+    db
+      .select({
+        id: sql<string>`${id}`.as('id'),
+        inviteId: invites.id,
+        openedAt: sql<Date>`now()`.as('opened_at'),
+      })
+      .from(invites)
+      .where(eq(invites.token, token)),
+  )
+}
 
 /** Activity records over Postgres (design §2, deck_views). */
 export function createActivityStore(db: Database): ActivityStore {
@@ -47,5 +71,6 @@ export function createActivityStore(db: Database): ActivityStore {
     forgetViews: async (memberId) => {
       await db.delete(deckViews).where(eq(deckViews.memberId, memberId))
     },
+    recordOpen: (open) => recordOpen(db, open),
   }
 }

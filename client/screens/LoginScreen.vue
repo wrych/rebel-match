@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, onMounted, ref } from 'vue'
+import { nextTick, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   requestLink,
@@ -8,6 +8,7 @@ import {
   type LinkRequest,
 } from '../lib/admission'
 import { fetchConfig } from '../lib/api'
+import { countInviteOpen } from '../lib/invite-open'
 import { solveHumanCheck } from '../lib/human-check'
 import { accountNotice, linkNotice } from '../lib/link-notice'
 
@@ -23,12 +24,20 @@ const accountGone = accountNotice(window.location.search)
 const consentVersion = ref<string | null>(null)
 const problem = ref<string | null>(null)
 
+let stopCounting = (): void => undefined
+
 onMounted(async () => {
+  const invite = new URLSearchParams(window.location.search).get('invite')
+  if (invite !== null && invite !== '') stopCounting = countInviteOpen(invite)
   try {
     consentVersion.value = (await fetchConfig()).consentVersion
   } catch {
     problem.value = 'The server is not reachable yet.'
   }
+})
+
+onUnmounted(() => {
+  stopCounting()
 })
 
 function ask(altcha?: string): Promise<LinkRequest> {

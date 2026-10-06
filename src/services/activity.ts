@@ -1,6 +1,7 @@
-/** What a member did in the app, recorded as part of running it (ADR 0033):
- * for now, which challenges their swipe deck showed them (R-STAT-1). Nothing
- * here reads a record back (R-STAT-2). */
+/** What happened in the app, recorded as part of running it (ADR 0033):
+ * which challenges a member's swipe deck showed them (R-STAT-1), and which
+ * invites were opened (R-STAT-6, ADR 0038). Nothing here reads a record back
+ * (R-STAT-2). */
 export interface ActivityStore {
   /** Records a view when the challenge is one the deck could show the member,
    * and says whether it did. */
@@ -11,6 +12,8 @@ export interface ActivityStore {
   }): Promise<boolean>
   /** Deletes the member's views, and nothing else (R-STAT-4). */
   forgetViews(memberId: string): Promise<void>
+  /** Records an open of the invite the token names, if any does. */
+  recordOpen(open: { id: string; token: string }): Promise<void>
 }
 
 export interface ActivityService {
@@ -22,6 +25,9 @@ export interface ActivityService {
   ): Promise<'recorded' | 'not_found'>
   /** Clears the member's activity history (R-STAT-4). */
   forgetHistory(memberId: string): Promise<void>
+  /** Records that an invite link was opened, with nothing about who opened
+   * it; an unknown token records nothing and says so to nobody. */
+  inviteOpened(token: string): Promise<void>
 }
 
 export function createActivity(deps: {
@@ -34,5 +40,6 @@ export function createActivity(deps: {
         ? 'recorded'
         : 'not_found',
     forgetHistory: (memberId) => deps.store.forgetViews(memberId),
+    inviteOpened: (token) => deps.store.recordOpen({ id: deps.newId(), token }),
   }
 }

@@ -20,6 +20,17 @@ export class TooManyRequests extends Error {
 
 const HANDLE_KEY = 'rm_applicant_handle'
 
+/** Tells the server an invite link was opened, so opens can be counted per
+ * code with nothing about who opened it (R-STAT-6, ADR 0038, ADR 0039).
+ * Nothing waits on it, and a failure changes nothing for the visitor. */
+export function noteInviteOpened(invite: string): void {
+  fetch('/auth/invite-opened', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ invite }),
+  }).catch(() => undefined)
+}
+
 /** Asks for a sign-in link, carrying the deep link, the QR's invite token and
  * a solved human check; the answer says which screen comes next (F1, F4, F15,
  * R-AUTH-13, R-NFR-8). */

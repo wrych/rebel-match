@@ -12,6 +12,7 @@ export const SIGN_IN_POSTS = [
   '/auth/request-link',
   '/auth/applicant',
   '/auth/verify',
+  '/auth/invite-opened',
 ] as const
 
 /** Answers `429` once an address has made `limit()` requests in the counter's
