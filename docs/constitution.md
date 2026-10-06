@@ -77,6 +77,12 @@ SOLID where it earns its keep — for this codebase that is mostly **S** and
   plug-in point on speculation.
 - **No speculative abstraction.** There is a November deadline. Two call sites
   do not justify a framework; the third one earns it.
+- **Same thing, same component.** Where the app already shows a thing — a step
+  header, a button, a card, a set of versioned words — a new screen uses the
+  component that draws it. One that does not quite fit is widened, with a prop
+  or a slot, not copied. A second component for the same thing needs a hard
+  reason, written in the PR: a different job, not a different taste. Reusing
+  what exists is not speculative abstraction (ADR 0040).
 - **No dead code.** Delete it — git remembers.
 - **No circular imports**, and no module reaching up into its parent's siblings.
 - Functions do one thing at one level of abstraction. If you are scrolling, it
@@ -156,9 +162,10 @@ pre-push hooks are the fast feedback (ADR 0019).
 | Secrets absent                          | CI uses synthetic config only; secret scanning on push |
 
 Enforced by **review**, because no linter can judge them: change size, comment
-necessity, the 300-character limit, naming, the privacy rules in §5, and whether
-an abstraction earned its place.
+necessity, the 300-character limit, naming, the privacy rules in §5, whether an
+abstraction earned its place, and whether a new component repeats one that
+exists.
 
 ---
 
-_Last reviewed 2026-10-02. Amendments require an ADR._
+_Last reviewed 2026-10-06. Amendments require an ADR._
