@@ -130,7 +130,7 @@ Conventions:
 
 1. Member sees two choices: **Ask for help** → **F5**, **Offer help** → **F6**.
 2. Bottom navigation also reaches the **Matches cockpit** (**F8**), with a badge
-   when requests are pending (R-MINE-4).
+   when requests or connections arrived since it was last opened (R-MINE-4).
 
 ---
 
@@ -269,9 +269,10 @@ before both sides agree.**
    - **Accept** → `POST /api/connections/:id/accept`. The request becomes
      accepted and _both_ parties may now read the other's email via
      **S16** (`/matches/requests/:id/contact`), which also offers a prefilled
-     `mailto:` (R-CONN-3, R-CONN-6). The requester is told by a badge and by an
-     email that deep-links to S16; the badge stays until they open it
-     (R-CONN-7, R-MINE-4).
+     `mailto:` (R-CONN-3, R-CONN-6). The requester is told by the Matches
+     badge, until they next open Matches, and by an email that deep-links to
+     S16; the connection's card stays outlined until they open S16 (R-CONN-7,
+     R-MINE-4, R-MINE-6).
    - **Decline** → `POST /api/connections/:id/decline`. Emails stay private on
      both sides, permanently (R-CONN-4).
 6. Both parties continue by email outside the app.
@@ -307,9 +308,10 @@ before both sides agree.**
    step 5), their connections, each member once, those with something new on
    top, outlined and counted (R-MINE-5,6), and their followed trends
    (R-MINE-3).
-3. The nav badge reflects the number of pending incoming requests and of
-   connections accepted that the member has not opened yet (R-MINE-4,
-   R-CONN-7,9).
+3. The nav badge counts the requests and connections that arrived since the
+   member last opened Matches; opening it clears the badge, whether or not
+   they answer. Waiting requests stay listed and unopened connections stay
+   outlined until dealt with (R-MINE-4, R-MINE-6, R-CONN-7,9).
 
 ---
 
