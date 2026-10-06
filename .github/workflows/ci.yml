@@ -64,9 +64,10 @@ jobs:
           scripts/ci-parallel.sh start integration \
             sh -c 'npm run migrate && npm run test:integration'
           # The same suite on PGlite, the engine development runs on, so a
-          # difference between the two shows up here (ADR 0024).
+          # difference between the two shows up here (ADR 0024). Two workers,
+          # since the unit tests run beside it on the runner's four cores.
           scripts/ci-parallel.sh start integration-pglite \
-            env DATABASE_URL= npm run test:integration
+            env DATABASE_URL= npm run test:integration -- --maxWorkers=2
 
       - name: Commit messages
         if: github.event_name == 'pull_request'

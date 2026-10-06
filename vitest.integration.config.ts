@@ -18,6 +18,7 @@ export default defineConfig({
     include: ['tests/integration/**/*.test.ts'],
     fileParallelism: !onPostgres,
     testTimeout: 20_000,
+    hookTimeout: 20_000,
     env: {
       ...(process.env['DATABASE_URL'] === undefined
         ? {}
