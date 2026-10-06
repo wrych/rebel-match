@@ -62,6 +62,16 @@ beforeAll(async () => {
     "DELETE FROM outbox WHERE kind IN ('connection_request', 'connection_accepted', 'connection_added') AND member_id IN (?)",
     [Object.values(ids)],
   )
+  // These tests read each email as it goes; when it goes is the worker's
+  // concern (tests/integration/notification-mail.test.ts).
+  await db.query('DELETE FROM notification_settings WHERE member_id IN (?)', [
+    Object.values(ids),
+  ])
+  for (const id of Object.values(ids))
+    await db.query(
+      "INSERT INTO notification_settings (member_id, type, cadence) VALUES (?, 'connection_request', 'immediately'), (?, 'new_connection', 'immediately')",
+      [id, id],
+    )
   const challenge = await db.query(
     'SELECT id FROM challenges WHERE member_id = ? LIMIT 1',
     [ids['bob']],
@@ -70,6 +80,9 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
+  await db.query('DELETE FROM notification_settings WHERE member_id IN (?)', [
+    Object.values(ids),
+  ])
   await db.query(
     'DELETE FROM connection_requests WHERE requester_id IN (?) OR target_id IN (?)',
     [Object.values(ids), Object.values(ids)],

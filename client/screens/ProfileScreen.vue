@@ -9,6 +9,7 @@ import {
   sectors,
 } from '../../src/profile-options'
 import AnalyticsToggle from '../components/AnalyticsToggle.vue'
+import NotificationSettings from '../components/NotificationSettings.vue'
 import DeleteAccount from '../components/DeleteAccount.vue'
 import DeleteHistory from '../components/DeleteHistory.vue'
 import SavedTick from '../components/SavedTick.vue'
@@ -223,6 +224,8 @@ function save(field: Field): Promise<void> {
           >. Your name and profile information may be seen by other members.
         </p>
       </div>
+
+      <NotificationSettings />
 
       <AnalyticsToggle :opted-in="profile.analyticsOptIn" />
 

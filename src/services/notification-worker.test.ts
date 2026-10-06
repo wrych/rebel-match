@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import type { Cadence } from './notification-cadence.js'
 import {
   createNotificationWorker,
   retryAfter,
@@ -15,6 +16,8 @@ const settings = {
   firstRetrySeconds: 60,
   holdSeconds: 300,
   batch: 100,
+  dailyAt: '08:00',
+  timeZone: 'Europe/Zurich',
 }
 
 const due = (over: Partial<DueNotification> = {}): DueNotification => ({
@@ -25,6 +28,7 @@ const due = (over: Partial<DueNotification> = {}): DueNotification => ({
   connectionId: 'r1',
   createdAt: now,
   attempts: 0,
+  cadence: 'immediately',
   seen: false,
   hidden: false,
   recipientActive: true,
@@ -35,10 +39,12 @@ const due = (over: Partial<DueNotification> = {}): DueNotification => ({
   ...over,
 })
 
-describe('skipReason (R-NOTE-9)', () => {
+describe('skipReason (R-NOTE-3, R-NOTE-9)', () => {
   it.each([
     ['nothing in the way', {}, null],
     ['hidden, its type off', { hidden: true }, 'off'],
+    ['its type set to off', { cadence: 'off' as const }, 'off'],
+    ['its type kept in the app', { cadence: 'in_app' as const }, 'in_app'],
     ['seen in the app', { seen: true }, 'seen'],
     ['a recipient no longer active', { recipientActive: false }, 'stale'],
     ['about a deleted member', { aboutDeleted: true }, 'stale'],
@@ -64,7 +70,7 @@ describe('skipReason (R-NOTE-9)', () => {
 })
 
 describe('retryAfter (R-NOTE-10)', () => {
-  it('waits a minute, then twice as long each time, then gives up', () => {
+  it('waits the first wait, then twice as long each time, then gives up', () => {
     const three = { maxAttempts: 3, firstRetrySeconds: 60 }
     expect(retryAfter(1, three, now)?.toISOString()).toBe(
       '2026-11-08T10:01:00.000Z',
@@ -76,131 +82,186 @@ describe('retryAfter (R-NOTE-10)', () => {
   })
 })
 
-function recording(notes: DueNotification[]): {
-  store: NotificationMailStore
-  calls: unknown[]
-} {
+function recording(
+  notes: DueNotification[],
+  last: Partial<Record<Cadence, Date>> = {},
+): { store: NotificationMailStore; calls: unknown[] } {
   const calls: unknown[] = []
+  const push = (call: unknown[]): Promise<void> => {
+    calls.push(call)
+    return Promise.resolve()
+  }
   const store: NotificationMailStore = {
     claimDue: (at, limit, holdUntil) => {
       calls.push(['claim', at.toISOString(), limit, holdUntil.toISOString()])
       return Promise.resolve(notes)
     },
-    mailed: (id, cadence) => {
-      calls.push(['mailed', id, cadence])
-      return Promise.resolve()
-    },
-    skipped: (id, reason) => {
-      calls.push(['skipped', id, reason])
-      return Promise.resolve()
-    },
-    retryAt: (id, attempts, at) => {
-      calls.push(['retry', id, attempts, at.toISOString()])
-      return Promise.resolve()
-    },
-    failed: (id, attempts) => {
-      calls.push(['failed', id, attempts])
-      return Promise.resolve()
-    },
+    lastMailed: (_recipient, cadence) => Promise.resolve(last[cadence] ?? null),
+    mailed: (ids, cadence) => push(['mailed', ids, cadence]),
+    skipped: (id, reason) => push(['skipped', id, reason]),
+    deferUntil: (ids, at) => push(['defer', ids, at.toISOString()]),
+    retryAt: (ids, attempts, at) =>
+      push(['retry', ids, attempts, at.toISOString()]),
+    failed: (ids, attempts) => push(['failed', ids, attempts]),
   }
   return { store, calls }
 }
 
+function worker(
+  store: NotificationMailStore,
+  send: (
+    notes: readonly DueNotification[],
+  ) => Promise<'sent' | 'failed' | 'suppressed' | null> = () =>
+    Promise.resolve('sent'),
+  errors: unknown[] = [],
+): { deliverDue(): Promise<void>; sent: string[][] } {
+  const sent: string[][] = []
+  const built = createNotificationWorker({
+    store,
+    send: (notes) => {
+      sent.push(notes.map((note) => note.id))
+      return send(notes)
+    },
+    settings: () => settings,
+    now: () => now,
+    onError: (error) => errors.push(error),
+  })
+  return { deliverDue: () => built.deliverDue(), sent }
+}
+
 describe('createNotificationWorker', () => {
-  it('mails what is due, leaves out the stale, and retries a refused mail (R-NOTE-7..10)', async () => {
+  it('leaves out what is kept in the app, off, seen or stale (R-NOTE-9)', async () => {
     const { store, calls } = recording([
-      due({ id: 'sent' }),
+      due({ id: 'app', cadence: 'in_app' }),
       due({ id: 'seen', seen: true }),
-      due({ id: 'refused', attempts: 0 }),
-      due({ id: 'spent', attempts: 4 }),
-      due({ id: 'nobody' }),
+      due({ id: 'mail' }),
     ])
-    const sent: string[] = []
-    const worker = createNotificationWorker({
-      store,
-      send: (note) => {
-        sent.push(note.id)
-        if (note.id === 'nobody') return Promise.resolve(null)
-        return Promise.resolve(
-          note.id === 'refused' || note.id === 'spent' ? 'failed' : 'sent',
-        )
-      },
-      settings: () => settings,
-      now: () => now,
-      onError: () => undefined,
-    })
+    const run = worker(store)
 
-    await worker.deliverDue()
+    await run.deliverDue()
 
-    expect(sent).toEqual(['sent', 'refused', 'spent', 'nobody'])
-    expect(calls).toEqual([
-      ['claim', '2026-11-08T10:00:00.000Z', 100, '2026-11-08T10:05:00.000Z'],
-      ['mailed', 'sent', 'immediately'],
+    expect(run.sent).toEqual([['mail']])
+    expect(calls.slice(1)).toEqual([
+      ['skipped', 'app', 'in_app'],
       ['skipped', 'seen', 'seen'],
-      ['retry', 'refused', 1, '2026-11-08T10:01:00.000Z'],
-      ['failed', 'spent', 5],
-      ['skipped', 'nobody', 'stale'],
+      ['mailed', ['mail'], 'immediately'],
     ])
   })
 
-  it('counts a suppressed mail as delivered: the outbound log holds it (R-DEV-1)', async () => {
-    const { store, calls } = recording([due()])
-    const worker = createNotificationWorker({
-      store,
-      send: () => Promise.resolve('suppressed'),
-      settings: () => settings,
-      now: () => now,
-      onError: () => undefined,
-    })
+  it('mails each immediate one on its own', async () => {
+    const { store } = recording([due({ id: 'a' }), due({ id: 'b' })])
+    const run = worker(store)
 
-    await worker.deliverDue()
+    await run.deliverDue()
 
-    expect(calls.at(-1)).toEqual(['mailed', 'n1', 'immediately'])
+    expect(run.sent).toEqual([['a'], ['b']])
   })
 
-  it('counts a send that throws as refused, so its attempts are capped', async () => {
+  it('mails every type on one cadence in one mail, when the window allows (R-NOTE-7)', async () => {
+    const { store, calls } = recording([
+      due({ id: 'request', cadence: 'hourly' }),
+      due({ id: 'accepted', type: 'new_connection', cadence: 'hourly' }),
+      due({ id: 'other', recipientId: 'm-eve', cadence: 'hourly' }),
+    ])
+    const run = worker(store)
+
+    await run.deliverDue()
+
+    expect(run.sent).toEqual([['request', 'accepted'], ['other']])
+    expect(calls).toContainEqual(['mailed', ['request', 'accepted'], 'hourly'])
+  })
+
+  it('holds them until a window after the last mail of that cadence', async () => {
+    const { store, calls } = recording(
+      [due({ cadence: 'hourly' }), due({ id: 'n2', cadence: 'immediately' })],
+      { hourly: new Date('2026-11-08T09:40:00.000Z') },
+    )
+    const run = worker(store)
+
+    await run.deliverDue()
+
+    expect(run.sent).toEqual([['n2']])
+    expect(calls).toContainEqual(['defer', ['n1'], '2026-11-08T10:40:00.000Z'])
+  })
+
+  it('holds daily ones until the daily time', async () => {
+    const { store, calls } = recording([due({ cadence: 'daily' })])
+    const run = worker(store)
+
+    await run.deliverDue()
+
+    expect(run.sent).toEqual([])
+    expect(calls).toContainEqual(['defer', ['n1'], '2026-11-09T07:00:00.000Z'])
+  })
+
+  it('retries a refused mail for all it carried, and gives up after the last try (R-NOTE-10)', async () => {
+    const { store, calls } = recording([
+      due({ id: 'a', cadence: 'hourly', attempts: 1 }),
+      due({ id: 'b', cadence: 'hourly' }),
+      due({ id: 'c', recipientId: 'm-eve', attempts: 4 }),
+    ])
+    const run = worker(store, () => Promise.resolve('failed'))
+
+    await run.deliverDue()
+
+    expect(calls).toContainEqual([
+      'retry',
+      ['a', 'b'],
+      2,
+      '2026-11-08T10:02:00.000Z',
+    ])
+    expect(calls).toContainEqual(['failed', ['c'], 5])
+  })
+
+  it('counts a send that throws as refused, and a suppressed one as mailed', async () => {
+    const errors: unknown[] = []
     const { store, calls } = recording([
       due({ id: 'a' }),
-      due({ id: 'b', attempts: 4 }),
+      due({ id: 'b', recipientId: 'm-eve' }),
     ])
-    const errors: unknown[] = []
-    const worker = createNotificationWorker({
+    const run = worker(
       store,
-      send: () => Promise.reject(new Error('connection lost')),
-      settings: () => settings,
-      now: () => now,
-      onError: (error) => errors.push(error),
-    })
+      (notes) =>
+        notes[0]?.id === 'a'
+          ? Promise.reject(new Error('connection lost'))
+          : Promise.resolve('suppressed'),
+      errors,
+    )
 
-    await worker.deliverDue()
-
-    expect(errors).toHaveLength(2)
-    expect(calls.slice(1)).toEqual([
-      ['retry', 'a', 1, '2026-11-08T10:01:00.000Z'],
-      ['failed', 'b', 5],
-    ])
-  })
-
-  it('reports a store that fails and goes on with the rest', async () => {
-    const { store, calls } = recording([due({ id: 'a' }), due({ id: 'b' })])
-    const errors: unknown[] = []
-    const worker = createNotificationWorker({
-      store,
-      send: () => Promise.resolve('sent'),
-      settings: () => settings,
-      now: () => now,
-      onError: (error) => errors.push(error),
-    })
-    store.mailed = (id, cadence) => {
-      if (id === 'a') return Promise.reject(new Error('database went away'))
-      calls.push(['mailed', id, cadence])
-      return Promise.resolve()
-    }
-
-    await worker.deliverDue()
+    await run.deliverDue()
 
     expect(errors).toHaveLength(1)
-    expect(calls.at(-1)).toEqual(['mailed', 'b', 'immediately'])
+    expect(calls).toContainEqual([
+      'retry',
+      ['a'],
+      1,
+      '2026-11-08T10:01:00.000Z',
+    ])
+    expect(calls).toContainEqual(['mailed', ['b'], 'immediately'])
+  })
+
+  it('skips those nobody could be sent to, and reports a store that fails', async () => {
+    const errors: unknown[] = []
+    const { store, calls } = recording([
+      due({ id: 'a' }),
+      due({ id: 'b', recipientId: 'm-eve' }),
+    ])
+    store.mailed = (ids, cadence) => {
+      if (ids.includes('b'))
+        return Promise.reject(new Error('database went away'))
+      calls.push(['mailed', ids, cadence])
+      return Promise.resolve()
+    }
+    const run = worker(
+      store,
+      (notes) => Promise.resolve(notes[0]?.id === 'a' ? null : 'sent'),
+      errors,
+    )
+
+    await run.deliverDue()
+
+    expect(calls).toContainEqual(['skipped', 'a', 'stale'])
+    expect(errors).toHaveLength(1)
   })
 })
 

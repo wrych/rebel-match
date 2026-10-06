@@ -27,6 +27,8 @@ import {
   markingOpened,
   type NotificationService,
 } from './services/notifications.js'
+import { createNotificationSettings } from './services/notification-settings.js'
+import { createNotificationSettingsStore } from './services/notification-settings-store.js'
 import { createNotificationStore } from './services/notification-store.js'
 import { createNotificationMailStore } from './services/notification-mail-store.js'
 import { createNotificationSender } from './services/notification-mail.js'
@@ -127,6 +129,7 @@ function composeJourneys(
   | 'follows'
   | 'cockpit'
   | 'notifications'
+  | 'notificationSettings'
 > {
   const notes = composeNotifications(db, settings)
   const challenges = createChallenges({
@@ -156,6 +159,9 @@ function composeJourneys(
       followed: (memberId) => follows.followed(memberId),
     }),
     notifications: notes,
+    notificationSettings: createNotificationSettings(
+      createNotificationSettingsStore(db),
+    ),
   }
 }
 

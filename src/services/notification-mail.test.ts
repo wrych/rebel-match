@@ -14,8 +14,16 @@ const record: ConnectionRecord = {
   status: 'pending',
   createdAt: '2026-11-08T10:00:00.000Z',
 }
+const accepted: ConnectionRecord = {
+  ...record,
+  id: 'r2',
+  requesterId: 'm-bob',
+  targetId: 'm-eve',
+  message: null,
+  status: 'accepted',
+}
 
-const due = (over: Partial<DueNotification>): DueNotification => ({
+const due = (over: Partial<DueNotification> = {}): DueNotification => ({
   id: 'n1',
   type: 'connection_request',
   recipientId: 'm-bob',
@@ -23,6 +31,7 @@ const due = (over: Partial<DueNotification>): DueNotification => ({
   connectionId: 'r1',
   createdAt: new Date('2026-11-08T10:00:00.000Z'),
   attempts: 0,
+  cadence: 'immediately',
   seen: false,
   hidden: false,
   recipientActive: true,
@@ -32,6 +41,12 @@ const due = (over: Partial<DueNotification>): DueNotification => ({
   applicantEmail: null,
   ...over,
 })
+
+const names: Record<string, string> = {
+  'm-ada': 'Ada',
+  'm-bob': 'Bob',
+  'm-eve': 'Eve',
+}
 
 function sender(status: DeliveryStatus = 'sent'): {
   send: ReturnType<typeof createNotificationSender>
@@ -48,21 +63,32 @@ function sender(status: DeliveryStatus = 'sent'): {
     mailer,
     members: {
       emailOf: (id) => Promise.resolve(`${id}@example.invalid`),
-      nameOf: (id) => Promise.resolve(id === 'm-ada' ? 'Ada' : 'Bob'),
+      nameOf: (id) => Promise.resolve(names[id] ?? null),
     },
     publicUrl: 'http://localhost:5173',
     requests: {
-      find: (id) => Promise.resolve(id === 'r1' ? record : null),
+      find: (id) =>
+        Promise.resolve(id === 'r1' ? record : id === 'r2' ? accepted : null),
     },
   })
   return { send, sent }
 }
 
-describe('createNotificationSender (R-NOTE-8)', () => {
+const applicant = due({
+  id: 'n3',
+  type: 'applicant',
+  aboutMemberId: 'm-new',
+  connectionId: null,
+  requestStatus: null,
+  applicantStatus: 'applicant',
+  applicantEmail: 'new@example.invalid',
+})
+
+describe('one notification: its type’s own email (R-NOTE-8)', () => {
   it('mails a request to its target as the request email', async () => {
     const { send, sent } = sender()
 
-    expect(await send(due({}))).toBe('sent')
+    expect(await send([due()])).toBe('sent')
     expect(sent).toEqual([
       expect.objectContaining({
         to: 'm-bob@example.invalid',
@@ -75,14 +101,14 @@ describe('createNotificationSender (R-NOTE-8)', () => {
   it('mails an acceptance to the requester, a connection added to the target', async () => {
     const { send, sent } = sender()
 
-    await send(
+    await send([
       due({
         type: 'new_connection',
         recipientId: 'm-ada',
         aboutMemberId: 'm-bob',
       }),
-    )
-    await send(due({ type: 'new_connection' }))
+    ])
+    await send([due({ type: 'new_connection' })])
 
     expect(sent.map((m) => [m.to, m.kind])).toEqual([
       ['m-ada@example.invalid', 'connection_accepted'],
@@ -93,17 +119,7 @@ describe('createNotificationSender (R-NOTE-8)', () => {
   it('mails a reviewer the applicant’s address', async () => {
     const { send, sent } = sender()
 
-    await send(
-      due({
-        type: 'applicant',
-        recipientId: 'm-host',
-        aboutMemberId: 'm-new',
-        connectionId: null,
-        requestStatus: null,
-        applicantStatus: 'applicant',
-        applicantEmail: 'new@example.invalid',
-      }),
-    )
+    await send([{ ...applicant, recipientId: 'm-host' }])
 
     expect(sent).toEqual([
       expect.objectContaining({
@@ -117,7 +133,62 @@ describe('createNotificationSender (R-NOTE-8)', () => {
   })
 
   it('says what became of the mail, and null when nobody got one', async () => {
-    expect(await sender('failed').send(due({}))).toBe('failed')
-    expect(await sender().send(due({ connectionId: 'gone' }))).toBeNull()
+    expect(await sender('failed').send([due()])).toBe('failed')
+    expect(await sender().send([due({ connectionId: 'gone' })])).toBeNull()
+  })
+})
+
+describe('several: one digest (R-NOTE-8, R-MSG-6)', () => {
+  it('says how many, lists each with its link and the note a request carries, and names everyone it quotes', async () => {
+    const { send, sent } = sender()
+
+    expect(
+      await send([
+        due(),
+        due({
+          id: 'n2',
+          type: 'new_connection',
+          connectionId: 'r2',
+          aboutMemberId: 'm-eve',
+          requestStatus: 'accepted',
+        }),
+        applicant,
+      ]),
+    ).toBe('sent')
+
+    expect(sent).toHaveLength(1)
+    const [mail] = sent
+    expect(mail).toMatchObject({
+      memberId: 'm-bob',
+      to: 'm-bob@example.invalid',
+      kind: 'notification_digest',
+      subject: '3 updates on Rebel Match',
+      quotes: ['m-ada', 'm-eve', 'm-new'],
+    })
+    expect(mail?.text).toContain(
+      'Ada wants to connect with you.\nThey wrote: Same here.\nhttp://localhost:5173/matches/requests/r1',
+    )
+    expect(mail?.text).toContain(
+      'Eve accepted your request.\nhttp://localhost:5173/matches/requests/r2/contact',
+    )
+    expect(mail?.text).toContain(
+      'new@example.invalid asked to join.\nhttp://localhost:5173/admin/applicants',
+    )
+    expect(mail?.text).toContain('http://localhost:5173/profile')
+    expect(mail?.text).not.toContain('@example.invalid accepted')
+  })
+
+  it('leaves out what is gone, and sends nothing when all is', async () => {
+    const { send, sent } = sender()
+
+    await send([due(), due({ id: 'n2', connectionId: 'gone' })])
+    expect(sent[0]?.subject).toBe('1 update on Rebel Match')
+
+    expect(
+      await send([
+        due({ connectionId: 'gone' }),
+        due({ id: 'n2', connectionId: 'gone' }),
+      ]),
+    ).toBeNull()
   })
 })

@@ -1,6 +1,12 @@
-import { and, eq, isNotNull, lte, or, sql } from 'drizzle-orm'
+import { and, eq, inArray, isNotNull, lte, or, sql } from 'drizzle-orm'
 import type { Database } from '../db/connect.js'
-import { invites, members, outbox, sessions } from '../db/schema.js'
+import {
+  invites,
+  members,
+  outbox,
+  outboxQuotes,
+  sessions,
+} from '../db/schema.js'
 import type { DeleteOutcome, EraseOutcome, ErasureStore } from './erasure.js'
 import type { Holding } from './roles.js'
 import { lockedHoldings } from './role-grant-store.js'
@@ -62,9 +68,23 @@ async function eraseChecked(
   const member = await lockedOrRefused(db, memberId, guardedRoles, mayErase)
   if (typeof member === 'string') return member
 
+  // A digest quotes several members, each listed in outbox_quotes; erasing
+  // any of them erases the entry (R-MSG-6).
   await db
     .delete(outbox)
-    .where(or(eq(outbox.memberId, memberId), eq(outbox.toEmail, member.email)))
+    .where(
+      or(
+        eq(outbox.memberId, memberId),
+        eq(outbox.toEmail, member.email),
+        inArray(
+          outbox.id,
+          db
+            .select({ id: outboxQuotes.outboxId })
+            .from(outboxQuotes)
+            .where(eq(outboxQuotes.memberId, memberId)),
+        ),
+      ),
+    )
   await endSessions(db, memberId)
   // The rest goes by cascade: roles, tokens, challenges, expertise, follows,
   // swipes, deck views and connection requests on either side (design §2).
