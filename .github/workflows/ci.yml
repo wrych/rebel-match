@@ -52,11 +52,21 @@ jobs:
 
       - run: npm ci
 
-      - name: Lint and format
-        run: npm run lint
-
-      - name: Typecheck
-        run: npm run typecheck
+      # Lint, typecheck and both integration suites need nothing from each
+      # other, so they run in the background beside the unit tests, and each
+      # reports in its own step below. Every task runs to the end, so one run
+      # shows every failure.
+      - name: Start lint, typecheck and integration tests
+        id: start
+        run: |
+          scripts/ci-parallel.sh start lint npm run lint
+          scripts/ci-parallel.sh start typecheck npm run typecheck
+          scripts/ci-parallel.sh start integration \
+            sh -c 'npm run migrate && npm run test:integration'
+          # The same suite on PGlite, the engine development runs on, so a
+          # difference between the two shows up here (ADR 0024).
+          scripts/ci-parallel.sh start integration-pglite \
+            env DATABASE_URL= npm run test:integration
 
       - name: Commit messages
         if: github.event_name == 'pull_request'
@@ -66,20 +76,28 @@ jobs:
           --to ${{ github.event.pull_request.head.sha }}
 
       - name: Unit tests
+        if: ${{ !cancelled() }}
         run: npm test
 
-      - name: Migrations, from an empty database
-        run: npm run migrate
+      - name: Lint and format
+        if: ${{ !cancelled() && steps.start.outcome == 'success' }}
+        timeout-minutes: 10
+        run: scripts/ci-parallel.sh await lint
 
-      - name: Integration tests
-        run: npm run test:integration
+      - name: Typecheck
+        if: ${{ !cancelled() && steps.start.outcome == 'success' }}
+        timeout-minutes: 10
+        run: scripts/ci-parallel.sh await typecheck
 
-      # The same suite on PGlite, the engine development runs on, so a
-      # difference between the two shows up here (ADR 0024).
+      - name: Migrations from an empty database, then integration tests
+        if: ${{ !cancelled() && steps.start.outcome == 'success' }}
+        timeout-minutes: 10
+        run: scripts/ci-parallel.sh await integration
+
       - name: Integration tests on PGlite
-        run: npm run test:integration
-        env:
-          DATABASE_URL: ''
+        if: ${{ !cancelled() && steps.start.outcome == 'success' }}
+        timeout-minutes: 10
+        run: scripts/ci-parallel.sh await integration-pglite
 
   # The production build, as the image every deployment runs (ADR 0025): built
   # here once per commit, beside `check`, and handed to `deploy` as a file, so

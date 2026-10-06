@@ -1339,7 +1339,13 @@ steps:
   - npm test # unit (R-QA-1)
   - npm run migrate # from an empty database (R-QA-4)
   - npm run test:integration # API-level (R-QA-2)
+  - DATABASE_URL= npm run test:integration # the same suite on PGlite
 ```
+
+All but `npm ci`, commitlint and the unit tests run in the background, beside
+the unit tests, through `scripts/ci-parallel.sh`; each still reports as its own
+step. On PGlite the integration test files run side by side, each on its own
+in-memory database; on Postgres, which they share, one at a time.
 
 A `build` job beside it builds the production image from the `Dockerfile` —
 server (tsc) and client (vite), ADR 0017 — once per commit, and hands it to the
