@@ -441,9 +441,10 @@ connect.")_
   requester, in the app and by email at the cadence they chose (R-NOTE-2),
   that they are now connected. The email carries the target's name and a link
   to the connection's contact screen, but no address and no challenge text
-  (R-NAV-9). The connection SHALL stay marked new in the cockpit and its badge
-  (R-MINE-4) until the requester first opens that contact screen, however the
-  entry on the notifications screen is marked (R-NOTE-5). A decline is not
+  (R-NAV-9). The connection's card SHALL stay outlined in the cockpit
+  (R-MINE-6) until the requester first opens that contact screen, however the
+  Matches badge (R-MINE-4) and the notifications screen (R-NOTE-5) are
+  cleared. A decline is not
   announced (R-CONN-4).
 - **R-CONN-8 (Already connected)** — IF the two members already share an
   accepted request, whichever side sent it, WHEN one of them initiates a
@@ -458,9 +459,10 @@ connect.")_
   (R-NOTE-2), that the requester connected with
   them over another challenge. The email carries the requester's name, their
   note and a link to the contact screen, but no address and no challenge text
-  (R-NAV-9). The connection SHALL stay marked new in the cockpit and its badge
-  (R-MINE-4) until the target first opens that contact screen, however the
-  entry on the notifications screen is marked (R-NOTE-5).
+  (R-NAV-9). The connection's card SHALL stay outlined in the cockpit
+  (R-MINE-6) until the target first opens that contact screen, however the
+  Matches badge (R-MINE-4) and the notifications screen (R-NOTE-5) are
+  cleared.
 - **R-CONN-10 (Connected over)** — The contact screen SHALL list, under
   _Connected over_, every accepted request between the two members, each with
   its challenge and trend, whether it was same boat or been there, and the note
@@ -483,13 +485,21 @@ connect.")_
   waiting for the member** with Accept / Decline actions (this is where R-CONN-3
   / R-CONN-4 are triggered).
 - **R-MINE-3** — The system SHALL show which trends the member is following.
-- **R-MINE-4** — The navigation SHALL badge the "Matches" tab when there are
-  pending incoming requests, connections accepted that the member has not
-  opened yet (R-CONN-7), or new matches, and the welcome screen SHALL badge
-  its "Your matches" link the same way, since it shows no tab bar. While the app
-  is open and visible, the badges and the list of waiting requests SHALL refresh
-  on their own, at most `limits.matchesPollSeconds` apart, so a new request
-  shows without a reload.
+- **R-MINE-4** — The navigation SHALL badge the "Matches" tab with what
+  arrived since the member last opened the Matches screen: requests waiting for
+  them and connections made with them (R-CONN-7, R-CONN-9), or new matches. The
+  welcome screen SHALL badge its "Your matches" link the same way, since it
+  shows no tab bar.
+  - **Opening the Matches screen SHALL clear the badge**, whether or not the
+    member answers what is waiting: an ignored request is an answer too
+    (R-CONN-4). What stays to be done stays on the screen — the waiting
+    requests (R-MINE-2) and the outlined connections (R-MINE-6).
+  - While the member is on the Matches screen its tab SHALL carry no badge.
+  - Seeing a notification SHALL NOT clear the badge, nor opening Matches the
+    notifications' (R-NOTE-5, R-NOTE-6).
+  - While the app is open and visible, the badges and the list of waiting
+    requests SHALL refresh on their own, at most `limits.matchesPollSeconds`
+    apart, so a new request shows without a reload.
 - **R-MINE-5** — The "Matches" screen SHALL list the member's **connections** —
   accepted requests, whichever side sent them — below the requests waiting for
   them, each other member once, as a member card, however many challenges they

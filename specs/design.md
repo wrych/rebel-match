@@ -298,6 +298,7 @@ CREATE TABLE members (
   analytics_consent_at      DATETIME    NULL,     -- both set = opted in
   joined_via_invite_id CHAR(36) NULL,            -- which invite admitted them (R-INV-8)
   analytics_id   CHAR(36)     NOT NULL,           -- pseudonymous id for Mixpanel
+  matches_seen_at DATETIME   NULL,              -- last opened the Matches screen (R-MINE-4)
   created_at     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY uq_members_email (email)
 );
@@ -856,9 +857,10 @@ about it (R-NOTE-5).
 
 ### Cockpit
 
-| Method | Path           | Behavior                                                                                                                                                                                                                                                                                                                                                                                                      |
-| ------ | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| GET    | `/api/cockpit` | `{challenges[], following[], pendingIncoming, newConnections}`: my active challenges with same-boat / been-there / case-study counts counted as the matches view lists them, my followed trends, how many requests wait for me, and how many accepted requests I have not opened yet, which together badge the nav (R-MINE-1,3,4, R-CONN-7,9). The requests themselves come from `/api/connections/incoming`. |
+| Method | Path                | Behavior                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ------ | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/cockpit`      | `{challenges[], following[], pendingIncoming, newConnections}`: my active challenges with same-boat / been-there / case-study counts counted as the matches view lists them, my followed trends, how many requests waiting for me arrived since I last opened Matches, and how many connections I have not opened were made since then, which together badge the nav (R-MINE-1,3,4, R-CONN-7,9). A connection counts from when it was made (`responded_at`). The requests themselves come from `/api/connections/incoming`. |
+| POST   | `/api/matches/seen` | Record that I opened the Matches screen, now: `204`. The screen sends it before each load, so whatever it then lists no longer badges the nav; something arriving in between still does (R-MINE-4).                                                                                                                                                                                                                                                                                                                         |
 
 ### Admin (permission-guarded, not role-name-guarded — R-ROLE-3)
 
