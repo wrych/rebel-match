@@ -17,6 +17,7 @@ export interface ClientConfig {
     notificationsPageSize: number
     erasureGraceDays: number
     holdToSelectMs: number
+    swipeMinPx: number
     inviteMaxUsesCeiling: number
   }
   consentVersion: string

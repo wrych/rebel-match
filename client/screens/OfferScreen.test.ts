@@ -39,6 +39,8 @@ const cards: DeckCard[] = [
   },
 ]
 
+const SWIPE_MIN_PX = 50
+
 /** Serves `decks` in turn for each deck read, answers with `swipe`, and
  * reads the `followed` trend ids back, or fails to when null. */
 function server(
@@ -53,6 +55,12 @@ function server(
   const fetchMock = vi.fn((url: string) => {
     if (url === '/api/deck/seen')
       return Promise.resolve({ ok: true, status: 204 })
+    if (url === '/api/config')
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({ limits: { swipeMinPx: SWIPE_MIN_PX } }),
+      })
     if (url === '/api/follows')
       return Promise.resolve({
         ok: followed !== null,
@@ -95,6 +103,18 @@ async function click(
     .findAll('button')
     .find((each) => each.text().includes(text))
   await button?.trigger('click')
+  await flushPromises()
+}
+
+async function swipe(
+  screen: ReturnType<typeof mount>,
+  across: number,
+): Promise<void> {
+  const card = screen.find('.deck-card')
+  const at = (x: number): Touch[] =>
+    [{ clientX: x, clientY: 300 }] as unknown as Touch[]
+  await card.trigger('touchstart', { touches: at(200) })
+  await card.trigger('touchend', { changedTouches: at(200 + across) })
   await flushPromises()
 }
 
@@ -152,6 +172,18 @@ describe('OfferScreen', () => {
     expect(screen.find('.deck-text').text()).toContain('salary model')
     window.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowLeft' }))
     await flushPromises()
+    expect(screen.find('.deck-text').text()).toBe('Two shifts, two cultures.')
+  })
+
+  it('browses with a swipe across the card (R-OFF-1)', async () => {
+    server([cards])
+    const screen = await mountScreen()
+
+    await swipe(screen, -SWIPE_MIN_PX)
+    expect(screen.find('.deck-text').text()).toContain('salary model')
+    await swipe(screen, SWIPE_MIN_PX - 1)
+    expect(screen.find('.deck-text').text()).toContain('salary model')
+    await swipe(screen, SWIPE_MIN_PX)
     expect(screen.find('.deck-text').text()).toBe('Two shifts, two cultures.')
   })
 

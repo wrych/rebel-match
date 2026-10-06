@@ -24,6 +24,8 @@ const INVITE_LABEL_MAX_CHARS = 120
 const SAVED_TICK_MS = 2500
 /** How long a member card is held to start selecting (R-MEM-3). */
 const HOLD_TO_SELECT_MS = 500
+/** How far a finger travels across a deck card to browse (R-OFF-1). */
+const SWIPE_MIN_PX = 50
 const INVITE_MAX_USES_CEILING = 0xffffffff
 // connection_requests.message (src/db/schema.ts).
 const CONNECTION_MESSAGE_MAX_CHARS = 600
@@ -331,6 +333,7 @@ export interface Limits {
   inviteLabelMaxChars: number
   savedTickMs: number
   holdToSelectMs: number
+  swipeMinPx: number
   inviteMaxUsesCeiling: number
   connectionMessageMaxChars: number
 }
@@ -441,6 +444,7 @@ function limitsFrom(env: Env): Limits {
     inviteLabelMaxChars: INVITE_LABEL_MAX_CHARS,
     savedTickMs: SAVED_TICK_MS,
     holdToSelectMs: HOLD_TO_SELECT_MS,
+    swipeMinPx: SWIPE_MIN_PX,
     inviteMaxUsesCeiling: INVITE_MAX_USES_CEILING,
     connectionMessageMaxChars: CONNECTION_MESSAGE_MAX_CHARS,
   }

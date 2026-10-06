@@ -907,6 +907,7 @@ textarea.input {
   color: var(--card-fg);
   box-shadow: var(--sticker-shadow);
   animation: rm-in 0.26s ease both;
+  touch-action: pan-y;
 }
 
 .deck-card .kicker,
