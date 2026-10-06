@@ -194,7 +194,8 @@ my challenge.
    below the field, read-only and without their authors — there is no "insert
    this" action, by design (R-ASK-2, R-ASK-14).
 3. Submit stays disabled until the text is longer than 30 characters
-   (`limits.challengeMinChars`), with a live counter (R-ASK-3, R-CFG-2).
+   (`limits.challengeMinChars`), and the field takes at most 500
+   (`limits.challengeMaxChars`), with a live counter (R-ASK-3, R-CFG-2).
 4. Submit → `POST /api/challenges`; the challenge is persisted and the
    keyword matcher assigns a trend (R-ASK-4, R-ASK-5, design §5).
 5. **S6** shows the detected trend with its "from → to" framing and the peer

@@ -327,9 +327,12 @@ capability, not a secret** — and every requirement below exists because of tha
   none yet the section SHALL NOT show. No invented example stands in for them.
   _(Rationale: a one-tap "use this example" invites a deck full of identical
   stock challenges, which would make matching meaningless.)_
-- **R-ASK-3** — WHILE the challenge text is **30 characters or shorter** THE
-  SYSTEM SHALL keep the submit/analyze action disabled, so the matcher has enough
-  words to work with. The screen SHALL show a character counter.
+- **R-ASK-3** — WHILE the challenge text is **30 characters or shorter**, or
+  **longer than 500 characters**, THE SYSTEM SHALL keep the submit/analyze
+  action disabled: the matcher needs enough words to work with, and a peer
+  needs to read the challenge on one phone screen, on the deck card and in the
+  connection request. The screen SHALL show a character counter with both
+  limits, and the field SHALL NOT take more than the maximum.
 - **R-ASK-4** — WHEN the member submits THE SYSTEM SHALL persist the challenge and
   proceed to trend categorization.
 
@@ -732,9 +735,9 @@ What differs by environment is only whether mail **leaves the machine**.
 
 - **R-CFG-1** — Content thresholds and timings SHALL live in a **single
   configuration file**, not be hard-coded at their use sites. At minimum:
-  minimum challenge length (R-ASK-3), minimum "been there" note length
-  (R-OFF-4), magic-link token lifetime (R-AUTH-5), and the current consent
-  version (R-ONB-3).
+  minimum and maximum challenge length (R-ASK-3), minimum "been there" note
+  length (R-OFF-4), magic-link token lifetime (R-AUTH-5), and the current
+  consent version (R-ONB-3).
 - **R-CFG-2** — Client and server SHALL read the **same** values, so the
   disabled-button rule on screen and the server-side validation can never
   disagree. The server SHALL expose them to the client rather than the client
@@ -757,12 +760,13 @@ What differs by environment is only whether mail **leaves the machine**.
   `settings:manage` SHALL be able to change, on the settings screen, the
   spam-protection numbers except the trusted proxies, the invite defaults, and
   the minimum challenge and "been there" note lengths (ADR 0031). Each change
-  SHALL be checked against bounds and the order of paired limits, take effect
-  without a restart on every server within a minute, and show who made it and
-  when. The host SHALL be able to go back to the deployment's value. Each
-  changeable value SHALL be an editable field, saved on change and confirmed
-  with the same "Saved" tick as the profile screen (R-PROF-1); a host without
-  `settings:manage` sees it as text.
+  SHALL be checked against bounds and the order of paired limits (the minimum
+  challenge length never above the maximum), take effect without a restart on
+  every server within a minute, and show who made it and when. The host SHALL
+  be able to go back to the deployment's value. Each changeable value SHALL be
+  an editable field, saved on change and confirmed with the same "Saved" tick
+  as the profile screen (R-PROF-1); a host without `settings:manage` sees it
+  as text.
 
 ---
 
