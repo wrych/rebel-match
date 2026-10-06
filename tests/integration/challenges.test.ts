@@ -129,6 +129,35 @@ describe('the ask journey over Postgres (F5)', () => {
     expect(JSON.stringify(matches)).not.toContain('@')
   })
 
+  it('leads the newest challenges for others, without its author (R-ASK-14)', async () => {
+    const response = await request(app)
+      .get('/api/challenges/newest?trend=04')
+      .set('Cookie', cookies['stranger']!)
+      .expect(200)
+    const { challenges } = response.body as {
+      challenges: { body: string; trend: { id: string } }[]
+    }
+
+    expect(challenges[0]).toEqual({
+      body,
+      trend: { id: '04', short: expect.any(String) as string },
+    })
+    expect(challenges.length).toBe(config.limits.newestChallengesShown)
+    expect(challenges.every((each) => each.trend.id === '04')).toBe(true)
+    expect(JSON.stringify(challenges)).not.toContain('Sanne')
+  })
+
+  it('never shows a member their own challenge as the newest', async () => {
+    const response = await request(app)
+      .get('/api/challenges/newest')
+      .set('Cookie', cookies['author']!)
+      .expect(200)
+
+    const { challenges } = response.body as { challenges: { body: string }[] }
+    expect(challenges.length).toBe(config.limits.newestChallengesShown)
+    expect(challenges.map((each) => each.body)).not.toContain(body)
+  })
+
   it('never lists the author among their own matches', async () => {
     const response = await request(app)
       .get(`/api/challenges/${challengeId}/matches`)

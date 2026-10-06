@@ -9,6 +9,7 @@ import { requirePermission, type GuardedLocals } from './require-permission.js'
 const challengeParams = z.object({ id: z.string().min(1) })
 const confirmBody = z.object({ trendId: z.string().min(1) })
 const trendParams = z.object({ trendId: z.string().min(1) })
+const newestQuery = z.object({ trend: z.string().min(1).optional() })
 
 const confirmStatus = {
   saved: 204,
@@ -65,6 +66,21 @@ function confirm(deps: Deps): RequestHandler {
   }
 }
 
+function newest(deps: Deps): RequestHandler {
+  return async (request, response) => {
+    const query = newestQuery.safeParse(request.query)
+    if (!query.success) {
+      response.status(400).json({ error: 'bad_request' })
+      return
+    }
+    const challenges = await deps.challenges.newest(
+      memberOf(response.locals),
+      query.data.trend ?? null,
+    )
+    response.json({ challenges })
+  }
+}
+
 // Answers what `read` finds for the author, and 404 for anything else.
 function ownOnly(
   read: (memberId: string, id: string) => Promise<object | null>,
@@ -81,9 +97,10 @@ function ownOnly(
   }
 }
 
-/** The Ask journey's API (design §3): trends to pick from, a challenge
- * written and matched, its trend confirmed, and its matches. Writing needs
- * `challenge:create`; reading a challenge is its author's alone (R-NAV-8). */
+/** The Ask journey's API (design §3): trends to pick from, others' newest
+ * challenges, a challenge written and matched, its trend confirmed, and its
+ * matches. Writing needs `challenge:create`; reading one's own challenge is
+ * its author's alone (R-NAV-8). */
 export function challengeRoutes(deps: Deps): Router {
   const router = Router()
   const write = requirePermission(deps.auth, 'challenge:create')
@@ -100,6 +117,11 @@ export function challengeRoutes(deps: Deps): Router {
     }
     response.json(detail)
   })
+  router.get(
+    '/api/challenges/newest',
+    requirePermission(deps.auth, 'challenge:swipe'),
+    newest(deps),
+  )
   router.post('/api/challenges', write, create(deps))
   router.get(
     '/api/challenges/:id',

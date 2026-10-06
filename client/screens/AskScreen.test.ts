@@ -1,7 +1,6 @@
 // @vitest-environment jsdom
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { challengeExamples } from '../lib/challenges'
 import AskScreen from './AskScreen.vue'
 
 const push = vi.fn()
@@ -10,14 +9,35 @@ vi.mock('vue-router', () => ({ useRouter: () => ({ push }) }))
 const minChars = 31
 const longEnough = 'Nobody here knows who can decide what.'
 
-/** Serves the config, and answers the submission with `status`. */
-function server(status = 201): ReturnType<typeof vi.fn> {
+const newest = [
+  {
+    body: 'Peer feedback instead of annual reviews.',
+    trend: { id: '07', short: 'Inner Motivation' },
+  },
+  {
+    body: 'A shadow organisation beside the official one.',
+    trend: { id: '02', short: 'Network of Teams' },
+  },
+]
+
+/** Serves the config and the newest challenges, or fails to when `latest` is
+ * null, and answers the submission with `status`. */
+function server(
+  status = 201,
+  latest: object[] | null = newest,
+): ReturnType<typeof vi.fn> {
   const fetchMock = vi.fn((url: string, init?: RequestInit) => {
     if (init?.method === 'POST')
       return Promise.resolve({
         ok: status < 300,
         status,
         json: async () => ({ challenge: { id: 'c 1' } }),
+      })
+    if (url === '/api/challenges/newest')
+      return Promise.resolve({
+        ok: latest !== null,
+        status: latest === null ? 500 : 200,
+        json: async () => ({ challenges: latest }),
       })
     return Promise.resolve({
       ok: url === '/api/config',
@@ -77,14 +97,31 @@ describe('AskScreen', () => {
     expect(submitButton(screen).disabled).toBe(false)
   })
 
-  it('shows examples as text, with nothing that inserts them (R-ASK-2)', async () => {
+  it('shows the newest challenges as inspiration, nothing inserting them (R-ASK-2)', async () => {
     server()
     const screen = await mountScreen()
-    const hints = screen.findAll('.hints li')
+    const section = screen.find('[aria-labelledby="inspiration-heading"]')
 
-    expect(hints.map((hint) => hint.text())).toEqual([...challengeExamples])
-    expect(screen.findAll('.hints button')).toHaveLength(0)
-    expect(screen.findAll('.hints a')).toHaveLength(0)
+    expect(section.find('h2').text()).toBe('Inspiration')
+    expect(section.findAll('.mine').map((each) => each.text())).toEqual([
+      'Peer feedback instead of annual reviews.',
+      'A shadow organisation beside the official one.',
+    ])
+    expect(section.text()).toContain('Inner Motivation')
+    expect(section.findAll('button')).toHaveLength(0)
+    expect(section.findAll('a')).toHaveLength(0)
+  })
+
+  it.each([
+    ['none yet', []],
+    ['they cannot be loaded', null],
+  ])('leaves inspiration out when %s (R-ASK-2)', async (_, latest) => {
+    server(201, latest)
+    const screen = await mountScreen()
+
+    expect(screen.find('#inspiration-heading').exists()).toBe(false)
+    expect(screen.find('[role="alert"]').exists()).toBe(false)
+    expect(screen.find('textarea#challenge').exists()).toBe(true)
   })
 
   it('saves the challenge and goes on to its domain (R-ASK-4)', async () => {

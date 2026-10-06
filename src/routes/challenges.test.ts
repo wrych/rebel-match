@@ -70,6 +70,15 @@ function setup(settings: LiveSettings = fixedSettings(config)): {
             }
           : null,
       ),
+    newest: (memberId, trendId) => {
+      calls.push(['newest', memberId, trendId])
+      return Promise.resolve([
+        {
+          body: 'Nobody knows who decides.',
+          trend: { id: '06', short: 'DDM' },
+        },
+      ])
+    },
   }
   const app = express()
   app.use(express.json())
@@ -97,6 +106,54 @@ describe('challenge routes', () => {
     const response = await request(setup().app).get('/api/trends/99')
 
     expect(response.status).toBe(404)
+  })
+
+  it('shows the newest challenges, in a trend when asked (R-ASK-14)', async () => {
+    const { app, calls } = setup()
+    const cookie = await cookieFor('m-ada')
+
+    const all = await request(app)
+      .get('/api/challenges/newest')
+      .set('Cookie', cookie)
+    await request(app)
+      .get('/api/challenges/newest?trend=06')
+      .set('Cookie', cookie)
+
+    expect(all.status).toBe(200)
+    expect(all.body).toEqual({
+      challenges: [
+        {
+          body: 'Nobody knows who decides.',
+          trend: { id: '06', short: 'DDM' },
+        },
+      ],
+    })
+    expect(calls).toEqual([
+      ['newest', 'm-ada', null],
+      ['newest', 'm-ada', '06'],
+    ])
+  })
+
+  it('refuses a trend given more than once', async () => {
+    const { app, calls } = setup()
+
+    const response = await request(app)
+      .get('/api/challenges/newest?trend=06&trend=08')
+      .set('Cookie', await cookieFor('m-ada'))
+
+    expect(response.status).toBe(400)
+    expect(calls).toEqual([])
+  })
+
+  it('hides the newest challenges from a member without challenge:swipe', async () => {
+    const { app, calls } = setup()
+
+    const response = await request(app)
+      .get('/api/challenges/newest')
+      .set('Cookie', await cookieFor('m-new'))
+
+    expect(response.status).toBe(404)
+    expect(calls).toEqual([])
   })
 
   it('lists the trends to pick from (R-ASK-6)', async () => {

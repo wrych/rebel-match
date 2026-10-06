@@ -142,6 +142,7 @@ function composeJourneys(
   const notes = composeNotifications(db, settings)
   const challenges = createChallenges({
     store: createChallengeStore(db),
+    newestShown: config.limits.newestChallengesShown,
     track,
   })
   const follows = createFollows({

@@ -47,6 +47,13 @@ export interface TrendDetail {
   cases: CaseStudy[]
 }
 
+/** Someone else's challenge as inspiration: its words and trend, never who
+ * wrote it (R-ASK-2, R-ASK-14). */
+export interface NewestChallenge {
+  body: string
+  trend: Pick<Trend, 'id' | 'short'>
+}
+
 export interface Matches {
   trend: Trend
   sameBoat: PeerCard[]
@@ -71,6 +78,13 @@ export interface ChallengeStore {
     viewerId: string,
   ): Promise<{ sameBoat: PeerCard[]; beenThere: PeerCard[] }>
   cases(trendId: string): Promise<CaseStudy[]>
+  /** The newest active challenges of other active, onboarded members, in
+   * `trendId` when it is given; never `viewerId`'s own (R-ASK-14). */
+  newest(
+    viewerId: string,
+    trendId: string | null,
+    limit: number,
+  ): Promise<NewestChallenge[]>
 }
 
 export type ConfirmOutcome = 'saved' | 'not_found' | 'unknown_trend'
@@ -90,6 +104,7 @@ export interface ChallengeService {
   ): Promise<ConfirmOutcome>
   matches(memberId: string, id: string): Promise<Matches | null>
   trend(trendId: string): Promise<TrendDetail | null>
+  newest(viewerId: string, trendId: string | null): Promise<NewestChallenge[]>
 }
 
 function shown(trend: StoredTrend): Trend {
@@ -126,14 +141,17 @@ async function trendDetail(
   return { trend: shown(trend), cases: await store.cases(trendId) }
 }
 
+interface ChallengeDeps {
+  store: ChallengeStore
+  newestShown: number
+  track?: Track
+}
+
 /** The Ask journey (F5): a challenge is written, matched to a trend
  * (R-ASK-4,5), confirmed or overridden (R-ASK-6,7), and shown its matches
  * (R-ASK-8). Only the author sees their challenge here: anyone else gets
  * nothing, as for a challenge that does not exist (R-NAV-8). */
-export function createChallenges(deps: {
-  store: ChallengeStore
-  track?: Track
-}): ChallengeService {
+export function createChallenges(deps: ChallengeDeps): ChallengeService {
   const track = deps.track ?? trackNothing
   const own = async (
     memberId: string,
@@ -179,5 +197,7 @@ export function createChallenges(deps: {
         : matchesFor(deps.store, challenge, memberId)
     },
     trend: (trendId) => trendDetail(deps.store, trendId),
+    newest: (viewerId, trendId) =>
+      deps.store.newest(viewerId, trendId, deps.newestShown),
   }
 }

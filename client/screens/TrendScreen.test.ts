@@ -23,20 +23,40 @@ const detail = {
   ],
 }
 
-function serve(found: object | null, status = 200): void {
-  vi.stubGlobal(
-    'fetch',
-    vi.fn((url: string) => {
-      if (url === '/api/follows')
-        return Promise.resolve({
-          ok: true,
-          status: 200,
-          json: async () => ({ trends: [] }),
-        })
-      if (found === null) return Promise.resolve({ ok: false, status })
-      return Promise.resolve({ ok: true, status: 200, json: async () => found })
-    }),
-  )
+const newest = [
+  {
+    body: 'Nobody knows who can decide what.',
+    trend: { id: '06', short: 'Distributed Decision Making' },
+  },
+  {
+    body: 'Every purchase needs three signatures.',
+    trend: { id: '06', short: 'Distributed Decision Making' },
+  },
+]
+
+function serve(
+  found: object | null,
+  status = 200,
+  latest: object[] | null = newest,
+): ReturnType<typeof vi.fn> {
+  const fetchMock = vi.fn((url: string) => {
+    if (url === '/api/follows')
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({ trends: [] }),
+      })
+    if (url.startsWith('/api/challenges/newest'))
+      return Promise.resolve({
+        ok: latest !== null,
+        status: latest === null ? 500 : 200,
+        json: async () => ({ challenges: latest }),
+      })
+    if (found === null) return Promise.resolve({ ok: false, status })
+    return Promise.resolve({ ok: true, status: 200, json: async () => found })
+  })
+  vi.stubGlobal('fetch', fetchMock)
+  return fetchMock
 }
 
 async function mountScreen(): Promise<ReturnType<typeof mount>> {
@@ -59,6 +79,36 @@ describe('TrendScreen', () => {
       'Centralized Authority → Distributed Decision Making',
     )
     expect(screen.text()).toContain('29 rebels work on this trend')
+  })
+
+  it('shows its newest challenges, without who wrote them (R-ASK-14)', async () => {
+    const fetchMock = serve(detail)
+    const screen = await mountScreen()
+    const shown = screen.findAll('.newest li')
+
+    expect(shown.map((each) => each.find('.mine').text())).toEqual([
+      'Nobody knows who can decide what.',
+      'Every purchase needs three signatures.',
+    ])
+    expect(fetchMock).toHaveBeenCalledWith('/api/challenges/newest?trend=06')
+  })
+
+  it('says so when the trend has no challenges yet (R-ASK-14)', async () => {
+    serve(detail, 200, [])
+
+    expect((await mountScreen()).find('.empty').text()).toBe(
+      'No challenges in this trend yet.',
+    )
+  })
+
+  it('shows the trend without that section when its newest fail to load', async () => {
+    serve(detail, 200, null)
+    const screen = await mountScreen()
+
+    expect(screen.find('h1').text()).toBe('Distributed Decision Making')
+    expect(screen.find('#newest').exists()).toBe(false)
+    expect(screen.find('a.case').exists()).toBe(true)
+    expect(screen.find('[role="alert"]').exists()).toBe(false)
   })
 
   it('lists the case studies, opening in a new tab', async () => {

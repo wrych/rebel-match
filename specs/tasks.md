@@ -141,7 +141,7 @@ printed dev link (R-DEV-6).
 - [x] Matches screen says posting worked and what it is for: posted banner,
       people-first section headings, empty sections that point onward.
       _(R-ASK-11,12,13)_
-- [ ] `GET /api/challenges/newest`; the trend screen shows its newest
+- [x] `GET /api/challenges/newest`; the trend screen shows its newest
       challenges, the submit screen the newest as _Inspiration_ in place of the
       invented examples. _(R-ASK-2,14)_
 

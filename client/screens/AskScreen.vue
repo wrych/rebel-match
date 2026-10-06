@@ -2,14 +2,20 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AskSteps from '../components/AskSteps.vue'
+import NewestChallenges from '../components/NewestChallenges.vue'
 import { fetchConfig } from '../lib/api'
-import { challengeExamples, submitChallenge } from '../lib/challenges'
+import {
+  fetchNewestChallenges,
+  submitChallenge,
+  type NewestChallenge,
+} from '../lib/challenges'
 
 const router = useRouter()
 const draft = ref('')
 const minChars = ref<number | null>(null)
 const sending = ref(false)
 const problem = ref<string | null>(null)
+const inspiration = ref<NewestChallenge[]>([])
 
 // The server trims before it counts, so the counter does too (R-CFG-2).
 const length = computed(() => draft.value.trim().length)
@@ -18,7 +24,18 @@ const ready = computed(
     minChars.value !== null && length.value >= minChars.value && !sending.value,
 )
 
+// Inspiration is a nicety: without it the form still works, so a failure
+// only leaves the section out.
+async function loadInspiration(): Promise<void> {
+  try {
+    inspiration.value = await fetchNewestChallenges()
+  } catch {
+    inspiration.value = []
+  }
+}
+
 onMounted(async () => {
+  void loadInspiration()
   try {
     minChars.value = (await fetchConfig()).limits.challengeMinChars
   } catch {
@@ -74,13 +91,13 @@ async function submit(): Promise<void> {
       <p v-if="problem" class="alert" role="alert">{{ problem }}</p>
     </form>
 
-    <section class="stack-tight rule" aria-labelledby="examples-heading">
-      <h2 id="examples-heading" class="kicker">Examples</h2>
-      <ul class="hints">
-        <li v-for="example in challengeExamples" :key="example">
-          {{ example }}
-        </li>
-      </ul>
+    <section
+      v-if="inspiration.length > 0"
+      class="stack-tight rule"
+      aria-labelledby="inspiration-heading"
+    >
+      <h2 id="inspiration-heading" class="kicker">Inspiration</h2>
+      <NewestChallenges :challenges="inspiration" />
     </section>
   </section>
 </template>
