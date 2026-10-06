@@ -1342,9 +1342,9 @@ steps:
   - DATABASE_URL= npm run test:integration # the same suite on PGlite
 ```
 
-All but `npm ci`, commitlint and the unit tests run in the background, beside
-the unit tests, through `scripts/ci-parallel.sh`; each still reports as its own
-step. On PGlite the integration test files run side by side, each on its own
+Lint, typecheck and the Postgres suite run in the background through
+`scripts/ci-parallel.sh` while the unit tests and the PGlite suite run in the
+foreground; each still reports as its own step. On PGlite the integration test files run side by side, each on its own
 in-memory database; on Postgres, which they share, one at a time.
 
 A `build` job beside it builds the production image from the `Dockerfile` —
