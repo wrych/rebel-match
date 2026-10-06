@@ -96,6 +96,7 @@ thresholds have sane defaults in the file and may be overridden by env.
 | `notifications.maxAttempts`           | `5`                           | R-NOTE-10                 |
 | `limits.whitelistBatchMax`            | `1000`                        | R-AUTH-1                  |
 | `limits.savedTickMs`                  | `2500`                        | R-PROF-1                  |
+| `limits.scrollHintShare`              | `0.4`                         | R-ONB-10                  |
 | `limits.holdToSelectMs`               | `500`                         | R-MEM-3                   |
 | `limits.swipeMinPx`                   | `50`                          | R-OFF-1                   |
 | `abuse.linkEmailsBeforeCheck`         | `3`                           | R-NFR-8                   |
@@ -260,6 +261,11 @@ classes that read only those tokens. A colour mode is one more token block,
 remembers the choice per browser (`client/lib/mood.ts`, R-LOOK-2). Calm is the
 default and happy the one alternative for the beta; a dark mode is another block
 of the same shape (R-LOOK-3). Fonts are self-hosted through `@fontsource`.
+
+The **step header** is one component (R-LOOK-4, ADR 0040): `AskSteps` loses its
+fixed labels and takes them, with the name it announces, from the screen. The
+Ask journey passes Describe, Domain, Matches; onboarding passes Profile,
+Privacy, Usage (R-ONB-6). Its look stays the `.steps` block of the theme.
 
 The header's right-hand button opens the **menu** (R-PROF-3): the colour mode
 switch, "Profile & privacy" (`/profile`), Feedback (R-FB-1), the host tools
@@ -815,16 +821,27 @@ onboarded → `403 {error: 'onboarding_required'}`. Only `/api/health` and
 
 ### Onboarding
 
-| Method | Path                | Body                                                                                | Behavior                                                                                                                                                                                                                                                                                                           |
-| ------ | ------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| GET    | `/api/onboarding`   | —                                                                                   | The form pre-filled: the member's profile so far, with `requested_name`/`requested_org` filling a missing name or organization (F2, R-AUTH-12), and the consent version in force. Pre-filling never stores them.                                                                                                   |
-| POST   | `/api/onboarding`   | `{name, jobTitle?, org?, sector?, companySize?, consentVersion, analyticsVersion?}` | Set name/profile, record consent version + timestamp. Required before other `/api` routes. A `consentVersion` other than the current one → `409` (R-ONB-4). `analyticsVersion` is sent only when the analytics box is ticked and records the opt-in; one other than the current analytics words → `409` (R-ANA-4). |
-| PUT    | `/api/me/analytics` | `{optIn: true, version}` or `{optIn: false}`                                        | Give or withdraw the analytics opt-in from the profile screen, as easily as at onboarding. A `version` other than the current analytics words → `409` (R-ANA-4).                                                                                                                                                   |
-| GET    | `/api/profile`      | —                                                                                   | The member's own name, job title, organization, sector, company size, email (read-only), the consent version and time they accepted, and `analyticsOptIn` (R-PROF-1,2).                                                                                                                                            |
-| PUT    | `/api/profile`      | `{name, jobTitle?, org?, sector?, companySize?}`                                    | Update the profile within the onboarding limits and lists; a blank or left-out optional field clears it (R-PROF-1).                                                                                                                                                                                                |
-| DELETE | `/api/me/history`   | —                                                                                   | Delete the member's own deck views, nothing else (R-STAT-4). Answers `204`.                                                                                                                                                                                                                                        |
-| DELETE | `/api/profile`      | —                                                                                   | Delete the member's own account as `DELETE /api/admin/members/:id` does: deactivate now, erase after the grace period; then end the session (R-PROF-2, ADR 0032). Refused with 409 `last_admin` or `created_invites`, as there. Answers `{eraseAfter}`.                                                            |
-| POST   | `/api/events`       | `{event, props}`                                                                    | The UI events of §7 (`journey_chosen`, `feedback_opened`) with their listed properties only; anything else → `400`. Forwarded to Mixpanel only for a member opted in; always `204` otherwise, so the client cannot tell (ADR 0026).                                                                                |
+| Method | Path                | Body                                                             | Behavior                                                                                                                                                                                                                                                                                                                        |
+| ------ | ------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/onboarding`   | —                                                                | The form pre-filled: the member's profile so far, with `requested_name`/`requested_org` filling a missing name or organization (F2, R-AUTH-12), and the consent version in force. Pre-filling never stores them.                                                                                                                |
+| POST   | `/api/onboarding`   | `{name, jobTitle?, org?, sector?, companySize?, consentVersion}` | Set name/profile, record consent version + timestamp. Required before other `/api` routes. A `consentVersion` other than the current one → `409` (R-ONB-4). Sent from the privacy step and never before it (R-ONB-7, R-ONB-8). It carries no analytics choice; the usage step uses `PUT /api/me/analytics` (R-ANA-4, ADR 0041). |
+| PUT    | `/api/me/analytics` | `{optIn: true, version, from?}` or `{optIn: false}`              | Give or withdraw the analytics opt-in, from the usage step of onboarding or the profile screen, as easily in one as in the other. `from: 'onboarding'` marks the usage step and sends `onboarding_completed` (R-ANA-6). A `version` other than the current analytics words → `409` (R-ANA-4).                                   |
+| GET    | `/api/profile`      | —                                                                | The member's own name, job title, organization, sector, company size, email (read-only), the consent version and time they accepted, and `analyticsOptIn` (R-PROF-1,2).                                                                                                                                                         |
+| PUT    | `/api/profile`      | `{name, jobTitle?, org?, sector?, companySize?}`                 | Update the profile within the onboarding limits and lists; a blank or left-out optional field clears it (R-PROF-1).                                                                                                                                                                                                             |
+| DELETE | `/api/me/history`   | —                                                                | Delete the member's own deck views, nothing else (R-STAT-4). Answers `204`.                                                                                                                                                                                                                                                     |
+| DELETE | `/api/profile`      | —                                                                | Delete the member's own account as `DELETE /api/admin/members/:id` does: deactivate now, erase after the grace period; then end the session (R-PROF-2, ADR 0032). Refused with 409 `last_admin` or `created_invites`, as there. Answers `{eraseAfter}`.                                                                         |
+| POST   | `/api/events`       | `{event, props}`                                                 | The UI events of §7 (`journey_chosen`, `feedback_opened`) with their listed properties only; anything else → `400`. Forwarded to Mixpanel only for a member opted in; always `204` otherwise, so the client cannot tell (ADR 0026).                                                                                             |
+
+The profile step keeps what the member types in the browser, for that tab
+only, and removes it once `POST /api/onboarding` has stored it (R-ONB-7).
+
+Consent and analytics words stay versioned lists (`consentTexts`,
+`analyticsTexts`). From the versions written for ADR 0041 on, an entry may
+carry a short heading; one component draws each list wherever it appears, so
+the privacy step, the usage step and the profile screen show the same thing
+(R-LOOK-4). The scroll hint of the privacy step moves the summary by
+`limits.scrollHintShare` of the visible height, without animation when the
+member prefers reduced motion (R-ONB-10).
 
 ### Ask journey
 
@@ -933,7 +950,7 @@ deep link reloads cleanly.
 | --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
 | S1  | **Login** — email field → "check your email"                                                                                                                                                                                                                                                                      | `/login`                                                |
 | S2  | **Sign in** — the magic link's landing: a **Sign in** button; tapping it verifies the token and routes onward (ADR 0027)                                                                                                                                                                                          | `/sign-in#token=…`                                      |
-| S3  | **Onboarding** — name + consent (first time only)                                                                                                                                                                                                                                                                 | `/onboarding`                                           |
+| S3  | **Onboarding: profile** — step 1 of 3: name and the optional profile, held in the browser until S28 is confirmed; links to S30 (R-ONB-2, R-ONB-7)                                                                                                                                                                 | `/onboarding`                                           |
 | S4  | **Welcome** — two doors: _Ask for help_ / _Offer help_                                                                                                                                                                                                                                                            | `/welcome`                                              |
 | S5  | **Submit challenge** — textarea + _Inspiration_: the newest challenges, read-only; disabled until the text passes `limits.challengeMinChars`; takes at most `limits.challengeMaxChars`                                                                                                                            | `/ask`                                                  |
 | S6  | **Domain / trend** — detected trend, "from → to", peer line, confirm                                                                                                                                                                                                                                              | `/challenges/:id`                                       |
@@ -958,6 +975,9 @@ deep link reloads cleanly.
 | S24 | **Profile & privacy** — edit name, job title, organization, sector and company size, each saved on change with a tick; the accepted consent, read-only with version and date; the analytics opt-in; how each notification arrives (R-NOTE-3); how to leave (R-PROF-1,2)                                           | `/profile`                                              |
 | S27 | **Notifications** — newest first, each one line naming who it is about and its time; tapping it opens the screen it comes from; new ones outlined (R-NOTE-5)                                                                                                                                                      | `/notifications`                                        |
 | S25 | **Settings** — every configured value in named groups such as Spam protection, marking what differs from the default; the values R-CFG-6 allows are fields saved on change with a tick, with who changed them and a way back to the deployment value (R-CFG-5,6)                                                  | `/admin/settings`                                       |
+| S28 | **Onboarding: privacy** — step 2 of 3: the consent summary under headings, a link to S30, a scroll hint while the button is out of view, and one button, _I have read the privacy notice_, which saves profile and consent (R-ONB-3, R-ONB-8, R-ONB-10)                                                           | `/onboarding/privacy`                                   |
+| S29 | **Onboarding: usage data** — step 3 of 3: "Profile saved" with a link to S24, the analytics words, and two equal buttons, _Share usage data_ and _No thanks_ (R-ONB-11, R-ANA-4)                                                                                                                                  | `/onboarding/usage`                                     |
+| S30 | **Privacy notice** — the full notice with its version and date; public (R-ONB-9)                                                                                                                                                                                                                                  | `/privacy`                                              |
 
 Remaining overlays, deliberately: the "really decline this request?" confirm, the
 "link sent" / "copied" toasts, and the feedback action (a `mailto:`, not a
@@ -988,6 +1008,11 @@ validator, so neither side can develop a private opinion about which paths exist
 - **Onboarding wins** — a guard sends an un-onboarded member to `/onboarding` and
   carries `next` through it; the server independently refuses every other `/api/*`
   route until onboarding is complete (R-NAV-7, R-ONB-1).
+- **Onboarding steps** — `/onboarding/privacy` with no name typed in this tab
+  goes to `/onboarding`, and `/onboarding/usage` needs a completed onboarding.
+  `next` is carried through all three. An onboarded member who opens either of
+  the first two steps is sent to `/welcome`. `/privacy` is public
+  (R-ONB-6..9, R-ONB-11).
 - **Authorization before rendering** — a screen for a challenge or request fetches
   it first. The API answers `404` for anything the caller may not see, never `403`,
   so the client renders the not-found screen without ever learning the row exists
@@ -1217,10 +1242,14 @@ Alternatives considered (kept only as fallbacks):
   (R-NFR-3). It covers email delivery, signing in and the onboarding screen; the
   scan and typing the address come before it and are timed by hand. It is left
   out when no such email is in the log, for instance after its retention.
+- `onboarding_completed` is sent when the member shares on the usage step
+  (`from: 'onboarding'`), with `consent_version` and `seconds_to_onboard` taken
+  from what the privacy step stored. A member who declines is not counted, so
+  the funnel reads as a rate among those who share (R-ANA-6).
 - **Never** send challenge `body`, member `name`, `email`, `org`.
-- **Opt-in only** (R-ANA-4, ADR 0026). Onboarding shows an unticked checkbox
-  under the consent, with its own versioned words (`analyticsTexts`, like
-  `consentTexts`). Ticking it sets `analytics_consent_version` and
+- **Opt-in only** (R-ANA-4, ADR 0026, ADR 0041). Onboarding asks on its third
+  step, with two equal buttons and its own versioned words (`analyticsTexts`,
+  like `consentTexts`). Sharing sets `analytics_consent_version` and
   `analytics_consent_at`; the member changes it later on the profile screen
   (`PUT /api/me/analytics`, R-PROF-2). An event is sent only while both are set.
 - **Server only.** The server sends every event through the Mixpanel HTTP

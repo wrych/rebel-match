@@ -62,7 +62,7 @@ still holds except where the later ADR says otherwise.
 | [0023](0023-prototype-look-and-colour-modes.md)            | Wear the prototype's look, with happy mode as a colour mode          | Accepted                  |
 | [0024](0024-postgres-via-drizzle-with-pglite-for-dev.md)   | Postgres through Drizzle, with PGlite for development and tests      | Accepted                  |
 | [0025](0025-cloud-run-promote-staging.md)                  | Cloud Run from GitHub; production promoted from staging              | Accepted, amended by 0028 |
-| [0026](0026-analytics-opt-in-sent-from-the-server.md)      | Analytics is opt-in, and every event goes from the server            | Accepted                  |
+| [0026](0026-analytics-opt-in-sent-from-the-server.md)      | Analytics is opt-in, and every event goes from the server            | Accepted, amended by 0041 |
 | [0027](0027-sign-in-with-a-button.md)                      | Sign in with a button, never by opening the link                     | Accepted, amended by 0034 |
 | [0028](0028-merge-without-updating.md)                     | Merge without updating the branch; previews on request               | Accepted                  |
 | [0029](0029-rate-limits-with-a-self-hosted-human-check.md) | Rate-limit sign-in, with a self-hosted human check                   | Accepted, amended by 0030 |
@@ -76,3 +76,4 @@ still holds except where the later ADR says otherwise.
 | [0038](0038-count-invite-opens.md)                         | Count the opens of each invite, and show them with its uses          | Accepted, amended by 0039 |
 | [0039](0039-count-an-open-on-first-interaction.md)         | Count an invite open on the visitor's first interaction              | Accepted                  |
 | [0040](0040-reuse-a-component-before-building-one.md)      | Reuse a component before building a new one                          | Accepted                  |
+| [0041](0041-onboard-in-three-steps.md)                     | Onboard in three steps; the notice is read, usage data is asked      | Accepted                  |

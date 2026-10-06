@@ -1,6 +1,6 @@
 # 0026. Make analytics opt-in, and send every event from the server
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by 0041
 - **Date:** 2026-10-04
 - **Deciders:** Andy Moesch
 
