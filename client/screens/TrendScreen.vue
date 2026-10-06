@@ -3,15 +3,33 @@ import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import CaseList from '../components/CaseList.vue'
 import FollowButton from '../components/FollowButton.vue'
-import { fetchTrendDetail, type TrendDetail } from '../lib/challenges'
+import NewestChallenges from '../components/NewestChallenges.vue'
+import {
+  fetchNewestChallenges,
+  fetchTrendDetail,
+  type NewestChallenge,
+  type TrendDetail,
+} from '../lib/challenges'
 
 const route = useRoute()
 const trendId = String(route.params.trendId)
 const detail = ref<TrendDetail | null>(null)
+const newest = ref<NewestChallenge[] | null>(null)
 const missing = ref(false)
 const problem = ref<string | null>(null)
 
+// The trend stands without its newest challenges, so their failure only
+// leaves that section out.
+async function loadNewest(): Promise<void> {
+  try {
+    newest.value = await fetchNewestChallenges(trendId)
+  } catch {
+    newest.value = null
+  }
+}
+
 onMounted(async () => {
+  void loadNewest()
   try {
     detail.value = await fetchTrendDetail(trendId)
     missing.value = detail.value === null
@@ -36,6 +54,14 @@ onMounted(async () => {
       <p class="mono peers">
         {{ detail.trend.peers }} rebels work on this trend
       </p>
+
+      <section v-if="newest" class="stack rule" aria-labelledby="newest">
+        <h2 id="newest" class="display display-md">Newest challenges</h2>
+        <p v-if="newest.length === 0" class="empty">
+          No challenges in this trend yet.
+        </p>
+        <NewestChallenges v-else :challenges="newest" />
+      </section>
 
       <section class="stack rule" aria-labelledby="cases">
         <h2 id="cases" class="display display-md">Case studies</h2>

@@ -182,6 +182,7 @@ const envSchema = z
     BEEN_THERE_NOTE_MIN_CHARS: z.coerce.number().int().positive().default(31),
     OUTBOX_PAGE_SIZE: z.coerce.number().int().positive().default(100),
     DECK_PAGE_SIZE: z.coerce.number().int().positive().default(20),
+    NEWEST_CHALLENGES_SHOWN: z.coerce.number().int().positive().default(3),
     MATCHES_POLL_SECONDS: z.coerce.number().int().positive().default(30),
     NOTIFICATIONS_PAGE_SIZE: z.coerce.number().int().positive().default(50),
     WHITELIST_BATCH_MAX: z.coerce.number().int().positive().default(1000),
@@ -308,6 +309,7 @@ export interface Limits {
   erasureGraceDays: number
   outboxPageSize: number
   deckPageSize: number
+  newestChallengesShown: number
   matchesPollSeconds: number
   notificationsPageSize: number
   whitelistBatchMax: number
@@ -416,6 +418,7 @@ function limitsFrom(env: Env): Limits {
     erasureGraceDays: env.ERASURE_GRACE_DAYS,
     outboxPageSize: env.OUTBOX_PAGE_SIZE,
     deckPageSize: env.DECK_PAGE_SIZE,
+    newestChallengesShown: env.NEWEST_CHALLENGES_SHOWN,
     matchesPollSeconds: env.MATCHES_POLL_SECONDS,
     notificationsPageSize: env.NOTIFICATIONS_PAGE_SIZE,
     whitelistBatchMax: env.WHITELIST_BATCH_MAX,

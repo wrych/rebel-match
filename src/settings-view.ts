@@ -271,6 +271,13 @@ const catalogue: Group[] = [
         unit: ['challenge', 'challenges'],
       },
       {
+        name: 'Newest challenges shown for inspiration',
+        explanation:
+          'How many recent challenges the trend and ask screens show.',
+        read: (c) => c.limits.newestChallengesShown,
+        unit: ['challenge', 'challenges'],
+      },
+      {
         name: 'How often the badges check for news',
         explanation:
           'While the app is open, the matches and notifications badges and the waiting requests refresh this often.',

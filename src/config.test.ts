@@ -345,6 +345,16 @@ describe('outbound message log settings', () => {
   })
 })
 
+describe('newest challenges shown', () => {
+  it('shows three unless told otherwise (R-ASK-2, R-ASK-14)', () => {
+    expect(loadConfig(valid).limits.newestChallengesShown).toBe(3)
+    expect(
+      loadConfig({ ...valid, NEWEST_CHALLENGES_SHOWN: '5' }).limits
+        .newestChallengesShown,
+    ).toBe(5)
+  })
+})
+
 describe('deck page size', () => {
   it('hands out 20 cards at a time unless told otherwise (R-OFF-1)', () => {
     expect(loadConfig(valid).limits.deckPageSize).toBe(20)

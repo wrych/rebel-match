@@ -29,11 +29,13 @@ function setup(): {
   service: ReturnType<typeof createChallenges>
   rows: Map<string, Challenge>
   peerCalls: [string, string][]
+  newestCalls: [string, string | null, number][]
   tracked: [string, AnalyticsEvent][]
 } {
   const tracked: [string, AnalyticsEvent][] = []
   const rows = new Map<string, Challenge>()
   const peerCalls: [string, string][] = []
+  const newestCalls: [string, string | null, number][] = []
   const store: ChallengeStore = {
     trends: () => Promise.resolve(stored),
     insert: (c) => {
@@ -59,15 +61,22 @@ function setup(): {
       Promise.resolve([
         { org: 'Advice process', url: 'https://x.invalid', takeaway: 'Ask.' },
       ]),
+    newest: (viewerId, trendId, limit) => {
+      newestCalls.push([viewerId, trendId, limit])
+      return Promise.resolve([
+        { body: decide, trend: { id: '06', short: 'Decisions' } },
+      ])
+    },
   }
   const track: Track = (memberId, event) => {
     tracked.push([memberId, event])
     return Promise.resolve()
   }
   return {
-    service: createChallenges({ store, track }),
+    service: createChallenges({ store, newestShown: 3, track }),
     rows,
     peerCalls,
+    newestCalls,
     tracked,
   }
 }
@@ -75,6 +84,17 @@ function setup(): {
 const decide = 'Since we flattened, nobody knows who can decide what any more.'
 
 describe('createChallenges', () => {
+  it('shows as many newest challenges as configured (R-ASK-14)', async () => {
+    const { service, newestCalls } = setup()
+
+    const newest = await service.newest('m-ada', '06')
+
+    expect(newest).toEqual([
+      { body: decide, trend: { id: '06', short: 'Decisions' } },
+    ])
+    expect(newestCalls).toEqual([['m-ada', '06', 3]])
+  })
+
   it('describes a trend with its cases, without keywords (design S9)', async () => {
     const detail = await setup().service.trend('06')
 

@@ -1,27 +1,42 @@
 import type {
   Challenge,
   Matches,
+  NewestChallenge,
   PeerCard,
   Trend,
   TrendDetail,
 } from '../../src/services/challenges'
 
-export type { Challenge, Matches, PeerCard, Trend, TrendDetail }
-
-/** Hints of what belongs in a challenge, taken from the prototype. They are
- * shown as text only, never inserted into the member's own words (R-ASK-2). */
-export const challengeExamples: readonly string[] = [
-  'Nobody knows who can decide what.',
-  'Roles and circles, old salary model.',
-  'Peer feedback instead of annual reviews.',
-  'A shadow organisation beside the official one.',
-]
+export type {
+  Challenge,
+  Matches,
+  NewestChallenge,
+  PeerCard,
+  Trend,
+  TrendDetail,
+}
 
 export async function fetchTrends(): Promise<Trend[]> {
   const response = await fetch('/api/trends')
   if (!response.ok)
     throw new Error(`trends unavailable (${String(response.status)})`)
   return ((await response.json()) as { trends: Trend[] }).trends
+}
+
+/** Other members' newest challenges, in one trend when given, without who
+ * wrote them (R-ASK-2, R-ASK-14). */
+export async function fetchNewestChallenges(
+  trendId?: string,
+): Promise<NewestChallenge[]> {
+  const query =
+    trendId === undefined ? '' : `?trend=${encodeURIComponent(trendId)}`
+  const response = await fetch(`/api/challenges/newest${query}`)
+  if (!response.ok)
+    throw new Error(
+      `newest challenges unavailable (${String(response.status)})`,
+    )
+  return ((await response.json()) as { challenges: NewestChallenge[] })
+    .challenges
 }
 
 /** Saves the challenge and returns it with the trend the matcher picked

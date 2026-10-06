@@ -11,6 +11,7 @@ import {
 import type {
   Challenge,
   ChallengeStore,
+  NewestChallenge,
   PeerCard,
   StoredTrend,
 } from './challenges.js'
@@ -85,6 +86,34 @@ async function peersOf(
   return { sameBoat: same.map(peerOf), beenThere: been.map(peerOf) }
 }
 
+// The deck's rule for whose challenges others may see (R-OFF-1); no member
+// column is selected, so nothing tells who wrote one (R-ASK-14).
+async function newestOf(
+  db: Database,
+  viewerId: string,
+  trendId: string | null,
+  limit: number,
+): Promise<NewestChallenge[]> {
+  const rows = await db
+    .select({ body: challenges.body, id: trends.id, short: trends.short })
+    .from(challenges)
+    .innerJoin(members, eq(members.id, challenges.memberId))
+    .innerJoin(trends, eq(trends.id, challengeTrend))
+    .where(
+      and(
+        eq(challenges.status, 'active'),
+        peerFilter(viewerId),
+        trendId === null ? undefined : eq(trends.id, trendId),
+      ),
+    )
+    .orderBy(desc(challenges.createdAt), challenges.id)
+    .limit(limit)
+  return rows.map((row) => ({
+    body: row.body,
+    trend: { id: row.id, short: row.short },
+  }))
+}
+
 function challengeOf(row: typeof challenges.$inferSelect): Challenge {
   return {
     id: row.id,
@@ -135,6 +164,8 @@ export function createChallengeStore(db: Database): ChallengeStore {
           })
       }),
     peers: (trendId, viewerId) => peersOf(db, trendId, viewerId),
+    newest: (viewerId, trendId, limit) =>
+      newestOf(db, viewerId, trendId, limit),
     cases: (trendId) =>
       db
         .select({ org: cases.org, url: cases.url, takeaway: cases.takeaway })
