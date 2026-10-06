@@ -8,12 +8,16 @@ import { startOutboxRetention } from './services/outbox-retention.js'
 import { startTokenPurge } from './services/token-purge.js'
 import { startErasureSweep } from './services/erasure-sweep.js'
 import { startSettingsRefresh } from './services/settings-refresh.js'
+import { startNotificationWorker } from './services/notification-worker.js'
 
 const config = await loadRuntimeConfig()
 const connection = await openDatabase(config)
 const deps = composeApp(config, connection.db, {
   onAnalyticsError: () => {
     console.warn('analytics: an event could not be sent')
+  },
+  onNotificationError: () => {
+    console.warn('notifications: one could not be mailed, will retry')
   },
 })
 
@@ -50,6 +54,27 @@ startOutboxRetention({
   intervalHours: config.outboxPurgeIntervalHours,
   onError: () => {
     console.warn('outbox retention: purge failed, will retry next interval')
+  },
+})
+
+// Notifications are mailed by this timer, not by the request that caused
+// them, and kept as long as the outbound log is purged (R-NOTE-7, R-NOTE-11).
+startNotificationWorker({
+  worker: deps.notificationMail,
+  intervalSeconds: config.notificationWorker.intervalSeconds,
+  onError: () => {
+    console.warn('notifications: the worker failed, will retry next interval')
+  },
+})
+
+startOutboxRetention({
+  log: deps.notificationMail,
+  retentionDays: config.limits.notificationRetentionDays,
+  intervalHours: config.outboxPurgeIntervalHours,
+  onError: () => {
+    console.warn(
+      'notification retention: purge failed, will retry next interval',
+    )
   },
 })
 

@@ -8,6 +8,7 @@ import type { DatabaseTarget } from './db/connect.js'
 // Node clamps a timer delay above 2^31-1 ms (about 24.8 days) to 1 ms, so a
 // longer purge interval would run the purge continuously.
 const MAX_TIMER_HOURS = Math.floor(0x7fffffff / 3_600_000)
+const MAX_TIMER_SECONDS = Math.floor(0x7fffffff / 1000)
 
 // The widths of members.name and requested_name, job_title, org and
 // requested_org (src/db/schema.ts): a fact of the schema rather
@@ -176,6 +177,8 @@ const envSchema = z
     NOTIFICATIONS_PAGE_SIZE: z.coerce.number().int().positive().default(50),
     WHITELIST_BATCH_MAX: z.coerce.number().int().positive().default(1000),
     OUTBOX_RETENTION_DAYS: z.coerce.number().int().positive().default(30),
+    // Notifications are kept a while for the list, then go (R-NOTE-11).
+    NOTIFICATION_RETENTION_DAYS: z.coerce.number().int().positive().default(90),
     // How long a deleted account waits before it is erased (ADR 0032).
     ERASURE_GRACE_DAYS: z.coerce.number().int().positive().default(30),
     OUTBOX_PURGE_INTERVAL_HOURS: z.coerce
@@ -220,6 +223,26 @@ const envSchema = z
     // How often a server re-reads the values hosts changed in the app
     // (ADR 0031); the server that saved a change applies it at once.
     SETTINGS_REFRESH_SECONDS: z.coerce.number().int().positive().default(60),
+    // The notification worker's round, and how often a refused mail is tried
+    // before it counts as failed (R-NOTE-7, R-NOTE-10).
+    NOTIFICATION_WORKER_SECONDS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .max(MAX_TIMER_SECONDS)
+      .default(60),
+    NOTIFICATION_MAX_ATTEMPTS: z.coerce.number().int().positive().default(5),
+    // A refused mail waits this long before its first retry, twice as long
+    // before each next; a claimed notification is held this long for the
+    // server that claimed it, longer than any send takes; and one round
+    // claims at most a batch (R-NOTE-10).
+    NOTIFICATION_FIRST_RETRY_SECONDS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(60),
+    NOTIFICATION_HOLD_SECONDS: z.coerce.number().int().positive().default(300),
+    NOTIFICATION_BATCH: z.coerce.number().int().positive().default(100),
   })
   .superRefine((env, ctx) => {
     if (env.MAIL_DELIVERY === 'smtp' && env.SMTP_HOST === undefined) {
@@ -262,6 +285,7 @@ export interface Limits {
   inviteDefaultMaxUses: number
   inviteDefaultHours: number
   outboxRetentionDays: number
+  notificationRetentionDays: number
   erasureGraceDays: number
   outboxPageSize: number
   deckPageSize: number
@@ -339,6 +363,8 @@ export interface Config {
   erasureSweepIntervalHours: number
   tokenPurgeIntervalHours: number
   settingsRefreshSeconds: number
+  /** The notification worker's round and retries (R-NOTE-7, R-NOTE-10). */
+  notificationWorker: NotificationWorkerSettings
   mail: {
     delivery: Env['MAIL_DELIVERY']
     from: string
@@ -367,6 +393,7 @@ function limitsFrom(env: Env): Limits {
     inviteDefaultMaxUses: env.INVITE_DEFAULT_MAX_USES,
     inviteDefaultHours: env.INVITE_DEFAULT_HOURS,
     outboxRetentionDays: env.OUTBOX_RETENTION_DAYS,
+    notificationRetentionDays: env.NOTIFICATION_RETENTION_DAYS,
     erasureGraceDays: env.ERASURE_GRACE_DAYS,
     outboxPageSize: env.OUTBOX_PAGE_SIZE,
     deckPageSize: env.DECK_PAGE_SIZE,
@@ -400,6 +427,39 @@ function abuseLimitsFrom(env: Env): AbuseLimits {
   }
 }
 
+export interface NotificationWorkerSettings {
+  intervalSeconds: number
+  maxAttempts: number
+  firstRetrySeconds: number
+  holdSeconds: number
+  batch: number
+}
+
+function notificationWorkerFrom(env: Env): NotificationWorkerSettings {
+  return {
+    intervalSeconds: env.NOTIFICATION_WORKER_SECONDS,
+    maxAttempts: env.NOTIFICATION_MAX_ATTEMPTS,
+    firstRetrySeconds: env.NOTIFICATION_FIRST_RETRY_SECONDS,
+    holdSeconds: env.NOTIFICATION_HOLD_SECONDS,
+    batch: env.NOTIFICATION_BATCH,
+  }
+}
+
+function mailFrom(env: Env): Config['mail'] {
+  return {
+    delivery: env.MAIL_DELIVERY,
+    from: env.MAIL_FROM,
+    smtp: {
+      ...(env.SMTP_HOST === undefined ? {} : { host: env.SMTP_HOST }),
+      port: env.SMTP_PORT,
+      ...(env.SMTP_USER === undefined ? {} : { user: env.SMTP_USER }),
+      ...(env.SMTP_PASSWORD === undefined
+        ? {}
+        : { password: env.SMTP_PASSWORD }),
+    },
+  }
+}
+
 /** Reads and validates configuration, failing before the server accepts a
  * request rather than on the first use of a bad value (R-CFG-1, R-CFG-4). */
 export function loadConfig(source: NodeJS.ProcessEnv = process.env): Config {
@@ -421,18 +481,8 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): Config {
     erasureSweepIntervalHours: env.ERASURE_SWEEP_INTERVAL_HOURS,
     tokenPurgeIntervalHours: env.TOKEN_PURGE_INTERVAL_HOURS,
     settingsRefreshSeconds: env.SETTINGS_REFRESH_SECONDS,
-    mail: {
-      delivery: env.MAIL_DELIVERY,
-      from: env.MAIL_FROM,
-      smtp: {
-        ...(env.SMTP_HOST === undefined ? {} : { host: env.SMTP_HOST }),
-        port: env.SMTP_PORT,
-        ...(env.SMTP_USER === undefined ? {} : { user: env.SMTP_USER }),
-        ...(env.SMTP_PASSWORD === undefined
-          ? {}
-          : { password: env.SMTP_PASSWORD }),
-      },
-    },
+    notificationWorker: notificationWorkerFrom(env),
+    mail: mailFrom(env),
     feedbackTo: env.FEEDBACK_TO,
     seedProfile: env.SEED_PROFILE,
     consentVersion: env.CONSENT_VERSION,

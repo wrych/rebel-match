@@ -77,6 +77,12 @@ export interface AppDeps {
   follows: FollowService
   cockpit: CockpitService
   notifications: NotificationService
+  /** Mails notifications and purges old ones; run by the server's timers,
+   * not by requests (R-NOTE-7, R-NOTE-11). */
+  notificationMail: {
+    deliverDue(): Promise<void>
+    purgeBefore(cutoff: Date): Promise<number>
+  }
 }
 
 /** True when the database answers. Reported rather than thrown, so a dev server

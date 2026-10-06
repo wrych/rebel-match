@@ -286,7 +286,7 @@ printed dev link (R-DEV-6).
       connection request, new connection and applicant; `/notifications`; the
       menu's badge and "Notifications (n new)". Mail still goes as today.
       _(R-NOTE-1,4,5,6, R-PROF-3, ADR 0037)_
-- [ ] Mail notifications through the worker, every type _Immediately_; a
+- [x] Mail notifications through the worker, every type _Immediately_; a
       request stands when its mail fails, so `notifyOrWithdraw` goes.
       _(R-NOTE-9,10,11, ADR 0037)_
 - [ ] Cadences: _Every 15 minutes_, _Hourly_, _Daily_, _In the app only_ and

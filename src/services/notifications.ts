@@ -1,4 +1,3 @@
-import type { AcceptedRequest, NewRequest } from './connection-notice.js'
 import type { ConnectionService } from './connections.js'
 
 /** What a notification says happened, as the screen words it (R-NOTE-1). */
@@ -35,16 +34,6 @@ export interface NotificationRow {
 }
 
 export interface NotificationStore {
-  /** Stores one notification for the member a request concerns. */
-  add(note: {
-    recipientId: string
-    type: 'connection_request' | 'new_connection'
-    aboutMemberId: string
-    connectionId: string
-  }): Promise<void>
-  /** Stores one notification for every member who may review applicants,
-   * about the applicant with this address. */
-  addApplicant(email: string): Promise<void>
   /** The member's notifications R-NOTE-5 shows, newest first; with
    * `before`, the page after that entry of theirs. */
   list(
@@ -66,15 +55,6 @@ export interface NotificationStore {
 }
 
 export interface NotificationService {
-  /** A request was made to its target (R-CONN-2). */
-  requested: (request: NewRequest) => Promise<void>
-  /** A request was accepted, which its requester learns (R-CONN-7). */
-  accepted: (request: AcceptedRequest) => Promise<void>
-  /** A member already connected connected again, which the target learns
-   * (R-CONN-9). */
-  added: (request: NewRequest) => Promise<void>
-  /** Someone asked to join (R-AUTH-2). */
-  applicant: (email: string) => Promise<void>
   list(memberId: string, before: string | null): Promise<NotificationView[]>
   newCount(memberId: string): Promise<number>
   seen(memberId: string, ids: readonly string[]): Promise<void>
@@ -116,36 +96,15 @@ function viewOf(row: NotificationRow): NotificationView {
   }
 }
 
-/** Notifications kept in the app (R-NOTE-4..6, ADR 0037). Mail still goes as
- * it did, beside them; the worker takes it over later. */
+/** Notifications kept in the app (R-NOTE-4..6, ADR 0037). They are written
+ * with their events by the stores that record them, and mailed by the
+ * worker. */
 export function createNotifications(deps: {
   store: NotificationStore
   pageSize: () => number
 }): NotificationService {
   const { store } = deps
   return {
-    requested: (request) =>
-      store.add({
-        recipientId: request.targetId,
-        type: 'connection_request',
-        aboutMemberId: request.requesterId,
-        connectionId: request.id,
-      }),
-    accepted: (request) =>
-      store.add({
-        recipientId: request.requesterId,
-        type: 'new_connection',
-        aboutMemberId: request.targetId,
-        connectionId: request.id,
-      }),
-    added: (request) =>
-      store.add({
-        recipientId: request.targetId,
-        type: 'new_connection',
-        aboutMemberId: request.requesterId,
-        connectionId: request.id,
-      }),
-    applicant: (email) => store.addApplicant(email),
     list: async (memberId, before) =>
       (await store.list(memberId, before, deps.pageSize())).map(viewOf),
     newCount: (memberId) => store.newCount(memberId),
@@ -154,18 +113,6 @@ export function createNotifications(deps: {
     openedConnection: (memberId, connectionId, contact) =>
       store.markSeenForConnection(memberId, connectionId, contact),
     openedApplicants: (memberId) => store.markSeenForApplicants(memberId),
-  }
-}
-
-/** Runs the notification before the mail, so a mail that fails, which
- * withdraws what it announces, takes the notification with it. */
-export function thenMail<T>(
-  note: (event: T) => Promise<void>,
-  mail: (event: T) => Promise<void>,
-): (event: T) => Promise<void> {
-  return async (event) => {
-    await note(event)
-    await mail(event)
   }
 }
 

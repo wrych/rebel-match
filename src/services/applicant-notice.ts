@@ -1,33 +1,33 @@
 import type { Mailer } from './mailer.js'
 
-export interface ReviewerDirectory {
-  /** Addresses of active members holding any of these roles. */
-  emailsHolding(roles: readonly string[]): Promise<string[]>
+/** One reviewer's notification of one applicant. */
+export interface ApplicantNote {
+  reviewerId: string
+  to: string
+  applicantId: string
+  applicantEmail: string
+  /** When they asked. */
+  at: Date
 }
 
-/** Emails every member who can review applicants about a new one (R-AUTH-2,
- * R-AUTH-11), found by permission, never by role name (R-ROLE-3). */
+/** Emails one member who can review applicants about a new one (R-AUTH-2,
+ * R-AUTH-11). The worker sends one per reviewer's notification (R-NOTE-7);
+ * the entry is erased with the applicant it names (R-MSG-6). */
 export function createApplicantNotice(deps: {
   mailer: Mailer
-  reviewers: ReviewerDirectory
-  reviewerRoles: readonly string[]
   publicUrl: string
-  now?: () => Date
-}): (applicantEmail: string) => Promise<void> {
-  return async (applicantEmail) => {
-    const at = (deps.now ?? (() => new Date()))().toISOString()
-    const review = new URL('/admin/applicants', deps.publicUrl).toString()
-
-    for (const to of await deps.reviewers.emailsHolding(deps.reviewerRoles)) {
-      await deps.mailer.send({
-        memberId: null,
-        to,
-        kind: 'admin_notice',
-        subject: 'Someone asked to join Rebel Match',
-        text:
-          `${applicantEmail} asked for access at ${at}.\n\n` +
-          `Approve or reject them here:\n${review}\n`,
-      })
-    }
+}): (note: ApplicantNote) => Promise<void> {
+  const review = new URL('/admin/applicants', deps.publicUrl).toString()
+  return async (note) => {
+    await deps.mailer.send({
+      memberId: note.reviewerId,
+      aboutMemberId: note.applicantId,
+      to: note.to,
+      kind: 'admin_notice',
+      subject: 'Someone asked to join Rebel Match',
+      text:
+        `${note.applicantEmail} asked for access at ${note.at.toISOString()}.\n\n` +
+        `Approve or reject them here:\n${review}\n`,
+    })
   }
 }

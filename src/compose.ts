@@ -14,10 +14,7 @@ import {
   type LiveSettings,
 } from './config.js'
 import type { Database } from './db/connect.js'
-import {
-  createAdmissionStore,
-  createReviewerDirectory,
-} from './services/admission-store.js'
+import { createAdmissionStore } from './services/admission-store.js'
 import { createAdmission } from './services/admission.js'
 import { createApplicantHandles } from './services/applicant-handle.js'
 import { createHumanCheck } from './services/human-check.js'
@@ -28,11 +25,12 @@ import { createWindowCounter } from './services/rate-limit.js'
 import {
   createNotifications,
   markingOpened,
-  thenMail,
   type NotificationService,
 } from './services/notifications.js'
 import { createNotificationStore } from './services/notification-store.js'
-import { createApplicantNotice } from './services/applicant-notice.js'
+import { createNotificationMailStore } from './services/notification-mail-store.js'
+import { createNotificationSender } from './services/notification-mail.js'
+import { createNotificationWorker } from './services/notification-worker.js'
 import { createApprovalStore } from './services/approval-store.js'
 import { createApprovals } from './services/approvals.js'
 import { mailLinks } from './services/link-delivery.js'
@@ -40,11 +38,6 @@ import { createChallengeStore } from './services/challenge-store.js'
 import { createChallenges } from './services/challenges.js'
 import { createConnectionStore } from './services/connection-store.js'
 import { createConnections } from './services/connections.js'
-import {
-  createAcceptNotice,
-  createAddedNotice,
-  createConnectionNotice,
-} from './services/connection-notice.js'
 import { createMemberDirectory } from './services/member-directory-store.js'
 import { createSwipeStore } from './services/swipe-store.js'
 import { createSwipes } from './services/swipes.js'
@@ -124,12 +117,18 @@ function composeJourneys(
   config: Config,
   db: Database,
   track: Track,
-  mailer: Mailer,
-  notes: NotificationService,
+  settings: LiveSettings,
 ): Pick<
   AppDeps,
-  'challenges' | 'deck' | 'connections' | 'swipes' | 'follows' | 'cockpit'
+  | 'challenges'
+  | 'deck'
+  | 'connections'
+  | 'swipes'
+  | 'follows'
+  | 'cockpit'
+  | 'notifications'
 > {
+  const notes = composeNotifications(db, settings)
   const challenges = createChallenges({
     store: createChallengeStore(db),
     track,
@@ -138,18 +137,10 @@ function composeJourneys(
     store: createFollowStore(db),
     trends: () => challenges.trends(),
   })
-  const notices = {
-    mailer,
-    members: createMemberDirectory(db),
-    publicUrl: config.publicUrl,
-  }
   const connections = createConnections({
     store: createConnectionStore(db),
     newId: randomUUID,
     track,
-    notify: thenMail(notes.requested, createConnectionNotice(notices)),
-    notifyAccepted: thenMail(notes.accepted, createAcceptNotice(notices)),
-    notifyAdded: thenMail(notes.added, createAddedNotice(notices)),
   })
   return {
     challenges,
@@ -164,6 +155,7 @@ function composeJourneys(
       store: createCockpitStore(db),
       followed: (memberId) => follows.followed(memberId),
     }),
+    notifications: notes,
   }
 }
 
@@ -236,25 +228,17 @@ function composeAdmission(
   settings: LiveSettings,
   db: Database,
   auth: AuthProvider,
-  mailer: Mailer,
-  notes: NotificationService,
 ): Pick<AppDeps, 'admission' | 'approvals'> {
   return {
     admission: createAdmission({
-      store: createAdmissionStore(db),
+      store: createAdmissionStore(
+        db,
+        configPolicy.rolesGranting('applicant:review'),
+      ),
       auth,
       handles: createApplicantHandles(config.sessionSecret),
       ...composeGates(config, settings),
       redeemInvite: createInviteRedemption(db, admittedRole),
-      notifyReviewers: thenMail(
-        notes.applicant,
-        createApplicantNotice({
-          mailer,
-          reviewers: createReviewerDirectory(db),
-          reviewerRoles: configPolicy.rolesGranting('applicant:review'),
-          publicUrl: config.publicUrl,
-        }),
-      ),
     }),
     approvals: createApprovals({
       store: createApprovalStore(db),
@@ -297,13 +281,46 @@ function composeNotifications(
 
 const ignoreError = (): void => undefined
 
+// The worker that mails notifications, each type's own email as it was sent
+// from the request before (R-NOTE-7..11, ADR 0037).
+function composeNotificationMail(
+  config: Config,
+  db: Database,
+  mailer: Mailer,
+  hooks: { onNotificationError?: (error: unknown) => void },
+): AppDeps['notificationMail'] {
+  const store = createNotificationMailStore(db)
+  const worker = createNotificationWorker({
+    store,
+    send: createNotificationSender({
+      mailer,
+      members: createMemberDirectory(db),
+      publicUrl: config.publicUrl,
+      requests: createConnectionStore(db),
+    }),
+    settings: () => config.notificationWorker,
+    onError: hooks.onNotificationError ?? ignoreError,
+  })
+  return {
+    deliverDue: () => worker.deliverDue(),
+    purgeBefore: (cutoff) => store.purgeBefore(cutoff),
+  }
+}
+
+/** Background work the server reports on: an analytics event that could not
+ * be sent, a notification that could not be mailed. */
+interface ComposeHooks {
+  onAnalyticsError?: (error: unknown) => void
+  onNotificationError?: (error: unknown) => void
+}
+
 /** Every service the app serves, wired to the database: the server and the
  * integration tests build the same thing, so a test cannot pass on wiring the
  * server lacks. `onAnalyticsError` hears of an event that could not be sent. */
 export function composeApp(
   config: Config,
   db: Database,
-  hooks: { onAnalyticsError?: (error: unknown) => void } = {},
+  hooks: ComposeHooks = {},
 ): AppDeps {
   const mailer = composeMailer(config, db)
   const auth = composeAuth(config, db, mailer)
@@ -312,7 +329,6 @@ export function composeApp(
     config,
     store: createSettingOverrideStore(db),
   })
-  const notifications = composeNotifications(db, settings)
 
   return {
     config,
@@ -327,7 +343,7 @@ export function composeApp(
     profile: createProfileStore(db, config.analyticsVersion),
     ...composeMembershipAdmin(config, db, auth),
     outbox: createOutboxLog(db),
-    ...composeAdmission(config, settings, db, auth, mailer, notifications),
+    ...composeAdmission(config, settings, db, auth),
     onboarding: createOnboarding({
       store: createOnboardingStore(db),
       currentConsentVersion: config.consentVersion,
@@ -347,7 +363,7 @@ export function composeApp(
       store: createActivityStore(db),
       newId: randomUUID,
     }),
-    ...composeJourneys(config, db, track, mailer, notifications),
-    notifications,
+    ...composeJourneys(config, db, track, settings),
+    notificationMail: composeNotificationMail(config, db, mailer, hooks),
   }
 }

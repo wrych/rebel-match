@@ -396,6 +396,46 @@ const catalogue: Group[] = [
         read: (c) => c.limits.outboxPageSize,
         unit: ['entry', 'entries'],
       },
+      {
+        name: 'Send notification emails every',
+        explanation: 'How often the server mails the notifications due.',
+        read: (c) => c.notificationWorker.intervalSeconds,
+        unit: ['second', 'seconds'],
+      },
+      {
+        name: 'Tries before a notification email counts as failed',
+        explanation:
+          'A refused email is tried again, waiting longer each time, this many times in all.',
+        read: (c) => c.notificationWorker.maxAttempts,
+        unit: ['try', 'tries'],
+      },
+      {
+        name: 'First retry of a refused notification email after',
+        explanation:
+          'Each retry after it waits twice as long as the one before.',
+        read: (c) => c.notificationWorker.firstRetrySeconds,
+        unit: ['second', 'seconds'],
+      },
+      {
+        name: 'A server holds the notifications it is mailing for',
+        explanation:
+          'Another server leaves them alone this long, so none is mailed twice.',
+        read: (c) => c.notificationWorker.holdSeconds,
+        unit: ['second', 'seconds'],
+      },
+      {
+        name: 'Notification emails per round, at most',
+        explanation: 'The rest wait for the next round.',
+        read: (c) => c.notificationWorker.batch,
+        unit: ['email', 'emails'],
+      },
+      {
+        name: 'Keep notifications for',
+        explanation:
+          'Notifications name other members, so older ones are deleted with the old log entries.',
+        read: (c) => c.limits.notificationRetentionDays,
+        unit: DAYS,
+      },
     ],
   },
   {

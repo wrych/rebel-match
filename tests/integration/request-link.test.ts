@@ -28,8 +28,12 @@ const member = 'sanne.kuipers@example.invalid'
 let db: TestDatabase
 let app: ReturnType<typeof createApp>
 let strangerHandle: string
+let deliverDue: () => Promise<void>
 
+// What the outbound log holds once the notification worker has run, as the
+// server's timer runs it (R-NOTE-7).
 async function outboxFor(to: string, kind: string): Promise<Row[]> {
+  await deliverDue()
   const rows = await db.query(
     'SELECT * FROM outbox WHERE to_email = ? AND kind = ?',
     [to, kind],
@@ -45,7 +49,9 @@ beforeAll(async () => {
     member,
   ])
   await db.query("DELETE FROM outbox WHERE kind = 'admin_notice'")
-  app = createApp(composeApp(config, db.drizzle))
+  const deps = composeApp(config, db.drizzle)
+  deliverDue = () => deps.notificationMail.deliverDue()
+  app = createApp(deps)
 })
 
 afterAll(async () => {

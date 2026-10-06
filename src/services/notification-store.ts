@@ -23,10 +23,6 @@ const n = notifications
 const about = members
 const request = connectionRequests
 
-// Mail for these still goes out beside them, as before the worker existed,
-// so the worker must never pick them up (ADR 0037).
-const mailedAlready = { mailStatus: 'mailed' as const, mailedAt: sql`now()` }
-
 function reviews(roles: readonly string[], memberId: unknown): SQL {
   return sql`exists (select 1 from ${memberRoles} where ${memberRoles.memberId} = ${memberId} and ${inArray(memberRoles.roleKey, [...roles])})`
 }
@@ -44,18 +40,34 @@ function shown(roles: readonly string[], memberId: string): SQL | undefined {
   )
 }
 
-async function addApplicant(
+/** Stores a notification inside the transaction that records its event, so
+ * the event stands with it whatever happens to the mail (R-NOTE-10). The
+ * worker mails it. */
+export async function insertNotification(
+  db: Database,
+  note: {
+    recipientId: string
+    type: 'connection_request' | 'new_connection'
+    aboutMemberId: string
+    connectionId: string
+  },
+): Promise<void> {
+  await db.insert(n).values({ id: randomUUID(), ...note })
+}
+
+/** Stores, inside the transaction that records the applicant, a notification
+ * for every active member who may review applicants (R-AUTH-2, R-NOTE-10). */
+export async function insertApplicantNotifications(
   db: Database,
   roles: readonly string[],
-  email: string,
+  applicantId: string,
 ): Promise<void> {
   if (roles.length === 0) return
   await db.execute(sql`
-    insert into ${n} (id, recipient_id, type, about_member_id, mail_status, mailed_at)
-    select gen_random_uuid()::text, reviewer.id, 'applicant', applicant.id, 'mailed', now()
-    from ${members} applicant, ${members} reviewer
-    where applicant.email = ${email}
-      and reviewer.status = 'active'
+    insert into ${n} (id, recipient_id, type, about_member_id)
+    select gen_random_uuid()::text, reviewer.id, 'applicant', ${applicantId}
+    from ${members} reviewer
+    where reviewer.status = 'active'
       and ${reviews(roles, sql`reviewer.id`)}`)
 }
 
@@ -149,10 +161,6 @@ export function createNotificationStore(
   reviewerRoles: readonly string[],
 ): NotificationStore {
   return {
-    add: async (note) => {
-      await db.insert(n).values({ id: randomUUID(), ...note, ...mailedAlready })
-    },
-    addApplicant: (email) => addApplicant(db, reviewerRoles, email),
     list: (memberId, before, limit) =>
       list(db, reviewerRoles, memberId, before, limit),
     newCount: (memberId) => newCount(db, reviewerRoles, memberId),

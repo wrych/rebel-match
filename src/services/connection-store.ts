@@ -9,6 +9,7 @@ import {
   type SQL,
 } from 'drizzle-orm'
 import type { Database } from '../db/connect.js'
+import { insertNotification } from './notification-store.js'
 import {
   challenges,
   connectionRequests as r,
@@ -238,14 +239,35 @@ function acceptedLookups(
   }
 }
 
-// The target has seen what they accept, so it is no news to them (R-CONN-9).
+// The target has seen what they accept, so it is no news to them (R-CONN-9);
+// the requester is told, in the same transaction (R-CONN-7, R-NOTE-10).
 async function respond(
   db: Database,
   id: string,
   targetId: string,
   status: ConnectionStatus,
 ): Promise<boolean> {
-  const answered = await db
+  return db.transaction(async (tx) => {
+    const answered = await answer(tx, id, targetId, status)
+    if (answered !== null && status === 'accepted')
+      await insertNotification(tx, {
+        recipientId: answered,
+        type: 'new_connection',
+        aboutMemberId: targetId,
+        connectionId: id,
+      })
+    return answered !== null
+  })
+}
+
+// The requester of a pending request to `targetId` it moved, or null.
+async function answer(
+  db: Database,
+  id: string,
+  targetId: string,
+  status: ConnectionStatus,
+): Promise<string | null> {
+  const [answered] = await db
     .update(r)
     .set({
       status,
@@ -260,8 +282,8 @@ async function respond(
         requesterActive,
       ),
     )
-    .returning({ id: r.id })
-  return answered.length === 1
+    .returning({ requesterId: r.requesterId })
+  return answered?.requesterId ?? null
 }
 
 // A target's answer, and what being connected settles with it (R-CONN-11).
@@ -292,6 +314,19 @@ function answers(
   }
 }
 
+// The target's notification of a request just made (R-CONN-2, R-CONN-9).
+function toldOf(
+  record: { id: string; requesterId: string; targetId: string },
+  type: 'connection_request' | 'new_connection',
+): Parameters<typeof insertNotification>[1] {
+  return {
+    recipientId: record.targetId,
+    type,
+    aboutMemberId: record.requesterId,
+    connectionId: record.id,
+  }
+}
+
 /** Connection requests over Postgres. The one query that reads an email
  * checks accepted status and party membership itself, so no caller can forget
  * to (R-CONN-3, R-CONN-6, ADR 0004). */
@@ -301,23 +336,26 @@ export function createConnectionStore(db: Database): ConnectionStore {
     ...acceptedLookups(db),
     ...answers(db),
     // uq_pending refuses a second pending request (R-CONN-5); that refusal is
-    // the answer, not an error.
-    insert: async (record) => {
-      const stored = await db
-        .insert(r)
-        .values(record)
-        .onConflictDoNothing()
-        .returning({ id: r.id })
-      return stored.length === 1
-    },
-    insertAccepted: async (record) => {
-      await db
-        .insert(r)
-        .values({ ...record, status: 'accepted', respondedAt: sql`now()` })
-    },
-    remove: async (id) => {
-      await db.delete(r).where(eq(r.id, id))
-    },
+    // the answer, not an error. The target's notification is stored with it
+    // (R-CONN-2, R-NOTE-10).
+    insert: (record) =>
+      db.transaction(async (tx) => {
+        const stored = await tx
+          .insert(r)
+          .values(record)
+          .onConflictDoNothing()
+          .returning({ id: r.id })
+        if (stored.length === 1)
+          await insertNotification(tx, toldOf(record, 'connection_request'))
+        return stored.length === 1
+      }),
+    insertAccepted: (record) =>
+      db.transaction(async (tx) => {
+        await tx
+          .insert(r)
+          .values({ ...record, status: 'accepted', respondedAt: sql`now()` })
+        await insertNotification(tx, toldOf(record, 'new_connection'))
+      }),
     find: async (id) => {
       const [row] = await db.select().from(r).where(eq(r.id, id))
       return row === undefined ? null : recordOf(row)

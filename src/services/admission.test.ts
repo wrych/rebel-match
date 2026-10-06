@@ -42,7 +42,7 @@ interface Harness {
 
 function setup(
   initial: [string, MemberStatus][] = [],
-  noticeFails = false,
+  recordFails = false,
   redeem: (email: string, token: string) => Redemption = () => ({
     result: 'refused',
     refusal: 'unknown',
@@ -60,14 +60,14 @@ function setup(
   const notified: string[] = []
   const store: AdmissionStore = {
     statusByEmail: (email) => Promise.resolve(members.get(email) ?? null),
+    // The reviewers' notifications are written with the applicant
+    // (R-NOTE-10), so the store is where they are told.
     createApplicant: (email) => {
+      if (recordFails) return Promise.reject(new Error('database unavailable'))
       if (members.has(email)) return Promise.resolve(false)
       members.set(email, 'applicant')
+      notified.push(email)
       return Promise.resolve(true)
-    },
-    removeApplicant: (email) => {
-      if (members.get(email) === 'applicant') members.delete(email)
-      return Promise.resolve()
     },
     describeApplicant: (email, given) => {
       if (members.get(email) !== 'applicant') return Promise.resolve(false)
@@ -93,11 +93,6 @@ function setup(
         issued.push(opts)
         return Promise.resolve()
       },
-    },
-    notifyReviewers: (email) => {
-      if (noticeFails) return Promise.reject(new Error('outbox unavailable'))
-      notified.push(email)
-      return Promise.resolve()
     },
   })
   return {
@@ -153,16 +148,6 @@ describe('createAdmission', () => {
     expect(await harness.requestLink('no@example.invalid')).toBe('not-approved')
     expect(harness.links).toEqual([])
     expect(harness.notified).toEqual([])
-  })
-
-  it('takes the applicant back when nobody could be told, so a retry notifies', async () => {
-    const harness = setup([], true)
-
-    await expect(harness.requestLink('new@example.invalid')).rejects.toThrow(
-      'outbox unavailable',
-    )
-
-    expect(harness.members.has('new@example.invalid')).toBe(false)
   })
 
   it('hands an applicant the handle for their own address (R-AUTH-11)', async () => {
