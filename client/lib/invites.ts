@@ -31,24 +31,49 @@ export async function fetchInvites(): Promise<Invite[]> {
   return ((await response.json()) as { invites: Invite[] }).invites
 }
 
-// A datetime-local value is local wall time with no zone; the server wants an
-// instant, so it is read as local time and sent as ISO.
-function instant(local: string): string | undefined {
-  return local === '' ? undefined : new Date(local).toISOString()
+// A host types a day as YYYY-MM-DD (e.g. 2026-11-08), optionally with a time
+// (2026-11-08 09:00), read as their local wall time. A bare day opens at its
+// first moment and, as an end, closes at the next midnight so the whole day
+// counts. Anything else, or a day the calendar lacks, is null.
+const DAY = /^(\d{4})-(\d{2})-(\d{2})(?:[ T]([01]\d|2[0-3]):([0-5]\d))?$/
+
+export function parseDay(text: string, end = false): Date | null {
+  const match = DAY.exec(text.trim())
+  if (match === null) return null
+  const [year, month, date] = [match[1], match[2], match[3]].map(Number) as [
+    number,
+    number,
+    number,
+  ]
+  const timed = match[4] !== undefined
+  const hour = timed ? Number(match[4]) : 0
+  const minute = timed ? Number(match[5]) : 0
+  const day = new Date(year, month - 1, date)
+  if (day.getMonth() !== month - 1 || day.getDate() !== date) return null
+  return new Date(year, month - 1, date + (end && !timed ? 1 : 0), hour, minute)
+}
+
+function instant(text: string, end: boolean): string | undefined | null {
+  if (text.trim() === '') return undefined
+  return parseDay(text, end)?.toISOString() ?? null
 }
 
 /** Creates an invite; blanks take the server's defaults (R-INV-2,4). 'bad
- * window' when it would end before it starts. */
+ * date' when a day is not YYYY-MM-DD, 'bad-window' when it would end before
+ * it starts. */
 export async function createInvite(
   draft: InviteDraft,
-): Promise<Invite | 'bad-window'> {
+): Promise<Invite | 'bad-date' | 'bad-window'> {
+  const validFrom = instant(draft.validFrom, false)
+  const validUntil = instant(draft.validUntil, true)
+  if (validFrom === null || validUntil === null) return 'bad-date'
   const response = await fetch('/api/admin/invites', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
       label: draft.label,
-      validFrom: instant(draft.validFrom),
-      validUntil: instant(draft.validUntil),
+      validFrom,
+      validUntil,
       maxUses: draft.maxUses === '' ? undefined : Number(draft.maxUses),
     }),
   })

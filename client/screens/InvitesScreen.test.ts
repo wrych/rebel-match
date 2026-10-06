@@ -93,13 +93,48 @@ describe('InvitesScreen', () => {
     expect(screen.find('[role="status"]').text()).toContain('Created')
   })
 
+  it('reads YYYY-MM-DD days as the whole of them, in local time', async () => {
+    const fetchMock = server()
+    const screen = await mountScreen()
+
+    await screen.find('#label').setValue('Summit')
+    await screen.find('#valid-from').setValue('2026-11-08')
+    await screen.find('#valid-until').setValue('2026-11-09')
+    await screen.find('form').trigger('submit')
+    await flushPromises()
+
+    expect(postBody(fetchMock)).toEqual({
+      label: 'Summit',
+      validFrom: new Date(2026, 10, 8).toISOString(),
+      validUntil: new Date(2026, 10, 10).toISOString(),
+    })
+  })
+
+  it('says how to write a day it cannot read, sending nothing', async () => {
+    const fetchMock = server()
+    const screen = await mountScreen()
+
+    await screen.find('#label').setValue('Typo')
+    await screen.find('#valid-until').setValue('08.11.2026')
+    await screen.find('form').trigger('submit')
+    await flushPromises()
+
+    expect(
+      fetchMock.mock.calls.some(
+        ([, options]) =>
+          (options as RequestInit | undefined)?.method === 'POST',
+      ),
+    ).toBe(false)
+    expect(screen.find('[role="status"]').text()).toContain('YYYY-MM-DD')
+  })
+
   it('sends a chosen window as instants and a cap as a number', async () => {
     const fetchMock = server()
     const screen = await mountScreen()
 
     await screen.find('#label').setValue('Side room')
-    await screen.find('#valid-from').setValue('2026-11-08T09:00')
-    await screen.find('#valid-until').setValue('2026-11-08T21:00')
+    await screen.find('#valid-from').setValue('2026-11-08 09:00')
+    await screen.find('#valid-until').setValue('2026-11-08 21:00')
     await screen.find('#max-uses').setValue('50')
     await screen.find('form').trigger('submit')
     await flushPromises()

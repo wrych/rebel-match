@@ -45,6 +45,10 @@ async function create(): Promise<void> {
   busy.value = true
   try {
     const outcome = await createInvite(draft)
+    if (outcome === 'bad-date') {
+      notice.value = 'Write each day as YYYY-MM-DD, for example 2026-11-08.'
+      return
+    }
     if (outcome === 'bad-window') {
       notice.value = 'The window must end after it starts.'
       return
@@ -148,7 +152,9 @@ onMounted(async () => {
             id="valid-from"
             v-model="draft.validFrom"
             class="input"
-            type="datetime-local"
+            placeholder="YYYY-MM-DD"
+            pattern="\d{4}-\d{2}-\d{2}( \d{2}:\d{2})?"
+            title="A day as YYYY-MM-DD, e.g. 2026-11-08; a time may follow, e.g. 2026-11-08 09:00"
           />
         </div>
         <div class="field">
@@ -159,7 +165,9 @@ onMounted(async () => {
             id="valid-until"
             v-model="draft.validUntil"
             class="input"
-            type="datetime-local"
+            placeholder="YYYY-MM-DD"
+            pattern="\d{4}-\d{2}-\d{2}( \d{2}:\d{2})?"
+            title="A day as YYYY-MM-DD, e.g. 2026-11-08; a time may follow, e.g. 2026-11-08 09:00"
           />
         </div>
       </div>
