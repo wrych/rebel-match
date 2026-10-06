@@ -181,9 +181,10 @@ export const invites = pgTable(
   (t) => [uniqueIndex('uq_invites_token').on(t.token)],
 )
 
-// One row per load of the entry screen with a token that names an invite, and
-// nothing about who opened it (R-STAT-6, ADR 0038). Never read back by any
-// endpoint (R-STAT-2); it goes with the invite.
+// One row per first interaction with the entry screen opened with a token that
+// names an invite, once per tab, and nothing about who opened it (R-STAT-6,
+// ADR 0038, ADR 0039). Read back only as a count per invite for the invite
+// links screen; it goes with the invite.
 export const inviteOpens = pgTable(
   'invite_opens',
   {

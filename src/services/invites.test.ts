@@ -61,6 +61,7 @@ function setup(): {
       rows.set(row.id, {
         ...row,
         uses: 0,
+        opens: 0,
         revokedAt: null,
         createdAt: now,
         creatorEmail: 'host@example.invalid',

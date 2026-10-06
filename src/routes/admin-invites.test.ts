@@ -31,6 +31,7 @@ const listed: InviteView = {
   validUntil: '2026-11-08T21:00:00.000Z',
   maxUses: 400,
   uses: 3,
+  opens: 7,
   state: 'active',
   joinUrl: 'http://localhost:5173/?invite=abc',
   createdBy: 'a@example.invalid',
