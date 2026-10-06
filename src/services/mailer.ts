@@ -7,6 +7,7 @@ export type OutboxKind =
   | 'admin_notice'
   | 'connection_accepted'
   | 'connection_added'
+  | 'notification_digest'
 
 export type DeliveryStatus = 'sent' | 'suppressed' | 'failed'
 
@@ -16,6 +17,8 @@ export interface OutboundMessage {
   memberId: string | null
   /** A member the body quotes, erased with them (R-MSG-6). */
   aboutMemberId?: string
+  /** Every further member the body quotes, as a digest does (R-MSG-6). */
+  quotes?: readonly string[]
   to: string
   kind: OutboxKind
   subject: string
@@ -32,6 +35,7 @@ export interface OutboxEntry {
   kind: OutboxKind
   subject: string
   bodyText: string
+  quotes: readonly string[]
 }
 
 export interface OutboxStore {
@@ -121,6 +125,7 @@ export function createMailer(deps: MailerDeps): Mailer {
         kind: message.kind,
         subject: message.subject,
         bodyText,
+        quotes: message.quotes ?? [],
       })
 
       if (deps.transport === null) {

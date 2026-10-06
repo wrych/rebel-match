@@ -109,6 +109,15 @@ const productionRules: {
 const COMMIT_URL_BASE = 'https://github.com/wrych/rebel-match/commit/'
 const SHORT_COMMIT_CHARS = 7
 
+function isTimeZone(name: string): boolean {
+  try {
+    new Intl.DateTimeFormat('en-GB', { timeZone: name })
+    return true
+  } catch {
+    return false
+  }
+}
+
 const envSchema = z
   .object({
     NODE_ENV: z
@@ -243,6 +252,16 @@ const envSchema = z
       .default(60),
     NOTIFICATION_HOLD_SECONDS: z.coerce.number().int().positive().default(300),
     NOTIFICATION_BATCH: z.coerce.number().int().positive().default(100),
+    // When the daily notification mail goes out, a local time in one time
+    // zone: members' own zones are not known (R-NOTE-7).
+    NOTIFICATION_DAILY_AT: z
+      .string()
+      .regex(/^([01]\d|2[0-3]):[0-5]\d$/)
+      .default('08:00'),
+    NOTIFICATION_TIME_ZONE: z
+      .string()
+      .refine(isTimeZone, 'not a time zone')
+      .default('Europe/Zurich'),
   })
   .superRefine((env, ctx) => {
     if (env.MAIL_DELIVERY === 'smtp' && env.SMTP_HOST === undefined) {
@@ -433,6 +452,8 @@ export interface NotificationWorkerSettings {
   firstRetrySeconds: number
   holdSeconds: number
   batch: number
+  dailyAt: string
+  timeZone: string
 }
 
 function notificationWorkerFrom(env: Env): NotificationWorkerSettings {
@@ -442,6 +463,8 @@ function notificationWorkerFrom(env: Env): NotificationWorkerSettings {
     firstRetrySeconds: env.NOTIFICATION_FIRST_RETRY_SECONDS,
     holdSeconds: env.NOTIFICATION_HOLD_SECONDS,
     batch: env.NOTIFICATION_BATCH,
+    dailyAt: env.NOTIFICATION_DAILY_AT,
+    timeZone: env.NOTIFICATION_TIME_ZONE,
   }
 }
 

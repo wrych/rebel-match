@@ -424,6 +424,17 @@ const catalogue: Group[] = [
         unit: ['second', 'seconds'],
       },
       {
+        name: 'Daily notification emails go out at',
+        explanation:
+          'For members who chose daily; one time for everyone, in the time zone below.',
+        read: (c) => c.notificationWorker.dailyAt,
+      },
+      {
+        name: 'Time zone of the daily notification email',
+        explanation: 'Members’ own time zones are not known.',
+        read: (c) => c.notificationWorker.timeZone,
+      },
+      {
         name: 'Notification emails per round, at most',
         explanation: 'The rest wait for the next round.',
         read: (c) => c.notificationWorker.batch,

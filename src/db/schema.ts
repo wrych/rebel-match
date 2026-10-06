@@ -206,6 +206,7 @@ export const outboxKind = pgEnum('outbox_kind', [
   'admin_notice',
   'connection_accepted',
   'connection_added',
+  'notification_digest',
 ])
 
 export const outboxStatus = pgEnum('outbox_status', [
@@ -509,5 +510,47 @@ export const notifications = pgTable(
   (t) => [
     index('ix_note_recipient').on(t.recipientId, t.createdAt),
     index('ix_note_waiting').on(t.mailStatus, t.nextAttemptAt),
+  ],
+)
+
+export const notificationCadence = pgEnum('notification_cadence', [
+  'immediately',
+  'every_15_minutes',
+  'hourly',
+  'daily',
+  'in_app',
+  'off',
+])
+
+// A member's choice of how one type of notification reaches them (R-NOTE-2,
+// R-NOTE-3). No row means the type's default; choosing it again deletes the
+// row.
+export const notificationSettings = pgTable(
+  'notification_settings',
+  {
+    memberId: id('member_id')
+      .notNull()
+      .references(() => members.id, { onDelete: 'cascade' }),
+    type: notificationType('type').notNull(),
+    cadence: notificationCadence('cadence').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.memberId, t.type] })],
+)
+
+// Every member a mail quotes, where `outbox.about_member_id` holds only one:
+// a digest names several, and erasing any of them erases the entry (R-MSG-6).
+export const outboxQuotes = pgTable(
+  'outbox_quotes',
+  {
+    outboxId: id('outbox_id')
+      .notNull()
+      .references(() => outbox.id, { onDelete: 'cascade' }),
+    memberId: id('member_id')
+      .notNull()
+      .references(() => members.id, { onDelete: 'cascade' }),
+  },
+  (t) => [
+    primaryKey({ columns: [t.outboxId, t.memberId] }),
+    index('ix_outbox_quotes_member').on(t.memberId),
   ],
 )

@@ -108,7 +108,7 @@ describe('the notification worker over Postgres (R-NOTE-7..11)', () => {
     expect(await mailed()).toBe(1)
     expect(await state(id)).toMatchObject({
       mail_status: 'mailed',
-      mailed_cadence: 'immediately',
+      mailed_cadence: 'hourly',
     })
   })
 

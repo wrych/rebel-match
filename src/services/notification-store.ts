@@ -15,6 +15,7 @@ import {
   connectionRequests,
   memberRoles,
   members,
+  notificationSettings,
   notifications,
 } from '../db/schema.js'
 import type { NotificationRow, NotificationStore } from './notifications.js'
@@ -52,7 +53,16 @@ export async function insertNotification(
     connectionId: string
   },
 ): Promise<void> {
-  await db.insert(n).values({ id: randomUUID(), ...note })
+  await db.insert(n).values({
+    id: randomUUID(),
+    ...note,
+    hidden: offFor(note.recipientId, note.type),
+  })
+}
+
+// Stored but hidden when the recipient set the type to Off (R-NOTE-4).
+function offFor(recipient: unknown, type: string): SQL<boolean> {
+  return sql<boolean>`exists (select 1 from ${notificationSettings} where ${notificationSettings.memberId} = ${recipient} and ${notificationSettings.type} = ${type} and ${notificationSettings.cadence} = 'off')`
 }
 
 /** Stores, inside the transaction that records the applicant, a notification
@@ -64,8 +74,9 @@ export async function insertApplicantNotifications(
 ): Promise<void> {
   if (roles.length === 0) return
   await db.execute(sql`
-    insert into ${n} (id, recipient_id, type, about_member_id)
-    select gen_random_uuid()::text, reviewer.id, 'applicant', ${applicantId}
+    insert into ${n} (id, recipient_id, type, about_member_id, hidden)
+    select gen_random_uuid()::text, reviewer.id, 'applicant', ${applicantId},
+      ${offFor(sql`reviewer.id`, 'applicant')}
     from ${members} reviewer
     where reviewer.status = 'active'
       and ${reviews(roles, sql`reviewer.id`)}`)

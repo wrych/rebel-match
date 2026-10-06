@@ -289,7 +289,7 @@ printed dev link (R-DEV-6).
 - [x] Mail notifications through the worker, every type _Immediately_; a
       request stands when its mail fails, so `notifyOrWithdraw` goes.
       _(R-NOTE-9,10,11, ADR 0037)_
-- [ ] Cadences: _Every 15 minutes_, _Hourly_, _Daily_, _In the app only_ and
+- [x] Cadences: _Every 15 minutes_, _Hourly_, _Daily_, _In the app only_ and
       _Off_ per type on the profile screen, with the defaults; the digest mail
       and `outbox_quotes`. _(R-NOTE-2,3,7,8, R-MSG-6)_
 - [ ] Notify followers of a new challenge in their trend, linking to the deck

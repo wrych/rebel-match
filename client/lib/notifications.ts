@@ -1,3 +1,4 @@
+import type { NotificationSetting } from '../../src/services/notification-settings'
 import type { NotificationView } from '../../src/services/notifications'
 
 export type { NotificationView }
@@ -64,4 +65,64 @@ export function headline(note: NotificationView): string {
 /** The menu item's words: the count only while something is new (R-NOTE-6). */
 export function menuLabel(count: number): string {
   return count > 0 ? `Notifications (${String(count)} new)` : 'Notifications'
+}
+
+export type { NotificationSetting }
+
+/** How each type reaches the member, for the profile screen (R-NOTE-3). */
+export async function fetchNotificationSettings(): Promise<
+  NotificationSetting[]
+> {
+  const response = await fetch('/api/me/notification-settings')
+  if (!response.ok)
+    throw new Error(`settings unavailable (${String(response.status)})`)
+  return ((await response.json()) as { settings: NotificationSetting[] })
+    .settings
+}
+
+/** Records the member's choice for one type (R-NOTE-2). */
+export async function chooseNotificationCadence(
+  type: string,
+  cadence: string,
+): Promise<void> {
+  const response = await fetch(
+    `/api/me/notification-settings/${encodeURIComponent(type)}`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cadence }),
+    },
+  )
+  if (!response.ok)
+    throw new Error(`setting not saved (${String(response.status)})`)
+}
+
+const TYPE_LABELS: Record<NotificationSetting['type'], string> = {
+  connection_request: 'Requests to connect',
+  new_connection: 'New connections',
+  trend_challenge: 'New challenges in trends you follow',
+  applicant: 'People asking to join',
+}
+
+const CADENCE_LABELS: Record<NotificationSetting['cadence'], string> = {
+  immediately: 'Immediately',
+  every_15_minutes: 'Every 15 minutes',
+  hourly: 'Hourly',
+  daily: 'Daily',
+  in_app: 'In the app only',
+  off: 'Off',
+}
+
+/** What a type is called on the profile screen. */
+export function typeLabel(type: NotificationSetting['type']): string {
+  return TYPE_LABELS[type]
+}
+
+/** An option as the profile screen offers it, marking the default. */
+export function cadenceLabel(
+  cadence: NotificationSetting['cadence'],
+  defaultCadence: NotificationSetting['cadence'],
+): string {
+  const label = CADENCE_LABELS[cadence]
+  return cadence === defaultCadence ? `${label} (default)` : label
 }

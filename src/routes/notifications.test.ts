@@ -18,6 +18,7 @@ const config = loadConfig({
 const auth = createAuth({
   store: createMemoryAuthStore([
     { id: 'm-ada', email: 'a@example.invalid', roles: ['member'] },
+    { id: 'm-host', email: 'h@example.invalid', roles: ['member', 'admin'] },
   ]),
   policy: configPolicy,
   deliver: () => Promise.resolve(),
@@ -54,6 +55,22 @@ function setup(): { app: Express; calls: unknown[] } {
     notificationRoutes({
       auth,
       notifications,
+      notificationSettings: {
+        list: (memberId, canReview) => {
+          calls.push(['settings', memberId, canReview])
+          return Promise.resolve([])
+        },
+        choose: (memberId, canReview, type, cadence) => {
+          calls.push(['choose', memberId, canReview, type, cadence])
+          return Promise.resolve(
+            type === 'nope'
+              ? 'not_found'
+              : cadence === 'weekly'
+                ? 'not_offered'
+                : 'done',
+          )
+        },
+      },
       settings: { limits: () => config.limits },
     }),
   )
@@ -124,6 +141,38 @@ describe('notification routes', () => {
 
     expect(tooMany.status).toBe(400)
     expect(calls).toEqual([['seen', 'm-ada', ['n1', 'n2']]])
+  })
+
+  it('lists the member’s choices, applicants only for a reviewer (R-NOTE-3)', async () => {
+    const { app, calls } = setup()
+
+    await request(app)
+      .get('/api/me/notification-settings')
+      .set('Cookie', await cookie())
+      .expect(200)
+    const host = await auth.createSession('m-host')
+    await request(app)
+      .get('/api/me/notification-settings')
+      .set('Cookie', `${host.name}=${host.value}`)
+      .expect(200)
+
+    expect(calls).toEqual([
+      ['settings', 'm-ada', false],
+      ['settings', 'm-host', true],
+    ])
+  })
+
+  it.each([
+    ['connection_request', 'daily', 204],
+    ['nope', 'daily', 404],
+    ['connection_request', 'weekly', 400],
+  ])('chooses %s %s with %i (R-NOTE-2)', async (type, cadence, status) => {
+    const response = await request(setup().app)
+      .put(`/api/me/notification-settings/${type}`)
+      .set('Cookie', await cookie())
+      .send({ cadence })
+
+    expect(response.status).toBe(status)
   })
 
   it('asks for a session', async () => {
