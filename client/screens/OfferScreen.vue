@@ -56,7 +56,6 @@ async function load(): Promise<void> {
   }
 }
 
-// Unknown follows leave Follow offered: following twice changes nothing.
 // Without the threshold the card takes no swipes; the arrows still browse.
 async function loadSwipeMinPx(): Promise<void> {
   try {
@@ -66,6 +65,7 @@ async function loadSwipeMinPx(): Promise<void> {
   }
 }
 
+// Unknown follows leave Follow offered: following twice changes nothing.
 async function loadFollowed(): Promise<void> {
   try {
     followed.value = new Set((await fetchFollowed()).map((trend) => trend.id))
