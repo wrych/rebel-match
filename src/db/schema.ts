@@ -454,3 +454,60 @@ export const settingOverrides = pgTable('setting_overrides', {
   }),
   changedAt: at('changed_at').notNull().defaultNow(),
 })
+
+export const notificationType = pgEnum('notification_type', [
+  'connection_request',
+  'new_connection',
+  'trend_challenge',
+  'applicant',
+])
+
+export const notificationMailStatus = pgEnum('notification_mail_status', [
+  'waiting',
+  'mailed',
+  'skipped',
+  'failed',
+])
+
+// One row per recipient and event, kept in the app whatever reaches the inbox
+// (R-NOTE-4, ADR 0037). It holds references, never words: the screen words it
+// from the current names when it is shown, and the cascades erase it with its
+// recipient, the member it is about, or what it refers to (R-NOTE-11). The
+// mail columns serve the worker (R-NOTE-7..10).
+export const notifications = pgTable(
+  'notifications',
+  {
+    id: id('id').primaryKey(),
+    recipientId: id('recipient_id')
+      .notNull()
+      .references(() => members.id, { onDelete: 'cascade' }),
+    type: notificationType('type').notNull(),
+    aboutMemberId: id('about_member_id').references(() => members.id, {
+      onDelete: 'cascade',
+    }),
+    connectionId: id('connection_id').references(() => connectionRequests.id, {
+      onDelete: 'cascade',
+    }),
+    challengeId: id('challenge_id').references(() => challenges.id, {
+      onDelete: 'cascade',
+    }),
+    createdAt: at('created_at').notNull().defaultNow(),
+    seenAt: at('seen_at'),
+    hidden: boolean('hidden').notNull().default(false),
+    mailStatus: notificationMailStatus('mail_status')
+      .notNull()
+      .default('waiting'),
+    skippedReason: varchar('skipped_reason', { length: 20 }),
+    mailedAt: at('mailed_at'),
+    mailedCadence: varchar('mailed_cadence', { length: 20 }),
+    outboxId: id('outbox_id').references(() => outbox.id, {
+      onDelete: 'set null',
+    }),
+    attempts: integer('attempts').notNull().default(0),
+    nextAttemptAt: at('next_attempt_at'),
+  },
+  (t) => [
+    index('ix_note_recipient').on(t.recipientId, t.createdAt),
+    index('ix_note_waiting').on(t.mailStatus, t.nextAttemptAt),
+  ],
+)

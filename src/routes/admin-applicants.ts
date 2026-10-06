@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { z } from 'zod'
 import type { AuthProvider } from '../auth/index.js'
 import type { ApprovalService } from '../services/approvals.js'
+import type { NotificationService } from '../services/notifications.js'
 import { requirePermission, type GuardedLocals } from './require-permission.js'
 
 const applicantParams = z.object({ id: z.string().min(1) })
@@ -18,12 +19,17 @@ const rejectStatus = { rejected: 204, not_pending: 404 } as const
 export function adminApplicantRoutes(deps: {
   auth: AuthProvider
   approvals: ApprovalService
+  notifications: Pick<NotificationService, 'openedApplicants'>
 }): Router {
   const router = Router()
   const guard = requirePermission(deps.auth, 'applicant:review')
 
   router.get('/api/admin/applicants', guard, async (_request, response) => {
-    response.json({ applicants: await deps.approvals.listPending() })
+    const applicants = await deps.approvals.listPending()
+    await deps.notifications.openedApplicants(
+      (response.locals as GuardedLocals).member.id,
+    )
+    response.json({ applicants })
   })
 
   router.post(

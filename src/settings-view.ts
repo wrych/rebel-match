@@ -271,11 +271,17 @@ const catalogue: Group[] = [
         unit: ['challenge', 'challenges'],
       },
       {
-        name: 'How often the matches badge checks for new requests',
+        name: 'How often the badges check for news',
         explanation:
-          'While the app is open, the badge and the waiting requests refresh this often.',
+          'While the app is open, the matches and notifications badges and the waiting requests refresh this often.',
         read: (c) => c.limits.matchesPollSeconds,
         unit: ['second', 'seconds'],
+      },
+      {
+        name: 'Notifications shown per page',
+        explanation: 'How many notifications the list loads at a time.',
+        read: (c) => c.limits.notificationsPageSize,
+        unit: ['notification', 'notifications'],
       },
       {
         name: 'Longest message with a connection request',

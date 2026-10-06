@@ -173,6 +173,7 @@ const envSchema = z
     OUTBOX_PAGE_SIZE: z.coerce.number().int().positive().default(100),
     DECK_PAGE_SIZE: z.coerce.number().int().positive().default(20),
     MATCHES_POLL_SECONDS: z.coerce.number().int().positive().default(30),
+    NOTIFICATIONS_PAGE_SIZE: z.coerce.number().int().positive().default(50),
     WHITELIST_BATCH_MAX: z.coerce.number().int().positive().default(1000),
     OUTBOX_RETENTION_DAYS: z.coerce.number().int().positive().default(30),
     // How long a deleted account waits before it is erased (ADR 0032).
@@ -265,6 +266,7 @@ export interface Limits {
   outboxPageSize: number
   deckPageSize: number
   matchesPollSeconds: number
+  notificationsPageSize: number
   whitelistBatchMax: number
   emailMaxChars: number
   nameMaxChars: number
@@ -369,6 +371,7 @@ function limitsFrom(env: Env): Limits {
     outboxPageSize: env.OUTBOX_PAGE_SIZE,
     deckPageSize: env.DECK_PAGE_SIZE,
     matchesPollSeconds: env.MATCHES_POLL_SECONDS,
+    notificationsPageSize: env.NOTIFICATIONS_PAGE_SIZE,
     whitelistBatchMax: env.WHITELIST_BATCH_MAX,
     emailMaxChars: EMAIL_MAX_CHARS,
     nameMaxChars: NAME_MAX_CHARS,

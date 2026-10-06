@@ -15,6 +15,7 @@ import MatchesScreen from './screens/MatchesScreen.vue'
 import MembersScreen from './screens/MembersScreen.vue'
 import MemberScreen from './screens/MemberScreen.vue'
 import NotFoundScreen from './screens/NotFoundScreen.vue'
+import NotificationsScreen from './screens/NotificationsScreen.vue'
 import OnboardingScreen from './screens/OnboardingScreen.vue'
 import OfferDoneScreen from './screens/OfferDoneScreen.vue'
 import OfferNoteScreen from './screens/OfferNoteScreen.vue'
@@ -63,6 +64,7 @@ export const router = createRouter({
     screen('onboarding', OnboardingScreen),
     screen('welcome', WelcomeScreen),
     screen('profile', ProfileScreen),
+    screen('notifications', NotificationsScreen),
     screen('ask', AskScreen),
     screen('challenge', ChallengeScreen),
     screen('trend-picker', TrendPickerScreen),
