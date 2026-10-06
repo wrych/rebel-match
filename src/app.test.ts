@@ -125,6 +125,10 @@ function deps(
       openedConnection: () => Promise.resolve(),
       openedApplicants: () => Promise.resolve(),
     },
+    notificationSettings: {
+      list: () => Promise.resolve([]),
+      choose: () => Promise.resolve('done'),
+    },
     notificationMail: {
       deliverDue: () => Promise.resolve(),
       purgeBefore: () => Promise.resolve(0),

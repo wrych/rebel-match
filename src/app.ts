@@ -49,6 +49,7 @@ import type { RoleService } from './services/roles.js'
 import type { WhitelistService } from './services/whitelist.js'
 import type { SettingsService } from './services/settings.js'
 import type { NotificationService } from './services/notifications.js'
+import type { NotificationSettingsService } from './services/notification-settings.js'
 import { notificationRoutes } from './routes/notifications.js'
 
 export interface AppDeps {
@@ -77,6 +78,7 @@ export interface AppDeps {
   follows: FollowService
   cockpit: CockpitService
   notifications: NotificationService
+  notificationSettings: NotificationSettingsService
   /** Mails notifications and purges old ones; run by the server's timers,
    * not by requests (R-NOTE-7, R-NOTE-11). */
   notificationMail: {

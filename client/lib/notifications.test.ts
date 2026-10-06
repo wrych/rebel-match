@@ -109,3 +109,13 @@ describe('markNotificationsSeen', () => {
     expect(fetchMock).not.toHaveBeenCalled()
   })
 })
+
+describe('the notification settings words', () => {
+  it('names each type and marks the default option (R-NOTE-3)', async () => {
+    const { typeLabel, cadenceLabel } = await import('./notifications')
+
+    expect(typeLabel('new_connection')).toBe('New connections')
+    expect(cadenceLabel('in_app', 'hourly')).toBe('In the app only')
+    expect(cadenceLabel('hourly', 'hourly')).toBe('Hourly (default)')
+  })
+})

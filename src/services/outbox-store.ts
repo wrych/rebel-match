@@ -1,22 +1,33 @@
 import { eq } from 'drizzle-orm'
 import type { Database } from '../db/connect.js'
-import { outbox } from '../db/schema.js'
+import { outbox, outboxQuotes } from '../db/schema.js'
 import type { OutboxStore } from './mailer.js'
 
 /** The outbound message log over Postgres (design §2 `outbox`). */
 export function createOutboxStore(db: Database): OutboxStore {
   return {
-    record: async (entry) => {
-      await db.insert(outbox).values({
-        id: entry.id,
-        memberId: entry.memberId,
-        aboutMemberId: entry.aboutMemberId,
-        toEmail: entry.to,
-        kind: entry.kind,
-        subject: entry.subject,
-        bodyText: entry.bodyText,
-      })
-    },
+    record: (entry) =>
+      db.transaction(async (tx) => {
+        await tx.insert(outbox).values({
+          id: entry.id,
+          memberId: entry.memberId,
+          aboutMemberId: entry.aboutMemberId,
+          toEmail: entry.to,
+          kind: entry.kind,
+          subject: entry.subject,
+          bodyText: entry.bodyText,
+        })
+        if (entry.quotes.length > 0)
+          await tx
+            .insert(outboxQuotes)
+            .values(
+              entry.quotes.map((memberId) => ({
+                outboxId: entry.id,
+                memberId,
+              })),
+            )
+            .onConflictDoNothing()
+      }),
     markSent: async (id, at) => {
       await db
         .update(outbox)
