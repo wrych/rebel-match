@@ -129,7 +129,7 @@ printed dev link (R-DEV-6).
 
 ## M2 — Ask journey _(M3 → M4 → M5, F5)_
 
-- [x] Submit screen: textarea, read-only example hints (no insert action), >30-char gate from config + counter. _(R-ASK-1,2,3, R-CFG-1,2)_
+- [x] Submit screen: textarea, read-only inspiration (no insert action), >30-char gate from config + counter. _(R-ASK-1,2,3, R-CFG-1,2)_
 - [x] `POST /api/challenges` + matcher service (keyword scorer §5). _(R-ASK-4,5)_
 - [x] Domain screen (`/challenges/:id`) + separate trend-picker **screen**
       (`/challenges/:id/trend`).
@@ -141,11 +141,16 @@ printed dev link (R-DEV-6).
 - [x] Matches screen says posting worked and what it is for: posted banner,
       people-first section headings, empty sections that point onward.
       _(R-ASK-11,12,13)_
+- [ ] `GET /api/challenges/newest`; the trend screen shows its newest
+      challenges, the submit screen the newest as _Inspiration_ in place of the
+      invented examples. _(R-ASK-2,14)_
 
 ## M3 — Offer journey _(M6, F6)_
 
 - [x] `GET /api/deck`: next challenges, exclude own + already-swiped. _(R-OFF-1,2)_
 - [x] Swipe UI: same boat / been there / follow / skip. _(R-OFF-3)_
+- [ ] Follow on a card says when its trend is already followed, greyed out.
+      _(R-OFF-3)_
 - [x] "Been there" note as its own screen, >30 chars from config + counter.
       _(R-OFF-4, R-CFG-1,2, R-NAV-2)_
 - [x] `POST /api/swipe` records swipe and, for same boat/been there, creates a
