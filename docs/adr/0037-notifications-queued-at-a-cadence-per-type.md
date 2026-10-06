@@ -20,15 +20,16 @@ once a day, and some want no word of trends at all.
 
 ## Decision
 
-- **Every notification is stored**, unless its type is set to _Off_, in a
-  `notifications` table: one row per
-  recipient and event, holding references (the request, the challenge, the
-  member it is about), never rendered text. The app lists them; mail is one
+- **Every notification is stored** in a `notifications` table, with the event
+  that causes it: one row per recipient and event, holding references (the
+  request, the challenge, the member it is about), never rendered text. The app lists them; mail is one
   way of delivering them.
 - **Each type has a cadence the member picks**, from five: _Immediately_,
   _Hourly_, _Daily_, _In the app only_, _Off_. Applicant notices offer a sixth,
   _Every 15 minutes_. Defaults: connection requests and new connections hourly,
   new challenges in a followed trend daily, applicant notices every 15 minutes.
+  _Off_ hides a notification rather than not storing it: it is kept with its
+  event, never listed, counted or mailed.
 - **Mail is grouped by cadence, not by type.** Every type a member has on the
   same cadence goes out in one mail. _Hourly_ and _Every 15 minutes_ send the
   first at once and the next no sooner than that window after the last mail

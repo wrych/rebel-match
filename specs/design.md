@@ -706,7 +706,8 @@ CREATE TABLE notifications (
   seen_at          DATETIME    NULL,               -- listed or its screen opened (R-NOTE-5)
   mail_status      ENUM('waiting','mailed','skipped','failed')
                                NOT NULL DEFAULT 'waiting',
-  skipped_reason   VARCHAR(20) NULL,               -- 'seen' | 'stale' | 'in_app' | 'off' (set to Off while waiting)
+  hidden           BOOLEAN     NOT NULL DEFAULT FALSE, -- its type was Off before it was seen (R-NOTE-4)
+  skipped_reason   VARCHAR(20) NULL,               -- 'seen' | 'stale' | 'in_app' | 'off'
   mailed_at        DATETIME    NULL,
   mailed_cadence   VARCHAR(20) NULL,               -- starts that cadence's window (R-NOTE-7)
   outbox_id        CHAR(36)    NULL,
@@ -732,8 +733,10 @@ CREATE TABLE notification_settings (
 ```
 
 A row holds references, never words: the screen and the mail word it when
-they show it, from the current names (R-NOTE-4). _Off_ writes no row at all;
-a row already waiting when its type is set to _Off_ is skipped as `off`
+they show it, from the current names (R-NOTE-4). A notification of a type set
+to _Off_ is still written, with the event, as `hidden` and `skipped` as `off`:
+the list, the count and the worker never see it, whatever the member chooses
+later. Setting a type to _Off_ does the same to its rows not yet seen
 (R-NOTE-3).
 No `notification_settings` row means the type's default (R-NOTE-2); choosing
 the default again deletes the row. `every_15_minutes` is accepted for
