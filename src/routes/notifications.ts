@@ -6,7 +6,14 @@ import type { NotificationService } from '../services/notifications.js'
 import type { SettingsService } from '../services/settings.js'
 import { requireSession, type GuardedLocals } from './require-permission.js'
 
-const listQuery = z.object({ before: z.string().min(1).max(36).optional() })
+// The width of notifications.id (src/db/schema.ts).
+const NOTIFICATION_ID_MAX_CHARS = 36
+// Room for any notification_cadence or notification_type value.
+const CHOICE_MAX_CHARS = 40
+
+const listQuery = z.object({
+  before: z.string().min(1).max(NOTIFICATION_ID_MAX_CHARS).optional(),
+})
 
 function memberOf(locals: unknown): string {
   return (locals as GuardedLocals).member.id
@@ -44,7 +51,7 @@ export function notificationRoutes(deps: {
     const { ids } = z
       .object({
         ids: z
-          .array(z.string().min(1).max(36))
+          .array(z.string().min(1).max(NOTIFICATION_ID_MAX_CHARS))
           .max(deps.settings.limits().notificationsPageSize),
       })
       .parse(request.body)
@@ -56,8 +63,8 @@ export function notificationRoutes(deps: {
   return router
 }
 
-const choice = z.object({ cadence: z.string().min(1).max(40) })
-const typeParams = z.object({ type: z.string().min(1).max(40) })
+const choice = z.object({ cadence: z.string().min(1).max(CHOICE_MAX_CHARS) })
+const typeParams = z.object({ type: z.string().min(1).max(CHOICE_MAX_CHARS) })
 const chooseStatus = { done: 204, not_found: 404, not_offered: 400 } as const
 
 function canReview(locals: unknown): boolean {
