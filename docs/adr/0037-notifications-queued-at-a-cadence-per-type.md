@@ -1,6 +1,6 @@
 # 0037. Store every notification, and mail it at a cadence each member picks per type
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-10-05
 - **Deciders:** Andy Moesch
 
