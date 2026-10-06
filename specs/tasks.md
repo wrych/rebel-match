@@ -270,8 +270,9 @@ printed dev link (R-DEV-6).
       email to the consent, so R-NFR-3 is watched in Mixpanel. _(R-NFR-3)_
 - [ ] Raise an invite's cap from its card on the invite links screen.
       _(R-INV-4, R-INV-9)_
-- [x] Record invite opens: `POST /auth/invite-opened` from the entry screen
-      into `invite_opens`. _(R-STAT-6, ADR 0038)_
+- [x] Record invite opens: `POST /auth/invite-opened` from the entry screen,
+      on the visitor's first press or key, into `invite_opens`.
+      _(R-STAT-6, ADR 0038, ADR 0039)_
 - [ ] Show each invite's opens beside its uses on the invite links screen.
       _(R-STAT-6, R-INV-9, ADR 0038)_
 - [ ] QR-code entry flow validated end-to-end on a phone; time scan → onboarding

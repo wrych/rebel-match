@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
-import { flushPromises, mount } from '@vue/test-utils'
+import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import LoginScreen from './LoginScreen.vue'
+
+enableAutoUnmount(afterEach)
 
 const push = vi.fn()
 vi.mock('vue-router', () => ({ useRouter: () => ({ push }) }))
@@ -308,20 +310,24 @@ describe('LoginScreen', () => {
     })
   })
 
-  it('reports an opened invite once, and nothing without one (R-STAT-6)', async () => {
+  it('reports an invite open on the first press, and nothing without an invite (R-STAT-6, ADR 0039)', async () => {
     const fetchMock = server({ state: 'check-email' })
-    window.history.replaceState(null, '', '/?invite=poster-token')
-    mount(LoginScreen)
-    await flushPromises()
+    sessionStorage.clear()
     window.history.replaceState(null, '', '/login')
     mount(LoginScreen)
     await flushPromises()
+    window.dispatchEvent(new Event('pointerdown'))
+    window.history.replaceState(null, '', '/?invite=poster-token')
+    mount(LoginScreen)
+    await flushPromises()
+    const opened = (): unknown[][] =>
+      fetchMock.mock.calls.filter(([url]) => url === '/auth/invite-opened')
+    expect(opened()).toHaveLength(0)
 
-    const opened = fetchMock.mock.calls.filter(
-      ([url]) => url === '/auth/invite-opened',
-    )
-    expect(opened).toHaveLength(1)
-    expect(JSON.parse(String((opened[0]?.[1] as RequestInit).body))).toEqual({
+    window.dispatchEvent(new Event('pointerdown'))
+
+    expect(opened()).toHaveLength(1)
+    expect(JSON.parse(String((opened()[0]?.[1] as RequestInit).body))).toEqual({
       invite: 'poster-token',
     })
   })

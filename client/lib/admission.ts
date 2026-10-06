@@ -21,8 +21,8 @@ export class TooManyRequests extends Error {
 const HANDLE_KEY = 'rm_applicant_handle'
 
 /** Tells the server an invite link was opened, so opens can be counted per
- * code with nothing about who opened it (R-STAT-6, ADR 0038). Nothing waits
- * on it, and a failure changes nothing for the visitor. */
+ * code with nothing about who opened it (R-STAT-6, ADR 0038, ADR 0039).
+ * Nothing waits on it, and a failure changes nothing for the visitor. */
 export function noteInviteOpened(invite: string): void {
   fetch('/auth/invite-opened', {
     method: 'POST',
