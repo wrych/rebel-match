@@ -7,6 +7,7 @@ const push = vi.fn()
 vi.mock('vue-router', () => ({ useRouter: () => ({ push }) }))
 
 const minChars = 31
+const maxChars = 500
 const longEnough = 'Nobody here knows who can decide what.'
 
 const newest = [
@@ -42,7 +43,9 @@ function server(
     return Promise.resolve({
       ok: url === '/api/config',
       status: 200,
-      json: async () => ({ limits: { challengeMinChars: minChars } }),
+      json: async () => ({
+        limits: { challengeMinChars: minChars, challengeMaxChars: maxChars },
+      }),
     })
   })
   vi.stubGlobal('fetch', fetchMock)
@@ -84,8 +87,20 @@ describe('AskScreen', () => {
       `${String(minChars - 1)} characters`,
     )
     expect(screen.find('#challenge-count').text()).toContain(
-      `at least ${String(minChars)}`,
+      `${String(minChars)} to ${String(maxChars)}`,
     )
+  })
+
+  it('takes no more than the configured maximum (R-ASK-3, R-CFG-2)', async () => {
+    server()
+    const screen = await mountScreen()
+    const field = screen.find('textarea')
+
+    expect(field.attributes('maxlength')).toBe(String(maxChars))
+    await field.setValue('x'.repeat(maxChars))
+    expect(submitButton(screen).disabled).toBe(false)
+    await field.setValue('x'.repeat(maxChars + 1))
+    expect(submitButton(screen).disabled).toBe(true)
   })
 
   it('enables Submit from the configured minimum (R-ASK-3, R-CFG-2)', async () => {

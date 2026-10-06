@@ -9,6 +9,9 @@ type LimitKey =
 /** A setting hosts may change in the app (R-CFG-6, ADR 0031). */
 export type SettingKey = `limits.${LimitKey}` | `abuse.${keyof AbuseLimits}`
 
+// A value a changeable setting is ordered against, though hosts cannot change it.
+type OrderedKey = SettingKey | 'limits.challengeMaxChars'
+
 /** The values the changeable settings live in. */
 export interface SettingValues {
   limits: Limits
@@ -42,10 +45,11 @@ const bounds: Readonly<Record<SettingKey, Bounds>> = {
   'limits.beenThereNoteMinChars': { min: 1, max: 300 },
 }
 
-// Each ceiling must stay at or above the free uses it caps.
-const pairs: readonly (readonly [free: SettingKey, ceiling: SettingKey])[] = [
+// Each ceiling must stay at or above the floor beneath it.
+const pairs: readonly (readonly [floor: OrderedKey, ceiling: OrderedKey])[] = [
   ['abuse.linkEmailsBeforeCheck', 'abuse.linkEmailsCeiling'],
   ['abuse.applicantsBeforeCheck', 'abuse.applicantsCeiling'],
+  ['limits.challengeMinChars', 'limits.challengeMaxChars'],
 ]
 
 export function isSettingKey(key: string): key is SettingKey {
@@ -58,23 +62,23 @@ export function boundsOf(key: SettingKey): Bounds {
 }
 
 function split(
-  key: SettingKey,
-): ['limits', LimitKey] | ['abuse', keyof AbuseLimits] {
+  key: OrderedKey,
+): ['limits', keyof Limits] | ['abuse', keyof AbuseLimits] {
   const [group, name] = key.split('.') as [string, string]
   return group === 'limits'
-    ? ['limits', name as LimitKey]
+    ? ['limits', name as keyof Limits]
     : ['abuse', name as keyof AbuseLimits]
 }
 
 /** The current value of `key`. */
-export function valueOf(values: SettingValues, key: SettingKey): number {
+export function valueOf(values: SettingValues, key: OrderedKey): number {
   const [group, name] = split(key)
   return group === 'limits' ? values.limits[name] : values.abuse[name]
 }
 
 function withValue(
   values: SettingValues,
-  key: SettingKey,
+  key: OrderedKey,
   value: number,
 ): SettingValues {
   const [group, name] = split(key)
@@ -92,12 +96,12 @@ function inBounds(key: SettingKey, value: number): boolean {
 
 function ordered(
   values: SettingValues,
-  [free, ceiling]: readonly [SettingKey, SettingKey],
+  [floor, ceiling]: readonly [OrderedKey, OrderedKey],
 ): boolean {
-  return valueOf(values, free) <= valueOf(values, ceiling)
+  return valueOf(values, floor) <= valueOf(values, ceiling)
 }
 
-/** Whether every ceiling stays at or above its free uses once `key` is
+/** Whether every ceiling stays at or above its floor once `key` is
  * `value`. */
 export function keepsOrder(
   values: SettingValues,
@@ -109,7 +113,7 @@ export function keepsOrder(
 }
 
 /** Whether `key` may take `value` given the other values in force: within its
- * bounds, and no ceiling below the free uses it caps. */
+ * bounds, and no ceiling below its floor. */
 export function checkChange(
   values: SettingValues,
   key: SettingKey,

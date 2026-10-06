@@ -34,7 +34,7 @@ function refusal(reason: Refusal): string {
   const edit = props.setting.edit
   if (reason === 'out_of_bounds' && edit !== undefined)
     return `Use a whole number from ${edit.min.toLocaleString('en')} to ${edit.max.toLocaleString('en')}. It was not saved.`
-  return 'That would put a limit below the number allowed without a check, so it was not saved.'
+  return 'That would put a limit below the one it must stay above, such as a ceiling below the free uses or a shortest challenge above the longest, so it was not saved.'
 }
 
 function tick(): void {
