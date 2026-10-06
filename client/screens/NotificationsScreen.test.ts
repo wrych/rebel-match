@@ -14,6 +14,7 @@ const entry = (
   isNew: false,
   name: 'Bea There',
   path: `/matches/requests/${id}`,
+  trend: null,
   ...over,
 })
 

@@ -5,7 +5,8 @@ import { dueAt, type Cadence } from './notification-cadence.js'
 /** A notification waiting to be mailed, with what deciding about it needs. */
 export interface DueNotification {
   id: string
-  type: 'connection_request' | 'new_connection' | 'applicant'
+  type:
+    'connection_request' | 'new_connection' | 'trend_challenge' | 'applicant'
   recipientId: string
   aboutMemberId: string
   connectionId: string | null
@@ -22,6 +23,11 @@ export interface DueNotification {
   /** An applicant's status and address, null for a request. */
   applicantStatus: string | null
   applicantEmail: string | null
+  /** For a new challenge: the challenge, whether it is still shown, and the
+   * short name of its trend. */
+  challengeId: string | null
+  challengeActive: boolean
+  trend: string | null
 }
 
 export type SkipReason = 'seen' | 'stale' | 'in_app' | 'off'
@@ -58,6 +64,7 @@ function stillApplies(note: DueNotification): boolean {
   if (!note.recipientActive || note.aboutDeleted) return false
   if (note.type === 'connection_request')
     return note.requestStatus === 'pending'
+  if (note.type === 'trend_challenge') return note.challengeActive
   return note.type !== 'applicant' || note.applicantStatus === 'applicant'
 }
 

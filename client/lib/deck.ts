@@ -12,9 +12,11 @@ export type SwipeResult =
   | { result: 'joined'; id: string }
   | { result: 'gone' }
 
-/** The next cards to answer, never the member's own (R-OFF-1). */
-export async function fetchDeck(): Promise<DeckCard[]> {
-  const response = await fetch('/api/deck')
+/** The next cards to answer, never the member's own (R-OFF-1); with
+ * `first`, opened at that card when it is among them (R-OFF-7). */
+export async function fetchDeck(first?: string): Promise<DeckCard[]> {
+  const query = first === undefined ? '' : `?first=${encodeURIComponent(first)}`
+  const response = await fetch(`/api/deck${query}`)
   if (!response.ok)
     throw new Error(`deck unavailable (${String(response.status)})`)
   return ((await response.json()) as { cards: DeckCard[] }).cards

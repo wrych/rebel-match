@@ -6,7 +6,11 @@ import OfferScreen from './OfferScreen.vue'
 
 const push = vi.fn()
 const replace = vi.fn()
-vi.mock('vue-router', () => ({ useRouter: () => ({ push, replace }) }))
+const route = { query: {} as Record<string, unknown> }
+vi.mock('vue-router', () => ({
+  useRouter: () => ({ push, replace }),
+  useRoute: () => route,
+}))
 
 const cards: DeckCard[] = [
   {
@@ -90,6 +94,7 @@ afterEach(() => {
   replace.mockReset()
   sessionStorage.clear()
   document.body.innerHTML = ''
+  route.query = {}
 })
 
 describe('OfferScreen', () => {
@@ -102,6 +107,21 @@ describe('OfferScreen', () => {
     expect(screen.text()).toContain('Ola Nyberg')
     expect(screen.text()).toContain('Björk · Manufacturing')
     expect(screen.text()).toContain('1 of 2')
+  })
+
+  it('opens at the card a notification links to, once (R-OFF-7)', async () => {
+    route.query = { challenge: 'c/2' }
+    const fetchMock = server([cards, []])
+    const screen = await mountScreen()
+
+    const reads = (): string[] =>
+      fetchMock.mock.calls
+        .map(([url]) => String(url))
+        .filter(
+          (url) => url.startsWith('/api/deck') && url !== '/api/deck/seen',
+        )
+    expect(reads()).toEqual(['/api/deck?first=c%2F2'])
+    screen.unmount()
   })
 
   it('browses with the arrow buttons and keys (R-OFF-1)', async () => {

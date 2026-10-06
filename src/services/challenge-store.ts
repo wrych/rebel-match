@@ -1,4 +1,5 @@
 import { and, asc, desc, eq, isNotNull, ne, sql, type SQL } from 'drizzle-orm'
+import { insertTrendNotifications } from './notification-store.js'
 import type { Database } from '../db/connect.js'
 import {
   cases,
@@ -110,12 +111,29 @@ export function createChallengeStore(db: Database): ChallengeStore {
         .where(and(eq(challenges.id, id), eq(challenges.status, 'active')))
       return row === undefined ? null : challengeOf(row)
     },
-    setTrend: async (id, trendId, overridden) => {
-      await db
-        .update(challenges)
-        .set({ trendId, overridden })
-        .where(eq(challenges.id, id))
-    },
+    // A challenge is posted once its trend is first confirmed; the trend's
+    // followers are told in the same transaction (R-ASK-9, R-NOTE-10).
+    setTrend: (id, trendId, overridden) =>
+      db.transaction(async (tx) => {
+        const [before] = await tx
+          .select({
+            trendId: challenges.trendId,
+            authorId: challenges.memberId,
+          })
+          .from(challenges)
+          .where(eq(challenges.id, id))
+          .for('update')
+        await tx
+          .update(challenges)
+          .set({ trendId, overridden })
+          .where(eq(challenges.id, id))
+        if (before?.trendId === null)
+          await insertTrendNotifications(tx, {
+            id,
+            authorId: before.authorId,
+            trendId,
+          })
+      }),
     peers: (trendId, viewerId) => peersOf(db, trendId, viewerId),
     cases: (trendId) =>
       db

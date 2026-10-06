@@ -292,7 +292,7 @@ printed dev link (R-DEV-6).
 - [x] Cadences: _Every 15 minutes_, _Hourly_, _Daily_, _In the app only_ and
       _Off_ per type on the profile screen, with the defaults; the digest mail
       and `outbox_quotes`. _(R-NOTE-2,3,7,8, R-MSG-6)_
-- [ ] Notify followers of a new challenge in their trend, linking to the deck
+- [x] Notify followers of a new challenge in their trend, linking to the deck
       opened at its card. _(R-ASK-9, R-NOTE-1, R-OFF-7)_
 - [x] The Matches badge counts what arrived since Matches was last opened,
       and opening it clears it; cards keep their own marks. _(R-MINE-4)_

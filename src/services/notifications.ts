@@ -1,10 +1,12 @@
 import type { ConnectionService } from './connections.js'
+import type { DeckService } from './deck.js'
 
 /** What a notification says happened, as the screen words it (R-NOTE-1). */
 export type NotificationKind =
   | 'connection_request'
   | 'connection_accepted'
   | 'connection_added'
+  | 'trend_challenge'
   | 'applicant'
 
 /** A notification as its recipient sees it in the list (R-NOTE-5): the member
@@ -16,12 +18,15 @@ export interface NotificationView {
   isNew: boolean
   name: string
   path: string
+  /** The trend a new challenge was posted in; null for every other kind. */
+  trend: string | null
 }
 
 /** A stored notification, with what the list needs to word it. */
 export interface NotificationRow {
   id: string
-  type: 'connection_request' | 'new_connection' | 'applicant'
+  type:
+    'connection_request' | 'new_connection' | 'trend_challenge' | 'applicant'
   createdAt: Date
   seenAt: Date | null
   /** The display name, or for an applicant what they gave or their address. */
@@ -31,6 +36,9 @@ export interface NotificationRow {
    * accepted (R-CONN-7), or received it from a member already connected
    * (R-CONN-9). */
   recipientRequested: boolean
+  challengeId: string | null
+  /** The short name of a new challenge's trend. */
+  trend: string | null
 }
 
 export interface NotificationStore {
@@ -52,6 +60,7 @@ export interface NotificationStore {
     between: boolean,
   ): Promise<void>
   markSeenForApplicants(memberId: string): Promise<void>
+  markSeenForChallenge(memberId: string, challengeId: string): Promise<void>
 }
 
 export interface NotificationService {
@@ -66,6 +75,8 @@ export interface NotificationService {
     contact: boolean,
   ): Promise<void>
   openedApplicants(memberId: string): Promise<void>
+  /** The member's deck opened at this challenge's card (R-OFF-7). */
+  openedChallenge(memberId: string, challengeId: string): Promise<void>
 }
 
 const requestPath = (id: string): string =>
@@ -76,8 +87,10 @@ function kindOf(row: NotificationRow): NotificationKind {
   return row.recipientRequested ? 'connection_accepted' : 'connection_added'
 }
 
-// Where tapping an entry leads: the screen it comes from (R-NOTE-5).
+// Where tapping an entry leads: the screen it comes from (R-NOTE-5, R-OFF-7).
 function pathOf(row: NotificationRow): string {
+  if (row.type === 'trend_challenge')
+    return `/offer?challenge=${encodeURIComponent(row.challengeId ?? '')}`
   if (row.type === 'applicant' || row.connectionId === null)
     return '/admin/applicants'
   return row.type === 'connection_request'
@@ -93,6 +106,7 @@ function viewOf(row: NotificationRow): NotificationView {
     isNew: row.seenAt === null,
     name: row.aboutName,
     path: pathOf(row),
+    trend: row.type === 'trend_challenge' ? row.trend : null,
   }
 }
 
@@ -113,6 +127,8 @@ export function createNotifications(deps: {
     openedConnection: (memberId, connectionId, contact) =>
       store.markSeenForConnection(memberId, connectionId, contact),
     openedApplicants: (memberId) => store.markSeenForApplicants(memberId),
+    openedChallenge: (memberId, challengeId) =>
+      store.markSeenForChallenge(memberId, challengeId),
   }
 }
 
@@ -134,6 +150,22 @@ export function markingOpened(
       const contact = await connections.contact(memberId, id)
       if (contact !== null) await notes.openedConnection(memberId, id, true)
       return contact
+    },
+  }
+}
+
+/** The deck, marking the viewer's notification of a new challenge seen when
+ * the deck opens at its card, the screen it leads to (R-NOTE-5, R-OFF-7). */
+export function markingDeckOpened(
+  deck: DeckService,
+  notes: Pick<NotificationService, 'openedChallenge'>,
+): DeckService {
+  return {
+    next: async (viewerId, first) => {
+      const cards = await deck.next(viewerId, first)
+      if (first !== undefined && cards[0]?.challengeId === first)
+        await notes.openedChallenge(viewerId, first)
+      return cards
     },
   }
 }

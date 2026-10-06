@@ -99,6 +99,13 @@
       "when": 1791274576679,
       "tag": "0013_notification_claims",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1791274946839,
+      "tag": "0014_trend_notifications",
+      "breakpoints": true
     }
   ]
 }

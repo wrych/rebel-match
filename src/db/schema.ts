@@ -207,6 +207,7 @@ export const outboxKind = pgEnum('outbox_kind', [
   'connection_accepted',
   'connection_added',
   'notification_digest',
+  'trend_challenge',
 ])
 
 export const outboxStatus = pgEnum('outbox_status', [

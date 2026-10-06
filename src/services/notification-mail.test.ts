@@ -39,6 +39,9 @@ const due = (over: Partial<DueNotification> = {}): DueNotification => ({
   requestStatus: 'pending',
   applicantStatus: null,
   applicantEmail: null,
+  challengeId: null,
+  challengeActive: false,
+  trend: null,
   ...over,
 })
 
@@ -135,6 +138,48 @@ describe('one notification: its type’s own email (R-NOTE-8)', () => {
   it('says what became of the mail, and null when nobody got one', async () => {
     expect(await sender('failed').send([due()])).toBe('failed')
     expect(await sender().send([due({ connectionId: 'gone' })])).toBeNull()
+  })
+})
+
+const trendNote = due({
+  id: 'n4',
+  type: 'trend_challenge',
+  connectionId: null,
+  requestStatus: null,
+  challengeId: 'c1',
+  challengeActive: true,
+  trend: 'Radical Transparency',
+})
+
+describe('a new challenge in a followed trend (R-ASK-9, R-OFF-7)', () => {
+  it('mails the follower its author and trend, linking the deck at its card, never its words', async () => {
+    const { send, sent } = sender()
+
+    expect(await send([trendNote])).toBe('sent')
+
+    expect(sent).toEqual([
+      {
+        memberId: 'm-bob',
+        aboutMemberId: 'm-ada',
+        to: 'm-bob@example.invalid',
+        kind: 'trend_challenge',
+        subject: 'Ada posted a challenge in Radical Transparency',
+        text:
+          'Ada posted a challenge in Radical Transparency, a trend you follow on Rebel Match.\n\n' +
+          'See it, and say if you are in the same boat or have been there, here:\n' +
+          'http://localhost:5173/offer?challenge=c1\n',
+      },
+    ])
+  })
+
+  it('takes a line of its own in a digest', async () => {
+    const { send, sent } = sender()
+
+    await send([due(), trendNote])
+
+    expect(sent[0]?.text).toContain(
+      'Ada posted a challenge in Radical Transparency.\nhttp://localhost:5173/offer?challenge=c1',
+    )
   })
 })
 

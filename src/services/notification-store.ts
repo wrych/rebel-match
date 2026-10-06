@@ -12,11 +12,14 @@ import {
 } from 'drizzle-orm'
 import type { Database } from '../db/connect.js'
 import {
+  challenges,
   connectionRequests,
+  follows,
   memberRoles,
   members,
   notificationSettings,
   notifications,
+  trends,
 } from '../db/schema.js'
 import type { NotificationRow, NotificationStore } from './notifications.js'
 
@@ -28,16 +31,19 @@ function reviews(roles: readonly string[], memberId: unknown): SQL {
   return sql`exists (select 1 from ${memberRoles} where ${memberRoles.memberId} = ${memberId} and ${inArray(memberRoles.roleKey, [...roles])})`
 }
 
-// What R-NOTE-5 shows: not hidden, about nobody deleted, and an applicant
-// notice only to someone who may still review applicants. Followed-trend
-// notices are not written yet (tasks.md, M6).
+// What R-NOTE-5 shows: not hidden, about nobody deleted, an applicant notice
+// only to someone who may still review applicants, and a new challenge only
+// while it is still shown.
 function shown(roles: readonly string[], memberId: string): SQL | undefined {
   return and(
     eq(n.recipientId, memberId),
     eq(n.hidden, false),
-    ne(n.type, 'trend_challenge'),
     ne(about.status, 'deleted'),
     or(ne(n.type, 'applicant'), reviews(roles, memberId)),
+    or(
+      ne(n.type, 'trend_challenge'),
+      sql`exists (select 1 from ${challenges} where ${challenges.id} = ${n.challengeId} and ${challenges.status} = 'active')`,
+    ),
   )
 }
 
@@ -65,6 +71,24 @@ function offFor(recipient: unknown, type: string): SQL<boolean> {
   return sql<boolean>`exists (select 1 from ${notificationSettings} where ${notificationSettings.memberId} = ${recipient} and ${notificationSettings.type} = ${type} and ${notificationSettings.cadence} = 'off')`
 }
 
+/** Stores, inside the transaction that first puts a challenge in a trend, a
+ * notification for every active member following it but its author
+ * (R-ASK-9, R-NOTE-1, R-NOTE-10). */
+export async function insertTrendNotifications(
+  db: Database,
+  challenge: { id: string; authorId: string; trendId: string },
+): Promise<void> {
+  await db.execute(sql`
+    insert into ${n} (id, recipient_id, type, about_member_id, challenge_id, hidden)
+    select gen_random_uuid()::text, follower.id, 'trend_challenge', ${challenge.authorId}, ${challenge.id},
+      ${offFor(sql`follower.id`, 'trend_challenge')}
+    from ${follows} f join ${members} follower on follower.id = f.member_id
+    where f.trend_id = ${challenge.trendId}
+      and follower.id <> ${challenge.authorId}
+      and follower.status = 'active'
+      and follower.name is not null`)
+}
+
 /** Stores, inside the transaction that records the applicant, a notification
  * for every active member who may review applicants (R-AUTH-2, R-NOTE-10). */
 export async function insertApplicantNotifications(
@@ -88,6 +112,39 @@ function olderThan(memberId: string, id: string): SQL {
   return sql`(${n.createdAt}, ${n.id}) < (select cursor.created_at, cursor.id from ${n} cursor where cursor.id = ${id} and cursor.recipient_id = ${memberId})`
 }
 
+interface ListedRow {
+  id: string
+  type: NotificationRow['type']
+  createdAt: Date
+  seenAt: Date | null
+  name: string | null
+  requestedName: string | null
+  email: string
+  connectionId: string | null
+  requesterId: string | null
+  challengeId: string | null
+  trend: string | null
+}
+
+// An applicant is named by what they gave, else their address; anyone else
+// by their name (R-NOTE-5).
+function rowOf(row: ListedRow, memberId: string): NotificationRow {
+  return {
+    id: row.id,
+    type: row.type,
+    createdAt: row.createdAt,
+    seenAt: row.seenAt,
+    aboutName:
+      row.type === 'applicant'
+        ? (row.requestedName ?? row.name ?? row.email)
+        : (row.name ?? ''),
+    connectionId: row.connectionId,
+    recipientRequested: row.requesterId === memberId,
+    challengeId: row.challengeId,
+    trend: row.trend,
+  }
+}
+
 async function list(
   db: Database,
   roles: readonly string[],
@@ -106,10 +163,20 @@ async function list(
       email: about.email,
       connectionId: n.connectionId,
       requesterId: request.requesterId,
+      challengeId: n.challengeId,
+      trend: trends.short,
     })
     .from(n)
     .innerJoin(about, eq(about.id, n.aboutMemberId))
     .leftJoin(request, eq(request.id, n.connectionId))
+    .leftJoin(challenges, eq(challenges.id, n.challengeId))
+    .leftJoin(
+      trends,
+      eq(
+        trends.id,
+        sql`coalesce(${challenges.trendId}, ${challenges.autoTrend})`,
+      ),
+    )
     .where(
       and(
         shown(roles, memberId),
@@ -118,18 +185,7 @@ async function list(
     )
     .orderBy(desc(n.createdAt), desc(n.id))
     .limit(limit)
-  return rows.map((row) => ({
-    id: row.id,
-    type: row.type as NotificationRow['type'],
-    createdAt: row.createdAt,
-    seenAt: row.seenAt,
-    aboutName:
-      row.type === 'applicant'
-        ? (row.requestedName ?? row.name ?? row.email)
-        : (row.name ?? ''),
-    connectionId: row.connectionId,
-    recipientRequested: row.requesterId === memberId,
-  }))
+  return rows.map((row) => rowOf(row, memberId))
 }
 
 async function newCount(
@@ -189,6 +245,12 @@ export function createNotificationStore(
               eq(n.type, 'connection_request'),
               eq(n.connectionId, connectionId),
             ),
+      ),
+    markSeenForChallenge: (memberId, challengeId) =>
+      markSeenWhere(
+        db,
+        memberId,
+        and(eq(n.type, 'trend_challenge'), eq(n.challengeId, challengeId)),
       ),
     markSeenForApplicants: (memberId) =>
       markSeenWhere(db, memberId, eq(n.type, 'applicant')),

@@ -1,4 +1,4 @@
-import { and, desc, eq, isNotNull, ne, notExists } from 'drizzle-orm'
+import { and, desc, eq, isNotNull, ne, notExists, sql } from 'drizzle-orm'
 import type { Database } from '../db/connect.js'
 import { challenges, members, swipes, trends } from '../db/schema.js'
 import { challengeTrend } from './challenge-store.js'
@@ -21,7 +21,7 @@ const cardColumns = {
  * check runs in the query, so a swiped card cannot reappear (R-OFF-2). */
 export function createDeckStore(db: Database): DeckStore {
   return {
-    nextFor: async (viewerId, limit) => {
+    nextFor: async (viewerId, limit, first) => {
       const swiped = db
         .select({ challengeId: swipes.challengeId })
         .from(swipes)
@@ -45,7 +45,11 @@ export function createDeckStore(db: Database): DeckStore {
             notExists(swiped),
           ),
         )
-        .orderBy(desc(challenges.createdAt), challenges.id)
+        .orderBy(
+          desc(sql`${challenges.id} = ${first ?? null}`),
+          desc(challenges.createdAt),
+          challenges.id,
+        )
         .limit(limit)
       return rows.map((row) => ({
         challengeId: row.challengeId,

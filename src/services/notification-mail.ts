@@ -1,4 +1,5 @@
 import { createApplicantNotice } from './applicant-notice.js'
+import { createTrendNotice, deckAt } from './trend-notice.js'
 import {
   createAcceptNotice,
   createAddedNotice,
@@ -77,6 +78,17 @@ async function itemOf(
     return note.applicantEmail === null
       ? null
       : `${note.applicantEmail} asked to join.\n${link(deps, '/admin/applicants')}`
+  if (note.type === 'trend_challenge')
+    return note.challengeId === null || note.trend === null
+      ? null
+      : `${await nameOf(deps, note.aboutMemberId)} posted a challenge in ${note.trend}.\n${link(deps, deckAt(note.challengeId))}`
+  return requestItem(deps, note)
+}
+
+async function requestItem(
+  deps: SenderDeps,
+  note: DueNotification,
+): Promise<string | null> {
   const record =
     note.connectionId === null
       ? null
@@ -125,6 +137,22 @@ async function digest(
   })
 }
 
+async function aboutChallenge(
+  deps: SenderDeps & { mailer: Mailer },
+  note: DueNotification,
+): Promise<void> {
+  const to = await deps.members.emailOf(note.recipientId)
+  if (to === null || note.challengeId === null || note.trend === null) return
+  await createTrendNotice(deps)({
+    recipientId: note.recipientId,
+    to,
+    authorId: note.aboutMemberId,
+    authorName: await nameOf(deps, note.aboutMemberId),
+    trend: note.trend,
+    challengeId: note.challengeId,
+  })
+}
+
 async function single(
   deps: SenderDeps,
   note: DueNotification,
@@ -137,6 +165,8 @@ async function single(
     },
   }
   if (note.type === 'applicant') await aboutApplicant({ ...deps, mailer }, note)
+  else if (note.type === 'trend_challenge')
+    await aboutChallenge({ ...deps, mailer }, note)
   else await aboutRequest({ ...deps, mailer }, note)
   return status
 }

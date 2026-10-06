@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import {
   answerCard,
   authorLine,
@@ -13,6 +13,12 @@ import { noticeFor } from '../lib/offer'
 import { countAnswer } from '../lib/offer-session'
 
 const router = useRouter()
+const route = useRoute()
+// A notification opens the deck at its challenge's card, once (R-OFF-7).
+let openAt =
+  typeof route.query['challenge'] === 'string'
+    ? route.query['challenge']
+    : undefined
 const cards = ref<DeckCard[]>([])
 const index = ref(0)
 const sending = ref(false)
@@ -32,7 +38,8 @@ watch(
 
 async function load(): Promise<void> {
   try {
-    cards.value = await fetchDeck()
+    cards.value = await fetchDeck(openAt)
+    openAt = undefined
     index.value = 0
     if (cards.value.length === 0) await router.replace('/offer/done')
   } catch {
