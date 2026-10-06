@@ -1,6 +1,6 @@
 # 0038. Count the opens of each invite, and show them with its uses
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by 0039
 - **Date:** 2026-10-05
 - **Deciders:** Andy Moesch
 

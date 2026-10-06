@@ -1,4 +1,4 @@
-import { desc, eq, getTableColumns, sql } from 'drizzle-orm'
+import { and, desc, eq, getTableColumns, isNull, lt, sql } from 'drizzle-orm'
 import type { Database } from '../db/connect.js'
 import { invites, members } from '../db/schema.js'
 import type { InviteStore, ListedInvite } from './invites.js'
@@ -37,6 +37,20 @@ export function createInviteStore(db: Database): InviteStore {
         .where(eq(invites.id, id))
         .returning({ id: invites.id })
       return revoked.length === 1
+    },
+    raiseCap: async (id, maxUses) => {
+      const raised = await db
+        .update(invites)
+        .set({ maxUses })
+        .where(
+          and(
+            eq(invites.id, id),
+            isNull(invites.revokedAt),
+            lt(invites.maxUses, maxUses),
+          ),
+        )
+        .returning({ id: invites.id })
+      return raised.length === 1
     },
   }
 }

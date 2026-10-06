@@ -67,9 +67,9 @@ warning, and CI remains the gate for everything else.
 
 ### Merging
 
-`main` takes squash merges of pull requests with CI's `check` green on their
-own branch; the branch need not be up to date with `main` (ADR 0028). Who
-presses the button depends on the change (ADR 0022):
+`main` takes squash merges of pull requests with CI's `check` and `build` green
+on their own branch; the branch need not be up to date with `main` (ADR 0028).
+Who presses the button depends on the change (ADR 0022):
 
 | The change                                                                   | Merged by                         |
 | ---------------------------------------------------------------------------- | --------------------------------- |

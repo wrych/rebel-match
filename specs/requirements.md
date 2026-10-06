@@ -834,9 +834,11 @@ records, and nothing here shows a number to anyone (ADR 0033).
   activity is recorded and kept with the account, that the app may show
   combined figures, that personal data reaches another member only where a
   feature needs it, and that the history can be deleted (R-ONB-5).
-- **R-STAT-6 (Invite opens)** — WHEN the entry screen loads with an invite
-  token THE SYSTEM SHALL record an **open** of that invite: the invite and the
-  time, and nothing about who opened it. The invite links screen SHALL show
+- **R-STAT-6 (Invite opens)** — WHEN a visitor first presses, touches or types
+  on the entry screen opened with an invite token THE SYSTEM SHALL record an
+  **open** of that invite: the invite and the time, and nothing about who
+  opened it. A browser that declares itself automated SHALL NOT count, and one
+  tab SHALL count an invite once (ADR 0039). The invite links screen SHALL show
   each invite's count of opens beside its uses (R-INV-9); no other screen or
   endpoint SHALL show or return opens (R-STAT-2). Opens SHALL go with their
   invite and SHALL NOT be sent to the analytics tool (ADR 0038).

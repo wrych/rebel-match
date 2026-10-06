@@ -76,6 +76,20 @@ describe('invite links over Postgres (F16)', () => {
     expect(listed?.joinUrl).toBe(created.joinUrl)
   })
 
+  it('raises its cap, and refuses to lower it (R-INV-4)', async () => {
+    const higher = config.limits.inviteDefaultMaxUses + 100
+    const raise = (maxUses: number): request.Test =>
+      request(app)
+        .patch(`/api/admin/invites/${created.id}`)
+        .set('Cookie', cookie)
+        .send({ maxUses })
+
+    const raised = await raise(higher)
+    expect(raised.status).toBe(200)
+    expect((raised.body as { invite: InviteView }).invite.maxUses).toBe(higher)
+    expect((await raise(higher - 1)).status).toBe(400)
+  })
+
   it('revokes it on the spot (R-INV-3)', async () => {
     await request(app)
       .post(`/api/admin/invites/${created.id}/revoke`)
@@ -89,5 +103,14 @@ describe('invite links over Postgres (F16)', () => {
       (invite) => invite.id === created.id,
     )
     expect(listed?.state).toBe('revoked')
+  })
+
+  it('leaves a revoked invite as it was', async () => {
+    const response = await request(app)
+      .patch(`/api/admin/invites/${created.id}`)
+      .set('Cookie', cookie)
+      .send({ maxUses: config.limits.inviteDefaultMaxUses + 500 })
+
+    expect(response.status).toBe(409)
   })
 })
