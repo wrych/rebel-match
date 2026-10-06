@@ -9,6 +9,7 @@ import {
   testDatabaseUrl,
   type TestDatabase,
 } from './support/database.js'
+import { createInviteStore } from '../../src/services/invite-store.js'
 
 const config = loadConfig({
   DATABASE_URL: testDatabaseUrl,
@@ -67,6 +68,12 @@ describe('invite opens over Postgres (R-STAT-6, ADR 0038)', () => {
       'invite_id',
       'opened_at',
     ])
+  })
+
+  it('counts the opens on the invite, the one way they are read (R-STAT-6)', async () => {
+    const found = await createInviteStore(db.drizzle).find(invite.id)
+
+    expect(found?.opens).toBe(2)
   })
 
   it('answers an unknown token the same and records nothing', async () => {

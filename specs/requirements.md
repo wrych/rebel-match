@@ -882,12 +882,15 @@ notifications: they go out at once, whatever is chosen here (R-NFR-3).
 - **R-NOTE-3 (Choosing)** — The profile screen SHALL offer the choice for each
   type the member can receive, and only those, saved on change like every
   setting there (R-PROF-1). A change SHALL apply to every notification still
-  waiting to be mailed.
-- **R-NOTE-4 (Kept in the app)** — WHEN a notification arises for a type that
-  is not **Off** THE SYSTEM SHALL store it for its recipient; for **Off** it
-  SHALL store nothing. A notification SHALL refer to what it is about — the
-  request, the challenge, the member — and SHALL be worded when shown, so it
-  never repeats a name or words that have since changed or gone.
+  waiting to be mailed. Setting a type to **Off** SHALL also hide its
+  notifications the member has not seen yet; those already seen stay listed.
+- **R-NOTE-4 (Kept in the app)** — WHEN a notification arises THE SYSTEM
+  SHALL store it for its recipient, whatever its type is set to, together with
+  the event that causes it (R-NOTE-10). For a type set to **Off** it SHALL be
+  stored **hidden**: never listed, counted or mailed, and still hidden if the
+  member later chooses otherwise. A notification SHALL refer to what it is
+  about — the request, the challenge, the member — and SHALL be worded when
+  shown, so it never repeats a name or words that have since changed or gone.
 - **R-NOTE-5 (The notifications screen)** — The member's notifications SHALL
   be listed, newest first, on their own screen (`/notifications`). Each entry
   SHALL say in one line what happened, naming the member it is about but
@@ -901,9 +904,9 @@ notifications: they go out at once, whatever is chosen here (R-NFR-3).
     notification SHALL link to the same screen (R-NOTE-8). Back SHALL return to
     the notifications screen (R-NAV-1).
   - An entry SHALL be **new** until the member has opened this screen while it
-    was listed, or the screen it opens. An entry about a member whose account
-    is deleted, or about anything the member may no longer open, SHALL NOT be
-    shown (R-NAV-8, R-NFR-7).
+    was listed, or the screen it opens. A hidden entry (R-NOTE-4), an entry
+    about a member whose account is deleted, or one about anything the member
+    may no longer open SHALL NOT be shown (R-NAV-8, R-NFR-7).
 - **R-NOTE-6 (In the menu)** — WHILE the member has new notifications the
   header's menu button SHALL carry a badge with their number, and the menu
   item SHALL read **Notifications (n new)**; without any it SHALL read
@@ -919,10 +922,12 @@ notifications: they go out at once, whatever is chosen here (R-NFR-3).
     Only mail of the same cadence starts the window.
   - **Daily** — one mail a day at the configured time, with everything gathered
     since the last.
-  - **In the app only** and **Off** — no mail.
+  - **In the app only** — no mail.
+  - **Off** — no mail; unseen notifications of the type are hidden (R-NOTE-3,
+    R-NOTE-4).
 - **R-NOTE-8 (What the mail says)** — A mail carrying one notification SHALL be
-  that type's own email (R-CONN-2, R-CONN-7, R-CONN-9). A mail carrying several SHALL say
-  how many in its subject and list each with its own link, under the same
+  that type's own email (R-CONN-2, R-CONN-7, R-CONN-9). A mail carrying several
+  SHALL say how many in its subject and list each with its own link, under the same
   rules as the single email (R-NAV-9).
 - **R-NOTE-9 (Nothing stale)** — Before mailing THE SYSTEM SHALL leave out
   every notification the member has seen in the app (R-NOTE-5), a request no

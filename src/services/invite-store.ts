@@ -1,11 +1,13 @@
 import { and, desc, eq, getTableColumns, isNull, lt, sql } from 'drizzle-orm'
 import type { Database } from '../db/connect.js'
-import { invites, members } from '../db/schema.js'
+import { invites, members, inviteOpens } from '../db/schema.js'
 import type { InviteStore, ListedInvite } from './invites.js'
 
 const listedColumns = {
   ...getTableColumns(invites),
   creatorEmail: members.email,
+  // A count per invite: the one way opens are read back (R-STAT-6).
+  opens: sql<number>`(SELECT count(*)::int FROM ${inviteOpens} WHERE ${inviteOpens.inviteId} = ${invites.id})`,
 }
 const byCreator = eq(members.id, invites.createdBy)
 
