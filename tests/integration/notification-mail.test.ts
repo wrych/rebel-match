@@ -156,6 +156,32 @@ describe('the notification worker over Postgres (R-NOTE-7..11)', () => {
     expect(await mailed()).toBe(1)
   })
 
+  it('leaves one another server is mailing alone, whatever the member chooses meanwhile (R-NOTE-3)', async () => {
+    const id = await ask()
+    await db.query(
+      "UPDATE notifications SET claimed_until = now() + interval '5 minutes' WHERE connection_id = ?",
+      [id],
+    )
+
+    await request(app)
+      .put('/api/me/notification-settings/connection_request')
+      .set('Cookie', cookies['bob']!)
+      .send({ cadence: 'immediately' })
+      .expect(204)
+    await deps.notificationMail.deliverDue()
+
+    expect(await mailed()).toBe(0)
+    expect(await state(id)).toMatchObject({ mail_status: 'waiting' })
+    const [held] = await db.query(
+      'SELECT claimed_until FROM notifications WHERE connection_id = ?',
+      [id],
+    )
+    expect(held?.['claimed_until']).not.toBeNull()
+    await db.query('DELETE FROM notification_settings WHERE member_id = ?', [
+      ids['bob'],
+    ])
+  })
+
   it('deletes notifications older than the retention (R-NOTE-11)', async () => {
     const id = await ask()
     await db.query(
