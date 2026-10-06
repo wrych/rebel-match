@@ -256,12 +256,15 @@ default and happy the one alternative for the beta; a dark mode is another block
 of the same shape (R-LOOK-3). Fonts are self-hosted through `@fontsource`.
 
 The header's right-hand button opens the **menu** (R-PROF-3): the colour mode
-switch, "Profile & privacy" (`/profile`), the host tools the member's
-permissions allow (paths and permissions from the route table, ADR 0017), and
-sign out. It is a small panel under the header, closed by Escape, by a click
+switch, "Profile & privacy" (`/profile`), Feedback (R-FB-1), the host tools
+the member's permissions allow (paths and permissions from the route table, ADR
+0017), and sign out. It is a small panel under the header, closed by Escape, by a click
 outside it or by choosing an item, with focus returned to the button. Signed
 out, the menu offers only the colour mode. The welcome screen keeps the two
 doors and "Your matches"; host tools and sign out move into the menu.
+
+The bottom tab bar, on member screens other than the welcome screen, reads Home
+(`/welcome`), Submit, Swipe and Matches, from left to right.
 
 ### Key libraries
 
