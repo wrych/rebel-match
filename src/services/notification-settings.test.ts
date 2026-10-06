@@ -51,13 +51,15 @@ describe('createNotificationSettings (R-NOTE-2, R-NOTE-3)', () => {
     expect(member.map((s) => [s.type, s.cadence])).toEqual([
       ['connection_request', 'hourly'],
       ['new_connection', 'hourly'],
+      ['trend_challenge', 'daily'],
     ])
     expect(host.map((s) => [s.type, s.cadence])).toEqual([
       ['connection_request', 'hourly'],
       ['new_connection', 'hourly'],
+      ['trend_challenge', 'daily'],
       ['applicant', 'every_15_minutes'],
     ])
-    expect(host[2]?.offered).toContain('every_15_minutes')
+    expect(host[3]?.offered).toContain('every_15_minutes')
     expect(member[0]?.offered).not.toContain('every_15_minutes')
   })
 
@@ -100,9 +102,9 @@ describe('createNotificationSettings (R-NOTE-2, R-NOTE-3)', () => {
     expect(await settings.choose('m-ada', false, 'applicant', 'daily')).toBe(
       'not_found',
     )
-    expect(
-      await settings.choose('m-ada', false, 'trend_challenge', 'daily'),
-    ).toBe('not_found')
+    expect(await settings.choose('m-ada', false, 'weekly_news', 'daily')).toBe(
+      'not_found',
+    )
     expect(
       await settings.choose(
         'm-ada',

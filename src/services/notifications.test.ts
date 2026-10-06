@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import type { ConnectionService } from './connections.js'
+import type { DeckService } from './deck.js'
 import {
   createNotifications,
+  markingDeckOpened,
   markingOpened,
   type NotificationRow,
   type NotificationStore,
@@ -26,6 +28,10 @@ function recordingStore(rows: NotificationRow[] = []): {
       calls.push(['seen-connection', memberId, id, between])
       return Promise.resolve()
     },
+    markSeenForChallenge: (memberId, challengeId) => {
+      calls.push(['seen-challenge', memberId, challengeId])
+      return Promise.resolve()
+    },
     markSeenForApplicants: (memberId) => {
       calls.push(['seen-applicants', memberId])
       return Promise.resolve()
@@ -43,6 +49,8 @@ const row = (over: Partial<NotificationRow>): NotificationRow => ({
   aboutName: 'Bea There',
   connectionId: 'r/1',
   recipientRequested: false,
+  challengeId: null,
+  trend: null,
   ...over,
 })
 
@@ -53,6 +61,13 @@ describe('createNotifications', () => {
       row({ id: 'b', type: 'new_connection', recipientRequested: true }),
       row({ id: 'c', type: 'new_connection', seenAt: at }),
       row({ id: 'd', type: 'applicant', connectionId: null }),
+      row({
+        id: 'e',
+        type: 'trend_challenge',
+        connectionId: null,
+        challengeId: 'c/1',
+        trend: 'Radical Transparency',
+      }),
     ])
     const notes = createNotifications({ store, pageSize: () => 20 })
 
@@ -64,6 +79,14 @@ describe('createNotifications', () => {
       ['b', 'connection_accepted', '/matches/requests/r%2F1/contact', true],
       ['c', 'connection_added', '/matches/requests/r%2F1/contact', false],
       ['d', 'applicant', '/admin/applicants', true],
+      ['e', 'trend_challenge', '/offer?challenge=c%2F1', true],
+    ])
+    expect(list.map((n) => n.trend)).toEqual([
+      null,
+      null,
+      null,
+      null,
+      'Radical Transparency',
     ])
     expect(list[0]).toMatchObject({
       name: 'Bea There',
@@ -79,11 +102,13 @@ describe('createNotifications', () => {
     await notes.seen('bob', ['n1'])
     await notes.openedConnection('bob', 'r1', true)
     await notes.openedApplicants('bob')
+    await notes.openedChallenge('bob', 'c1')
 
     expect(calls).toEqual([
       ['seen', 'bob', ['n1']],
       ['seen-connection', 'bob', 'r1', true],
       ['seen-applicants', 'bob'],
+      ['seen-challenge', 'bob', 'c1'],
     ])
     expect(await notes.newCount('bob')).toBe(3)
   })
@@ -131,5 +156,44 @@ describe('markingOpened', () => {
     expect(await wrapped.get('eve', 'r1')).toBeNull()
     expect(await wrapped.contact('eve', 'r1')).toBeNull()
     expect(opened).toEqual([])
+  })
+})
+
+describe('markingDeckOpened (R-OFF-7, R-NOTE-5)', () => {
+  const card = (
+    challengeId: string,
+  ): Awaited<ReturnType<DeckService['next']>>[number] =>
+    ({ challengeId }) as Awaited<ReturnType<DeckService['next']>>[number]
+
+  it('marks the new-challenge notification seen when the deck opens at its card', async () => {
+    const opened: unknown[] = []
+    const asked: unknown[] = []
+    const deck = markingDeckOpened(
+      {
+        next: (viewer, first) => {
+          asked.push([viewer, first])
+          return Promise.resolve(
+            first === 'c1' ? [card('c1'), card('c2')] : [card('c2')],
+          )
+        },
+      },
+      {
+        openedChallenge: (...args) => {
+          opened.push(args)
+          return Promise.resolve()
+        },
+      },
+    )
+
+    await deck.next('bob', 'c1')
+    await deck.next('bob', 'gone')
+    await deck.next('bob')
+
+    expect(asked).toEqual([
+      ['bob', 'c1'],
+      ['bob', 'gone'],
+      ['bob', undefined],
+    ])
+    expect(opened).toEqual([['bob', 'c1']])
   })
 })

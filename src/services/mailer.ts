@@ -8,6 +8,7 @@ export type OutboxKind =
   | 'connection_accepted'
   | 'connection_added'
   | 'notification_digest'
+  | 'trend_challenge'
 
 export type DeliveryStatus = 'sent' | 'suppressed' | 'failed'
 

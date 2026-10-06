@@ -57,6 +57,8 @@ export function headline(note: NotificationView): string {
       return `${note.name} accepted your request`
     case 'connection_added':
       return `${note.name} connected with you over another challenge`
+    case 'trend_challenge':
+      return `${note.name} posted a challenge in ${note.trend ?? 'a trend you follow'}`
     case 'applicant':
       return `${note.name} asked to join`
   }

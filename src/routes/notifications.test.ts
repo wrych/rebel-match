@@ -31,6 +31,7 @@ const entry: NotificationView = {
   isNew: true,
   name: 'Bea There',
   path: '/matches/requests/r1',
+  trend: null,
 }
 
 function setup(): { app: Express; calls: unknown[] } {

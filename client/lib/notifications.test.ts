@@ -29,6 +29,7 @@ const note = (kind: NotificationView['kind']): NotificationView => ({
   isNew: true,
   name: 'Bea',
   path: '/x',
+  trend: kind === 'trend_challenge' ? 'Radical Transparency' : null,
 })
 
 afterEach(() => {
@@ -41,6 +42,7 @@ describe('headline', () => {
     ['connection_accepted', 'Bea accepted your request'],
     ['connection_added', 'Bea connected with you over another challenge'],
     ['applicant', 'Bea asked to join'],
+    ['trend_challenge', 'Bea posted a challenge in Radical Transparency'],
   ] as const)('words %s (R-NOTE-5)', (kind, words) => {
     expect(headline(note(kind))).toBe(words)
   })

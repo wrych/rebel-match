@@ -124,6 +124,7 @@ function deps(
       seen: () => Promise.resolve(),
       openedConnection: () => Promise.resolve(),
       openedApplicants: () => Promise.resolve(),
+      openedChallenge: () => Promise.resolve(),
     },
     notificationSettings: {
       list: () => Promise.resolve([]),

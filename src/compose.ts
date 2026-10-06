@@ -24,6 +24,7 @@ import { createSettings } from './services/settings.js'
 import { createWindowCounter } from './services/rate-limit.js'
 import {
   createNotifications,
+  markingDeckOpened,
   markingOpened,
   type NotificationService,
 } from './services/notifications.js'
@@ -50,7 +51,7 @@ import {
 import { createCockpit } from './services/cockpit.js'
 import { createFollows } from './services/follows.js'
 import { createDeckStore } from './services/deck-store.js'
-import { createDeck } from './services/deck.js'
+import { createDeck, type DeckService } from './services/deck.js'
 import { createActivity } from './services/activity.js'
 import { createActivityStore } from './services/activity-store.js'
 import { createInviteRedemption } from './services/invite-redemption-store.js'
@@ -114,6 +115,13 @@ export function composeAuth(
   })
 }
 
+function composeDeck(config: Config, db: Database): DeckService {
+  return createDeck({
+    store: createDeckStore(db),
+    pageSize: config.limits.deckPageSize,
+  })
+}
+
 // The member journeys: asking, offering and connecting (F5, F6, F7).
 function composeJourneys(
   config: Config,
@@ -147,10 +155,7 @@ function composeJourneys(
   })
   return {
     challenges,
-    deck: createDeck({
-      store: createDeckStore(db),
-      pageSize: config.limits.deckPageSize,
-    }),
+    deck: markingDeckOpened(composeDeck(config, db), notes),
     connections: markingOpened(connections, notes),
     swipes: createSwipes({ store: createSwipeStore(db), connections, track }),
     follows,

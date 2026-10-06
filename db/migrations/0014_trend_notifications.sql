@@ -1,0 +1,1 @@
+ALTER TYPE "public"."outbox_kind" ADD VALUE 'trend_challenge';

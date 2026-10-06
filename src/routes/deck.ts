@@ -1,10 +1,14 @@
 import { Router } from 'express'
+import { z } from 'zod'
 import type { AuthProvider } from '../auth/index.js'
 import type { DeckService } from '../services/deck.js'
 import { requirePermission, type GuardedLocals } from './require-permission.js'
 
+// The card to open the deck at, as a notification links it (R-OFF-7).
+const deckQuery = z.object({ first: z.string().min(1).max(36).optional() })
+
 /** `GET /api/deck` (design §3): the next cards to swipe, behind
- * `challenge:swipe` (R-OFF-1). */
+ * `challenge:swipe` (R-OFF-1), optionally opened at one (R-OFF-7). */
 export function deckRoutes(deps: {
   auth: AuthProvider
   deck: DeckService
@@ -14,9 +18,10 @@ export function deckRoutes(deps: {
   router.get(
     '/api/deck',
     requirePermission(deps.auth, 'challenge:swipe'),
-    async (_request, response) => {
+    async (request, response) => {
       const viewer = (response.locals as GuardedLocals).member
-      response.json({ cards: await deps.deck.next(viewer.id) })
+      const { first } = deckQuery.parse(request.query)
+      response.json({ cards: await deps.deck.next(viewer.id, first) })
     },
   )
 

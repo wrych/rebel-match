@@ -1,13 +1,15 @@
-import { and, eq, inArray, isNull, lt, lte, max, or } from 'drizzle-orm'
+import { and, eq, inArray, isNull, lt, lte, max, or, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 import type { Database } from '../db/connect.js'
 import {
+  challenges,
   connectionRequests,
   members,
   notificationSettings,
   notifications,
+  trends,
 } from '../db/schema.js'
-import { DEFAULT_CADENCE } from './notification-cadence.js'
+import { DEFAULT_CADENCE, type Cadence } from './notification-cadence.js'
 import type {
   DueNotification,
   NotificationMailStore,
@@ -51,9 +53,51 @@ async function claim(
   })
 }
 
-async function read(db: Database, ids: string[]): Promise<DueNotification[]> {
-  if (ids.length === 0) return []
-  const rows = await db
+interface ReadRow {
+  id: string
+  type: DueNotification['type']
+  recipientId: string
+  aboutMemberId: string | null
+  connectionId: string | null
+  createdAt: Date
+  attempts: number
+  seenAt: Date | null
+  hidden: boolean
+  recipientStatus: string
+  aboutStatus: string
+  aboutEmail: string
+  requestStatus: DueNotification['requestStatus']
+  cadence: Cadence | null
+  challengeId: string | null
+  challengeStatus: string | null
+  trend: string | null
+}
+
+function dueOf(row: ReadRow): DueNotification {
+  return {
+    id: row.id,
+    type: row.type,
+    cadence: row.cadence ?? DEFAULT_CADENCE[row.type],
+    recipientId: row.recipientId,
+    aboutMemberId: row.aboutMemberId ?? '',
+    connectionId: row.connectionId,
+    createdAt: row.createdAt,
+    attempts: row.attempts,
+    seen: row.seenAt !== null,
+    hidden: row.hidden,
+    recipientActive: row.recipientStatus === 'active',
+    aboutDeleted: row.aboutStatus === 'deleted',
+    requestStatus: row.requestStatus,
+    applicantStatus: row.type === 'applicant' ? row.aboutStatus : null,
+    applicantEmail: row.type === 'applicant' ? row.aboutEmail : null,
+    challengeId: row.challengeId,
+    challengeActive: row.challengeStatus === 'active',
+    trend: row.trend,
+  }
+}
+
+function readRows(db: Database, ids: string[]): Promise<ReadRow[]> {
+  return db
     .select({
       id: n.id,
       type: n.type,
@@ -69,34 +113,33 @@ async function read(db: Database, ids: string[]): Promise<DueNotification[]> {
       aboutEmail: about.email,
       requestStatus: request.status,
       cadence: chosen.cadence,
+      challengeId: n.challengeId,
+      challengeStatus: challenges.status,
+      trend: trends.short,
     })
     .from(n)
     .innerJoin(recipient, eq(recipient.id, n.recipientId))
     .innerJoin(about, eq(about.id, n.aboutMemberId))
     .leftJoin(request, eq(request.id, n.connectionId))
+    .leftJoin(challenges, eq(challenges.id, n.challengeId))
+    .leftJoin(
+      trends,
+      eq(
+        trends.id,
+        sql`coalesce(${challenges.trendId}, ${challenges.autoTrend})`,
+      ),
+    )
     .leftJoin(
       chosen,
       and(eq(chosen.memberId, n.recipientId), eq(chosen.type, n.type)),
     )
     .where(inArray(n.id, ids))
     .orderBy(n.createdAt, n.id)
-  return rows.map((row) => ({
-    id: row.id,
-    type: row.type as DueNotification['type'],
-    cadence: row.cadence ?? DEFAULT_CADENCE[row.type],
-    recipientId: row.recipientId,
-    aboutMemberId: row.aboutMemberId ?? '',
-    connectionId: row.connectionId,
-    createdAt: row.createdAt,
-    attempts: row.attempts,
-    seen: row.seenAt !== null,
-    hidden: row.hidden,
-    recipientActive: row.recipientStatus === 'active',
-    aboutDeleted: row.aboutStatus === 'deleted',
-    requestStatus: row.requestStatus,
-    applicantStatus: row.type === 'applicant' ? row.aboutStatus : null,
-    applicantEmail: row.type === 'applicant' ? row.aboutEmail : null,
-  }))
+}
+
+async function read(db: Database, ids: string[]): Promise<DueNotification[]> {
+  if (ids.length === 0) return []
+  return (await readRows(db, ids)).map(dueOf)
 }
 
 // When the member's last mail of a cadence went out, which starts its next

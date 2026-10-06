@@ -36,6 +36,9 @@ const due = (over: Partial<DueNotification> = {}): DueNotification => ({
   requestStatus: 'pending',
   applicantStatus: null,
   applicantEmail: null,
+  challengeId: null,
+  challengeActive: false,
+  trend: null,
   ...over,
 })
 
@@ -53,6 +56,16 @@ describe('skipReason (R-NOTE-3, R-NOTE-9)', () => {
       'a new connection, accepted',
       { type: 'new_connection' as const, requestStatus: 'accepted' as const },
       null,
+    ],
+    [
+      'a new challenge still shown',
+      { type: 'trend_challenge' as const, challengeActive: true },
+      null,
+    ],
+    [
+      'a new challenge no longer shown',
+      { type: 'trend_challenge' as const, challengeActive: false },
+      'stale',
     ],
     [
       'an applicant still waiting',
