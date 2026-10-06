@@ -31,10 +31,10 @@ describe('activeTab', () => {
 describe('matchesLabel', () => {
   it.each([
     [0, 0, 'Matches'],
-    [1, 0, 'Matches, 1 request waiting'],
-    [3, 0, 'Matches, 3 requests waiting'],
+    [1, 0, 'Matches, 1 new request'],
+    [3, 0, 'Matches, 3 new requests'],
     [0, 1, 'Matches, 1 new connection'],
-    [2, 2, 'Matches, 2 requests waiting, 2 new connections'],
+    [2, 2, 'Matches, 2 new requests, 2 new connections'],
   ])(
     'reads %i waiting and %i connected as %s (R-MINE-4, R-CONN-7)',
     (waiting, connected, label) => {

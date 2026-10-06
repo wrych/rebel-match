@@ -97,6 +97,8 @@ export const members = pgTable(
     }),
     analyticsConsentAt: at('analytics_consent_at'),
     analyticsId: id('analytics_id').notNull(),
+    // The Matches badge counts only what arrived after this (R-MINE-4).
+    matchesSeenAt: at('matches_seen_at'),
     createdAt: at('created_at').notNull().defaultNow(),
   },
   (t) => [

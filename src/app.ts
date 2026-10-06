@@ -34,7 +34,7 @@ import type { ConnectionService } from './services/connections.js'
 import type { DeckService } from './services/deck.js'
 import type { ActivityService } from './services/activity.js'
 import type { SwipeService } from './services/swipes.js'
-import type { Cockpit } from './services/cockpit.js'
+import type { CockpitService } from './services/cockpit.js'
 import type { FollowService } from './services/follows.js'
 import type { InviteService } from './services/invites.js'
 import type { OnboardingService } from './services/onboarding.js'
@@ -73,7 +73,7 @@ export interface AppDeps {
   connections: ConnectionService
   swipes: SwipeService
   follows: FollowService
-  cockpit: { cockpit(memberId: string): Promise<Cockpit> }
+  cockpit: CockpitService
 }
 
 /** True when the database answers. Reported rather than thrown, so a dev server

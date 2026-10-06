@@ -36,6 +36,10 @@ function setup(): { app: Express; calls: string[] } {
           calls.push(`cockpit:${m}`)
           return Promise.resolve(cockpit)
         },
+        seen: (m) => {
+          calls.push(`seen:${m}`)
+          return Promise.resolve()
+        },
       },
       follows: {
         follow: (m, t) => {
@@ -91,7 +95,20 @@ describe('cockpit routes', () => {
     expect(calls).toEqual(['unfollow:m-ada:06'])
   })
 
+  it('records that the member opened Matches (R-MINE-4)', async () => {
+    const { app, calls } = setup()
+
+    await request(app)
+      .post('/api/matches/seen')
+      .set('Cookie', await cookie())
+      .expect(204)
+    expect(calls).toEqual(['seen:m-ada'])
+  })
+
   it('asks for a session', async () => {
     expect((await request(setup().app).get('/api/cockpit')).status).toBe(401)
+    expect((await request(setup().app).post('/api/matches/seen')).status).toBe(
+      401,
+    )
   })
 })

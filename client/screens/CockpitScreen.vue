@@ -6,6 +6,7 @@ import {
   fetchCockpit,
   fetchConnected,
   fetchIncoming,
+  markMatchesSeen,
   type Cockpit,
 } from '../lib/cockpit'
 import {
@@ -35,7 +36,10 @@ const MS_PER_SECOND = 1000
 let stopPolling: (() => void) | undefined
 let gone = false
 
+// Marked before reading, so what arrives in between still badges the tab; a
+// failed mark only leaves the badge up (R-MINE-4).
 async function load(): Promise<void> {
+  await markMatchesSeen().catch(() => undefined)
   const [mine, waiting, people] = await Promise.all([
     fetchCockpit(),
     fetchIncoming(),

@@ -17,7 +17,6 @@ import {
 const MS_PER_SECOND = 1000
 const route = useRoute()
 const news = ref<MatchesNews>(NO_NEWS)
-const badge = computed(() => matchesBadge(news.value))
 const feedbackTo = ref<string | null>(null)
 let stopPolling: (() => void) | undefined
 let starting: Promise<void> | undefined
@@ -25,6 +24,10 @@ let gone = false
 
 const visible = computed(() => showsTabs(route.meta['access'], route.name))
 const active = computed(() => activeTab(route.path))
+// On the Matches screen itself everything is in view, so its tab carries no
+// badge; its sub-screens record no visit, so they keep it (R-MINE-4).
+const shown = computed(() => (route.path === '/matches' ? NO_NEWS : news.value))
+const badge = computed(() => matchesBadge(shown.value))
 const screen = computed(() => String(route.name ?? 'unknown'))
 const feedback = computed(() =>
   feedbackTo.value === null
@@ -58,10 +61,9 @@ async function startPolling(): Promise<void> {
   }, config.limits.matchesPollSeconds * MS_PER_SECOND)
 }
 
-// Re-read on every move, so an answered request or an opened connection
-// leaves the badge as soon as the member navigates on, and on a timer, so a
-// new one shows without a move (R-MINE-4, R-CONN-7). A failed read just shows
-// no badge.
+// Re-read on every move, so leaving Matches shows a badge already cleared by
+// the visit, and on a timer, so a new request shows without a move
+// (R-MINE-4, R-CONN-7). A failed read just shows no badge.
 watch(
   () => [route.fullPath, visible.value] as const,
   async ([, show]) => {
@@ -88,7 +90,7 @@ onUnmounted(() => {
       class="tab"
       :class="{ on: active?.to === tab.to }"
       :aria-current="active?.to === tab.to ? 'page' : undefined"
-      :aria-label="tab.to === '/matches' ? matchesLabel(news) : undefined"
+      :aria-label="tab.to === '/matches' ? matchesLabel(shown) : undefined"
     >
       {{ tab.label }}
       <span

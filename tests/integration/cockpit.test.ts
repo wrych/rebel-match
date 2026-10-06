@@ -49,7 +49,11 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await db.query('DELETE FROM follows WHERE member_id = ?', [memberId])
-  await db.query('DELETE FROM connection_requests WHERE target_id = ?', [
+  await db.query(
+    'DELETE FROM connection_requests WHERE target_id = ? OR requester_id = ?',
+    [memberId, memberId],
+  )
+  await db.query('UPDATE members SET matches_seen_at = NULL WHERE id = ?', [
     memberId,
   ])
   await db.close()
@@ -85,6 +89,44 @@ describe('the cockpit over Postgres (F8)', () => {
       [someone[0]?.['id'], memberId],
     )
 
+    expect((await cockpit()).pendingIncoming).toBe(1)
+  })
+
+  it('counts only what arrived since the member opened Matches, answered or not (R-MINE-4)', async () => {
+    const [someone] = await db.query(
+      "SELECT id FROM members WHERE email = 'sanne.kuipers@example.invalid'",
+    )
+    const other = someone?.['id']
+    await db.query(
+      "INSERT INTO connection_requests (id, requester_id, target_id, kind, status, responded_at) VALUES (gen_random_uuid()::text, ?, ?, 'been_there', 'accepted', now())",
+      [memberId, other],
+    )
+    expect(await cockpit()).toMatchObject({
+      pendingIncoming: 1,
+      newConnections: 1,
+    })
+
+    await request(app)
+      .post('/api/matches/seen')
+      .set('Cookie', cookie)
+      .expect(204)
+    expect(await cockpit()).toMatchObject({
+      pendingIncoming: 0,
+      newConnections: 0,
+    })
+    const pending = await db.query(
+      "SELECT count(*)::int AS n FROM connection_requests WHERE target_id = ? AND status = 'pending'",
+      [memberId],
+    )
+    expect(pending[0]?.['n']).toBe(1)
+
+    const [third] = await db.query(
+      "SELECT id FROM members WHERE email = 'nadia.osei@example.invalid'",
+    )
+    await db.query(
+      "INSERT INTO connection_requests (id, requester_id, target_id, kind) VALUES (gen_random_uuid()::text, ?, ?, 'same_boat')",
+      [third?.['id'], memberId],
+    )
     expect((await cockpit()).pendingIncoming).toBe(1)
   })
 })
