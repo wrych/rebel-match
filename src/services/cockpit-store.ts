@@ -1,4 +1,4 @@
-import { and, count, desc, eq, isNull, or, sql } from 'drizzle-orm'
+import { and, count, desc, eq, isNull, or, sql, type SQL } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 import type { Database } from '../db/connect.js'
 import {
@@ -38,6 +38,12 @@ const beenThere = sql<number>`(SELECT count(*)::int FROM ${memberExpertise}
 const caseCount = sql<number>`(SELECT count(*)::int FROM ${cases}
   WHERE ${cases.trendId} = ${trends.id})`
 
+// Only what arrived after the member last opened Matches badges it; never
+// having opened it, everything does (R-MINE-4).
+function since(memberId: string, column: SQL): SQL {
+  return sql`${column} > coalesce((SELECT ${members.matchesSeenAt} FROM ${members} WHERE ${members.id} = ${memberId}), '-infinity')`
+}
+
 // Requests from members deleted since are hidden, as in the list (ADR 0032).
 async function pendingIncoming(
   db: Database,
@@ -57,13 +63,15 @@ async function pendingIncoming(
       and(
         eq(connectionRequests.targetId, memberId),
         eq(connectionRequests.status, 'pending'),
+        since(memberId, sql`${connectionRequests.createdAt}`),
       ),
     )
   return row?.n ?? 0
 }
 
 // Accepted requests the member has not opened, either side, from members
-// still active, as the connections list shows them (R-CONN-7,9, ADR 0032).
+// still active, as the connections list shows them, made since the member
+// last opened Matches (R-MINE-4, R-CONN-7,9, ADR 0032).
 async function newConnections(db: Database, memberId: string): Promise<number> {
   const r = connectionRequests
   const unseenByRequester = and(
@@ -75,7 +83,13 @@ async function newConnections(db: Database, memberId: string): Promise<number> {
     .select({ n: count() })
     .from(r)
     .innerJoin(members, activeOtherParty(memberId))
-    .where(and(eq(r.status, 'accepted'), or(unseenByRequester, unseenByTarget)))
+    .where(
+      and(
+        eq(r.status, 'accepted'),
+        or(unseenByRequester, unseenByTarget),
+        since(memberId, sql`${r.respondedAt}`),
+      ),
+    )
   return row?.n ?? 0
 }
 
@@ -118,6 +132,12 @@ export function createCockpitStore(db: Database): CockpitStore {
     },
     pendingIncoming: (memberId) => pendingIncoming(db, memberId),
     newConnections: (memberId) => newConnections(db, memberId),
+    markSeen: async (memberId) => {
+      await db
+        .update(members)
+        .set({ matchesSeenAt: sql`now()` })
+        .where(eq(members.id, memberId))
+    },
   }
 }
 

@@ -31,6 +31,7 @@ describe('createCockpit', () => {
           asked.push(`new:${m}`)
           return Promise.resolve(1)
         },
+        markSeen: () => Promise.reject(new Error('not asked')),
       },
       followed: (m) => {
         asked.push(`followed:${m}`)
@@ -50,5 +51,25 @@ describe('createCockpit', () => {
       'new:m-ada',
       'pending:m-ada',
     ])
+  })
+
+  it('records that the member opened Matches (R-MINE-4)', async () => {
+    const marked: string[] = []
+    const cockpit = createCockpit({
+      store: {
+        challenges: () => Promise.resolve([]),
+        pendingIncoming: () => Promise.resolve(0),
+        newConnections: () => Promise.resolve(0),
+        markSeen: (m) => {
+          marked.push(m)
+          return Promise.resolve()
+        },
+      },
+      followed: () => Promise.resolve([]),
+    })
+
+    await cockpit.seen('m-ada')
+
+    expect(marked).toEqual(['m-ada'])
   })
 })

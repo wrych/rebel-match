@@ -4,9 +4,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import TabBar from './TabBar.vue'
 
 const route = {
-  path: '/matches',
-  fullPath: '/matches',
-  name: 'cockpit' as string,
+  path: '/offer',
+  fullPath: '/offer',
+  name: 'offer' as string,
   meta: { access: 'onboarded' } as Record<string, unknown>,
 }
 vi.mock('vue-router', () => ({ useRoute: () => route }))
@@ -54,12 +54,14 @@ async function mountBar(): Promise<ReturnType<typeof mount>> {
 
 afterEach(() => {
   vi.unstubAllGlobals()
-  route.name = 'cockpit'
+  route.path = '/offer'
+  route.fullPath = '/offer'
+  route.name = 'offer'
   route.meta = { access: 'onboarded' }
 })
 
 describe('TabBar', () => {
-  it('badges Matches with the requests waiting (R-MINE-4)', async () => {
+  it('badges Matches with the new requests (R-MINE-4)', async () => {
     serve(2)
     const bar = await mountBar()
     const matches = bar
@@ -67,10 +69,33 @@ describe('TabBar', () => {
       .find((link) => link.props('to') === '/matches')
 
     expect(matches?.find('.badge').text()).toBe('2')
-    expect(matches?.attributes('aria-label')).toBe(
-      'Matches, 2 requests waiting',
-    )
+    expect(matches?.attributes('aria-label')).toBe('Matches, 2 new requests')
+  })
+
+  it('carries no badge on Matches itself, where all of it is in view (R-MINE-4)', async () => {
+    route.path = '/matches'
+    route.fullPath = '/matches'
+    route.name = 'cockpit'
+    serve(2, 1)
+    const matches = (await mountBar())
+      .findAllComponents(RouterLinkStub)
+      .find((link) => link.props('to') === '/matches')
+
+    expect(matches?.find('.badge').exists()).toBe(false)
+    expect(matches?.attributes('aria-label')).toBe('Matches')
     expect(matches?.attributes('aria-current')).toBe('page')
+  })
+
+  it('keeps the badge on a screen under Matches, which records no visit (R-MINE-4)', async () => {
+    route.path = '/matches/requests/r1'
+    route.fullPath = '/matches/requests/r1'
+    route.name = 'request'
+    serve(2)
+    const matches = (await mountBar())
+      .findAllComponents(RouterLinkStub)
+      .find((link) => link.props('to') === '/matches')
+
+    expect(matches?.find('.badge').text()).toBe('2')
   })
 
   it('counts a request of theirs accepted but not opened yet (R-CONN-7)', async () => {
@@ -81,7 +106,7 @@ describe('TabBar', () => {
 
     expect(matches?.find('.badge').text()).toBe('2')
     expect(matches?.attributes('aria-label')).toBe(
-      'Matches, 1 request waiting, 1 new connection',
+      'Matches, 1 new request, 1 new connection',
     )
   })
 
@@ -147,7 +172,7 @@ describe('TabBar', () => {
 
     expect(link.text()).toContain('Feedback')
     expect(url.pathname).toBe('owner@example.org')
-    expect(url.searchParams.get('body')).toContain('Screen: cockpit')
+    expect(url.searchParams.get('body')).toContain('Screen: offer')
   })
 
   it('reports the feedback opened, by screen name only (R-ANA-1, ADR 0026)', async () => {
@@ -161,7 +186,7 @@ describe('TabBar', () => {
     ) as [string, RequestInit]
     expect(JSON.parse(init.body as string)).toEqual({
       event: 'feedback_opened',
-      props: { screen: 'cockpit' },
+      props: { screen: 'offer' },
     })
   })
 

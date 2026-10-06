@@ -12,8 +12,9 @@ export async function fetchCockpit(): Promise<Cockpit> {
   return (await response.json()) as Cockpit
 }
 
-/** What badges the way to Matches: requests waiting for the member, and their
- * own requests accepted but not opened yet (R-MINE-4, R-CONN-7). */
+/** What badges the way to Matches: requests waiting for the member and
+ * connections not opened yet, that arrived since they last opened Matches
+ * (R-MINE-4, R-CONN-7). */
 export interface MatchesNews {
   waiting: number
   connected: number
@@ -32,6 +33,14 @@ export async function fetchMatchesNews(): Promise<MatchesNews> {
     waiting: countOf(cockpit.pendingIncoming),
     connected: countOf(cockpit.newConnections),
   }
+}
+
+/** Records that the member opened Matches, so what arrived before no longer
+ * badges it (R-MINE-4). */
+export async function markMatchesSeen(): Promise<void> {
+  const response = await fetch('/api/matches/seen', { method: 'POST' })
+  if (!response.ok)
+    throw new Error(`matches not marked (${String(response.status)})`)
 }
 
 /** Accepted requests the member is a party to, either side (R-MINE-5). */

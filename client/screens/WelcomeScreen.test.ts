@@ -100,9 +100,7 @@ describe('WelcomeScreen', () => {
       .find((each) => each.props('to') === '/matches')
 
     expect(link?.find('.badge').text()).toBe('2')
-    expect(link?.attributes('aria-label')).toBe(
-      'Your matches, 2 requests waiting',
-    )
+    expect(link?.attributes('aria-label')).toBe('Your matches, 2 new requests')
   })
 
   it('badges the matches link with new connections too (R-CONN-7)', async () => {

@@ -91,6 +91,32 @@ afterEach(() => {
 })
 
 describe('CockpitScreen', () => {
+  it('records the visit before reading, so the badge clears (R-MINE-4)', async () => {
+    serve(cockpit, () => [request])
+    await mountScreen()
+
+    const calls = vi
+      .mocked(fetch)
+      .mock.calls.map(([url, init]) =>
+        [String(url), init?.method ?? 'GET'].join(' '),
+      )
+    const marked = calls.indexOf('/api/matches/seen POST')
+    expect(marked).toBeGreaterThanOrEqual(0)
+    expect(marked).toBeLessThan(calls.indexOf('/api/connections/incoming GET'))
+  })
+
+  it('still lists what waits when the visit cannot be recorded (R-MINE-4)', async () => {
+    serve(cockpit, () => [request])
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+    } as Response)
+
+    const screen = await mountScreen()
+
+    expect(screen.text()).toContain('Bea There')
+  })
+
   it('lists requests waiting for the member, each opening its screen (R-MINE-2)', async () => {
     serve(cockpit, () => [request])
     const screen = await mountScreen()

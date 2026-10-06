@@ -116,6 +116,7 @@ function deps(
           pendingIncoming: 0,
           newConnections: 0,
         }),
+      seen: () => Promise.resolve(),
     },
   }
 }
