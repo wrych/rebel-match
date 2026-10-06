@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { activeTab, matchesBadge, matchesLabel, showsTabs } from './tabs'
+import { activeTab, matchesBadge, matchesLabel, showsTabs, tabs } from './tabs'
 
 describe('showsTabs', () => {
   it.each([
@@ -22,9 +22,22 @@ describe('activeTab', () => {
     ['/offer/c1/note', 'Swipe'],
     ['/matches', 'Matches'],
     ['/matches/requests/r1/contact', 'Matches'],
+    ['/welcome', 'Home'],
     ['/admin/invites', undefined],
   ])('lights the tab for %s: %s', (path, label) => {
     expect(activeTab(path)?.label).toBe(label)
+  })
+})
+
+describe('tabs', () => {
+  it('starts with Home, the welcome screen', () => {
+    expect(tabs.map((tab) => tab.label)).toEqual([
+      'Home',
+      'Submit',
+      'Swipe',
+      'Matches',
+    ])
+    expect(tabs[0]?.to).toBe('/welcome')
   })
 })
 

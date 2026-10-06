@@ -1,7 +1,9 @@
 // @vitest-environment jsdom
 import { mount, RouterLinkStub } from '@vue/test-utils'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from './App.vue'
+
+vi.mock('vue-router', () => ({ useRoute: () => ({ name: 'welcome' }) }))
 
 function mountApp(): ReturnType<typeof mount> {
   return mount(App, {

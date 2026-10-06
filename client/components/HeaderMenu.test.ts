@@ -2,6 +2,8 @@
 import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+vi.mock('vue-router', () => ({ useRoute: () => ({ name: 'offer' }) }))
+
 /** Answers /auth/me as this member, or 401 for nobody signed in. */
 function signedIn(permissions: string[] | null): ReturnType<typeof vi.fn> {
   const fetchMock = vi.fn((url: string) =>
@@ -25,6 +27,29 @@ function signedIn(permissions: string[] | null): ReturnType<typeof vi.fn> {
             status: url === '/auth/me' ? 401 : 204,
           },
     ),
+  )
+  vi.stubGlobal('fetch', fetchMock)
+  return fetchMock
+}
+
+/** Also answers /api/config, naming where feedback goes. */
+function withConfig(
+  signedInAs: ReturnType<typeof vi.fn>,
+): ReturnType<typeof vi.fn> {
+  const answer = signedInAs as unknown as (url: string) => Promise<unknown>
+  const fetchMock = vi.fn((url: string) =>
+    url === '/api/config'
+      ? Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve({
+              build: { commit: 'dev', url: null },
+              feedbackTo: 'owner@example.org',
+              limits: { matchesPollSeconds: 30 },
+            }),
+        })
+      : answer(url),
   )
   vi.stubGlobal('fetch', fetchMock)
   return fetchMock
@@ -291,5 +316,38 @@ describe('HeaderMenu', () => {
     await flushPromises()
 
     expect(menu.find('.menu-badge').exists()).toBe(false)
+  })
+
+  it('offers an onboarded member a Feedback mail naming the screen (R-FB-1)', async () => {
+    withConfig(signedIn([]))
+    const menu = await opened()
+    const link = menu.find('a.item-feedback')
+    const url = new URL(link.attributes('href') ?? '')
+
+    expect(link.text()).toBe('Feedback')
+    expect(url.pathname).toBe('owner@example.org')
+    expect(url.searchParams.get('body')).toContain('Screen: offer')
+  })
+
+  it('reports the feedback opened, by screen name only, and closes (R-ANA-1, ADR 0026)', async () => {
+    const fetchMock = withConfig(signedIn([]))
+    const menu = await opened()
+
+    await menu.find('a.item-feedback').trigger('click')
+
+    const [, init] = fetchMock.mock.calls.find(
+      ([url]) => url === '/api/events',
+    ) as [string, RequestInit]
+    expect(JSON.parse(init.body as string)).toEqual({
+      event: 'feedback_opened',
+      props: { screen: 'offer' },
+    })
+    expect(menu.find('#main-menu').exists()).toBe(false)
+  })
+
+  it('offers no Feedback to nobody signed in', async () => {
+    withConfig(signedIn(null))
+
+    expect((await opened()).find('a.item-feedback').exists()).toBe(false)
   })
 })

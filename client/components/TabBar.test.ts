@@ -165,29 +165,19 @@ describe('TabBar', () => {
     expect((await mountBar()).find('.badge').exists()).toBe(false)
   })
 
-  it('ends with a Feedback mail naming the screen (R-FB-1)', async () => {
+  it('leads Home to the welcome screen, first, and carries no Feedback', async () => {
     serve(0)
-    const link = (await mountBar()).find('a.tab-feedback')
-    const url = new URL(link.attributes('href') ?? '')
-
-    expect(link.text()).toContain('Feedback')
-    expect(url.pathname).toBe('owner@example.org')
-    expect(url.searchParams.get('body')).toContain('Screen: offer')
-  })
-
-  it('reports the feedback opened, by screen name only (R-ANA-1, ADR 0026)', async () => {
-    const fetchMock = serve(0)
     const bar = await mountBar()
+    const links = bar.findAllComponents(RouterLinkStub)
 
-    await bar.find('a.tab-feedback').trigger('click')
-
-    const [, init] = fetchMock.mock.calls.find(
-      ([url]) => url === '/api/events',
-    ) as [string, RequestInit]
-    expect(JSON.parse(init.body as string)).toEqual({
-      event: 'feedback_opened',
-      props: { screen: 'offer' },
-    })
+    expect(links.map((link) => link.props('to') as unknown)).toEqual([
+      '/welcome',
+      '/ask',
+      '/offer',
+      '/matches',
+    ])
+    expect(links[0]?.text()).toBe('Home')
+    expect(bar.text()).not.toContain('Feedback')
   })
 
   it('stays away from the welcome screen and asks nothing there', async () => {
