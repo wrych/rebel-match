@@ -1339,8 +1339,12 @@ steps:
   - npm test # unit (R-QA-1)
   - npm run migrate # from an empty database (R-QA-4)
   - npm run test:integration # API-level (R-QA-2)
-  - npm run build # server (tsc) + client (vite) — ADR 0017
 ```
+
+A `build` job beside it builds the production image from the `Dockerfile` —
+server (tsc) and client (vite), ADR 0017 — once per commit, and hands it to the
+deploy job as an artifact, which pushes it rather than building again (ADR
+0025).
 
 - The workflow uses synthetic env only: a throwaway `SESSION_SECRET`,
   `mail.delivery=none`, `SEED_PROFILE=dev`, and **no** Mixpanel token. No

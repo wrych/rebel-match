@@ -257,16 +257,16 @@ gcloud sql instances describe rebel-match --project="$NONPROD" --format='value(s
 
 Nothing more to set up: from here the workflows do it.
 
-- **A pull request with the `preview` label** gets a preview once `check` is
-  green (ADR 0028): the image is built and pushed, database `pr-<n>` is
-  created, migrated and seeded with the fictional roster, and a tagged
-  revision of `rebel-match-dev` serves it at its own
+- **A pull request with the `preview` label** gets a preview once `check` and
+  `build` are green (ADR 0028): the image `build` made is pushed, database
+  `pr-<n>` is created, migrated and seeded with the fictional roster, and a
+  tagged revision of `rebel-match-dev` serves it at its own
   `https://pr-<n>---rebel-match-dev-….a.run.app` address, given in the run's
   summary. Each push while the label is on redeploys it. Removing the label,
   or closing the pull request, removes the tag, its jobs and its database
-  (`preview-cleanup.yml`). Without the label a pull request runs `check` only.
-  Create the label once under **Issues → Labels → New label**, named
-  `preview`.
+  (`preview-cleanup.yml`). Without the label a pull request runs `check` and
+  `build` only. Create the label once under **Issues → Labels → New label**,
+  named `preview`.
 - **A merge to `main`** does the same for `rebel-match-staging`, on database
   `staging`, at `https://rebel-match-staging-<project number>.europe-west6.run.app`.
 - **Signing in:** previews and staging send no mail, so the first sign-in is
