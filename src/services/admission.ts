@@ -27,10 +27,9 @@ export function admissionFor(status: MemberStatus | null): Admission {
 
 export interface AdmissionStore {
   statusByEmail(email: string): Promise<MemberStatus | null>
-  /** Records a pending applicant; false when the address already exists. */
+  /** Records a pending applicant, with a notification for each reviewer
+   * (R-AUTH-2, R-NOTE-10); false when the address already exists. */
   createApplicant(email: string): Promise<boolean>
-  /** Takes back an applicant this request created, while still pending. */
-  removeApplicant(email: string): Promise<void>
   /** Adds what the applicant said about themselves, keeping any part they
    * leave out; false when the address is not a pending applicant. */
   describeApplicant(email: string, details: ApplicantDetails): Promise<boolean>
@@ -83,7 +82,6 @@ interface AdmissionDeps {
   store: AdmissionStore
   auth: Pick<AuthProvider, 'issueLink'>
   handles: ApplicantHandles
-  notifyReviewers: (applicantEmail: string) => Promise<void>
   redeemInvite: RedeemInvite
   /** New applicants, paced per IP address (R-NFR-8). */
   applicants: PacedGate
@@ -197,19 +195,8 @@ async function queueApplicant(
   }
 }
 
-// An applicant nobody was told about is invisible to the host, and a retry
-// would find them already asked. So a failed notice takes the applicant back
-// and fails the request: retrying starts over, and reviewers hear of it.
-async function recordApplicant(
-  deps: AdmissionDeps,
-  email: string,
-): Promise<boolean> {
-  if (!(await deps.store.createApplicant(email))) return false
-  try {
-    await deps.notifyReviewers(email)
-  } catch (error) {
-    await deps.store.removeApplicant(email)
-    throw error
-  }
-  return true
+// The reviewers' notifications are stored with the applicant, so nobody can be
+// recorded without the hosts hearing of it (R-AUTH-2, R-NOTE-10).
+function recordApplicant(deps: AdmissionDeps, email: string): Promise<boolean> {
+  return deps.store.createApplicant(email)
 }

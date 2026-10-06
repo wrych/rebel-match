@@ -1,11 +1,12 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import request from 'supertest'
-import { createApp } from '../../src/app.js'
+import { createApp, type AppDeps } from '../../src/app.js'
 import { composeApp } from '../../src/compose.js'
 import { loadConfig } from '../../src/config.js'
 import {
   openTestDatabase,
   testDatabaseUrl,
+  type Row,
   type TestDatabase,
 } from './support/database.js'
 import { planSeed } from '../../src/seed/plan.js'
@@ -30,11 +31,20 @@ let app: ReturnType<typeof createApp>
 const ids: Record<string, string> = {}
 const cookies: Record<string, string> = {}
 let bobChallenge: string
+let mail: AppDeps['notificationMail']
+
+// What the outbound log holds once the worker has run, as the server's timer
+// runs it (R-NOTE-7).
+async function sent(query: string, params: unknown[]): Promise<Row[]> {
+  await mail.deliverDue()
+  return db.query(query, params)
+}
 
 beforeAll(async () => {
   db = await openTestDatabase()
   await applySeed(db.drizzle, planSeed(config), config.consentVersion)
   const deps = composeApp(config, db.drizzle)
+  mail = deps.notificationMail
   app = createApp(deps)
   for (const [who, email] of Object.entries(people)) {
     const rows = await db.query('SELECT id FROM members WHERE email = ?', [
@@ -115,7 +125,7 @@ describe('connecting over Postgres: the double opt-in (F7, ADR 0004)', () => {
   })
 
   it('emails the target who asks, their note and a link, but no address or challenge (R-CONN-2, R-NAV-9)', async () => {
-    const logged = await db.query(
+    const logged = await sent(
       "SELECT to_email, about_member_id, subject, body_text FROM outbox WHERE kind = 'connection_request' AND member_id = ?",
       [ids['bob']],
     )
@@ -158,7 +168,7 @@ describe('connecting over Postgres: the double opt-in (F7, ADR 0004)', () => {
   })
 
   it('tells the requester by email and badge, with no address (R-CONN-7, R-NAV-9)', async () => {
-    const logged = await db.query(
+    const logged = await sent(
       "SELECT to_email, about_member_id, subject, body_text FROM outbox WHERE kind = 'connection_accepted' AND member_id = ?",
       [ids['ada']],
     )
@@ -245,7 +255,7 @@ describe('connecting over Postgres: the double opt-in (F7, ADR 0004)', () => {
       ).expect(404)
     }
     expect(
-      await db.query(
+      await sent(
         "SELECT id FROM outbox WHERE kind = 'connection_accepted' AND member_id = ?",
         [ids['dee']],
       ),
@@ -329,7 +339,7 @@ describe('connecting again once connected, over Postgres (R-CONN-8..10, ADR 0035
   })
 
   it('tells the target by email and badge, with no address (R-CONN-9, R-NAV-9)', async () => {
-    const logged = await db.query(
+    const logged = await sent(
       "SELECT to_email, about_member_id, subject, body_text FROM outbox WHERE kind = 'connection_added' AND member_id = ?",
       [ids['ada']],
     )
@@ -396,7 +406,7 @@ describe('accepting one of several requests between two, over Postgres (R-CONN-1
       request(app).get('/api/connections/incoming'),
     )
     expect(JSON.stringify(incoming.body)).not.toContain(fromEve)
-    const told = await db.query(
+    const told = await sent(
       "SELECT id FROM outbox WHERE kind = 'connection_accepted' AND member_id = ?",
       [ids['dee']],
     )

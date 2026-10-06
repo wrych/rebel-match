@@ -1,5 +1,4 @@
 import { trackNothing, type Track } from './analytics.js'
-import type { AcceptedRequest, NewRequest } from './connection-notice.js'
 
 export type ConnectionKind = 'same_boat' | 'been_there'
 export type ConnectionStatus = 'pending' | 'accepted' | 'declined'
@@ -79,20 +78,20 @@ export interface ConnectionStore {
     otherId: string,
     challengeId: string | null,
   ): Promise<string | null>
-  /** Stores a pending request; false when one is already pending between
-   * the same two members about the same challenge, however close the race. */
+  /** Stores a pending request with its target's notification; false when one
+   * is already pending between the same two members about the same
+   * challenge, however close the race (R-CONN-5, R-NOTE-10). */
   insert(
     record: Omit<ConnectionRecord, 'status' | 'createdAt'>,
   ): Promise<boolean>
-  /** Stores a request accepted at once, unseen by both (R-CONN-8). */
+  /** Stores a request accepted at once, unseen by both, with its target's
+   * notification (R-CONN-8, R-CONN-9). */
   insertAccepted(
     record: Omit<ConnectionRecord, 'status' | 'createdAt'>,
   ): Promise<void>
   /** Accepts every request still pending between the two, either side, as
    * seen by `accepterId`, who just accepted one of them (R-CONN-11). */
   acceptPending(accepterId: string, otherId: string): Promise<void>
-  /** Deletes a request its target was never told of. */
-  remove(id: string): Promise<void>
   find(id: string): Promise<ConnectionRecord | null>
   /** The request as `viewerId` sees it, or null when they are no party. */
   view(id: string, viewerId: string): Promise<ConnectionView | null>
@@ -102,7 +101,8 @@ export interface ConnectionStore {
   /** Accepted requests between the two, as `viewerId` sees them, newest
    * first (R-CONN-10). */
   connectedOver(viewerId: string, otherId: string): Promise<ConnectionView[]>
-  /** Moves a pending request addressed to `targetId`; false otherwise. */
+  /** Moves a pending request addressed to `targetId`, an acceptance with the
+   * requester's notification; false otherwise (R-CONN-7). */
   respond(
     id: string,
     targetId: string,
@@ -206,46 +206,14 @@ async function storePending(
     : { result: 'exists', id: raced }
 }
 
-// A request its target was never told of is withdrawn, so a retry tells them.
-async function notifyOrWithdraw(
-  store: ConnectionStore,
-  notify: (request: NewRequest) => Promise<void>,
-  request: NewRequest,
-): Promise<void> {
-  try {
-    await notify(request)
-  } catch (error) {
-    await store.remove(request.id)
-    throw error
-  }
-}
-
-const notifyNobody = (): Promise<void> => Promise.resolve()
-
-type Notify = (request: NewRequest) => Promise<void>
-
 interface Asking {
   store: ConnectionStore
   newId: () => string
   track: Track
-  notify: Notify
-  notifyAdded: Notify
 }
 
-function announced(
-  input: NewConnection,
-  requesterId: string,
-  id: string,
-): NewRequest {
-  return {
-    id,
-    requesterId,
-    targetId: input.targetId,
-    message: input.message ?? null,
-  }
-}
-
-// The double opt-in proper: pending, and the target told (R-CONN-1, R-CONN-2).
+// The double opt-in proper: pending, and the target told, by a notification
+// stored with the request (R-CONN-1, R-CONN-2, R-NOTE-10).
 async function ask(
   deps: Asking,
   requesterId: string,
@@ -253,11 +221,6 @@ async function ask(
 ): Promise<RequestOutcome> {
   const outcome = await storePending(deps.store, deps.newId, requesterId, input)
   if (outcome.result !== 'created') return outcome
-  await notifyOrWithdraw(
-    deps.store,
-    deps.notify,
-    announced(input, requesterId, outcome.id),
-  )
   void deps.track(requesterId, {
     name: 'connection_requested',
     kind: input.kind,
@@ -289,11 +252,6 @@ async function join(
     kind: input.kind,
     message: input.message ?? null,
   })
-  await notifyOrWithdraw(
-    deps.store,
-    deps.notifyAdded,
-    announced(input, requesterId, id),
-  )
   void deps.track(requesterId, {
     name: 'connection_requested',
     kind: input.kind,
@@ -301,21 +259,14 @@ async function join(
   return { result: 'joined', id }
 }
 
-// Once connected, nothing between the two is left to answer (R-CONN-11); the
-// requester learns of the acceptance by email as well as by the badge.
+// Once connected, nothing between the two is left to answer (R-CONN-11).
 async function settleAccepted(
   store: ConnectionStore,
-  notifyAccepted: (request: AcceptedRequest) => Promise<void>,
   id: string,
 ): Promise<void> {
   const record = await store.find(id)
   if (record === null) return
   await store.acceptPending(record.targetId, record.requesterId)
-  await notifyAccepted({
-    id,
-    requesterId: record.requesterId,
-    targetId: record.targetId,
-  })
 }
 
 async function readContact(
@@ -342,20 +293,10 @@ export function createConnections(deps: {
   store: ConnectionStore
   newId: () => string
   track?: Track
-  notify?: Notify
-  notifyAccepted?: (request: AcceptedRequest) => Promise<void>
-  notifyAdded?: Notify
 }): ConnectionService {
   const { store } = deps
   const track = deps.track ?? trackNothing
-  const notifyAccepted = deps.notifyAccepted ?? notifyNobody
-  const asking: Asking = {
-    store,
-    newId: deps.newId,
-    track,
-    notify: deps.notify ?? notifyNobody,
-    notifyAdded: deps.notifyAdded ?? notifyNobody,
-  }
+  const asking: Asking = { store, newId: deps.newId, track }
   return {
     request: async (requesterId, input) => {
       if (!(await mayRequest(store, requesterId, input)))
@@ -370,7 +311,7 @@ export function createConnections(deps: {
     respond: async (memberId, id, answer) => {
       if (!(await store.respond(id, memberId, answer))) return 'not_found'
       void track(memberId, { name: 'connection_responded', status: answer })
-      if (answer === 'accepted') await settleAccepted(store, notifyAccepted, id)
+      if (answer === 'accepted') await settleAccepted(store, id)
       return 'done'
     },
     contact: (memberId, id) => readContact(store, memberId, id),

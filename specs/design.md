@@ -686,11 +686,11 @@ nothing leaves the machine (R-DEV-1). Without this, `outbox:read` would be the s
 system: an admin could read any member's magic link and sign in as them.
 
 `ON DELETE CASCADE` on `member_id` is what makes erasure one transaction
-(R-NFR-7). `member_id` is null for messages to an address that never became a
-member — an admin notice about an unknown applicant, say — and those age out under
-retention rather than erasure. `about_member_id` names the member a body quotes:
-a request email carries its requester's name and note, so erasing the requester
-erases the email in the target's log as well.
+(R-NFR-7). `member_id` is null only for a message to an address no member row
+holds, and those age out under retention rather than erasure. `about_member_id`
+names the member a body quotes: a request email carries its requester's name
+and note, and an admin notice its applicant's address, so erasing either
+erases the email in the recipient's log as well.
 
 **Retention is a job, not an endpoint (R-MSG-6).** The server deletes entries
 older than `limits.outboxRetentionDays` once at startup and then every

@@ -19,12 +19,21 @@ const challenges: Record<string, string> = {
   'c-eve': 'm-eve',
 }
 
+/** A notification the store wrote with its event (R-NOTE-10). */
+interface Told {
+  to: string
+  type: 'connection_request' | 'new_connection'
+  id: string
+}
+
 function fakeStore(): ConnectionStore & {
   rows: Map<string, ConnectionRecord>
   seen: string[]
+  told: Told[]
 } {
   const rows = new Map<string, ConnectionRecord>()
   const seen: string[] = []
+  const told: Told[] = []
   const party = (r: ConnectionRecord, m: string): boolean =>
     r.requesterId === m || r.targetId === m
   const pendingId = (
@@ -64,6 +73,7 @@ function fakeStore(): ConnectionStore & {
   return {
     rows,
     seen,
+    told,
     isReachable: (id) => Promise.resolve(id in emails),
     challengeAuthor: (id) => Promise.resolve(challenges[id] ?? null),
     findPending: (req, tgt, ch) => Promise.resolve(pendingId(req, tgt, ch)),
@@ -76,6 +86,7 @@ function fakeStore(): ConnectionStore & {
         status: 'pending',
         createdAt: '2026-11-08T10:00:00.000Z',
       })
+      told.push({ to: r.targetId, type: 'connection_request', id: r.id })
       return Promise.resolve(true)
     },
     isConnected: (a, b) => Promise.resolve(acceptedBetween(a, b).length > 0),
@@ -89,6 +100,7 @@ function fakeStore(): ConnectionStore & {
         status: 'accepted',
         createdAt: '2026-11-08T11:00:00.000Z',
       })
+      told.push({ to: r.targetId, type: 'new_connection', id: r.id })
       return Promise.resolve()
     },
     acceptPending: (a, b) => {
@@ -96,10 +108,6 @@ function fakeStore(): ConnectionStore & {
         if (r.status === 'pending' && party(r, a) && party(r, b))
           rows.set(r.id, { ...r, status: 'accepted' })
       }
-      return Promise.resolve()
-    },
-    remove: (id) => {
-      rows.delete(id)
       return Promise.resolve()
     },
     find: (id) => Promise.resolve(rows.get(id) ?? null),
@@ -119,6 +127,8 @@ function fakeStore(): ConnectionStore & {
       if (r?.targetId !== target || r.status !== 'pending')
         return Promise.resolve(false)
       rows.set(id, { ...r, status })
+      if (status === 'accepted')
+        told.push({ to: r.requesterId, type: 'new_connection', id })
       return Promise.resolve(true)
     },
     contactFor: (id, viewer) => {
@@ -161,46 +171,16 @@ const sameBoat = {
 } as const
 
 describe('telling the target (R-CONN-2)', () => {
-  it('notifies the target of a new request, once', async () => {
-    const notified: unknown[] = []
-    const service = createConnections({
-      store: fakeStore(),
-      newId: () => 'r-1',
-      notify: (request) => {
-        notified.push(request)
-        return Promise.resolve()
-      },
-    })
+  it('stores the target’s notification with a new request, once', async () => {
+    const { service, store } = setup()
 
     await service.request('m-ada', sameBoat)
     await service.request('m-ada', sameBoat)
     await service.request('m-ada', { targetId: 'm-ghost', kind: 'same_boat' })
 
-    expect(notified).toEqual([
-      { id: 'r-1', requesterId: 'm-ada', targetId: 'm-bob', message: null },
+    expect(store.told).toEqual([
+      { to: 'm-bob', type: 'connection_request', id: 'r-1' },
     ])
-  })
-
-  it('keeps no request its target could not be told of, so a retry tells them', async () => {
-    const store = fakeStore()
-    let attempts = 0
-    const service = createConnections({
-      store,
-      newId: () => `r-${String(++attempts)}`,
-      notify: () =>
-        attempts === 1
-          ? Promise.reject(new Error('database went away'))
-          : Promise.resolve(),
-    })
-
-    await expect(service.request('m-ada', sameBoat)).rejects.toThrow(
-      'database went away',
-    )
-    expect(store.rows.size).toBe(0)
-    expect(await service.request('m-ada', sameBoat)).toEqual({
-      result: 'created',
-      id: 'r-2',
-    })
   })
 })
 
@@ -208,46 +188,30 @@ describe('telling the requester (R-CONN-7)', () => {
   function accepting(): {
     service: ReturnType<typeof createConnections>
     store: ReturnType<typeof fakeStore>
-    told: unknown[]
   } {
-    const told: unknown[] = []
     const store = fakeStore()
-    const service = createConnections({
-      store,
-      newId: () => 'r-1',
-      notifyAccepted: (request) => {
-        told.push(request)
-        return Promise.resolve()
-      },
-    })
-    return { service, store, told }
+    return { service: createConnections({ store, newId: () => 'r-1' }), store }
   }
 
+  // What the store told requesters, leaving out the targets' requests.
+  const accepted = (store: ReturnType<typeof fakeStore>): Told[] =>
+    store.told.filter((each) => each.type === 'new_connection')
+
   it('tells the requester once their request is accepted', async () => {
-    const { service, told } = accepting()
+    const { service, store } = accepting()
     await service.request('m-ada', sameBoat)
 
     await service.respond('m-eve', 'r-1', 'accepted')
     await service.respond('m-bob', 'r-1', 'accepted')
     await service.respond('m-bob', 'r-1', 'accepted')
 
-    expect(told).toEqual([
-      { id: 'r-1', requesterId: 'm-ada', targetId: 'm-bob' },
+    expect(accepted(store)).toEqual([
+      { to: 'm-ada', type: 'new_connection', id: 'r-1' },
     ])
   })
 
   it('accepts every other request pending between the two, telling the requester once (R-CONN-11)', async () => {
-    const store = fakeStore()
-    const told: unknown[] = []
-    let n = 0
-    const service = createConnections({
-      store,
-      newId: () => `r-${String(++n)}`,
-      notifyAccepted: (request) => {
-        told.push(request)
-        return Promise.resolve()
-      },
-    })
+    const { service, store } = setup()
     await service.request('m-ada', sameBoat)
     await service.request('m-ada', { ...sameBoat, challengeId: 'c-bob2' })
     await service.request('m-bob', {
@@ -265,7 +229,7 @@ describe('telling the requester (R-CONN-7)', () => {
       ['r-3', 'accepted'],
       ['r-4', 'pending'],
     ])
-    expect(told).toHaveLength(1)
+    expect(accepted(store)).toHaveLength(1)
   })
 
   it('leaves the others pending after a decline (R-CONN-4)', async () => {
@@ -283,12 +247,12 @@ describe('telling the requester (R-CONN-7)', () => {
   })
 
   it('says nothing of a decline (R-CONN-4)', async () => {
-    const { service, told } = accepting()
+    const { service, store } = accepting()
     await service.request('m-ada', sameBoat)
 
     await service.respond('m-bob', 'r-1', 'declined')
 
-    expect(told).toEqual([])
+    expect(accepted(store)).toEqual([])
   })
 
   it('ends the notices of whoever opens the contact, for that reader only', async () => {
@@ -439,13 +403,11 @@ describe('already connected (R-CONN-8, R-CONN-9, ADR 0035)', () => {
   async function connected(): Promise<{
     service: ReturnType<typeof createConnections>
     store: ReturnType<typeof fakeStore>
-    asked: unknown[]
-    added: unknown[]
+    asked: () => Told[]
+    added: () => Told[]
     tracked: AnalyticsEvent[]
   }> {
     let n = 0
-    const asked: unknown[] = []
-    const added: unknown[] = []
     const tracked: AnalyticsEvent[] = []
     const store = fakeStore()
     const service = createConnections({
@@ -455,20 +417,22 @@ describe('already connected (R-CONN-8, R-CONN-9, ADR 0035)', () => {
         tracked.push(event)
         return Promise.resolve()
       },
-      notify: (request) => {
-        asked.push(request)
-        return Promise.resolve()
-      },
-      notifyAdded: (request) => {
-        added.push(request)
-        return Promise.resolve()
-      },
     })
     await service.request('m-ada', sameBoat)
     await service.respond('m-bob', 'r-1', 'accepted')
-    asked.length = 0
+    store.told.length = 0
     tracked.length = 0
-    return { service, store, asked, added, tracked }
+    // What the store told since: new requests, and connections added to their
+    // targets (R-CONN-9).
+    const told = (type: Told['type']) => (): Told[] =>
+      store.told.filter((each) => each.type === type)
+    return {
+      service,
+      store,
+      asked: told('connection_request'),
+      added: told('new_connection'),
+      tracked,
+    }
   }
 
   it('accepts a request about another challenge at once and tells the target', async () => {
@@ -483,14 +447,9 @@ describe('already connected (R-CONN-8, R-CONN-9, ADR 0035)', () => {
 
     expect(outcome).toEqual({ result: 'joined', id: 'r-2' })
     expect(store.rows.get('r-2')?.status).toBe('accepted')
-    expect(asked).toEqual([])
-    expect(added).toEqual([
-      {
-        id: 'r-2',
-        requesterId: 'm-ada',
-        targetId: 'm-bob',
-        message: 'We did this last year.',
-      },
+    expect(asked()).toEqual([])
+    expect(added()).toEqual([
+      { to: 'm-bob', type: 'new_connection', id: 'r-2' },
     ])
   })
 
@@ -504,7 +463,7 @@ describe('already connected (R-CONN-8, R-CONN-9, ADR 0035)', () => {
         kind: 'same_boat',
       }),
     ).toEqual({ result: 'joined', id: 'r-2' })
-    expect(added).toHaveLength(1)
+    expect(added()).toHaveLength(1)
   })
 
   it('adds nothing about a challenge they are already connected over', async () => {
@@ -515,7 +474,7 @@ describe('already connected (R-CONN-8, R-CONN-9, ADR 0035)', () => {
       id: 'r-1',
     })
     expect(store.rows.size).toBe(1)
-    expect(added).toEqual([])
+    expect(added()).toEqual([])
     expect(tracked).toEqual([])
   })
 
@@ -529,30 +488,6 @@ describe('already connected (R-CONN-8, R-CONN-9, ADR 0035)', () => {
     ])
   })
 
-  it('keeps no connection its target could not be told of', async () => {
-    const store = fakeStore()
-    store.rows.set('r-0', {
-      id: 'r-0',
-      requesterId: 'm-ada',
-      targetId: 'm-bob',
-      challengeId: 'c-bob',
-      kind: 'same_boat',
-      message: null,
-      status: 'accepted',
-      createdAt: '2026-11-08T10:00:00.000Z',
-    })
-    const service = createConnections({
-      store,
-      newId: () => 'r-1',
-      notifyAdded: () => Promise.reject(new Error('mail went away')),
-    })
-
-    await expect(
-      service.request('m-ada', { ...sameBoat, challengeId: 'c-bob2' }),
-    ).rejects.toThrow('mail went away')
-    expect([...store.rows.keys()]).toEqual(['r-0'])
-  })
-
   it('still asks a member connected only to someone else', async () => {
     const { service, added } = await connected()
 
@@ -563,7 +498,7 @@ describe('already connected (R-CONN-8, R-CONN-9, ADR 0035)', () => {
         kind: 'same_boat',
       }),
     ).toEqual({ result: 'created', id: 'r-2' })
-    expect(added).toEqual([])
+    expect(added()).toEqual([])
   })
 
   it('lists on the contact everything the two are connected over (R-CONN-10)', async () => {

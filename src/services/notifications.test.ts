@@ -3,7 +3,6 @@ import type { ConnectionService } from './connections.js'
 import {
   createNotifications,
   markingOpened,
-  thenMail,
   type NotificationRow,
   type NotificationStore,
 } from './notifications.js'
@@ -14,14 +13,6 @@ function recordingStore(rows: NotificationRow[] = []): {
 } {
   const calls: unknown[] = []
   const store: NotificationStore = {
-    add: (note) => {
-      calls.push(['add', note])
-      return Promise.resolve()
-    },
-    addApplicant: (email) => {
-      calls.push(['applicant', email])
-      return Promise.resolve()
-    },
     list: (memberId, before, limit) => {
       calls.push(['list', memberId, before, limit])
       return Promise.resolve(rows)
@@ -56,48 +47,6 @@ const row = (over: Partial<NotificationRow>): NotificationRow => ({
 })
 
 describe('createNotifications', () => {
-  it('stores each event for the member it concerns (R-NOTE-1, R-NOTE-4)', async () => {
-    const { store, calls } = recordingStore()
-    const notes = createNotifications({ store, pageSize: () => 50 })
-    const request = { id: 'r1', requesterId: 'ada', targetId: 'bob' }
-
-    await notes.requested({ ...request, message: 'Hi' })
-    await notes.accepted(request)
-    await notes.added({ ...request, message: null })
-    await notes.applicant('new@example.invalid')
-
-    expect(calls).toEqual([
-      [
-        'add',
-        {
-          recipientId: 'bob',
-          type: 'connection_request',
-          aboutMemberId: 'ada',
-          connectionId: 'r1',
-        },
-      ],
-      [
-        'add',
-        {
-          recipientId: 'ada',
-          type: 'new_connection',
-          aboutMemberId: 'bob',
-          connectionId: 'r1',
-        },
-      ],
-      [
-        'add',
-        {
-          recipientId: 'bob',
-          type: 'new_connection',
-          aboutMemberId: 'ada',
-          connectionId: 'r1',
-        },
-      ],
-      ['applicant', 'new@example.invalid'],
-    ])
-  })
-
   it('words each entry and links it where it comes from (R-NOTE-5)', async () => {
     const { store, calls } = recordingStore([
       row({ id: 'a' }),
@@ -182,24 +131,5 @@ describe('markingOpened', () => {
     expect(await wrapped.get('eve', 'r1')).toBeNull()
     expect(await wrapped.contact('eve', 'r1')).toBeNull()
     expect(opened).toEqual([])
-  })
-})
-
-describe('thenMail', () => {
-  it('stores the notification before the mail, and fails with the mail', async () => {
-    const order: string[] = []
-    const both = thenMail(
-      () => {
-        order.push('note')
-        return Promise.resolve()
-      },
-      () => {
-        order.push('mail')
-        return Promise.reject(new Error('smtp down'))
-      },
-    )
-
-    await expect(both('event')).rejects.toThrow('smtp down')
-    expect(order).toEqual(['note', 'mail'])
   })
 })

@@ -119,15 +119,15 @@ function deps(
       seen: () => Promise.resolve(),
     },
     notifications: {
-      requested: () => Promise.resolve(),
-      accepted: () => Promise.resolve(),
-      added: () => Promise.resolve(),
-      applicant: () => Promise.resolve(),
       list: () => Promise.resolve([]),
       newCount: () => Promise.resolve(0),
       seen: () => Promise.resolve(),
       openedConnection: () => Promise.resolve(),
       openedApplicants: () => Promise.resolve(),
+    },
+    notificationMail: {
+      deliverDue: () => Promise.resolve(),
+      purgeBefore: () => Promise.resolve(0),
     },
   }
 }
