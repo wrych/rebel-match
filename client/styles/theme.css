@@ -292,6 +292,11 @@ a {
   background: var(--paper);
 }
 
+/* The Home icon's column, narrower than the labelled tabs after it. */
+.tabs:has(> .tab-icon:first-child) {
+  grid-template-columns: 3.5rem;
+}
+
 .tab {
   display: flex;
   align-items: center;
@@ -312,6 +317,24 @@ a {
 .tab.on {
   border-top-color: var(--accent);
   color: var(--ink);
+}
+
+/* An icon tab keeps the accent, calm or happy, lit or not. */
+.tab-icon,
+.tab-icon.on {
+  color: var(--accent);
+}
+
+.tab-icon:hover {
+  color: var(--accent-hover);
+}
+
+.tab-icon .icon {
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .badge {

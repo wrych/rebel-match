@@ -165,7 +165,7 @@ describe('TabBar', () => {
     expect((await mountBar()).find('.badge').exists()).toBe(false)
   })
 
-  it('leads Home to the welcome screen, first, and carries no Feedback', async () => {
+  it('leads Home, an icon named for screen readers, to the welcome screen, first, and carries no Feedback', async () => {
     serve(0)
     const bar = await mountBar()
     const links = bar.findAllComponents(RouterLinkStub)
@@ -176,7 +176,11 @@ describe('TabBar', () => {
       '/offer',
       '/matches',
     ])
-    expect(links[0]?.text()).toBe('Home')
+    expect(links[0]?.text()).toBe('')
+    expect(links[0]?.attributes('aria-label')).toBe('Home')
+    expect(links[0]?.classes()).toContain('tab-icon')
+    expect(links[0]?.find('svg').attributes('aria-hidden')).toBe('true')
+    expect(links[1]?.classes()).not.toContain('tab-icon')
     expect(bar.text()).not.toContain('Feedback')
   })
 

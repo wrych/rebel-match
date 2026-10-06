@@ -74,11 +74,30 @@ onUnmounted(() => {
       :key="tab.to"
       :to="tab.to"
       class="tab"
-      :class="{ on: active?.to === tab.to }"
+      :class="{ on: active?.to === tab.to, 'tab-icon': tab.icon }"
       :aria-current="active?.to === tab.to ? 'page' : undefined"
-      :aria-label="tab.to === '/matches' ? matchesLabel(shown) : undefined"
+      :aria-label="
+        tab.to === '/matches'
+          ? matchesLabel(shown)
+          : tab.icon
+            ? tab.label
+            : undefined
+      "
     >
-      {{ tab.label }}
+      <svg
+        v-if="tab.icon === 'home'"
+        class="icon"
+        viewBox="0 0 24 24"
+        width="20"
+        height="20"
+        aria-hidden="true"
+        focusable="false"
+      >
+        <path d="M3 10.5 12 3l9 7.5" />
+        <path d="M5.5 9v11.5h13V9" />
+        <path d="M10 20.5v-6h4v6" />
+      </svg>
+      <template v-else>{{ tab.label }}</template>
       <span
         v-if="tab.to === '/matches' && badge > 0"
         class="badge"
