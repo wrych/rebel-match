@@ -306,9 +306,9 @@ capability, not a secret** — and every requirement below exists because of tha
 - **R-PROF-3** — The header SHALL carry a **menu** in place of the "CR" mark,
   offering: the colour mode switch (R-LOOK-2), the member's notifications
   (R-NOTE-5, R-NOTE-6), the profile screen, the host tools the member's
-  permissions allow (R-ROLE-4), and sign out. The menu holds links
-  and one switch only, so it is navigation, not a screen (R-NAV-1); every item it
-  leads to has its own URL.
+  permissions allow (R-ROLE-4), and sign out, with the running version at its
+  foot (R-NFR-11). The menu holds links and one switch only, so it is
+  navigation, not a screen (R-NAV-1); every item it leads to has its own URL.
 
 ---
 
@@ -1020,6 +1020,13 @@ notifications: they go out at once, whatever is chosen here (R-NFR-3).
   rises above a configured threshold over five minutes, or when a scheduled
   job fails. An alert names the deployment and the failing check, and
   nothing about any member.
+- **R-NFR-11 (Which version is running)** — The menu SHALL show at its foot,
+  small and muted, the version that is running: the short commit the build was
+  made from, linking to that commit in the repository, so a member reporting a
+  problem and a developer looking at a deployment can name the same build.
+  Every deployment of one build SHALL show the same version; a build made
+  without a commit, such as on a developer's machine, SHALL show `dev`.
+  `GET /api/config` SHALL carry it (R-CFG-2).
 
 ---
 
