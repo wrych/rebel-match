@@ -149,7 +149,7 @@ printed dev link (R-DEV-6).
 
 - [x] `GET /api/deck`: next challenges, exclude own + already-swiped. _(R-OFF-1,2)_
 - [x] Swipe UI: same boat / been there / follow / skip. _(R-OFF-3)_
-- [ ] Follow on a card says when its trend is already followed, greyed out.
+- [x] Follow on a card says when its trend is already followed, greyed out.
       _(R-OFF-3)_
 - [x] "Been there" note as its own screen, >30 chars from config + counter.
       _(R-OFF-4, R-CFG-1,2, R-NAV-2)_

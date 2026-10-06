@@ -9,6 +9,7 @@ import {
   type DeckCard,
 } from '../lib/deck'
 import { contactPath } from '../lib/connections'
+import { fetchFollowed } from '../lib/follows'
 import { noticeFor } from '../lib/offer'
 import { countAnswer } from '../lib/offer-session'
 
@@ -24,8 +25,12 @@ const index = ref(0)
 const sending = ref(false)
 const notice = ref<string | null>(null)
 const problem = ref<string | null>(null)
+const followed = ref(new Set<string>())
 
 const card = computed(() => cards.value[index.value])
+const followsTopic = computed(
+  () => card.value !== undefined && followed.value.has(card.value.trend.id),
+)
 
 // Each card that becomes the visible one is a view, the same card shown again
 // included (R-STAT-1). Cards sent ahead but never shown are not.
@@ -44,6 +49,15 @@ async function load(): Promise<void> {
     if (cards.value.length === 0) await router.replace('/offer/done')
   } catch {
     problem.value = 'The challenges could not be loaded. Reload to try again.'
+  }
+}
+
+// Unknown follows leave Follow offered: following twice changes nothing.
+async function loadFollowed(): Promise<void> {
+  try {
+    followed.value = new Set((await fetchFollowed()).map((trend) => trend.id))
+  } catch {
+    followed.value = new Set()
   }
 }
 
@@ -91,8 +105,10 @@ async function answer(action: 'same_boat' | 'follow' | 'skip'): Promise<void> {
     notice.value = noticeFor(answered, action, result)
     if (result.result === 'recorded' && result.request === 'created')
       countAnswer('sameBoat')
-    if (result.result === 'recorded' && action === 'follow')
+    if (result.result === 'recorded' && action === 'follow') {
       countAnswer('follows')
+      followed.value.add(answered.trend.id)
+    }
     await settle(answered)
   } catch {
     problem.value = 'That did not save. Try again.'
@@ -110,6 +126,7 @@ async function offerExperience(): Promise<void> {
 onMounted(() => {
   window.addEventListener('keydown', onKey)
   void load()
+  void loadFollowed()
 })
 onUnmounted(() => {
   window.removeEventListener('keydown', onKey)
@@ -179,10 +196,10 @@ onUnmounted(() => {
           <button
             type="button"
             class="btn btn-ghost btn-small"
-            :disabled="sending"
+            :disabled="sending || followsTopic"
             @click="answer('follow')"
           >
-            Follow topic
+            {{ followsTopic ? 'Following topic' : 'Follow topic' }}
           </button>
           <button
             type="button"
