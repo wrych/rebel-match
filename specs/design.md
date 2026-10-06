@@ -220,7 +220,10 @@ The worker runs in the server process every
 run:
 
 1. **Claims** the rows waiting to be mailed whose recipient is due, with
-   `FOR UPDATE SKIP LOCKED`, so a second server never mails the same row.
+   `FOR UPDATE SKIP LOCKED`, and holds them in `claimed_until`, so a second
+   server never mails the same row. The hold is apart from `next_attempt_at`,
+   so a member's new choice, which releases what waits for its window, never
+   releases a row being sent.
 2. **Reads each recipient's cadence** for each row's type, as it is now
    (R-NOTE-3). _In the app only_ and _Off_ mark the row `skipped`.
 3. **Leaves out what is stale** (R-NOTE-9): seen in the app, a request no
@@ -728,7 +731,8 @@ CREATE TABLE notifications (
   mailed_cadence   VARCHAR(20) NULL,               -- starts that cadence's window (R-NOTE-7)
   outbox_id        CHAR(36)    NULL,
   attempts         SMALLINT    NOT NULL DEFAULT 0,
-  next_attempt_at  DATETIME    NULL,
+  next_attempt_at  DATETIME    NULL,               -- its cadence's window, or a retry
+  claimed_until    DATETIME    NULL,               -- held by the server mailing it
   INDEX ix_note_recipient (recipient_id, created_at),
   INDEX ix_note_waiting (mail_status, next_attempt_at),
   FOREIGN KEY (recipient_id)    REFERENCES members(id) ON DELETE CASCADE,

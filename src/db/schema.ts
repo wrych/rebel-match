@@ -505,7 +505,11 @@ export const notifications = pgTable(
       onDelete: 'set null',
     }),
     attempts: integer('attempts').notNull().default(0),
+    // When it may go next: its cadence's window, or a retry (R-NOTE-7,10).
     nextAttemptAt: at('next_attempt_at'),
+    // Held by the server mailing it until then, apart from when it is due,
+    // so a member's new choice cannot release one being sent (R-NOTE-3).
+    claimedUntil: at('claimed_until'),
   },
   (t) => [
     index('ix_note_recipient').on(t.recipientId, t.createdAt),

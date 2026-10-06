@@ -35,6 +35,7 @@ async function claim(
         and(
           eq(n.mailStatus, 'waiting'),
           or(isNull(n.nextAttemptAt), lte(n.nextAttemptAt, now)),
+          or(isNull(n.claimedUntil), lte(n.claimedUntil, now)),
         ),
       )
       .orderBy(n.createdAt, n.id)
@@ -44,7 +45,7 @@ async function claim(
     if (ids.length > 0)
       await tx
         .update(n)
-        .set({ nextAttemptAt: holdUntil })
+        .set({ claimedUntil: holdUntil })
         .where(inArray(n.id, ids))
     return ids
   })
@@ -112,6 +113,9 @@ async function lastMailed(
   return row?.at ?? null
 }
 
+// What every outcome leaves: no hold, and no time to go next.
+const settled = { nextAttemptAt: null, claimedUntil: null }
+
 /** The worker's reads and writes over `notifications` (design §1). */
 export function createNotificationMailStore(
   db: Database,
@@ -135,18 +139,19 @@ export function createNotificationMailStore(
         mailStatus: 'mailed',
         mailedAt: at,
         mailedCadence: cadence,
-        nextAttemptAt: null,
+        ...settled,
       }),
     skipped: (id, reason) =>
       set([id], {
         mailStatus: 'skipped',
         skippedReason: reason,
-        nextAttemptAt: null,
+        ...settled,
       }),
-    deferUntil: (ids, at) => set(ids, { nextAttemptAt: at }),
-    retryAt: (ids, attempts, at) => set(ids, { attempts, nextAttemptAt: at }),
+    deferUntil: (ids, at) => set(ids, { ...settled, nextAttemptAt: at }),
+    retryAt: (ids, attempts, at) =>
+      set(ids, { ...settled, attempts, nextAttemptAt: at }),
     failed: (ids, attempts) =>
-      set(ids, { mailStatus: 'failed', attempts, nextAttemptAt: null }),
+      set(ids, { ...settled, mailStatus: 'failed', attempts }),
     // Kept a bounded time, like the outbound log (R-NOTE-11).
     purgeBefore: async (cutoff) => {
       const gone = await db
