@@ -556,7 +556,7 @@ and expired ones are purged (ADR 0034).
 
 1. Something happens for the member: a request to them, a new connection, a
    challenge in a trend they follow, or, for hosts, a new applicant
-   (R-NOTE-1). Unless the type is _Off_, it is stored with the event
+   (R-NOTE-1). It is stored with the event, hidden if the type is _Off_
    (R-NOTE-4, R-NOTE-10).
 2. The header's menu button shows a badge with the number of new
    notifications, and the menu reads **Notifications (n new)**; with none new,
