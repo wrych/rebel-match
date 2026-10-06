@@ -305,9 +305,9 @@ capability, not a secret** — and every requirement below exists because of tha
   SHALL NOT stop the rest.
 - **R-PROF-3** — The header SHALL carry a **menu** in place of the "CR" mark,
   offering: the colour mode switch (R-LOOK-2), the member's notifications
-  (R-NOTE-5, R-NOTE-6), the profile screen, the host tools the member's
-  permissions allow (R-ROLE-4), and sign out, with the running version at its
-  foot (R-NFR-11). The menu holds links and one switch only, so it is
+  (R-NOTE-5, R-NOTE-6), the profile screen, feedback (R-FB-1), the host tools
+  the member's permissions allow (R-ROLE-4), and sign out, with the running
+  version at its foot (R-NFR-11). The menu holds links and one switch only, so it is
   navigation, not a screen (R-NAV-1); every item it leads to has its own URL.
 
 ---
@@ -519,7 +519,7 @@ connect.")_
 
 - **R-FB-1** — The system SHALL provide a feedback affordance that lets a member
   send feedback (pre-filled with the current screen/context) to the product
-  owner. A `mailto:` is acceptable for beta.
+  owner, from the header menu (R-PROF-3). A `mailto:` is acceptable for beta.
 
 ---
 

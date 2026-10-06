@@ -383,7 +383,7 @@ before both sides agree.**
 
 ## F12 — Feedback
 
-1. From the app chrome the member taps Feedback, which opens a prefilled
+1. From the header menu the member taps Feedback, which opens a prefilled
    `mailto:` to the team (R-FB-1). No in-app ticketing in the beta.
 
 ---
