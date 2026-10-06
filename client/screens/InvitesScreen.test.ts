@@ -20,6 +20,7 @@ const limits = {
   inviteDefaultHours: 12,
   inviteDefaultMaxUses: 400,
   inviteLabelMaxChars: 120,
+  savedTickMs: 2000,
 }
 
 interface Reply {
@@ -57,6 +58,12 @@ async function mountScreen(): Promise<ReturnType<typeof mount>> {
   const screen = mount(InvitesScreen)
   await flushPromises()
   return screen
+}
+
+function copyButton(
+  screen: ReturnType<typeof mount>,
+): ReturnType<ReturnType<typeof mount>['find']> {
+  return screen.find('button[aria-label="Copy the join URL of Main stage"]')
 }
 
 function postBody(fetchMock: ReturnType<typeof vi.fn>): unknown {
@@ -222,5 +229,80 @@ describe('InvitesScreen', () => {
     await flushPromises()
 
     expect(screen.find('[role="status"]').text()).toContain('more than 400')
+  })
+
+  it('copies the join URL to the clipboard from the card', async () => {
+    server()
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    vi.stubGlobal('navigator', { clipboard: { writeText } })
+    const screen = await mountScreen()
+
+    await copyButton(screen).trigger('click')
+    await flushPromises()
+
+    expect(writeText).toHaveBeenCalledWith('http://localhost:5173/?invite=abc')
+    expect(screen.find('[role="status"]').text()).toContain('Copied')
+    expect(copyButton(screen).attributes('title')).toBe('Copied')
+  })
+
+  it('lets the tick fade, and drops it when a later copy fails', async () => {
+    vi.useFakeTimers()
+    server()
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    vi.stubGlobal('navigator', { clipboard: { writeText } })
+    const screen = await mountScreen()
+
+    await copyButton(screen).trigger('click')
+    await flushPromises()
+    vi.advanceTimersByTime(2000)
+    await flushPromises()
+    expect(copyButton(screen).attributes('title')).toBe('Copy')
+
+    await copyButton(screen).trigger('click')
+    await flushPromises()
+    writeText.mockRejectedValueOnce(new Error('denied'))
+    await copyButton(screen).trigger('click')
+    await flushPromises()
+    expect(copyButton(screen).attributes('title')).toBe('Copy')
+    vi.useRealTimers()
+  })
+
+  it('keeps the tick until the next copy when the config is unavailable', async () => {
+    vi.useFakeTimers()
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) =>
+        Promise.resolve({
+          ok: url !== '/api/config',
+          status: url === '/api/config' ? 500 : 200,
+          json: async () => ({ invites: [invite] }),
+        }),
+      ),
+    )
+    vi.stubGlobal('navigator', {
+      clipboard: { writeText: vi.fn().mockResolvedValue(undefined) },
+    })
+    const screen = await mountScreen()
+
+    await copyButton(screen).trigger('click')
+    await flushPromises()
+    vi.advanceTimersByTime(60_000)
+    await flushPromises()
+
+    expect(copyButton(screen).attributes('title')).toBe('Copied')
+    vi.useRealTimers()
+  })
+
+  it('says so when the clipboard refuses', async () => {
+    server()
+    vi.stubGlobal('navigator', {
+      clipboard: { writeText: vi.fn().mockRejectedValue(new Error('denied')) },
+    })
+    const screen = await mountScreen()
+
+    await copyButton(screen).trigger('click')
+    await flushPromises()
+
+    expect(screen.find('[role="status"]').text()).toContain('not copied')
   })
 })
