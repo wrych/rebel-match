@@ -8,10 +8,12 @@ import {
   reportSeen,
   type DeckCard,
 } from '../lib/deck'
+import { fetchConfig } from '../lib/api'
 import { contactPath } from '../lib/connections'
 import { fetchFollowed } from '../lib/follows'
 import { noticeFor } from '../lib/offer'
 import { countAnswer } from '../lib/offer-session'
+import { swipeStep } from '../lib/swipe'
 
 const router = useRouter()
 const route = useRoute()
@@ -26,6 +28,8 @@ const sending = ref(false)
 const notice = ref<string | null>(null)
 const problem = ref<string | null>(null)
 const followed = ref(new Set<string>())
+const swipeMinPx = ref<number | null>(null)
+let touchedAt: { x: number; y: number } | null = null
 
 const card = computed(() => cards.value[index.value])
 const followsTopic = computed(
@@ -53,6 +57,15 @@ async function load(): Promise<void> {
 }
 
 // Unknown follows leave Follow offered: following twice changes nothing.
+// Without the threshold the card takes no swipes; the arrows still browse.
+async function loadSwipeMinPx(): Promise<void> {
+  try {
+    swipeMinPx.value = (await fetchConfig()).limits.swipeMinPx
+  } catch {
+    swipeMinPx.value = null
+  }
+}
+
 async function loadFollowed(): Promise<void> {
   try {
     followed.value = new Set((await fetchFollowed()).map((trend) => trend.id))
@@ -80,6 +93,32 @@ function onKey(event: KeyboardEvent): void {
   if (event.target instanceof HTMLTextAreaElement) return
   if (event.key === 'ArrowLeft') browse(-1)
   if (event.key === 'ArrowRight') browse(1)
+}
+
+function onTouchStart(event: TouchEvent): void {
+  const touch = event.touches[0]
+  touchedAt =
+    event.touches.length === 1 && touch !== undefined
+      ? { x: touch.clientX, y: touch.clientY }
+      : null
+}
+
+// A swipe browses as the arrows do, left to the next card (R-OFF-1).
+function onTouchEnd(event: TouchEvent): void {
+  const touch = event.changedTouches[0]
+  const from = touchedAt
+  touchedAt = null
+  if (from === null || touch === undefined || swipeMinPx.value === null) return
+  const step = swipeStep(
+    from,
+    { x: touch.clientX, y: touch.clientY },
+    swipeMinPx.value,
+  )
+  if (step !== 0) browse(step)
+}
+
+function onTouchCancel(): void {
+  touchedAt = null
 }
 
 // An answered card is never dealt again (R-OFF-2), so it leaves the hand;
@@ -127,6 +166,7 @@ onMounted(() => {
   window.addEventListener('keydown', onKey)
   void load()
   void loadFollowed()
+  void loadSwipeMinPx()
 })
 onUnmounted(() => {
   window.removeEventListener('keydown', onKey)
@@ -152,7 +192,13 @@ onUnmounted(() => {
         >
           ‹
         </button>
-        <article class="deck-card" aria-live="polite">
+        <article
+          class="deck-card"
+          aria-live="polite"
+          @touchstart.passive="onTouchStart"
+          @touchend="onTouchEnd"
+          @touchcancel="onTouchCancel"
+        >
           <p class="kicker">{{ card.trend.short }}</p>
           <p class="deck-text">{{ card.body }}</p>
           <div class="deck-author">

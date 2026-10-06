@@ -352,6 +352,14 @@ const catalogue: Group[] = [
         read: (c) => c.limits.holdToSelectMs / MS_PER_SECOND,
         unit: ['second', 'seconds'],
       },
+      {
+        name: 'Swipe a challenge card to browse across',
+        explanation:
+          'How far a finger moves across a card in the deck before the next or previous challenge shows.',
+        fixed: true,
+        read: (c) => c.limits.swipeMinPx,
+        unit: ['pixel', 'pixels'],
+      },
     ],
   },
   {
