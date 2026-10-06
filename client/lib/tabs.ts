@@ -6,10 +6,12 @@ export interface Tab {
   to: string
   /** Path prefixes that belong to the tab, so it stays lit deeper in. */
   owns: readonly string[]
+  /** Shown as an icon, its label read to screen readers only. */
+  icon?: 'home'
 }
 
 export const tabs: readonly Tab[] = [
-  { label: 'Home', to: '/welcome', owns: ['/welcome'] },
+  { label: 'Home', to: '/welcome', owns: ['/welcome'], icon: 'home' },
   { label: 'Submit', to: '/ask', owns: ['/ask', '/challenges/'] },
   { label: 'Swipe', to: '/offer', owns: ['/offer'] },
   { label: 'Matches', to: '/matches', owns: ['/matches'] },
