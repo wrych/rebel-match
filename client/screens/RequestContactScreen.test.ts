@@ -34,6 +34,48 @@ describe('RequestContactScreen', () => {
     expect(screen.find('a').attributes('href')).toBe(contact.mailto)
   })
 
+  it('copies the email to the clipboard (R-CONN-3)', async () => {
+    const contact = {
+      name: 'Sam Boat',
+      email: 'sam@example.invalid',
+      mailto: 'mailto:sam@example.invalid',
+      over: [],
+    }
+    serve({ ok: true, status: 200, json: async () => ({ contact }) })
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    vi.stubGlobal('navigator', { clipboard: { writeText } })
+    const screen = await mountScreen()
+
+    await screen
+      .find('button[aria-label="Copy Sam Boat’s email"]')
+      .trigger('click')
+    await flushPromises()
+
+    expect(writeText).toHaveBeenCalledWith('sam@example.invalid')
+    expect(screen.find('[role="status"]').text()).toContain('Copied')
+  })
+
+  it('says so when the email cannot be copied', async () => {
+    const contact = {
+      name: 'Sam Boat',
+      email: 'sam@example.invalid',
+      mailto: 'mailto:sam@example.invalid',
+      over: [],
+    }
+    serve({ ok: true, status: 200, json: async () => ({ contact }) })
+    vi.stubGlobal('navigator', {
+      clipboard: { writeText: vi.fn().mockRejectedValue(new Error('denied')) },
+    })
+    const screen = await mountScreen()
+
+    await screen
+      .find('button[aria-label="Copy Sam Boat’s email"]')
+      .trigger('click')
+    await flushPromises()
+
+    expect(screen.find('[role="status"]').text()).toContain('not copied')
+  })
+
   it('lists what the two are connected over, the unopened first and outlined (R-CONN-10)', async () => {
     const entry = {
       direction: 'outgoing',
