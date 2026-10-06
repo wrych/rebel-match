@@ -39,18 +39,28 @@ const cards: DeckCard[] = [
   },
 ]
 
-/** Serves `decks` in turn for each deck read, and answers with `swipe`. */
+/** Serves `decks` in turn for each deck read, answers with `swipe`, and
+ * reads the `followed` trend ids back, or fails to when null. */
 function server(
   decks: DeckCard[][],
   swipe: { status: number; body?: object } = {
     status: 201,
     body: { result: 'recorded' },
   },
+  followed: string[] | null = [],
 ): ReturnType<typeof vi.fn> {
   const reads = [...decks]
   const fetchMock = vi.fn((url: string) => {
     if (url === '/api/deck/seen')
       return Promise.resolve({ ok: true, status: 204 })
+    if (url === '/api/follows')
+      return Promise.resolve({
+        ok: followed !== null,
+        status: followed === null ? 500 : 200,
+        json: async () => ({
+          trends: (followed ?? []).map((id) => ({ id })),
+        }),
+      })
     if (url === '/api/swipe')
       return Promise.resolve({
         ok: swipe.status < 300,
@@ -86,6 +96,16 @@ async function click(
     .find((each) => each.text().includes(text))
   await button?.trigger('click')
   await flushPromises()
+}
+
+function followTopic(
+  screen: ReturnType<typeof mount>,
+): ReturnType<ReturnType<typeof mount>['find']> {
+  const button = screen
+    .findAll('button')
+    .find((each) => each.text().endsWith('topic'))
+  if (button === undefined) throw new Error('no follow button')
+  return button
 }
 
 afterEach(() => {
@@ -204,6 +224,41 @@ describe('OfferScreen', () => {
     )
     await click(screen, 'Skip')
     expect(replace).toHaveBeenCalledWith('/offer/done')
+  })
+
+  it('greys out Follow on a card whose topic is followed (R-OFF-3)', async () => {
+    server([cards], undefined, ['02'])
+    const screen = await mountScreen()
+
+    expect(followTopic(screen).text()).toBe('Following topic')
+    expect(followTopic(screen).attributes('disabled')).toBeDefined()
+    await screen.find('[aria-label="Next challenge"]').trigger('click')
+    expect(followTopic(screen).text()).toBe('Follow topic')
+    expect(followTopic(screen).attributes('disabled')).toBeUndefined()
+  })
+
+  it('greys out Follow on the next card of a topic just followed', async () => {
+    const sameTopic = {
+      ...cards[0]!,
+      challengeId: 'c3',
+      body: 'Teams wait on a central planning office.',
+    }
+    server([[cards[0]!, sameTopic]])
+    const screen = await mountScreen()
+    await click(screen, 'Follow topic')
+
+    expect(screen.find('.deck-text').text()).toContain('central planning')
+    expect(followTopic(screen).text()).toBe('Following topic')
+    expect(followTopic(screen).attributes('disabled')).toBeDefined()
+  })
+
+  it('keeps Follow offered when the follows cannot be read', async () => {
+    server([cards], undefined, null)
+    const screen = await mountScreen()
+
+    expect(followTopic(screen).text()).toBe('Follow topic')
+    expect(followTopic(screen).attributes('disabled')).toBeUndefined()
+    expect(screen.find('[role="alert"]').exists()).toBe(false)
   })
 
   it('counts same-boat requests for the summary (R-OFF-5)', async () => {

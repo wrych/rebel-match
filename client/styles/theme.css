@@ -526,6 +526,11 @@ textarea.input {
   border-color: var(--ink);
 }
 
+.btn-ghost:disabled {
+  color: var(--muted);
+  border-color: var(--disabled);
+}
+
 .btn-small {
   min-height: 2.75rem;
   padding: 0.65rem 1rem;
