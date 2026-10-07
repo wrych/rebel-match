@@ -32,15 +32,19 @@ Everyone also waits at the door for their email to arrive, with nothing to do.
 - **Every address gets a sign-in link at the door**, unless it was rejected
   (R-AUTH-13). An unknown address without a usable invite is still recorded as
   a pending applicant, and still gets a link. The link confirms the address.
-- **One screen after the email is submitted, the same for everyone**: check
-  your email, and while you wait, tell us about you. It shows the profile form
-  with the line "We keep what you enter here to set up your account. Privacy
-  notice · Terms of use". Each field saves on change with the usual tick.
+- **One screen after the email is submitted**: check your email, and while
+  you wait, tell us about you. It shows the profile form with the line "We
+  keep what you enter here to set up your account. Privacy notice · Terms of
+  use". Each field saves on change with the usual tick. For an applicant the
+  screen also says that a person approves access and that we email them once
+  they are in, so they know what they are waiting for.
 - **What is typed there is a draft**, kept in a table of its own and never read
   as the member's profile. The waiting screen writes it with a **draft token**:
   random, issued with each sign-in request, stored hashed, good for that one
-  draft only, and spent when the draft is confirmed or a newer request
-  replaces it. A draft is deleted once confirmed, when the applicant is
+  draft only, and spent when the draft is confirmed or deleted. A later
+  request adds a token rather than replacing one, so typing someone's address
+  cannot cut off their open screen. Draft saves are limited per token, not
+  per IP address, since a whole room shares one at an event. A draft is deleted once confirmed, when the applicant is
   rejected or the account erased, and otherwise after
   `limits.profileDraftRetentionDays`.
 - **Onboarding starts where the draft leaves off.** With a name in the draft
@@ -54,13 +58,14 @@ Everyone also waits at the door for their email to arrive, with nothing to do.
 - **One button still accepts the privacy notice and the terms.** It copies the
   draft into the profile and records the consent (R-ONB-8). Typing in the
   draft accepts nothing.
-- **An applicant signs in like anyone else**, with a session that reaches only
-  onboarding and a waiting screen. Hosts see an applicant once the address is
-  confirmed, with the name and organization from the draft (R-AUTH-11). After
-  the usage step the applicant waits; approval still emails a working link
-  (R-AUTH-10), and rejection erases them (R-AUTH-3).
-- **The door no longer tells known and unknown addresses apart**: both get the
-  same screen. A rejected address is still told so (R-AUTH-13).
+- **Hosts see an applicant as soon as they ask**, with the name and
+  organization from the draft and whether the address is confirmed yet
+  (R-AUTH-11). Nobody has to click the door link to be approved: the approval
+  email carries a working link (R-AUTH-10), and using it confirms the address
+  before anything is accepted.
+- **An applicant who signs in before approval** gets a session that reaches
+  only onboarding and a waiting screen; after the usage step they wait there.
+  Rejection erases them (R-AUTH-3).
 
 ## Alternatives considered
 
@@ -74,6 +79,9 @@ Everyone also waits at the door for their email to arrive, with nothing to do.
   needs no agreement, only to be shown where the data is collected.
 - **Always start at the profile step** — costs a step for everyone who filled
   the form while waiting; the profile preview gives the same safety.
+- **Show hosts only applicants who confirmed their address** — keeps typos off
+  the list, but an applicant who never opens the door link would never be
+  approved, which costs members the app needs.
 - **Reuse the applicant handle** — an HMAC of the address that never expires
   and cannot be revoked; fine for two labels, too loose for a profile.
 
@@ -88,13 +96,18 @@ Everyone also waits at the door for their email to arrive, with nothing to do.
   collection. Whoever types an address can write its draft; the profile
   preview is what keeps that from reaching a profile unseen. Reverses
   R-ONB-7 and the part of ADR 0041 that keeps the profile in the browser.
-- An applicant now has a session. The access model gains a state between
-  signed out and onboarded: signed in, not admitted. R-AUTH-1 changes from
-  "no session" to "no access to the app".
+- An applicant may now have a session. The access model gains a state
+  between signed out and onboarded: signed in, not admitted. R-AUTH-1 changes
+  from "no session" to "no access to the app".
+- Typos and spam still reach the approvals list, as before; marking each
+  request confirmed or not is what lets a host tell them apart.
 - Applicants receive a sign-in email at the door, so the sign-in email
   allowances and the human check (R-NFR-8) now cover them too.
-- The door stops revealing whether an address is on the whitelist. Amends
-  ADR 0013: applicants still learn their status, after signing in.
+- The door still tells applicants their status, as ADR 0013 decided, now on
+  the check-your-email screen instead of a screen of its own. Amends ADR 0013.
+- Confirming changed consent words gets easier: a member who already has a
+  profile starts at the privacy step, sees it in the profile preview, and
+  confirms with one tap (R-ONB-4).
 - Drafts are new personal data to purge; the retention is a config value.
 - Amends ADR 0041: the profile is saved field by field as a draft instead of
   held in the tab, and the privacy step shows it.

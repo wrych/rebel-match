@@ -64,12 +64,14 @@ a break. All of them take this flow (ADR 0043).
    single-use token (stored hashed, 15-min expiry), emails the magic link, and
    issues a draft token for the profile draft (R-AUTH-1, R-AUTH-2, R-AUTH-4,
    R-AUTH-5, R-ONB-15, R-NFR-5).
-5. S1 switches to its **check-your-email** state, the same for every address:
-   the link is on its way, and while they wait they can fill in the profile
-   form, each field saved to the draft with a tick, under the line "We keep
-   what you enter here to set up your account. Privacy notice · Terms of use"
-   (R-AUTH-4, R-ONB-7). The link works whether or not they do. Rate-limiting
-   keeps repeated requests expensive.
+5. S1 switches to its **check-your-email** state: the link is on its way, and
+   while they wait they can fill in the profile form, each field saved to the
+   draft with a tick, under the line "We keep what you enter here to set up
+   your account. Privacy notice · Terms of use" (R-AUTH-4, R-ONB-7). The link
+   works whether or not they do. An applicant is also told that a person
+   approves access (**F4**); the two states differ on purpose, so email
+   enumeration through this form is possible and accepted (ADR 0013).
+   Rate-limiting keeps repeated requests expensive.
 6. Member opens the email on the same phone and taps the link →
    **S2** `/sign-in#token=…`, which shows a **Sign in** button. Opening the link
    uses nothing, so a mail scanner or a chat preview that fetched it first has
@@ -83,9 +85,9 @@ a break. All of them take this flow (ADR 0043).
 
 **Branches**
 
-- _Email not on the whitelist, no invite_ → **F4**: recorded as an applicant;
-  the same screen and the same link, and a host approves them once they have
-  signed in and onboarded (R-AUTH-2).
+- _Email not on the whitelist, no invite_ → **F4**: recorded as an applicant,
+  hosts are notified, and they get the same link and form, told that a person
+  approves access (R-AUTH-2).
 - _Email not on the whitelist, but the QR carried a valid invite_ → **F15**: they
   are admitted straight away and never see the queue (R-INV-1).
 - _Link opened in another browser_ (a mail app's, say) → the draft is on the
@@ -128,7 +130,8 @@ usage data. S30 Privacy notice is one tap from each of the first two.
    **S30** and **S31**. Above the button, the **profile preview** shows their
    card as other members will see it, with **Edit**, which opens **S3**
    (R-ONB-14). Below the button: "Other members see your profile once you tap
-   this button." (R-ONB-8).
+   this button.", or, for an applicant, "once a host has let you in"
+   (R-ONB-8).
 4. Member taps **I have read the privacy notice and the terms of use** →
    `POST /api/onboarding` with `{consentVersion}` (R-ONB-3, R-ONB-8).
 5. Server makes the draft their profile, records the consent version and
@@ -190,28 +193,32 @@ queue. Everything after the approval is built to cost zero extra steps.
 
 1. They submit an email on **S1** that is not on the whitelist, with no invite
    token or an unusable one.
-2. Server records a pending **applicant** and, as for anyone, emails a sign-in
-   link and shows the check-your-email state with the profile form (**F1**,
-   R-AUTH-2, R-AUTH-4). Hosts are not told yet: nobody has confirmed the
-   address.
+2. Server records a pending **applicant**, notifies the members who review
+   applicants, and, as for anyone, emails a sign-in link and shows the
+   check-your-email state with the profile form (**F1**, R-AUTH-2, R-AUTH-4,
+   R-NOTE-1). The state also says, in plain language: thanks for your interest
+   in Rebel Match; access is approved by a person; **we will email you as soon
+   as it is approved, and that email will contain your login link**; you can
+   already tell us about yourself.
 3. IF they arrived with an invite that was refused, the check-your-email state
-   carries a notice above its message — _"this invitation link isn't valid
-   right now"_ — saying a person approves access once they have signed in, and
-   the URL carries `invite=invalid`, so a reload keeps it. The notice never
-   says which control refused the link (R-INV-5).
-4. They open the link and sign in (**F1**, steps 6–7), which confirms the
-   address. The members who review applicants are notified, and the pending
-   list shows the email, the request time, and the name and organization from
-   the draft (R-AUTH-2, R-AUTH-11, R-NOTE-1).
-5. They onboard as anyone does (**F2**). Their session reaches onboarding and
-   the waiting screen, nothing else (R-AUTH-1).
+   carries a notice above that message — _"this invitation link isn't valid
+   right now"_ — and the URL carries `invite=invalid`, so a reload keeps it.
+   The notice never says which control refused the link (R-INV-5).
+4. The pending list shows the email, the request time, whether the address is
+   confirmed yet, and the name and organization from the draft as they type
+   it (R-AUTH-11, **F10**).
+5. IF they open the link before approval, they sign in (**F1**, steps 6–7),
+   which confirms the address, and onboard as anyone does (**F2**). Their
+   session reaches onboarding and the waiting screen, nothing else (R-AUTH-1).
 6. After the usage step they land on **S21** (`/access-requested`), which says
    in plain language: thanks for your interest in Rebel Match; access is
    approved by a person; **we will email you as soon as it is approved, and
    that email will contain your login link** (R-AUTH-9).
 7. An admin resolves it in **F10**. On approval the applicant gets a **working
    magic link in the approval email itself**, and a session they still hold
-   opens the app on their next visit (R-AUTH-3, R-AUTH-10). On rejection their
+   opens the app on their next visit (R-AUTH-3, R-AUTH-10). If they had not
+   signed in yet, that link confirms the address and starts onboarding where
+   the draft leaves off (**F2**). On rejection their
    sessions end, they cannot log in, and their profile, draft and any challenge
    data are erased.
 
@@ -222,11 +229,13 @@ queue. Everything after the approval is built to cost zero extra steps.
   dead end (R-AUTH-6, R-AUTH-10).
 - _Applicant requests a link again while pending_ → a new link and a new draft
   token, no duplicate applicant, and the admin notification is not repeated.
-- _Never opens the link_ → hosts never see the request; the draft is deleted
-  after its retention (R-ONB-15).
-- _The host finds them first_ → once they have signed in, the pending list
-  carries the email, request time, and the name from the draft, so a host can
-  approve on the spot (R-AUTH-11, **F10**).
+- _Never opens the door link_ → nothing is lost: a host can still approve
+  them, and the approval email's link brings them in.
+- _The host finds them first_ → the pending list carries the email, request
+  time, and the name from the draft, so a host can approve on the spot and the
+  link arrives while the two of them are standing there (R-AUTH-11, **F10**).
+- _A typo or a made-up address_ → it shows as not confirmed, and the host
+  rejects it or leaves it (R-AUTH-11).
 - _Approved before finishing onboarding_ → they finish it and go straight into
   the app.
 - _Address was rejected earlier_ → not this flow: the login screen says the
@@ -385,9 +394,9 @@ before both sides agree.**
 **Screens:** S19 Admin approvals.
 
 1. Admin opens the approvals screen → `GET /api/admin/applicants`. It lists
-   applicants who have signed in, so confirmed their address. Each row carries
-   the email, when they asked, and the name and organization from their draft
-   or profile, so the host can match a row to a person in the room
+   every pending applicant. Each row carries the email, when they asked,
+   whether the address is confirmed yet, and the name and organization from
+   their draft or profile, so the host can match a row to a person in the room
    (R-AUTH-2, R-AUTH-11).
 2. Per applicant: **Approve** → `POST /api/admin/applicants/:id/approve` sets
    `status='active'`, grants the `member` role, **and emails them a magic link
@@ -550,9 +559,8 @@ they wait for a human (**F4**).
 
 - _Token unknown, expired, not yet valid, revoked, or at its cap_ → the request
   continues as an ordinary one: recorded as an applicant, the same sign-in link
-  and check-your-email state, with a notice at the top — _"this invitation link
-  isn't valid right now"_ — saying a person approves access once they have
-  signed in. One wording for every case, since the next step is the same;
+  and check-your-email state with its applicant message, and a notice at the
+  top — _"this invitation link isn't valid right now"_. One wording for every case, since the next step is the same;
   never an error dead end, because the QR is printed and the person is holding
   a phone (R-INV-5, **F4**).
 - _Scanner is already whitelisted_ → ordinary **F1**; the invite is ignored and no

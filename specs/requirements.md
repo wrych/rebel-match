@@ -89,11 +89,10 @@ Requirements:
   approved by a host (R-AUTH-3). Any other address MAY sign in to confirm it,
   but SHALL reach only onboarding and the waiting screen (R-AUTH-9, ADR 0043).
 - **R-AUTH-2** — WHEN a non-whitelisted email requests access **without a valid
-  invite** THE SYSTEM SHALL record it as a pending **applicant** and email it a
-  sign-in link like any other address (R-AUTH-4). WHEN the applicant has signed
-  in, and so confirmed the address, THE SYSTEM SHALL notify the members who
-  review applicants (R-NOTE-1); before that, hosts do not see the request
-  (ADR 0043).
+  invite** THE SYSTEM SHALL record it as a pending **applicant**, email it a
+  sign-in link like any other address (R-AUTH-4), and notify the members who
+  review applicants (R-NOTE-1). The applicant need not use that link to be
+  approved; the approval email carries one (R-AUTH-10, ADR 0043).
 - **R-AUTH-3** — WHEN an admin approves an applicant THE SYSTEM SHALL move them
   to active, grant the `member` role, and immediately email them a working magic
   link (R-AUTH-10). WHEN an admin rejects an applicant THE SYSTEM SHALL prevent
@@ -108,10 +107,12 @@ Requirements:
   for the wait, offers the profile form (R-ONB-7). The link works whether or
   not the form is filled. _(Meeting: "something like a magic link that is then
   sent to your email… really simple user management.")_
-  - Whitelisted, invited and unknown addresses get the **same screen**, so the
-    login screen does not reveal whether an address is known; an applicant
-    learns their status once signed in (R-AUTH-9). Only a rejected address is
-    told so at the door (R-AUTH-13, ADR 0013, ADR 0043).
+  - For an applicant the screen SHALL also say that **access is approved by a
+    person** and that they will be emailed once they are in. A whitelisted
+    address and an unknown one therefore still lead to different words, which
+    means the login screen reveals whether an address is known. This is a
+    deliberate trade: telling an applicant the truth is worth more here than
+    hiding membership of a 350-person invite list. See ADR 0013.
 - **R-AUTH-5** — The magic link SHALL be single-use and SHALL expire (default 15
   minutes). **Opening the link SHALL NOT use it:** it SHALL show a sign-in
   screen, and WHEN the user confirms there with a deliberate action (a button,
@@ -130,7 +131,8 @@ Requirements:
 - **R-AUTH-8** — The system SHALL NOT require a password at any point.
 - **R-AUTH-9 (Access-requested screen)** — WHILE a signed-in applicant who has
   completed onboarding waits for approval THE SYSTEM SHALL show the
-  access-requested screen, at its own URL, instead of the app. It SHALL tell
+  access-requested screen, at its own URL, instead of the app (R-AUTH-4 tells
+  those who have not signed in). It SHALL tell
   them, in plain language: that their interest is welcome, that access is
   approved by a person, that **they will be notified by email once approved**,
   and that the email will contain a working login link — so nobody waits on a
@@ -147,8 +149,9 @@ Requirements:
     (R-AUTH-6), never to a dead end.
 - **R-AUTH-11 (The host can find them)** — The admin notification and the pending
   applicant list SHALL carry what a host needs to recognize someone in the room:
-  the email address, the time of the request, and the name and organization
-  from their profile draft or profile, if given (R-ONB-15). This is what lets
+  the email address, the time of the request, **whether the address is
+  confirmed yet** (by signing in), and the name and organization from their
+  profile draft or profile, if given (R-ONB-15). This is what lets
   the host of an event check in with the people who cannot get in yet, and
   approve them on the spot.
 - **R-AUTH-12** — _(Withdrawn: the profile draft (R-ONB-15) replaces the name
@@ -211,7 +214,8 @@ Requirements:
   THE SYSTEM SHALL make the draft their profile and record the consent version
   and time, in one request; onboarding is then complete (R-ONB-1). The privacy
   step SHALL say, below the button: "Other members see your profile once you
-  tap this button."
+  tap this button.", or, to a pending applicant, "Other members see your
+  profile once a host has let you in." (R-AUTH-1).
 - **R-ONB-9 (Full privacy notice)** — The system SHALL serve the full privacy
   notice as a screen of its own, readable without signing in and showing its
   version and date. It SHALL be linked from the profile step, the privacy step
@@ -247,9 +251,9 @@ Requirements:
   kept as a **draft**, apart from the profile: never shown to other members,
   except its name and organization to the hosts reviewing an applicant
   (R-AUTH-11), and never counted towards onboarding (R-ONB-1). Before sign-in only the
-  check-your-email screen of that sign-in request may write it, with a token
-  issued with the request, stored hashed and spent when the draft is confirmed
-  or a newer request replaces it. A draft SHALL be deleted once confirmed
+  check-your-email screen of a sign-in request may write it, with a token
+  issued with that request, stored hashed, and spent when the draft is
+  confirmed or deleted; a later request SHALL NOT spend an earlier one. A draft SHALL be deleted once confirmed
   (R-ONB-8), with the account (R-NFR-7), and otherwise after
   `limits.profileDraftRetentionDays` (default 30, R-CFG-1).
 
@@ -286,8 +290,8 @@ capability, not a secret** — and every requirement below exists because of tha
 - **R-INV-5 (Graceful fallback)** — IF a token is unknown, not yet valid, expired,
   revoked, or at its cap THEN THE SYSTEM SHALL continue into the ordinary
   applicant flow (R-AUTH-2) and present the **check-your-email screen**
-  (R-AUTH-4) with a **notice that the invitation link is not valid**, saying
-  that a person approves access once they have signed in. It SHALL NOT
+  (R-AUTH-4) with a **notice that the invitation link is not valid**, above
+  its applicant message that a person approves access. It SHALL NOT
   show an error dead end: the person is standing in the room holding a phone, and
   the QR cannot be reprinted.
   - The notice SHALL be **state-agnostic** — "this invitation link isn't valid
@@ -295,7 +299,8 @@ capability, not a secret** — and every requirement below exists because of tha
     revoked, has not started yet, or is full. It SHALL NOT name which control
     refused it, and SHALL NOT imply the person did something wrong.
   - The notice SHALL NOT replace or obscure the screen's primary message: that
-    their sign-in link is on its way (R-AUTH-4).
+    their sign-in link is on its way, and that a person approves access
+    (R-AUTH-4).
   - The notice SHALL be part of the screen's URL state, so a reload keeps it
     (R-NAV-1), and SHALL NOT carry the token (R-INV-12).
   - The notice SHALL be announced to assistive technology, not conveyed by colour
@@ -974,8 +979,8 @@ notifications: they go out at once, whatever is chosen here (R-NFR-3).
   - **New challenge in a followed trend** — every member following the trend,
     except its author, when a challenge is posted in it, linking to the deck
     opened at its card (R-ASK-9, R-OFF-7);
-  - **New applicant** — every member who can review applicants, when one has
-    signed in and so confirmed the address (R-AUTH-2, R-AUTH-11).
+  - **New applicant** — every member who can review applicants, when one is
+    recorded (R-AUTH-2, R-AUTH-11).
 - **R-NOTE-2 (Cadences)** — For each type a member can receive, they SHALL
   choose one of: **Immediately**, **Hourly**, **Daily**, **In the app only**,
   **Off**. New applicant notices SHALL also offer **Every 15 minutes**. Until
