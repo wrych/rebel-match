@@ -176,7 +176,8 @@ login path.
 Budget: **under 120 kB gzipped** for the whole client. If a dependency would
 breach it, the question is whether that screen needs the dependency or needs less
 of it. The M6 QR dry run on a phone over conference wifi is what proves the
-budget, not the number itself.
+budget, not the number itself. The 9to5 game is a chunk of its own, loaded
+only when it is opened, and is not counted here (ADR 0045).
 
 ### The running version
 
@@ -284,6 +285,96 @@ The bottom tab bar, on member screens other than the welcome screen, reads Home
 (`/welcome`), Submit, Swipe and Matches, from left to right. Home is a house
 icon in the accent colour, named "Home" for screen readers, in a column
 narrower than the others.
+
+### The 9to5 game
+
+An easter egg behind the impressum (R-GAME-1..20, ADR 0045, F18). It is the
+one screen drawn on a canvas, and the one played in landscape.
+
+**Layout.** Everything lives under `client/game/`, loaded as its own chunk
+when `/9to5` is first opened, so none of it counts against the login path's
+bundle budget; the chunk itself aims for under 60 kB gzipped and uses no game
+library.
+
+```
+client/game/
+  core/       pure: state, step(state, input, dt), boss and rebel rules,
+              seeded random numbers, grid pathfinding, available actions
+  floors/     the five floor plans as data: a tile grid plus named spots
+              (entrance, meeting room, cubicles, office or desk, coolers)
+  render/     Canvas 2D: floor, vector characters, files, heat, edge arrows,
+              floor map; no game state of its own
+  input/      joystick, keyboard, the action button and its two-choice split
+  GameScreen.vue   the loop: input → step → render, at a fixed 30 steps a
+                   second; the menus, results card, hints and rotate prompt
+                   are ordinary Vue overlays above the canvas
+```
+
+**The core is pure.** `step` takes the state, the player's input and the time
+since the last step, and returns the next state; it never reads the clock,
+the DOM or `Math.random`. A day is seeded, so a test replays it exactly. The
+rules — temptation, files, the cooler, meetings, heat, breaks, talking, the
+masterclass, losing — are unit-tested there, with no canvas (constitution §2,
+§4). `availableActions(state)` decides what the action button offers, so the
+button and the rules cannot disagree.
+
+**Movement.** The player moves continuously and collides with walls and
+furniture on the tile grid; employees walk tile paths found by A\* between
+their cubicle, the coolers, the meeting room and the entrance. "Nearest the
+meeting room" (R-GAME-6) is the walking distance, not the straight line.
+
+**Drawing.** Characters are drawn in code as smooth vector figures: a rounded
+suit body, head, hair, tie, and a soft shadow. Each figure has a colour palette
+and a grey one, so turning grey is a palette swap, never a filter. Rebel colours
+come from the happy-mode tokens (R-LOOK-3). The camera follows the player
+across a floor larger than the screen; off-screen trouble is marked by arrows
+at the edge, and the floor map is the same floor drawn small. If time runs out
+before the summit, a pixel-art renderer can replace this one without touching
+`core/` (ADR 0045).
+
+**What the server knows.** The colour mode lives in the browser, so the server
+cannot enforce happy mode; it enforces the switch and onboarding, and the
+client hides the card and the game in calm mode (R-GAME-1).
+
+**Tuning.** Every number is a setting under `game.*`, in the 9to5 group of
+the settings screen, changeable by hosts as R-CFG-6 describes and stored in
+`setting_overrides` (ADR 0031). The client receives the values with each day
+it starts (`GET /api/game`, `POST /api/game/days`), so a change applies from
+the next day (R-GAME-17).
+
+| Setting (per job)                         | Team Lead | Manager | Director |  VP | CEO |
+| ----------------------------------------- | --------: | ------: | -------: | --: | --: |
+| `game.<job>.employees`                    |         4 |       8 |       14 |  22 |  32 |
+| `game.<job>.coolers`                      |         0 |       1 |        1 |   2 |   2 |
+| `game.<job>.morningRebels`                |         1 |       1 |        2 |   3 |   5 |
+| `game.<job>.temptationEverySeconds` (avg) |        12 |       9 |        7 |   5 |   4 |
+| `game.<job>.temptedGraceSeconds`          |        20 |      16 |       14 |  12 |  10 |
+| `game.<job>.meetingSeats`                 |         — |       2 |        3 |   4 |   5 |
+
+| Setting                                  | Default | Serves                     |
+| ---------------------------------------- | ------: | -------------------------- |
+| `game.enabled` (0 off, 1 on)             |     `0` | R-GAME-1, R-GAME-17        |
+| `game.dayLengthSeconds`                  |    `90` | R-GAME-3                   |
+| `game.fileWorkSeconds`                   |    `15` | R-GAME-4                   |
+| `game.coolerVisitEverySeconds` (avg)     |    `20` | R-GAME-5, R-GAME-11        |
+| `game.coolerChatSeconds`                 |     `6` | R-GAME-5                   |
+| `game.speechSeconds`                     |     `2` | R-GAME-5                   |
+| `game.meetingSeconds`                    |     `8` | R-GAME-6                   |
+| `game.rebel.morningGrey`                 |     `3` | R-GAME-3                   |
+| `game.rebel.fileEverySeconds` (level 16) |    `10` | R-GAME-9                   |
+| `game.rebel.fileStepPercent` (per level) |     `8` | R-GAME-9                   |
+| `game.rebel.fileFloorSeconds`            |     `3` | R-GAME-9                   |
+| `game.rebel.heatStageSeconds`            |     `6` | R-GAME-9                   |
+| `game.rebel.helpSeconds`                 |     `2` | R-GAME-9                   |
+| `game.rebel.breakSeconds`                |    `15` | R-GAME-10                  |
+| `game.rebel.breakCooldownSeconds`        |    `20` | R-GAME-10                  |
+| `game.rebel.talkSeconds`                 |     `4` | R-GAME-11                  |
+| `game.rebel.masterclassSeconds`          |     `8` | R-GAME-11                  |
+| `game.recordsPerMinute`                  |    `10` | R-GAME-20 (not changeable) |
+
+The employee and cooler counts are bounded by the floor plan: a value beyond
+the cubicles or cooler spots a floor has is refused. The defaults are a
+first guess, to be tuned during the pilot.
 
 ### Key libraries
 
@@ -822,6 +913,57 @@ so `outbox_quotes (outbox_id, member_id)` lists them, each cascading from both
 sides, and erasing a member deletes every outbox entry it lists them on
 (R-MSG-6).
 
+### game_players (9to5 progress — R-GAME-15, R-GAME-16, ADR 0045)
+
+```sql
+CREATE TABLE game_players (
+  member_id      CHAR(36)     NOT NULL PRIMARY KEY,
+  pseudonym      VARCHAR(40)  NOT NULL UNIQUE,      -- e.g. 'Furious Rebel'
+  shared         BOOLEAN      NOT NULL DEFAULT FALSE,
+  current_level  INTEGER      NOT NULL DEFAULT 1,   -- the level being played
+  highest_level  INTEGER      NOT NULL DEFAULT 1,   -- the highest reached
+  best_level     INTEGER      NULL,                 -- the highest won
+  best_seconds   INTEGER      NULL,                 -- total play when first won
+  total_seconds  INTEGER      NOT NULL DEFAULT 0,
+  hints_seen     JSONB        NOT NULL DEFAULT '[]',
+  created_at     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_game_player_member FOREIGN KEY (member_id)
+    REFERENCES members(id) ON DELETE CASCADE
+);
+CREATE INDEX idx_game_players_board ON game_players (best_level DESC, best_seconds);
+```
+
+The job follows from the level (1–3 Team Lead … 13–15 CEO, 16 and on Rebel),
+so ranking by `best_level`, then `best_seconds`, is R-GAME-13's order. A
+player without a win is not on the board. The pseudonym is an adjective from a
+list in code with "Rebel", picked at random among those free; once the list
+runs out, a number follows ("Furious Rebel 2"). A deactivated member's row is
+left off the board (R-NFR-7). No query outside the game's own endpoints reads
+this table, and those return the member's own row and the board only
+(R-GAME-15).
+
+### game_days (9to5 day log — R-GAME-14, recorded, not shown)
+
+```sql
+CREATE TABLE game_days (
+  id            BIGSERIAL    PRIMARY KEY,
+  member_id     CHAR(36)     NOT NULL,
+  level         INTEGER      NOT NULL,
+  outcome       VARCHAR(9)   NOT NULL,   -- 'won' | 'lost' | 'abandoned'
+  play_seconds  INTEGER      NOT NULL,
+  finished_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_game_day_member FOREIGN KEY (member_id)
+    REFERENCES members(id) ON DELETE CASCADE,
+  CONSTRAINT chk_game_day_outcome CHECK (outcome IN ('won','lost','abandoned'))
+);
+CREATE INDEX idx_game_days_member ON game_days (member_id);
+```
+
+The log is the record for tuning: where players get stuck. `game_players`
+holds everything the game and the board read, so deleting the activity history
+(R-STAT-4) empties the log without touching the board.
+
 ### setting_overrides (values hosts set in the app — R-CFG-6, ADR 0031)
 
 ```sql
@@ -955,6 +1097,25 @@ about it (R-NOTE-5).
 | GET    | `/api/cockpit`      | `{challenges[], following[], pendingIncoming, newConnections}`: my active challenges with same-boat / been-there / case-study counts counted as the matches view lists them, my followed trends, how many requests waiting for me arrived since I last opened Matches, and how many connections I have not opened were made since then, which together badge the nav (R-MINE-1,3,4, R-CONN-7,9). A connection counts from when it was made (`responded_at`). The requests themselves come from `/api/connections/incoming`. |
 | POST   | `/api/matches/seen` | Record that I opened the Matches screen, now: `204`. The screen sends it before each load, so whatever it then lists no longer badges the nav; something arriving in between still does (R-MINE-4).                                                                                                                                                                                                                                                                                                                         |
 
+### 9to5 (R-GAME-1..20)
+
+Every endpoint answers `404` while the game is off or for a member not
+onboarded (R-GAME-1, R-NAV-8).
+
+| Method | Path                    | Body                            | Behavior                                                                                                                                                                                               |
+| ------ | ----------------------- | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| GET    | `/api/game`             | —                               | My progress (the level to resume, the highest reached, the best, hints seen, pseudonym, sharing) and the tuning for the next day; the first call creates my player with a pseudonym (R-GAME-15,16,17). |
+| POST   | `/api/game/days`        | `{level, outcome, playSeconds}` | Record a day (R-GAME-14). Returns my new progress, whether it is a new best, my place `{position, of}` (null without a win), and the tuning for the next day. Out of bounds → `422` (R-GAME-20).       |
+| PUT    | `/api/game/sharing`     | `{shared}`                      | Show my profile name on the board, or my pseudonym (R-GAME-15).                                                                                                                                        |
+| PUT    | `/api/game/hints/:hint` | —                               | Mark a hint seen: `204` (R-GAME-18).                                                                                                                                                                   |
+| GET    | `/api/game/leaderboard` | —                               | The top 100 and my own row: place, name or pseudonym, job, level, and `mine` (R-GAME-13).                                                                                                              |
+
+An abandoned day is sent with `navigator.sendBeacon` to `POST /api/game/days`
+when the page is hidden mid-day, under the same session and checks as any
+other request. A level above `highest_level + 1`, an outcome other than the
+three, or `playSeconds` below 1 or above twice the day's length plus a minute
+is refused, and records are limited per member (`game.recordsPerMinute`).
+
 ### Admin (permission-guarded, not role-name-guarded — R-ROLE-3)
 
 | Method | Path                                 | Behavior                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
@@ -1028,6 +1189,8 @@ deep link reloads cleanly.
 | S30 | **Privacy notice** — the full notice with its version and date; public (R-ONB-9)                                                                                                                                                                                                                                                                                                                                                                                                      | `/privacy`                                            |
 | S31 | **Terms of use** — the terms with their version and date; public (R-ONB-13)                                                                                                                                                                                                                                                                                                                                                                                                           | `/terms`                                              |
 | S32 | **Impressum** — the people who made the app, one card each with portrait, name and responsibilities, browsed as the swipe deck; public (R-PROF-4)                                                                                                                                                                                                                                                                                                                                     | `/impressum`                                          |
+| S33 | **9to5** — the office game on a canvas, landscape only: joystick and action button, pause and menu (play from a job, share or stop sharing, leaderboard, leave), results card after each day, the CEO's choice; only in happy mode, while the game is on (R-GAME-1..12, R-GAME-14..16)                                                                                                                                                                                                | `/9to5`                                               |
+| S34 | **9to5 leaderboard** — every player's best by job, level and time, names only where shared, pseudonyms otherwise, the member's own row marked; only where S33 is shown (R-GAME-13, R-GAME-15)                                                                                                                                                                                                                                                                                         | `/9to5/leaderboard`                                   |
 
 Remaining overlays, deliberately: the "really decline this request?" confirm, the
 "link sent" / "copied" toasts, and the feedback action (a `mailto:`, not a
@@ -1297,6 +1460,9 @@ Alternatives considered (kept only as fallbacks):
   | `connection_requested` | `kind`                                   |
   | `connection_responded` | `status: accepted\|declined`             |
   | `feedback_opened`      | `screen`                                 |
+  | `game_opened`          | —                                        |
+  | `game_day_finished`    | `mode`, `level`, `outcome`, `seconds`    |
+  | `game_result_shared`   | —                                        |
 
 - `seconds_to_onboard` is `consent_at` minus the time the latest sign-in email
   (`outbox` kind `magic_link`) to the member was recorded, in whole seconds
@@ -1318,10 +1484,10 @@ Alternatives considered (kept only as fallbacks):
   `analytics_consent_at`; the member changes it later on the profile screen
   (`PUT /api/me/analytics`, R-PROF-2). An event is sent only while both are set.
 - **Server only.** The server sends every event through the Mixpanel HTTP
-  ingestion API at `analytics.apiHost` (`api-eu.mixpanel.com`). The two UI
-  events, `journey_chosen` and `feedback_opened`, are posted by the client to
-  `POST /api/events`, which accepts only those names with their listed
-  properties. No Mixpanel script, cookie or device identifier is in the browser,
+  ingestion API at `analytics.apiHost` (`api-eu.mixpanel.com`). The three UI
+  events, `journey_chosen`, `feedback_opened` and `game_opened`, are posted by
+  the client to `POST /api/events`, which accepts only those names with their
+  listed properties. No Mixpanel script, cookie or device identifier is in the browser,
   and the token never leaves the server.
 - `invite_rejected` is not captured: a visitor turned away has not onboarded,
   so cannot have opted in.

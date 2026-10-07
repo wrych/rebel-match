@@ -365,6 +365,7 @@ capability, not a secret** — and every requirement below exists because of tha
   name, job title, organization, sector, email, status, roles, when and through
   which invite they joined, the consent version they accepted and when, the
   analytics opt-in, and how many challenges and connection requests they have.
+  It SHALL leave out the member's 9to5 results, which no host sees (R-GAME-15).
   From there a host SHALL be able to change their roles (R-ROLE-9) and delete
   them (R-NFR-7), each within the host's own permissions; later member actions
   belong on this page. For a deleted account it SHALL show when it will be
@@ -388,7 +389,9 @@ capability, not a secret** — and every requirement below exists because of tha
   signed in or not, that shows the people who made the app one card at a time,
   each with their portrait, name and what they are responsible for, browsed as
   the swipe deck is (R-OFF-1, R-LOOK-4), and closes with a card for the
-  community. It is public and has its own URL (R-NAV-1).
+  community. It is public and has its own URL (R-NAV-1). In happy mode, for a
+  member who completed onboarding and while the game is on, one more card
+  follows the community's: the door to 9to5 (R-GAME-1).
 
 ---
 
@@ -693,6 +696,8 @@ at a screen instead of at the front door.
   | `/privacy`                           | full privacy notice (R-ONB-9)                  |
   | `/terms`                             | terms of use (R-ONB-13)                        |
   | `/impressum`                         | the people who made the app (R-PROF-4)         |
+  | `/9to5`                              | the 9to5 game (R-GAME-1)                       |
+  | `/9to5/leaderboard`                  | the 9to5 leaderboard (R-GAME-13)               |
   | `/welcome`                           | two doors                                      |
   | `/ask`                               | submit a challenge                             |
   | `/challenges/:id`                    | detected trend for that challenge              |
@@ -859,7 +864,8 @@ What differs by environment is only whether mail **leaves the machine**.
 - **R-CFG-6 (Changing settings in the host tools)** — A host with
   `settings:manage` SHALL be able to change, on the settings screen, the
   spam-protection numbers except the trusted proxies, the invite defaults, and
-  the minimum challenge and "been there" note lengths (ADR 0031). Each change
+  the minimum challenge and "been there" note lengths (ADR 0031), and the 9to5
+  switch and tuning (R-GAME-17, ADR 0045). Each change
   SHALL be checked against bounds and the order of paired limits (the minimum
   challenge length never above the maximum), take effect without a restart on
   every server within a minute, and show who made it and when. The host SHALL
@@ -885,8 +891,10 @@ _(Decided by the maintainer after trying the redesign: ADR 0023.)_
   between the calm default and happy mode, announced as a switch to assistive
   technology. _(It replaces the prototype's "CR" button.)_ The choice SHALL be
   remembered per browser and SHALL change colours and decoration only, never
-  content, behaviour or anything recorded. IF the browser refuses storage THEN
-  the app SHALL still switch, and start calm next time.
+  content, behaviour or anything recorded, with one exception: happy mode
+  reveals the 9to5 card and lets the game run (R-GAME-1, ADR 0045). IF the
+  browser refuses storage THEN the app SHALL still switch, and start calm next
+  time.
 - **R-LOOK-3 (Modes are tokens)** — Colour modes SHALL be sets of colour tokens
   over one set of components, so a further mode (a dark mode, priorities C7) is a
   new token set rather than new screens. Every mode SHALL keep text readable
@@ -960,7 +968,8 @@ records, and nothing here shows a number to anyone (ADR 0033).
   with the challenge.
 - **R-STAT-4 (Delete my history)** — The profile screen SHALL offer **deleting
   one's activity history**, apart from deleting the account: after one
-  confirmation that says what goes, the member's views SHALL be deleted. Their
+  confirmation that says what goes, the member's views and their 9to5 day log
+  (R-GAME-14) SHALL be deleted. Their
   challenges, "been there" notes, swipes, follows and connections SHALL stay;
   they are content and decisions, not history, and losing the swipes would
   deal every answered card again.
@@ -1071,6 +1080,182 @@ notifications: they go out at once, whatever is chosen here (R-NFR-3).
 
 ---
 
+## 8i. 9to5, the office game
+
+An easter egg for members who play with the colours: a top-down office game
+behind the impressum's last card, in the spirit of the browser's offline
+dinosaur game. The player starts as the boss of a grey office, crushing the
+spirit of every employee who turns colourful, is promoted through five jobs,
+and as CEO may turn rebel, after which the game runs in reverse. Its results
+feed a leaderboard where nobody's real name appears unless they share it.
+_(Decided by the maintainer: ADR 0045. Numbers below marked "setting" are
+defaults hosts can tune, R-GAME-17.)_
+
+**Words.** A **level** is one working **day**, 09:00 to 17:00 on the game's
+clock. Levels 1–15 are **boss mode**, three days per **job**: Team Lead
+(1–3), Manager (4–6), Director (7–9), VP (10–12), CEO (13–15). Levels 16 and
+on are **rebel mode**, all of them the job **Rebel**. An **employee** is one of
+the office's people; the **player** is the character the member steers.
+
+- **R-GAME-1 (The door)** — WHILE the game is switched on (R-GAME-17), the
+  colour mode is happy and the visitor is a member who completed onboarding,
+  the impressum (R-PROF-4) SHALL end with a 9to5 card carrying a **Be a rebel**
+  button that opens `/9to5`. WHEN the mode is calm THE SYSTEM SHALL show neither
+  the card nor the game: `/9to5` shows "The rebels only come out in happy mode"
+  with a link to the impressum, and a running game pauses there (R-GAME-12).
+  WHILE the game is off, `/9to5`, `/9to5/leaderboard` and every game endpoint
+  SHALL answer as not found (R-NAV-8). A visitor not signed in, or not yet
+  onboarded, SHALL follow the deep-link rules (R-NAV-5, R-NAV-7).
+- **R-GAME-2 (The office)** — Each job SHALL be played on its own fixed floor
+  plan, larger with each job, holding an **entrance**, a **meeting room**, one
+  **cubicle** per employee, the boss's **office**, and the job's number of
+  **water coolers**: Team Lead 4 employees and no cooler, Manager 8 and 1,
+  Director 14 and 1, VP 22 and 2, CEO 32 and 2 (setting, within what the floor
+  plan holds). Rebel mode SHALL use the CEO floor with the office replaced by
+  the player's own **desk**.
+- **R-GAME-3 (A day)** — Each day SHALL begin at 09:00 with every employee
+  walking in through the entrance to their cubicle. In boss mode a number of
+  them SHALL arrive already as rebels, and in rebel mode already grey (setting,
+  per job). The clock SHALL reach 17:00 after the day's length (setting,
+  default 90 seconds), and a day survived to 17:00 is **won**.
+- **R-GAME-4 (Temptation and files, boss mode)** — An employee is **grey**,
+  **tempted** or a **rebel**. At random moments (setting, per job) a grey
+  employee's screen SHALL switch to Corporate Rebels, which makes them
+  tempted. The player SHALL carry at most one **file**, taken from a cabinet in
+  their office. Assigning a file to a tempted employee SHALL make them grey and
+  busy with it for a while (setting); assigning one to a rebel SHALL make them
+  tempted, so a rebel needs two files. A file SHALL be assignable only to a
+  tempted employee or a rebel. WHEN an employee stays tempted longer than the
+  grace time (setting, per job) THE SYSTEM SHALL make them a rebel. A rebel
+  arises in no other way than this and R-GAME-5.
+- **R-GAME-5 (The water cooler, boss mode)** — From Manager on, employees
+  SHALL now and then walk to a water cooler (setting), at most two at a cooler.
+  WHEN a rebel has talked with a grey employee there for the chat time
+  (setting) THE SYSTEM SHALL make the grey one tempted, and the break SHALL end
+  then at the latest, both returning to their cubicles. The player SHALL be
+  able to break it up by **talking** to them at the cooler for the speech time
+  (setting, default 2 seconds): "It doesn't work without hierarchy." Both go
+  back to their cubicles unchanged. Assigning a file at the cooler SHALL both
+  break it up and count as assigned (R-GAME-4).
+- **R-GAME-6 (Meetings, boss mode)** — From Manager on, WHEN the player walks
+  into the meeting room, and has not held a meeting that day, THE SYSTEM SHALL
+  start a meeting: the employees nearest the meeting room, as many as the job
+  seats (Manager 2, Director 3, VP 4, CEO 5, setting), walk in, and the player
+  stays in the room for the meeting's length (setting, default 8 seconds).
+  Every tempted employee and rebel who attended SHALL leave it grey; the rest
+  of the office carries on meanwhile.
+- **R-GAME-7 (Losing)** — WHEN more than half of the employees are rebels in
+  boss mode, or grey in rebel mode, THE SYSTEM SHALL end the day as **lost**
+  at once. After a loss the player SHALL continue from the first day of the
+  job they were playing (Rebel: level 16).
+- **R-GAME-8 (Becoming CEO)** — WHEN the player wins level 15 THE SYSTEM SHALL
+  show "Every spirit crushed. The board is thrilled.", the player's own screen
+  turning colourful, and two buttons: **Continue**, which leaves the game for
+  `/ask`, and **Be a rebel**, which starts level 16.
+- **R-GAME-9 (Rebel mode: files and heat)** — In rebel mode employees are
+  rebels or grey, and the roles turn: files SHALL land on employees' desks, at
+  an interval that shortens with each level down to a floor (setting). A file
+  SHALL lie on the desk next to its employee, and while it does their **heat**
+  SHALL rise through warm, hot and boiling, one stage per heat time (setting);
+  after boiling they turn grey. The player **helps** by standing at the desk
+  for the help time (setting, default 2 seconds), which removes the file and
+  stops the heat rising, without lowering it.
+- **R-GAME-10 (Breaks)** — The player SHALL be able to send an employee on a
+  **break**, at most once per break cooldown (setting). The employee leaves
+  their desk for 15 seconds (setting), receives no file meanwhile, and returns
+  with no heat. A file already on the desk SHALL stay there, and the player
+  SHALL be able to help with it while they are away.
+- **R-GAME-11 (Talking and the masterclass, rebel mode)** — Grey employees
+  SHALL now and then walk to a water cooler; WHEN a grey and a rebel employee
+  meet there THE SYSTEM SHALL raise the rebel's heat to hot. Talking to an
+  employee for the talk time (setting, default 4 seconds) SHALL turn a grey
+  one back into a rebel, at their desk or at a cooler; at a cooler it turns at
+  most one grey employee and also takes a stressed rebel's heat away. Once a
+  day the player SHALL be able to start a **masterclass** at their desk by
+  choosing two grey employees, who leave through the entrance and return as
+  rebels after the masterclass time (setting, default 8 seconds). The player
+  moves freely meanwhile.
+- **R-GAME-12 (Controls and view)** — The game SHALL be played in landscape,
+  filling the window and going full screen where the browser allows; held in
+  portrait, it SHALL ask for the phone to be turned and pause. On a touch screen
+  a joystick appears where the left thumb rests; on a keyboard the arrows or
+  WASD steer. One **action button** SHALL light up and name what the player can
+  do where they stand: _Take file_, _Assign_, _Break it up_, _Help_, _Break_,
+  _Talk_, _Masterclass_. Walking into the meeting room needs no button
+  (R-GAME-6). WHERE two actions are possible at once, as help and break at a
+  desk, the first press SHALL open both as buttons beside it and the second
+  choose; on a keyboard Space helps and E sends on a break, directly. The
+  masterclass's two employees SHALL be chosen by tapping them, or with the
+  arrows and Space. The camera SHALL follow the player, arrows at the screen's
+  edge SHALL point to trouble out of view (a tempted employee, a rebel, rising
+  heat, a grey employee), and a floor map SHALL open and close from a button.
+  A pause button SHALL stop the game, as SHALL hiding the tab or switching to
+  calm mode; a paused game's clock and play time stand still.
+- **R-GAME-13 (Leaderboard)** — `/9to5/leaderboard` SHALL rank each player's
+  best result: by job, Rebel above CEO above VP above Director above Manager
+  above Team Lead, then by level, then by the shorter total play time until
+  that best was first reached (R-GAME-16). Each row SHALL show the place, the
+  name or pseudonym (R-GAME-15), the job and the level, and the member's own
+  row SHALL be marked. It is shown only under the conditions of R-GAME-1.
+- **R-GAME-14 (Results and the day log)** — WHEN a day ends THE SYSTEM SHALL
+  record it in the **day log**: the member, the level, won, lost or abandoned,
+  the play time and when. A day the member leaves unfinished, by leaving the
+  game or closing the tab, is recorded as abandoned where the browser lets the
+  record be sent. The game SHALL then show a results card with the outcome,
+  the spirits crushed (boss mode) or people helped (rebel mode), the day's
+  time, and where the member's best stands on the leaderboard ("You're #7 of
+  42"). Its buttons SHALL be, for a new personal best: **Share and continue**,
+  **Continue** and **Leave**; for another win: **Continue** and **Leave**; for a
+  loss: **Retry** and **Leave**. _Share and continue_ and _Retry_ SHALL stand
+  out. The day log is recorded, not shown (R-STAT-2): nothing but the
+  leaderboard and the results card shows anything derived from it.
+- **R-GAME-15 (Pseudonyms and sharing)** — Each player SHALL get, at their first
+  game, a pseudonym of an adjective and "Rebel" ("Furious Rebel"), unique among
+  players, kept for good. The leaderboard SHALL show the pseudonym unless the
+  member shared their name, then the name on their profile. _Share and
+  continue_ shares it, and the game's menu SHALL let the member share or stop
+  sharing at any time. Which member stands behind a pseudonym SHALL NOT be
+  shown, exported or returned by any screen or endpoint, to hosts or anyone
+  else; it lives in the database only (ADR 0045).
+- **R-GAME-16 (Progress)** — THE SYSTEM SHALL keep each player's progress with
+  their account: the level they are playing, the highest level reached, their
+  best and its total play time, which hints they have seen, and their
+  pseudonym and sharing choice. A member returning after leaving or closing
+  the tab SHALL continue from the first day of the job they were in, as after a
+  loss (R-GAME-7). The game's menu SHALL let them **play from** the first day of
+  any job up to the highest level reached; a loss there sends them to the first
+  day of that job. The total play time counts every day played, lost and
+  abandoned ones included, and the best keeps the total from when it was first
+  reached, so replaying never changes it. Progress, the day log and the
+  pseudonym go with the account (R-NFR-7); deleting the activity history takes
+  the day log only (R-STAT-4).
+- **R-GAME-17 (Switch and tuning)** — Hosts with `settings:manage` SHALL switch
+  the game on and off and change its tuning on the settings screen, as R-CFG-6
+  describes; it is off by default. A changed number SHALL apply from the next
+  day a player starts, never in the middle of one. Switching the game off SHALL
+  take effect as R-CFG-6 describes for every setting, and a game already
+  running SHALL be refused its next record.
+- **R-GAME-18 (Look and readability)** — The office SHALL be grey; colour
+  belongs to rebellion. Characters SHALL be drawn as smooth vector figures in
+  suits, with a range of skin tones and hair, and a grey employee is the whole
+  figure desaturated, never a change of skin colour. Every state SHALL also
+  show as a shape: a tempted employee's screen carries the CR logo, a rebel
+  raises a fist and wears a colourful hairdo, a grey employee in rebel mode
+  slumps, and heat shows as a flush, then sweat, then steam over a heat bar.
+  The first time a member meets a mechanic (the first day, the water cooler,
+  meetings, rebel mode) the game SHALL show a short hint, once per member. The
+  game makes no sound.
+- **R-GAME-19 (Usage data)** — For a member opted in (R-ANA-4) THE SYSTEM SHALL
+  send `game_opened`, `game_day_finished` with the mode, level, outcome and
+  whole seconds, and `game_result_shared`, with no name or pseudonym
+  (R-ANA-3).
+- **R-GAME-20 (Plausible records)** — THE SYSTEM SHALL refuse a day record for
+  a level above the highest reached plus one, or with a play time outside what
+  a day can take, and SHALL limit how many records a member sends per minute.
+  It SHALL do no more against a faked score (ADR 0045).
+
+---
+
 ## 9. Non-functional requirements
 
 - **R-NFR-1 (Privacy)** — Challenge text and member contact details SHALL be
@@ -1078,7 +1263,8 @@ notifications: they go out at once, whatever is chosen here (R-NFR-3).
   after mutual opt-in. No public/unauthenticated page exposes member data.
 - **R-NFR-2 (Mobile-first)** — All member-facing screens SHALL be usable on a
   phone in portrait, since the launch mechanic is scanning a QR code during a
-  break.
+  break. The 9to5 game alone is played in landscape (R-GAME-12); its
+  leaderboard is a portrait screen like any other.
 - **R-NFR-3 (Onboarding speed)** — A first-time member SHALL be able to get from
   scanning the QR code to a completed onboarding screen (display name entered,
   consent accepted) in **less than 2 minutes**, measured on a phone over
@@ -1121,8 +1307,8 @@ notifications: they go out at once, whatever is chosen here (R-NFR-3).
 - **R-NFR-7 (Deletion)** — The system SHALL support deleting a member and the
   personal data attached to them — challenges, connection requests, swipes,
   deck views (R-STAT-3), follows, role grants, notifications (R-NOTE-11), the
-  profile draft (R-ONB-15), and
-  their **outbound message log entries** (R-MSG-6) — on
+  profile draft (R-ONB-15), their 9to5 progress, results and pseudonym
+  (R-GAME-16), and their **outbound message log entries** (R-MSG-6) — on
   request (GDPR erasure), at minimum via an admin action. Deleting SHALL first
   **deactivate** the account at once: no sign-in, and nothing of theirs shown
   to anyone. The erasure SHALL follow after a **grace period** of 30 days

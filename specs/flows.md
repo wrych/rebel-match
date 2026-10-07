@@ -41,6 +41,8 @@ Conventions:
                    ├──►  F17 Notifications
                    └──►  F12 Feedback
 
+   Happy mode, onboarded: F18 9to5 (impressum → game → leaderboard)
+
    Admin only: F10 Approvals · F16 Invite links · F11 GDPR deletion
                F14 Outbound message log
 ```
@@ -648,3 +650,53 @@ and expired ones are purged (ADR 0034).
   R-NOTE-9).
 - _The mail fails_ → it is tried again, longer apart each time; the request it
   announces stands regardless (R-NOTE-10).
+
+---
+
+## F18 — 9to5, the office game
+
+**Actor:** an onboarded member in happy mode, while hosts have the game on.
+**Screens:** S32 Impressum, S33 9to5, S34 9to5 leaderboard (ADR 0045).
+
+1. In happy mode the member browses the impressum to its end, past the
+   community card, and finds the 9to5 card. **Be a rebel** → **S33** `/9to5`
+   (R-GAME-1). `GET /api/game` returns their progress and the tuning for the
+   day; `game_opened` is posted (R-GAME-19).
+2. The phone is turned to landscape (R-GAME-12). The first day shows its hints
+   (R-GAME-18): walk into your office, take a file, assign it to the tempted
+   employee.
+3. **A boss day.** Employees walk in at 09:00, some already rebels. Screens
+   turn to Corporate Rebels; the player fetches files and assigns them before
+   the tempted turn rebel, breaks up the water cooler, and once a day walks
+   into the meeting room (R-GAME-3..6).
+4. 17:00 → the day is won; more than half rebels → lost (R-GAME-7). The client
+   sends `POST /api/game/days`, and the results card shows the outcome and
+   "You're #n of m" (R-GAME-14).
+5. A new personal best → **Share and continue** puts the member's name on the
+   board in place of their pseudonym; **Continue** keeps it anonymous
+   (R-GAME-15). Then the next day.
+6. Three days won → promotion to the next job and a larger floor (R-GAME-2).
+7. Level 15 won → "Every spirit crushed." The player's own screen turns
+   colourful: **Continue** → `/ask`; **Be a rebel** → level 16 (R-GAME-8).
+8. **A rebel day.** Files land on desks; the player helps, sends overheating
+   people on a break, talks grey employees back into rebels, and once a day
+   sends two of them to a masterclass (R-GAME-9..11). Each level shortens the
+   interval between files, without end.
+9. From the results card or the game's menu → **S34** `/9to5/leaderboard`
+   (R-GAME-13).
+
+**Branches**
+
+- _A loss_ → **Retry** starts the first day of the same job (Rebel: level 16).
+- _The tab is closed, or the member leaves mid-day_ → the day is sent as
+  abandoned where the browser allows; next time the game resumes at the first
+  day of that job (R-GAME-16).
+- _Play from a level_ → the game's menu offers the first day of every job up
+  to the highest reached; the best and its time stay as they are.
+- _Switched to calm mode, or the tab hidden_ → the game pauses; in calm mode it
+  says the rebels only come out in happy mode, with a link to the impressum
+  (R-GAME-1, R-GAME-12).
+- _The game is switched off by a host_ → the card is gone and every game URL
+  is not found; a game already running is refused its next record and says
+  the office has closed (R-GAME-17).
+- _A record out of bounds_ → refused, and the day is not counted (R-GAME-20).

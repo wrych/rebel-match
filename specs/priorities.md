@@ -5,11 +5,12 @@ deadline: feature-complete and pilot-tested by **2026-11-01**, summit launch
 **2026-11-08**.
 
 Guiding rule from the meeting: **focus on sharing challenges and sharing
-experience; cut the gamification.** Build the pipeline in the order challenges →
-matching → connecting, because each step is independently useful. _(Andy: "we can
-start with just adding the challenges as the first priority, then adding that
-step in between is relatively easy… step by step so we certainly have something
-that works.")_
+experience; cut the gamification.** _(With the core journeys built, the
+maintainer let gamification back in for one easter egg, S8: ADR 0045.)_ Build
+the pipeline in the order challenges → matching → connecting, because each step
+is independently useful. _(Andy: "we can start with just adding the challenges
+as the first priority, then adding that step in between is relatively easy…
+step by step so we certainly have something that works.")_
 
 ---
 
@@ -35,15 +36,16 @@ that works.")_
 
 ## Should have (strongly wanted; cut only under deadline pressure)
 
-| #   | Feature                                                     | Notes                                                                                        |
-| --- | ----------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| S1  | Admin approval of new applicants + whitelist management     | Can start as a seeded whitelist + manual DB/CLI; UI can follow.                              |
-| S2  | Follow a trend / "follow this topic"                        | Low effort; drives return visits.                                                            |
-| S3  | Usage analytics (Mixpanel, free tier, EU residency)         | See how the summit crowd uses it; privacy-scoped (no PII).                                   |
-| S4  | Email notification on an incoming connection request        | At the summit everyone is in the room, so in-app may suffice — but valuable right after.     |
-| S5  | Feedback affordance (mailto)                                | Cheap; useful signal during the pilot.                                                       |
-| S6  | Use the ~15 real collected challenges as seed               | Makes the summit demo authentic.                                                             |
-| S7  | Notifications kept in the app, mailed at a cadence per type | One member can get many requests in a summit hour; grouping keeps inboxes usable (ADR 0037). |
+| #   | Feature                                                                      | Notes                                                                                        |
+| --- | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| S1  | Admin approval of new applicants + whitelist management                      | Can start as a seeded whitelist + manual DB/CLI; UI can follow.                              |
+| S2  | Follow a trend / "follow this topic"                                         | Low effort; drives return visits.                                                            |
+| S3  | Usage analytics (Mixpanel, free tier, EU residency)                          | See how the summit crowd uses it; privacy-scoped (no PII).                                   |
+| S4  | Email notification on an incoming connection request                         | At the summit everyone is in the room, so in-app may suffice — but valuable right after.     |
+| S5  | Feedback affordance (mailto)                                                 | Cheap; useful signal during the pilot.                                                       |
+| S6  | Use the ~15 real collected challenges as seed                                | Makes the summit demo authentic.                                                             |
+| S7  | Notifications kept in the app, mailed at a cadence per type                  | One member can get many requests in a summit hour; grouping keeps inboxes usable (ADR 0037). |
+| S8  | 9to5, the office game behind the impressum in happy mode, with a leaderboard | An easter egg for the summit, behind a switch hosts flip (R-GAME-1..20, ADR 0045). Was W1.   |
 
 ## Could have (nice, only if time remains)
 
@@ -59,14 +61,13 @@ that works.")_
 
 ## Won't have (this beta)
 
-| #   | Feature                                                   | Reason                                                                                                                                                                          |
-| --- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| W1  | Gamification: standings, badges, ranks, milestone pop-ups | Explicitly cut for beta.                                                                                                                                                        |
-| W3  | "Nominate as frontier" escalation                         | Idea stage; no defined flow.                                                                                                                                                    |
-| W4  | Integration with the Corporate Rebels member platform     | "Significant work… avoid if possible."                                                                                                                                          |
-| W5  | Connect via phone number or LinkedIn                      | Email only for beta.                                                                                                                                                            |
-| W6  | LLM-based case-study matching                             | Beta uses curated per-trend case lists.                                                                                                                                         |
-| W7  | One-tap "insert this example challenge"                   | Invites a deck of identical boilerplate challenges, which would make matching meaningless (R-ASK-2). Inspiration stays read-only: the newest real challenges, no insert action. |
+| #   | Feature                                               | Reason                                                                                                                                                                          |
+| --- | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| W3  | "Nominate as frontier" escalation                     | Idea stage; no defined flow.                                                                                                                                                    |
+| W4  | Integration with the Corporate Rebels member platform | "Significant work… avoid if possible."                                                                                                                                          |
+| W5  | Connect via phone number or LinkedIn                  | Email only for beta.                                                                                                                                                            |
+| W6  | LLM-based case-study matching                         | Beta uses curated per-trend case lists.                                                                                                                                         |
+| W7  | One-tap "insert this example challenge"               | Invites a deck of identical boilerplate challenges, which would make matching meaningless (R-ASK-2). Inspiration stays read-only: the newest real challenges, no insert action. |
 
 ---
 
