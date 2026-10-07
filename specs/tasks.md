@@ -125,8 +125,9 @@ printed dev link (R-DEV-6).
       the drafts in `docs/legal/`, linked from onboarding and the profile
       screen. _(R-ONB-9, R-ONB-13)_
 - [ ] Settle what the drafts in `docs/legal/` mark as to confirm: EU
-      representative, who the hosts are, mail operator, Mixpanel retention,
-      code licence. _(R-ONB-9, R-ONB-13)_
+      representative, who the hosts are, Mixpanel retention. Confirm with
+      Transformation Architects GmbH that it is named as controller and that
+      the server and mail are run on its behalf. _(R-ONB-9, R-ONB-13)_
 - [ ] New consent and analytics words, naming Transformation Architects GmbH.
       _(R-ONB-5, R-ANA-4)_
 - [ ] Time onboarding again on a phone against the two-minute budget.

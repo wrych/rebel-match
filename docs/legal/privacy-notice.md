@@ -99,7 +99,7 @@ challenges. If you do not agree, nothing is sent to Mixpanel about you.
   Transformation Architects GmbH, such as Corporate Rebels staff.]
 - **Service providers** who work on our instructions:
   - Google Cloud hosts the app and its database in Zurich, Switzerland.
-  - [TO CONFIRM: the operator of the mail server] sends our emails.
+  - Our emails are sent from our own mail server.
   - Mixpanel stores usage data in the EU, only for members who share it.
 
 Your data is kept in Switzerland and, for usage data, in the EU. Members can be

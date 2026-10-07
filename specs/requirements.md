@@ -1172,7 +1172,8 @@ fixtures. `design.md` §6 lists the exact records and the profile mechanism.
   step and in the notice is **Transformation Architects GmbH**, c/o Impact Hub
   Zürich AG, Sihlquai 131, 8005 Zürich, reached at
   `ready@transformation-architects.ch` (R-ONB-5). This also answers who owns
-  the consent copy (question 1).
+  the consent copy (question 1). Assumed for now; the company's agreement is
+  still to be confirmed (`tasks.md`, M1).
 - **Full privacy notice and terms of use** (2026-10-07) — both are written on a
   best-effort basis from free templates: the notice from the DSAT.ch model
   privacy notice, the terms from the Basecamp open-source policies, both

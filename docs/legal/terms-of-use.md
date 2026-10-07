@@ -77,9 +77,10 @@ what happens to your data then.
 ## 8. Open source
 
 The source code of Rebel Match is public at
-https://github.com/wrych/rebel-match. [TO CONFIRM: the licence, once a LICENSE
-file is added to the repository.] These terms cover the use of the app we run,
-not the code.
+https://github.com/wrych/rebel-match under the MIT licence, copyright (c) 2026
+Pascal Dulex, Ivo Pejakovic, Andy Moesch (founders) and the Rebel Match
+contributors. The licence covers the code. These terms cover the use of the app
+we run.
 
 ## 9. Liability
 
