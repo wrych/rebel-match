@@ -364,15 +364,17 @@ up the summit. One pull request per item, in this order.
 - [ ] Leaderboard endpoint and screen S34. _(R-GAME-13, R-GAME-15)_
 - [ ] Impressum card in happy mode, `/9torevolution` route as a lazy chunk,
       calm-mode and rotate screens. _(R-GAME-1, R-GAME-12)_
-- [ ] Game core, boss mode: floors, day clock, temptation, files, losing,
+- [x] Game core, boss mode: floors, day clock, temptation, files, losing,
       seeded and unit-tested without a canvas. _(R-GAME-2..4, R-GAME-7)_
 - [ ] Renderer and controls: vector characters, camera, edge arrows, floor
       map, joystick, action button, keyboard, pause. _(R-GAME-12, R-GAME-18)_
 - [ ] Results card, sharing, play from a job, resume, abandoned days.
       _(R-GAME-14..16)_
-- [ ] Water cooler and meetings. _(R-GAME-5, R-GAME-6)_
-- [ ] CEO's choice and rebel mode: files, heat, help, breaks, talking,
-      masterclass. _(R-GAME-8..11)_
+- [x] Rules of the water cooler, meetings and rebel mode in the core: files,
+      heat, help, breaks, talking, masterclass. _(R-GAME-5, R-GAME-6,
+      R-GAME-9..11)_
+- [ ] The CEO's choice, and the masterclass's choosing on screen.
+      _(R-GAME-8, R-GAME-11)_
 - [ ] Hints, usage events. _(R-GAME-18, R-GAME-19)_
 - [ ] Playtest on phones in landscape; tune the defaults; switch on for the
       summit. _(R-GAME-17)_

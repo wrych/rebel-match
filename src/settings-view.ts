@@ -237,6 +237,18 @@ const gameGroups: Group[] = [
         'The boss is stuck in the meeting room meanwhile.',
         SECONDS,
       ),
+      gameEntry(
+        'arrivalGapMs',
+        'Employees walk in at 09:00, one every',
+        'How far apart they come through the entrance.',
+        ['millisecond', 'milliseconds'],
+      ),
+      gameEntry(
+        'coolerLoneWaitSeconds',
+        'Someone alone at a cooler goes back after',
+        'When nobody joins them for a chat.',
+        SECONDS,
+      ),
     ],
   },
   ...bossJobs.map(jobGroup),
@@ -297,6 +309,12 @@ const gameGroups: Group[] = [
         'Talking someone back into a rebel takes',
         'At their desk or at a cooler.',
         SECONDS,
+      ),
+      gameEntry(
+        'rebel.masterclassSeats',
+        'Grey employees one masterclass takes',
+        'The player chooses them at their desk, once a day.',
+        EMPLOYEES,
       ),
       gameEntry(
         'rebel.masterclassSeconds',
