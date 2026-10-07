@@ -1,6 +1,6 @@
 # 0041. Onboard in three steps; the notice is read, usage data is asked
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by 0043
 - **Date:** 2026-10-06
 - **Deciders:** Andy Moesch
 

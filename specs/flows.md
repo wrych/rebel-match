@@ -49,22 +49,29 @@ Conventions:
 
 ## F1 — Entry & login (QR → magic link)
 
-**Actor:** invited summit attendee, on a phone, during a break.
-**Precondition:** their email is on the whitelist.
-**Screens:** S1 Login → S2 Magic-link landing.
+**Actor:** anyone at the door: an invited summit attendee, someone joining
+through an invite link (**F15**), or an applicant (**F4**), on a phone, during
+a break. All of them take this flow (ADR 0043).
+**Screens:** S1 Login → S1 check-your-email → S2 Magic-link landing.
 **Budget:** this flow plus F2 must complete in **under 2 minutes** (R-NFR-3).
 
 1. Member scans the QR code; the phone browser opens the app root.
 2. App has no session → shows **S1 Login**: single email field, no password
    (R-AUTH-8).
 3. Member types their email and submits → `POST /auth/request-link`.
-4. Server finds an active whitelisted member, creates a single-use token (stored
-   hashed, 15-min expiry), emails the magic link (R-AUTH-1, R-AUTH-4, R-AUTH-5,
-   R-NFR-5).
-5. S1 switches to a "check your email" state. An address that is **not** on the
-   whitelist goes to a different screen instead (**F4**) — the two states differ
-   on purpose, so email enumeration through this form is possible and accepted
-   (R-AUTH-4, ADR 0013). Rate-limiting is what keeps it expensive.
+4. Server finds the address — an active member, a newcomer admitted by a usable
+   invite (**F15**), or a pending applicant it records now (**F4**) — creates a
+   single-use token (stored hashed, 15-min expiry), emails the magic link, and
+   issues a draft token for the profile draft (R-AUTH-1, R-AUTH-2, R-AUTH-4,
+   R-AUTH-5, R-ONB-15, R-NFR-5).
+5. S1 switches to its **check-your-email** state: the link is on its way, and
+   while they wait they can fill in the profile form, each field saved to the
+   draft with a tick, under the line "We keep what you enter here to set up
+   your account. Privacy notice · Terms of use" (R-AUTH-4, R-ONB-7). The link
+   works whether or not they do. An applicant is also told that a person
+   approves access (**F4**); the two states differ on purpose, so email
+   enumeration through this form is possible and accepted (ADR 0013).
+   Rate-limiting keeps repeated requests expensive.
 6. Member opens the email on the same phone and taps the link →
    **S2** `/sign-in#token=…`, which shows a **Sign in** button. Opening the link
    uses nothing, so a mail scanner or a chat preview that fetched it first has
@@ -72,15 +79,19 @@ Conventions:
 7. Member taps **Sign in** → `POST /auth/verify`. Server validates and consumes
    the token, creates a signed http-only session cookie that survives closing
    the browser (R-AUTH-5, R-AUTH-7, R-NFR-5).
-8. **S2** routes onward: onboarding not yet complete → **F2**; otherwise → **F3**
-   (R-ONB-1).
+8. **S2** routes onward: onboarding not yet complete → **F2**, at the privacy
+   step if the draft holds a name; a pending applicant who has onboarded → the
+   waiting screen **S21**; otherwise → **F3** (R-ONB-1, R-ONB-6, R-AUTH-9).
 
 **Branches**
 
-- _Email not on the whitelist, no invite_ → **F4**: recorded as an applicant, an
-  admin is notified, and they land on the access-requested screen (R-AUTH-2).
+- _Email not on the whitelist, no invite_ → **F4**: recorded as an applicant,
+  hosts are notified, and they get the same link and form, told that a person
+  approves access (R-AUTH-2).
 - _Email not on the whitelist, but the QR carried a valid invite_ → **F15**: they
   are admitted straight away and never see the queue (R-INV-1).
+- _Link opened in another browser_ (a mail app's, say) → the draft is on the
+  server, so onboarding finds it there (R-ONB-15).
 - _Link expired, already used, or unknown_ → error screen with a "send me a new
   link" action, returning to step 3 (R-AUTH-6).
 - _Email is slow to arrive_ → the "check your email" state offers resend after a
@@ -100,27 +111,32 @@ usage data. S30 Privacy notice is one tap from each of the first two.
 **Ends the R-NFR-3 measurement** at step 5.
 
 1. Any authenticated route detects incomplete onboarding — a missing name, or an
-   unaccepted current consent version — and forces **S3** before anything else
-   (R-ONB-1). The three screens carry the step header of the Ask journey,
+   unaccepted current consent version — and forces onboarding before anything
+   else (R-ONB-1): **S28** when the profile draft already holds a name, else
+   **S3** (R-ONB-6). The three screens carry the step header of the Ask journey,
    reading Profile, Privacy, Usage (R-ONB-6, R-LOOK-4).
 2. On **S3** the member enters their **display name** (required), pre-filled
-   from what they gave at the door if they came through **F4** (R-AUTH-12). Job
+   with whatever they put in the draft while waiting for the link (**F1**). Job
    title, organization, sector and company size are optional and only feed the
-   match cards; sector and company size are picked from a list (R-ONB-2). The
-   screen says that nothing is saved or sent yet and links to **S30**
-   (R-ONB-7). _Continue_ opens **S28**; what was typed stays in the browser.
+   match cards; sector and company size are picked from a list (R-ONB-2). Each
+   field saves to the draft on change, with a tick, under the line "We keep
+   what you enter here to set up your account. Privacy notice · Terms of use"
+   (R-ONB-7, R-ONB-15). _Continue_ opens **S28**.
 3. On **S28** the member reads the summary: who is responsible, what is kept,
    who sees it, what activity is recorded, and their rights. It states plainly
    that **email addresses are shared only when both sides accept a
    connection** (R-ONB-5). While the button is below the visible area, a
    floating arrow scrolls down a little at a time (R-ONB-10). Links open
-   **S30** and **S31**.
+   **S30** and **S31**. Above the button, the **profile preview** shows their
+   card as other members will see it, with **Edit**, which opens **S3**
+   (R-ONB-14). Below the button: "Other members see your profile once you tap
+   this button.", or, for an applicant, "once a host has let you in"
+   (R-ONB-8).
 4. Member taps **I have read the privacy notice and the terms of use** →
-   `POST /api/onboarding` with
-   `{name, jobTitle?, org?, sector?, companySize?, consentVersion}` (R-ONB-3,
-   R-ONB-8).
-5. Server stores the profile plus the consent version and timestamp (R-NFR-6).
-   Onboarding is complete. **Stopwatch for R-NFR-3 stops here.**
+   `POST /api/onboarding` with `{consentVersion}` (R-ONB-3, R-ONB-8).
+5. Server makes the draft their profile, records the consent version and
+   timestamp (R-NFR-6), and deletes the draft (R-ONB-15). Onboarding is
+   complete. **Stopwatch for R-NFR-3 stops here.**
 6. **S29** opens. It says the profile is saved and links to Profile & privacy,
    then explains the optional usage data. Two buttons of equal weight
    (R-ANA-4): _Share usage data_ → `PUT /api/me/analytics` with
@@ -130,21 +146,26 @@ usage data. S30 Privacy notice is one tap from each of the first two.
    answer is recorded, so `onboarding_completed` is never sent for this
    onboarding (R-ANA-6).
 7. Either way the member lands on **F3**, or on the screen they came for
-   (**F13**, R-ONB-11).
+   (**F13**, R-ONB-11). A pending applicant lands on the waiting screen **S21**
+   instead, until a host approves them (**F4**, R-AUTH-9).
 
 **Branches**
 
 - _Name empty_ → _Continue_ on S3 stays disabled.
-- _S28 opened with no name typed_ (a reload, a pasted link) → back to S3.
-- _Member leaves at S28_ → nothing was stored and the app remains blocked
-  (R-ONB-4, R-ONB-7).
+- _S28 opened with no name in the draft_ (a pasted link) → back to S3.
+- _Member leaves at S28_ → the draft stays, nobody else sees it, and the app
+  remains blocked; they come back to S28 (R-ONB-4, R-ONB-15).
 - _Member leaves at S29_ → they are onboarded and not opted in; the choice
   stays on the profile screen (R-PROF-2).
-- _Browser back from S28_ → S3 with what was typed still there. The steps have
-  no back control of their own (R-ONB-12).
+- _Browser back from S28_ → S3 with the draft. The steps have no back control
+  of their own; **Edit** in the profile preview leads there too (R-ONB-12,
+  R-ONB-14).
+- _Someone else typed a profile for this address while waiting_ → the profile
+  preview shows it before anything is confirmed; Edit corrects it (R-ONB-14).
 - _Consent version has since changed_ → on a later visit a member who already
-  has a name goes straight to S28, confirms the new words, then sees S29 unless
-  they are opted in to the current analytics words (R-ONB-4, R-ONB-11).
+  has a name goes straight to S28, with their profile in the preview, confirms
+  the new words, then sees S29 unless they are opted in to the current
+  analytics words (R-ONB-4, R-ONB-11).
 - _Words changed while reading_ → the server answers `409`; the screen loads
   the new words and asks again (R-ONB-4).
 
@@ -164,47 +185,61 @@ usage data. S30 Privacy notice is one tap from each of the first two.
 
 **Actor:** someone who heard about the app but was not invited, and whose QR code
 carried no usable invite — so a person has to let them in.
-**Screens:** S1 Login → S21 Access requested.
+**Screens:** S1 Login → S1 check-your-email → S2 Sign in → **F2** → S21
+Access requested.
 **Outside the R-NFR-3 budget**, since a human approval sits in the middle. When
 that wait is unacceptable, the answer is an invite link (**F15**), not a faster
 queue. Everything after the approval is built to cost zero extra steps.
 
 1. They submit an email on **S1** that is not on the whitelist, with no invite
    token or an unusable one.
-2. Server records a pending **applicant** and notifies an admin — no token, no
-   session (R-AUTH-2).
-3. They land on **S21** (`/access-requested`), a screen of its own, which says in
-   plain language: thanks for your interest in Rebel Match; access is approved by
-   a person; **we will email you as soon as it is approved, and that email will
-   contain your login link**. No false "check your email" — there is nothing in
-   their inbox yet, and saying so prevents the refresh-and-wait loop (R-AUTH-9).
-4. IF they arrived with an invite that was refused, **S21** carries a notice above
-   that message — _"this invitation link isn't valid right now"_ — and the URL
-   becomes `/access-requested?invite=invalid`, so a reload keeps it. The notice
-   never replaces the primary message, and it never says which control refused the
-   link (R-INV-5).
-5. **S21** also offers an optional name and organization — "so the host can find
-   you" — which is what makes R-AUTH-11 work in a crowded room. Skipping it
-   changes nothing; the request is already recorded (R-AUTH-12).
-6. An admin resolves it in **F10**. On approval the applicant gets a **working
-   magic link in the approval email itself**, not a notice telling them to go and
-   request one: one tap and they are in **F2** (R-AUTH-3, R-AUTH-10). On
-   rejection they cannot log in and no challenge data is kept for them.
+2. Server records a pending **applicant**, notifies the members who review
+   applicants, and, as for anyone, emails a sign-in link and shows the
+   check-your-email state with the profile form (**F1**, R-AUTH-2, R-AUTH-4,
+   R-NOTE-1). The state also says, in plain language: thanks for your interest
+   in Rebel Match; access is approved by a person; **we will email you as soon
+   as it is approved, and that email will contain your login link**; you can
+   already tell us about yourself.
+3. IF they arrived with an invite that was refused, the check-your-email state
+   carries a notice above that message — _"this invitation link isn't valid
+   right now"_ — and the URL carries `invite=invalid`, so a reload keeps it.
+   The notice never says which control refused the link (R-INV-5).
+4. The pending list shows the email, the request time, whether the address is
+   confirmed yet, and the name and organization from the draft as they type
+   it (R-AUTH-11, **F10**).
+5. IF they open the link before approval, they sign in (**F1**, steps 6–7),
+   which confirms the address, and onboard as anyone does (**F2**). Their
+   session reaches onboarding and the waiting screen, nothing else (R-AUTH-1).
+6. After the usage step they land on **S21** (`/access-requested`), which says
+   in plain language: thanks for your interest in Rebel Match; access is
+   approved by a person; **we will email you as soon as it is approved, and
+   that email will contain your login link** (R-AUTH-9).
+7. An admin resolves it in **F10**. On approval the applicant gets a **working
+   magic link in the approval email itself**, and a session they still hold
+   opens the app on their next visit (R-AUTH-3, R-AUTH-10). If they had not
+   signed in yet, that link confirms the address and starts onboarding where
+   the draft leaves off (**F2**). On rejection their
+   sessions end, they cannot log in, and their profile, draft and any challenge
+   data are erased.
 
 **Branches**
 
 - _Approval link expired_ (issued without being asked for, so it lives 24 hours
   rather than 15 minutes) → the normal expired-link screen with a resend, never a
   dead end (R-AUTH-6, R-AUTH-10).
-- _Applicant requests access again while pending_ → same screen, no duplicate
-  applicant, and the admin notification is not repeated.
-- _The host finds them first_ → the pending list carries the email, request time,
-  and any name given, so a host can approve on the spot and the link arrives
-  while the two of them are standing there (R-AUTH-11, **F10**).
-- _Already-whitelisted address typed here_ → that is **F1**, not this flow; the
-  two states are deliberately different screens (R-AUTH-4, ADR 0013).
-- _Address was rejected earlier_ → not this screen: the login screen says the
-  request was not approved, rather than promising an email (R-AUTH-13).
+- _Applicant requests a link again while pending_ → a new link and a new draft
+  token, no duplicate applicant, and the admin notification is not repeated.
+- _Never opens the door link_ → nothing is lost: a host can still approve
+  them, and the approval email's link brings them in.
+- _The host finds them first_ → the pending list carries the email, request
+  time, and the name from the draft, so a host can approve on the spot and the
+  link arrives while the two of them are standing there (R-AUTH-11, **F10**).
+- _A typo or a made-up address_ → it shows as not confirmed, and the host
+  rejects it or leaves it (R-AUTH-11).
+- _Approved before finishing onboarding_ → they finish it and go straight into
+  the app.
+- _Address was rejected earlier_ → not this flow: the login screen says the
+  request was not approved, and sends no link (R-AUTH-13).
 
 ---
 
@@ -358,14 +393,17 @@ before both sides agree.**
 **Actor:** admin member — at the summit, usually the host with a phone in hand.
 **Screens:** S19 Admin approvals.
 
-1. Admin opens the approvals screen → `GET /api/admin/applicants`. Each row
-   carries the email, when they asked, and any name or organization they gave,
-   so the host can match a row to a person in the room (R-AUTH-11).
+1. Admin opens the approvals screen → `GET /api/admin/applicants`. It lists
+   every pending applicant. Each row carries the email, when they asked,
+   whether the address is confirmed yet, and the name and organization from
+   their draft or profile, so the host can match a row to a person in the room
+   (R-AUTH-2, R-AUTH-11).
 2. Per applicant: **Approve** → `POST /api/admin/applicants/:id/approve` sets
    `status='active'`, grants the `member` role, **and emails them a magic link
    straight away** — they do not have to come back to the login screen
    (R-AUTH-3, R-AUTH-10). **Reject** → `POST /api/admin/applicants/:id/reject`
-   blocks login (R-AUTH-3).
+   blocks login, ends their sessions and erases their profile and draft
+   (R-AUTH-3).
 3. Admin may also pre-whitelist addresses in bulk → `POST /api/admin/whitelist`
    (R-AUTH-1) — the normal pre-summit path for invited attendees. A new address
    is not emailed; it signs in on arrival (F1) and onboards (F2). A pending
@@ -499,7 +537,8 @@ box: you cannot look in someone else's inbox.
 **Actor:** someone in the room who is not on the whitelist, scanning the summit
 QR code. **This is the flow that makes R-NFR-3 reachable for them** — without it
 they wait for a human (**F4**).
-**Screens:** S1 Login → S3 Onboarding. No applicant queue, no admin step.
+**Screens:** S1 Login → S1 check-your-email → S2 Sign in → onboarding
+(**F2**). No applicant queue, no admin step.
 
 1. The QR encodes the app root with an invite token, `/?invite=…` (R-NAV-10). The
    client keeps the token while routing to **S1**.
@@ -519,12 +558,11 @@ they wait for a human (**F4**).
 **Branches**
 
 - _Token unknown, expired, not yet valid, revoked, or at its cap_ → the request
-  continues as an ordinary one: recorded as an applicant, admin notified, and they
-  land on **S21** (`/access-requested?invite=invalid`) with a notice at the top —
-  _"this invitation link isn't valid right now"_ — above the usual message that
-  someone will approve them and the email will carry their link. One wording for
-  every case, since the next step is the same; never an error dead end, because
-  the QR is printed and the person is holding a phone (R-INV-5, **F4**).
+  continues as an ordinary one: recorded as an applicant, the same sign-in link
+  and check-your-email state with its applicant message, and a notice at the
+  top — _"this invitation link isn't valid right now"_. One wording for every case, since the next step is the same;
+  never an error dead end, because the QR is printed and the person is holding
+  a phone (R-INV-5, **F4**).
 - _Scanner is already whitelisted_ → ordinary **F1**; the invite is ignored and no
   use is consumed.
 - _Scanner already has an account_ → ordinary **F1** login. No new member, so

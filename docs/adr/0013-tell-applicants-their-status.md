@@ -1,6 +1,6 @@
 # 0013. Tell applicants their status, accepting email enumeration
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by 0043
 - **Date:** 2026-10-02
 - **Deciders:** Andy Moesch
 

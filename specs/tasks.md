@@ -129,6 +129,29 @@ printed dev link (R-DEV-6).
       whether a representative in the EU is needed. _(R-ONB-9, R-ONB-13)_
 - [x] New consent and analytics words, naming Transformation Architects GmbH.
       _(R-ONB-5, R-ANA-4)_
+- [ ] One door: every address that is not rejected gets a sign-in link and
+      the check-your-email screen at `/login/sent`, with the applicant message
+      for applicants. _(R-AUTH-1,2,4, R-INV-5, ADR 0043)_
+- [ ] Profile drafts: `profile_drafts` and `profile_draft_tokens`, a draft
+      token per sign-in request, `PUT /auth/draft` limited per token, `PUT
+/api/onboarding/draft`, and the purge after
+      `limits.profileDraftRetentionDays`. _(R-ONB-15, R-NFR-7, R-NFR-8)_
+- [ ] One profile form for the check-your-email screen and the profile step,
+      saved field by field with the notice line; onboarding starts at the
+      privacy step when the draft holds a name. _(R-ONB-6, R-ONB-7)_
+- [ ] Profile preview on the privacy step, with the member card the match
+      screens use and an Edit button; `POST /api/onboarding` takes only the
+      consent version. _(R-ONB-8, R-ONB-14, R-LOOK-4)_
+- [ ] Applicant sessions: onboarding and `/access-requested` only; the
+      approvals list marks each applicant confirmed or not
+      (`email_confirmed_at`) and shows their draft's name and organization.
+      _(R-AUTH-1, R-AUTH-9, R-AUTH-11)_
+- [ ] Privacy notice: what is typed while waiting for the link is kept as a
+      draft, hosts see an applicant's name and organization, and an unused
+      draft is deleted after `limits.profileDraftRetentionDays`; a new
+      notice version before the code ships. _(R-ONB-9, R-ONB-15, ADR 0043)_
+- [ ] Drop `/auth/applicant`, the applicant handle, then `requested_name` and
+      `requested_org`, once nothing reads them. _(R-AUTH-12 withdrawn)_
 - [ ] Time onboarding again on a phone against the two-minute budget.
       _(R-NFR-3)_
 
