@@ -33,6 +33,12 @@ export const routeTable: readonly RouteDef[] = [
   { path: '/terms', name: 'terms', access: 'public' },
   { path: '/impressum', name: 'impressum', access: 'public' },
   {
+    path: '/9torevolution',
+    name: 'game',
+    access: 'onboarded',
+    permission: 'game:play',
+  },
+  {
     path: '/9torevolution/leaderboard',
     name: 'game-leaderboard',
     access: 'onboarded',

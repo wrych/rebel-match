@@ -76,10 +76,11 @@ describe('the game API (R-GAME-1, R-GAME-14..17, R-GAME-20)', () => {
         .send({ shared: true }),
       request(app).put('/api/game/hints/firstDay').set('Cookie', cookie),
       request(app).get('/api/game/leaderboard').set('Cookie', cookie),
+      request(app).get('/api/game/door').set('Cookie', cookie),
     ])
 
     expect(answers.map((answer) => answer.status)).toEqual([
-      404, 404, 404, 404, 404,
+      404, 404, 404, 404, 404, 404,
     ])
     expect(store.players.size).toBe(0)
   })
@@ -92,6 +93,17 @@ describe('the game API (R-GAME-1, R-GAME-14..17, R-GAME-20)', () => {
       .set('Cookie', await cookieFor('m-none'))
 
     expect(response.status).toBe(404)
+  })
+
+  it('opens the door while the game is on, without making a player (R-GAME-1)', async () => {
+    const { app, store } = setup()
+
+    const response = await request(app)
+      .get('/api/game/door')
+      .set('Cookie', await cookieFor('m-ada'))
+
+    expect(response.status).toBe(204)
+    expect(store.players.size).toBe(0)
   })
 
   it('gives the player their state', async () => {

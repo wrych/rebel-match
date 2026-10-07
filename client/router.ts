@@ -78,6 +78,7 @@ export const router = createRouter({
     screen('privacy', PrivacyScreen),
     screen('terms', TermsScreen),
     screen('impressum', ImpressumScreen),
+    screen('game', () => import('./screens/GameScreen.vue')),
     screen('game-leaderboard', () => import('./screens/LeaderboardScreen.vue')),
     screen('welcome', WelcomeScreen),
     screen('profile', ProfileScreen),

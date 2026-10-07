@@ -1,23 +1,42 @@
 // @vitest-environment jsdom
-import { flushPromises, mount } from '@vue/test-utils'
+import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { makers } from '../lib/makers'
+import { applyMood } from '../lib/mood'
 import ImpressumScreen from './ImpressumScreen.vue'
 
 const SWIPE_MIN_PX = 50
 
-async function mountScreen(): Promise<ReturnType<typeof mount>> {
+async function mountScreen(
+  doorOpen = false,
+): Promise<ReturnType<typeof mount>> {
   vi.stubGlobal(
     'fetch',
-    vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      json: async () => ({ limits: { swipeMinPx: SWIPE_MIN_PX } }),
-    }),
+    vi.fn((url: string) =>
+      Promise.resolve(
+        url === '/api/game/door'
+          ? { ok: doorOpen, status: doorOpen ? 204 : 404 }
+          : {
+              ok: true,
+              status: 200,
+              json: async () => ({ limits: { swipeMinPx: SWIPE_MIN_PX } }),
+            },
+      ),
+    ),
   )
-  const screen = mount(ImpressumScreen, { attachTo: document.body })
+  const screen = mount(ImpressumScreen, {
+    attachTo: document.body,
+    global: { stubs: { RouterLink: RouterLinkStub } },
+  })
   await flushPromises()
   return screen
+}
+
+async function toTheEnd(screen: ReturnType<typeof mount>): Promise<void> {
+  const next = screen.find('[aria-label="Next maker"]')
+  for (let shown = 0; shown < makers.length + 1; shown += 1)
+    await next.trigger('click')
+  await flushPromises()
 }
 
 function shownName(screen: ReturnType<typeof mount>): string {
@@ -26,6 +45,8 @@ function shownName(screen: ReturnType<typeof mount>): string {
 
 afterEach(() => {
   vi.unstubAllGlobals()
+  applyMood('calm')
+  localStorage.clear()
   document.body.innerHTML = ''
 })
 
@@ -72,5 +93,69 @@ describe('ImpressumScreen', () => {
     expect(shownName(screen)).toBe('Community')
     expect(screen.find('img.portrait').exists()).toBe(false)
     expect(screen.find('.portrait-initials').text()).toBe('C')
+  })
+
+  it('ends with the door to 9toRevolution in happy mode while it is open (R-GAME-1)', async () => {
+    applyMood('happy')
+    const screen = await mountScreen(true)
+    await toTheEnd(screen)
+
+    expect(shownName(screen)).toBe('9toRevolution')
+    expect(screen.findComponent(RouterLinkStub).props('to')).toBe(
+      '/9torevolution',
+    )
+    expect(screen.text()).toContain('Be a rebel')
+  })
+
+  it('has no door in calm mode, nor while the game is off', async () => {
+    const calm = await mountScreen(true)
+    await toTheEnd(calm)
+    expect(shownName(calm)).toBe('Community')
+    calm.unmount()
+
+    applyMood('happy')
+    const off = await mountScreen(false)
+    await toTheEnd(off)
+    expect(shownName(off)).toBe('Community')
+  })
+
+  it('closes the door when the member switches back to calm on it', async () => {
+    applyMood('happy')
+    const screen = await mountScreen(true)
+    await toTheEnd(screen)
+
+    applyMood('calm')
+    await flushPromises()
+
+    expect(shownName(screen)).toBe('Community')
+  })
+
+  it('keeps the door shut in calm mode when its answer comes late', async () => {
+    applyMood('happy')
+    let answer: (value: unknown) => void = () => undefined
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) =>
+        url === '/api/game/door'
+          ? new Promise((resolve) => {
+              answer = resolve
+            })
+          : Promise.resolve({
+              ok: true,
+              status: 200,
+              json: async () => ({ limits: { swipeMinPx: SWIPE_MIN_PX } }),
+            }),
+      ),
+    )
+    const screen = mount(ImpressumScreen, {
+      attachTo: document.body,
+      global: { stubs: { RouterLink: RouterLinkStub } },
+    })
+    applyMood('calm')
+    answer({ ok: true, status: 204 })
+    await flushPromises()
+    await toTheEnd(screen)
+
+    expect(shownName(screen)).toBe('Community')
   })
 })

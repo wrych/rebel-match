@@ -362,12 +362,14 @@ up the summit. One pull request per item, in this order.
       `PUT /api/game/sharing`, `PUT /api/game/hints/:hint`; pseudonyms;
       erasure and history deletion. _(R-GAME-14..16, R-GAME-20, R-NFR-7, R-STAT-4)_
 - [x] Leaderboard endpoint and screen S34. _(R-GAME-13, R-GAME-15)_
-- [ ] Impressum card in happy mode, `/9torevolution` route as a lazy chunk,
-      calm-mode and rotate screens. _(R-GAME-1, R-GAME-12)_
+- [x] Impressum card in happy mode, `/9torevolution` route as a lazy chunk,
+      the calm-mode screen, and the office's lobby with sharing. _(R-GAME-1,
+      R-GAME-15)_
 - [x] Game core, boss mode: floors, day clock, temptation, files, losing,
       seeded and unit-tested without a canvas. _(R-GAME-2..4, R-GAME-7)_
 - [ ] Renderer and controls: vector characters, camera, edge arrows, floor
-      map, joystick, action button, keyboard, pause. _(R-GAME-12, R-GAME-18)_
+      map, joystick, action button, keyboard, pause, the rotate prompt.
+      _(R-GAME-12, R-GAME-18)_
 - [ ] Results card, sharing, play from a job, resume, abandoned days.
       _(R-GAME-14..16)_
 - [x] Rules of the water cooler, meetings and rebel mode in the core: files,
