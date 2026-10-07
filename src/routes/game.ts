@@ -73,6 +73,9 @@ export function gameRoutes(deps: Deps): Router {
     requirePermission(deps.auth, 'game:play'),
   ]
 
+  router.get('/api/game/door', ...guard, (_request, response) => {
+    response.status(204).end()
+  })
   router.get('/api/game', ...guard, async (_request, response) => {
     response.json(await deps.game.state(memberOf(response.locals)))
   })
