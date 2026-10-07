@@ -64,6 +64,8 @@ export interface SeedPlan {
   trends: SeedTrend[]
   cases: SeedCase[]
   members: SeedMember[]
+  /** Addresses made admins, un-onboarded, if new (R-SEED-9). */
+  admins: readonly string[]
   challenges: SeedChallenge[]
   expertise: SeedExpertise[]
 }

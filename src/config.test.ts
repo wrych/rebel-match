@@ -34,6 +34,20 @@ describe('loadConfig', () => {
     })
   })
 
+  it('reads the first admins as a trimmed, lower-cased list (R-SEED-9)', () => {
+    expect(loadConfig(valid).seedAdmins).toEqual([])
+    expect(
+      loadConfig({ ...valid, SEED_ADMINS: ' Ada@Example.org, ,b@example.org ' })
+        .seedAdmins,
+    ).toEqual(['ada@example.org', 'b@example.org'])
+  })
+
+  it('refuses a first admin that is not an address (R-SEED-9)', () => {
+    expect(() =>
+      loadConfig({ ...valid, SEED_ADMINS: 'a@example.org,nobody' }),
+    ).toThrow(/SEED_ADMINS/)
+  })
+
   it('trusts no proxy unless told how many hops (R-NFR-8)', () => {
     expect(loadConfig(valid).trustProxy).toBe(0)
     expect(loadConfig({ ...valid, TRUST_PROXY: '1' }).trustProxy).toBe(1)

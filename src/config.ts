@@ -170,6 +170,16 @@ const envSchema = z
     SMTP_PASSWORD: z.string().optional(),
 
     SEED_PROFILE: z.enum(['dev', 'prod']).default('dev'),
+    SEED_ADMINS: z
+      .string()
+      .default('')
+      .transform((list) =>
+        list
+          .split(',')
+          .map((email) => email.trim().toLowerCase())
+          .filter((email) => email !== ''),
+      )
+      .pipe(z.array(z.email())),
 
     CONSENT_VERSION: z
       .string()
@@ -411,6 +421,8 @@ export interface Config {
   }
   feedbackTo: string
   seedProfile: Env['SEED_PROFILE']
+  /** Addresses the prod seed makes admins (R-SEED-9). */
+  seedAdmins: string[]
   consentVersion: string
   /** The analytics opt-in words in force (R-ANA-4); new words ship as code. */
   analyticsVersion: string
@@ -532,6 +544,7 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): Config {
     mail: mailFrom(env),
     feedbackTo: env.FEEDBACK_TO,
     seedProfile: env.SEED_PROFILE,
+    seedAdmins: env.SEED_ADMINS,
     consentVersion: env.CONSENT_VERSION,
     analyticsVersion: latestAnalyticsVersion,
     analytics: {

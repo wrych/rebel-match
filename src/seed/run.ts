@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { and, eq, sql } from 'drizzle-orm'
+import type { RoleKey } from '../access.js'
 import type { Database } from '../db/connect.js'
 import {
   cases,
@@ -20,6 +21,8 @@ import type {
   SeedOption,
   SeedPlan,
 } from './types.js'
+
+const SEEDED_ADMIN_ROLES: readonly RoleKey[] = ['member', 'admin']
 
 // The value an upsert would have written: Postgres calls that row `excluded`.
 const excluded = (column: string): ReturnType<typeof sql> =>
@@ -87,6 +90,25 @@ async function upsertMember(
       .insert(memberRoles)
       .values({ memberId, roleKey: role })
       .onConflictDoNothing()
+  }
+}
+
+// Only a new address is granted, so a re-run never undoes a host taking the
+// role away; no name or consent, so onboarding still asks (R-SEED-6, R-SEED-9).
+async function insertAdmin(db: Database, email: string): Promise<void> {
+  const [created] = await db
+    .insert(members)
+    .values({
+      id: randomUUID(),
+      email,
+      status: 'active',
+      analyticsId: randomUUID(),
+    })
+    .onConflictDoNothing({ target: members.email })
+    .returning({ id: members.id })
+  if (created === undefined) return
+  for (const role of SEEDED_ADMIN_ROLES) {
+    await db.insert(memberRoles).values({ memberId: created.id, roleKey: role })
   }
 }
 
@@ -181,6 +203,7 @@ async function applyPlan(
   for (const member of plan.members) {
     await upsertMember(db, member, consentVersion)
   }
+  for (const email of plan.admins) await insertAdmin(db, email)
   for (const challenge of plan.challenges) await insertChallenge(db, challenge)
   for (const offer of plan.expertise) await upsertExpertise(db, offer)
 }
