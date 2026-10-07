@@ -28,6 +28,9 @@ export type GameKey =
   | 'coolerChatSeconds'
   | 'speechSeconds'
   | 'meetingSeconds'
+  | 'arrivalGapMs'
+  | 'coolerLoneWaitSeconds'
+  | 'rebel.masterclassSeats'
   | 'rebel.morningGrey'
   | 'rebel.fileEverySeconds'
   | 'rebel.fileStepPercent'
@@ -84,6 +87,9 @@ export const gameDefaults: GameSettings = {
   coolerChatSeconds: 6,
   speechSeconds: 2,
   meetingSeconds: 8,
+  arrivalGapMs: 600,
+  coolerLoneWaitSeconds: 12,
+  'rebel.masterclassSeats': 2,
   'rebel.morningGrey': 3,
   'rebel.fileEverySeconds': 10,
   'rebel.fileStepPercent': 8,
@@ -137,6 +143,9 @@ export const gameBounds: Readonly<Record<GameKey, Bounds>> = {
   coolerChatSeconds: SHORT_SECONDS,
   speechSeconds: SHORT_SECONDS,
   meetingSeconds: SHORT_SECONDS,
+  arrivalGapMs: { min: 0, max: 5000 },
+  coolerLoneWaitSeconds: SECONDS,
+  'rebel.masterclassSeats': range(4, 1),
   'rebel.morningGrey': range(Math.floor(cubicles.ceo / 2)),
   'rebel.fileEverySeconds': SECONDS,
   'rebel.fileStepPercent': range(50),

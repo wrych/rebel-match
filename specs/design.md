@@ -360,6 +360,9 @@ next day (R-GAME-17).
 | `game.coolerChatSeconds`                 |     `6` | R-GAME-5                   |
 | `game.speechSeconds`                     |     `2` | R-GAME-5                   |
 | `game.meetingSeconds`                    |     `8` | R-GAME-6                   |
+| `game.arrivalGapMs`                      |   `600` | R-GAME-3                   |
+| `game.coolerLoneWaitSeconds`             |    `12` | R-GAME-5, R-GAME-11        |
+| `game.rebel.masterclassSeats`            |     `2` | R-GAME-11                  |
 | `game.rebel.morningGrey`                 |     `3` | R-GAME-3                   |
 | `game.rebel.fileEverySeconds` (level 16) |    `10` | R-GAME-9                   |
 | `game.rebel.fileStepPercent` (per level) |     `8` | R-GAME-9                   |
