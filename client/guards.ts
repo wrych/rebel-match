@@ -14,6 +14,7 @@ export type Decision =
 const SIGNED_OUT_ONLY = new Set(['/', '/login'])
 const PROFILE_STEP = '/onboarding'
 const PRIVACY_STEP = '/onboarding/privacy'
+const USAGE_STEP = '/onboarding/usage'
 
 function withNext(path: string, next: string): string {
   return `${path}?next=${encodeURIComponent(next)}`
@@ -27,20 +28,33 @@ function sameQuery(path: string, target: Target): string {
   return path + target.fullPath.slice(target.path.length)
 }
 
+const WELCOME: Decision = { kind: 'redirect', to: '/welcome' }
+
 // The first two onboarding steps (design §4): done with once onboarded; a
 // member with a stored name confirms new words without retyping the profile
 // (F2); the privacy step needs a profile typed in this tab (R-ONB-7).
+function firstSteps(
+  target: Target,
+  me: Me,
+  profileTyped: boolean,
+): Decision | null {
+  if (me.onboarded) return WELCOME
+  if (target.path === PROFILE_STEP && me.name !== null)
+    return { kind: 'redirect', to: sameQuery(PRIVACY_STEP, target) }
+  if (target.path === PRIVACY_STEP && me.name === null && !profileTyped)
+    return { kind: 'redirect', to: sameQuery(PROFILE_STEP, target) }
+  return null
+}
+
+// The usage step is done with once the member shares (R-ONB-11, R-ANA-6).
 function onboardingStep(
   target: Target,
   me: Me,
   profileTyped: boolean,
 ): Decision | null {
-  if (target.path !== PROFILE_STEP && target.path !== PRIVACY_STEP) return null
-  if (me.onboarded) return { kind: 'redirect', to: '/welcome' }
-  if (target.path === PROFILE_STEP && me.name !== null)
-    return { kind: 'redirect', to: sameQuery(PRIVACY_STEP, target) }
-  if (target.path === PRIVACY_STEP && me.name === null && !profileTyped)
-    return { kind: 'redirect', to: sameQuery(PROFILE_STEP, target) }
+  if (target.path === USAGE_STEP) return me.analyticsOptIn ? WELCOME : null
+  if (target.path === PROFILE_STEP || target.path === PRIVACY_STEP)
+    return firstSteps(target, me, profileTyped)
   return null
 }
 

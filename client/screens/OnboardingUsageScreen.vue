@@ -40,7 +40,7 @@ async function share(): Promise<void> {
       return
     }
     forgetMe()
-    await router.push(afterOnboarding(next.value))
+    await router.replace(afterOnboarding(next.value))
   } catch {
     problem.value = 'That did not save. Try again.'
   } finally {
@@ -49,7 +49,7 @@ async function share(): Promise<void> {
 }
 
 async function decline(): Promise<void> {
-  await router.push(afterOnboarding(next.value))
+  await router.replace(afterOnboarding(next.value))
 }
 </script>
 

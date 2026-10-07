@@ -22,7 +22,9 @@ function setup(
 ): {
   onboarding: ReturnType<typeof createOnboarding>
   saved: { memberId: string; input: OnboardingInput; at: Date }[]
+  asked: Date[]
 } {
+  const asked: Date[] = []
   const saved: { memberId: string; input: OnboardingInput; at: Date }[] = []
   const store: OnboardingStore = {
     draft: () => Promise.resolve(draft),
@@ -36,19 +38,21 @@ function setup(
           ? { version: '2026-11-01', acceptedAt: at }
           : options.consent,
       ),
-    signInEmailAt: () =>
-      Promise.resolve(
+    signInEmailAt: (_memberId, notAfter) => {
+      asked.push(notAfter)
+      return Promise.resolve(
         options.emailedAt === undefined
           ? new Date(at.getTime() - 90_000)
           : options.emailedAt,
-      ),
+      )
+    },
   }
   const onboarding = createOnboarding({
     store,
     currentConsentVersion: '2026-11-01',
     now: () => at,
   })
-  return { onboarding, saved }
+  return { onboarding, saved, asked }
 }
 
 describe('createOnboarding', () => {
@@ -112,8 +116,17 @@ describe('completion', () => {
 
     expect(await onboarding.completion('m-ada')).toEqual({
       consentVersion: '2026-11-01',
+      confirmedAt: at,
       secondsToOnboard: 74,
     })
+  })
+
+  it('times from the sign-in email before the confirmation, not a later one (R-NFR-3)', async () => {
+    const { onboarding, asked } = setup()
+
+    await onboarding.completion('m-ada')
+
+    expect(asked).toEqual([at])
   })
 
   it('leaves the time out when no sign-in email is kept', async () => {
@@ -121,6 +134,7 @@ describe('completion', () => {
 
     expect(await onboarding.completion('m-ada')).toEqual({
       consentVersion: '2026-11-01',
+      confirmedAt: at,
       secondsToOnboard: null,
     })
   })

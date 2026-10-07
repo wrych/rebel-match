@@ -7,10 +7,10 @@ import {
 } from '../../src/analytics-consent'
 import OnboardingUsageScreen from './OnboardingUsageScreen.vue'
 
-const push = vi.fn()
+const replace = vi.fn()
 const route = { query: {} as Record<string, string> }
 vi.mock('vue-router', () => ({
-  useRouter: () => ({ push }),
+  useRouter: () => ({ replace }),
   useRoute: () => route,
 }))
 
@@ -53,7 +53,7 @@ function button(
 
 afterEach(() => {
   vi.unstubAllGlobals()
-  push.mockReset()
+  replace.mockReset()
   route.query = {}
 })
 
@@ -98,7 +98,7 @@ describe('OnboardingUsageScreen', () => {
     expect(puts(fetchMock)).toEqual([
       { optIn: true, version: latestAnalyticsVersion, from: 'onboarding' },
     ])
-    expect(push).toHaveBeenCalledWith('/matches')
+    expect(replace).toHaveBeenCalledWith('/matches')
   })
 
   it('sends and records nothing for No thanks (R-ANA-4, R-ANA-6)', async () => {
@@ -108,7 +108,7 @@ describe('OnboardingUsageScreen', () => {
     await flushPromises()
 
     expect(puts(fetchMock)).toEqual([])
-    expect(push).toHaveBeenCalledWith('/welcome')
+    expect(replace).toHaveBeenCalledWith('/welcome')
   })
 
   it('stays when the words changed, saying so', async () => {
@@ -120,7 +120,7 @@ describe('OnboardingUsageScreen', () => {
     expect(screen.find('[role="alert"]').text()).toContain(
       'The wording has just changed',
     )
-    expect(push).not.toHaveBeenCalled()
+    expect(replace).not.toHaveBeenCalled()
   })
 
   it('says a failed save failed', async () => {

@@ -109,6 +109,15 @@ describe('decide', () => {
       ).toEqual({ kind: 'allow' })
     })
 
+    it('sends a member who already shares from the usage step to welcome (R-ONB-11, R-ANA-6)', () => {
+      expect(
+        decide(target('/onboarding/usage', 'onboarded'), {
+          ...member,
+          analyticsOptIn: true,
+        }),
+      ).toEqual({ kind: 'redirect', to: '/welcome' })
+    })
+
     it('keeps the usage step for onboarded members (R-ONB-11)', () => {
       expect(decide(target('/onboarding/usage', 'onboarded'), member)).toEqual({
         kind: 'allow',

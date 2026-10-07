@@ -9,6 +9,7 @@ import {
   testDatabaseUrl,
   type TestDatabase,
 } from './support/database.js'
+import { createAnalyticsConsentStore } from '../../src/services/analytics-consent-store.js'
 import { createOnboardingStore } from '../../src/services/onboarding-store.js'
 
 const config = loadConfig({
@@ -104,6 +105,12 @@ describe('onboarding over Postgres (F2)', () => {
     expect(admin.status).toBe(404)
   })
 
+  it('no longer fills the organization they left empty from the door (R-AUTH-12)', async () => {
+    const form = await request(app).get('/api/onboarding').set('Cookie', cookie)
+
+    expect(form.body).toMatchObject({ name: 'Ada Rebel', org: null })
+  })
+
   it('records nothing for analytics until the member shares (R-ANA-4)', async () => {
     const [row] = await db.query(
       'SELECT analytics_consent_version, analytics_consent_at FROM members WHERE id = ?',
@@ -135,6 +142,9 @@ describe('onboarding over Postgres (F2)', () => {
     expect(row?.['analytics_consent_version']).toBe(config.analyticsVersion)
     expect(Date.parse(String(row?.['analytics_consent_at']))).not.toBeNaN()
     expect(await me()).toMatchObject({ analyticsOptIn: true })
+    expect(
+      await createAnalyticsConsentStore(db.drizzle).givenAt(newcomer.id),
+    ).toEqual(new Date(String(row?.['analytics_consent_at'])))
   })
 
   it('keeps the opt-in when the member confirms the consent again (ADR 0041)', async () => {
@@ -184,13 +194,16 @@ describe('onboarding over Postgres (F2)', () => {
         [newcomer.id, newcomer.email, kind, at],
       )
     const store = createOnboardingStore(db.drizzle)
-    expect(await store.signInEmailAt(newcomer.id)).toBeNull()
+    const confirmedAt = new Date('2026-11-08T10:00:00Z')
+    expect(await store.signInEmailAt(newcomer.id, confirmedAt)).toBeNull()
 
     await email('magic_link', '2026-11-08T09:58:00Z')
     await email('magic_link', '2026-11-08T09:59:00Z')
     await email('connection_request', '2026-11-08T10:05:00Z')
 
-    expect(await store.signInEmailAt(newcomer.id)).toEqual(
+    await email('magic_link', '2026-11-09T08:00:00Z')
+
+    expect(await store.signInEmailAt(newcomer.id, confirmedAt)).toEqual(
       new Date('2026-11-08T09:59:00Z'),
     )
   })

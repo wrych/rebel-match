@@ -5,23 +5,32 @@ import type { OnboardingCompletion } from './onboarding.js'
 
 const at = new Date('2026-11-08T10:00:00Z')
 
-function setup(completion: OnboardingCompletion | null = null): {
+const confirmedAt = new Date('2026-11-08T09:58:00Z')
+
+function setup(
+  completion: Omit<OnboardingCompletion, 'confirmedAt'> | null = null,
+  givenAt: Date | null = null,
+): {
   consent: ReturnType<typeof createAnalyticsConsent>
   recorded: unknown[]
   tracked: [string, AnalyticsEvent][]
 } {
   const recorded: unknown[] = []
   const tracked: [string, AnalyticsEvent][] = []
+  let given = givenAt
   const consent = createAnalyticsConsent({
     currentVersion: '2026-10-04',
     now: () => at,
     store: {
       record: (memberId, version, when) => {
         recorded.push({ memberId, version, when })
+        given = when
         return Promise.resolve()
       },
+      givenAt: () => Promise.resolve(given),
     },
-    completion: () => Promise.resolve(completion),
+    completion: () =>
+      Promise.resolve(completion && { ...completion, confirmedAt }),
     track: (memberId, event) => {
       tracked.push([memberId, event])
       return Promise.resolve()
@@ -129,6 +138,38 @@ describe('createAnalyticsConsent', () => {
         { name: 'onboarding_completed', consent_version: '2026-11-01' },
       ],
     ])
+  })
+
+  it('reports one onboarding once, however often the member shares (R-ANA-6)', async () => {
+    const { consent, tracked } = setup({
+      consentVersion: '2026-11-01',
+      secondsToOnboard: 84,
+    })
+    const share = {
+      optIn: true,
+      version: '2026-10-04',
+      from: 'onboarding',
+    } as const
+
+    await consent.choose('m-ada', share)
+    await consent.choose('m-ada', share)
+
+    expect(tracked).toHaveLength(1)
+  })
+
+  it('reports an onboarding though the member shared older words before it', async () => {
+    const { consent, tracked } = setup(
+      { consentVersion: '2026-11-01', secondsToOnboard: 84 },
+      new Date('2026-10-01T00:00:00Z'),
+    )
+
+    await consent.choose('m-ada', {
+      optIn: true,
+      version: '2026-10-04',
+      from: 'onboarding',
+    })
+
+    expect(tracked).toHaveLength(1)
   })
 
   it('reports no onboarding for an opt-in from the profile screen (R-ANA-6)', async () => {

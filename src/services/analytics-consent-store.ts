@@ -14,5 +14,12 @@ export function createAnalyticsConsentStore(
         .set({ analyticsConsentVersion: version, analyticsConsentAt: at })
         .where(eq(members.id, memberId))
     },
+    givenAt: async (memberId) => {
+      const [row] = await db
+        .select({ at: members.analyticsConsentAt })
+        .from(members)
+        .where(eq(members.id, memberId))
+      return row?.at ?? null
+    },
   }
 }

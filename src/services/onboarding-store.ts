@@ -1,4 +1,4 @@
-import { and, desc, eq } from 'drizzle-orm'
+import { and, desc, eq, lte } from 'drizzle-orm'
 import type { Database } from '../db/connect.js'
 import { members, outbox } from '../db/schema.js'
 import type { OnboardingStore } from './onboarding.js'
@@ -6,19 +6,27 @@ import type { OnboardingStore } from './onboarding.js'
 async function latestSignInEmailAt(
   db: Database,
   memberId: string,
+  notAfter: Date,
 ): Promise<Date | null> {
   const [row] = await db
     .select({ at: outbox.createdAt })
     .from(outbox)
-    .where(and(eq(outbox.memberId, memberId), eq(outbox.kind, 'magic_link')))
+    .where(
+      and(
+        eq(outbox.memberId, memberId),
+        eq(outbox.kind, 'magic_link'),
+        lte(outbox.createdAt, notAfter),
+      ),
+    )
     .orderBy(desc(outbox.createdAt))
     .limit(1)
   return row?.at ?? null
 }
 
 /** Onboarding over `members` (design §2). `requested_name` and
- * `requested_org` only pre-fill; they are never copied without the member
- * submitting them (R-AUTH-12). */
+ * `requested_org` only pre-fill the profile step of a member who has never
+ * given a name; they are never copied without the member submitting them
+ * (R-AUTH-12). */
 export function createOnboardingStore(db: Database): OnboardingStore {
   return {
     draft: async (memberId) => {
@@ -27,10 +35,11 @@ export function createOnboardingStore(db: Database): OnboardingStore {
         .from(members)
         .where(eq(members.id, memberId))
       if (row === undefined) return null
+      const fromTheDoor = row.name === null
       return {
         name: row.name ?? row.requestedName,
         jobTitle: row.jobTitle,
-        org: row.org ?? row.requestedOrg,
+        org: row.org ?? (fromTheDoor ? row.requestedOrg : null),
         sector: row.sector,
         companySize: row.companySize,
       }
@@ -58,6 +67,7 @@ export function createOnboardingStore(db: Database): OnboardingStore {
         return null
       return { version: row.version, acceptedAt: row.at }
     },
-    signInEmailAt: (memberId) => latestSignInEmailAt(db, memberId),
+    signInEmailAt: (memberId, notAfter) =>
+      latestSignInEmailAt(db, memberId, notAfter),
   }
 }

@@ -34,15 +34,17 @@ export interface OnboardingStore {
   consent(
     memberId: string,
   ): Promise<{ version: string; acceptedAt: Date } | null>
-  /** When the latest sign-in email to the member was recorded in the outbound
-   * log, or null when none is kept (R-NFR-3). */
-  signInEmailAt(memberId: string): Promise<Date | null>
+  /** When the latest sign-in email to the member up to `notAfter` was
+   * recorded in the outbound log, or null when none is kept (R-NFR-3). */
+  signInEmailAt(memberId: string, notAfter: Date): Promise<Date | null>
 }
 
 /** A finished onboarding as `onboarding_completed` reports it: the consent
- * version and the seconds from the sign-in email, if one is kept (R-NFR-3). */
+ * version confirmed, when, and the seconds from the sign-in email before it,
+ * if one is kept (R-NFR-3). */
 export interface OnboardingCompletion {
   consentVersion: string
+  confirmedAt: Date
   secondsToOnboard: number | null
 }
 
@@ -76,9 +78,13 @@ export function createOnboarding(deps: {
     completion: async (memberId) => {
       const consent = await deps.store.consent(memberId)
       if (consent?.version !== deps.currentConsentVersion) return null
-      const emailedAt = await deps.store.signInEmailAt(memberId)
+      const emailedAt = await deps.store.signInEmailAt(
+        memberId,
+        consent.acceptedAt,
+      )
       return {
         consentVersion: consent.version,
+        confirmedAt: consent.acceptedAt,
         secondsToOnboard:
           emailedAt === null
             ? null
