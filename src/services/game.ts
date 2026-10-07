@@ -1,4 +1,5 @@
 import {
+  jobOf,
   firstDayOf,
   firstDaysUpTo,
   newProgress,
@@ -9,6 +10,7 @@ import {
 } from '../game/levels.js'
 import { pickPseudonym } from '../game/pseudonyms.js'
 import type { GameSettings } from '../game/tuning.js'
+import type { Job } from '../game/levels.js'
 
 /** The hints the game shows once per member (R-GAME-18). */
 export const gameHints = ['firstDay', 'cooler', 'meeting', 'rebelMode'] as const
@@ -25,6 +27,32 @@ export interface Player extends Progress {
 /** Where a player's best stands on the leaderboard (R-GAME-13). */
 export interface Place {
   position: number
+  of: number
+}
+
+/** A best on the board, as the store reads it: who it is stays a flag. */
+export interface BoardEntry {
+  place: number
+  /** The member's profile name where they share it, else the pseudonym. */
+  name: string
+  level: number
+  mine: boolean
+}
+
+/** One row of the leaderboard as players see it (R-GAME-13). */
+export interface BoardRow {
+  place: number
+  name: string
+  job: Job
+  level: number
+  mine: boolean
+}
+
+export interface Leaderboard {
+  rows: BoardRow[]
+  /** The caller's own row when it is not among `rows`. */
+  own: BoardRow | null
+  /** How many players are on the board. */
   of: number
 }
 
@@ -45,6 +73,12 @@ export interface GameStore {
   /** The player's place among active members with a win, or null without
    * one. */
   place(memberId: string): Promise<Place | null>
+  /** The best `size` entries and the caller's own, among active members with
+   * a win, and how many there are. */
+  board(
+    memberId: string,
+    size: number,
+  ): Promise<{ entries: BoardEntry[]; of: number }>
 }
 
 /** The game's tuning as a player receives it: everything but the switch. */
@@ -81,6 +115,24 @@ export interface GameService {
   ): Promise<DayResult | 'implausible'>
   share(memberId: string, shared: boolean): Promise<void>
   seeHint(memberId: string, hint: GameHint): Promise<void>
+  /** The leaderboard: the top `size`, and the caller's row below them. */
+  leaderboard(memberId: string, size: number): Promise<Leaderboard>
+}
+
+const rowOf = (entry: BoardEntry): BoardRow => ({
+  ...entry,
+  job: jobOf(entry.level),
+})
+
+async function leaderboardOf(
+  store: GameStore,
+  memberId: string,
+  size: number,
+): Promise<Leaderboard> {
+  const { entries, of } = await store.board(memberId, size)
+  const rows = entries.slice(0, size).map(rowOf)
+  const own = entries.slice(size).find((entry) => entry.mine)
+  return { rows, own: own === undefined ? null : rowOf(own), of }
 }
 
 function tuningOf(settings: GameSettings): Tuning {
@@ -164,5 +216,6 @@ export function createGame(deps: {
       await playerOf(memberId)
       await deps.store.seeHint(memberId, hint)
     },
+    leaderboard: (memberId, size) => leaderboardOf(deps.store, memberId, size),
   }
 }

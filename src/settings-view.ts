@@ -218,6 +218,14 @@ const gameGroups: Group[] = [
         unit: ['day', 'days'],
       },
       {
+        name: 'Places on the leaderboard',
+        explanation:
+          'How many players the leaderboard lists; a player below them sees ' +
+          'their own place too.',
+        read: (c) => c.gameLeaderboardSize,
+        unit: ['place', 'places'],
+      },
+      {
         name: 'A game day’s record may run up to',
         explanation:
           'Day lengths, plus the seconds below, before a record is refused ' +

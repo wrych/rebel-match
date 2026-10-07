@@ -4,7 +4,11 @@ import request from 'supertest'
 import { createApp } from '../../src/app.js'
 import { composeApp } from '../../src/compose.js'
 import { loadConfig } from '../../src/config.js'
-import type { DayResult, GameState } from '../../src/services/game.js'
+import type {
+  DayResult,
+  GameState,
+  Leaderboard,
+} from '../../src/services/game.js'
 import {
   openTestDatabase,
   testDatabaseUrl,
@@ -181,5 +185,50 @@ describe('9toRevolution over Postgres (R-GAME-13..16)', () => {
 
     expect(await count('game_days', ada.id)).toBe(0)
     expect(await count('game_players', ada.id)).toBe(0)
+  })
+
+  it('ranks the board, shows a shared name, and keeps ids and deleted members off it (R-GAME-13, R-GAME-15)', async () => {
+    const best = await newMember()
+    const tied = [await newMember(), await newMember()]
+    const gone = await newMember()
+    await day(best.cookie, { level: 1, outcome: 'won', playSeconds: 1 }).expect(
+      200,
+    )
+    await day(best.cookie, { level: 2, outcome: 'won', playSeconds: 1 }).expect(
+      200,
+    )
+    for (const member of tied)
+      await day(member.cookie, {
+        level: 1,
+        outcome: 'won',
+        playSeconds: 2,
+      }).expect(200)
+    await day(gone.cookie, { level: 1, outcome: 'won', playSeconds: 1 }).expect(
+      200,
+    )
+    await db.query("UPDATE members SET status = 'deleted' WHERE id = ?", [
+      gone.id,
+    ])
+    await request(app)
+      .put('/api/game/sharing')
+      .set('Cookie', best.cookie)
+      .send({ shared: true })
+      .expect(204)
+
+    const answer = await request(app)
+      .get('/api/game/leaderboard')
+      .set('Cookie', tied[0]?.cookie ?? '')
+      .expect(200)
+    const board = answer.body as Leaderboard
+    const all = [...board.rows, ...(board.own === null ? [] : [board.own])]
+    const named = all.find((row) => row.name === 'Pat Player')
+    const mine = all.find((row) => row.mine)
+
+    expect(named).toMatchObject({ level: 2, job: 'teamLead' })
+    expect(all.filter((row) => row.place === mine?.place)).toHaveLength(2)
+    expect(JSON.stringify(board)).not.toMatch(
+      new RegExp([best.id, gone.id, ...tied.map((t) => t.id)].join('|')),
+    )
+    expect(board.of).toBe(all.length)
   })
 })

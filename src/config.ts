@@ -254,6 +254,8 @@ const envSchema = z
     // Game days one member may record per minute, and how long a day's
     // record may run: this many day lengths plus these seconds (R-GAME-20).
     GAME_RECORDS_PER_MINUTE: z.coerce.number().int().positive().default(10),
+    // The top of the leaderboard players see (R-GAME-13).
+    GAME_LEADERBOARD_SIZE: z.coerce.number().int().positive().default(100),
     GAME_DAY_ALLOWANCE_FACTOR: z.coerce.number().int().positive().default(2),
     GAME_DAY_ALLOWANCE_SECONDS: z.coerce
       .number()
@@ -449,6 +451,8 @@ export interface Config {
   game: GameSettings
   /** Game days one member may record per minute (R-GAME-20). */
   gameRecordsPerMinute: number
+  /** How many bests the leaderboard shows above the caller's (R-GAME-13). */
+  gameLeaderboardSize: number
   /** How long a day's record may run: day lengths plus seconds (R-GAME-20). */
   gameDayAllowance: { factor: number; extraSeconds: number }
   trustProxy: number
@@ -579,6 +583,7 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): Config {
     abuse: abuseLimitsFrom(env),
     game: gameDefaults,
     gameRecordsPerMinute: env.GAME_RECORDS_PER_MINUTE,
+    gameLeaderboardSize: env.GAME_LEADERBOARD_SIZE,
     gameDayAllowance: {
       factor: env.GAME_DAY_ALLOWANCE_FACTOR,
       extraSeconds: env.GAME_DAY_ALLOWANCE_SECONDS,

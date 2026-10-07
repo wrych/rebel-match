@@ -42,7 +42,10 @@ import WelcomeScreen from './screens/WelcomeScreen.vue'
  * cannot invent a path the server has never heard of. An unknown name throws at
  * startup rather than 404-ing in front of a member.
  */
-function screen(name: string, component: Component): RouteRecordRaw {
+function screen(
+  name: string,
+  component: Component | (() => Promise<Component>),
+): RouteRecordRaw {
   const route = routeTable.find((candidate) => candidate.name === name)
   if (route === undefined) {
     throw new Error(`no route named ${name} in the shared route table`)
@@ -75,6 +78,7 @@ export const router = createRouter({
     screen('privacy', PrivacyScreen),
     screen('terms', TermsScreen),
     screen('impressum', ImpressumScreen),
+    screen('game-leaderboard', () => import('./screens/LeaderboardScreen.vue')),
     screen('welcome', WelcomeScreen),
     screen('profile', ProfileScreen),
     screen('notifications', NotificationsScreen),

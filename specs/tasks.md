@@ -361,7 +361,7 @@ up the summit. One pull request per item, in this order.
       `POST /api/game/days` with its bounds and rate limit,
       `PUT /api/game/sharing`, `PUT /api/game/hints/:hint`; pseudonyms;
       erasure and history deletion. _(R-GAME-14..16, R-GAME-20, R-NFR-7, R-STAT-4)_
-- [ ] Leaderboard endpoint and screen S34. _(R-GAME-13, R-GAME-15)_
+- [x] Leaderboard endpoint and screen S34. _(R-GAME-13, R-GAME-15)_
 - [ ] Impressum card in happy mode, `/9torevolution` route as a lazy chunk,
       calm-mode and rotate screens. _(R-GAME-1, R-GAME-12)_
 - [ ] Game core, boss mode: floors, day clock, temptation, files, losing,

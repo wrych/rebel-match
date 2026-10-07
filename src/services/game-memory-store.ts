@@ -1,5 +1,5 @@
 import type { DayRecord } from '../game/levels.js'
-import type { GameStore, Place, Player } from './game.js'
+import type { BoardEntry, GameStore, Place, Player } from './game.js'
 
 /** A day as the memory store logged it. */
 export type LoggedDay = DayRecord & { id: string; memberId: string }
@@ -37,6 +37,27 @@ function placeIn(players: Players, memberId: string): Place | null {
   return { position: ahead.length + 1, of: board.length }
 }
 
+function boardIn(
+  players: Players,
+  names: ReadonlyMap<string, string>,
+  memberId: string,
+  size: number,
+): { entries: BoardEntry[]; of: number } {
+  const board = [...players.entries()]
+    .filter(([, player]) => onBoard(player))
+    .map(([id, player]) => ({
+      place: placeIn(players, id)?.position ?? 0,
+      name: player.shared
+        ? (names.get(id) ?? player.pseudonym)
+        : player.pseudonym,
+      level: player.bestLevel ?? 0,
+      mine: id === memberId,
+    }))
+    .sort((a, b) => a.place - b.place)
+  const entries = board.filter((entry, index) => index < size || entry.mine)
+  return { entries, of: board.length }
+}
+
 function update(
   players: Players,
   memberId: string,
@@ -61,8 +82,10 @@ function create(
 }
 
 /** A game store in memory, for tests that need no database. Every member it
- * holds counts as active. */
-export function createMemoryGameStore(): GameStore & {
+ * holds counts as active; `names` stands in for their profile names. */
+export function createMemoryGameStore(
+  names: ReadonlyMap<string, string> = new Map(),
+): GameStore & {
   players: Players
   days: LoggedDay[]
 } {
@@ -88,5 +111,7 @@ export function createMemoryGameStore(): GameStore & {
           : { ...p, hintsSeen: [...p.hintsSeen, hint] },
       ),
     place: (memberId) => Promise.resolve(placeIn(players, memberId)),
+    board: (memberId, size) =>
+      Promise.resolve(boardIn(players, names, memberId, size)),
   }
 }

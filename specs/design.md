@@ -371,6 +371,7 @@ next day (R-GAME-17).
 | `game.rebel.talkSeconds`                 |     `4` | R-GAME-11                  |
 | `game.rebel.masterclassSeconds`          |     `8` | R-GAME-11                  |
 | `GAME_RECORDS_PER_MINUTE` (environment)  |    `10` | R-GAME-20 (not changeable) |
+| `GAME_LEADERBOARD_SIZE` (environment)    |   `100` | R-GAME-13 (not changeable) |
 
 The employee and cooler counts are bounded by the floor plan: a value beyond
 the cubicles or cooler spots a floor has is refused. The defaults are a
@@ -1107,7 +1108,7 @@ onboarded (R-GAME-1, R-NAV-8).
 | POST   | `/api/game/days`        | `{level, outcome, playSeconds}` | Record a day (R-GAME-14). Returns my new progress, whether it is a new best, my place `{position, of}` (null without a win), and the tuning for the next day. Out of bounds → `422` (R-GAME-20).       |
 | PUT    | `/api/game/sharing`     | `{shared}`                      | Show my profile name on the board, or my pseudonym (R-GAME-15).                                                                                                                                        |
 | PUT    | `/api/game/hints/:hint` | —                               | Mark a hint seen: `204` (R-GAME-18).                                                                                                                                                                   |
-| GET    | `/api/game/leaderboard` | —                               | The top 100 and my own row: place, name or pseudonym, job, level, and `mine` (R-GAME-13).                                                                                                              |
+| GET    | `/api/game/leaderboard` | —                               | `{rows, own, of}`: the top `GAME_LEADERBOARD_SIZE` (100), my own row when below them, and how many are on the board; each row is place, name or pseudonym, job, level and `mine` (R-GAME-13).          |
 
 An abandoned day is sent with `navigator.sendBeacon` to `POST /api/game/days`
 when the page is hidden mid-day, under the same session and checks as any
