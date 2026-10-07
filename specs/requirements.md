@@ -921,7 +921,8 @@ _(Decided by the maintainer after trying the redesign: ADR 0023.)_
   job SHALL fail the check.
 - **R-QA-4 (Migrations in CI)** — CI SHALL run the database migrations from
   scratch against a disposable Postgres service, so a broken migration is caught
-  before deployment.
+  before deployment. It SHALL also refuse a change that edits, renumbers or
+  removes a migration already on `main`, which has run on staging by then.
 - **R-QA-5 (No secrets in CI)** — CI SHALL use non-production, synthetic
   configuration only. Real SMTP credentials, the Mixpanel production token, the
   session secret, and the real attendee whitelist SHALL NOT be available to the
