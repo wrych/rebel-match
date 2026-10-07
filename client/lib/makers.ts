@@ -1,3 +1,5 @@
+import andyMoesch from '../assets/makers/andy-moesch.jpg'
+import ivoPejakovic from '../assets/makers/ivo-pejakovic.jpg'
 import pascalDulex from '../assets/makers/pascal-dulex.jpg'
 
 /** A person who made the app, as the impressum shows them (R-PROF-4). */
@@ -17,11 +19,16 @@ export const makers: readonly Maker[] = [
   {
     name: 'Ivo Pejakovic',
     responsibilities: ['Coordination', 'Community'],
-    portrait: null,
+    portrait: ivoPejakovic,
   },
   {
     name: 'Andy Moesch',
     responsibilities: ['Engineering', 'Operations'],
+    portrait: andyMoesch,
+  },
+  {
+    name: 'Community',
+    responsibilities: ['Challenges', 'Experience', 'Connections'],
     portrait: null,
   },
 ]

@@ -62,12 +62,15 @@ describe('ImpressumScreen', () => {
     expect(shownName(screen)).toBe(makers[1]?.name)
   })
 
-  it('shows initials for a maker without a portrait', async () => {
+  it('shows initials for a card without a portrait', async () => {
     const screen = await mountScreen()
+    const next = screen.find('[aria-label="Next maker"]')
 
-    await screen.find('[aria-label="Next maker"]').trigger('click')
+    for (let shown = 1; shown < makers.length; shown += 1)
+      await next.trigger('click')
 
+    expect(shownName(screen)).toBe('Community')
     expect(screen.find('img.portrait').exists()).toBe(false)
-    expect(screen.find('.portrait-initials').text()).toBe('IP')
+    expect(screen.find('.portrait-initials').text()).toBe('C')
   })
 })
