@@ -182,6 +182,10 @@ onBeforeUnmount(() => {
         >Feedback</a
       >
 
+      <RouterLink to="/impressum" class="item" @click="close(false)"
+        >Impressum</RouterLink
+      >
+
       <nav v-if="hostTools.length > 0" aria-label="Host tools" class="group">
         <p class="kicker">Host tools</p>
         <RouterLink

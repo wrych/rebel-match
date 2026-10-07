@@ -136,13 +136,19 @@ describe('HeaderMenu', () => {
     expect(paths(await opened())).toContain('/profile')
   })
 
-  it('offers only the colour mode to nobody signed in', async () => {
+  it('offers the colour mode and the impressum to nobody signed in (R-PROF-4)', async () => {
     signedIn(null)
     const menu = await opened()
 
     expect(menu.find('[role="switch"]').exists()).toBe(true)
     expect(menu.text()).not.toContain('Sign out')
-    expect(paths(menu)).toEqual([])
+    expect(paths(menu)).toEqual(['/impressum'])
+  })
+
+  it('leads a member to the impressum (R-PROF-4)', async () => {
+    signedIn([])
+
+    expect(paths(await opened())).toContain('/impressum')
   })
 
   it('signs out on the server, then goes to the login screen', async () => {
