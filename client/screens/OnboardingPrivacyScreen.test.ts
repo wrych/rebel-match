@@ -39,7 +39,7 @@ function server(
       return Promise.resolve({ ok: status < 300, status })
     }
     const bodies: Record<string, unknown> = {
-      '/api/config': { limits: { scrollHintShare: 0.6 } },
+      '/api/config': { limits: { scrollHintShare: 0.4 } },
       '/auth/me': {
         id: 'm',
         name: null,
@@ -261,7 +261,7 @@ describe('the scroll hint (R-ONB-10)', () => {
     await screen.find('[aria-label="Scroll down"]').trigger('click')
 
     expect(scrollBy).toHaveBeenCalledWith({
-      top: window.innerHeight * 0.6,
+      top: window.innerHeight * 0.4,
       behavior: 'smooth',
     })
   })
