@@ -27,6 +27,8 @@ export interface Floor {
   meetingDoor: Spot
   /** Where those in a meeting stand, nearest the table first. */
   meetingSpots: readonly Spot[]
+  /** The meeting table. */
+  table: Spot
   cubicles: readonly Cubicle[]
   /** The tile beside each cooler where two can stand. */
   coolers: readonly { cooler: Spot; stands: readonly [Spot, Spot] }[]
@@ -185,6 +187,7 @@ export function layOut(layout: Layout): Floor {
     cabinet,
     meetingDoor: door,
     meetingSpots: meetingSpots(rows),
+    table: TABLE,
     cubicles: placed,
     coolers: spots,
   }

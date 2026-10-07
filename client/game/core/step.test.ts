@@ -89,6 +89,17 @@ describe('a day (R-GAME-3)', () => {
     expect(step(day, idle, DT)).toBe(day)
   })
 
+  it('leaves the day it steps from as it was, sharing the frozen tuning', () => {
+    const before = settled(1, { 'teamLead.temptationEverySeconds': 1 })
+    const copy = structuredClone({ ...before, tuning: { ...before.tuning } })
+
+    const after = run(before, 5, { move: { x: 1, y: 0 } })
+
+    expect({ ...before, tuning: { ...before.tuning } }).toEqual(copy)
+    expect(after.tuning).toBe(before.tuning)
+    expect(Object.isFrozen(after.tuning)).toBe(true)
+  })
+
   it('plays out the same way from the same seed', () => {
     const tuning = { ...calm, 'teamLead.temptationEverySeconds': 2 }
     const a = run(startDay(1, tuning, 42), 20)
