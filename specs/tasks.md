@@ -370,13 +370,13 @@ up the summit. One pull request per item, in this order.
 - [x] Renderer and controls: vector characters, camera, edge arrows, floor
       map, joystick, action button, keyboard, pause, the rotate prompt.
       _(R-GAME-12, R-GAME-18)_
-- [ ] Results card, sharing, play from a job, resume, abandoned days.
+- [x] Results card, sharing, play from a job, resume, abandoned days.
       _(R-GAME-14..16)_
 - [x] Rules of the water cooler, meetings and rebel mode in the core: files,
       heat, help, breaks, talking, masterclass. _(R-GAME-5, R-GAME-6,
       R-GAME-9..11)_
 - [x] The masterclass's choosing on screen. _(R-GAME-11)_
-- [ ] The CEO's choice. _(R-GAME-8)_
+- [x] The CEO's choice. _(R-GAME-8)_
 - [ ] Hints, usage events. _(R-GAME-18, R-GAME-19)_
 - [ ] Playtest on phones in landscape; tune the defaults; switch on for the
       summit. _(R-GAME-17)_

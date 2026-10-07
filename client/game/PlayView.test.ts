@@ -7,6 +7,7 @@ import PlayView from './PlayView.vue'
 
 const { enabled: _enabled, ...tuning } = gameDefaults
 let frames: FrameRequestCallback[] = []
+const beacon = vi.fn(() => true)
 let now = 0
 
 function frame(seconds = 0.1): void {
@@ -31,6 +32,11 @@ beforeEach(() => {
     return frames.length
   })
   vi.stubGlobal('cancelAnimationFrame', () => undefined)
+  beacon.mockClear()
+  Object.defineProperty(navigator, 'sendBeacon', {
+    value: beacon,
+    configurable: true,
+  })
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null)
   Object.assign(window, { innerWidth: 844, innerHeight: 390 })
   applyMood('happy')
@@ -202,5 +208,28 @@ describe('PlayView (R-GAME-12)', () => {
       'Take file',
     )
     view.unmount()
+  })
+
+  it('records a day left unfinished when the page goes away (R-GAME-14)', async () => {
+    const view = mountView()
+    for (let i = 0; i < 20; i += 1) frame(0.25)
+    window.dispatchEvent(new Event('pagehide'))
+    view.unmount()
+
+    expect(beacon).toHaveBeenCalledTimes(1)
+    expect(beacon).toHaveBeenCalledWith('/api/game/days', expect.any(Blob))
+  })
+
+  it('sends nothing on its own once the day was left or ended', async () => {
+    const view = mountView()
+    frame()
+    window.dispatchEvent(new KeyboardEvent('keydown', { code: 'Escape' }))
+    await flushPromises()
+    document.querySelectorAll<HTMLButtonElement>('button').forEach((button) => {
+      if (button.textContent?.includes('Leave')) button.click()
+    })
+    view.unmount()
+
+    expect(beacon).not.toHaveBeenCalled()
   })
 })

@@ -67,3 +67,13 @@ export async function recordDay(day: DayRecord): Promise<DayResult | null> {
     throw new Error(`day not recorded (${String(response.status)})`)
   return (await response.json()) as DayResult
 }
+
+/** Records a day left unfinished as the page goes away, where the browser
+ * lets a last request through (R-GAME-14, R-GAME-16). */
+export function abandonDay(level: number, playSeconds: number): void {
+  const day: DayRecord = { level, outcome: 'abandoned', playSeconds }
+  navigator.sendBeacon(
+    '/api/game/days',
+    new Blob([JSON.stringify(day)], { type: 'application/json' }),
+  )
+}
