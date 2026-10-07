@@ -1094,6 +1094,11 @@ notifications: they go out at once, whatever is chosen here (R-NFR-3).
   Every deployment of one build SHALL show the same version; a build made
   without a commit, such as on a developer's machine, SHALL show `dev`.
   `GET /api/config` SHALL carry it (R-CFG-2).
+- **R-NFR-12 (Open source)** — The source code SHALL be published under an
+  open-source license, kept in `LICENSE` at the repository root, that obliges
+  anyone who copies or redistributes it to keep the copyright notice. That
+  notice SHALL name the founders, Pascal Dulex, Ivo Pejakovic and Andy Moesch,
+  and the Rebel Match contributors.
 
 ---
 
