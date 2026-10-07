@@ -60,7 +60,11 @@ function toggleMood(): void {
 }
 
 .bar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
   flex: 0 0 auto;
+  height: var(--header-height);
   display: flex;
   align-items: center;
   justify-content: space-between;

@@ -277,6 +277,9 @@ outside it or by choosing an item, with focus returned to the button. Signed
 out, the menu offers only the colour mode. The welcome screen keeps the two
 doors and "Your matches"; host tools and sign out move into the menu.
 
+The header stays at the top while the page scrolls (R-NAV-11); its height is a
+theme token, so anything else that sticks to the top sits below it.
+
 The bottom tab bar, on member screens other than the welcome screen, reads Home
 (`/welcome`), Submit, Swipe and Matches, from left to right. Home is a house
 icon in the accent colour, named "Home" for screen readers, in a column

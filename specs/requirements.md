@@ -734,6 +734,11 @@ at a screen instead of at the front door.
   non-identifying campaign parameter for analytics and an **invite token**
   (R-INV-1), and follow the same routing. The invite token SHALL survive the trip
   to the login screen.
+- **R-NAV-11 (Home in reach)** — The header, with the mark that leads home and
+  the menu (R-PROF-3), SHALL stay at the top of the screen while the page
+  scrolls, so that home is one tap away on a long screen without the tab bar,
+  such as the privacy notice or the terms. Nothing on a screen SHALL stick where
+  the header would cover it.
 
 ---
 
