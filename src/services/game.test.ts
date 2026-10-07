@@ -131,4 +131,32 @@ describe('game service (R-GAME-14..16, R-GAME-20)', () => {
 
     await expect(game.state('m-ada')).rejects.toThrow('no free pseudonym')
   })
+
+  it('lists the top of the board, and the caller below it on their own row (R-GAME-13)', async () => {
+    const { game } = setup()
+    for (const [member, seconds] of [
+      ['m-a', 30],
+      ['m-b', 40],
+      ['m-c', 50],
+    ] as const)
+      await game.recordDay(member, {
+        level: 1,
+        outcome: 'won',
+        playSeconds: seconds,
+      })
+
+    const top = await game.leaderboard('m-a', 2)
+    const below = await game.leaderboard('m-c', 2)
+
+    expect(top).toMatchObject({
+      rows: [
+        { place: 1, job: 'teamLead', level: 1, mine: true },
+        { place: 2, mine: false },
+      ],
+      own: null,
+      of: 3,
+    })
+    expect(below.rows.map((row) => row.mine)).toEqual([false, false])
+    expect(below.own).toMatchObject({ place: 3, mine: true })
+  })
 })

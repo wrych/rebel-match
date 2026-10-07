@@ -21,7 +21,7 @@ type Deps = {
   auth: AuthProvider
   settings: LiveSettings
   game: GameService
-  config: Pick<Config, 'gameRecordsPerMinute'>
+  config: Pick<Config, 'gameRecordsPerMinute' | 'gameLeaderboardSize'>
 }
 
 // While hosts have the game off, every game address is as absent as one that
@@ -64,7 +64,8 @@ function recordDay(deps: Deps): RequestHandler {
 }
 
 /** `/api/game*` (design §3, 9toRevolution): the player's state, day records,
- * sharing and hints, behind the game's switch and `game:play`. */
+ * the leaderboard, sharing and hints, behind the game's switch and
+ * `game:play`. */
 export function gameRoutes(deps: Deps): Router {
   const router = Router()
   const guard = [
@@ -76,6 +77,14 @@ export function gameRoutes(deps: Deps): Router {
     response.json(await deps.game.state(memberOf(response.locals)))
   })
   router.post('/api/game/days', ...guard, recordDay(deps))
+  router.get('/api/game/leaderboard', ...guard, async (_request, response) => {
+    response.json(
+      await deps.game.leaderboard(
+        memberOf(response.locals),
+        deps.config.gameLeaderboardSize,
+      ),
+    )
+  })
   router.put('/api/game/sharing', ...guard, async (request, response) => {
     const body = sharingBody.safeParse(request.body)
     if (!body.success) {

@@ -102,6 +102,7 @@ function deps(
       recordDay: () => Promise.resolve('implausible'),
       share: () => Promise.resolve(),
       seeHint: () => Promise.resolve(),
+      leaderboard: () => Promise.resolve({ rows: [], own: null, of: 0 }),
     },
     connections: {
       request: () => Promise.resolve({ result: 'not_found' }),

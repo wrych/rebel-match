@@ -1,8 +1,8 @@
-import { and, count, eq, gt, isNotNull, lt, or, sql } from 'drizzle-orm'
+import { and, count, eq, gt, isNotNull, lt, lte, or, sql } from 'drizzle-orm'
 import type { Database } from '../db/connect.js'
 import { gameDays, gamePlayers, members } from '../db/schema.js'
 import type { DayRecord, Progress } from '../game/levels.js'
-import type { GameStore, Place, Player } from './game.js'
+import type { BoardEntry, GameStore, Place, Player } from './game.js'
 
 const onBoard = and(
   isNotNull(gamePlayers.bestLevel),
@@ -79,6 +79,50 @@ async function recordDayIn(
   })
 }
 
+const ORDER = sql`${gamePlayers.bestLevel} DESC, ${gamePlayers.bestSeconds}`
+
+// Ranked with ties sharing a place; the caller's own row rides along when it
+// is below the top. No member id leaves this query (R-GAME-15).
+async function boardOf(
+  db: Database,
+  memberId: string,
+  size: number,
+): Promise<{ entries: BoardEntry[]; of: number }> {
+  const board = db.$with('board').as(
+    db
+      .select({
+        memberId: gamePlayers.memberId,
+        name: sql<string>`CASE WHEN ${gamePlayers.shared}
+          THEN coalesce(${members.name}, ${gamePlayers.pseudonym})
+          ELSE ${gamePlayers.pseudonym} END`.as('name'),
+        level: sql<number>`${gamePlayers.bestLevel}`.as('level'),
+        place: sql<number>`rank() OVER (ORDER BY ${ORDER})`.as('place'),
+        n: sql<number>`row_number() OVER (ORDER BY ${ORDER}, ${gamePlayers.memberId})`.as(
+          'n',
+        ),
+      })
+      .from(gamePlayers)
+      .innerJoin(members, eq(members.id, gamePlayers.memberId))
+      .where(onBoard),
+  )
+  const rows = await db
+    .with(board)
+    .select({
+      name: board.name,
+      level: sql<number>`${board.level}`.mapWith(Number),
+      place: sql<number>`${board.place}`.mapWith(Number),
+      mine: sql<boolean>`${board.memberId} = ${memberId}`,
+      of: sql<number>`(SELECT count(*) FROM ${board})`.mapWith(Number),
+    })
+    .from(board)
+    .where(or(lte(board.n, size), eq(board.memberId, memberId)))
+    .orderBy(board.n)
+  return {
+    entries: rows.map(({ of: _of, ...entry }) => entry),
+    of: rows[0]?.of ?? 0,
+  }
+}
+
 /** 9toRevolution players and their day log over Postgres (design §2). */
 export function createGameStore(db: Database): GameStore {
   return {
@@ -118,5 +162,6 @@ export function createGameStore(db: Database): GameStore {
         )
     },
     place: (memberId) => placeOf(db, memberId),
+    board: (memberId, size) => boardOf(db, memberId, size),
   }
 }

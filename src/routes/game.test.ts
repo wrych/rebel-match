@@ -30,7 +30,7 @@ function setup(enabled = 1): {
   store: ReturnType<typeof createMemoryGameStore>
 } {
   const settings: GameSettings = { ...gameDefaults, enabled }
-  const store = createMemoryGameStore()
+  const store = createMemoryGameStore(new Map([['m-ada', 'Ada Lovelace']]))
   const game = createGame({
     store,
     settings: () => settings,
@@ -75,9 +75,12 @@ describe('the game API (R-GAME-1, R-GAME-14..17, R-GAME-20)', () => {
         .set('Cookie', cookie)
         .send({ shared: true }),
       request(app).put('/api/game/hints/firstDay').set('Cookie', cookie),
+      request(app).get('/api/game/leaderboard').set('Cookie', cookie),
     ])
 
-    expect(answers.map((answer) => answer.status)).toEqual([404, 404, 404, 404])
+    expect(answers.map((answer) => answer.status)).toEqual([
+      404, 404, 404, 404, 404,
+    ])
     expect(store.players.size).toBe(0)
   })
 
@@ -175,6 +178,49 @@ describe('the game API (R-GAME-1, R-GAME-14..17, R-GAME-20)', () => {
     expect(store.players.get('m-ada')).toMatchObject({
       shared: true,
       hintsSeen: ['cooler'],
+    })
+  })
+
+  it('serves the leaderboard without a member id', async () => {
+    const { app } = setup()
+    const cookie = await cookieFor('m-ada')
+    await request(app).post('/api/game/days').set('Cookie', cookie).send(won)
+
+    const response = await request(app)
+      .get('/api/game/leaderboard')
+      .set('Cookie', cookie)
+
+    expect(response.body).toEqual({
+      rows: [
+        {
+          place: 1,
+          name: expect.stringMatching(/ Rebel$/) as unknown,
+          job: 'teamLead',
+          level: 1,
+          mine: true,
+        },
+      ],
+      own: null,
+      of: 1,
+    })
+    expect(JSON.stringify(response.body)).not.toContain('m-ada')
+  })
+
+  it('shows the profile name of a player who shares it (R-GAME-15)', async () => {
+    const { app } = setup()
+    const cookie = await cookieFor('m-ada')
+    await request(app).post('/api/game/days').set('Cookie', cookie).send(won)
+    await request(app)
+      .put('/api/game/sharing')
+      .set('Cookie', cookie)
+      .send({ shared: true })
+
+    const response = await request(app)
+      .get('/api/game/leaderboard')
+      .set('Cookie', cookie)
+
+    expect(response.body).toMatchObject({
+      rows: [{ name: 'Ada Lovelace', mine: true }],
     })
   })
 })
