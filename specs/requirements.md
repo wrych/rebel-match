@@ -1179,7 +1179,8 @@ fixtures. `design.md` §6 lists the exact records and the profile mechanism.
   privacy notice, the terms from the Basecamp open-source policies, both
   CC BY 4.0 and credited on the screen. Rebel Match is a free open-source
   project without a lawyer, so **neither text is legally reviewed**; the
-  maintainer accepts that. The drafts are `docs/legal/privacy-notice.md` and
+  maintainer accepts that and approved both. They are
+  `docs/legal/privacy-notice.md` and
   `docs/legal/terms-of-use.md` (R-ONB-9, R-ONB-13).
 - **Email delivery provider** (2026-10-01) — the team has its **own SMTP server**
   available; no third-party transactional service (SendGrid/Postmark/SES) is

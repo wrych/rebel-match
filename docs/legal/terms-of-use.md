@@ -1,12 +1,12 @@
 # Rebel Match — Terms of use
 
-- **Status:** Draft, not reviewed by a lawyer
-- **Version:** draft 2026-10-07
+- **Status:** Approved by the maintainer on 2026-10-07; best effort, not
+  reviewed by a lawyer
+- **Version:** 2026-10-07
 - **Shown at:** `/terms` (R-ONB-13)
 
 Written on a best-effort basis, adapted from the Basecamp open-source policies.
-Square brackets mark what is still to be confirmed. The text below the line is
-what the screen shows.
+The text below the line is what the screen shows.
 
 ---
 

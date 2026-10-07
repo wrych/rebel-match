@@ -1,12 +1,12 @@
 # Rebel Match — Privacy notice
 
-- **Status:** Draft, not reviewed by a lawyer
-- **Version:** draft 2026-10-07
+- **Status:** Approved by the maintainer on 2026-10-07; best effort, not
+  reviewed by a lawyer
+- **Version:** 2026-10-07
 - **Shown at:** `/privacy` (R-ONB-9)
 
 Written on a best-effort basis from the DSAT.ch model privacy notice, cut down
-to what Rebel Match does. Square brackets mark what is still to be confirmed.
-The text below the line is what the screen shows.
+to what Rebel Match does. The text below the line is what the screen shows.
 
 ---
 
@@ -19,8 +19,7 @@ For anything about your data, write to
 **ready@transformation-architects.ch**. Your contact there for data protection
 is Pascal Dulex.
 
-We have not appointed a data protection officer. [TO CONFIRM: whether a
-representative in the EU is needed and, if so, who it is.]
+We have not appointed a data protection officer or a representative in the EU.
 
 This notice covers the Rebel Match app. It follows the Swiss Data Protection
 Act and, for members in the EU and EEA, the General Data Protection Regulation
@@ -95,8 +94,8 @@ challenges. If you do not agree, nothing is sent to Mixpanel about you.
   reveals nothing.
 - **Hosts.** The people who run Rebel Match for the network can see members,
   access requests and the log of outgoing messages, in order to admit people
-  and help them. [TO CONFIRM: whether hosts include people outside
-  Transformation Architects GmbH, such as Corporate Rebels staff.]
+  and help them. Hosts are the founders of Rebel Match and a small number of
+  other people they have carefully selected.
 - **Service providers** who work on our instructions:
   - Google Cloud hosts the app and its database in Zurich, Switzerland.
   - Our emails are sent from our own mail server.
@@ -121,7 +120,10 @@ We pass data to authorities only where the law obliges us to.
   undo the deletion with the link we email you.
 - **The log of outgoing messages**: 30 days.
 - **Notifications**: 90 days.
-- **Usage data at Mixpanel**: [TO CONFIRM: the retention set in Mixpanel].
+- **Usage data at Mixpanel**: Mixpanel deletes event data after 24 months.
+- **Backups**: copies of the database made for recovery can still contain
+  deleted data for up to 90 days. They are used only to restore the app after
+  a failure.
 
 ## 7. Security
 
