@@ -186,8 +186,9 @@ Requirements:
   members** — wherever the app shows them, not only on match cards — while the
   email address stays private until a connection is accepted. It SHALL name
   **who is responsible** for the data and how to reach them, and SHALL say that
-  the member can ask for a copy, a correction or deletion, with the rest in the
-  full privacy notice (R-ONB-9, ADR 0041).
+  the member can ask for a copy or a correction, and can delete their activity
+  history or their account themselves on the profile screen (R-PROF-2), with
+  the rest in the full privacy notice (R-ONB-9, ADR 0041).
   _(Meeting: "we need to make it very explicit
   that the emails will be shared when you connect.")_
 - **R-ONB-6 (Three steps)** — Onboarding SHALL run as three screens in this
