@@ -50,6 +50,7 @@ export function createSettings(deps: {
   const deployment: SettingValues = {
     limits: deps.config.limits,
     abuse: deps.config.abuse,
+    game: deps.config.game,
   }
   let stored: SettingOverride[] = []
   let current = deployment
@@ -62,6 +63,7 @@ export function createSettings(deps: {
   return {
     limits: () => current.limits,
     abuse: () => current.abuse,
+    game: () => current.game,
     deployment: () => deployment,
     overrides: () =>
       stored.filter(

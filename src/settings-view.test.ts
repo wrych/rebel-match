@@ -1,9 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import { defaultConfig, loadConfig, type Config } from './config.js'
+import { gameBounds } from './game/tuning.js'
 import { settingsView, type SettingsState } from './settings-view.js'
 
 function unchanged(config: Config): SettingsState {
-  const values = { limits: config.limits, abuse: config.abuse }
+  const values = {
+    limits: config.limits,
+    abuse: config.abuse,
+    game: config.game,
+  }
   return { current: values, deployment: values, overrides: [] }
 }
 
@@ -91,6 +96,7 @@ describe('settingsView (R-CFG-5)', () => {
     expect(find(groups, 'Sign-in link valid for')).not.toHaveProperty('edit')
     expect(find(groups, 'Shortest challenge').edit).toEqual({
       key: 'limits.challengeMinChars',
+      kind: 'number',
       value: 31,
       unit: 'characters',
       min: 1,
@@ -100,7 +106,11 @@ describe('settingsView (R-CFG-5)', () => {
 
   it('shows a value changed in the app, who changed it and the deployment’s value', () => {
     const config = defaultConfig()
-    const deployment = { limits: config.limits, abuse: config.abuse }
+    const deployment = {
+      limits: config.limits,
+      abuse: config.abuse,
+      game: config.game,
+    }
     const groups = settingsView(config, config, {
       current: {
         ...deployment,
@@ -141,6 +151,30 @@ describe('settingsView (R-CFG-5)', () => {
     expect(find(groups, 'Database').value).toBe('Postgres')
   })
 
+  it('shows the game switch as On or Off, off by default (R-GAME-17)', () => {
+    const config = defaultConfig()
+    const on = { ...config.game, enabled: 1 }
+    const groups = settingsView(config, config, {
+      current: { limits: config.limits, abuse: config.abuse, game: on },
+      deployment: unchanged(config).deployment,
+      overrides: [
+        {
+          key: 'game.enabled',
+          value: 1,
+          changedBy: 'm-host',
+          changerName: 'Ada Host',
+          changedAt: new Date('2026-11-08T09:00:00Z'),
+        },
+      ],
+    })
+    const game = find(groups, 'The game')
+
+    expect(game.value).toBe('On')
+    expect(game.changed).toBe(true)
+    expect(game.edit).toMatchObject({ kind: 'switch', value: 1 })
+    expect(game.override?.deploymentValue).toBe('Off')
+  })
+
   it('offers each changeable setting once', () => {
     const keys = view(defaultConfig())
       .flatMap((group) => group.settings)
@@ -149,6 +183,6 @@ describe('settingsView (R-CFG-5)', () => {
       )
 
     expect(new Set(keys).size).toBe(keys.length)
-    expect(keys).toHaveLength(14)
+    expect(keys).toHaveLength(14 + Object.keys(gameBounds).length)
   })
 })

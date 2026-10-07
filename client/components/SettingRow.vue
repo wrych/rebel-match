@@ -47,19 +47,21 @@ function tick(): void {
 
 async function apply(
   send: () => Promise<SettingsGroup[] | Refusal>,
-): Promise<void> {
+): Promise<boolean> {
   busy.value = true
   problem.value = null
   try {
     const outcome = await send()
     if (typeof outcome === 'string') {
       problem.value = refusal(outcome)
-      return
+      return false
     }
     emit('updated', outcome)
     tick()
+    return true
   } catch {
     problem.value = 'That did not save. Try again.'
+    return false
   } finally {
     busy.value = false
   }
@@ -81,6 +83,16 @@ async function save(): Promise<void> {
   await apply(() => changeSetting(edit.key, value))
 }
 
+async function toggle(event: Event): Promise<void> {
+  const edit = props.setting.edit
+  if (edit === undefined) return
+  const input = event.target as HTMLInputElement
+  const saved = await apply(() =>
+    changeSetting(edit.key, input.checked ? 1 : 0),
+  )
+  if (!saved) input.checked = edit.value === 1
+}
+
 async function reset(): Promise<void> {
   const edit = props.setting.edit
   if (edit !== undefined) await apply(() => resetSetting(edit.key))
@@ -89,7 +101,25 @@ async function reset(): Promise<void> {
 
 <template>
   <div class="row">
-    <template v-if="setting.edit && canManage">
+    <template v-if="setting.edit?.kind === 'switch' && canManage">
+      <div class="label-row">
+        <label class="check name">
+          <input
+            :id="setting.edit.key"
+            type="checkbox"
+            role="switch"
+            :checked="setting.edit.value === 1"
+            :disabled="busy"
+            :aria-describedby="`${setting.edit.key}-about`"
+            @change="toggle"
+          />
+          <span>{{ setting.name }}: {{ setting.value }}</span>
+        </label>
+        <SavedTick :shown="tickShown" />
+      </div>
+      <p v-if="problem" class="alert" role="alert">{{ problem }}</p>
+    </template>
+    <template v-else-if="setting.edit && canManage">
       <div class="label-row">
         <label :for="setting.edit.key" class="name">{{ setting.name }}</label>
         <SavedTick :shown="tickShown" />

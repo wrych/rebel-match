@@ -4,6 +4,7 @@ import { rolePermissions } from './access.js'
 import { latestAnalyticsVersion } from './analytics-consent.js'
 import { consentWordsOf, latestConsentVersion } from './consent.js'
 import type { DatabaseTarget } from './db/connect.js'
+import { gameDefaults, type GameSettings } from './game/tuning.js'
 
 // Node clamps a timer delay above 2^31-1 ms (about 24.8 days) to 1 ms, so a
 // longer purge interval would run the purge continuously.
@@ -374,11 +375,16 @@ export interface AbuseLimits {
 export interface LiveSettings {
   limits(): Limits
   abuse(): AbuseLimits
+  game(): GameSettings
 }
 
 /** The deployment's values, never changed: settings as loaded at startup. */
 export function fixedSettings(config: Config): LiveSettings {
-  return { limits: () => config.limits, abuse: () => config.abuse }
+  return {
+    limits: () => config.limits,
+    abuse: () => config.abuse,
+    game: () => config.game,
+  }
 }
 
 /** The running version as the menu shows it: the short commit and a link to
@@ -429,6 +435,9 @@ export interface Config {
   analytics: { token?: string; apiHost: string }
   limits: Limits
   abuse: AbuseLimits
+  /** The game's tuning; its values are set in the app, never the environment
+   * (R-GAME-17). */
+  game: GameSettings
   trustProxy: number
   rolePermissions: typeof rolePermissions
   /** The commit the build was made from, if it was made from one (R-NFR-11). */
@@ -555,6 +564,7 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): Config {
     },
     limits: limitsFrom(env),
     abuse: abuseLimitsFrom(env),
+    game: gameDefaults,
     trustProxy: env.TRUST_PROXY,
     rolePermissions,
     build: {

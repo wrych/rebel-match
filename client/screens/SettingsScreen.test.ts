@@ -25,6 +25,7 @@ function groups(ceiling = 20, changedBy?: string): SettingsGroup[] {
           fixed: false,
           edit: {
             key: CEILING,
+            kind: 'number',
             value: ceiling,
             unit: 'emails',
             min: 1,
@@ -59,6 +60,32 @@ function groups(ceiling = 20, changedBy?: string): SettingsGroup[] {
           value: '120 characters',
           changed: false,
           fixed: true,
+        },
+      ],
+    },
+  ]
+}
+
+function gameGroups(on: boolean): SettingsGroup[] {
+  return [
+    {
+      title: '9toRevolution',
+      explanation: 'The office game.',
+      settings: [
+        {
+          name: 'The game',
+          explanation: 'On shows the game.',
+          value: on ? 'On' : 'Off',
+          changed: on,
+          fixed: false,
+          edit: {
+            key: 'game.enabled',
+            kind: 'switch',
+            value: on ? 1 : 0,
+            unit: '',
+            min: 0,
+            max: 1,
+          },
         },
       ],
     },
@@ -247,5 +274,55 @@ describe('SettingsScreen (R-CFG-5, R-CFG-6)', () => {
     expect(screen.find('[role="alert"]').text()).toContain(
       'could not be loaded',
     )
+  })
+
+  it('turns a switch on by saving 1, and shows it on (R-GAME-17)', async () => {
+    const fetchMock = vi.fn((url: string, init?: RequestInit) =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () =>
+          url === '/api/config'
+            ? { limits: { savedTickMs: 2500 } }
+            : { groups: gameGroups(init?.method !== undefined) },
+      }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    const screen = await mountScreen()
+    const toggle = screen.find('input[role="switch"]')
+
+    expect(screen.find('input[type="number"]').exists()).toBe(false)
+    await toggle.setValue(true)
+    await flushPromises()
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/admin/settings/game.enabled',
+      expect.objectContaining({ method: 'PUT', body: '{"value":1}' }),
+    )
+    expect(screen.text()).toContain('The game: On')
+  })
+
+  it('shows the switch as it was when the change does not save', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string, init?: RequestInit) =>
+        Promise.resolve({
+          ok: init?.method === undefined,
+          status: init?.method === undefined ? 200 : 500,
+          json: async () =>
+            url === '/api/config'
+              ? { limits: { savedTickMs: 2500 } }
+              : { groups: gameGroups(false) },
+        }),
+      ),
+    )
+    const screen = await mountScreen()
+    const toggle = screen.find('input[role="switch"]')
+
+    await toggle.setValue(true)
+    await flushPromises()
+
+    expect((toggle.element as HTMLInputElement).checked).toBe(false)
+    expect(screen.find('[role="alert"]').text()).toContain('did not save')
   })
 })
