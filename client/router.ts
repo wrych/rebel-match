@@ -11,6 +11,7 @@ import AskScreen from './screens/AskScreen.vue'
 import ChallengeScreen from './screens/ChallengeScreen.vue'
 import CockpitScreen from './screens/CockpitScreen.vue'
 import ConnectScreen from './screens/ConnectScreen.vue'
+import ImpressumScreen from './screens/ImpressumScreen.vue'
 import InvitesScreen from './screens/InvitesScreen.vue'
 import LoginScreen from './screens/LoginScreen.vue'
 import MatchesScreen from './screens/MatchesScreen.vue'
@@ -73,6 +74,7 @@ export const router = createRouter({
     screen('onboarding-usage', OnboardingUsageScreen),
     screen('privacy', PrivacyScreen),
     screen('terms', TermsScreen),
+    screen('impressum', ImpressumScreen),
     screen('welcome', WelcomeScreen),
     screen('profile', ProfileScreen),
     screen('notifications', NotificationsScreen),

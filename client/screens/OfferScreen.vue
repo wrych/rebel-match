@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
   answerCard,
@@ -8,12 +8,11 @@ import {
   reportSeen,
   type DeckCard,
 } from '../lib/deck'
-import { fetchConfig } from '../lib/api'
 import { contactPath } from '../lib/connections'
 import { fetchFollowed } from '../lib/follows'
 import { noticeFor } from '../lib/offer'
 import { countAnswer } from '../lib/offer-session'
-import { swipeStep } from '../lib/swipe'
+import CardDeck from '../components/CardDeck.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -28,8 +27,6 @@ const sending = ref(false)
 const notice = ref<string | null>(null)
 const problem = ref<string | null>(null)
 const followed = ref(new Set<string>())
-const swipeMinPx = ref<number | null>(null)
-let touchedAt: { x: number; y: number } | null = null
 
 const card = computed(() => cards.value[index.value])
 const followsTopic = computed(
@@ -56,15 +53,6 @@ async function load(): Promise<void> {
   }
 }
 
-// Without the threshold the card takes no swipes; the arrows still browse.
-async function loadSwipeMinPx(): Promise<void> {
-  try {
-    swipeMinPx.value = (await fetchConfig()).limits.swipeMinPx
-  } catch {
-    swipeMinPx.value = null
-  }
-}
-
 // Unknown follows leave Follow offered: following twice changes nothing.
 async function loadFollowed(): Promise<void> {
   try {
@@ -81,44 +69,9 @@ function clearMessages(): void {
   problem.value = null
 }
 
-function browse(step: -1 | 1): void {
-  const next = index.value + step
-  if (next < 0 || next >= cards.value.length) return
+function browse(next: number): void {
   index.value = next
   clearMessages()
-}
-
-// Arrow keys browse, as the prototype's arrow buttons do (R-OFF-1).
-function onKey(event: KeyboardEvent): void {
-  if (event.target instanceof HTMLTextAreaElement) return
-  if (event.key === 'ArrowLeft') browse(-1)
-  if (event.key === 'ArrowRight') browse(1)
-}
-
-function onTouchStart(event: TouchEvent): void {
-  const touch = event.touches[0]
-  touchedAt =
-    event.touches.length === 1 && touch !== undefined
-      ? { x: touch.clientX, y: touch.clientY }
-      : null
-}
-
-// A swipe browses as the arrows do, left to the next card (R-OFF-1).
-function onTouchEnd(event: TouchEvent): void {
-  const touch = event.changedTouches[0]
-  const from = touchedAt
-  touchedAt = null
-  if (from === null || touch === undefined || swipeMinPx.value === null) return
-  const step = swipeStep(
-    from,
-    { x: touch.clientX, y: touch.clientY },
-    swipeMinPx.value,
-  )
-  if (step !== 0) browse(step)
-}
-
-function onTouchCancel(): void {
-  touchedAt = null
 }
 
 // An answered card is never dealt again (R-OFF-2), so it leaves the hand;
@@ -163,13 +116,8 @@ async function offerExperience(): Promise<void> {
 }
 
 onMounted(() => {
-  window.addEventListener('keydown', onKey)
   void load()
   void loadFollowed()
-  void loadSwipeMinPx()
-})
-onUnmounted(() => {
-  window.removeEventListener('keydown', onKey)
 })
 </script>
 
@@ -178,46 +126,21 @@ onUnmounted(() => {
     <p v-if="notice" class="notice notice-solid" role="status">{{ notice }}</p>
 
     <template v-if="card">
-      <p class="footnote">
-        {{ index + 1 }} of {{ cards.length }} · arrows or ‹ › to browse
-      </p>
-
-      <div class="deck">
-        <button
-          type="button"
-          class="deck-arrow"
-          aria-label="Previous challenge"
-          :disabled="index === 0"
-          @click="browse(-1)"
-        >
-          ‹
-        </button>
-        <article
-          class="deck-card"
-          aria-live="polite"
-          @touchstart.passive="onTouchStart"
-          @touchend="onTouchEnd"
-          @touchcancel="onTouchCancel"
-        >
-          <p class="kicker">{{ card.trend.short }}</p>
-          <p class="deck-text">{{ card.body }}</p>
-          <div class="deck-author">
-            <span class="card-title">{{ card.author.name }}</span>
-            <span v-if="authorLine(card)" class="mono">{{
-              authorLine(card)
-            }}</span>
-          </div>
-        </article>
-        <button
-          type="button"
-          class="deck-arrow"
-          aria-label="Next challenge"
-          :disabled="index >= cards.length - 1"
-          @click="browse(1)"
-        >
-          ›
-        </button>
-      </div>
+      <CardDeck
+        :index="index"
+        :count="cards.length"
+        noun="challenge"
+        @browse="browse"
+      >
+        <p class="kicker">{{ card.trend.short }}</p>
+        <p class="deck-text">{{ card.body }}</p>
+        <div class="deck-author">
+          <span class="card-title">{{ card.author.name }}</span>
+          <span v-if="authorLine(card)" class="mono">{{
+            authorLine(card)
+          }}</span>
+        </div>
+      </CardDeck>
 
       <div class="stack-tight">
         <button
