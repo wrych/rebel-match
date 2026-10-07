@@ -978,6 +978,7 @@ deep link reloads cleanly.
 | S28 | **Onboarding: privacy** — step 2 of 3: the consent summary under headings, a link to S30, a scroll hint while the button is out of view, and one button, _I have read the privacy notice_, which saves profile and consent (R-ONB-3, R-ONB-8, R-ONB-10)                                                           | `/onboarding/privacy`                                   |
 | S29 | **Onboarding: usage data** — step 3 of 3: "Profile saved" with a link to S24, the analytics words, and two equal buttons, _Share usage data_ and _No thanks_ (R-ONB-11, R-ANA-4)                                                                                                                                  | `/onboarding/usage`                                     |
 | S30 | **Privacy notice** — the full notice with its version and date; public (R-ONB-9)                                                                                                                                                                                                                                  | `/privacy`                                              |
+| S31 | **Terms of use** — the terms with their version and date; public (R-ONB-13)                                                                                                                                                                                                                                       | `/terms`                                                |
 
 Remaining overlays, deliberately: the "really decline this request?" confirm, the
 "link sent" / "copied" toasts, and the feedback action (a `mailto:`, not a
@@ -1011,8 +1012,8 @@ validator, so neither side can develop a private opinion about which paths exist
 - **Onboarding steps** — `/onboarding/privacy` with no name typed in this tab
   goes to `/onboarding`, and `/onboarding/usage` needs a completed onboarding.
   `next` is carried through all three. An onboarded member who opens either of
-  the first two steps is sent to `/welcome`. `/privacy` is public
-  (R-ONB-6..9, R-ONB-11).
+  the first two steps is sent to `/welcome`. `/privacy` and `/terms` are public
+  (R-ONB-6..9, R-ONB-11, R-ONB-13).
 - **Authorization before rendering** — a screen for a challenge or request fetches
   it first. The API answers `404` for anything the caller may not see, never `403`,
   so the client renders the not-found screen without ever learning the row exists

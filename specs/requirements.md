@@ -205,7 +205,8 @@ Requirements:
 - **R-ONB-9 (Full privacy notice)** — The system SHALL serve the full privacy
   notice as a screen of its own, readable without signing in and showing its
   version and date. It SHALL be linked from the profile step, the privacy step
-  and the profile screen (R-PROF-2). _(Its words are open question 7.)_
+  and the profile screen (R-PROF-2). _(Its words are drafted in
+  `docs/legal/privacy-notice.md`.)_
 - **R-ONB-10 (Scroll hint)** — WHILE the confirm button of the privacy step is
   outside the visible area THE SYSTEM SHALL show a floating button that scrolls
   the summary down by part of the visible height, never to its end. The hint
@@ -219,6 +220,12 @@ Requirements:
 - **R-ONB-12 (Going back)** — The onboarding steps SHALL carry no back control
   of their own. WHEN the member goes back from the privacy step with the
   browser THE SYSTEM SHALL show the profile step with what they typed.
+- **R-ONB-13 (Terms of use)** — The system SHALL serve the terms of use as a
+  screen of its own, readable without signing in and showing its version and
+  date. The privacy step SHALL link to it and SHALL say that continuing
+  accepts the terms; the privacy notice and the profile screen SHALL link to it
+  too. A change of the terms SHALL be a new consent version (R-ONB-4).
+  _(Its words are drafted in `docs/legal/terms-of-use.md`.)_
 
 ---
 
@@ -646,6 +653,7 @@ at a screen instead of at the front door.
   | `/onboarding/privacy`                | onboarding: privacy summary (R-ONB-3)          |
   | `/onboarding/usage`                  | onboarding: optional usage data (R-ANA-4)      |
   | `/privacy`                           | full privacy notice (R-ONB-9)                  |
+  | `/terms`                             | terms of use (R-ONB-13)                        |
   | `/welcome`                           | two doors                                      |
   | `/ask`                               | submit a challenge                             |
   | `/challenges/:id`                    | detected trend for that challenge              |
@@ -1155,15 +1163,23 @@ fixtures. `design.md` §6 lists the exact records and the profile mechanism.
    **unattributed** (visible as content, not connectable until the author logs in
    and claims them)? Unattributed is the safer default for the privacy model
    (R-NFR-1, R-ONB-3); attributed needs the authors' explicit OK first.
-6. **Controller and contact** — who is named as responsible for the data on the
-   privacy step and in the notice, and at which address? The consent words of
-   ADR 0041 cannot be versioned until this is known (R-ONB-5).
-7. **Full privacy notice** — which template is it written from, and who checks
-   it, and the wording "I have read the privacy notice", against the GDPR
-   before the summit (R-ONB-9)? Related to question 1.
+6. **Controller and contact** — _(Resolved; see below.)_
+7. **Full privacy notice** — _(Resolved; see below.)_
 
 ### Resolved
 
+- **Controller and contact** (2026-10-07) — the controller named on the privacy
+  step and in the notice is **Transformation Architects GmbH**, c/o Impact Hub
+  Zürich AG, Sihlquai 131, 8005 Zürich, reached at
+  `ready@transformation-architects.ch` (R-ONB-5). This also answers who owns
+  the consent copy (question 1).
+- **Full privacy notice and terms of use** (2026-10-07) — both are written on a
+  best-effort basis from free templates: the notice from the DSAT.ch model
+  privacy notice, the terms from the Basecamp open-source policies, both
+  CC BY 4.0 and credited on the screen. Rebel Match is a free open-source
+  project without a lawyer, so **neither text is legally reviewed**; the
+  maintainer accepts that. The drafts are `docs/legal/privacy-notice.md` and
+  `docs/legal/terms-of-use.md` (R-ONB-9, R-ONB-13).
 - **Email delivery provider** (2026-10-01) — the team has its **own SMTP server**
   available; no third-party transactional service (SendGrid/Postmark/SES) is
   needed for the beta. The app connects via nodemailer using `SMTP_*`
