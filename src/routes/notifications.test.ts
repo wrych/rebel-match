@@ -3,6 +3,7 @@ import request from 'supertest'
 import { describe, expect, it } from 'vitest'
 import { createAuth, createMemoryAuthStore } from '../auth/index.js'
 import { loadConfig } from '../config.js'
+import { handleErrors } from '../app.js'
 import { configPolicy } from '../permissions.js'
 import type {
   NotificationService,
@@ -75,16 +76,7 @@ function setup(): { app: Express; calls: unknown[] } {
       settings: { limits: () => config.limits },
     }),
   )
-  app.use(
-    (
-      _error: unknown,
-      _request: express.Request,
-      response: express.Response,
-      _next: express.NextFunction,
-    ) => {
-      response.status(400).end()
-    },
-  )
+  app.use(handleErrors)
   return { app, calls }
 }
 
@@ -174,6 +166,23 @@ describe('notification routes', () => {
       .send({ cadence })
 
     expect(response.status).toBe(status)
+  })
+
+  it.each([
+    ['no body', undefined],
+    ['no cadence', {}],
+    ['an overlong cadence', { cadence: 'd'.repeat(41) }],
+  ])('refuses a choice with %s as a bad request', async (_case, body) => {
+    const { app, calls } = setup()
+
+    const response = await request(app)
+      .put('/api/me/notification-settings/connection_request')
+      .set('Cookie', await cookie())
+      .send(body)
+
+    expect(response.status).toBe(400)
+    expect(response.body).toEqual({ error: 'bad_request' })
+    expect(calls).toEqual([])
   })
 
   it('asks for a session', async () => {

@@ -3,6 +3,7 @@ import request from 'supertest'
 import { describe, expect, it } from 'vitest'
 import { createAuth, createMemoryAuthStore } from '../auth/index.js'
 import { loadConfig } from '../config.js'
+import { handleErrors } from '../app.js'
 import { configPolicy } from '../permissions.js'
 import { createDeck, type DeckCard } from '../services/deck.js'
 import { deckRoutes } from './deck.js'
@@ -46,6 +47,7 @@ function setup(): { app: Express; asked: [string, number][] } {
   })
   const app = express()
   app.use(deckRoutes({ auth, deck }))
+  app.use(handleErrors)
   return { app, asked }
 }
 
@@ -74,6 +76,22 @@ describe('GET /api/deck', () => {
       .set('Cookie', await cookieFor('m-none'))
 
     expect(response.status).toBe(404)
+    expect(asked).toEqual([])
+  })
+
+  it.each([
+    ['an empty first', '?first='],
+    ['an overlong first', `?first=${'c'.repeat(37)}`],
+    ['a repeated first', '?first=a&first=b'],
+  ])('refuses %s as a bad request (R-OFF-7)', async (_case, query) => {
+    const { app, asked } = setup()
+
+    const response = await request(app)
+      .get(`/api/deck${query}`)
+      .set('Cookie', await cookieFor('m-ada'))
+
+    expect(response.status).toBe(400)
+    expect(response.body).toEqual({ error: 'bad_request' })
     expect(asked).toEqual([])
   })
 })
