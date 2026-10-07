@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AskSteps from '../components/AskSteps.vue'
+import { askJourney } from '../lib/steps'
 import CaseList from '../components/CaseList.vue'
 import FollowButton from '../components/FollowButton.vue'
 import PeerCards from '../components/PeerCards.vue'
@@ -46,7 +47,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <AskSteps v-if="!posted" :current="3" />
+  <AskSteps v-if="!posted" :journey="askJourney" :current="3" />
   <section class="screen">
     <p v-if="missing" class="empty">There is no challenge of yours here.</p>
 

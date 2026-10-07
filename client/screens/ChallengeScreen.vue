@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AskSteps from '../components/AskSteps.vue'
+import { askJourney } from '../lib/steps'
 import {
   confirmTrend,
   fetchChallenge,
@@ -63,7 +64,7 @@ async function confirm(): Promise<void> {
 </script>
 
 <template>
-  <AskSteps :current="2" />
+  <AskSteps :journey="askJourney" :current="2" />
   <section class="screen">
     <p v-if="missing" class="empty">There is no challenge of yours here.</p>
 

@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import AskSteps from '../components/AskSteps.vue'
+import { askJourney } from '../lib/steps'
 import { fetchTrends, type Trend } from '../lib/challenges'
 
 const route = useRoute()
@@ -21,7 +22,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <AskSteps :current="2" />
+  <AskSteps :journey="askJourney" :current="2" />
   <section class="screen">
     <div class="stack">
       <h1 class="display display-lg">All trends</h1>

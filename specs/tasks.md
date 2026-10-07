@@ -111,7 +111,7 @@ printed dev link (R-DEV-6).
       _(R-ONB-5)_
 - [x] Route guard: active + onboarded required for `/api/*`; deep links land on
       onboarding first. _(R-NAV-7)_
-- [ ] Step header shared by Ask and onboarding: `AskSteps` takes its labels.
+- [x] Step header shared by Ask and onboarding: `AskSteps` takes its labels.
       _(R-LOOK-4, ADR 0040)_
 - [ ] Onboarding in three steps: routes and guards, the profile held in the
       browser until the privacy step, no back controls. _(R-ONB-6..8,
