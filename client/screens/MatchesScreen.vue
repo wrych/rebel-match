@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AskSteps from '../components/AskSteps.vue'
+import DoneNotice from '../components/DoneNotice.vue'
 import { askJourney } from '../lib/steps'
 import CaseList from '../components/CaseList.vue'
 import FollowButton from '../components/FollowButton.vue'
@@ -52,13 +53,10 @@ onMounted(async () => {
     <p v-if="missing" class="empty">There is no challenge of yours here.</p>
 
     <template v-else-if="challenge && matches">
-      <p v-if="posted" class="notice notice-ok" role="status">
-        <span class="tick" aria-hidden="true">✓</span>
-        <span
-          ><strong>Your challenge is live.</strong> Rebels who can help will now
-          see it.</span
-        >
-      </p>
+      <DoneNotice v-if="posted">
+        <strong>Your challenge is live.</strong> Rebels who can help will now
+        see it.
+      </DoneNotice>
 
       <div class="stack-tight">
         <h1 class="display display-lg">Rebels who can help</h1>
@@ -127,17 +125,6 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.notice-ok {
-  display: flex;
-  gap: 0.6rem;
-  align-items: baseline;
-}
-
-.tick {
-  flex: none;
-  font-size: 1rem;
-}
-
 .purpose {
   margin: 0;
   color: var(--muted);
