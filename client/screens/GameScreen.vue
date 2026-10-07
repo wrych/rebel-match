@@ -6,9 +6,12 @@ import HappyOnly from '../components/HappyOnly.vue'
 import DayResults from '../game/DayResults.vue'
 import GameLobby from '../game/GameLobby.vue'
 import PlayView from '../game/PlayView.vue'
+import { hintsDue, type GameHint } from '../game/hints'
+import { reportEvent } from '../lib/events'
 import {
   fetchGame,
   recordDay,
+  seeHint,
   shareName,
   type DayResult,
   type GameState,
@@ -44,6 +47,7 @@ async function load(): Promise<void> {
   try {
     game.value = await fetchGame()
     if (game.value === null) await notFound()
+    else reportEvent({ event: 'game_opened', props: {} })
   } catch {
     problem.value = 'The office could not be opened. Reload to try again.'
   }
@@ -109,6 +113,15 @@ async function shareAndContinue(): Promise<void> {
   next()
 }
 
+function hintSeen(hint: GameHint): void {
+  seeHint(hint)
+  if (game.value !== null)
+    game.value = {
+      ...game.value,
+      hintsSeen: [...game.value.hintsSeen, hint],
+    }
+}
+
 function next(): void {
   if (ended.value !== null) start(ended.value.level + 1)
 }
@@ -167,6 +180,8 @@ watch(
     :level="playing.level"
     :seed="playing.seed"
     :tuning="game.tuning"
+    :hints="hintsDue(playing.level, game.tuning, game.hintsSeen)"
+    @seen="hintSeen"
     @ended="dayEnded"
     @leave="dayLeft"
   />

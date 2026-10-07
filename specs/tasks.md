@@ -377,7 +377,7 @@ up the summit. One pull request per item, in this order.
       R-GAME-9..11)_
 - [x] The masterclass's choosing on screen. _(R-GAME-11)_
 - [x] The CEO's choice. _(R-GAME-8)_
-- [ ] Hints, usage events. _(R-GAME-18, R-GAME-19)_
+- [x] Hints, usage events. _(R-GAME-18, R-GAME-19)_
 - [ ] Playtest on phones in landscape; tune the defaults; switch on for the
       summit. _(R-GAME-17)_
 

@@ -32,7 +32,11 @@ function serve(
 ): ReturnType<typeof vi.fn> {
   const fetchMock = vi.fn((url: string, init?: RequestInit) => {
     if (init?.method === 'PUT')
-      return Promise.resolve({ ok: sharing < 300, status: sharing })
+      return Promise.resolve({
+        ok: url.includes('hints') || sharing < 300,
+        status: url.includes('hints') ? 204 : sharing,
+      })
+    if (url === '/api/events') return Promise.resolve({ ok: true, status: 204 })
     if (init?.method === 'POST')
       return Promise.resolve({
         ok: true,
@@ -275,5 +279,29 @@ describe('GameScreen (R-GAME-1, R-GAME-15, R-GAME-16)', () => {
         }),
       }),
     )
+  })
+
+  it('reports the game opened, and marks a hint seen once read (R-GAME-18, R-GAME-19)', async () => {
+    applyMood('happy')
+    const fetchMock = serve(state)
+    const screen = await mountScreen()
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/events',
+      expect.objectContaining({
+        body: JSON.stringify({ event: 'game_opened', props: {} }),
+      }),
+    )
+    await screen.find('button.btn-dark').trigger('click')
+    const play = screen.findComponent({ name: 'PlayView' })
+    expect(play.props('hints')).toEqual(['firstDay', 'meeting', 'cooler'])
+    play.vm.$emit('seen', 'firstDay')
+    await flushPromises()
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/game/hints/firstDay',
+      expect.objectContaining({ method: 'PUT' }),
+    )
+    expect(play.props('hints')).toEqual(['meeting', 'cooler'])
   })
 })

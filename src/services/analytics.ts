@@ -19,6 +19,15 @@ export type AnalyticsEvent =
   | { name: 'connection_requested'; kind: 'same_boat' | 'been_there' }
   | { name: 'connection_responded'; status: 'accepted' | 'declined' }
   | { name: 'feedback_opened'; screen: string }
+  | { name: 'game_opened' }
+  | {
+      name: 'game_day_finished'
+      mode: 'boss' | 'rebel'
+      level: number
+      outcome: 'won' | 'lost' | 'abandoned'
+      seconds: number
+    }
+  | { name: 'game_result_shared' }
 
 /** Reports what a member did. It never rejects and is not awaited by the
  * request it describes, so analytics can neither fail nor slow it. */

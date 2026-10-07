@@ -1,13 +1,16 @@
 import { describe, expect, it } from 'vitest'
 import { gameDefaults } from '../game/tuning.js'
+import { trackNothing, type AnalyticsEvent } from './analytics.js'
 import { createGame } from './game.js'
 import { createMemoryGameStore } from './game-memory-store.js'
 
 function setup(): {
   store: ReturnType<typeof createMemoryGameStore>
   game: ReturnType<typeof createGame>
+  tracked: [string, AnalyticsEvent][]
 } {
   const store = createMemoryGameStore()
+  const tracked: [string, AnalyticsEvent][] = []
   let next = 0
   const game = createGame({
     store,
@@ -15,8 +18,12 @@ function setup(): {
     allowance: { factor: 2, extraSeconds: 60 },
     newId: () => `d-${String((next += 1))}`,
     random: () => 0,
+    track: (memberId, event) => {
+      tracked.push([memberId, event])
+      return Promise.resolve()
+    },
   })
-  return { store, game }
+  return { store, game, tracked }
 }
 
 describe('game service (R-GAME-14..16, R-GAME-20)', () => {
@@ -127,6 +134,7 @@ describe('game service (R-GAME-14..16, R-GAME-20)', () => {
       settings: () => gameDefaults,
       allowance: { factor: 2, extraSeconds: 60 },
       newId: () => 'd',
+      track: trackNothing,
     })
 
     await expect(game.state('m-ada')).rejects.toThrow('no free pseudonym')
@@ -158,5 +166,31 @@ describe('game service (R-GAME-14..16, R-GAME-20)', () => {
     })
     expect(below.rows.map((row) => row.mine)).toEqual([false, false])
     expect(below.own).toMatchObject({ place: 3, mine: true })
+  })
+
+  it('reports a finished day and a shared name, without a name or pseudonym (R-GAME-19)', async () => {
+    const { game, tracked } = setup()
+
+    await game.recordDay('m-ada', {
+      level: 1,
+      outcome: 'lost',
+      playSeconds: 40,
+    })
+    await game.share('m-ada', true)
+    await game.share('m-ada', false)
+
+    expect(tracked).toEqual([
+      [
+        'm-ada',
+        {
+          name: 'game_day_finished',
+          mode: 'boss',
+          level: 1,
+          outcome: 'lost',
+          seconds: 40,
+        },
+      ],
+      ['m-ada', { name: 'game_result_shared' }],
+    ])
   })
 })

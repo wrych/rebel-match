@@ -10,6 +10,8 @@ import {
 } from '../game/levels.js'
 import { pickPseudonym } from '../game/pseudonyms.js'
 import type { GameSettings } from '../game/tuning.js'
+import type { AnalyticsEvent, Track } from './analytics.js'
+import { FIRST_REBEL_LEVEL } from '../game/levels.js'
 import type { Job } from '../game/levels.js'
 
 /** The hints the game shows once per member (R-GAME-18). */
@@ -167,13 +169,45 @@ export interface DayAllowance {
   extraSeconds: number
 }
 
-export function createGame(deps: {
+interface GameDeps {
   store: GameStore
   settings: () => GameSettings
   allowance: DayAllowance
   newId: () => string
+  track: Track
   random?: () => number
-}): GameService {
+}
+
+const dayFinished = (day: DayRecord): AnalyticsEvent => ({
+  name: 'game_day_finished',
+  mode: day.level >= FIRST_REBEL_LEVEL ? 'rebel' : 'boss',
+  level: day.level,
+  outcome: day.outcome,
+  seconds: day.playSeconds,
+})
+
+async function recordFor(
+  deps: GameDeps,
+  memberId: string,
+  player: Player,
+  day: DayRecord,
+): Promise<DayResult | 'implausible'> {
+  const settings = deps.settings()
+  const longest =
+    deps.allowance.factor * settings.dayLengthSeconds +
+    deps.allowance.extraSeconds
+  if (!plausible(player, day, longest)) return 'implausible'
+  const progress = progressAfter(player, day)
+  await deps.store.recordDay({ ...day, id: deps.newId(), memberId }, progress)
+  void deps.track(memberId, dayFinished(day))
+  return {
+    state: stateOf({ ...player, ...progress }, settings),
+    newBest: progress.bestLevel !== player.bestLevel,
+    place: await deps.store.place(memberId),
+  }
+}
+
+export function createGame(deps: GameDeps): GameService {
   const random = deps.random ?? Math.random
 
   const playerOf = async (memberId: string): Promise<Player> => {
@@ -190,27 +224,12 @@ export function createGame(deps: {
   return {
     state: async (memberId) =>
       stateOf(await playerOf(memberId), deps.settings()),
-    recordDay: async (memberId, day) => {
-      const settings = deps.settings()
-      const player = await playerOf(memberId)
-      const longest =
-        deps.allowance.factor * settings.dayLengthSeconds +
-        deps.allowance.extraSeconds
-      if (!plausible(player, day, longest)) return 'implausible'
-      const progress = progressAfter(player, day)
-      await deps.store.recordDay(
-        { ...day, id: deps.newId(), memberId },
-        progress,
-      )
-      return {
-        state: stateOf({ ...player, ...progress }, settings),
-        newBest: progress.bestLevel !== player.bestLevel,
-        place: await deps.store.place(memberId),
-      }
-    },
+    recordDay: async (memberId, day) =>
+      recordFor(deps, memberId, await playerOf(memberId), day),
     share: async (memberId, shared) => {
       await playerOf(memberId)
       await deps.store.share(memberId, shared)
+      if (shared) void deps.track(memberId, { name: 'game_result_shared' })
     },
     seeHint: async (memberId, hint) => {
       await playerOf(memberId)

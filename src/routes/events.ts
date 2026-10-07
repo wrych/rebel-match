@@ -10,7 +10,7 @@ const screens: readonly string[] = [
   'not-found',
 ]
 
-/** The two UI events of design §7, with their listed properties only. A
+/** The three UI events of design §7, with their listed properties only. A
  * screen is a route name, never a path, so no id rides along. */
 const uiEvent: z.ZodType<AnalyticsEvent> = z
   .discriminatedUnion('event', [
@@ -25,6 +25,10 @@ const uiEvent: z.ZodType<AnalyticsEvent> = z
           screen: z.string().refine((name) => screens.includes(name)),
         })
         .strict(),
+    }),
+    z.object({
+      event: z.literal('game_opened'),
+      props: z.object({}).strict(),
     }),
   ])
   .transform(

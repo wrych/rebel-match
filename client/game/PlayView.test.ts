@@ -232,4 +232,33 @@ describe('PlayView (R-GAME-12)', () => {
 
     expect(beacon).not.toHaveBeenCalled()
   })
+
+  it('shows the day’s hints first, the clock standing still until each is read (R-GAME-18)', async () => {
+    const view = mount(PlayView, {
+      props: { level: 4, seed: 1, tuning, hints: ['meeting', 'cooler'] },
+      attachTo: document.body,
+    })
+    frame(3)
+    await flushPromises()
+
+    expect(document.body.textContent).toContain('Meetings')
+    expect(document.querySelector('.hud .mono')?.textContent).toBe('09:00')
+    const gotIt = (): void => {
+      document
+        .querySelectorAll<HTMLButtonElement>('button')
+        .forEach((button) => {
+          if (button.textContent?.trim() === 'Got it') button.click()
+        })
+    }
+    gotIt()
+    await flushPromises()
+    expect(document.body.textContent).toContain('The water cooler')
+    gotIt()
+    frame(3)
+    await flushPromises()
+
+    expect(view.emitted('seen')).toEqual([['meeting'], ['cooler']])
+    expect(document.querySelector('.hud .mono')?.textContent).not.toBe('09:00')
+    view.unmount()
+  })
 })
