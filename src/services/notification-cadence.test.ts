@@ -73,6 +73,23 @@ describe('nextDaily', () => {
   ])('falls %s', (_case, after, expected) => {
     expect(nextDaily(at(after), zurich).toISOString()).toBe(expected)
   })
+
+  it('skips no day across the change to summer time', () => {
+    const lateSaturday = at('2026-03-28T22:30:00Z')
+
+    expect(nextDaily(lateSaturday, zurich).toISOString()).toBe(
+      '2026-03-29T06:00:00.000Z',
+    )
+  })
+
+  it('falls on the next day on the long day of the change to winter time', () => {
+    const justAfter = { ...zurich, dailyAt: '00:15' }
+    const earlySunday = at('2026-10-24T22:30:00Z')
+
+    expect(nextDaily(earlySunday, justAfter).toISOString()).toBe(
+      '2026-10-25T23:15:00.000Z',
+    )
+  })
 })
 
 describe('dueAt (R-NOTE-7)', () => {
