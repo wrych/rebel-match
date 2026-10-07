@@ -174,10 +174,10 @@ gzipped**. That is the floor, and it is already the largest single asset on the
 login path.
 
 Budget: **under 120 kB gzipped** for the whole client. If a dependency would
-breach it, the question is whether that screen needs the dependency or needs less
-of it. The M6 QR dry run on a phone over conference wifi is what proves the
-budget, not the number itself. The 9to5 game is a chunk of its own, loaded
-only when it is opened, and is not counted here (ADR 0045).
+breach it, the question is whether that screen needs the dependency or needs
+less of it. The M6 QR dry run on a phone over conference wifi is what proves the
+budget, not the number itself. The 9toRevolution game is a chunk of its own,
+loaded only when it is opened, and is not counted here (ADR 0045).
 
 ### The running version
 
@@ -286,13 +286,13 @@ The bottom tab bar, on member screens other than the welcome screen, reads Home
 icon in the accent colour, named "Home" for screen readers, in a column
 narrower than the others.
 
-### The 9to5 game
+### The 9toRevolution game
 
 An easter egg behind the impressum (R-GAME-1..20, ADR 0045, F18). It is the
 one screen drawn on a canvas, and the one played in landscape.
 
-**Layout.** Everything lives under `client/game/`, loaded as its own chunk
-when `/9to5` is first opened, so none of it counts against the login path's
+**Layout.** Everything lives under `client/game/`, loaded as its own chunk when
+`/9torevolution` is first opened, so none of it counts against the login path's
 bundle budget; the chunk itself aims for under 60 kB gzipped and uses no game
 library.
 
@@ -336,11 +336,11 @@ before the summit, a pixel-art renderer can replace this one without touching
 cannot enforce happy mode; it enforces the switch and onboarding, and the
 client hides the card and the game in calm mode (R-GAME-1).
 
-**Tuning.** Every number is a setting under `game.*`, in the 9to5 group of
-the settings screen, changeable by hosts as R-CFG-6 describes and stored in
-`setting_overrides` (ADR 0031). The client receives the values with each day
-it starts (`GET /api/game`, `POST /api/game/days`), so a change applies from
-the next day (R-GAME-17).
+**Tuning.** Every number is a setting under `game.*`, in the 9toRevolution group
+of the settings screen, changeable by hosts as R-CFG-6 describes and stored in
+`setting_overrides` (ADR 0031). The client receives the values with each day it
+starts (`GET /api/game`, `POST /api/game/days`), so a change applies from the
+next day (R-GAME-17).
 
 | Setting (per job)                         | Team Lead | Manager | Director |  VP | CEO |
 | ----------------------------------------- | --------: | ------: | -------: | --: | --: |
@@ -913,7 +913,7 @@ so `outbox_quotes (outbox_id, member_id)` lists them, each cascading from both
 sides, and erasing a member deletes every outbox entry it lists them on
 (R-MSG-6).
 
-### game_players (9to5 progress — R-GAME-15, R-GAME-16, ADR 0045)
+### game_players (9toRevolution progress — R-GAME-15, R-GAME-16, ADR 0045)
 
 ```sql
 CREATE TABLE game_players (
@@ -943,7 +943,7 @@ left off the board (R-NFR-7). No query outside the game's own endpoints reads
 this table, and those return the member's own row and the board only
 (R-GAME-15).
 
-### game_days (9to5 day log — R-GAME-14, recorded, not shown)
+### game_days (9toRevolution day log — R-GAME-14, recorded, not shown)
 
 ```sql
 CREATE TABLE game_days (
@@ -1097,7 +1097,7 @@ about it (R-NOTE-5).
 | GET    | `/api/cockpit`      | `{challenges[], following[], pendingIncoming, newConnections}`: my active challenges with same-boat / been-there / case-study counts counted as the matches view lists them, my followed trends, how many requests waiting for me arrived since I last opened Matches, and how many connections I have not opened were made since then, which together badge the nav (R-MINE-1,3,4, R-CONN-7,9). A connection counts from when it was made (`responded_at`). The requests themselves come from `/api/connections/incoming`. |
 | POST   | `/api/matches/seen` | Record that I opened the Matches screen, now: `204`. The screen sends it before each load, so whatever it then lists no longer badges the nav; something arriving in between still does (R-MINE-4).                                                                                                                                                                                                                                                                                                                         |
 
-### 9to5 (R-GAME-1..20)
+### 9toRevolution (R-GAME-1..20)
 
 Every endpoint answers `404` while the game is off or for a member not
 onboarded (R-GAME-1, R-NAV-8).
@@ -1189,8 +1189,8 @@ deep link reloads cleanly.
 | S30 | **Privacy notice** — the full notice with its version and date; public (R-ONB-9)                                                                                                                                                                                                                                                                                                                                                                                                      | `/privacy`                                            |
 | S31 | **Terms of use** — the terms with their version and date; public (R-ONB-13)                                                                                                                                                                                                                                                                                                                                                                                                           | `/terms`                                              |
 | S32 | **Impressum** — the people who made the app, one card each with portrait, name and responsibilities, browsed as the swipe deck; public (R-PROF-4)                                                                                                                                                                                                                                                                                                                                     | `/impressum`                                          |
-| S33 | **9to5** — the office game on a canvas, landscape only: joystick and action button, pause and menu (play from a job, share or stop sharing, leaderboard, leave), results card after each day, the CEO's choice; only in happy mode, while the game is on (R-GAME-1..12, R-GAME-14..16)                                                                                                                                                                                                | `/9to5`                                               |
-| S34 | **9to5 leaderboard** — every player's best by job, level and time, names only where shared, pseudonyms otherwise, the member's own row marked; only where S33 is shown (R-GAME-13, R-GAME-15)                                                                                                                                                                                                                                                                                         | `/9to5/leaderboard`                                   |
+| S33 | **9toRevolution** — the office game on a canvas, landscape only: joystick and action button, pause and menu (play from a job, share or stop sharing, leaderboard, leave), results card after each day, the CEO's choice; only in happy mode, while the game is on (R-GAME-1..12, R-GAME-14..16)                                                                                                                                                                                       | `/9torevolution`                                      |
+| S34 | **9toRevolution leaderboard** — every player's best by job, level and time, names only where shared, pseudonyms otherwise, the member's own row marked; only where S33 is shown (R-GAME-13, R-GAME-15)                                                                                                                                                                                                                                                                                | `/9torevolution/leaderboard`                          |
 
 Remaining overlays, deliberately: the "really decline this request?" confirm, the
 "link sent" / "copied" toasts, and the feedback action (a `mailto:`, not a

@@ -365,11 +365,11 @@ capability, not a secret** — and every requirement below exists because of tha
   name, job title, organization, sector, email, status, roles, when and through
   which invite they joined, the consent version they accepted and when, the
   analytics opt-in, and how many challenges and connection requests they have.
-  It SHALL leave out the member's 9to5 results, which no host sees (R-GAME-15).
-  From there a host SHALL be able to change their roles (R-ROLE-9) and delete
-  them (R-NFR-7), each within the host's own permissions; later member actions
-  belong on this page. For a deleted account it SHALL show when it will be
-  erased, and offer to restore it or erase it at once (ADR 0032).
+  It SHALL leave out the member's 9toRevolution results, which no host sees
+  (R-GAME-15). From there a host SHALL be able to change their roles (R-ROLE-9)
+  and delete them (R-NFR-7), each within the host's own permissions; later
+  member actions belong on this page. For a deleted account it SHALL show when
+  it will be erased, and offer to restore it or erase it at once (ADR 0032).
 - **R-MEM-3 (Selecting several)** — Each card SHALL carry a small **selector**
   that shows whether it is selected; tapping it, or holding the card, SHALL
   start selecting with that card chosen, and while selecting each tap selects
@@ -391,7 +391,7 @@ capability, not a secret** — and every requirement below exists because of tha
   the swipe deck is (R-OFF-1, R-LOOK-4), and closes with a card for the
   community. It is public and has its own URL (R-NAV-1). In happy mode, for a
   member who completed onboarding and while the game is on, one more card
-  follows the community's: the door to 9to5 (R-GAME-1).
+  follows the community's: the door to 9toRevolution (R-GAME-1).
 
 ---
 
@@ -696,8 +696,8 @@ at a screen instead of at the front door.
   | `/privacy`                           | full privacy notice (R-ONB-9)                  |
   | `/terms`                             | terms of use (R-ONB-13)                        |
   | `/impressum`                         | the people who made the app (R-PROF-4)         |
-  | `/9to5`                              | the 9to5 game (R-GAME-1)                       |
-  | `/9to5/leaderboard`                  | the 9to5 leaderboard (R-GAME-13)               |
+  | `/9torevolution`                     | the 9toRevolution game (R-GAME-1)              |
+  | `/9torevolution/leaderboard`         | the 9toRevolution leaderboard (R-GAME-13)      |
   | `/welcome`                           | two doors                                      |
   | `/ask`                               | submit a challenge                             |
   | `/challenges/:id`                    | detected trend for that challenge              |
@@ -864,15 +864,14 @@ What differs by environment is only whether mail **leaves the machine**.
 - **R-CFG-6 (Changing settings in the host tools)** — A host with
   `settings:manage` SHALL be able to change, on the settings screen, the
   spam-protection numbers except the trusted proxies, the invite defaults, and
-  the minimum challenge and "been there" note lengths (ADR 0031), and the 9to5
-  switch and tuning (R-GAME-17, ADR 0045). Each change
-  SHALL be checked against bounds and the order of paired limits (the minimum
-  challenge length never above the maximum), take effect without a restart on
-  every server within a minute, and show who made it and when. The host SHALL
-  be able to go back to the deployment's value. Each changeable value SHALL be
-  an editable field, saved on change and confirmed with the same "Saved" tick
-  as the profile screen (R-PROF-1); a host without `settings:manage` sees it
-  as text.
+  the minimum challenge and "been there" note lengths (ADR 0031), and the
+  9toRevolution switch and tuning (R-GAME-17, ADR 0045). Each change SHALL be
+  checked against bounds and the order of paired limits (the minimum challenge
+  length never above the maximum), take effect without a restart on every server
+  within a minute, and show who made it and when. The host SHALL be able to go
+  back to the deployment's value. Each changeable value SHALL be an editable
+  field, saved on change and confirmed with the same "Saved" tick as the profile
+  screen (R-PROF-1); a host without `settings:manage` sees it as text.
 
 ---
 
@@ -892,9 +891,9 @@ _(Decided by the maintainer after trying the redesign: ADR 0023.)_
   technology. _(It replaces the prototype's "CR" button.)_ The choice SHALL be
   remembered per browser and SHALL change colours and decoration only, never
   content, behaviour or anything recorded, with one exception: happy mode
-  reveals the 9to5 card and lets the game run (R-GAME-1, ADR 0045). IF the
-  browser refuses storage THEN the app SHALL still switch, and start calm next
-  time.
+  reveals the 9toRevolution card and lets the game run (R-GAME-1, ADR 0045). IF
+  the browser refuses storage THEN the app SHALL still switch, and start calm
+  next time.
 - **R-LOOK-3 (Modes are tokens)** — Colour modes SHALL be sets of colour tokens
   over one set of components, so a further mode (a dark mode, priorities C7) is a
   new token set rather than new screens. Every mode SHALL keep text readable
@@ -968,11 +967,10 @@ records, and nothing here shows a number to anyone (ADR 0033).
   with the challenge.
 - **R-STAT-4 (Delete my history)** — The profile screen SHALL offer **deleting
   one's activity history**, apart from deleting the account: after one
-  confirmation that says what goes, the member's views and their 9to5 day log
-  (R-GAME-14) SHALL be deleted. Their
-  challenges, "been there" notes, swipes, follows and connections SHALL stay;
-  they are content and decisions, not history, and losing the swipes would
-  deal every answered card again.
+  confirmation that says what goes, the member's views and their 9toRevolution
+  day log (R-GAME-14) SHALL be deleted. Their challenges, "been there" notes,
+  swipes, follows and connections SHALL stay; they are content and decisions,
+  not history, and losing the swipes would deal every answered card again.
 - **R-STAT-5 (Members are told)** — The data-usage consent SHALL say that
   activity is recorded and kept with the account, that the app may show
   combined figures, that personal data reaches another member only where a
@@ -1080,7 +1078,7 @@ notifications: they go out at once, whatever is chosen here (R-NFR-3).
 
 ---
 
-## 8i. 9to5, the office game
+## 8i. 9toRevolution, the office game
 
 An easter egg for members who play with the colours: a top-down office game
 behind the impressum's last card, in the spirit of the browser's offline
@@ -1098,14 +1096,15 @@ on are **rebel mode**, all of them the job **Rebel**. An **employee** is one of
 the office's people; the **player** is the character the member steers.
 
 - **R-GAME-1 (The door)** — WHILE the game is switched on (R-GAME-17), the
-  colour mode is happy and the visitor is a member who completed onboarding,
-  the impressum (R-PROF-4) SHALL end with a 9to5 card carrying a **Be a rebel**
-  button that opens `/9to5`. WHEN the mode is calm THE SYSTEM SHALL show neither
-  the card nor the game: `/9to5` shows "The rebels only come out in happy mode"
-  with a link to the impressum, and a running game pauses there (R-GAME-12).
-  WHILE the game is off, `/9to5`, `/9to5/leaderboard` and every game endpoint
-  SHALL answer as not found (R-NAV-8). A visitor not signed in, or not yet
-  onboarded, SHALL follow the deep-link rules (R-NAV-5, R-NAV-7).
+  colour mode is happy and the visitor is a member who completed onboarding, the
+  impressum (R-PROF-4) SHALL end with a 9toRevolution card carrying a **Be a
+  rebel** button that opens `/9torevolution`. WHEN the mode is calm THE SYSTEM
+  SHALL show neither the card nor the game: `/9torevolution` shows "The rebels
+  only come out in happy mode" with a link to the impressum, and a running game
+  pauses there (R-GAME-12). WHILE the game is off, `/9torevolution`,
+  `/9torevolution/leaderboard` and every game endpoint SHALL answer as not found
+  (R-NAV-8). A visitor not signed in, or not yet onboarded, SHALL follow the
+  deep-link rules (R-NAV-5, R-NAV-7).
 - **R-GAME-2 (The office)** — Each job SHALL be played on its own fixed floor
   plan, larger with each job, holding an **entrance**, a **meeting room**, one
   **cubicle** per employee, the boss's **office**, and the job's number of
@@ -1191,11 +1190,11 @@ the office's people; the **player** is the character the member steers.
   heat, a grey employee), and a floor map SHALL open and close from a button.
   A pause button SHALL stop the game, as SHALL hiding the tab or switching to
   calm mode; a paused game's clock and play time stand still.
-- **R-GAME-13 (Leaderboard)** — `/9to5/leaderboard` SHALL rank each player's
-  best result: by job, Rebel above CEO above VP above Director above Manager
-  above Team Lead, then by level, then by the shorter total play time until
-  that best was first reached (R-GAME-16). Each row SHALL show the place, the
-  name or pseudonym (R-GAME-15), the job and the level, and the member's own
+- **R-GAME-13 (Leaderboard)** — `/9torevolution/leaderboard` SHALL rank each
+  player's best result: by job, Rebel above CEO above VP above Director above
+  Manager above Team Lead, then by level, then by the shorter total play time
+  until that best was first reached (R-GAME-16). Each row SHALL show the place,
+  the name or pseudonym (R-GAME-15), the job and the level, and the member's own
   row SHALL be marked. It is shown only under the conditions of R-GAME-1.
 - **R-GAME-14 (Results and the day log)** — WHEN a day ends THE SYSTEM SHALL
   record it in the **day log**: the member, the level, won, lost or abandoned,
@@ -1263,7 +1262,7 @@ the office's people; the **player** is the character the member steers.
   after mutual opt-in. No public/unauthenticated page exposes member data.
 - **R-NFR-2 (Mobile-first)** — All member-facing screens SHALL be usable on a
   phone in portrait, since the launch mechanic is scanning a QR code during a
-  break. The 9to5 game alone is played in landscape (R-GAME-12); its
+  break. The 9toRevolution game alone is played in landscape (R-GAME-12); its
   leaderboard is a portrait screen like any other.
 - **R-NFR-3 (Onboarding speed)** — A first-time member SHALL be able to get from
   scanning the QR code to a completed onboarding screen (display name entered,
@@ -1307,7 +1306,7 @@ the office's people; the **player** is the character the member steers.
 - **R-NFR-7 (Deletion)** — The system SHALL support deleting a member and the
   personal data attached to them — challenges, connection requests, swipes,
   deck views (R-STAT-3), follows, role grants, notifications (R-NOTE-11), the
-  profile draft (R-ONB-15), their 9to5 progress, results and pseudonym
+  profile draft (R-ONB-15), their 9toRevolution progress, results and pseudonym
   (R-GAME-16), and their **outbound message log entries** (R-MSG-6) — on
   request (GDPR erasure), at minimum via an admin action. Deleting SHALL first
   **deactivate** the account at once: no sign-in, and nothing of theirs shown

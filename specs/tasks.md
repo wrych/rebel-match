@@ -349,21 +349,21 @@ printed dev link (R-DEV-6).
 - [x] Show the running version at the foot of the menu: CI passes the commit
       to the image, `/api/config` returns it. _(R-NFR-11)_
 
-## M7 — 9to5, the office game _(S8, F18, ADR 0045 — behind its switch)_
+## M7 — 9toRevolution, the office game _(S8, F18, ADR 0045 — behind its switch)_
 
 Off by default; hosts switch it on when it is ready, so nothing here can hold
 up the summit. One pull request per item, in this order.
 
-- [ ] Settings: `game.enabled` and the tuning in a 9to5 group, changeable by
-      hosts; game routes and endpoints not found while off. _(R-GAME-17,
-      R-GAME-1, R-CFG-6)_
+- [ ] Settings: `game.enabled` and the tuning in a 9toRevolution group,
+      changeable by hosts; game routes and endpoints not found while off.
+      _(R-GAME-17, R-GAME-1, R-CFG-6)_
 - [ ] Tables `game_players` and `game_days`; `GET /api/game`,
       `POST /api/game/days` with its bounds and rate limit,
       `PUT /api/game/sharing`, `PUT /api/game/hints/:hint`; pseudonyms;
       erasure and history deletion. _(R-GAME-14..16, R-GAME-20, R-NFR-7, R-STAT-4)_
 - [ ] Leaderboard endpoint and screen S34. _(R-GAME-13, R-GAME-15)_
-- [ ] Impressum card in happy mode, `/9to5` route as a lazy chunk, calm-mode
-      and rotate screens. _(R-GAME-1, R-GAME-12)_
+- [ ] Impressum card in happy mode, `/9torevolution` route as a lazy chunk,
+      calm-mode and rotate screens. _(R-GAME-1, R-GAME-12)_
 - [ ] Game core, boss mode: floors, day clock, temptation, files, losing,
       seeded and unit-tested without a canvas. _(R-GAME-2..4, R-GAME-7)_
 - [ ] Renderer and controls: vector characters, camera, edge arrows, floor

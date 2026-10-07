@@ -41,7 +41,7 @@ Conventions:
                    ├──►  F17 Notifications
                    └──►  F12 Feedback
 
-   Happy mode, onboarded: F18 9to5 (impressum → game → leaderboard)
+   Happy mode, onboarded: F18 9toRevolution (impressum → game → leaderboard)
 
    Admin only: F10 Approvals · F16 Invite links · F11 GDPR deletion
                F14 Outbound message log
@@ -653,15 +653,16 @@ and expired ones are purged (ADR 0034).
 
 ---
 
-## F18 — 9to5, the office game
+## F18 — 9toRevolution, the office game
 
 **Actor:** an onboarded member in happy mode, while hosts have the game on.
-**Screens:** S32 Impressum, S33 9to5, S34 9to5 leaderboard (ADR 0045).
+**Screens:** S32 Impressum, S33 9toRevolution, S34 9toRevolution leaderboard
+(ADR 0045).
 
-1. In happy mode the member browses the impressum to its end, past the
-   community card, and finds the 9to5 card. **Be a rebel** → **S33** `/9to5`
-   (R-GAME-1). `GET /api/game` returns their progress and the tuning for the
-   day; `game_opened` is posted (R-GAME-19).
+1. In happy mode the member browses the impressum to its end, past the community
+   card, and finds the 9toRevolution card. **Be a rebel** → **S33**
+   `/9torevolution` (R-GAME-1). `GET /api/game` returns their progress and the
+   tuning for the day; `game_opened` is posted (R-GAME-19).
 2. The phone is turned to landscape (R-GAME-12). The first day shows its hints
    (R-GAME-18): walk into your office, take a file, assign it to the tempted
    employee.
@@ -682,8 +683,8 @@ and expired ones are purged (ADR 0034).
    people on a break, talks grey employees back into rebels, and once a day
    sends two of them to a masterclass (R-GAME-9..11). Each level shortens the
    interval between files, without end.
-9. From the results card or the game's menu → **S34** `/9to5/leaderboard`
-   (R-GAME-13).
+9. From the results card or the game's menu → **S34**
+   `/9torevolution/leaderboard` (R-GAME-13).
 
 **Branches**
 

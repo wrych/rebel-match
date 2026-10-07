@@ -1,4 +1,4 @@
-# 0045. Hide 9to5, an office game, behind the impressum in happy mode
+# 0045. Hide 9toRevolution, an office game, behind the impressum in happy mode
 
 - **Status:** Accepted
 - **Date:** 2026-10-07
@@ -19,10 +19,11 @@ deploy.
 
 ## Decision
 
-- **9to5**, a top-down office game, is the impressum's last card, shown only in
-  happy mode to members who completed onboarding. Its **Be a rebel** button
-  opens the game at `/9to5`, which also runs only in happy mode. This is the
-  one exception to R-LOOK-2: happy mode reveals the card and lets the game run.
+- **9toRevolution**, a top-down office game, is the impressum's last card, shown
+  only in happy mode to members who completed onboarding. Its **Be a rebel**
+  button opens the game at `/9torevolution`, which also runs only in happy mode.
+  This is the one exception to R-LOOK-2: happy mode reveals the card and lets
+  the game run.
 - **Gamification is allowed** within the game: jobs, levels, a leaderboard.
   W1 leaves the _Won't_ list; the app outside the game stays as it is.
 - **A game's results are recorded, never shown with a real name** unless the
@@ -71,4 +72,4 @@ deploy.
 
 Requirements: R-GAME-1..20, R-LOOK-2, R-MEM-2, R-PROF-4, R-CFG-6. Amends ADR
 0023 and ADR 0031. Spec: `specs/requirements.md` §8i, `specs/design.md` §1
-(The 9to5 game), §2, §3, §4, §7, `specs/flows.md` F18.
+(The 9toRevolution game), §2, §3, §4, §7, `specs/flows.md` F18.
