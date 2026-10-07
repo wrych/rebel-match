@@ -121,17 +121,40 @@ jobs:
           path: ${{ runner.temp }}/image.tar
           retention-days: 1
 
-  # Non-prod deploys (ADR 0025): staging from main, and a preview for a pull
-  # request that carries the `preview` label (ADR 0028). Only after `check` and
-  # `build` are green, so nothing deploys from a red commit. Pull requests from
-  # forks get no token from GitHub, so no preview.
-  deploy:
+  # Whether this run's commit is still the one to deploy (scripts/
+  # deploy-is-current.sh). Its own job, so a stale run never joins the deploy
+  # queue, where it would cancel a newer deploy waiting there, or a preview's
+  # cleanup.
+  current:
     needs: [check, build]
     if: >-
       github.event_name == 'push' ||
       (github.event.pull_request.head.repo.full_name == github.repository &&
        contains(github.event.pull_request.labels.*.name, 'preview') &&
        (github.event.action != 'labeled' || github.event.label.name == 'preview'))
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      current: ${{ steps.current.outputs.current }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: ${{ github.repository }}
+      SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      PR: ${{ github.event.pull_request.number }}
+    steps:
+      - uses: actions/checkout@v6
+      - id: current
+        run: scripts/deploy-is-current.sh
+
+  # Non-prod deploys (ADR 0025): staging from main, and a preview for a pull
+  # request that carries the `preview` label (ADR 0028). Only after `check` and
+  # `build` are green, so nothing deploys from a red commit. Pull requests from
+  # forks get no token from GitHub, so no preview.
+  deploy:
+    needs: [check, build, current]
+    if: needs.current.outputs.current == 'true'
     runs-on: ubuntu-latest
     environment: ${{ github.event_name == 'push' && 'staging' || 'dev' }}
     concurrency:
@@ -140,6 +163,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
+      pull-requests: read
 
     env:
       TARGET: ${{ github.event_name == 'push' && 'staging' || format('pr-{0}', github.event.pull_request.number) }}
@@ -173,7 +197,19 @@ jobs:
           name: image
           path: ${{ runner.temp }}
 
+      # Asked again: a re-run of this job alone reuses `current`'s answer from
+      # when the run began, and a newer commit may have deployed since.
+      - name: Still the commit to deploy
+        id: current
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          PR: ${{ github.event.pull_request.number }}
+        run: scripts/deploy-is-current.sh
+
       - name: Push the image built for this commit
+        if: steps.current.outputs.current == 'true'
         id: image
         env:
           REF: ${{ vars.GCP_IMAGE_REPO }}/app:${{ github.sha }}
@@ -187,6 +223,7 @@ jobs:
           echo "digest=$digest" >> "$GITHUB_OUTPUT"
 
       - name: Deploy
+        if: steps.current.outputs.current == 'true'
         env:
           IMAGE: ${{ vars.GCP_IMAGE_REPO }}/app@${{ steps.image.outputs.digest }}
         run: scripts/deploy.sh
