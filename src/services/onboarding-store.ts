@@ -3,6 +3,19 @@ import type { Database } from '../db/connect.js'
 import { members, outbox } from '../db/schema.js'
 import type { OnboardingStore } from './onboarding.js'
 
+async function latestSignInEmailAt(
+  db: Database,
+  memberId: string,
+): Promise<Date | null> {
+  const [row] = await db
+    .select({ at: outbox.createdAt })
+    .from(outbox)
+    .where(and(eq(outbox.memberId, memberId), eq(outbox.kind, 'magic_link')))
+    .orderBy(desc(outbox.createdAt))
+    .limit(1)
+  return row?.at ?? null
+}
+
 /** Onboarding over `members` (design §2). `requested_name` and
  * `requested_org` only pre-fill; they are never copied without the member
  * submitting them (R-AUTH-12). */
@@ -20,8 +33,6 @@ export function createOnboardingStore(db: Database): OnboardingStore {
         org: row.org ?? row.requestedOrg,
         sector: row.sector,
         companySize: row.companySize,
-        analyticsVersion:
-          row.analyticsConsentAt === null ? null : row.analyticsConsentVersion,
       }
     },
     save: async (memberId, input, acceptedAt) => {
@@ -35,22 +46,18 @@ export function createOnboardingStore(db: Database): OnboardingStore {
           companySize: input.companySize ?? null,
           consentVersion: input.consentVersion,
           consentAt: acceptedAt,
-          analyticsConsentVersion: input.analyticsVersion ?? null,
-          analyticsConsentAt:
-            input.analyticsVersion === undefined ? null : acceptedAt,
         })
         .where(eq(members.id, memberId))
     },
-    signInEmailAt: async (memberId) => {
+    consent: async (memberId) => {
       const [row] = await db
-        .select({ at: outbox.createdAt })
-        .from(outbox)
-        .where(
-          and(eq(outbox.memberId, memberId), eq(outbox.kind, 'magic_link')),
-        )
-        .orderBy(desc(outbox.createdAt))
-        .limit(1)
-      return row?.at ?? null
+        .select({ version: members.consentVersion, at: members.consentAt })
+        .from(members)
+        .where(eq(members.id, memberId))
+      if (row === undefined || row.version === null || row.at === null)
+        return null
+      return { version: row.version, acceptedAt: row.at }
     },
+    signInEmailAt: (memberId) => latestSignInEmailAt(db, memberId),
   }
 }

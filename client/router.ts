@@ -2,6 +2,7 @@ import type { Component } from 'vue'
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { routeTable, type Access } from '../src/routes'
 import { decide } from './guards'
+import { typedProfile } from './lib/onboarding'
 import { loadMe } from './lib/session'
 import AccessRequestedScreen from './screens/AccessRequestedScreen.vue'
 import ApplicantsScreen from './screens/ApplicantsScreen.vue'
@@ -16,7 +17,9 @@ import MembersScreen from './screens/MembersScreen.vue'
 import MemberScreen from './screens/MemberScreen.vue'
 import NotFoundScreen from './screens/NotFoundScreen.vue'
 import NotificationsScreen from './screens/NotificationsScreen.vue'
-import OnboardingScreen from './screens/OnboardingScreen.vue'
+import OnboardingPrivacyScreen from './screens/OnboardingPrivacyScreen.vue'
+import OnboardingProfileScreen from './screens/OnboardingProfileScreen.vue'
+import OnboardingUsageScreen from './screens/OnboardingUsageScreen.vue'
 import OfferDoneScreen from './screens/OfferDoneScreen.vue'
 import OfferNoteScreen from './screens/OfferNoteScreen.vue'
 import OfferScreen from './screens/OfferScreen.vue'
@@ -63,7 +66,9 @@ export const router = createRouter({
     screen('login', LoginScreen),
     screen('sign-in', SignInScreen),
     screen('access-requested', AccessRequestedScreen),
-    screen('onboarding', OnboardingScreen),
+    screen('onboarding', OnboardingProfileScreen),
+    screen('onboarding-privacy', OnboardingPrivacyScreen),
+    screen('onboarding-usage', OnboardingUsageScreen),
     screen('privacy', PrivacyScreen),
     screen('terms', TermsScreen),
     screen('welcome', WelcomeScreen),
@@ -102,6 +107,7 @@ router.beforeEach(async (to) => {
       permission: to.meta['permission'] as string | undefined,
     },
     await loadMe(),
+    typedProfile() !== null,
   )
 
   if (decision.kind === 'redirect') return decision.to

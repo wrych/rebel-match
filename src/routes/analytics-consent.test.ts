@@ -62,6 +62,19 @@ describe('PUT /api/me/analytics', () => {
     expect(chosen).toEqual([{ memberId: 'm-ada', choice: body }])
   })
 
+  it('passes on that the opt-in comes from the usage step (R-ANA-6)', async () => {
+    const { app, chosen } = setup()
+    const body = { optIn: true, version: '2026-10-07', from: 'onboarding' }
+
+    const response = await request(app)
+      .put('/api/me/analytics')
+      .set('Cookie', await cookie())
+      .send(body)
+
+    expect(response.status).toBe(204)
+    expect(chosen).toEqual([{ memberId: 'm-ada', choice: body }])
+  })
+
   it('answers 409 when the words changed', async () => {
     const response = await request(setup('stale').app)
       .put('/api/me/analytics')
@@ -72,20 +85,22 @@ describe('PUT /api/me/analytics', () => {
     expect(response.body).toEqual({ result: 'stale_analytics' })
   })
 
-  it.each([[{}], [{ optIn: true }], [{ optIn: 'yes' }]])(
-    'refuses %j with 400',
-    async (body) => {
-      const { app, chosen } = setup()
+  it.each([
+    [{}],
+    [{ optIn: true }],
+    [{ optIn: 'yes' }],
+    [{ optIn: true, version: '2026-10-07', from: 'profile' }],
+  ])('refuses %j with 400', async (body) => {
+    const { app, chosen } = setup()
 
-      const response = await request(app)
-        .put('/api/me/analytics')
-        .set('Cookie', await cookie())
-        .send(body)
+    const response = await request(app)
+      .put('/api/me/analytics')
+      .set('Cookie', await cookie())
+      .send(body)
 
-      expect(response.status).toBe(400)
-      expect(chosen).toEqual([])
-    },
-  )
+    expect(response.status).toBe(400)
+    expect(chosen).toEqual([])
+  })
 
   it('asks for a session', async () => {
     const response = await request(setup().app)

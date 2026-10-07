@@ -104,7 +104,7 @@ describe('onboarding over Postgres (F2)', () => {
     expect(admin.status).toBe(404)
   })
 
-  it('records nothing for analytics when the box is left unticked (R-ANA-4)', async () => {
+  it('records nothing for analytics until the member shares (R-ANA-4)', async () => {
     const [row] = await db.query(
       'SELECT analytics_consent_version, analytics_consent_at FROM members WHERE id = ?',
       [newcomer.id],
@@ -117,14 +117,14 @@ describe('onboarding over Postgres (F2)', () => {
     expect(await me()).toMatchObject({ analyticsOptIn: false })
   })
 
-  it('records the opt-in when the box is ticked, and withdraws it (R-ANA-4)', async () => {
+  it('records the opt-in when the member shares on the usage step (R-ANA-4)', async () => {
     await request(app)
-      .post('/api/onboarding')
+      .put('/api/me/analytics')
       .set('Cookie', cookie)
       .send({
-        name: 'Ada Rebel',
-        consentVersion: config.consentVersion,
-        analyticsVersion: config.analyticsVersion,
+        optIn: true,
+        version: config.analyticsVersion,
+        from: 'onboarding',
       })
       .expect(204)
 
@@ -135,9 +135,19 @@ describe('onboarding over Postgres (F2)', () => {
     expect(row?.['analytics_consent_version']).toBe(config.analyticsVersion)
     expect(Date.parse(String(row?.['analytics_consent_at']))).not.toBeNaN()
     expect(await me()).toMatchObject({ analyticsOptIn: true })
-    const form = await request(app).get('/api/onboarding').set('Cookie', cookie)
-    expect(form.body).toMatchObject({ analyticsOptIn: true })
+  })
 
+  it('keeps the opt-in when the member confirms the consent again (ADR 0041)', async () => {
+    await request(app)
+      .post('/api/onboarding')
+      .set('Cookie', cookie)
+      .send({ name: 'Ada Rebel', consentVersion: config.consentVersion })
+      .expect(204)
+
+    expect(await me()).toMatchObject({ onboarded: true, analyticsOptIn: true })
+  })
+
+  it('withdraws the opt-in on request (R-ANA-4)', async () => {
     await request(app)
       .put('/api/me/analytics')
       .set('Cookie', cookie)
@@ -154,6 +164,16 @@ describe('onboarding over Postgres (F2)', () => {
     )
 
     expect(await me()).toMatchObject({ onboarded: false })
+  })
+
+  it('reads the consent version confirmed and when, for the onboarding time (R-NFR-3)', async () => {
+    const store = createOnboardingStore(db.drizzle)
+
+    expect(await store.consent(newcomer.id)).toEqual({
+      version: '2000-01-01',
+      acceptedAt: expect.any(Date) as Date,
+    })
+    expect(await store.consent(randomUUID())).toBeNull()
   })
 
   it('finds the latest sign-in email, for the onboarding time (R-NFR-3)', async () => {

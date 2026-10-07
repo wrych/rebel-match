@@ -4,7 +4,6 @@ import { describe, expect, it } from 'vitest'
 import { createAuth, createMemoryAuthStore } from '../auth/index.js'
 import { loadConfig } from '../config.js'
 import { configPolicy } from '../permissions.js'
-import type { AnalyticsEvent } from '../services/analytics.js'
 import type {
   OnboardingInput,
   OnboardingOutcome,
@@ -29,28 +28,19 @@ const draft = {
   org: 'Rebels',
   sector: null,
   companySize: null,
-  analyticsOptIn: false,
 }
 
-function setup(
-  outcome: OnboardingOutcome = { result: 'done', secondsToOnboard: 84 },
-): {
+function setup(outcome: OnboardingOutcome = 'done'): {
   app: Express
   completed: { memberId: string; input: OnboardingInput }[]
-  tracked: [string, AnalyticsEvent][]
 } {
   const completed: { memberId: string; input: OnboardingInput }[] = []
-  const tracked: [string, AnalyticsEvent][] = []
   const app = express()
   app.use(express.json())
   app.use(
     onboardingRoutes({
       auth,
       config,
-      track: (memberId, event) => {
-        tracked.push([memberId, event])
-        return Promise.resolve()
-      },
       onboarding: {
         draft: () => Promise.resolve(draft),
         complete: (memberId, input) => {
@@ -60,7 +50,7 @@ function setup(
       },
     }),
   )
-  return { app, completed, tracked }
+  return { app, completed }
 }
 
 async function cookie(): Promise<string> {
@@ -69,7 +59,7 @@ async function cookie(): Promise<string> {
 }
 
 describe('GET /api/onboarding', () => {
-  it('pre-fills the form and names the consent and analytics words in force (F2)', async () => {
+  it('pre-fills the profile and names the consent words in force (F2)', async () => {
     const response = await request(setup().app)
       .get('/api/onboarding')
       .set('Cookie', await cookie())
@@ -77,7 +67,6 @@ describe('GET /api/onboarding', () => {
     expect(response.body).toEqual({
       ...draft,
       consentVersion: config.consentVersion,
-      analyticsVersion: config.analyticsVersion,
     })
   })
 
@@ -137,35 +126,23 @@ describe('POST /api/onboarding', () => {
     })
   })
 
-  it('reports onboarding with the consent version, and not a refused one (R-ANA-1)', async () => {
-    const done = setup()
-    const stale = setup({ result: 'stale_consent' })
-    const body = { name: 'Ada', consentVersion: config.consentVersion }
+  it('takes no analytics choice: the usage step makes it (ADR 0041)', async () => {
+    const { app, completed } = setup()
 
-    await request(done.app)
+    await request(app)
       .post('/api/onboarding')
       .set('Cookie', await cookie())
-      .send(body)
-    await request(stale.app)
-      .post('/api/onboarding')
-      .set('Cookie', await cookie())
-      .send(body)
+      .send({
+        name: 'Ada',
+        consentVersion: config.consentVersion,
+        analyticsVersion: config.analyticsVersion,
+      })
 
-    expect(done.tracked).toEqual([
-      [
-        'm-new',
-        {
-          name: 'onboarding_completed',
-          consent_version: config.consentVersion,
-          seconds_to_onboard: 84,
-        },
-      ],
-    ])
-    expect(stale.tracked).toEqual([])
+    expect(completed[0]?.input).not.toHaveProperty('analyticsVersion')
   })
 
   it('answers 409 when the consent accepted is no longer current (R-ONB-4)', async () => {
-    const response = await request(setup({ result: 'stale_consent' }).app)
+    const response = await request(setup('stale_consent').app)
       .post('/api/onboarding')
       .set('Cookie', await cookie())
       .send({ name: 'Ada', consentVersion: 'old' })
@@ -202,24 +179,5 @@ describe('POST /api/onboarding', () => {
 
     expect(response.status).toBe(401)
     expect(completed).toEqual([])
-  })
-
-  it('sends no time when the sign-in email is no longer kept (R-NFR-3)', async () => {
-    const { app, tracked } = setup({ result: 'done', secondsToOnboard: null })
-
-    await request(app)
-      .post('/api/onboarding')
-      .set('Cookie', await cookie())
-      .send({ name: 'Ada', consentVersion: config.consentVersion })
-
-    expect(tracked).toEqual([
-      [
-        'm-new',
-        {
-          name: 'onboarding_completed',
-          consent_version: config.consentVersion,
-        },
-      ],
-    ])
   })
 })

@@ -367,6 +367,13 @@ const catalogue: Group[] = [
         read: (c) => c.limits.swipeMinPx,
         unit: ['pixel', 'pixels'],
       },
+      {
+        name: 'Scroll hint on the privacy step moves',
+        explanation:
+          'How far one tap on the arrow scrolls the privacy summary, as a share of the screen height.',
+        fixed: true,
+        read: (c) => `${String(Math.round(c.limits.scrollHintShare * 100))}%`,
+      },
     ],
   },
   {

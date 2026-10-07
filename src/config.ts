@@ -26,6 +26,9 @@ const SAVED_TICK_MS = 2500
 const HOLD_TO_SELECT_MS = 500
 /** How far a finger travels across a deck card to browse (R-OFF-1). */
 const SWIPE_MIN_PX = 50
+/** The share of the visible height one tap on the privacy step's scroll hint
+ * moves the summary, so it never jumps to the end (R-ONB-10). */
+const SCROLL_HINT_SHARE = 0.6
 const INVITE_MAX_USES_CEILING = 0xffffffff
 // connection_requests.message (src/db/schema.ts).
 const CONNECTION_MESSAGE_MAX_CHARS = 600
@@ -334,6 +337,7 @@ export interface Limits {
   savedTickMs: number
   holdToSelectMs: number
   swipeMinPx: number
+  scrollHintShare: number
   inviteMaxUsesCeiling: number
   connectionMessageMaxChars: number
 }
@@ -445,6 +449,7 @@ function limitsFrom(env: Env): Limits {
     savedTickMs: SAVED_TICK_MS,
     holdToSelectMs: HOLD_TO_SELECT_MS,
     swipeMinPx: SWIPE_MIN_PX,
+    scrollHintShare: SCROLL_HINT_SHARE,
     inviteMaxUsesCeiling: INVITE_MAX_USES_CEILING,
     connectionMessageMaxChars: CONNECTION_MESSAGE_MAX_CHARS,
   }

@@ -6,6 +6,7 @@ describe('showsTabs', () => {
     ['onboarded', 'cockpit', true],
     ['onboarded', 'challenge', true],
     ['onboarded', 'welcome', false],
+    ['onboarded', 'onboarding-usage', false],
     ['session', 'onboarding', false],
     ['public', 'login', false],
     [undefined, 'not-found', false],

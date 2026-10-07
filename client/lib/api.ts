@@ -18,6 +18,7 @@ export interface ClientConfig {
     erasureGraceDays: number
     holdToSelectMs: number
     swipeMinPx: number
+    scrollHintShare: number
     inviteMaxUsesCeiling: number
   }
   consentVersion: string
