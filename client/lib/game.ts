@@ -1,7 +1,7 @@
-import type { Job } from '../../src/game/levels'
-import type { GameState, Leaderboard } from '../../src/services/game'
+import type { DayRecord, Job } from '../../src/game/levels'
+import type { DayResult, GameState, Leaderboard } from '../../src/services/game'
 
-export type { GameState, Job, Leaderboard }
+export type { DayResult, GameState, Job, Leaderboard }
 
 const jobNames: Readonly<Record<Job, string>> = {
   teamLead: 'Team Lead',
@@ -52,4 +52,18 @@ export async function shareName(shared: boolean): Promise<void> {
   })
   if (!response.ok)
     throw new Error(`sharing not saved (${String(response.status)})`)
+}
+
+/** Records a finished or abandoned day; null once the office has closed
+ * (R-GAME-14, R-GAME-17). */
+export async function recordDay(day: DayRecord): Promise<DayResult | null> {
+  const response = await fetch('/api/game/days', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(day),
+  })
+  if (response.status === 404) return null
+  if (!response.ok)
+    throw new Error(`day not recorded (${String(response.status)})`)
+  return (await response.json()) as DayResult
 }

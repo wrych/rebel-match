@@ -47,7 +47,8 @@ function settle(state: DayState): void {
  * play out the same way. A finished day stays as it is. */
 export function step(previous: DayState, input: Input, dt: number): DayState {
   if (previous.outcome !== null) return previous
-  const state = structuredClone(previous)
+  const { tuning, ...rest } = previous
+  const state: DayState = { ...structuredClone(rest), tuning }
   state.clock = Math.min(state.clock + dt, state.tuning.dayLengthSeconds)
   finish(state)
   movePlayer(state, input.move, dt)

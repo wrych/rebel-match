@@ -167,7 +167,7 @@ export function startDay(
     mode,
     level,
     floor: job,
-    tuning,
+    tuning: Object.freeze({ ...tuning }),
     clock: 0,
     seed: next,
     player: { position: centreOf(floor.start), carrying: false, busy: null },

@@ -32,6 +32,16 @@ function serve(
   const fetchMock = vi.fn((url: string, init?: RequestInit) => {
     if (init?.method === 'PUT')
       return Promise.resolve({ ok: sharing < 300, status: sharing })
+    if (init?.method === 'POST')
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          state: { ...state, resumeLevel: 5 },
+          newBest: true,
+          place: { position: 1, of: 1 },
+        }),
+      })
     if (url === '/api/config')
       return Promise.resolve({
         ok: config < 300,
@@ -50,7 +60,7 @@ function serve(
 
 async function mountScreen(): Promise<ReturnType<typeof mount>> {
   const screen = mount(GameScreen, {
-    global: { stubs: { RouterLink: RouterLinkStub } },
+    global: { stubs: { RouterLink: RouterLinkStub, PlayView: true } },
   })
   await flushPromises()
   return screen
@@ -131,5 +141,48 @@ describe('GameScreen (R-GAME-1, R-GAME-15, R-GAME-16)', () => {
 
     expect((toggle.element as HTMLInputElement).checked).toBe(true)
     expect(screen.find('[role="alert"]').exists()).toBe(false)
+  })
+
+  it('starts the day it resumes at, and records how it ended (R-GAME-14)', async () => {
+    applyMood('happy')
+    const fetchMock = serve(state)
+    const screen = await mountScreen()
+
+    await screen.find('button.btn-dark').trigger('click')
+    const play = screen.findComponent({ name: 'PlayView' })
+    expect(play.props('level')).toBe(4)
+    play.vm.$emit('ended', { outcome: 'won', score: 3, seconds: 88 })
+    await flushPromises()
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/game/days',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ level: 4, outcome: 'won', playSeconds: 88 }),
+      }),
+    )
+    expect(screen.text()).toContain('Day won.')
+    expect(screen.text()).toContain('level 5')
+  })
+
+  it('records a day left unfinished as abandoned', async () => {
+    applyMood('happy')
+    const fetchMock = serve(state)
+    const screen = await mountScreen()
+
+    await screen.find('button.btn-dark').trigger('click')
+    screen.findComponent({ name: 'PlayView' }).vm.$emit('leave', 12)
+    await flushPromises()
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/game/days',
+      expect.objectContaining({
+        body: JSON.stringify({
+          level: 4,
+          outcome: 'abandoned',
+          playSeconds: 12,
+        }),
+      }),
+    )
   })
 })
