@@ -10,8 +10,9 @@ export interface ActivityStore {
     memberId: string
     challengeId: string
   }): Promise<boolean>
-  /** Deletes the member's views, and nothing else (R-STAT-4). */
-  forgetViews(memberId: string): Promise<void>
+  /** Deletes the member's views and game day log, and nothing else
+   * (R-STAT-4, R-GAME-16). */
+  forgetHistory(memberId: string): Promise<void>
   /** Records an open of the invite the token names, if any does. */
   recordOpen(open: { id: string; token: string }): Promise<void>
 }
@@ -39,7 +40,7 @@ export function createActivity(deps: {
       (await deps.store.recordView({ id: deps.newId(), memberId, challengeId }))
         ? 'recorded'
         : 'not_found',
-    forgetHistory: (memberId) => deps.store.forgetViews(memberId),
+    forgetHistory: (memberId) => deps.store.forgetHistory(memberId),
     inviteOpened: (token) => deps.store.recordOpen({ id: deps.newId(), token }),
   }
 }

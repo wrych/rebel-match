@@ -209,6 +209,28 @@ const gameGroups: Group[] = [
         'How long the boss talks before everyone goes back to work.',
         SECONDS,
       ),
+      {
+        name: 'Game days one member may record per minute',
+        explanation:
+          'More than this from one member is refused, to slow a script ' +
+          'sending scores.',
+        read: (c) => c.gameRecordsPerMinute,
+        unit: ['day', 'days'],
+      },
+      {
+        name: 'A game day’s record may run up to',
+        explanation:
+          'Day lengths, plus the seconds below, before a record is refused ' +
+          'as one no day can take. A paused day’s clock stands still.',
+        read: (c) => c.gameDayAllowance.factor,
+        unit: ['day length', 'day lengths'],
+      },
+      {
+        name: 'Plus',
+        explanation: 'Added to the day lengths above.',
+        read: (c) => c.gameDayAllowance.extraSeconds,
+        unit: SECONDS,
+      },
       gameEntry(
         'meetingSeconds',
         'A meeting lasts',

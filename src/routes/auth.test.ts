@@ -239,6 +239,7 @@ describe('GET /auth/me', () => {
         'challenge:create',
         'challenge:swipe',
         'connection:request',
+        'game:play',
       ],
     })
   })

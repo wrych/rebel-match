@@ -113,6 +113,13 @@
       "when": 1791372843817,
       "tag": "0015_first_onboarding",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1791407771213,
+      "tag": "0016_game",
+      "breakpoints": true
     }
   ]
 }

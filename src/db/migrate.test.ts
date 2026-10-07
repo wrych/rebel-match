@@ -52,6 +52,7 @@ describe('applyMigrations on Postgres (ADR 0024)', () => {
       '0013_notification_claims.sql',
       '0014_trend_notifications.sql',
       '0015_first_onboarding.sql',
+      '0016_game.sql',
     ])
     expect(await applyMigrations(connection, MIGRATIONS)).toEqual([])
     expect(await tableExists('connection_requests')).toBe(true)

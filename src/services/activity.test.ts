@@ -19,7 +19,7 @@ function setup(dealable: boolean): {
         if (dealable) views.push(view)
         return Promise.resolve(dealable)
       },
-      forgetViews: (memberId) => {
+      forgetHistory: (memberId) => {
         forgotten.push(memberId)
         return Promise.resolve()
       },

@@ -3,6 +3,7 @@ import type { Database } from '../db/connect.js'
 import {
   challenges,
   deckViews,
+  gameDays,
   inviteOpens,
   invites,
   members,
@@ -68,8 +69,11 @@ export function createActivityStore(db: Database): ActivityStore {
         .returning({ id: deckViews.id })
       return written.length > 0
     },
-    forgetViews: async (memberId) => {
-      await db.delete(deckViews).where(eq(deckViews.memberId, memberId))
+    forgetHistory: async (memberId) => {
+      await db.transaction(async (tx) => {
+        await tx.delete(deckViews).where(eq(deckViews.memberId, memberId))
+        await tx.delete(gameDays).where(eq(gameDays.memberId, memberId))
+      })
     },
     recordOpen: (open) => recordOpen(db, open),
   }
