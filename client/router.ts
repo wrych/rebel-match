@@ -3,6 +3,7 @@ import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { routeTable, type Access } from '../src/routes'
 import { decide } from './guards'
 import { typedProfile } from './lib/onboarding'
+import { scrollFor } from './lib/scroll'
 import { loadMe } from './lib/session'
 import AccessRequestedScreen from './screens/AccessRequestedScreen.vue'
 import ApplicantsScreen from './screens/ApplicantsScreen.vue'
@@ -61,6 +62,7 @@ function screen(name: string, component: Component): RouteRecordRaw {
 
 export const router = createRouter({
   history: createWebHistory(),
+  scrollBehavior: (to, from, saved) => scrollFor(to.path, from.path, saved),
   routes: [
     screen('entry', LoginScreen),
     screen('login', LoginScreen),
