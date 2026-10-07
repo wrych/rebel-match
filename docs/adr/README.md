@@ -77,3 +77,4 @@ still holds except where the later ADR says otherwise.
 | [0039](0039-count-an-open-on-first-interaction.md)         | Count an invite open on the visitor's first interaction              | Accepted                  |
 | [0040](0040-reuse-a-component-before-building-one.md)      | Reuse a component before building a new one                          | Accepted                  |
 | [0041](0041-onboard-in-three-steps.md)                     | Onboard in three steps; the notice is read, usage data is asked      | Accepted                  |
+| [0042](0042-mit-license.md)                                | Publish the code under the MIT license                               | Accepted                  |
