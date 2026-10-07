@@ -305,6 +305,7 @@ onBeforeUnmount(() => {
   margin: 0.4rem 0.75rem 0.2rem;
   font-size: 0.75em;
   color: var(--muted);
+  text-align: right;
 }
 
 .version a {
