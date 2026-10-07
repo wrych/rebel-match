@@ -25,6 +25,7 @@ function responder(deps: Deps): Respond {
         current: {
           limits: deps.settings.limits(),
           abuse: deps.settings.abuse(),
+          game: deps.settings.game(),
         },
         deployment: deps.settings.deployment(),
         overrides: deps.settings.overrides(),

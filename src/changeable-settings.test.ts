@@ -10,7 +10,11 @@ import {
 import { defaultConfig } from './config.js'
 
 const config = defaultConfig()
-const base: SettingValues = { limits: config.limits, abuse: config.abuse }
+const base: SettingValues = {
+  limits: config.limits,
+  abuse: config.abuse,
+  game: config.game,
+}
 
 describe('changeable settings (R-CFG-6, ADR 0031)', () => {
   it('names only the settings hosts may change', () => {
@@ -19,6 +23,25 @@ describe('changeable settings (R-CFG-6, ADR 0031)', () => {
     expect(isSettingKey('limits.nameMaxChars')).toBe(false)
     expect(isSettingKey('trustProxy')).toBe(false)
     expect(isSettingKey('sessionSecret')).toBe(false)
+  })
+
+  it('lets hosts tune the game within what a floor holds (R-GAME-17)', () => {
+    expect(isSettingKey('game.enabled')).toBe(true)
+    expect(isSettingKey('game.ceo.meetingSeats')).toBe(true)
+    expect(isSettingKey('game.teamLead.meetingSeats')).toBe(false)
+    expect(valueOf(base, 'game.enabled')).toBe(0)
+    expect(checkChange(base, 'game.enabled', 1)).toBe('ok')
+    expect(checkChange(base, 'game.enabled', 2)).toBe('out_of_bounds')
+    expect(checkChange(base, 'game.teamLead.employees', 5)).toBe(
+      'out_of_bounds',
+    )
+    expect(checkChange(base, 'game.rebel.fileFloorSeconds', 11)).toBe(
+      'out_of_order',
+    )
+    expect(
+      withOverrides(base, [{ key: 'game.dayLengthSeconds', value: 120 }]).game
+        .dayLengthSeconds,
+    ).toBe(120)
   })
 
   it('accepts a value within bounds', () => {

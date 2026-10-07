@@ -180,7 +180,11 @@ describe('challenge routes', () => {
 
   it('applies a changed minimum length to the next challenge (ADR 0031)', async () => {
     const limits = { ...config.limits }
-    const { app } = setup({ limits: () => limits, abuse: () => config.abuse })
+    const { app } = setup({
+      limits: () => limits,
+      abuse: () => config.abuse,
+      game: () => config.game,
+    })
     const cookie = await cookieFor('m-ada')
     limits.challengeMinChars = 40
 

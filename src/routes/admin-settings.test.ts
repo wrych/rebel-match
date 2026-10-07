@@ -76,6 +76,7 @@ describe('GET /api/admin/settings', () => {
 
     expect(setting(response.body, CEILING)?.edit).toEqual({
       key: CEILING,
+      kind: 'number',
       value: 300,
       unit: 'applicants',
       min: 1,

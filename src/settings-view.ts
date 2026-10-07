@@ -5,11 +5,14 @@ import {
   type SettingValues,
 } from './changeable-settings.js'
 import type { Config } from './config.js'
+import { bossJobs, type BossJob, type GameKey } from './game/tuning.js'
 import type { SettingOverride } from './services/settings.js'
 
 /** How a changeable setting is edited: its current number and bounds. */
 export interface SettingEdit {
   key: SettingKey
+  /** A number field, or an on/off switch storing 1 or 0. */
+  kind: 'number' | 'switch'
   value: number
   unit: string
   min: number
@@ -66,6 +69,8 @@ interface Entry {
   fixed?: true
   read: (config: Config) => string | number
   unit?: Unit
+  /** An on/off switch storing 1 or 0, shown as On or Off. */
+  switch?: true
 }
 
 interface Group {
@@ -80,6 +85,206 @@ function withUnit(value: string | number, unit: Unit | undefined): string {
 }
 
 const onOff = (on: boolean): string => (on ? 'On' : 'Off')
+
+const SECONDS: Unit = ['second', 'seconds']
+const EMPLOYEES: Unit = ['employee', 'employees']
+
+const jobNames: Readonly<Record<BossJob, string>> = {
+  teamLead: 'Team Lead',
+  manager: 'Manager',
+  director: 'Director',
+  vp: 'VP',
+  ceo: 'CEO',
+}
+
+function gameEntry(
+  key: GameKey,
+  name: string,
+  explanation: string,
+  unit: Unit,
+): Entry {
+  return {
+    name,
+    explanation,
+    key: `game.${key}`,
+    read: (c) => c.game[key],
+    unit,
+  }
+}
+
+function jobGroup(job: BossJob): Group {
+  const meetings: Entry[] =
+    job === 'teamLead'
+      ? []
+      : [
+          gameEntry(
+            `${job}.meetingSeats`,
+            'Seats in a meeting',
+            'How many employees nearest the meeting room join a meeting.',
+            EMPLOYEES,
+          ),
+        ]
+  return {
+    title: `9toRevolution: ${jobNames[job]}`,
+    explanation: `Boss mode as ${jobNames[job]}, three days of the game.`,
+    entries: [
+      gameEntry(
+        `${job}.employees`,
+        'Employees',
+        'How many people work on this floor; never more than it has cubicles.',
+        EMPLOYEES,
+      ),
+      gameEntry(
+        `${job}.coolers`,
+        'Water coolers',
+        'Where employees chat, and a rebel tempts the other one.',
+        ['cooler', 'coolers'],
+      ),
+      gameEntry(
+        `${job}.morningRebels`,
+        'Rebels arriving in the morning',
+        'How many employees walk in already as rebels each day.',
+        ['rebel', 'rebels'],
+      ),
+      gameEntry(
+        `${job}.temptationEverySeconds`,
+        'A screen turns to Corporate Rebels every',
+        'On average, how often a grey employee becomes tempted.',
+        SECONDS,
+      ),
+      gameEntry(
+        `${job}.temptedGraceSeconds`,
+        'A tempted employee turns rebel after',
+        'How long the boss has to bring a file.',
+        SECONDS,
+      ),
+      ...meetings,
+    ],
+  }
+}
+
+const gameGroups: Group[] = [
+  {
+    title: '9toRevolution',
+    explanation:
+      'The office game behind the impressum, in happy mode. A change applies ' +
+      'from the next day a player starts.',
+    entries: [
+      {
+        name: 'The game',
+        explanation:
+          'On shows the game to members in happy mode; off hides it, and ' +
+          'every game address answers as not found.',
+        key: 'game.enabled',
+        read: (c) => c.game.enabled,
+        switch: true,
+      },
+      gameEntry(
+        'dayLengthSeconds',
+        'A working day lasts',
+        'From 09:00 to 17:00 on the game’s clock.',
+        SECONDS,
+      ),
+      gameEntry(
+        'fileWorkSeconds',
+        'An employee works on a file for',
+        'How long an employee stays busy with a file the boss brought.',
+        SECONDS,
+      ),
+      gameEntry(
+        'coolerVisitEverySeconds',
+        'Someone walks to a water cooler every',
+        'On average, in either mode.',
+        SECONDS,
+      ),
+      gameEntry(
+        'coolerChatSeconds',
+        'A rebel tempts a colleague at the cooler after',
+        'How long they chat before the other one is tempted.',
+        SECONDS,
+      ),
+      gameEntry(
+        'speechSeconds',
+        'Breaking up the cooler takes',
+        'How long the boss talks before everyone goes back to work.',
+        SECONDS,
+      ),
+      gameEntry(
+        'meetingSeconds',
+        'A meeting lasts',
+        'The boss is stuck in the meeting room meanwhile.',
+        SECONDS,
+      ),
+    ],
+  },
+  ...bossJobs.map(jobGroup),
+  {
+    title: '9toRevolution: rebel mode',
+    explanation: 'The game in reverse, from level 16 on.',
+    entries: [
+      gameEntry(
+        'rebel.morningGrey',
+        'Grey employees arriving in the morning',
+        'How many walk in grey each day.',
+        EMPLOYEES,
+      ),
+      gameEntry(
+        'rebel.fileEverySeconds',
+        'A file lands on a desk every',
+        'At level 16; each level after it is quicker.',
+        SECONDS,
+      ),
+      gameEntry(
+        'rebel.fileStepPercent',
+        'Files come quicker per level by',
+        'How much shorter the wait between files gets each level.',
+        ['percent', 'percent'],
+      ),
+      gameEntry(
+        'rebel.fileFloorSeconds',
+        'Files never come quicker than every',
+        'The shortest wait between files, however high the level.',
+        SECONDS,
+      ),
+      gameEntry(
+        'rebel.heatStageSeconds',
+        'Heat rises one stage every',
+        'While a file waits on the desk: warm, hot, boiling, then grey.',
+        SECONDS,
+      ),
+      gameEntry(
+        'rebel.helpSeconds',
+        'Helping with a file takes',
+        'How long the player stands at the desk.',
+        SECONDS,
+      ),
+      gameEntry(
+        'rebel.breakSeconds',
+        'A break lasts',
+        'The employee is away, receives no file, and comes back cool.',
+        SECONDS,
+      ),
+      gameEntry(
+        'rebel.breakCooldownSeconds',
+        'One break every',
+        'How long before the player can send someone on a break again.',
+        SECONDS,
+      ),
+      gameEntry(
+        'rebel.talkSeconds',
+        'Talking someone back into a rebel takes',
+        'At their desk or at a cooler.',
+        SECONDS,
+      ),
+      gameEntry(
+        'rebel.masterclassSeconds',
+        'A masterclass lasts',
+        'Two grey employees are away, and come back as rebels.',
+        SECONDS,
+      ),
+    ],
+  },
+]
 
 const described = (entry: Entry): { name: string; explanation: string } => ({
   name: entry.name,
@@ -564,7 +769,14 @@ const catalogue: Group[] = [
       },
     ],
   },
+  ...gameGroups,
 ]
+
+function shown(entry: Entry, value: string | number): string {
+  return entry.switch === true
+    ? onOff(value === 1)
+    : withUnit(value, entry.unit)
+}
 
 function editOf(
   entry: Entry,
@@ -573,6 +785,7 @@ function editOf(
 ): SettingEdit {
   return {
     key,
+    kind: entry.switch === true ? 'switch' : 'number',
     value: valueOf(state.current, key),
     unit: entry.unit?.[1] ?? '',
     ...boundsOf(key),
@@ -589,7 +802,7 @@ function overrideOf(
   return {
     by: override.changerName,
     at: override.changedAt.toISOString(),
-    deploymentValue: withUnit(valueOf(state.deployment, key), entry.unit),
+    deploymentValue: shown(entry, valueOf(state.deployment, key)),
   }
 }
 
@@ -599,13 +812,12 @@ function viewOf(
   defaults: Config,
   state: SettingsState,
 ): SettingView {
-  const value = withUnit(entry.read(config), entry.unit)
+  const value = shown(entry, entry.read(config))
   const view: SettingView = {
     ...described(entry),
     value,
     changed:
-      entry.fixed !== true &&
-      value !== withUnit(entry.read(defaults), entry.unit),
+      entry.fixed !== true && value !== shown(entry, entry.read(defaults)),
     fixed: entry.fixed === true,
   }
   if (entry.key === undefined) return view
@@ -629,6 +841,7 @@ export function settingsView(
     ...config,
     limits: state.current.limits,
     abuse: state.current.abuse,
+    game: state.current.game,
   }
   return catalogue.map((group) => ({
     title: group.title,

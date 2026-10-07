@@ -1,4 +1,11 @@
 import type { AbuseLimits, Limits } from './config.js'
+import {
+  gameBounds,
+  gameOrder,
+  isGameKey,
+  type GameKey,
+  type GameSettings,
+} from './game/tuning.js'
 
 type LimitKey =
   | 'challengeMinChars'
@@ -7,7 +14,8 @@ type LimitKey =
   | 'inviteDefaultHours'
 
 /** A setting hosts may change in the app (R-CFG-6, ADR 0031). */
-export type SettingKey = `limits.${LimitKey}` | `abuse.${keyof AbuseLimits}`
+export type SettingKey =
+  `limits.${LimitKey}` | `abuse.${keyof AbuseLimits}` | `game.${GameKey}`
 
 // A value a changeable setting is ordered against, though hosts cannot change it.
 type OrderedKey = SettingKey | 'limits.challengeMaxChars'
@@ -16,6 +24,7 @@ type OrderedKey = SettingKey | 'limits.challengeMaxChars'
 export interface SettingValues {
   limits: Limits
   abuse: AbuseLimits
+  game: GameSettings
 }
 
 interface Bounds {
@@ -43,6 +52,9 @@ const bounds: Readonly<Record<SettingKey, Bounds>> = {
   'limits.inviteDefaultHours': { min: 1, max: 720 },
   'limits.challengeMinChars': { min: 1, max: 300 },
   'limits.beenThereNoteMinChars': { min: 1, max: 300 },
+  ...(Object.fromEntries(
+    Object.entries(gameBounds).map(([key, value]) => [`game.${key}`, value]),
+  ) as Record<`game.${GameKey}`, Bounds>),
 }
 
 // Each ceiling must stay at or above the floor beneath it.
@@ -50,6 +62,9 @@ const pairs: readonly (readonly [floor: OrderedKey, ceiling: OrderedKey])[] = [
   ['abuse.linkEmailsBeforeCheck', 'abuse.linkEmailsCeiling'],
   ['abuse.applicantsBeforeCheck', 'abuse.applicantsCeiling'],
   ['limits.challengeMinChars', 'limits.challengeMaxChars'],
+  ...gameOrder.map(
+    ([floor, ceiling]) => [`game.${floor}`, `game.${ceiling}`] as const,
+  ),
 ]
 
 export function isSettingKey(key: string): key is SettingKey {
@@ -61,10 +76,14 @@ export function boundsOf(key: SettingKey): Bounds {
   return bounds[key]
 }
 
-function split(
-  key: OrderedKey,
-): ['limits', keyof Limits] | ['abuse', keyof AbuseLimits] {
-  const [group, name] = key.split('.') as [string, string]
+type Located =
+  ['limits', keyof Limits] | ['abuse', keyof AbuseLimits] | ['game', GameKey]
+
+function split(key: OrderedKey): Located {
+  const dot = key.indexOf('.')
+  const group = key.slice(0, dot)
+  const name = key.slice(dot + 1)
+  if (group === 'game' && isGameKey(name)) return ['game', name]
   return group === 'limits'
     ? ['limits', name as keyof Limits]
     : ['abuse', name as keyof AbuseLimits]
@@ -73,6 +92,7 @@ function split(
 /** The current value of `key`. */
 export function valueOf(values: SettingValues, key: OrderedKey): number {
   const [group, name] = split(key)
+  if (group === 'game') return values.game[name]
   return group === 'limits' ? values.limits[name] : values.abuse[name]
 }
 
@@ -82,6 +102,8 @@ function withValue(
   value: number,
 ): SettingValues {
   const [group, name] = split(key)
+  if (group === 'game')
+    return { ...values, game: { ...values.game, [name]: value } }
   return group === 'limits'
     ? { ...values, limits: { ...values.limits, [name]: value } }
     : { ...values, abuse: { ...values.abuse, [name]: value } }
