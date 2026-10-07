@@ -7,9 +7,10 @@ import { applyMood } from '../lib/mood'
 import GameScreen from './GameScreen.vue'
 
 const replace = vi.fn()
+const push = vi.fn()
 vi.mock('vue-router', () => ({
   useRoute: () => ({ path: '/9torevolution' }),
-  useRouter: () => ({ replace }),
+  useRouter: () => ({ replace, push }),
 }))
 
 const { enabled: _enabled, ...tuning } = gameDefaults
@@ -161,8 +162,98 @@ describe('GameScreen (R-GAME-1, R-GAME-15, R-GAME-16)', () => {
         body: JSON.stringify({ level: 4, outcome: 'won', playSeconds: 88 }),
       }),
     )
+    expect(screen.text()).toContain('17:00. Home time.')
+    expect(screen.text()).toContain('Spirits crushed: 3 · 1:28')
+    expect(screen.text()).toContain('#1 of 1')
+    expect(
+      screen.findAllComponents(RouterLinkStub).map((link) => link.props('to')),
+    ).toContain('/9torevolution/leaderboard')
+  })
+
+  async function endDay(
+    screen: ReturnType<typeof mount>,
+    outcome: 'won' | 'lost',
+  ): Promise<void> {
+    await screen.find('button.btn-dark').trigger('click')
+    screen
+      .findComponent({ name: 'PlayView' })
+      .vm.$emit('ended', { outcome, score: 1, seconds: 60 })
+    await flushPromises()
+  }
+
+  function button(
+    screen: ReturnType<typeof mount>,
+    name: string,
+  ): ReturnType<ReturnType<typeof mount>['find']> {
+    const found = screen.findAll('button').find((b) => b.text() === name)
+    if (found === undefined) throw new Error(`no button ${name}`)
+    return found
+  }
+
+  it('shares the name on a new best and goes on to the next day (R-GAME-15)', async () => {
+    applyMood('happy')
+    const fetchMock = serve(state)
+    const screen = await mountScreen()
+    await endDay(screen, 'won')
+
+    await button(screen, 'Share and continue').trigger('click')
+    await flushPromises()
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/game/sharing',
+      expect.objectContaining({ body: '{"shared":true}' }),
+    )
+    expect(screen.findComponent({ name: 'PlayView' }).props('level')).toBe(5)
+  })
+
+  it('offers a retry from the first day of the job after a loss', async () => {
+    applyMood('happy')
+    serve({ ...state, resumeLevel: 5 })
+    const screen = await mountScreen()
+    await endDay(screen, 'lost')
+
+    expect(screen.text()).toContain('The rebels took over')
+    expect(screen.text()).not.toContain('Share and continue')
+    await button(screen, 'Retry').trigger('click')
+
+    expect(screen.findComponent({ name: 'PlayView' }).props('level')).toBe(4)
+  })
+
+  it('goes back to the lobby on Leave, saying how the day went', async () => {
+    applyMood('happy')
+    serve(state)
+    const screen = await mountScreen()
+    await endDay(screen, 'won')
+
+    await button(screen, 'Leave').trigger('click')
+
     expect(screen.text()).toContain('Day won.')
-    expect(screen.text()).toContain('level 5')
+    expect(screen.text()).toContain('Start the day')
+  })
+
+  it('plays from the first day of an earlier job (R-GAME-16)', async () => {
+    applyMood('happy')
+    serve(state)
+    const screen = await mountScreen()
+
+    await screen.find('input[type="radio"][value="1"]').setValue(true)
+    await screen.find('button.btn-dark').trigger('click')
+
+    expect(screen.findComponent({ name: 'PlayView' }).props('level')).toBe(1)
+  })
+
+  it('offers the CEO a choice: be a rebel, or continue to the app (R-GAME-8)', async () => {
+    applyMood('happy')
+    serve({ ...state, resumeLevel: 15, highestLevel: 15 })
+    const screen = await mountScreen()
+    await endDay(screen, 'won')
+
+    expect(screen.text()).toContain(
+      'Every spirit crushed. The board is thrilled.',
+    )
+    await button(screen, 'Be a rebel').trigger('click')
+
+    expect(screen.findComponent({ name: 'PlayView' }).props('level')).toBe(16)
   })
 
   it('records a day left unfinished as abandoned', async () => {

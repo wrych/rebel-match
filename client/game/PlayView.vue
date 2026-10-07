@@ -1,7 +1,14 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, shallowRef } from 'vue'
+import {
+  computed,
+  onBeforeUnmount,
+  onMounted,
+  onUnmounted,
+  ref,
+  shallowRef,
+} from 'vue'
 import { DAYS_PER_JOB, jobOf } from '../../src/game/levels'
-import { jobName } from '../lib/game'
+import { abandonDay, jobName } from '../lib/game'
 import { currentMood } from '../lib/mood'
 import { availableActions, type ActionKind } from './core/actions'
 import type { Spot } from './core/floors'
@@ -48,6 +55,15 @@ let lastScale = 1
 let carry = 0
 let last: number | null = null
 let frame = 0
+let over = false
+
+const playedSeconds = (): number => Math.max(1, Math.round(state.value.clock))
+
+function goneUnfinished(): void {
+  if (over) return
+  over = true
+  abandonDay(props.level, playedSeconds())
+}
 
 const offered = computed(() =>
   availableActions(state.value).map((action) => action.kind),
@@ -180,12 +196,14 @@ function tick(now: number): void {
       pending = undefined
       pendingChosen = []
     }
-    if (next.state.outcome !== null)
+    if (next.state.outcome !== null) {
+      over = true
       emit('ended', {
         outcome: next.state.outcome,
         score: next.state.score,
-        seconds: Math.max(1, Math.round(next.state.clock)),
+        seconds: playedSeconds(),
       })
+    }
   }
   draw()
   frame = requestAnimationFrame(tick)
@@ -201,7 +219,8 @@ function onVisibility(): void {
 }
 
 function leave(): void {
-  emit('leave', Math.max(1, Math.round(state.value.clock)))
+  over = true
+  emit('leave', playedSeconds())
 }
 
 onMounted(() => {
@@ -210,15 +229,18 @@ onMounted(() => {
   window.addEventListener('keyup', onKeyUp)
   window.addEventListener('resize', onResize)
   window.addEventListener('blur', releaseKeys)
+  window.addEventListener('pagehide', goneUnfinished)
   document.addEventListener('visibilitychange', onVisibility)
   frame = requestAnimationFrame(tick)
 })
+onBeforeUnmount(goneUnfinished)
 onUnmounted(() => {
   cancelAnimationFrame(frame)
   window.removeEventListener('keydown', onKeyDown)
   window.removeEventListener('keyup', onKeyUp)
   window.removeEventListener('resize', onResize)
   window.removeEventListener('blur', releaseKeys)
+  window.removeEventListener('pagehide', goneUnfinished)
   document.removeEventListener('visibilitychange', onVisibility)
 })
 </script>
