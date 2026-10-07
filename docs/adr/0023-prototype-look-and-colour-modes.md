@@ -1,6 +1,6 @@
 # 0023. Wear the prototype's look, with happy mode as a colour mode
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by 0045
 - **Date:** 2026-10-03
 - **Deciders:** Andy Moesch
 
