@@ -106,6 +106,13 @@
       "when": 1791274946839,
       "tag": "0014_trend_notifications",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1791370844069,
+      "tag": "0015_first_onboarding",
+      "breakpoints": true
     }
   ]
 }

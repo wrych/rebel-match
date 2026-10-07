@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 import type { Database } from '../db/connect.js'
 import { members } from '../db/schema.js'
 import type { AnalyticsConsentStore } from './analytics-consent.js'
@@ -14,12 +14,15 @@ export function createAnalyticsConsentStore(
         .set({ analyticsConsentVersion: version, analyticsConsentAt: at })
         .where(eq(members.id, memberId))
     },
-    givenAt: async (memberId) => {
-      const [row] = await db
-        .select({ at: members.analyticsConsentAt })
-        .from(members)
-        .where(eq(members.id, memberId))
-      return row?.at ?? null
+    claimOnboardingReport: async (memberId, at) => {
+      const claimed = await db
+        .update(members)
+        .set({ onboardingReportedAt: at })
+        .where(
+          and(eq(members.id, memberId), isNull(members.onboardingReportedAt)),
+        )
+        .returning({ id: members.id })
+      return claimed.length > 0
     },
   }
 }

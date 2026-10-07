@@ -30,21 +30,21 @@ export interface OnboardingStore {
     input: OnboardingInput,
     acceptedAt: Date,
   ): Promise<void>
-  /** The consent version the member confirmed and when, or null. */
+  /** The consent version the member last confirmed, when, and whether that
+   * was their first confirmation of any words; null when none. */
   consent(
     memberId: string,
-  ): Promise<{ version: string; acceptedAt: Date } | null>
+  ): Promise<{ version: string; acceptedAt: Date; first: boolean } | null>
   /** When the latest sign-in email to the member up to `notAfter` was
    * recorded in the outbound log, or null when none is kept (R-NFR-3). */
   signInEmailAt(memberId: string, notAfter: Date): Promise<Date | null>
 }
 
 /** A finished onboarding as `onboarding_completed` reports it: the consent
- * version confirmed, when, and the seconds from the sign-in email before it,
- * if one is kept (R-NFR-3). */
+ * version and the seconds from the sign-in email before its confirmation, if
+ * one is kept (R-NFR-3). */
 export interface OnboardingCompletion {
   consentVersion: string
-  confirmedAt: Date
   secondsToOnboard: number | null
 }
 
@@ -55,6 +55,8 @@ const MS_PER_SECOND = 1000
 export interface OnboardingService {
   draft(memberId: string): Promise<OnboardingDraft | null>
   complete(memberId: string, input: OnboardingInput): Promise<OnboardingOutcome>
+  /** The member's first onboarding, while the words they confirmed then are
+   * still in force; null after a later confirmation (R-ANA-6). */
   completion(memberId: string): Promise<OnboardingCompletion | null>
 }
 
@@ -77,14 +79,14 @@ export function createOnboarding(deps: {
     },
     completion: async (memberId) => {
       const consent = await deps.store.consent(memberId)
-      if (consent?.version !== deps.currentConsentVersion) return null
+      if (consent?.version !== deps.currentConsentVersion || !consent.first)
+        return null
       const emailedAt = await deps.store.signInEmailAt(
         memberId,
         consent.acceptedAt,
       )
       return {
         consentVersion: consent.version,
-        confirmedAt: consent.acceptedAt,
         secondsToOnboard:
           emailedAt === null
             ? null

@@ -5,11 +5,9 @@ import type { OnboardingCompletion } from './onboarding.js'
 
 const at = new Date('2026-11-08T10:00:00Z')
 
-const confirmedAt = new Date('2026-11-08T09:58:00Z')
-
 function setup(
-  completion: Omit<OnboardingCompletion, 'confirmedAt'> | null = null,
-  givenAt: Date | null = null,
+  completion: OnboardingCompletion | null = null,
+  reported = false,
 ): {
   consent: ReturnType<typeof createAnalyticsConsent>
   recorded: unknown[]
@@ -17,20 +15,22 @@ function setup(
 } {
   const recorded: unknown[] = []
   const tracked: [string, AnalyticsEvent][] = []
-  let given = givenAt
+  let claimed = reported
   const consent = createAnalyticsConsent({
     currentVersion: '2026-10-04',
     now: () => at,
     store: {
       record: (memberId, version, when) => {
         recorded.push({ memberId, version, when })
-        given = when
         return Promise.resolve()
       },
-      givenAt: () => Promise.resolve(given),
+      claimOnboardingReport: () => {
+        const first = !claimed
+        claimed = true
+        return Promise.resolve(first)
+      },
     },
-    completion: () =>
-      Promise.resolve(completion && { ...completion, confirmedAt }),
+    completion: () => Promise.resolve(completion),
     track: (memberId, event) => {
       tracked.push([memberId, event])
       return Promise.resolve()
@@ -157,19 +157,20 @@ describe('createAnalyticsConsent', () => {
     expect(tracked).toHaveLength(1)
   })
 
-  it('reports an onboarding though the member shared older words before it', async () => {
+  it('reports nothing once the onboarding was reported, after a withdrawal too (R-ANA-6)', async () => {
     const { consent, tracked } = setup(
       { consentVersion: '2026-11-01', secondsToOnboard: 84 },
-      new Date('2026-10-01T00:00:00Z'),
+      true,
     )
 
+    await consent.choose('m-ada', { optIn: false })
     await consent.choose('m-ada', {
       optIn: true,
       version: '2026-10-04',
       from: 'onboarding',
     })
 
-    expect(tracked).toHaveLength(1)
+    expect(tracked).toEqual([])
   })
 
   it('reports no onboarding for an opt-in from the profile screen (R-ANA-6)', async () => {

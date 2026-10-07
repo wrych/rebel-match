@@ -29,8 +29,9 @@ export interface AnalyticsConsentStore {
     version: string | null,
     at: Date | null,
   ): Promise<void>
-  /** When the member last gave the opt-in, or null when it is not given. */
-  givenAt(memberId: string): Promise<Date | null>
+  /** Marks `onboarding_completed` as sent at `at`; false when it already
+   * was, so it goes out at most once per member (R-ANA-6). */
+  claimOnboardingReport(memberId: string, at: Date): Promise<boolean>
 }
 
 export interface AnalyticsConsentService {
@@ -50,15 +51,10 @@ export function createAnalyticsConsent(deps: {
 }): AnalyticsConsentService {
   const now = deps.now ?? ((): Date => new Date())
 
-  // Once per onboarding: not when the member already gave the opt-in after
-  // confirming the words, so a repeated share reports nothing (R-ANA-6).
-  async function reportOnboarding(
-    memberId: string,
-    givenBefore: Date | null,
-  ): Promise<void> {
+  async function reportOnboarding(memberId: string): Promise<void> {
     const done = await deps.completion(memberId)
     if (done === null) return
-    if (givenBefore !== null && givenBefore >= done.confirmedAt) return
+    if (!(await deps.store.claimOnboardingReport(memberId, now()))) return
     void deps.track(memberId, {
       name: 'onboarding_completed',
       consent_version: done.consentVersion,
@@ -75,10 +71,8 @@ export function createAnalyticsConsent(deps: {
         return 'done'
       }
       if (choice.version !== deps.currentVersion) return 'stale'
-      const onboarding = choice.from === 'onboarding'
-      const givenBefore = onboarding ? await deps.store.givenAt(memberId) : null
       await deps.store.record(memberId, choice.version, now())
-      if (onboarding) await reportOnboarding(memberId, givenBefore)
+      if (choice.from === 'onboarding') await reportOnboarding(memberId)
       return 'done'
     },
   }

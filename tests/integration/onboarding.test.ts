@@ -99,6 +99,9 @@ describe('onboarding over Postgres (F2)', () => {
     })
     expect(Date.parse(String(rows[0]?.['consent_at']))).not.toBeNaN()
     expect(await me()).toMatchObject({ onboarded: true, name: 'Ada Rebel' })
+    expect(
+      await createOnboardingStore(db.drizzle).consent(newcomer.id),
+    ).toMatchObject({ version: config.consentVersion, first: true })
     const admin = await request(app)
       .get('/api/admin/applicants')
       .set('Cookie', cookie)
@@ -142,9 +145,21 @@ describe('onboarding over Postgres (F2)', () => {
     expect(row?.['analytics_consent_version']).toBe(config.analyticsVersion)
     expect(Date.parse(String(row?.['analytics_consent_at']))).not.toBeNaN()
     expect(await me()).toMatchObject({ analyticsOptIn: true })
+  })
+
+  it('marks the first onboarding as reported, and only once (R-ANA-6)', async () => {
+    const [row] = await db.query(
+      'SELECT onboarding_reported_at FROM members WHERE id = ?',
+      [newcomer.id],
+    )
+
+    expect(Date.parse(String(row?.['onboarding_reported_at']))).not.toBeNaN()
     expect(
-      await createAnalyticsConsentStore(db.drizzle).givenAt(newcomer.id),
-    ).toEqual(new Date(String(row?.['analytics_consent_at'])))
+      await createAnalyticsConsentStore(db.drizzle).claimOnboardingReport(
+        newcomer.id,
+        new Date(),
+      ),
+    ).toBe(false)
   })
 
   it('keeps the opt-in when the member confirms the consent again (ADR 0041)', async () => {
@@ -176,12 +191,13 @@ describe('onboarding over Postgres (F2)', () => {
     expect(await me()).toMatchObject({ onboarded: false })
   })
 
-  it('reads the consent version confirmed and when, for the onboarding time (R-NFR-3)', async () => {
+  it('reads the consent confirmed, when, and that a second confirmation is not the first (R-NFR-3, R-ANA-6)', async () => {
     const store = createOnboardingStore(db.drizzle)
 
     expect(await store.consent(newcomer.id)).toEqual({
       version: '2000-01-01',
       acceptedAt: expect.any(Date) as Date,
+      first: false,
     })
     expect(await store.consent(randomUUID())).toBeNull()
   })

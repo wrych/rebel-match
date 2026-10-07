@@ -17,7 +17,7 @@ const draft = {
 function setup(
   options: {
     emailedAt?: Date | null
-    consent?: { version: string; acceptedAt: Date } | null
+    consent?: { version: string; acceptedAt: Date; first: boolean } | null
   } = {},
 ): {
   onboarding: ReturnType<typeof createOnboarding>
@@ -35,7 +35,7 @@ function setup(
     consent: () =>
       Promise.resolve(
         options.consent === undefined
-          ? { version: '2026-11-01', acceptedAt: at }
+          ? { version: '2026-11-01', acceptedAt: at, first: true }
           : options.consent,
       ),
     signInEmailAt: (_memberId, notAfter) => {
@@ -116,7 +116,6 @@ describe('completion', () => {
 
     expect(await onboarding.completion('m-ada')).toEqual({
       consentVersion: '2026-11-01',
-      confirmedAt: at,
       secondsToOnboard: 74,
     })
   })
@@ -134,9 +133,16 @@ describe('completion', () => {
 
     expect(await onboarding.completion('m-ada')).toEqual({
       consentVersion: '2026-11-01',
-      confirmedAt: at,
       secondsToOnboard: null,
     })
+  })
+
+  it('has none for a member confirming new words after onboarding once (R-ANA-6)', async () => {
+    expect(
+      await setup({
+        consent: { version: '2026-11-01', acceptedAt: at, first: false },
+      }).onboarding.completion('m-ada'),
+    ).toBeNull()
   })
 
   it('has none for a member who has not confirmed the current words', async () => {
@@ -145,7 +151,7 @@ describe('completion', () => {
     ).toBeNull()
     expect(
       await setup({
-        consent: { version: '2025-01-01', acceptedAt: at },
+        consent: { version: '2025-01-01', acceptedAt: at, first: true },
       }).onboarding.completion('m-ada'),
     ).toBeNull()
   })

@@ -1,4 +1,4 @@
-import { and, desc, eq, lte } from 'drizzle-orm'
+import { and, desc, eq, lte, sql } from 'drizzle-orm'
 import type { Database } from '../db/connect.js'
 import { members, outbox } from '../db/schema.js'
 import type { OnboardingStore } from './onboarding.js'
@@ -21,6 +21,26 @@ async function latestSignInEmailAt(
     .orderBy(desc(outbox.createdAt))
     .limit(1)
   return row?.at ?? null
+}
+
+async function lastConsent(
+  db: Database,
+  memberId: string,
+): Promise<{ version: string; acceptedAt: Date; first: boolean } | null> {
+  const [row] = await db
+    .select({
+      version: members.consentVersion,
+      at: members.consentAt,
+      firstAt: members.firstOnboardedAt,
+    })
+    .from(members)
+    .where(eq(members.id, memberId))
+  if (row === undefined || row.version === null || row.at === null) return null
+  return {
+    version: row.version,
+    acceptedAt: row.at,
+    first: row.firstAt?.getTime() === row.at.getTime(),
+  }
 }
 
 /** Onboarding over `members` (design §2). `requested_name` and
@@ -55,18 +75,11 @@ export function createOnboardingStore(db: Database): OnboardingStore {
           companySize: input.companySize ?? null,
           consentVersion: input.consentVersion,
           consentAt: acceptedAt,
+          firstOnboardedAt: sql`coalesce(${members.firstOnboardedAt}, ${acceptedAt})`,
         })
         .where(eq(members.id, memberId))
     },
-    consent: async (memberId) => {
-      const [row] = await db
-        .select({ version: members.consentVersion, at: members.consentAt })
-        .from(members)
-        .where(eq(members.id, memberId))
-      if (row === undefined || row.version === null || row.at === null)
-        return null
-      return { version: row.version, acceptedAt: row.at }
-    },
+    consent: (memberId) => lastConsent(db, memberId),
     signInEmailAt: (memberId, notAfter) =>
       latestSignInEmailAt(db, memberId, notAfter),
   }

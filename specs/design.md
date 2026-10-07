@@ -323,6 +323,8 @@ CREATE TABLE members (
   requested_org  VARCHAR(160) NULL,              -- applicant-supplied, for R-AUTH-11
   consent_version VARCHAR(20) NULL,
   consent_at     DATETIME     NULL,
+  first_onboarded_at DATETIME NULL,              -- first consent_at, kept (R-ANA-6)
+  onboarding_reported_at DATETIME NULL,          -- onboarding_completed sent (R-ANA-6)
   analytics_consent_version VARCHAR(20) NULL,     -- opt-in words accepted (R-ANA-4)
   analytics_consent_at      DATETIME    NULL,     -- both set = opted in
   joined_via_invite_id CHAR(36) NULL,            -- which invite admitted them (R-INV-8)
@@ -1244,8 +1246,9 @@ Alternatives considered (kept only as fallbacks):
   scan and typing the address come before it and are timed by hand. It is left
   out when no such email is in the log, for instance after its retention.
 - `onboarding_completed` is sent when the member shares on the usage step
-  (`from: 'onboarding'`), with `consent_version` and `seconds_to_onboard` taken
-  from what the privacy step stored. A member who declines is not counted, so
+  (`from: 'onboarding'`) of their **first** onboarding, once, with
+  `consent_version` and `seconds_to_onboard` taken from what the privacy step
+  stored. Confirming new words later is not an onboarding and is not counted. A member who declines is not counted, so
   the funnel reads as a rate among those who share (R-ANA-6).
 - **Never** send challenge `body`, member `name`, `email`, `org`.
 - **Opt-in only** (R-ANA-4, ADR 0026, ADR 0041). Onboarding asks on its third
