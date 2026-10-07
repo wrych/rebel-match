@@ -387,8 +387,8 @@ capability, not a secret** — and every requirement below exists because of tha
 - **R-PROF-4 (Impressum)** — The menu SHALL offer an **Impressum** to everyone,
   signed in or not, that shows the people who made the app one card at a time,
   each with their portrait, name and what they are responsible for, browsed as
-  the swipe deck is (R-OFF-1, R-LOOK-4). It is public and has its own URL
-  (R-NAV-1).
+  the swipe deck is (R-OFF-1, R-LOOK-4), and closes with a card for the
+  community. It is public and has its own URL (R-NAV-1).
 
 ---
 
