@@ -172,7 +172,8 @@ Requirements:
   (R-ROLE-8).
 - **R-ONB-3** — The privacy step of onboarding SHALL present the **data-usage
   consent** as a short summary and SHALL require the member to confirm having
-  read it, with one button labelled "I have read the privacy notice", before
+  read it and the terms of use (R-ONB-13), with one button labelled "I have
+  read the privacy notice and the terms of use", before
   continuing. THE SYSTEM SHALL record the consent version and timestamp
   (ADR 0041).
 - **R-ONB-4** — IF the user has not accepted the current consent version THEN THE
@@ -222,8 +223,9 @@ Requirements:
   browser THE SYSTEM SHALL show the profile step with what they typed.
 - **R-ONB-13 (Terms of use)** — The system SHALL serve the terms of use as a
   screen of its own, readable without signing in and showing its version and
-  date. The privacy step SHALL link to it and SHALL say that continuing
-  accepts the terms; the privacy notice and the profile screen SHALL link to it
+  date. The privacy step SHALL link to it beside the link to the privacy
+  notice, and its button confirms having read both (R-ONB-3); the privacy
+  notice and the profile screen SHALL link to it
   too. A change of the terms SHALL be a new consent version (R-ONB-4).
   _(Its words are drafted in `docs/legal/terms-of-use.md`.)_
 
