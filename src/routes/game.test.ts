@@ -6,6 +6,7 @@ import { handleErrors } from '../app.js'
 import { loadConfig } from '../config.js'
 import { gameDefaults, type GameSettings } from '../game/tuning.js'
 import { configPolicy } from '../permissions.js'
+import { trackNothing } from '../services/analytics.js'
 import { createGame } from '../services/game.js'
 import { createMemoryGameStore } from '../services/game-memory-store.js'
 import { gameRoutes } from './game.js'
@@ -35,6 +36,7 @@ function setup(enabled = 1): {
     store,
     settings: () => settings,
     allowance: config.gameDayAllowance,
+    track: trackNothing,
     newId: () => 'd-1',
   })
   const app = express()

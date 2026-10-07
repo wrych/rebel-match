@@ -397,6 +397,7 @@ export function composeApp(
       settings: () => settings.game(),
       allowance: config.gameDayAllowance,
       newId: randomUUID,
+      track,
     }),
     notificationMail: composeNotificationMail(config, db, mailer, hooks),
   }

@@ -77,3 +77,11 @@ export function abandonDay(level: number, playSeconds: number): void {
     new Blob([JSON.stringify(day)], { type: 'application/json' }),
   )
 }
+
+/** Marks a hint seen, so it shows once per member; a failure only means it
+ * may show again (R-GAME-18). */
+export function seeHint(hint: string): void {
+  fetch(`/api/game/hints/${encodeURIComponent(hint)}`, { method: 'PUT' }).catch(
+    () => undefined,
+  )
+}

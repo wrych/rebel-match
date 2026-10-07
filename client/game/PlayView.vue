@@ -16,6 +16,7 @@ import { floors } from './core/floors'
 import { startDay, type Tuning } from './core/state'
 import { actionLabel, heading, keyAction, steers } from './input/keys'
 import Joystick from './Joystick.vue'
+import { hintWords, type GameHint } from './hints'
 import { advance } from './loop'
 import { drawDay } from './render/draw'
 import { contextOf, pagePalette } from './render/palette'
@@ -31,8 +32,14 @@ import FloorMap from './FloorMap.vue'
 import MasterclassPicker from './MasterclassPicker.vue'
 import type { Input } from './core/step'
 
-const props = defineProps<{ level: number; tuning: Tuning; seed: number }>()
+const props = defineProps<{
+  level: number
+  tuning: Tuning
+  seed: number
+  hints?: readonly GameHint[]
+}>()
 const emit = defineEmits<{
+  seen: [hint: GameHint]
   ended: [result: { outcome: 'won' | 'lost'; score: number; seconds: number }]
   leave: [seconds: number]
 }>()
@@ -50,6 +57,8 @@ let stick: Spot = { x: 0, y: 0 }
 let pending: ActionKind | undefined
 let pendingChosen: number[] = []
 const choosing = ref<number[] | null>(null)
+const hintQueue = ref<GameHint[]>([...(props.hints ?? [])])
+const hint = computed(() => hintQueue.value[0])
 let lastView: View | null = null
 let lastScale = 1
 let carry = 0
@@ -72,7 +81,16 @@ const calm = computed(() => currentMood.value !== 'happy')
 const unpaused = computed(
   () => !paused.value && !portrait.value && !hidden.value && !calm.value,
 )
-const running = computed(() => choosing.value === null && unpaused.value)
+const running = computed(
+  () => choosing.value === null && hint.value === undefined && unpaused.value,
+)
+
+function dismissHint(): void {
+  const shown = hintQueue.value[0]
+  if (shown === undefined) return
+  hintQueue.value = hintQueue.value.slice(1)
+  emit('seen', shown)
+}
 const job = computed(() => jobOf(props.level))
 const title = computed(() =>
   job.value === 'rebel'
@@ -302,6 +320,18 @@ onUnmounted(() => {
         @cancel="choosing = null"
       />
 
+      <div
+        v-if="hint && !calm && !portrait"
+        class="overlay"
+        role="dialog"
+        :aria-label="hintWords(hint).title"
+      >
+        <p class="display display-md">{{ hintWords(hint).title }}</p>
+        <p class="hint">{{ hintWords(hint).text }}</p>
+        <button type="button" class="btn btn-dark" @click="dismissHint">
+          Got it
+        </button>
+      </div>
       <div v-if="calm" class="overlay" role="status">
         <p class="display display-md">Nobody here</p>
         <p>The rebels only come out in happy mode. Switch back to carry on.</p>
@@ -399,6 +429,10 @@ onUnmounted(() => {
 .action-lit {
   background: var(--accent);
   color: var(--on-accent);
+}
+
+.hint {
+  max-width: 34rem;
 }
 
 .overlay {
