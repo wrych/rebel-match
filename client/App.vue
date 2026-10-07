@@ -1,16 +1,13 @@
 <script setup lang="ts">
-import { ref } from 'vue'
 import logo from './assets/corporate-rebels.png'
 import HeaderMenu from './components/HeaderMenu.vue'
 import TabBar from './components/TabBar.vue'
-import { applyMood, savedMood, type Mood } from './lib/mood'
+import { applyMood, currentMood as mood, savedMood } from './lib/mood'
 
-const mood = ref<Mood>(savedMood())
-applyMood(mood.value)
+applyMood(savedMood())
 
 function toggleMood(): void {
-  mood.value = mood.value === 'happy' ? 'calm' : 'happy'
-  applyMood(mood.value)
+  applyMood(mood.value === 'happy' ? 'calm' : 'happy')
 }
 </script>
 

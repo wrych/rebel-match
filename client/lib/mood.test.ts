@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { applyMood, savedMood } from './mood'
+import { applyMood, currentMood, savedMood } from './mood'
 
 afterEach(() => {
   localStorage.clear()
@@ -17,6 +17,7 @@ describe('mood', () => {
     applyMood('happy')
 
     expect(document.documentElement.dataset['mood']).toBe('happy')
+    expect(currentMood.value).toBe('happy')
     expect(savedMood()).toBe('happy')
   })
 
