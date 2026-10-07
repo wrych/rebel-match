@@ -922,6 +922,10 @@ _(Decided by the maintainer after trying the redesign: ADR 0023.)_
   test workflow (R-NFR-5, R-SEED-5).
 - **R-QA-6 (Green before launch)** — The pipeline SHALL be green on `main` as part
   of "feature-complete and tested" by 2026-11-01.
+- **R-QA-7 (Dependency audit)** — `npm audit` SHALL report no known
+  vulnerability in the installed dependencies. Where no upstream release carries
+  the fix yet, an npm `overrides` entry MAY pin the patched transitive version;
+  each such entry SHALL be removed once its upstream release carries the fix.
 
 ---
 
