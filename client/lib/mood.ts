@@ -1,3 +1,5 @@
+import { ref } from 'vue'
+
 export type Mood = 'calm' | 'happy'
 
 const MOOD_KEY = 'rm_mood'
@@ -12,8 +14,12 @@ export function savedMood(): Mood {
   }
 }
 
+/** The colour mode shown now, for any screen that depends on it. */
+export const currentMood = ref<Mood>('calm')
+
 /** Shows a colour mode and remembers it for this browser. */
 export function applyMood(mood: Mood): void {
+  currentMood.value = mood
   document.documentElement.dataset['mood'] = mood
   try {
     localStorage.setItem(MOOD_KEY, mood)
