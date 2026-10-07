@@ -147,15 +147,15 @@ describe('onboarding over Postgres (F2)', () => {
     expect(await me()).toMatchObject({ analyticsOptIn: true })
   })
 
-  it('marks the first onboarding as reported, and only once (R-ANA-6)', async () => {
+  it('records the first answer on the usage step, and only that one (R-ANA-6)', async () => {
     const [row] = await db.query(
-      'SELECT onboarding_reported_at FROM members WHERE id = ?',
+      'SELECT usage_answered_at FROM members WHERE id = ?',
       [newcomer.id],
     )
 
-    expect(Date.parse(String(row?.['onboarding_reported_at']))).not.toBeNaN()
+    expect(Date.parse(String(row?.['usage_answered_at']))).not.toBeNaN()
     expect(
-      await createAnalyticsConsentStore(db.drizzle).claimOnboardingReport(
+      await createAnalyticsConsentStore(db.drizzle).claimUsageAnswer(
         newcomer.id,
         new Date(),
       ),

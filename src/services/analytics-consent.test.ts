@@ -12,6 +12,7 @@ function setup(
   consent: ReturnType<typeof createAnalyticsConsent>
   recorded: unknown[]
   tracked: [string, AnalyticsEvent][]
+  answered: () => boolean
 } {
   const recorded: unknown[] = []
   const tracked: [string, AnalyticsEvent][] = []
@@ -24,7 +25,7 @@ function setup(
         recorded.push({ memberId, version, when })
         return Promise.resolve()
       },
-      claimOnboardingReport: () => {
+      claimUsageAnswer: () => {
         const first = !claimed
         claimed = true
         return Promise.resolve(first)
@@ -36,7 +37,7 @@ function setup(
       return Promise.resolve()
     },
   })
-  return { consent, recorded, tracked }
+  return { consent, recorded, tracked, answered: () => claimed }
 }
 
 describe('isOptedIn', () => {
@@ -171,6 +172,32 @@ describe('createAnalyticsConsent', () => {
     })
 
     expect(tracked).toEqual([])
+  })
+
+  it('records No thanks on the usage step, so a later share there reports nothing (R-ANA-6)', async () => {
+    const { consent, tracked, recorded, answered } = setup({
+      consentVersion: '2026-11-01',
+      secondsToOnboard: 84,
+    })
+
+    await consent.choose('m-ada', { optIn: false, from: 'onboarding' })
+    expect(answered()).toBe(true)
+    expect(recorded).toEqual([{ memberId: 'm-ada', version: null, when: null }])
+
+    await consent.choose('m-ada', {
+      optIn: true,
+      version: '2026-10-04',
+      from: 'onboarding',
+    })
+    expect(tracked).toEqual([])
+  })
+
+  it('records no answer for a withdrawal on the profile screen', async () => {
+    const { consent, answered } = setup()
+
+    await consent.choose('m-ada', { optIn: false })
+
+    expect(answered()).toBe(false)
   })
 
   it('reports no onboarding for an opt-in from the profile screen (R-ANA-6)', async () => {

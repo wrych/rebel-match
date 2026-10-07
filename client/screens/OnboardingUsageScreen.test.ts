@@ -101,14 +101,24 @@ describe('OnboardingUsageScreen', () => {
     expect(replace).toHaveBeenCalledWith('/matches')
   })
 
-  it('sends and records nothing for No thanks (R-ANA-4, R-ANA-6)', async () => {
+  it('records No thanks as the answer on the usage step, opting in to nothing (R-ANA-6)', async () => {
     const fetchMock = server()
     const screen = await mountScreen()
     await button(screen, 'No thanks').trigger('click')
     await flushPromises()
 
-    expect(puts(fetchMock)).toEqual([])
+    expect(puts(fetchMock)).toEqual([{ optIn: false, from: 'onboarding' }])
     expect(replace).toHaveBeenCalledWith('/welcome')
+  })
+
+  it('stays when No thanks could not be recorded', async () => {
+    server(500)
+    const screen = await mountScreen()
+    await button(screen, 'No thanks').trigger('click')
+    await flushPromises()
+
+    expect(screen.find('[role="alert"]').exists()).toBe(true)
+    expect(replace).not.toHaveBeenCalled()
   })
 
   it('stays when the words changed, saying so', async () => {

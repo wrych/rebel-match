@@ -14,13 +14,11 @@ export function createAnalyticsConsentStore(
         .set({ analyticsConsentVersion: version, analyticsConsentAt: at })
         .where(eq(members.id, memberId))
     },
-    claimOnboardingReport: async (memberId, at) => {
+    claimUsageAnswer: async (memberId, at) => {
       const claimed = await db
         .update(members)
-        .set({ onboardingReportedAt: at })
-        .where(
-          and(eq(members.id, memberId), isNull(members.onboardingReportedAt)),
-        )
+        .set({ usageAnsweredAt: at })
+        .where(and(eq(members.id, memberId), isNull(members.usageAnsweredAt)))
         .returning({ id: members.id })
       return claimed.length > 0
     },

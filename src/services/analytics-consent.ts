@@ -16,11 +16,11 @@ export function isOptedIn(
   )
 }
 
-/** An opt-in names the words read; one from the usage step of onboarding
- * says so with `from` (R-ANA-6). */
+/** An opt-in names the words read; an answer on the usage step of
+ * onboarding says so with `from` (R-ANA-6). */
 export type AnalyticsChoice =
   | { optIn: true; version: string; from?: 'onboarding' | undefined }
-  | { optIn: false }
+  | { optIn: false; from?: 'onboarding' | undefined }
 
 export interface AnalyticsConsentStore {
   /** Records the opt-in to `version` at `at`, or clears it with nulls. */
@@ -29,9 +29,9 @@ export interface AnalyticsConsentStore {
     version: string | null,
     at: Date | null,
   ): Promise<void>
-  /** Marks `onboarding_completed` as sent at `at`; false when it already
-   * was, so it goes out at most once per member (R-ANA-6). */
-  claimOnboardingReport(memberId: string, at: Date): Promise<boolean>
+  /** Records the first answer on the usage step at `at`; false when the
+   * member already answered there (R-ANA-6). */
+  claimUsageAnswer(memberId: string, at: Date): Promise<boolean>
 }
 
 export interface AnalyticsConsentService {
@@ -40,8 +40,8 @@ export interface AnalyticsConsentService {
 }
 
 /** Gives or withdraws the analytics opt-in, on the usage step of onboarding
- * or the profile screen alike (R-ANA-4). Sharing on the usage step reports
- * the onboarding it ends; declining there reports nothing (R-ANA-6). */
+ * or the profile screen alike (R-ANA-4). The first answer on the usage step
+ * is recorded; sharing as that answer reports the onboarding (R-ANA-6). */
 export function createAnalyticsConsent(deps: {
   store: AnalyticsConsentStore
   currentVersion: string
@@ -52,9 +52,9 @@ export function createAnalyticsConsent(deps: {
   const now = deps.now ?? ((): Date => new Date())
 
   async function reportOnboarding(memberId: string): Promise<void> {
+    if (!(await deps.store.claimUsageAnswer(memberId, now()))) return
     const done = await deps.completion(memberId)
     if (done === null) return
-    if (!(await deps.store.claimOnboardingReport(memberId, now()))) return
     void deps.track(memberId, {
       name: 'onboarding_completed',
       consent_version: done.consentVersion,
@@ -68,6 +68,8 @@ export function createAnalyticsConsent(deps: {
     choose: async (memberId, choice) => {
       if (!choice.optIn) {
         await deps.store.record(memberId, null, null)
+        if (choice.from === 'onboarding')
+          await deps.store.claimUsageAnswer(memberId, now())
         return 'done'
       }
       if (choice.version !== deps.currentVersion) return 'stale'

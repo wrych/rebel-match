@@ -95,8 +95,9 @@ export const members = pgTable(
     // The first confirmation of any consent words: onboarding_completed
     // reports only the onboarding it ends (R-ANA-6).
     firstOnboardedAt: at('first_onboarded_at'),
-    // When onboarding_completed was sent: at most once per member (R-ANA-6).
-    onboardingReportedAt: at('onboarding_reported_at'),
+    // The first answer on the usage step of onboarding, either one, so
+    // onboarding_completed goes out at most once (R-ANA-6).
+    usageAnsweredAt: at('usage_answered_at'),
     analyticsConsentVersion: varchar('analytics_consent_version', {
       length: 20,
     }),

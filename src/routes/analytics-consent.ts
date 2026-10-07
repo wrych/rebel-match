@@ -13,7 +13,10 @@ const choiceBody: z.ZodType<AnalyticsChoice> = z.discriminatedUnion('optIn', [
     version: z.string().min(1),
     from: z.literal('onboarding').optional(),
   }),
-  z.object({ optIn: z.literal(false) }),
+  z.object({
+    optIn: z.literal(false),
+    from: z.literal('onboarding').optional(),
+  }),
 ])
 
 /** `PUT /api/me/analytics` (design §3): give or withdraw the analytics opt-in,

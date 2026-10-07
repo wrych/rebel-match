@@ -1,5 +1,5 @@
 {
-  "id": "26e671a8-18f5-4394-8d81-a08618fa0c8a",
+  "id": "e0a01742-cccc-40aa-b56c-bc08dd30ef9e",
   "prevId": "6373f4d1-d132-4825-b155-48b83ee9d750",
   "version": "7",
   "dialect": "postgresql",
@@ -1159,8 +1159,8 @@
           "primaryKey": false,
           "notNull": false
         },
-        "onboarding_reported_at": {
-          "name": "onboarding_reported_at",
+        "usage_answered_at": {
+          "name": "usage_answered_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": false

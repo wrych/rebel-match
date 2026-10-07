@@ -50,6 +50,7 @@ describe('PUT /api/me/analytics', () => {
   it.each([
     [{ optIn: true, version: '2026-10-04' }],
     [{ optIn: false }],
+    [{ optIn: false, from: 'onboarding' }],
   ] as const)('records %j for the signed-in member (R-ANA-4)', async (body) => {
     const { app, chosen } = setup()
 

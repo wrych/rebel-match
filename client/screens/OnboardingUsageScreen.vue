@@ -29,12 +29,12 @@ onMounted(async () => {
   }
 })
 
-async function share(): Promise<void> {
+async function answer(share: boolean): Promise<void> {
   if (version.value === null) return
   sending.value = true
   problem.value = null
   try {
-    const outcome = await chooseAnalytics(true, version.value, 'onboarding')
+    const outcome = await chooseAnalytics(share, version.value, 'onboarding')
     if (outcome === 'stale') {
       problem.value = 'The wording has just changed. Reload to read it.'
       return
@@ -46,10 +46,6 @@ async function share(): Promise<void> {
   } finally {
     sending.value = false
   }
-}
-
-async function decline(): Promise<void> {
-  await router.replace(afterOnboarding(next.value))
 }
 </script>
 
@@ -76,7 +72,7 @@ async function decline(): Promise<void> {
           type="button"
           class="btn btn-primary"
           :disabled="sending"
-          @click="share"
+          @click="answer(true)"
         >
           Share usage data
         </button>
@@ -84,7 +80,7 @@ async function decline(): Promise<void> {
           type="button"
           class="btn btn-primary"
           :disabled="sending"
-          @click="decline"
+          @click="answer(false)"
         >
           No thanks
         </button>
