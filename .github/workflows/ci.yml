@@ -65,6 +65,15 @@ jobs:
           --from ${{ github.event.pull_request.base.sha }}
           --to ${{ github.event.pull_request.head.sha }}
 
+      # A migration on main has run on staging; editing or removing it stops
+      # every later deploy there (constitution §6, ADR 0044). A pull request
+      # is checked out as its merge into main, so main's own newer migrations
+      # are in the tree, and the base is the merge's first parent.
+      - name: Migrations already on main, unchanged
+        run: npx tsx scripts/check-migrations.ts "$BASE"
+        env:
+          BASE: ${{ github.event_name == 'pull_request' && 'HEAD^1' || github.event.before }}
+
       - name: Unit tests
         run: npm test
 
