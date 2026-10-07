@@ -125,7 +125,10 @@ usage data. S30 Privacy notice is one tap from each of the first two.
    then explains the optional usage data. Two buttons of equal weight
    (R-ANA-4): _Share usage data_ → `PUT /api/me/analytics` with
    `{optIn: true, version, from: 'onboarding'}`, and the server sends
-   `onboarding_completed` (R-ANA-6); _No thanks_ → nothing is sent or recorded.
+   `onboarding_completed` (R-ANA-6); _No thanks_ → `PUT /api/me/analytics`
+   with `{optIn: false, from: 'onboarding'}`: nothing goes to Mixpanel, and the
+   answer is recorded, so `onboarding_completed` is never sent for this
+   onboarding (R-ANA-6).
 7. Either way the member lands on **F3**, or on the screen they came for
    (**F13**, R-ONB-11).
 

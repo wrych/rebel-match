@@ -620,7 +620,8 @@ fallback).
 - **R-ANA-6** — WHEN a member chooses to share on the usage-data step of
   onboarding THE SYSTEM SHALL send `onboarding completed` (R-ANA-1) for that
   onboarding. For a member who declines there it SHALL NOT be sent, then or
-  later (ADR 0041).
+  later (ADR 0041). THE SYSTEM SHALL record the first answer given on that
+  step, either one, so that no later answer there sends it.
 
 ---
 
