@@ -49,7 +49,7 @@ still holds except where the later ADR says otherwise.
 | [0010](0010-keyword-trend-matching-for-beta.md)            | Keyword-based trend matching for the beta                            | Accepted                  |
 | [0011](0011-typescript-strict.md)                          | TypeScript in strict mode                                            | Accepted                  |
 | [0012](0012-conventional-commits-one-change-per-pr.md)     | Conventional Commits, one change per pull request                    | Accepted                  |
-| [0013](0013-tell-applicants-their-status.md)               | Tell applicants their status, accepting email enumeration            | Accepted                  |
+| [0013](0013-tell-applicants-their-status.md)               | Tell applicants their status, accepting email enumeration            | Accepted, amended by 0043 |
 | [0014](0014-qr-invite-tokens.md)                           | Invite tokens in the QR code, auto-approving the scanner             | Accepted                  |
 | [0015](0015-own-auth-behind-a-narrow-seam.md)              | Build authentication in-app, behind a narrow seam                    | Accepted, amended by 0018 |
 | [0016](0016-outbound-message-log.md)                       | Record every outbound message, in every environment                  | Accepted                  |
@@ -76,5 +76,6 @@ still holds except where the later ADR says otherwise.
 | [0038](0038-count-invite-opens.md)                         | Count the opens of each invite, and show them with its uses          | Accepted, amended by 0039 |
 | [0039](0039-count-an-open-on-first-interaction.md)         | Count an invite open on the visitor's first interaction              | Accepted                  |
 | [0040](0040-reuse-a-component-before-building-one.md)      | Reuse a component before building a new one                          | Accepted                  |
-| [0041](0041-onboard-in-three-steps.md)                     | Onboard in three steps; the notice is read, usage data is asked      | Accepted                  |
+| [0041](0041-onboard-in-three-steps.md)                     | Onboard in three steps; the notice is read, usage data is asked      | Accepted, amended by 0043 |
 | [0042](0042-mit-license.md)                                | Publish the code under the MIT license                               | Accepted                  |
+| [0043](0043-one-door-confirm-the-address-then-onboard.md)  | One door: confirm the address, then onboard, then wait if need be    | Accepted                  |
