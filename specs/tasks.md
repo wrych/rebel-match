@@ -121,7 +121,7 @@ printed dev link (R-DEV-6).
 - [ ] Usage step: two equal buttons; `onboarding_completed` when the member
       shares; `POST /api/onboarding` drops `analyticsVersion`. _(R-ANA-4,
       R-ANA-6)_
-- [ ] Privacy notice screen at `/privacy` and terms of use at `/terms`, from
+- [x] Privacy notice screen at `/privacy` and terms of use at `/terms`, from
       the drafts in `docs/legal/`, linked from onboarding and the profile
       screen. _(R-ONB-9, R-ONB-13)_
 - [ ] Confirm with Transformation Architects GmbH that it is named as

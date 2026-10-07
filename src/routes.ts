@@ -23,6 +23,8 @@ export const routeTable: readonly RouteDef[] = [
   { path: '/sign-in', name: 'sign-in', access: 'public' },
   { path: '/access-requested', name: 'access-requested', access: 'public' },
   { path: '/onboarding', name: 'onboarding', access: 'session' },
+  { path: '/privacy', name: 'privacy', access: 'public' },
+  { path: '/terms', name: 'terms', access: 'public' },
   { path: '/welcome', name: 'welcome', access: 'onboarded' },
   { path: '/profile', name: 'profile', access: 'onboarded' },
   { path: '/notifications', name: 'notifications', access: 'onboarded' },

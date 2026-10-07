@@ -242,6 +242,12 @@ function save(field: Field): Promise<void> {
             {{ paragraph }}
           </p>
         </div>
+        <RouterLink to="/privacy" class="row-link">
+          <span class="row-link-label">Privacy notice</span>
+        </RouterLink>
+        <RouterLink to="/terms" class="row-link">
+          <span class="row-link-label">Terms of use</span>
+        </RouterLink>
       </section>
 
       <DeleteHistory />
