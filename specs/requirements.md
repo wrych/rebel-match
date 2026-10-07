@@ -381,9 +381,14 @@ capability, not a secret** — and every requirement below exists because of tha
 - **R-PROF-3** — The header SHALL carry a **menu** in place of the "CR" mark,
   offering: the colour mode switch (R-LOOK-2), the member's notifications
   (R-NOTE-5, R-NOTE-6), the profile screen, feedback (R-FB-1), the host tools
-  the member's permissions allow (R-ROLE-4), and sign out, with the running
-  version at its foot (R-NFR-11). The menu holds links and one switch only, so it is
+  the member's permissions allow (R-ROLE-4), the impressum (R-PROF-4), and
+  sign out, with the running version at its foot (R-NFR-11). The menu holds links and one switch only, so it is
   navigation, not a screen (R-NAV-1); every item it leads to has its own URL.
+- **R-PROF-4 (Impressum)** — The menu SHALL offer an **Impressum** to everyone,
+  signed in or not, that shows the people who made the app one card at a time,
+  each with their portrait, name and what they are responsible for, browsed as
+  the swipe deck is (R-OFF-1, R-LOOK-4). It is public and has its own URL
+  (R-NAV-1).
 
 ---
 
@@ -687,6 +692,7 @@ at a screen instead of at the front door.
   | `/onboarding/usage`                  | onboarding: optional usage data (R-ANA-4)      |
   | `/privacy`                           | full privacy notice (R-ONB-9)                  |
   | `/terms`                             | terms of use (R-ONB-13)                        |
+  | `/impressum`                         | the people who made the app (R-PROF-4)         |
   | `/welcome`                           | two doors                                      |
   | `/ask`                               | submit a challenge                             |
   | `/challenges/:id`                    | detected trend for that challenge              |

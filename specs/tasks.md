@@ -258,6 +258,8 @@ printed dev link (R-DEV-6).
 - [x] Select several members by holding a card; give or take a role, or delete
       them. _(R-MEM-3)_
 - [x] Delete your own account from the profile screen. _(R-PROF-2, C4)_
+- [ ] Impressum at `/impressum`, from the menu: the app's makers as a deck of
+      cards. _(S32, R-PROF-4)_
 - [x] Erasure waits 30 days: deactivate now, undo by emailed link or host,
       sweep after the grace period. _(R-NFR-7, ADR 0032)_
 

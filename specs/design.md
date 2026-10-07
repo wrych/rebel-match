@@ -272,9 +272,9 @@ Privacy, Usage (R-ONB-6). Its look stays the `.steps` block of the theme.
 The header's right-hand button opens the **menu** (R-PROF-3): the colour mode
 switch, "Profile & privacy" (`/profile`), Feedback (R-FB-1), the host tools
 the member's permissions allow (paths and permissions from the route table, ADR
-0017), and sign out. It is a small panel under the header, closed by Escape, by a click
+0017), the Impressum (`/impressum`, R-PROF-4), and sign out. It is a small panel under the header, closed by Escape, by a click
 outside it or by choosing an item, with focus returned to the button. Signed
-out, the menu offers only the colour mode. The welcome screen keeps the two
+out, the menu offers the colour mode and the Impressum. The welcome screen keeps the two
 doors and "Your matches"; host tools and sign out move into the menu.
 
 The header stays at the top while the page scrolls (R-NAV-11); its height is a
@@ -1027,6 +1027,7 @@ deep link reloads cleanly.
 | S29 | **Onboarding: usage data** — step 3 of 3: "Profile saved" with a link to S24, the analytics words, and two equal buttons, _Share usage data_ and _No thanks_ (R-ONB-11, R-ANA-4)                                                                                                                                                                                                                                                                                                      | `/onboarding/usage`                                   |
 | S30 | **Privacy notice** — the full notice with its version and date; public (R-ONB-9)                                                                                                                                                                                                                                                                                                                                                                                                      | `/privacy`                                            |
 | S31 | **Terms of use** — the terms with their version and date; public (R-ONB-13)                                                                                                                                                                                                                                                                                                                                                                                                           | `/terms`                                              |
+| S32 | **Impressum** — the people who made the app, one card each with portrait, name and responsibilities, browsed as the swipe deck; public (R-PROF-4)                                                                                                                                                                                                                                                                                                                                     | `/impressum`                                          |
 
 Remaining overlays, deliberately: the "really decline this request?" confirm, the
 "link sent" / "copied" toasts, and the feedback action (a `mailto:`, not a
