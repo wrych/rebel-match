@@ -77,7 +77,9 @@ describe('OnboardingScreen', () => {
     const text = (await mountScreen()).text()
 
     for (const paragraph of consentWordsOf(latestConsentVersion)) {
-      expect(text).toContain(paragraph)
+      expect(text).toContain(
+        typeof paragraph === 'string' ? paragraph : paragraph.text,
+      )
     }
   })
 
@@ -160,7 +162,9 @@ describe('OnboardingScreen', () => {
     expect(boxes).toHaveLength(2)
     expect((boxes[1]!.element as HTMLInputElement).checked).toBe(false)
     for (const paragraph of analyticsWordsOf(latestAnalyticsVersion)) {
-      expect(screen.text()).toContain(paragraph)
+      expect(screen.text()).toContain(
+        typeof paragraph === 'string' ? paragraph : paragraph.text,
+      )
     }
   })
 

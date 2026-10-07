@@ -10,6 +10,7 @@ import {
   sectors,
 } from '../../src/profile-options'
 import AnalyticsWords from '../components/AnalyticsWords.vue'
+import ConsentWords from '../components/ConsentWords.vue'
 import { fetchConfig, type ClientConfig } from '../lib/api'
 import {
   afterOnboarding,
@@ -180,11 +181,13 @@ onMounted(load)
         Your name and profile information may be seen by other members.
       </p>
 
-      <section class="card-solid consent" aria-labelledby="consent-heading">
+      <section
+        v-if="consentVersion"
+        class="stack-tight consent"
+        aria-labelledby="consent-heading"
+      >
         <h2 id="consent-heading" class="kicker">How we use your data</h2>
-        <p v-for="(paragraph, index) in consentWords" :key="index">
-          {{ paragraph }}
-        </p>
+        <ConsentWords :version="consentVersion" />
       </section>
 
       <label class="check">

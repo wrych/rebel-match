@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
-import { consentWordsOf } from '../../src/consent'
+import { onMounted, reactive, ref } from 'vue'
 import {
   companySizeKeys,
   companySizes,
@@ -9,6 +8,7 @@ import {
   sectors,
 } from '../../src/profile-options'
 import AnalyticsToggle from '../components/AnalyticsToggle.vue'
+import ConsentWords from '../components/ConsentWords.vue'
 import NotificationSettings from '../components/NotificationSettings.vue'
 import DeleteAccount from '../components/DeleteAccount.vue'
 import DeleteHistory from '../components/DeleteHistory.vue'
@@ -52,12 +52,6 @@ const timers: Partial<Record<Field, ReturnType<typeof setTimeout>>> = {}
 // Saves run one at a time, each built from what the server last accepted,
 // so a quick second edit cannot carry a stale value over the first.
 let queue: Promise<void> = Promise.resolve()
-
-const consentWords = computed(() =>
-  profile.value?.consentVersion
-    ? consentWordsOf(profile.value.consentVersion)
-    : [],
-)
 
 onMounted(async () => {
   try {
@@ -237,11 +231,10 @@ function save(field: Field): Promise<void> {
             when(profile.consentAt)
           }}</time>
         </p>
-        <div class="card-solid stack-tight">
-          <p v-for="(paragraph, index) in consentWords" :key="index">
-            {{ paragraph }}
-          </p>
-        </div>
+        <ConsentWords
+          v-if="profile.consentVersion"
+          :version="profile.consentVersion"
+        />
         <RouterLink to="/privacy" class="row-link">
           <span class="row-link-label">Privacy notice</span>
         </RouterLink>

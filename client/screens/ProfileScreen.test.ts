@@ -236,7 +236,9 @@ describe('ProfileScreen', () => {
 
     expect(text).toContain(`Version ${latestConsentVersion}`)
     for (const paragraph of consentWordsOf(latestConsentVersion)) {
-      expect(text).toContain(paragraph)
+      expect(text).toContain(
+        typeof paragraph === 'string' ? paragraph : paragraph.text,
+      )
     }
   })
 

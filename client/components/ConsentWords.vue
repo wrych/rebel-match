@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { analyticsWordsOf } from '../../src/analytics-consent'
+import { consentWordsOf } from '../../src/consent'
 import VersionedWords from './VersionedWords.vue'
 
 const props = defineProps<{ version: string }>()
-const words = computed(() => analyticsWordsOf(props.version))
+const words = computed(() => consentWordsOf(props.version))
 </script>
 
 <template>
-  <VersionedWords :words="words" />
+  <VersionedWords :words="words" solid />
 </template>

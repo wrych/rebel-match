@@ -1,8 +1,22 @@
 import { describe, expect, it } from 'vitest'
-import { consentWordsOf, latestConsentVersion } from './consent.js'
+import {
+  consentWordsOf,
+  latestConsentVersion,
+  type Paragraph,
+} from './consent.js'
+
+function textOf(words: readonly Paragraph[]): string {
+  return words
+    .map((paragraph) =>
+      typeof paragraph === 'string'
+        ? paragraph
+        : `${paragraph.heading}: ${paragraph.text}`,
+    )
+    .join(' ')
+}
 
 describe('consent wording', () => {
-  const words = consentWordsOf(latestConsentVersion).join(' ')
+  const words = textOf(consentWordsOf(latestConsentVersion))
 
   it('has words for the latest version', () => {
     expect(words.length).toBeGreaterThan(0)
@@ -26,9 +40,32 @@ describe('consent wording', () => {
     expect(words).toContain('You can delete your activity history at any time')
   })
 
+  it('names who is responsible and how to reach them (R-ONB-5)', () => {
+    expect(words).toContain(
+      'Who is responsible: Transformation Architects GmbH',
+    )
+    expect(words).toContain('ready@transformation-architects.ch')
+  })
+
+  it('says what the member can ask for and do themselves (R-ONB-5)', () => {
+    expect(words).toContain('ask for a copy of your data or have it corrected')
+    expect(words).toContain(
+      'delete your activity history or your account yourself under Profile & privacy',
+    )
+    expect(words).toContain('full privacy notice')
+  })
+
+  it('puts every paragraph of the latest words under a heading (ADR 0041)', () => {
+    for (const paragraph of consentWordsOf(latestConsentVersion))
+      expect(typeof paragraph).toBe('object')
+  })
+
   it('leaves the words of earlier versions as they were accepted (R-ONB-4)', () => {
-    expect(consentWordsOf('2026-11-01.2').join(' ')).not.toContain(
+    expect(textOf(consentWordsOf('2026-11-01.2'))).not.toContain(
       'We record your activity',
+    )
+    expect(textOf(consentWordsOf('2026-11-01.3'))).not.toContain(
+      'Transformation Architects',
     )
   })
 

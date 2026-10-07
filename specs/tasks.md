@@ -127,7 +127,7 @@ printed dev link (R-DEV-6).
 - [ ] Confirm with Transformation Architects GmbH that it is named as
       controller and that the server and mail are run on its behalf; check
       whether a representative in the EU is needed. _(R-ONB-9, R-ONB-13)_
-- [ ] New consent and analytics words, naming Transformation Architects GmbH.
+- [x] New consent and analytics words, naming Transformation Architects GmbH.
       _(R-ONB-5, R-ANA-4)_
 - [ ] Time onboarding again on a phone against the two-minute budget.
       _(R-NFR-3)_
