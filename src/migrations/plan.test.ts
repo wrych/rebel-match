@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  assertMigrationsKept,
   checksumOf,
   orderMigrationNames,
   planMigrations,
@@ -122,5 +123,33 @@ describe('planMigrations', () => {
     expect(() => planMigrations([], applied)).toThrow(
       /no longer in the repository/,
     )
+  })
+})
+
+describe('assertMigrationsKept', () => {
+  const base = [migration('001_a.sql', 'A'), migration('002_b.sql', 'B')]
+
+  it('accepts a change that only adds migrations', () => {
+    const head = [...base, migration('003_c.sql', 'C')]
+
+    expect(() => {
+      assertMigrationsKept(base, head)
+    }).not.toThrow()
+  })
+
+  it('refuses a change that edits a migration on the base branch', () => {
+    const head = [migration('001_a.sql', 'A'), migration('002_b.sql', 'B2')]
+
+    expect(() => {
+      assertMigrationsKept(base, head)
+    }).toThrow(/002_b\.sql/)
+  })
+
+  it('refuses a change that renumbers a migration on the base branch', () => {
+    const head = [migration('001_a.sql', 'A'), migration('003_b.sql', 'B')]
+
+    expect(() => {
+      assertMigrationsKept(base, head)
+    }).toThrow(/no longer in the repository: 002_b\.sql/)
   })
 })
