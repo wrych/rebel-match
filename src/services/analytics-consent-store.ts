@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 import type { Database } from '../db/connect.js'
 import { members } from '../db/schema.js'
 import type { AnalyticsConsentStore } from './analytics-consent.js'
@@ -13,6 +13,14 @@ export function createAnalyticsConsentStore(
         .update(members)
         .set({ analyticsConsentVersion: version, analyticsConsentAt: at })
         .where(eq(members.id, memberId))
+    },
+    claimUsageAnswer: async (memberId, at) => {
+      const claimed = await db
+        .update(members)
+        .set({ usageAnsweredAt: at })
+        .where(and(eq(members.id, memberId), isNull(members.usageAnsweredAt)))
+        .returning({ id: members.id })
+      return claimed.length > 0
     },
   }
 }

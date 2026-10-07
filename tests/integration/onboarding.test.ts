@@ -9,6 +9,7 @@ import {
   testDatabaseUrl,
   type TestDatabase,
 } from './support/database.js'
+import { createAnalyticsConsentStore } from '../../src/services/analytics-consent-store.js'
 import { createOnboardingStore } from '../../src/services/onboarding-store.js'
 
 const config = loadConfig({
@@ -98,13 +99,22 @@ describe('onboarding over Postgres (F2)', () => {
     })
     expect(Date.parse(String(rows[0]?.['consent_at']))).not.toBeNaN()
     expect(await me()).toMatchObject({ onboarded: true, name: 'Ada Rebel' })
+    expect(
+      await createOnboardingStore(db.drizzle).consent(newcomer.id),
+    ).toMatchObject({ version: config.consentVersion, first: true })
     const admin = await request(app)
       .get('/api/admin/applicants')
       .set('Cookie', cookie)
     expect(admin.status).toBe(404)
   })
 
-  it('records nothing for analytics when the box is left unticked (R-ANA-4)', async () => {
+  it('no longer fills the organization they left empty from the door (R-AUTH-12)', async () => {
+    const form = await request(app).get('/api/onboarding').set('Cookie', cookie)
+
+    expect(form.body).toMatchObject({ name: 'Ada Rebel', org: null })
+  })
+
+  it('records nothing for analytics until the member shares (R-ANA-4)', async () => {
     const [row] = await db.query(
       'SELECT analytics_consent_version, analytics_consent_at FROM members WHERE id = ?',
       [newcomer.id],
@@ -117,14 +127,14 @@ describe('onboarding over Postgres (F2)', () => {
     expect(await me()).toMatchObject({ analyticsOptIn: false })
   })
 
-  it('records the opt-in when the box is ticked, and withdraws it (R-ANA-4)', async () => {
+  it('records the opt-in when the member shares on the usage step (R-ANA-4)', async () => {
     await request(app)
-      .post('/api/onboarding')
+      .put('/api/me/analytics')
       .set('Cookie', cookie)
       .send({
-        name: 'Ada Rebel',
-        consentVersion: config.consentVersion,
-        analyticsVersion: config.analyticsVersion,
+        optIn: true,
+        version: config.analyticsVersion,
+        from: 'onboarding',
       })
       .expect(204)
 
@@ -135,9 +145,34 @@ describe('onboarding over Postgres (F2)', () => {
     expect(row?.['analytics_consent_version']).toBe(config.analyticsVersion)
     expect(Date.parse(String(row?.['analytics_consent_at']))).not.toBeNaN()
     expect(await me()).toMatchObject({ analyticsOptIn: true })
-    const form = await request(app).get('/api/onboarding').set('Cookie', cookie)
-    expect(form.body).toMatchObject({ analyticsOptIn: true })
+  })
 
+  it('records the first answer on the usage step, and only that one (R-ANA-6)', async () => {
+    const [row] = await db.query(
+      'SELECT usage_answered_at FROM members WHERE id = ?',
+      [newcomer.id],
+    )
+
+    expect(Date.parse(String(row?.['usage_answered_at']))).not.toBeNaN()
+    expect(
+      await createAnalyticsConsentStore(db.drizzle).claimUsageAnswer(
+        newcomer.id,
+        new Date(),
+      ),
+    ).toBe(false)
+  })
+
+  it('keeps the opt-in when the member confirms the consent again (ADR 0041)', async () => {
+    await request(app)
+      .post('/api/onboarding')
+      .set('Cookie', cookie)
+      .send({ name: 'Ada Rebel', consentVersion: config.consentVersion })
+      .expect(204)
+
+    expect(await me()).toMatchObject({ onboarded: true, analyticsOptIn: true })
+  })
+
+  it('withdraws the opt-in on request (R-ANA-4)', async () => {
     await request(app)
       .put('/api/me/analytics')
       .set('Cookie', cookie)
@@ -156,6 +191,17 @@ describe('onboarding over Postgres (F2)', () => {
     expect(await me()).toMatchObject({ onboarded: false })
   })
 
+  it('reads the consent confirmed, when, and that a second confirmation is not the first (R-NFR-3, R-ANA-6)', async () => {
+    const store = createOnboardingStore(db.drizzle)
+
+    expect(await store.consent(newcomer.id)).toEqual({
+      version: '2000-01-01',
+      acceptedAt: expect.any(Date) as Date,
+      first: false,
+    })
+    expect(await store.consent(randomUUID())).toBeNull()
+  })
+
   it('finds the latest sign-in email, for the onboarding time (R-NFR-3)', async () => {
     const email = (kind: string, at: string): Promise<unknown> =>
       db.query(
@@ -164,13 +210,16 @@ describe('onboarding over Postgres (F2)', () => {
         [newcomer.id, newcomer.email, kind, at],
       )
     const store = createOnboardingStore(db.drizzle)
-    expect(await store.signInEmailAt(newcomer.id)).toBeNull()
+    const confirmedAt = new Date('2026-11-08T10:00:00Z')
+    expect(await store.signInEmailAt(newcomer.id, confirmedAt)).toBeNull()
 
     await email('magic_link', '2026-11-08T09:58:00Z')
     await email('magic_link', '2026-11-08T09:59:00Z')
     await email('connection_request', '2026-11-08T10:05:00Z')
 
-    expect(await store.signInEmailAt(newcomer.id)).toEqual(
+    await email('magic_link', '2026-11-09T08:00:00Z')
+
+    expect(await store.signInEmailAt(newcomer.id, confirmedAt)).toEqual(
       new Date('2026-11-08T09:59:00Z'),
     )
   })

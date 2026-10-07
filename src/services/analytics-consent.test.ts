@@ -1,13 +1,22 @@
 import { describe, expect, it } from 'vitest'
+import type { AnalyticsEvent } from './analytics.js'
 import { createAnalyticsConsent, isOptedIn } from './analytics-consent.js'
+import type { OnboardingCompletion } from './onboarding.js'
 
 const at = new Date('2026-11-08T10:00:00Z')
 
-function setup(): {
+function setup(
+  completion: OnboardingCompletion | null = null,
+  reported = false,
+): {
   consent: ReturnType<typeof createAnalyticsConsent>
   recorded: unknown[]
+  tracked: [string, AnalyticsEvent][]
+  answered: () => boolean
 } {
   const recorded: unknown[] = []
+  const tracked: [string, AnalyticsEvent][] = []
+  let claimed = reported
   const consent = createAnalyticsConsent({
     currentVersion: '2026-10-04',
     now: () => at,
@@ -16,9 +25,19 @@ function setup(): {
         recorded.push({ memberId, version, when })
         return Promise.resolve()
       },
+      claimUsageAnswer: () => {
+        const first = !claimed
+        claimed = true
+        return Promise.resolve(first)
+      },
+    },
+    completion: () => Promise.resolve(completion),
+    track: (memberId, event) => {
+      tracked.push([memberId, event])
+      return Promise.resolve()
     },
   })
-  return { consent, recorded }
+  return { consent, recorded, tracked, answered: () => claimed }
 }
 
 describe('isOptedIn', () => {
@@ -77,5 +96,137 @@ describe('createAnalyticsConsent', () => {
       await consent.choose('m-ada', { optIn: true, version: '2025-01-01' }),
     ).toBe('stale')
     expect(recorded).toEqual([])
+  })
+  it('reports the onboarding when the member shares on its usage step (R-ANA-6)', async () => {
+    const { consent, tracked } = setup({
+      consentVersion: '2026-11-01',
+      secondsToOnboard: 84,
+    })
+
+    await consent.choose('m-ada', {
+      optIn: true,
+      version: '2026-10-04',
+      from: 'onboarding',
+    })
+
+    expect(tracked).toEqual([
+      [
+        'm-ada',
+        {
+          name: 'onboarding_completed',
+          consent_version: '2026-11-01',
+          seconds_to_onboard: 84,
+        },
+      ],
+    ])
+  })
+
+  it('leaves the time out of the report when it is not known (R-NFR-3)', async () => {
+    const { consent, tracked } = setup({
+      consentVersion: '2026-11-01',
+      secondsToOnboard: null,
+    })
+
+    await consent.choose('m-ada', {
+      optIn: true,
+      version: '2026-10-04',
+      from: 'onboarding',
+    })
+
+    expect(tracked).toEqual([
+      [
+        'm-ada',
+        { name: 'onboarding_completed', consent_version: '2026-11-01' },
+      ],
+    ])
+  })
+
+  it('reports one onboarding once, however often the member shares (R-ANA-6)', async () => {
+    const { consent, tracked } = setup({
+      consentVersion: '2026-11-01',
+      secondsToOnboard: 84,
+    })
+    const share = {
+      optIn: true,
+      version: '2026-10-04',
+      from: 'onboarding',
+    } as const
+
+    await consent.choose('m-ada', share)
+    await consent.choose('m-ada', share)
+
+    expect(tracked).toHaveLength(1)
+  })
+
+  it('reports nothing once the onboarding was reported, after a withdrawal too (R-ANA-6)', async () => {
+    const { consent, tracked } = setup(
+      { consentVersion: '2026-11-01', secondsToOnboard: 84 },
+      true,
+    )
+
+    await consent.choose('m-ada', { optIn: false })
+    await consent.choose('m-ada', {
+      optIn: true,
+      version: '2026-10-04',
+      from: 'onboarding',
+    })
+
+    expect(tracked).toEqual([])
+  })
+
+  it('records No thanks on the usage step, so a later share there reports nothing (R-ANA-6)', async () => {
+    const { consent, tracked, recorded, answered } = setup({
+      consentVersion: '2026-11-01',
+      secondsToOnboard: 84,
+    })
+
+    await consent.choose('m-ada', { optIn: false, from: 'onboarding' })
+    expect(answered()).toBe(true)
+    expect(recorded).toEqual([{ memberId: 'm-ada', version: null, when: null }])
+
+    await consent.choose('m-ada', {
+      optIn: true,
+      version: '2026-10-04',
+      from: 'onboarding',
+    })
+    expect(tracked).toEqual([])
+  })
+
+  it('records no answer for a withdrawal on the profile screen', async () => {
+    const { consent, answered } = setup()
+
+    await consent.choose('m-ada', { optIn: false })
+
+    expect(answered()).toBe(false)
+  })
+
+  it('reports no onboarding for an opt-in from the profile screen (R-ANA-6)', async () => {
+    const { consent, tracked } = setup({
+      consentVersion: '2026-11-01',
+      secondsToOnboard: 84,
+    })
+
+    await consent.choose('m-ada', { optIn: true, version: '2026-10-04' })
+
+    expect(tracked).toEqual([])
+  })
+
+  it('reports nothing for stale words or a member not onboarded', async () => {
+    const stale = setup({ consentVersion: '2026-11-01', secondsToOnboard: 1 })
+    const notOnboarded = setup(null)
+
+    await stale.consent.choose('m-ada', {
+      optIn: true,
+      version: '2025-01-01',
+      from: 'onboarding',
+    })
+    await notOnboarded.consent.choose('m-ada', {
+      optIn: true,
+      version: '2026-10-04',
+      from: 'onboarding',
+    })
+
+    expect(stale.tracked).toEqual([])
+    expect(notOnboarded.tracked).toEqual([])
   })
 })

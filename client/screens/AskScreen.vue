@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AskSteps from '../components/AskSteps.vue'
+import { askJourney } from '../lib/steps'
 import NewestChallenges from '../components/NewestChallenges.vue'
 import { fetchConfig } from '../lib/api'
 import {
@@ -66,7 +67,7 @@ async function submit(): Promise<void> {
 </script>
 
 <template>
-  <AskSteps :current="1" />
+  <AskSteps :journey="askJourney" :current="1" />
   <section class="screen">
     <div class="stack">
       <h1 class="display display-lg">What’s your challenge?</h1>

@@ -87,4 +87,12 @@ describe('routeTable', () => {
     expect(public_).toContain('/login')
     expect(public_).toContain('/access-requested')
   })
+
+  it('serves the privacy notice and the terms without a session (R-ONB-9, R-ONB-13)', () => {
+    const public_ = routeTable
+      .filter((route) => route.access === 'public')
+      .map((route) => route.path)
+
+    expect(public_).toEqual(expect.arrayContaining(['/privacy', '/terms']))
+  })
 })

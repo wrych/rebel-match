@@ -319,6 +319,28 @@ function composeNotificationMail(
   }
 }
 
+// Onboarding, and the opt-in its usage step gives, which reports the
+// onboarding it ends (R-ANA-6, ADR 0041).
+function composeOnboarding(
+  config: Config,
+  db: Database,
+  track: Track,
+): Pick<AppDeps, 'onboarding' | 'analyticsConsent'> {
+  const onboarding = createOnboarding({
+    store: createOnboardingStore(db),
+    currentConsentVersion: config.consentVersion,
+  })
+  return {
+    onboarding,
+    analyticsConsent: createAnalyticsConsent({
+      store: createAnalyticsConsentStore(db),
+      currentVersion: config.analyticsVersion,
+      completion: (memberId) => onboarding.completion(memberId),
+      track,
+    }),
+  }
+}
+
 /** Background work the server reports on: an analytics event that could not
  * be sent, a notification that could not be mailed. */
 interface ComposeHooks {
@@ -356,15 +378,7 @@ export function composeApp(
     ...composeMembershipAdmin(config, db, auth),
     outbox: createOutboxLog(db),
     ...composeAdmission(config, settings, db, auth),
-    onboarding: createOnboarding({
-      store: createOnboardingStore(db),
-      currentConsentVersion: config.consentVersion,
-      currentAnalyticsVersion: config.analyticsVersion,
-    }),
-    analyticsConsent: createAnalyticsConsent({
-      store: createAnalyticsConsentStore(db),
-      currentVersion: config.analyticsVersion,
-    }),
+    ...composeOnboarding(config, db, track),
     invites: createInvites({
       store: createInviteStore(db),
       publicUrl: config.publicUrl,

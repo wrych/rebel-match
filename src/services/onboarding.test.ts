@@ -6,42 +6,57 @@ import {
 } from './onboarding.js'
 
 const at = new Date('2026-11-08T10:00:00Z')
+const draft = {
+  name: 'Ada',
+  jobTitle: null,
+  org: null,
+  sector: null,
+  companySize: null,
+}
 
 function setup(
-  draftAnalytics: string | null = null,
-  emailedAt: Date | null = new Date(at.getTime() - 90_000),
+  options: {
+    emailedAt?: Date | null
+    consent?: { version: string; acceptedAt: Date; first: boolean } | null
+  } = {},
 ): {
   onboarding: ReturnType<typeof createOnboarding>
   saved: { memberId: string; input: OnboardingInput; at: Date }[]
+  asked: Date[]
 } {
+  const asked: Date[] = []
   const saved: { memberId: string; input: OnboardingInput; at: Date }[] = []
   const store: OnboardingStore = {
-    draft: () =>
-      Promise.resolve({
-        name: 'Ada',
-        jobTitle: null,
-        org: null,
-        sector: null,
-        companySize: null,
-        analyticsVersion: draftAnalytics,
-      }),
+    draft: () => Promise.resolve(draft),
     save: (memberId, input, acceptedAt) => {
       saved.push({ memberId, input, at: acceptedAt })
       return Promise.resolve()
     },
-    signInEmailAt: () => Promise.resolve(emailedAt),
+    consent: () =>
+      Promise.resolve(
+        options.consent === undefined
+          ? { version: '2026-11-01', acceptedAt: at, first: true }
+          : options.consent,
+      ),
+    signInEmailAt: (_memberId, notAfter) => {
+      asked.push(notAfter)
+      return Promise.resolve(
+        options.emailedAt === undefined
+          ? new Date(at.getTime() - 90_000)
+          : options.emailedAt,
+      )
+    },
   }
   const onboarding = createOnboarding({
     store,
     currentConsentVersion: '2026-11-01',
-    currentAnalyticsVersion: '2026-10-04',
     now: () => at,
   })
-  return { onboarding, saved }
+  return { onboarding, saved, asked }
 }
 
 describe('createOnboarding', () => {
-  it('records the profile with the consent version and time (R-ONB-3)', async () => {
+  it('records the profile with the consent version and time (R-ONB-3, R-ONB-8)', async () => {
     const { onboarding, saved } = setup()
     const input = {
       name: 'Ada',
@@ -49,10 +64,7 @@ describe('createOnboarding', () => {
       consentVersion: '2026-11-01',
     }
 
-    expect(await onboarding.complete('m-ada', input)).toEqual({
-      result: 'done',
-      secondsToOnboard: 90,
-    })
+    expect(await onboarding.complete('m-ada', input)).toBe('done')
     expect(saved).toEqual([{ memberId: 'm-ada', input, at }])
   })
 
@@ -64,69 +76,25 @@ describe('createOnboarding', () => {
         name: 'Ada',
         consentVersion: '2026-01-01',
       }),
-    ).toEqual({ result: 'stale_consent' })
+    ).toBe('stale_consent')
     expect(saved).toEqual([])
   })
 
-  it('passes the draft through, the analytics box unticked by default', async () => {
-    expect(await setup().onboarding.draft('m-ada')).toEqual({
-      name: 'Ada',
-      jobTitle: null,
-      org: null,
-      sector: null,
-      companySize: null,
-      analyticsOptIn: false,
-    })
-  })
-
-  it('ticks the analytics box only for an opt-in to the words in force (R-ANA-4)', async () => {
-    expect(
-      (await setup('2026-10-04').onboarding.draft('m-ada'))?.analyticsOptIn,
-    ).toBe(true)
-    expect(
-      (await setup('2025-01-01').onboarding.draft('m-ada'))?.analyticsOptIn,
-    ).toBe(false)
-  })
-
-  it('records an analytics opt-in to the current words (R-ANA-4)', async () => {
-    const { onboarding, saved } = setup()
-    const input = {
-      name: 'Ada',
-      consentVersion: '2026-11-01',
-      analyticsVersion: '2026-10-04',
-    }
-
-    expect(await onboarding.complete('m-ada', input)).toEqual({
-      result: 'done',
-      secondsToOnboard: 90,
-    })
-    expect(saved).toEqual([{ memberId: 'm-ada', input, at }])
-  })
-
-  it('refuses an opt-in to analytics words other than the current ones', async () => {
-    const { onboarding, saved } = setup()
-
-    expect(
-      await onboarding.complete('m-ada', {
-        name: 'Ada',
-        consentVersion: '2026-11-01',
-        analyticsVersion: '2025-01-01',
-      }),
-    ).toEqual({ result: 'stale_consent' })
-    expect(saved).toEqual([])
+  it('passes the draft through', async () => {
+    expect(await setup().onboarding.draft('m-ada')).toEqual(draft)
   })
 
   it('stamps the acceptance with the current time by default (R-ONB-3)', async () => {
     const stamped: Date[] = []
     const onboarding = createOnboarding({
       currentConsentVersion: '2026-11-01',
-      currentAnalyticsVersion: '2026-10-04',
       store: {
         draft: () => Promise.resolve(null),
         save: (_m, _input, acceptedAt) => {
           stamped.push(acceptedAt)
           return Promise.resolve()
         },
+        consent: () => Promise.resolve(null),
         signInEmailAt: () => Promise.resolve(null),
       },
     })
@@ -140,26 +108,51 @@ describe('createOnboarding', () => {
     expect(stamped[0]?.getTime()).toBeGreaterThanOrEqual(before)
     expect(stamped[0]?.getTime()).toBeLessThanOrEqual(Date.now())
   })
+})
 
-  it('says how long it took from the sign-in email (R-NFR-3)', async () => {
-    const { onboarding } = setup(null, new Date(at.getTime() - 74_400))
+describe('completion', () => {
+  it('says how long it took from the sign-in email to the confirmation (R-NFR-3)', async () => {
+    const { onboarding } = setup({ emailedAt: new Date(at.getTime() - 74_400) })
 
-    expect(
-      await onboarding.complete('m-ada', {
-        name: 'Ada',
-        consentVersion: '2026-11-01',
-      }),
-    ).toEqual({ result: 'done', secondsToOnboard: 74 })
+    expect(await onboarding.completion('m-ada')).toEqual({
+      consentVersion: '2026-11-01',
+      secondsToOnboard: 74,
+    })
+  })
+
+  it('times from the sign-in email before the confirmation, not a later one (R-NFR-3)', async () => {
+    const { onboarding, asked } = setup()
+
+    await onboarding.completion('m-ada')
+
+    expect(asked).toEqual([at])
   })
 
   it('leaves the time out when no sign-in email is kept', async () => {
-    const { onboarding } = setup(null, null)
+    const { onboarding } = setup({ emailedAt: null })
 
+    expect(await onboarding.completion('m-ada')).toEqual({
+      consentVersion: '2026-11-01',
+      secondsToOnboard: null,
+    })
+  })
+
+  it('has none for a member confirming new words after onboarding once (R-ANA-6)', async () => {
     expect(
-      await onboarding.complete('m-ada', {
-        name: 'Ada',
-        consentVersion: '2026-11-01',
-      }),
-    ).toEqual({ result: 'done', secondsToOnboard: null })
+      await setup({
+        consent: { version: '2026-11-01', acceptedAt: at, first: false },
+      }).onboarding.completion('m-ada'),
+    ).toBeNull()
+  })
+
+  it('has none for a member who has not confirmed the current words', async () => {
+    expect(
+      await setup({ consent: null }).onboarding.completion('m-ada'),
+    ).toBeNull()
+    expect(
+      await setup({
+        consent: { version: '2025-01-01', acceptedAt: at, first: true },
+      }).onboarding.completion('m-ada'),
+    ).toBeNull()
   })
 })

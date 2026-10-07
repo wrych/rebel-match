@@ -111,23 +111,23 @@ printed dev link (R-DEV-6).
       _(R-ONB-5)_
 - [x] Route guard: active + onboarded required for `/api/*`; deep links land on
       onboarding first. _(R-NAV-7)_
-- [ ] Step header shared by Ask and onboarding: `AskSteps` takes its labels.
+- [x] Step header shared by Ask and onboarding: `AskSteps` takes its labels.
       _(R-LOOK-4, ADR 0040)_
-- [ ] Onboarding in three steps: routes and guards, the profile held in the
+- [x] Onboarding in three steps: routes and guards, the profile held in the
       browser until the privacy step, no back controls. _(R-ONB-6..8,
       R-ONB-11, R-ONB-12, ADR 0041)_
-- [ ] Privacy step: summary under headings, the one confirm button, the scroll
+- [x] Privacy step: summary under headings, the one confirm button, the scroll
       hint. _(R-ONB-3, R-ONB-10)_
-- [ ] Usage step: two equal buttons; `onboarding_completed` when the member
+- [x] Usage step: two equal buttons; `onboarding_completed` when the member
       shares; `POST /api/onboarding` drops `analyticsVersion`. _(R-ANA-4,
       R-ANA-6)_
-- [ ] Privacy notice screen at `/privacy` and terms of use at `/terms`, from
+- [x] Privacy notice screen at `/privacy` and terms of use at `/terms`, from
       the drafts in `docs/legal/`, linked from onboarding and the profile
       screen. _(R-ONB-9, R-ONB-13)_
 - [ ] Confirm with Transformation Architects GmbH that it is named as
       controller and that the server and mail are run on its behalf; check
       whether a representative in the EU is needed. _(R-ONB-9, R-ONB-13)_
-- [ ] New consent and analytics words, naming Transformation Architects GmbH.
+- [x] New consent and analytics words, naming Transformation Architects GmbH.
       _(R-ONB-5, R-ANA-4)_
 - [ ] Time onboarding again on a phone against the two-minute budget.
       _(R-NFR-3)_

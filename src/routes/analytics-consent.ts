@@ -8,12 +8,19 @@ import type {
 import { requireSession, type GuardedLocals } from './require-permission.js'
 
 const choiceBody: z.ZodType<AnalyticsChoice> = z.discriminatedUnion('optIn', [
-  z.object({ optIn: z.literal(true), version: z.string().min(1) }),
-  z.object({ optIn: z.literal(false) }),
+  z.object({
+    optIn: z.literal(true),
+    version: z.string().min(1),
+    from: z.literal('onboarding').optional(),
+  }),
+  z.object({
+    optIn: z.literal(false),
+    from: z.literal('onboarding').optional(),
+  }),
 ])
 
-/** `PUT /api/me/analytics` (design §3): give or withdraw the analytics opt-in
- * after onboarding (R-ANA-4, ADR 0026). */
+/** `PUT /api/me/analytics` (design §3): give or withdraw the analytics opt-in,
+ * from the usage step of onboarding or the profile screen (R-ANA-4, ADR 0041). */
 export function analyticsConsentRoutes(deps: {
   auth: AuthProvider
   analyticsConsent: AnalyticsConsentService

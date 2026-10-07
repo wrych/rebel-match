@@ -1,6 +1,16 @@
 import { safeNextPath } from '../../src/routes'
 
-/** The onboarding form as `GET /api/onboarding` pre-fills it (F2). */
+/** The profile as the member types it on the first step (R-ONB-2). */
+export interface TypedProfile {
+  name: string
+  jobTitle: string
+  org: string
+  sector: string
+  companySize: string
+}
+
+/** The profile step pre-filled by `GET /api/onboarding`, with the consent
+ * version in force (F2, R-AUTH-12). */
 export interface OnboardingDraft {
   name: string | null
   jobTitle: string | null
@@ -8,20 +18,67 @@ export interface OnboardingDraft {
   sector: string | null
   companySize: string | null
   consentVersion: string
-  /** The analytics words in force, and whether the box starts ticked. */
-  analyticsVersion: string
-  analyticsOptIn: boolean
 }
 
-export interface OnboardingAnswers {
-  name: string
-  jobTitle: string
-  org: string
-  sector: string
-  companySize: string
-  consentVersion: string
-  /** Sent only when the analytics box is ticked (R-ANA-4). */
-  analyticsVersion?: string
+export type OnboardingAnswers = TypedProfile & { consentVersion: string }
+
+export const onboardingSteps = {
+  profile: '/onboarding',
+  privacy: '/onboarding/privacy',
+  usage: '/onboarding/usage',
+} as const
+
+const TYPED_KEY = 'rm_onboarding_profile'
+
+let typed: TypedProfile | null = null
+
+function asTyped(value: unknown): TypedProfile | null {
+  if (value === null || typeof value !== 'object') return null
+  const saved = value as Partial<Record<keyof TypedProfile, unknown>>
+  if (typeof saved.name !== 'string' || saved.name.trim() === '') return null
+  const text = (field: keyof TypedProfile): string => {
+    const given = saved[field]
+    return typeof given === 'string' ? given : ''
+  }
+  return {
+    name: saved.name,
+    jobTitle: text('jobTitle'),
+    org: text('org'),
+    sector: text('sector'),
+    companySize: text('companySize'),
+  }
+}
+
+/** Keeps what the member typed for this tab only, sending nothing, until the
+ * privacy step stores it (R-ONB-7). Kept in memory too, so a browser that
+ * refuses storage still reaches the next step. */
+export function keepTyped(profile: TypedProfile): void {
+  typed = { ...profile }
+  try {
+    sessionStorage.setItem(TYPED_KEY, JSON.stringify(typed))
+  } catch {
+    // Without storage the profile lives as long as this page does.
+  }
+}
+
+/** What the member typed on the profile step in this tab, if anything. */
+export function typedProfile(): TypedProfile | null {
+  if (typed !== null) return { ...typed }
+  try {
+    return asTyped(JSON.parse(sessionStorage.getItem(TYPED_KEY) ?? 'null'))
+  } catch {
+    return null
+  }
+}
+
+/** Drops the typed profile once the server has stored it (R-ONB-7). */
+export function forgetTyped(): void {
+  typed = null
+  try {
+    sessionStorage.removeItem(TYPED_KEY)
+  } catch {
+    // Nothing was kept there.
+  }
 }
 
 export async function fetchDraft(): Promise<OnboardingDraft> {
@@ -31,8 +88,8 @@ export async function fetchDraft(): Promise<OnboardingDraft> {
   return (await response.json()) as OnboardingDraft
 }
 
-/** Submits the form; 'stale' when the consent or analytics words changed
- * while they read them, so they must read the new words (R-ONB-4). */
+/** The privacy step's confirmation: the profile and the consent version read,
+ * in one request (R-ONB-8); 'stale' when the words changed meanwhile. */
 export async function completeOnboarding(
   answers: OnboardingAnswers,
 ): Promise<'done' | 'stale'> {
@@ -47,10 +104,18 @@ export async function completeOnboarding(
   return 'done'
 }
 
+/** A step's path carrying `next` on, so the member still lands where they
+ * came for (R-NAV-7). */
+export function stepPath(step: string, next: string | null): string {
+  return next === null ? step : `${step}?next=${encodeURIComponent(next)}`
+}
+
+const steps: ReadonlySet<string> = new Set(Object.values(onboardingSteps))
+
 /** Where to go once onboarded: the deep link they came for, when it is a
  * screen of this app other than onboarding itself, else welcome (R-NAV-7). */
 export function afterOnboarding(next: string | null): string {
   const safe = safeNextPath(next ?? undefined)
   const [path = ''] = safe.split(/[?#]/)
-  return path === '/' || path === '/onboarding' ? '/welcome' : safe
+  return path === '/' || steps.has(path) ? '/welcome' : safe
 }

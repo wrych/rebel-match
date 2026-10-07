@@ -68,6 +68,66 @@ describe('decide', () => {
     })
   })
 
+  describe('onboarding steps (R-ONB-6, design §4)', () => {
+    const returning: Me = { ...newcomer, name: 'Ada' }
+    const withNext = (path: string): Target => ({
+      path,
+      fullPath: `${path}?next=%2Fmatches`,
+      access: 'session',
+    })
+
+    it.each(['/onboarding', '/onboarding/privacy'])(
+      'sends an onboarded member from %s to welcome',
+      (path) => {
+        expect(decide(target(path, 'session'), member, true)).toEqual({
+          kind: 'redirect',
+          to: '/welcome',
+        })
+      },
+    )
+
+    it('sends the privacy step back to the profile step when nothing was typed in this tab, keeping next (R-ONB-7)', () => {
+      expect(decide(withNext('/onboarding/privacy'), newcomer)).toEqual({
+        kind: 'redirect',
+        to: '/onboarding?next=%2Fmatches',
+      })
+    })
+
+    it('opens the privacy step once a profile was typed', () => {
+      expect(
+        decide(target('/onboarding/privacy', 'session'), newcomer, true),
+      ).toEqual({ kind: 'allow' })
+    })
+
+    it('takes a member with a stored name straight to the new words, keeping next (F2, R-ONB-4)', () => {
+      expect(decide(withNext('/onboarding'), returning)).toEqual({
+        kind: 'redirect',
+        to: '/onboarding/privacy?next=%2Fmatches',
+      })
+      expect(
+        decide(target('/onboarding/privacy', 'session'), returning),
+      ).toEqual({ kind: 'allow' })
+    })
+
+    it('sends a member who already shares from the usage step to welcome (R-ONB-11, R-ANA-6)', () => {
+      expect(
+        decide(target('/onboarding/usage', 'onboarded'), {
+          ...member,
+          analyticsOptIn: true,
+        }),
+      ).toEqual({ kind: 'redirect', to: '/welcome' })
+    })
+
+    it('keeps the usage step for onboarded members (R-ONB-11)', () => {
+      expect(decide(target('/onboarding/usage', 'onboarded'), member)).toEqual({
+        kind: 'allow',
+      })
+      expect(
+        decide(target('/onboarding/usage', 'onboarded'), newcomer),
+      ).toMatchObject({ kind: 'redirect' })
+    })
+  })
+
   it('shows not found, never forbidden, without the permission (R-NAV-8)', () => {
     expect(
       decide(target('/admin/outbox', 'onboarded', 'outbox:read'), member),

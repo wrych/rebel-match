@@ -7,6 +7,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { createApp, handleErrors, type AppDeps } from './app.js'
 import { createAuth, createMemoryAuthStore } from './auth/index.js'
 import { loadConfig } from './config.js'
+import { latestConsentVersion } from './consent.js'
 import { createMemorySettingOverrideStore } from './services/memory-setting-override-store.js'
 import { createSettings } from './services/settings.js'
 import type { Database } from './db/connect.js'
@@ -72,7 +73,8 @@ function deps(
     },
     onboarding: {
       draft: () => Promise.resolve(null),
-      complete: () => Promise.resolve({ result: 'stale_consent' }),
+      complete: () => Promise.resolve('stale_consent'),
+      completion: () => Promise.resolve(null),
     },
     invites: {
       list: () => Promise.resolve([]),
@@ -166,7 +168,7 @@ describe('GET /api/config', () => {
     }
 
     expect(body.limits.challengeMinChars).toBe(31)
-    expect(body.consentVersion).toBe('2026-11-01.3')
+    expect(body.consentVersion).toBe(latestConsentVersion)
   })
 
   it('leaks no secret, whatever the server holds', async () => {

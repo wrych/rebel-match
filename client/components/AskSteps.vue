@@ -1,13 +1,13 @@
 <script setup lang="ts">
-defineProps<{ current: 1 | 2 | 3 }>()
+import type { Journey } from '../lib/steps'
 
-const steps = ['Describe', 'Domain', 'Matches'] as const
+defineProps<{ journey: Journey; current: 1 | 2 | 3 }>()
 </script>
 
 <template>
-  <ol class="steps" aria-label="Ask for help">
+  <ol class="steps" :aria-label="journey.name">
     <li
-      v-for="(label, index) in steps"
+      v-for="(label, index) in journey.labels"
       :key="label"
       :class="{
         done: index + 1 < current,

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { flushPromises, mount } from '@vue/test-utils'
+import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { consentWordsOf, latestConsentVersion } from '../../src/consent'
 import ProfileScreen from './ProfileScreen.vue'
@@ -43,7 +43,9 @@ function server(status = 204, own = profile): ReturnType<typeof vi.fn> {
 }
 
 async function mountScreen(): Promise<ReturnType<typeof mount>> {
-  const screen = mount(ProfileScreen)
+  const screen = mount(ProfileScreen, {
+    global: { stubs: { RouterLink: RouterLinkStub } },
+  })
   await flushPromises()
   return screen
 }
@@ -234,8 +236,20 @@ describe('ProfileScreen', () => {
 
     expect(text).toContain(`Version ${latestConsentVersion}`)
     for (const paragraph of consentWordsOf(latestConsentVersion)) {
-      expect(text).toContain(paragraph)
+      expect(text).toContain(
+        typeof paragraph === 'string' ? paragraph : paragraph.text,
+      )
     }
+  })
+
+  it('links the privacy notice and the terms of use (R-PROF-2, R-ONB-13)', async () => {
+    server()
+    const screen = await mountScreen()
+
+    const targets = screen
+      .findAllComponents(RouterLinkStub)
+      .map((link) => link.props('to'))
+    expect(targets).toEqual(expect.arrayContaining(['/privacy', '/terms']))
   })
 
   it('carries the analytics opt-in and offers deleting the account (R-PROF-2)', async () => {

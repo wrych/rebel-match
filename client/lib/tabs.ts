@@ -17,11 +17,16 @@ export const tabs: readonly Tab[] = [
   { label: 'Matches', to: '/matches', owns: ['/matches'] },
 ]
 
+const WITHOUT_TABS: ReadonlySet<unknown> = new Set([
+  'welcome',
+  'onboarding-usage',
+])
+
 /** The bar belongs to member screens, as in the prototype: not before
- * sign-in or onboarding, and not on the welcome screen, whose two doors are
- * the navigation there. */
+ * sign-in, not on any onboarding step, and not on the welcome screen, whose
+ * two doors are the navigation there. */
 export function showsTabs(access: unknown, name: unknown): boolean {
-  return access === 'onboarded' && name !== 'welcome'
+  return access === 'onboarded' && !WITHOUT_TABS.has(name)
 }
 
 /** The tab a path sits under, if any. */

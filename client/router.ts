@@ -2,6 +2,8 @@ import type { Component } from 'vue'
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { routeTable, type Access } from '../src/routes'
 import { decide } from './guards'
+import { typedProfile } from './lib/onboarding'
+import { scrollFor } from './lib/scroll'
 import { loadMe } from './lib/session'
 import AccessRequestedScreen from './screens/AccessRequestedScreen.vue'
 import ApplicantsScreen from './screens/ApplicantsScreen.vue'
@@ -16,16 +18,20 @@ import MembersScreen from './screens/MembersScreen.vue'
 import MemberScreen from './screens/MemberScreen.vue'
 import NotFoundScreen from './screens/NotFoundScreen.vue'
 import NotificationsScreen from './screens/NotificationsScreen.vue'
-import OnboardingScreen from './screens/OnboardingScreen.vue'
+import OnboardingPrivacyScreen from './screens/OnboardingPrivacyScreen.vue'
+import OnboardingProfileScreen from './screens/OnboardingProfileScreen.vue'
+import OnboardingUsageScreen from './screens/OnboardingUsageScreen.vue'
 import OfferDoneScreen from './screens/OfferDoneScreen.vue'
 import OfferNoteScreen from './screens/OfferNoteScreen.vue'
 import OfferScreen from './screens/OfferScreen.vue'
 import OutboxScreen from './screens/OutboxScreen.vue'
 import SettingsScreen from './screens/SettingsScreen.vue'
+import PrivacyScreen from './screens/PrivacyScreen.vue'
 import ProfileScreen from './screens/ProfileScreen.vue'
 import RequestContactScreen from './screens/RequestContactScreen.vue'
 import RequestScreen from './screens/RequestScreen.vue'
 import SignInScreen from './screens/SignInScreen.vue'
+import TermsScreen from './screens/TermsScreen.vue'
 import TrendPickerScreen from './screens/TrendPickerScreen.vue'
 import TrendScreen from './screens/TrendScreen.vue'
 import WelcomeScreen from './screens/WelcomeScreen.vue'
@@ -56,12 +62,17 @@ function screen(name: string, component: Component): RouteRecordRaw {
 
 export const router = createRouter({
   history: createWebHistory(),
+  scrollBehavior: (to, from, saved) => scrollFor(to.path, from.path, saved),
   routes: [
     screen('entry', LoginScreen),
     screen('login', LoginScreen),
     screen('sign-in', SignInScreen),
     screen('access-requested', AccessRequestedScreen),
-    screen('onboarding', OnboardingScreen),
+    screen('onboarding', OnboardingProfileScreen),
+    screen('onboarding-privacy', OnboardingPrivacyScreen),
+    screen('onboarding-usage', OnboardingUsageScreen),
+    screen('privacy', PrivacyScreen),
+    screen('terms', TermsScreen),
     screen('welcome', WelcomeScreen),
     screen('profile', ProfileScreen),
     screen('notifications', NotificationsScreen),
@@ -98,6 +109,7 @@ router.beforeEach(async (to) => {
       permission: to.meta['permission'] as string | undefined,
     },
     await loadMe(),
+    typedProfile() !== null,
   )
 
   if (decision.kind === 'redirect') return decision.to
