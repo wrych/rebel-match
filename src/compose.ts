@@ -54,6 +54,8 @@ import { createDeckStore } from './services/deck-store.js'
 import { createDeck, type DeckService } from './services/deck.js'
 import { createActivity } from './services/activity.js'
 import { createActivityStore } from './services/activity-store.js'
+import { createGame } from './services/game.js'
+import { createGameStore } from './services/game-store.js'
 import { createInviteRedemption } from './services/invite-redemption-store.js'
 import { createInviteStore } from './services/invite-store.js'
 import { createInvites } from './services/invites.js'
@@ -390,6 +392,12 @@ export function composeApp(
       newId: randomUUID,
     }),
     ...composeJourneys(config, db, track, settings),
+    game: createGame({
+      store: createGameStore(db),
+      settings: () => settings.game(),
+      allowance: config.gameDayAllowance,
+      newId: randomUUID,
+    }),
     notificationMail: composeNotificationMail(config, db, mailer, hooks),
   }
 }

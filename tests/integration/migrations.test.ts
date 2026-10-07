@@ -49,6 +49,8 @@ describe('migrations', () => {
       'connection_requests',
       'deck_views',
       'follows',
+      'game_days',
+      'game_players',
       'invite_opens',
       'invites',
       'magic_tokens',

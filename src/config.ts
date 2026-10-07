@@ -251,6 +251,15 @@ const envSchema = z
     // How often a server re-reads the values hosts changed in the app
     // (ADR 0031); the server that saved a change applies it at once.
     SETTINGS_REFRESH_SECONDS: z.coerce.number().int().positive().default(60),
+    // Game days one member may record per minute, and how long a day's
+    // record may run: this many day lengths plus these seconds (R-GAME-20).
+    GAME_RECORDS_PER_MINUTE: z.coerce.number().int().positive().default(10),
+    GAME_DAY_ALLOWANCE_FACTOR: z.coerce.number().int().positive().default(2),
+    GAME_DAY_ALLOWANCE_SECONDS: z.coerce
+      .number()
+      .int()
+      .nonnegative()
+      .default(60),
     // The notification worker's round, and how often a refused mail is tried
     // before it counts as failed (R-NOTE-7, R-NOTE-10).
     NOTIFICATION_WORKER_SECONDS: z.coerce
@@ -438,6 +447,10 @@ export interface Config {
   /** The game's tuning; its values are set in the app, never the environment
    * (R-GAME-17). */
   game: GameSettings
+  /** Game days one member may record per minute (R-GAME-20). */
+  gameRecordsPerMinute: number
+  /** How long a day's record may run: day lengths plus seconds (R-GAME-20). */
+  gameDayAllowance: { factor: number; extraSeconds: number }
   trustProxy: number
   rolePermissions: typeof rolePermissions
   /** The commit the build was made from, if it was made from one (R-NFR-11). */
@@ -565,6 +578,11 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): Config {
     limits: limitsFrom(env),
     abuse: abuseLimitsFrom(env),
     game: gameDefaults,
+    gameRecordsPerMinute: env.GAME_RECORDS_PER_MINUTE,
+    gameDayAllowance: {
+      factor: env.GAME_DAY_ALLOWANCE_FACTOR,
+      extraSeconds: env.GAME_DAY_ALLOWANCE_SECONDS,
+    },
     trustProxy: env.TRUST_PROXY,
     rolePermissions,
     build: {

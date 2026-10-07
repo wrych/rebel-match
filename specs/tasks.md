@@ -354,10 +354,10 @@ printed dev link (R-DEV-6).
 Off by default; hosts switch it on when it is ready, so nothing here can hold
 up the summit. One pull request per item, in this order.
 
-- [ ] Settings: `game.enabled` and the tuning in a 9toRevolution group,
+- [x] Settings: `game.enabled` and the tuning in a 9toRevolution group,
       changeable by hosts; game routes and endpoints not found while off.
       _(R-GAME-17, R-GAME-1, R-CFG-6)_
-- [ ] Tables `game_players` and `game_days`; `GET /api/game`,
+- [x] Tables `game_players` and `game_days`; `GET /api/game`,
       `POST /api/game/days` with its bounds and rate limit,
       `PUT /api/game/sharing`, `PUT /api/game/hints/:hint`; pseudonyms;
       erasure and history deletion. _(R-GAME-14..16, R-GAME-20, R-NFR-7, R-STAT-4)_

@@ -2,7 +2,12 @@
  * table can name them. A member's access is the union of their roles' grants,
  * resolved per request — never a role-name check (R-ROLE-2, R-ROLE-3). */
 export const rolePermissions = {
-  member: ['challenge:create', 'challenge:swipe', 'connection:request'],
+  member: [
+    'challenge:create',
+    'challenge:swipe',
+    'connection:request',
+    'game:play',
+  ],
   admin: [
     'applicant:review',
     'whitelist:manage',

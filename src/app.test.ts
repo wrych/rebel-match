@@ -97,6 +97,12 @@ function deps(
       forgetHistory: () => Promise.resolve(),
       inviteOpened: () => Promise.resolve(),
     },
+    game: {
+      state: () => Promise.reject(new Error('not used')),
+      recordDay: () => Promise.resolve('implausible'),
+      share: () => Promise.resolve(),
+      seeHint: () => Promise.resolve(),
+    },
     connections: {
       request: () => Promise.resolve({ result: 'not_found' }),
       incoming: () => Promise.resolve([]),

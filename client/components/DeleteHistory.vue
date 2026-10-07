@@ -26,10 +26,10 @@ async function forget(): Promise<void> {
   <section class="stack-tight rule" aria-labelledby="history-heading">
     <h2 id="history-heading" class="kicker">Your activity history</h2>
     <p class="small">
-      We record which challenges you are shown, kept with your account and never
-      shown to anyone. You can delete it at any time. Your challenges, your
-      answers to other members' challenges, what you follow and your connections
-      stay.
+      We record which challenges you are shown, and a few other things you do in
+      the app, kept with your account and never shown to anyone. You can delete
+      it at any time. Your challenges, your answers to other members'
+      challenges, what you follow and your connections stay.
     </p>
     <p v-if="done" class="small" role="status">
       Your activity history is deleted.

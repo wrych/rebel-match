@@ -370,7 +370,7 @@ next day (R-GAME-17).
 | `game.rebel.breakCooldownSeconds`        |    `20` | R-GAME-10                  |
 | `game.rebel.talkSeconds`                 |     `4` | R-GAME-11                  |
 | `game.rebel.masterclassSeconds`          |     `8` | R-GAME-11                  |
-| `game.recordsPerMinute`                  |    `10` | R-GAME-20 (not changeable) |
+| `GAME_RECORDS_PER_MINUTE` (environment)  |    `10` | R-GAME-20 (not changeable) |
 
 The employee and cooler counts are bounded by the floor plan: a value beyond
 the cubicles or cooler spots a floor has is refused. The defaults are a
@@ -947,15 +947,14 @@ this table, and those return the member's own row and the board only
 
 ```sql
 CREATE TABLE game_days (
-  id            BIGSERIAL    PRIMARY KEY,
+  id            CHAR(36)     NOT NULL PRIMARY KEY,
   member_id     CHAR(36)     NOT NULL,
   level         INTEGER      NOT NULL,
-  outcome       VARCHAR(9)   NOT NULL,   -- 'won' | 'lost' | 'abandoned'
+  outcome       game_outcome NOT NULL,   -- enum: 'won' | 'lost' | 'abandoned'
   play_seconds  INTEGER      NOT NULL,
   finished_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_game_day_member FOREIGN KEY (member_id)
-    REFERENCES members(id) ON DELETE CASCADE,
-  CONSTRAINT chk_game_day_outcome CHECK (outcome IN ('won','lost','abandoned'))
+    REFERENCES members(id) ON DELETE CASCADE
 );
 CREATE INDEX idx_game_days_member ON game_days (member_id);
 ```
@@ -1114,7 +1113,8 @@ An abandoned day is sent with `navigator.sendBeacon` to `POST /api/game/days`
 when the page is hidden mid-day, under the same session and checks as any
 other request. A level above `highest_level + 1`, an outcome other than the
 three, or `playSeconds` below 1 or above twice the day's length plus a minute
-is refused, and records are limited per member (`game.recordsPerMinute`).
+(`GAME_DAY_ALLOWANCE_FACTOR`, `GAME_DAY_ALLOWANCE_SECONDS`) is refused, and
+records are limited per member (`GAME_RECORDS_PER_MINUTE`).
 
 ### Admin (permission-guarded, not role-name-guarded — R-ROLE-3)
 

@@ -565,3 +565,44 @@ export const outboxQuotes = pgTable(
     index('ix_outbox_quotes_member').on(t.memberId),
   ],
 )
+
+export const gameOutcome = pgEnum('game_outcome', ['won', 'lost', 'abandoned'])
+
+// A member's place in 9toRevolution. The pseudonym stands in for them on the
+// leaderboard; which member it is never leaves the game's own endpoints
+// (R-GAME-15, R-GAME-16, ADR 0045).
+export const gamePlayers = pgTable(
+  'game_players',
+  {
+    memberId: id('member_id')
+      .primaryKey()
+      .references(() => members.id, { onDelete: 'cascade' }),
+    pseudonym: varchar('pseudonym', { length: 40 }).notNull().unique(),
+    shared: boolean('shared').notNull().default(false),
+    currentLevel: integer('current_level').notNull().default(1),
+    highestLevel: integer('highest_level').notNull().default(1),
+    bestLevel: integer('best_level'),
+    bestSeconds: integer('best_seconds'),
+    totalSeconds: integer('total_seconds').notNull().default(0),
+    hintsSeen: jsonb('hints_seen').$type<string[]>().notNull().default([]),
+    createdAt: at('created_at').notNull().defaultNow(),
+    updatedAt: at('updated_at').notNull().defaultNow(),
+  },
+  (t) => [index('ix_game_players_board').on(t.bestLevel, t.bestSeconds)],
+)
+
+// Every day played, for tuning: recorded, never shown (R-GAME-14, R-STAT-2).
+export const gameDays = pgTable(
+  'game_days',
+  {
+    id: id('id').primaryKey(),
+    memberId: id('member_id')
+      .notNull()
+      .references(() => members.id, { onDelete: 'cascade' }),
+    level: integer('level').notNull(),
+    outcome: gameOutcome('outcome').notNull(),
+    playSeconds: integer('play_seconds').notNull(),
+    finishedAt: at('finished_at').notNull().defaultNow(),
+  },
+  (t) => [index('ix_game_days_member').on(t.memberId)],
+)

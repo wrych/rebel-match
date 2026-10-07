@@ -129,6 +129,7 @@ describe('the auth seam over Postgres', () => {
         'challenge:create',
         'challenge:swipe',
         'connection:request',
+        'game:play',
       ],
     })
 
