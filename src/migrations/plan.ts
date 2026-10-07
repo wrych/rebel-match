@@ -91,3 +91,19 @@ export function planMigrations(
     alreadyApplied: applied.map((row) => row.name),
   }
 }
+
+/** Refuses a change that edits or removes a migration already on the base
+ * branch: by then it has run on staging, and its file is how the next deploy
+ * knows (constitution §6). */
+export function assertMigrationsKept(
+  base: Migration[],
+  head: Migration[],
+): void {
+  planMigrations(
+    head,
+    base.map((migration) => ({
+      name: migration.name,
+      checksum: checksumOf(migration.sql),
+    })),
+  )
+}
