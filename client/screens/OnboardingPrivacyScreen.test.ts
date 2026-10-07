@@ -39,7 +39,7 @@ function server(
       return Promise.resolve({ ok: status < 300, status })
     }
     const bodies: Record<string, unknown> = {
-      '/api/config': { limits: { scrollHintShare: 0.6 } },
+      '/api/config': { limits: { scrollHintShare: 0.4 } },
       '/auth/me': {
         id: 'm',
         name: null,
@@ -239,6 +239,17 @@ describe('the scroll hint (R-ONB-10)', () => {
     expect(screen.find('[aria-label="Scroll down"]').exists()).toBe(false)
   })
 
+  it('floats outside the animated screen, which would hold it below the fold', async () => {
+    server()
+    const screen = await mountScreen()
+    report(false)
+    await flushPromises()
+
+    expect(screen.find('.screen [aria-label="Scroll down"]').exists()).toBe(
+      false,
+    )
+  })
+
   it('scrolls by part of the visible height, never to the end', async () => {
     server()
     const scrollBy = vi.fn()
@@ -250,7 +261,7 @@ describe('the scroll hint (R-ONB-10)', () => {
     await screen.find('[aria-label="Scroll down"]').trigger('click')
 
     expect(scrollBy).toHaveBeenCalledWith({
-      top: window.innerHeight * 0.6,
+      top: window.innerHeight * 0.4,
       behavior: 'smooth',
     })
   })

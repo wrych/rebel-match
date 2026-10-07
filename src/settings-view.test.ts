@@ -59,7 +59,7 @@ describe('settingsView (R-CFG-5)', () => {
     )
     expect(find(groups, '“Saved” tick shown for').value).toBe('2.5 seconds')
     expect(find(groups, 'Scroll hint on the privacy step moves').value).toBe(
-      '60%',
+      '40%',
     )
   })
 

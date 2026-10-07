@@ -28,7 +28,7 @@ const HOLD_TO_SELECT_MS = 500
 const SWIPE_MIN_PX = 50
 /** The share of the visible height one tap on the privacy step's scroll hint
  * moves the summary, so it never jumps to the end (R-ONB-10). */
-const SCROLL_HINT_SHARE = 0.6
+const SCROLL_HINT_SHARE = 0.4
 const INVITE_MAX_USES_CEILING = 0xffffffff
 // connection_requests.message (src/db/schema.ts).
 const CONNECTION_MESSAGE_MAX_CHARS = 600
