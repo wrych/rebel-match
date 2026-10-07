@@ -37,7 +37,6 @@ const WINDOW_MINUTES: Partial<Record<Cadence, number>> = {
   hourly: 60,
 }
 const MS_PER_MINUTE = 60_000
-const MS_PER_DAY = 86_400_000
 
 /** When the daily mail goes out: a local time in a time zone. */
 export interface DailyTime {
@@ -70,14 +69,15 @@ function offsetAt(instant: number, timeZone: string): number {
   return local - Math.floor(instant / 1000) * 1000
 }
 
-// The instant the local `hh:mm` falls on, on the local day of `instant`.
-function sameDayAt(instant: number, time: DailyTime): number {
+// The instant the local `hh:mm` falls on, `days` local days after the local
+// day of `instant`. Counted in calendar days, as a day is not always 24 hours.
+function dayAt(instant: number, time: DailyTime, days: number): number {
   const [hours = 0, minutes = 0] = time.dailyAt.split(':').map(Number)
   const local = new Date(instant + offsetAt(instant, time.timeZone))
   const wall = Date.UTC(
     local.getUTCFullYear(),
     local.getUTCMonth(),
-    local.getUTCDate(),
+    local.getUTCDate() + days,
     hours,
     minutes,
   )
@@ -87,11 +87,9 @@ function sameDayAt(instant: number, time: DailyTime): number {
 
 /** The first daily moment after `after` (R-NOTE-7). */
 export function nextDaily(after: Date, time: DailyTime): Date {
-  const today = sameDayAt(after.getTime(), time)
+  const today = dayAt(after.getTime(), time, 0)
   return new Date(
-    today > after.getTime()
-      ? today
-      : sameDayAt(after.getTime() + MS_PER_DAY, time),
+    today > after.getTime() ? today : dayAt(after.getTime(), time, 1),
   )
 }
 
