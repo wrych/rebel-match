@@ -2,6 +2,7 @@
   "name": "rebel-match",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
   "description": "Peer matching for the Corporate Rebels network",
   "type": "module",
   "engines": {
