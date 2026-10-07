@@ -113,9 +113,10 @@ usage data. S30 Privacy notice is one tap from each of the first two.
    who sees it, what activity is recorded, and their rights. It states plainly
    that **email addresses are shared only when both sides accept a
    connection** (R-ONB-5). While the button is below the visible area, a
-   floating arrow scrolls down a little at a time (R-ONB-10). A link opens
-   **S30**.
-4. Member taps **I have read the privacy notice** → `POST /api/onboarding` with
+   floating arrow scrolls down a little at a time (R-ONB-10). Links open
+   **S30** and **S31**.
+4. Member taps **I have read the privacy notice and the terms of use** →
+   `POST /api/onboarding` with
    `{name, jobTitle?, org?, sector?, companySize?, consentVersion}` (R-ONB-3,
    R-ONB-8).
 5. Server stores the profile plus the consent version and timestamp (R-NFR-6).

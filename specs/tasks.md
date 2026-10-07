@@ -121,10 +121,14 @@ printed dev link (R-DEV-6).
 - [ ] Usage step: two equal buttons; `onboarding_completed` when the member
       shares; `POST /api/onboarding` drops `analyticsVersion`. _(R-ANA-4,
       R-ANA-6)_
-- [ ] Privacy notice screen at `/privacy`, linked from onboarding and the
-      profile screen. _(R-ONB-9, open question 7)_
-- [ ] New consent and analytics words, once the controller is known.
-      _(R-ONB-5, R-ANA-4, open question 6)_
+- [ ] Privacy notice screen at `/privacy` and terms of use at `/terms`, from
+      the drafts in `docs/legal/`, linked from onboarding and the profile
+      screen. _(R-ONB-9, R-ONB-13)_
+- [ ] Confirm with Transformation Architects GmbH that it is named as
+      controller and that the server and mail are run on its behalf; check
+      whether a representative in the EU is needed. _(R-ONB-9, R-ONB-13)_
+- [ ] New consent and analytics words, naming Transformation Architects GmbH.
+      _(R-ONB-5, R-ANA-4)_
 - [ ] Time onboarding again on a phone against the two-minute budget.
       _(R-NFR-3)_
 
