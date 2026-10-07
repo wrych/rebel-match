@@ -60,6 +60,9 @@
 
   --radius: 14px;
   --radius-lg: 18px;
+
+  /* The header's height, which whatever else sticks to the top sits below. */
+  --header-height: calc(34px + 1.75rem);
 }
 
 :root[data-mood='happy'] {
@@ -108,6 +111,11 @@ html,
 body {
   margin: 0;
   background: var(--surround);
+}
+
+/* So a link or field scrolled to is not left under the header. */
+html {
+  scroll-padding-top: var(--header-height);
 }
 
 body {
