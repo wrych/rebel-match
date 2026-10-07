@@ -362,6 +362,10 @@ printed dev link (R-DEV-6).
 - [ ] Live peer counts per trend. _(C3)_
 - [ ] Dark mode as a further colour mode: a third token block, possibly
       following the phone's own setting. _(C7, R-LOOK-3, ADR 0023)_
+- [ ] Review the npm `overrides` in `package.json`: drop the `shell-quote`
+      pin once `concurrently` depends on `shell-quote` 1.11.0 or later, and the
+      `esbuild` pin once `drizzle-kit` no longer pulls in
+      `@esbuild-kit/core-utils`. Run `npm audit` again while there. _(R-QA-7)_
 - [ ] (Deferred) gamification, frontier nomination, platform integration,
       phone/LinkedIn connect. _(W1, W3–W7)_
 
