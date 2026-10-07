@@ -1,6 +1,6 @@
 # 0031. Hosts change selected settings in the app, stored in the database
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by 0045
 - **Date:** 2026-10-04
 - **Deciders:** Andy Moesch
 

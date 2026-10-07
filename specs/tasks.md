@@ -349,6 +349,36 @@ printed dev link (R-DEV-6).
 - [x] Show the running version at the foot of the menu: CI passes the commit
       to the image, `/api/config` returns it. _(R-NFR-11)_
 
+## M7 — 9toRevolution, the office game _(S8, F18, ADR 0045 — behind its switch)_
+
+Off by default; hosts switch it on when it is ready, so nothing here can hold
+up the summit. One pull request per item, in this order.
+
+- [ ] Settings: `game.enabled` and the tuning in a 9toRevolution group,
+      changeable by hosts; game routes and endpoints not found while off.
+      _(R-GAME-17, R-GAME-1, R-CFG-6)_
+- [ ] Tables `game_players` and `game_days`; `GET /api/game`,
+      `POST /api/game/days` with its bounds and rate limit,
+      `PUT /api/game/sharing`, `PUT /api/game/hints/:hint`; pseudonyms;
+      erasure and history deletion. _(R-GAME-14..16, R-GAME-20, R-NFR-7, R-STAT-4)_
+- [ ] Leaderboard endpoint and screen S34. _(R-GAME-13, R-GAME-15)_
+- [ ] Impressum card in happy mode, `/9torevolution` route as a lazy chunk,
+      calm-mode and rotate screens. _(R-GAME-1, R-GAME-12)_
+- [ ] Game core, boss mode: floors, day clock, temptation, files, losing,
+      seeded and unit-tested without a canvas. _(R-GAME-2..4, R-GAME-7)_
+- [ ] Renderer and controls: vector characters, camera, edge arrows, floor
+      map, joystick, action button, keyboard, pause. _(R-GAME-12, R-GAME-18)_
+- [ ] Results card, sharing, play from a job, resume, abandoned days.
+      _(R-GAME-14..16)_
+- [ ] Water cooler and meetings. _(R-GAME-5, R-GAME-6)_
+- [ ] CEO's choice and rebel mode: files, heat, help, breaks, talking,
+      masterclass. _(R-GAME-8..11)_
+- [ ] Hints, usage events. _(R-GAME-18, R-GAME-19)_
+- [ ] Playtest on phones in landscape; tune the defaults; switch on for the
+      summit. _(R-GAME-17)_
+
+---
+
 ## Post-beta backlog _(Could / Won't-for-now)_
 
 - [ ] Offer "refresh to update" when the server's version differs from the
@@ -368,8 +398,8 @@ printed dev link (R-DEV-6).
       pin once `concurrently` depends on `shell-quote` 1.11.0 or later, and the
       `esbuild` pin once `drizzle-kit` no longer pulls in
       `@esbuild-kit/core-utils`. Run `npm audit` again while there. _(R-QA-7)_
-- [ ] (Deferred) gamification, frontier nomination, platform integration,
-      phone/LinkedIn connect. _(W1, W3–W7)_
+- [ ] (Deferred) frontier nomination, platform integration, phone/LinkedIn
+      connect. _(W3–W7)_
 
 ---
 
