@@ -101,10 +101,8 @@ async function databaseReachable(db: Database): Promise<boolean> {
 
 /**
  * Never let an internal message reach a client: it can carry a query, a path or a
- * member's data (constitution §5). A client error keeps its 4xx status, which says
- * something about the caller's request and nothing about ours, and so does a
- * request that failed a route's validation (a ZodError); everything else is a
- * 500. The status is the whole response.
+ * member's data (constitution §5). A client error, or a request failing a route's
+ * validation, answers 4xx; everything else is a 500. The status is the whole response.
  */
 export const handleErrors: ErrorRequestHandler = (
   error,
