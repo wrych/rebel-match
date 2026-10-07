@@ -75,6 +75,28 @@ describe('planSeed', () => {
     ).toHaveLength(2)
   })
 
+  it('carries the configured first admins in the prod plan (R-SEED-9)', () => {
+    const plan = planSeed({
+      seedProfile: 'prod',
+      seedAdmins: ['a@example.org'],
+      env: 'production',
+      mail: SMTP,
+    })
+
+    expect(plan.admins).toEqual(['a@example.org'])
+  })
+
+  it('refuses first admins with the dev profile (R-SEED-9)', () => {
+    expect(() =>
+      planSeed({
+        seedProfile: 'dev',
+        seedAdmins: ['a@example.org'],
+        env: 'development',
+        mail: NONE,
+      }),
+    ).toThrow(/R-SEED-9/)
+  })
+
   it('seeds no fictional member for prod', () => {
     expect(
       planSeed({ seedProfile: 'prod', env: 'production', mail: SMTP }).members,

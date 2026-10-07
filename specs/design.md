@@ -1238,6 +1238,11 @@ Production starts with real content only — no fictional members, ever.
 - Whitelisted attendees are seeded as **not yet onboarded**: they still go
   through **F1** and **F2** themselves, which is what records their consent
   (R-ONB-3, R-NFR-6). The seed never pre-accepts consent on someone's behalf.
+- **First admins** (R-SEED-9): `SEED_ADMINS`, a comma-separated list of
+  addresses, is set on the production seed job. Each new address becomes an
+  active member holding `member` and `admin`, with no name and no consent, so
+  their first sign-in goes through onboarding like everyone else's. An address
+  already in the database is left as it is.
 - Attribution of the collected challenges is an open point — see requirements
   §11 open question 5.
 

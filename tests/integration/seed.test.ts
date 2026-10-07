@@ -85,3 +85,51 @@ describe('the dev seed', () => {
     ).toBe(plan.expertise.length)
   })
 })
+
+describe('the first admins of the prod seed (R-SEED-9)', () => {
+  const admin = 'first-admin@seed.invalid'
+  const prod = planSeed({
+    seedProfile: 'prod',
+    seedAdmins: [admin],
+    env: 'production',
+    mail: { delivery: 'smtp' },
+  })
+
+  async function adminRow(): Promise<Record<string, unknown> | undefined> {
+    const rows = await db.query(
+      'SELECT m.status, m.name, m.consent_at, ' +
+        "string_agg(mr.role_key, ',' ORDER BY mr.role_key) AS roles " +
+        'FROM members m LEFT JOIN member_roles mr ON mr.member_id = m.id ' +
+        'WHERE m.email = ? GROUP BY m.id, m.status, m.name, m.consent_at',
+      [admin],
+    )
+    return rows[0]
+  }
+
+  afterAll(async () => {
+    await db.query('DELETE FROM members WHERE email = ?', [admin])
+  })
+
+  it('makes a new address an active admin who still has to onboard', async () => {
+    await applySeed(db.drizzle, prod, config.consentVersion)
+
+    expect(await adminRow()).toMatchObject({
+      status: 'active',
+      name: null,
+      consent_at: null,
+      roles: 'admin,member',
+    })
+  })
+
+  it('gives back no role a host took away on a re-run', async () => {
+    await db.query(
+      "DELETE FROM member_roles WHERE role_key = 'admin' AND member_id = " +
+        '(SELECT id FROM members WHERE email = ?)',
+      [admin],
+    )
+
+    await applySeed(db.drizzle, prod, config.consentVersion)
+
+    expect(await adminRow()).toMatchObject({ roles: 'member' })
+  })
+})

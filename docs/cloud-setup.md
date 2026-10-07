@@ -503,6 +503,11 @@ separate step (ADR 0025, consequences).
   `https://<your domain>`.
 - **Then one real sign-in** from a team mailbox. Staging never sends mail, so
   this is the first time the SMTP path runs.
+- **The first admins:** set production's `SEED_ADMINS` variable to the
+  comma-separated addresses that should hold `admin` (R-SEED-9). The prod seed
+  makes each new one an admin who onboards on first sign-in; from there they
+  approve applicants and grant roles in the app. Changing the list later adds
+  new addresses only; it never takes a role away or gives one back.
 
 ---
 

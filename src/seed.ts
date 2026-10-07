@@ -13,7 +13,8 @@ try {
   await applySeed(connection.db, plan, config.consentVersion)
   console.log(
     `seed (${config.seedProfile}): ${String(plan.roles.length)} roles, ` +
-      `${String(plan.members.length)} members`,
+      `${String(plan.members.length)} members, ` +
+      `${String(plan.admins.length)} first admins`,
   )
 } finally {
   await connection.close()

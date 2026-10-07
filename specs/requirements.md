@@ -1195,6 +1195,14 @@ fixtures. `design.md` §6 lists the exact records and the profile mechanism.
   THEN THE SYSTEM SHALL abort without writing. A development deployment keeps
   magic links readable in its log (R-DEV-1); real addresses there would make
   the log a way into real people's accounts.
+- **R-SEED-9 (First admins)** — The production seed SHALL grant the `member`
+  and `admin` roles to the addresses configuration names (`SEED_ADMINS`), so a
+  new deployment has someone who can approve applicants and grant roles
+  (R-ROLE-9). The addresses come from configuration, never from the repository
+  (R-SEED-5), and each starts un-onboarded (R-SEED-6). Only an address new to
+  the database is granted: a re-run SHALL NOT give back a role a host took
+  away. The dev profile SHALL refuse `SEED_ADMINS`; it has its own admin
+  (R-SEED-2).
 
 ---
 
