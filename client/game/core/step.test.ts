@@ -165,6 +165,20 @@ describe('boss mode (R-GAME-4, R-GAME-7)', () => {
     expect(day.score).toBe(1)
   })
 
+  it('hands out files anywhere along the two-tile desk, and nowhere else', () => {
+    const day = settled(1)
+    const at = (x: number, y: number): string[] => {
+      day.player.position = { x, y }
+      return availableActions(day).map((a) => a.kind)
+    }
+    const [first, second] = floors[day.floor].desk
+    if (first === undefined || second === undefined) throw new Error('no desk')
+
+    expect(at(first.x + 0.5, first.y + 1.5)).toEqual(['takeFile'])
+    expect(at(second.x + 0.5, second.y + 1.5)).toEqual(['takeFile'])
+    expect(at(second.x + 3.5, second.y + 3.5)).toEqual([])
+  })
+
   it('needs two files for a rebel: the first only tempts them', () => {
     let day = settled(1)
     day.employees[0] = { ...employee(day, 0), spirit: 'rebel' }

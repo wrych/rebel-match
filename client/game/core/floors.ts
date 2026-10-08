@@ -19,10 +19,13 @@ export interface Floor {
   /** One string per row; see `TILE`. */
   rows: readonly string[]
   entrance: Spot
-  /** Where the player starts, beside the cabinet or, in rebel mode, the desk. */
+  /** Where the player starts, beside their desk. */
   start: Spot
-  /** The office cabinet in boss mode; the player's own desk in rebel mode. */
+  /** The first tile of the player's desk, where the files are kept in boss
+   * mode and the masterclass is called in rebel mode. */
   cabinet: Spot
+  /** Every tile of the player's desk, which is two wide. */
+  desk: readonly Spot[]
   /** The meeting room's door, from which "nearest" is measured. */
   meetingDoor: Spot
   /** Where those in a meeting stand, nearest the table first. */
@@ -108,18 +111,22 @@ function put(grid: Grid, spot: Spot, tile: string): void {
 }
 
 // The office above, the meeting room below, each with a door to the right.
-function rooms(grid: Grid, height: number): { door: Spot; cabinet: Spot } {
+function rooms(
+  grid: Grid,
+  height: number,
+): { door: Spot; cabinet: Spot; desk: Spot[] } {
   fill(grid, { x: 1, y: 1 }, { x: ROOM, y: ROOM }, TILE.office)
   fill(grid, { x: ROOM + 1, y: 0 }, { x: ROOM + 1, y: height - 1 }, TILE.wall)
   fill(grid, { x: 0, y: ROOM + 1 }, { x: ROOM + 1, y: ROOM + 1 }, TILE.wall)
   fill(grid, { x: 1, y: ROOM + 2 }, { x: ROOM, y: height - 2 }, TILE.meeting)
   const cabinet = { x: 2, y: 2 }
-  put(grid, cabinet, TILE.cabinet)
+  const desk = [cabinet, { x: cabinet.x + 1, y: cabinet.y }]
+  for (const tile of desk) put(grid, tile, TILE.cabinet)
   put(grid, TABLE, TILE.table)
   put(grid, { x: ROOM + 1, y: 3 }, TILE.office)
   const door = { x: ROOM + 1, y: ROOM + 4 }
   put(grid, door, TILE.meeting)
-  return { door, cabinet }
+  return { door, cabinet, desk }
 }
 
 function cubicles(grid: Grid, layout: Layout): Cubicle[] {
@@ -169,7 +176,7 @@ export function layOut(layout: Layout): Floor {
   const width = LEFT + 2 + layout.perRow * CUBICLE_WIDTH + 2
   const height = Math.max(MIN_HEIGHT, 3 + layout.rows * CUBICLE_HEIGHT + 1)
   const grid = blank(width, height)
-  const { door, cabinet } = rooms(grid, height)
+  const { door, cabinet, desk } = rooms(grid, height)
   const placed = cubicles(grid, layout)
   const spots = coolers(grid, width, layout.coolers)
   const entrance = {
@@ -183,8 +190,9 @@ export function layOut(layout: Layout): Floor {
     height,
     rows,
     entrance,
-    start: { x: cabinet.x + 1, y: cabinet.y },
+    start: { x: cabinet.x + 2, y: cabinet.y + 1 },
     cabinet,
+    desk,
     meetingDoor: door,
     meetingSpots: meetingSpots(rows),
     table: TABLE,

@@ -327,7 +327,11 @@ their cubicle, the coolers, the meeting room and the entrance. "Nearest the
 meeting room" (R-GAME-6) is the walking distance, not the straight line.
 
 **Drawing.** Characters are drawn in code as smooth vector figures: a rounded
-suit body, head, hair, tie, and a soft shadow. Each figure has a colour palette
+suit body with arms and hands, a shirt collar and tie, a head with ears, eyes
+and one of a few hair styles, a soft outline and a shadow. Furniture is seen
+from above and a little in front: every desk has a monitor, a keyboard and a
+chair, and the player's desk in the office is two tiles wide, with a wide
+screen, a chair in front and, in boss mode, the stack of files. Each figure has a colour palette
 and a grey one, so turning grey is a palette swap, never a filter. Rebel colours
 come from the happy-mode tokens (R-LOOK-3). The camera follows the player
 across a floor larger than the screen; off-screen trouble is marked by arrows

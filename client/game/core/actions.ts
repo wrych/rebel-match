@@ -30,6 +30,9 @@ export interface Action {
 const near = (state: DayState, spot: Spot): boolean =>
   distance(state.player.position, spot) <= REACH
 
+const atOwnDesk = (state: DayState): boolean =>
+  floorFor(state).desk.some((tile) => near(state, centreOf(tile)))
+
 function nearest(
   state: DayState,
   candidates: Employee[],
@@ -63,8 +66,7 @@ const reachable = (employee: Employee): boolean =>
 function bossActions(state: DayState): Action[] {
   const actions: Action[] = []
   const { carrying } = state.player
-  if (!carrying && near(state, centreOf(floorFor(state).cabinet)))
-    actions.push({ kind: 'takeFile' })
+  if (!carrying && atOwnDesk(state)) actions.push({ kind: 'takeFile' })
   const target = carrying
     ? nearest(
         state,
@@ -112,11 +114,7 @@ function rebelActions(state: DayState): Action[] {
     })
   }
   const anyGrey = state.employees.some((e) => e.spirit === 'grey' && present(e))
-  if (
-    !state.masterclassHeld &&
-    anyGrey &&
-    near(state, centreOf(floorFor(state).cabinet))
-  )
+  if (!state.masterclassHeld && anyGrey && atOwnDesk(state))
     actions.push({ kind: 'masterclass' })
   return actions
 }

@@ -39,7 +39,14 @@ describe('floors (R-GAME-2)', () => {
 
     expect(floor.rows[floor.cabinet.y]?.[floor.cabinet.x]).toBe(TILE.cabinet)
     expect(floor.rows[floor.entrance.y]?.[floor.entrance.x]).toBe(TILE.entrance)
-    expect(blocked(floor, floor.cabinet.x, floor.cabinet.y)).toBe(true)
+    expect(floor.desk).toEqual([
+      floor.cabinet,
+      { x: floor.cabinet.x + 1, y: floor.cabinet.y },
+    ])
+    expect(floor.desk.every((tile) => blocked(floor, tile.x, tile.y))).toBe(
+      true,
+    )
+    expect(blocked(floor, floor.start.x, floor.start.y)).toBe(false)
     expect(blocked(floor, -1, 0)).toBe(true)
     expect(floor.meetingSpots.length).toBeGreaterThanOrEqual(
       gameDefaults['ceo.meetingSeats'],

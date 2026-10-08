@@ -6,6 +6,11 @@ export interface Palette {
   meeting: string
   wall: string
   furniture: string
+  /** The darker front edge of furniture seen from above. */
+  edge: string
+  chair: string
+  /** Monitor frames and keyboards. */
+  bezel: string
   screen: string
   paper: string
   ink: string
@@ -20,6 +25,9 @@ const greys = {
   meeting: '#c4c1ba',
   wall: '#4a4845',
   furniture: '#8d8a84',
+  edge: '#6c6964',
+  chair: '#4e4c48',
+  bezel: '#2c2b29',
   screen: '#5c5a56',
   paper: '#f4f2ee',
   ink: '#1c1b19',
@@ -40,6 +48,8 @@ export function palette(read: (token: string) => string): Palette {
 
 const SKIN = ['#f1d3b8', '#e0b18c', '#c68a63', '#9a6544', '#6e4a33', '#4a3022']
 const HAIR = ['#2b2522', '#5a3b26', '#8a6a3f', '#c9b18a', '#1d1d1d', '#6b6b6b']
+/** How many hair styles there are to draw. */
+export const HAIR_STYLES = 4
 const SUITS = ['#3c3b39', '#4b4a47', '#56544f', '#2f3236']
 
 /** One person's look, the same every day: a skin tone, hair and a suit. */
@@ -49,6 +59,8 @@ export interface Look {
   suit: string
   /** The colour their hair turns as a rebel. */
   rebelHair: number
+  /** One of the hair styles figures are drawn with. */
+  hairStyle: number
 }
 
 export function lookOf(id: number): Look {
@@ -57,6 +69,7 @@ export function lookOf(id: number): Look {
     hair: HAIR[(id * 7) % HAIR.length] ?? '#2b2522',
     suit: SUITS[id % SUITS.length] ?? '#3c3b39',
     rebelHair: id,
+    hairStyle: (id * 3) % HAIR_STYLES,
   }
 }
 
