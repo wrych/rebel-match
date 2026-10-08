@@ -1125,7 +1125,7 @@ the office's people; the **player** is the character the member steers.
   No screen SHALL turn in the day's first seconds (setting), and the rate SHALL
   rise through the day from a share of its average at 09:00 to a share at 17:00
   (settings), the same on average (ADR 0046). The player SHALL carry at most one
-  **file**, taken from a cabinet in their office. Assigning a file to a tempted
+  **file**, taken from the stack on their desk. Assigning a file to a tempted
   employee SHALL make them grey and busy with it for a while (setting);
   assigning one to a rebel SHALL make them tempted, so a rebel needs two files.
   A file SHALL be assignable only to a tempted employee or a rebel. WHEN an
