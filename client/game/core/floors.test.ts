@@ -53,6 +53,15 @@ describe('floors (R-GAME-2)', () => {
     )
   })
 
+  it('lets everyone in beside the office, so they walk past the boss', () => {
+    for (const floor of Object.values(floors)) {
+      const { x, y } = floor.entrance
+      expect(y).toBe(0)
+      expect(floor.rows[1]?.[x - 1]).toBe(TILE.wall)
+      expect(floor.rows[1]?.[x - 2]).toBe(TILE.office)
+    }
+  })
+
   it('walks a path of neighbouring tiles that ends where it should', () => {
     const floor = floors.teamLead
     const seat = floor.cubicles[3]?.seat ?? floor.start

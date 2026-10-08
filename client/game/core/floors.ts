@@ -183,7 +183,7 @@ function meetingSpots(rows: readonly string[]): Spot[] {
 
 /** Lays out a floor: an office and a meeting room on the left, rows of
  * cubicles in the open plan, coolers along the right wall and the entrance
- * in the bottom wall. The same layout always gives the same floor. */
+ * in the top wall beside the office. The same layout always gives the same floor. */
 export function layOut(layout: Layout): Floor {
   const width = LEFT + 2 + layout.perRow * CUBICLE_WIDTH + 2
   const height = Math.max(MIN_HEIGHT, 3 + layout.rows * CUBICLE_HEIGHT + 1)
@@ -191,10 +191,8 @@ export function layOut(layout: Layout): Floor {
   const { door, cabinet, desk } = rooms(grid, height)
   const placed = cubicles(grid, layout)
   const spots = coolers(grid, width, layout.coolers)
-  const entrance = {
-    x: LEFT + 1 + Math.floor((layout.perRow * CUBICLE_WIDTH) / 2),
-    y: height - 1,
-  }
+  // Beside the office, so everyone walks in past the boss.
+  const entrance = { x: LEFT, y: 0 }
   put(grid, entrance, TILE.entrance)
   const rows = grid.map((row) => row.join(''))
   const chair = {
