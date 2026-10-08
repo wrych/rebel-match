@@ -6,6 +6,8 @@ export interface Spot {
   y: number
 }
 
+const centreOf = (tile: Spot): Spot => ({ x: tile.x + 0.5, y: tile.y + 0.5 })
+
 /** A round obstacle: its centre and radius, in tiles. */
 export interface Obstacle extends Spot {
   r: number
@@ -35,6 +37,8 @@ export interface Floor {
   chair: Spot
   /** Round things the player bumps into that stand between tiles. */
   obstacles: readonly Obstacle[]
+  /** The tiles office plants stand on; nobody walks through them. */
+  plants: readonly Spot[]
   /** The meeting room's door, from which "nearest" is measured. */
   meetingDoor: Spot
   /** Where those in a meeting stand, nearest the table first. */
@@ -72,7 +76,8 @@ const BLOCKING: ReadonlySet<string> = new Set([
 export function blocked(floor: Floor, x: number, y: number): boolean {
   const row = floor.rows[y]
   if (row === undefined) return true
-  return BLOCKING.has(row[x] ?? TILE.wall)
+  if (BLOCKING.has(row[x] ?? TILE.wall)) return true
+  return floor.plants.some((plant) => plant.x === x && plant.y === y)
 }
 
 /** Whether the tile at x, y is part of the meeting room. */
@@ -95,6 +100,7 @@ const COOLER_GAP = 5
 const MIN_HEIGHT = 2 * ROOM + 3
 const TABLE: Spot = { x: 3, y: ROOM + 4 }
 const CHAIR_RADIUS = 0.3
+const PLANT_RADIUS = 0.3
 // The chair stands a little into the row in front of the desk.
 const CHAIR_DEPTH = 1.45
 
@@ -196,6 +202,11 @@ export function layOut(layout: Layout): Floor {
   const entrance = { x: LEFT, y: 0 }
   put(grid, entrance, TILE.entrance)
   const rows = grid.map((row) => row.join(''))
+  // One in the office's far corner, one in the open plan's bottom corner.
+  const plants = [
+    { x: ROOM, y: 1 },
+    { x: LEFT, y: height - 2 },
+  ]
   const chair = {
     x: cabinet.x + desk.length / 2,
     y: cabinet.y + CHAIR_DEPTH,
@@ -209,7 +220,11 @@ export function layOut(layout: Layout): Floor {
     cabinet,
     desk,
     chair,
-    obstacles: [{ ...chair, r: CHAIR_RADIUS }],
+    obstacles: [
+      { ...chair, r: CHAIR_RADIUS },
+      ...plants.map((plant) => ({ ...centreOf(plant), r: PLANT_RADIUS })),
+    ],
+    plants,
     meetingDoor: door,
     meetingSpots: meetingSpots(rows),
     table: TABLE,

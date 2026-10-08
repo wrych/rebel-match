@@ -172,6 +172,33 @@ function drawCoolers(ctx: Ctx, floor: Floor, pal: Palette): void {
   }
 }
 
+/** An office plant in its pot, seen from above. */
+function drawPlant(ctx: Ctx, centre: Spot, pal: Palette): void {
+  ctx.fillStyle = 'rgb(0 0 0 / 15%)'
+  ctx.beginPath()
+  ctx.ellipse(centre.x, centre.y + 0.3, 0.26, 0.08, 0, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.fillStyle = pal.edge
+  roundRect(ctx, centre.x - 0.17, centre.y + 0.02, 0.34, 0.28, 0.06)
+  outline(ctx)
+  ctx.fillStyle = pal.furniture
+  roundRect(ctx, centre.x - 0.2, centre.y - 0.02, 0.4, 0.08, 0.03)
+  ctx.fillStyle = pal.leafShade
+  for (const [dx, dy, r] of LEAVES)
+    circle(ctx, { x: centre.x + dx, y: centre.y + dy }, r)
+  ctx.fillStyle = pal.leaf
+  for (const [dx, dy, r] of LEAVES)
+    circle(ctx, { x: centre.x + dx - 0.03, y: centre.y + dy - 0.03 }, r * 0.7)
+}
+
+// Each leaf cluster's offset from the pot's centre and its radius.
+const LEAVES: readonly (readonly [number, number, number])[] = [
+  [-0.14, -0.12, 0.15],
+  [0.14, -0.12, 0.15],
+  [0, -0.26, 0.16],
+  [0, -0.06, 0.14],
+]
+
 /** Everything that stands on the floor but the screens' content. */
 export function drawFurniture(ctx: Ctx, state: DayState, pal: Palette): void {
   const floor = floors[state.floor]
@@ -184,6 +211,8 @@ export function drawFurniture(ctx: Ctx, state: DayState, pal: Palette): void {
     pal,
   )
   drawCoolers(ctx, floor, pal)
+  for (const plant of floor.plants)
+    drawPlant(ctx, { x: plant.x + 0.5, y: plant.y + 0.5 }, pal)
 }
 
 function screenColour(employee: Employee, pal: Palette): string {

@@ -1,4 +1,5 @@
 import { blocked, type Floor, type Spot } from './floors'
+import { overlaps, solidsOf } from './walls'
 
 const STEPS: readonly Spot[] = [
   { x: 1, y: 0 },
@@ -78,19 +79,18 @@ export const distance = (a: Spot, b: Spot): number =>
 // Moving one axis at a time lets the player slide along a wall rather than
 // stick to it.
 function free(floor: Floor, at: Spot, radius: number): boolean {
-  const corners = [
-    { x: at.x - radius, y: at.y - radius },
-    { x: at.x + radius, y: at.y - radius },
-    { x: at.x - radius, y: at.y + radius },
-    { x: at.x + radius, y: at.y + radius },
-  ]
-  return (
-    corners.every(
-      (corner) => !blocked(floor, Math.floor(corner.x), Math.floor(corner.y)),
-    ) &&
-    floor.obstacles.every(
-      (obstacle) => distance(at, obstacle) >= obstacle.r + radius,
-    )
+  const body = {
+    x: at.x - radius,
+    y: at.y - radius,
+    w: 2 * radius,
+    h: 2 * radius,
+  }
+  for (let y = Math.floor(body.y); y <= Math.floor(body.y + body.h); y += 1)
+    for (let x = Math.floor(body.x); x <= Math.floor(body.x + body.w); x += 1)
+      if (solidsOf(floor, x, y).some((solid) => overlaps(body, solid)))
+        return false
+  return floor.obstacles.every(
+    (obstacle) => distance(at, obstacle) >= obstacle.r + radius,
   )
 }
 

@@ -5,12 +5,18 @@ export interface Palette {
   office: string
   meeting: string
   wall: string
+  /** Beyond the building's walls. */
+  outside: string
   furniture: string
   /** The darker front edge of furniture seen from above. */
   edge: string
   chair: string
   /** Monitor frames and keyboards. */
   bezel: string
+  /** An office plant's leaves, lit and shaded: grey like everything else in
+   * the office (R-GAME-18). */
+  leaf: string
+  leafShade: string
   screen: string
   paper: string
   ink: string
@@ -24,10 +30,13 @@ const greys = {
   office: '#cfccc5',
   meeting: '#c4c1ba',
   wall: '#4a4845',
+  outside: '#b9b6af',
   furniture: '#8d8a84',
   edge: '#6c6964',
   chair: '#4e4c48',
   bezel: '#2c2b29',
+  leaf: '#a3a29b',
+  leafShade: '#7c7b75',
   screen: '#5c5a56',
   paper: '#f4f2ee',
   ink: '#1c1b19',
