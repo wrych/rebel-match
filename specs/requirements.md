@@ -1268,6 +1268,12 @@ the office's people; the **player** is the character the member steers.
   a level above the highest reached plus one, or with a play time outside what
   a day can take, and SHALL limit how many records a member sends per minute.
   It SHALL do no more against a faked score (ADR 0045).
+- **R-GAME-21 (The office door)** — The boss's office SHALL have a door that
+  swings into the office. Some time after it was last opened (setting, varying
+  around it) THE SYSTEM SHALL swing it shut; the player SHALL open a shut or
+  shutting door with the action button from either side. The door SHALL block
+  the player wherever it stands, and SHALL stop swinging rather than pass
+  through the player (ADR 0047).
 
 ---
 

@@ -80,5 +80,6 @@ still holds except where the later ADR says otherwise.
 | [0042](0042-mit-license.md)                                       | Publish the code under the MIT license                                          | Accepted                           |
 | [0043](0043-one-door-confirm-the-address-then-onboard.md)         | One door: confirm the address, then onboard, then wait if need be               | Accepted                           |
 | [0044](0044-roll-back-code-not-schema.md)                         | Roll back the code, never the schema; fix a migration forward                   | Accepted                           |
-| [0045](0045-9torevolution-an-office-game-hidden-in-happy-mode.md) | Hide 9toRevolution, an office game, behind the impressum in happy mode          | Accepted, amended by 0046          |
+| [0045](0045-9torevolution-an-office-game-hidden-in-happy-mode.md) | Hide 9toRevolution, an office game, behind the impressum in happy mode          | Accepted, amended by 0046, 0047    |
 | [0046](0046-enter-9torevolution-by-turning-the-phone.md)          | Enter 9toRevolution by turning the phone; play in landscape, choose in portrait | Accepted                           |
+| [0047](0047-an-office-door-that-shuts.md)                         | Give the boss's office a door that shuts now and then                           | Accepted                           |
