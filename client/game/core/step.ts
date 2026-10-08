@@ -1,6 +1,7 @@
 import { act, finish, type ActionKind } from './actions'
 import { bossRules, meetingDue, startMeeting } from './boss'
 import { coolers } from './cooler'
+import { fromLeaf, swingDoor, touchesLeaf } from './door'
 import { inMeetingRoom, type Spot } from './floors'
 import { distance, slide } from './grid'
 import { rebelRules } from './rebel'
@@ -39,9 +40,18 @@ function clearOfPeople(state: DayState, from: Spot, to: Spot): boolean {
   })
 }
 
+// Like people, the door's leaf may be walked away from but not into.
+const clearOfDoor = (state: DayState, from: Spot, to: Spot): boolean =>
+  !touchesLeaf(state, to) || fromLeaf(state, to) >= fromLeaf(state, from)
+
 function stepAround(state: DayState, from: Spot, to: Spot): Spot {
   const options = [to, { x: to.x, y: from.y }, { x: from.x, y: to.y }]
-  return options.find((spot) => clearOfPeople(state, from, spot)) ?? from
+  return (
+    options.find(
+      (spot) =>
+        clearOfPeople(state, from, spot) && clearOfDoor(state, from, spot),
+    ) ?? from
+  )
 }
 
 function movePlayer(state: DayState, move: Spot, dt: number): void {
@@ -81,6 +91,7 @@ export function step(previous: DayState, input: Input, dt: number): DayState {
   finish(state)
   movePlayer(state, input.move, dt)
   if (input.act !== undefined) act(state, input.act, input.chosen)
+  swingDoor(state, dt)
   walk(state, dt)
   coolers(state, dt)
   if (state.mode === 'boss') bossRules(state, dt)

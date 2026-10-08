@@ -61,6 +61,14 @@ export interface Player {
   busy: Busy | null
 }
 
+/** The office door: how far open, 0 shut to 1 open, which way it swings, and
+ * when it shuts by itself next (R-GAME-21). */
+export interface Door {
+  openness: number
+  opening: boolean
+  shutsAt: number
+}
+
 /** A day of 9toRevolution, everything `step` needs and nothing else. */
 export interface DayState {
   mode: Mode
@@ -75,6 +83,7 @@ export interface DayState {
   employees: Employee[]
   /** When two first stood together at each cooler, if they still do. */
   chats: (number | null)[]
+  door: Door
   meetingHeld: boolean
   masterclassHeld: boolean
   breakReadyAt: number
@@ -181,6 +190,7 @@ export function startDay(
       ),
     ),
     chats: floor.coolers.map(() => null),
+    door: { openness: 1, opening: true, shutsAt: tuning.doorOpenSeconds },
     meetingHeld: false,
     masterclassHeld: false,
     breakReadyAt: 0,

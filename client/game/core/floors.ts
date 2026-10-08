@@ -8,6 +8,15 @@ export interface Spot {
 
 const centreOf = (tile: Spot): Spot => ({ x: tile.x + 0.5, y: tile.y + 0.5 })
 
+export interface OfficeDoor {
+  /** The doorway's tile. */
+  tile: Spot
+  hinge: Spot
+  length: number
+  shut: number
+  open: number
+}
+
 /** A round obstacle: its centre and radius, in tiles. */
 export interface Obstacle extends Spot {
   r: number
@@ -39,6 +48,9 @@ export interface Floor {
   obstacles: readonly Obstacle[]
   /** The tiles office plants stand on; nobody walks through them. */
   plants: readonly Spot[]
+  /** The office door: where it hangs, how long its leaf is, and the angles
+   * it stands at shut and open, in radians. */
+  officeDoor: OfficeDoor
   /** The meeting room's door, from which "nearest" is measured. */
   meetingDoor: Spot
   /** Where those in a meeting stand, nearest the table first. */
@@ -99,6 +111,8 @@ const CUBICLE_HEIGHT = 3
 const COOLER_GAP = 5
 const MIN_HEIGHT = 2 * ROOM + 3
 const TABLE: Spot = { x: 3, y: ROOM + 4 }
+// The office's doorway, in the wall to its right.
+const OFFICE_DOOR: Spot = { x: ROOM + 1, y: 3 }
 const CHAIR_RADIUS = 0.3
 const PLANT_RADIUS = 0.3
 // The chair stands a little into the row in front of the desk.
@@ -141,7 +155,7 @@ function rooms(
   const desk = [cabinet, { x: cabinet.x + 1, y: cabinet.y }]
   for (const tile of desk) put(grid, tile, TILE.cabinet)
   put(grid, TABLE, TILE.table)
-  put(grid, { x: ROOM + 1, y: 3 }, TILE.office)
+  put(grid, OFFICE_DOOR, TILE.office)
   const door = { x: ROOM + 1, y: ROOM + 4 }
   put(grid, door, TILE.meeting)
   return { door, cabinet, desk }
@@ -225,6 +239,15 @@ export function layOut(layout: Layout): Floor {
       ...plants.map((plant) => ({ ...centreOf(plant), r: PLANT_RADIUS })),
     ],
     plants,
+    // Hung at the doorway's top, it shuts down the wall's line and opens into
+    // the office.
+    officeDoor: {
+      tile: OFFICE_DOOR,
+      hinge: { x: OFFICE_DOOR.x + 0.5, y: OFFICE_DOOR.y },
+      length: 1,
+      shut: Math.PI / 2,
+      open: Math.PI,
+    },
     meetingDoor: door,
     meetingSpots: meetingSpots(rows),
     table: TABLE,
