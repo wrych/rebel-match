@@ -122,6 +122,28 @@ describe('GameScreen (R-GAME-1, R-GAME-15, R-GAME-16)', () => {
     expect(howTo.text()).toContain('You are a rebel now')
   })
 
+  it('stops the page zooming while a day shows, and only then (R-GAME-12)', async () => {
+    applyMood('happy')
+    serve(state)
+    const screen = await mountScreen()
+    const pinch = (): boolean => {
+      const event = new Event('gesturestart', { cancelable: true })
+      document.dispatchEvent(event)
+      return event.defaultPrevented
+    }
+    expect(pinch()).toBe(false)
+
+    const start = screen
+      .findAll('button')
+      .find((b) => b.text() === 'Start the day')
+    await start?.trigger('click')
+    await flushPromises()
+    expect(pinch()).toBe(true)
+
+    screen.unmount()
+    expect(pinch()).toBe(false)
+  })
+
   it('asks the server nothing in calm mode', async () => {
     const fetchMock = serve(state)
     const screen = await mountScreen()
