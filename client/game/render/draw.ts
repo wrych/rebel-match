@@ -74,11 +74,33 @@ function drawScreen(
   ctx.fillStyle = colour
   roundRect(ctx, desk.x + 0.25, desk.y + 0.22, 0.5, 0.34, 0.05)
   if (!logo) return
+  drawLabel(ctx, 'CR', { x: desk.x + 0.5, y: desk.y + 0.39 }, LOGO_SIZE, pal)
+}
+
+const LOGO_SIZE = 0.2
+
+// Text is set in screen pixels: some browsers, Firefox among them, place a
+// font of a fraction of a pixel wrongly once the canvas is scaled.
+function drawLabel(
+  ctx: Ctx,
+  text: string,
+  at: Spot,
+  size: number,
+  pal: Palette,
+): void {
+  const m = ctx.getTransform()
+  ctx.save()
+  ctx.setTransform(1, 0, 0, 1, 0, 0)
   ctx.fillStyle = pal.paper
-  ctx.font = 'bold 0.2px sans-serif'
+  ctx.font = `bold ${String(Math.max(1, Math.round(size * m.a)))}px sans-serif`
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
-  ctx.fillText('CR', desk.x + 0.5, desk.y + 0.4)
+  ctx.fillText(
+    text,
+    m.a * at.x + m.c * at.y + m.e,
+    m.b * at.x + m.d * at.y + m.f,
+  )
+  ctx.restore()
 }
 
 function drawFile(ctx: Ctx, at: Spot, pal: Palette): void {

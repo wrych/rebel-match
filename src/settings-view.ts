@@ -246,6 +246,24 @@ const gameGroups: Group[] = [
         SECONDS,
       ),
       gameEntry(
+        'quietStartSeconds',
+        'No screen turns before',
+        'Seconds after 09:00, so the boss can get going.',
+        SECONDS,
+      ),
+      gameEntry(
+        'rampStartPercent',
+        'Screens turn in the morning at',
+        'Of the average rate; it rises through the day to the afternoon’s.',
+        ['percent', 'percent'],
+      ),
+      gameEntry(
+        'rampEndPercent',
+        'Screens turn in the afternoon at',
+        'Of the average rate, by 17:00. The day keeps its average.',
+        ['percent', 'percent'],
+      ),
+      gameEntry(
         'arrivalGapMs',
         'Employees walk in at 09:00, one every',
         'How far apart they come through the entrance.',
