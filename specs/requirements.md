@@ -390,8 +390,8 @@ capability, not a secret** — and every requirement below exists because of tha
   each with their portrait, name and what they are responsible for, browsed as
   the swipe deck is (R-OFF-1, R-LOOK-4), and closes with a card for the
   community. It is public and has its own URL (R-NAV-1). In happy mode, for a
-  member who completed onboarding and while the game is on, one more card
-  follows the community's: the door to 9toRevolution (R-GAME-1).
+  member who completed onboarding and while the game is on, the community's
+  card is the door to 9toRevolution (R-GAME-1).
 
 ---
 
@@ -891,7 +891,7 @@ _(Decided by the maintainer after trying the redesign: ADR 0023.)_
   technology. _(It replaces the prototype's "CR" button.)_ The choice SHALL be
   remembered per browser and SHALL change colours and decoration only, never
   content, behaviour or anything recorded, with one exception: happy mode
-  reveals the 9toRevolution card and lets the game run (R-GAME-1, ADR 0045). IF
+  reveals the 9toRevolution door and lets the game run (R-GAME-1, ADR 0045). IF
   the browser refuses storage THEN the app SHALL still switch, and start calm
   next time.
 - **R-LOOK-3 (Modes are tokens)** — Colour modes SHALL be sets of colour tokens
@@ -1096,10 +1096,12 @@ on are **rebel mode**, all of them the job **Rebel**. An **employee** is one of
 the office's people; the **player** is the character the member steers.
 
 - **R-GAME-1 (The door)** — WHILE the game is switched on (R-GAME-17), the
-  colour mode is happy and the visitor is a member who completed onboarding, the
-  impressum (R-PROF-4) SHALL end with a 9toRevolution card carrying a **Be a
-  rebel** button that opens `/9torevolution`. WHEN the mode is calm THE SYSTEM
-  SHALL show neither the card nor the game: `/9torevolution` shows "The rebels
+  colour mode is happy and the visitor is a member who completed onboarding,
+  turning the phone to landscape while the impressum (R-PROF-4) shows its
+  community card SHALL open `/9torevolution` and start the game; that card
+  SHALL carry a small turn-the-phone sign, and on a screen without touch a
+  **Be a rebel** button that does the same (ADR 0046). WHEN the mode is calm
+  THE SYSTEM SHALL show neither the sign nor the game: `/9torevolution` shows "The rebels
   only come out in happy mode" with a link to the impressum, and a running game
   pauses there (R-GAME-12). WHILE the game is off, `/9torevolution`,
   `/9torevolution/leaderboard` and every game endpoint SHALL answer as not found
@@ -1119,14 +1121,17 @@ the office's people; the **player** is the character the member steers.
   default 90 seconds), and a day survived to 17:00 is **won**.
 - **R-GAME-4 (Temptation and files, boss mode)** — An employee is **grey**,
   **tempted** or a **rebel**. At random moments (setting, per job) a grey
-  employee's screen SHALL switch to Corporate Rebels, which makes them
-  tempted. The player SHALL carry at most one **file**, taken from a cabinet in
-  their office. Assigning a file to a tempted employee SHALL make them grey and
-  busy with it for a while (setting); assigning one to a rebel SHALL make them
-  tempted, so a rebel needs two files. A file SHALL be assignable only to a
-  tempted employee or a rebel. WHEN an employee stays tempted longer than the
-  grace time (setting, per job) THE SYSTEM SHALL make them a rebel. A rebel
-  arises in no other way than this and R-GAME-5.
+  employee's screen SHALL switch to Corporate Rebels, which makes them tempted.
+  No screen SHALL turn in the day's first seconds (setting), and the rate SHALL
+  rise through the day from a share of its average at 09:00 to a share at 17:00
+  (settings), the same on average (ADR 0046). The player SHALL carry at most one
+  **file**, taken from a cabinet in their office. Assigning a file to a tempted
+  employee SHALL make them grey and busy with it for a while (setting);
+  assigning one to a rebel SHALL make them tempted, so a rebel needs two files.
+  A file SHALL be assignable only to a tempted employee or a rebel. WHEN an
+  employee stays tempted longer than the grace time (setting, per job) THE
+  SYSTEM SHALL make them a rebel. A rebel arises in no other way than this and
+  R-GAME-5.
 - **R-GAME-5 (The water cooler, boss mode)** — From Manager on, employees
   SHALL now and then walk to a water cooler (setting), at most two at a cooler.
   WHEN a rebel has talked with a grey employee there for the chat time
@@ -1175,8 +1180,11 @@ the office's people; the **player** is the character the member steers.
   rebels after the masterclass time (setting, default 8 seconds). The player
   moves freely meanwhile.
 - **R-GAME-12 (Controls and view)** — The game SHALL be played in landscape,
-  filling the window and going full screen where the browser allows; held in
-  portrait, it SHALL ask for the phone to be turned and pause. On a touch screen
+  filling the window and going full screen where the browser allows; days,
+  their results and the next day SHALL follow each other there without the
+  phone turning. Held in portrait, the game SHALL pause and show the lobby, a
+  portrait screen with the pseudonym, where to play from, sharing and the
+  leaderboard; turned back, the same day SHALL carry on (ADR 0046). On a touch screen
   a joystick appears where the left thumb rests; on a keyboard the arrows or
   WASD steer. One **action button** SHALL light up and name what the player can
   do where they stand: _Take file_, _Assign_, _Break it up_, _Help_, _Break_,
@@ -1206,13 +1214,14 @@ the office's people; the **player** is the character the member steers.
   42"). Its buttons SHALL be, for a new personal best: **Share and continue**,
   **Continue** and **Leave**; for another win: **Continue** and **Leave**; for a
   loss: **Retry** and **Leave**. _Share and continue_ and _Retry_ SHALL stand
-  out. The day log is recorded, not shown (R-STAT-2): nothing but the
+  out. The card SHALL show in landscape, over the floor, and _Leave_ SHALL go
+  to the lobby. The day log is recorded, not shown (R-STAT-2): nothing but the
   leaderboard and the results card shows anything derived from it.
 - **R-GAME-15 (Pseudonyms and sharing)** — Each player SHALL get, at their first
   game, a pseudonym of an adjective and "Rebel" ("Furious Rebel"), unique among
   players, kept for good. The leaderboard SHALL show the pseudonym unless the
   member shared their name, then the name on their profile. _Share and
-  continue_ shares it, and the game's menu SHALL let the member share or stop
+  continue_ shares it, and the lobby SHALL let the member share or stop
   sharing at any time. Which member stands behind a pseudonym SHALL NOT be
   shown, exported or returned by any screen or endpoint, to hosts or anyone
   else; it lives in the database only (ADR 0045).
@@ -1221,7 +1230,7 @@ the office's people; the **player** is the character the member steers.
   best and its total play time, which hints they have seen, and their
   pseudonym and sharing choice. A member returning after leaving or closing
   the tab SHALL continue from the first day of the job they were in, as after a
-  loss (R-GAME-7). The game's menu SHALL let them **play from** the first day of
+  loss (R-GAME-7). The lobby SHALL let them **play from** the first day of
   any job up to the highest level reached; a loss there sends them to the first
   day of that job. The total play time counts every day played, lost and
   abandoned ones included, and the best keeps the total from when it was first

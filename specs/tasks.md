@@ -378,6 +378,12 @@ up the summit. One pull request per item, in this order.
 - [x] The masterclass's choosing on screen. _(R-GAME-11)_
 - [x] The CEO's choice. _(R-GAME-8)_
 - [x] Hints, usage events. _(R-GAME-18, R-GAME-19)_
+- [ ] After the first playtest: a day builds up from a quiet start; the
+      CR logo drawn on the screen in every browser. _(R-GAME-4, R-GAME-18,
+      ADR 0046)_
+- [ ] After the first playtest: enter by turning the phone on the community
+      card; results and the next day in landscape; upright pauses into the
+      lobby. _(R-GAME-1, R-GAME-12, R-GAME-14, ADR 0046)_
 - [ ] Playtest on phones in landscape; tune the defaults; switch on for the
       summit. _(R-GAME-17)_
 
