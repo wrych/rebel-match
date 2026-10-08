@@ -2,10 +2,11 @@ import { describe, expect, it } from 'vitest'
 import { gameDefaults } from '../../../src/game/tuning'
 import { availableActions } from './actions'
 import { temptationScale } from './boss'
-import { centreOf } from './grid'
+import { centreOf, distance } from './grid'
 import { floors } from './floors'
 import { fileInterval } from './rebel'
 import {
+  BODY_RADIUS,
   HEAT,
   startDay,
   type DayState,
@@ -179,6 +180,34 @@ describe('boss mode (R-GAME-4, R-GAME-7)', () => {
     day.player.carrying = true
 
     expect(availableActions(day)).toEqual([])
+  })
+})
+
+describe('the boss’s body', () => {
+  const left = { move: { x: -1, y: 0 } }
+  const right = { move: { x: 1, y: 0 } }
+
+  function besideEmployee(gap: number): DayState {
+    const day = settled(1)
+    const { x, y } = employee(day, 0).position
+    day.player.position = { x: x + gap, y }
+    return day
+  }
+
+  it('stops short of someone it walks into', () => {
+    const day = run(besideEmployee(1), 1, left)
+
+    expect(day.player.position.x).toBeGreaterThan(employee(day, 0).position.x)
+    expect(
+      distance(day.player.position, employee(day, 0).position),
+    ).toBeGreaterThanOrEqual(2 * BODY_RADIUS)
+  })
+
+  it('walks away from someone it stands too close to', () => {
+    const start = besideEmployee(BODY_RADIUS)
+    const day = run(start, 0.2, right)
+
+    expect(day.player.position.x).toBeGreaterThan(start.player.position.x)
   })
 })
 
