@@ -18,6 +18,7 @@ import {
 } from '../lib/game'
 import { currentMood } from '../lib/mood'
 import { touchScreen, watchLandscape } from '../lib/orientation'
+import { holdZoom } from '../lib/zoom'
 
 interface Ended {
   level: number
@@ -50,6 +51,13 @@ const staged = computed(
     (playing.value !== null || ended.value !== null) &&
     (!touch || landscape.value),
 )
+
+// The page may not zoom under the player's thumbs while the stage shows.
+let releaseZoom: (() => void) | null = null
+watch(staged, (shown) => {
+  releaseZoom?.()
+  releaseZoom = shown ? holdZoom() : null
+})
 
 const SEED_RANGE = 0x7fffffff
 
@@ -178,7 +186,10 @@ watch([landscape, game], ([wide, loaded]) => {
   if (!touch || !wide || loaded === null || resting.value) return
   if (playing.value === null && ended.value === null) start(nextLevel())
 })
-onUnmounted(stop)
+onUnmounted(() => {
+  stop()
+  releaseZoom?.()
+})
 
 // Nothing is asked of the server, and no player made, until the member is
 // in happy mode (R-GAME-1).
@@ -251,6 +262,11 @@ watch(
   inset: 0;
   z-index: 1000;
   background: #d9d7d2;
+  touch-action: none;
+  overscroll-behavior: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 .results-layer {
@@ -260,6 +276,7 @@ watch(
   place-items: center;
   padding: 1rem;
   overflow-y: auto;
+  touch-action: pan-y;
   background: rgb(17 16 16 / 45%);
 }
 
