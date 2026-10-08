@@ -1,4 +1,5 @@
 import { floors, TILE, type Floor } from '../core/floors'
+import { wallParts } from '../core/walls'
 import type { DayState, Employee } from '../core/state'
 import { drawFigure, type Figure } from './figure'
 import { drawFurniture, drawScreens } from './furniture'
@@ -6,25 +7,114 @@ import { lookOf, type Palette } from './palette'
 import { TAU, type Ctx } from './shapes'
 import { markers, type View } from './view'
 
-function tileColour(tile: string, pal: Palette): string | null {
-  if (tile === TILE.wall) return pal.wall
+function tileColour(tile: string, pal: Palette): string {
   if (tile === TILE.office || tile === TILE.cabinet) return pal.office
   if (tile === TILE.meeting || tile === TILE.table) return pal.meeting
   return pal.floor
 }
 
-function drawTiles(ctx: Ctx, floor: Floor, view: View, pal: Palette): void {
+const roomColour = (
+  floor: Floor,
+  pal: Palette,
+  x: number,
+  y: number,
+): string | null => {
+  const tile = floor.rows[y]?.[x]
+  return tile === undefined || tile === TILE.wall ? null : tileColour(tile, pal)
+}
+
+const QUARTERS: readonly (readonly [number, number])[] = [
+  [-1, -1],
+  [1, -1],
+  [-1, 1],
+  [1, 1],
+]
+
+// Around its thin wall, each quarter of a wall tile takes the colour of the
+// room on that side; a quarter beyond the floor stays outside.
+function drawAroundWall(
+  ctx: Ctx,
+  floor: Floor,
+  pal: Palette,
+  at: { x: number; y: number },
+): void {
+  for (const [dx, dy] of QUARTERS) {
+    const colour =
+      roomColour(floor, pal, at.x + dx, at.y) ??
+      roomColour(floor, pal, at.x, at.y + dy) ??
+      roomColour(floor, pal, at.x + dx, at.y + dy)
+    if (colour === null) continue
+    ctx.fillStyle = colour
+    ctx.fillRect(at.x + (dx + 1) / 4, at.y + (dy + 1) / 4, 0.52, 0.52)
+  }
+}
+
+const wallAt = (floor: Floor, x: number, y: number): boolean =>
+  floor.rows[y]?.[x] === TILE.wall
+
+// A door or the entrance: a gap in a wall, split between the rooms it joins.
+const inWallLine = (
+  floor: Floor,
+  { x, y }: { x: number; y: number },
+): boolean =>
+  (wallAt(floor, x - 1, y) && wallAt(floor, x + 1, y)) ||
+  (wallAt(floor, x, y - 1) && wallAt(floor, x, y + 1))
+
+function drawTile(
+  ctx: Ctx,
+  floor: Floor,
+  pal: Palette,
+  at: { x: number; y: number },
+): void {
+  const tile = floor.rows[at.y]?.[at.x] ?? TILE.wall
+  if (tile === TILE.wall || inWallLine(floor, at)) {
+    drawAroundWall(ctx, floor, pal, at)
+    return
+  }
+  ctx.fillStyle = tileColour(tile, pal)
+  ctx.fillRect(at.x, at.y, 1.02, 1.02)
+}
+
+function drawWall(
+  ctx: Ctx,
+  floor: Floor,
+  pal: Palette,
+  at: { x: number; y: number },
+): void {
+  if (floor.rows[at.y]?.[at.x] !== TILE.wall) return
+  ctx.fillStyle = pal.wall
+  for (const part of wallParts(floor, at.x, at.y))
+    ctx.fillRect(part.x, part.y, part.w + 0.01, part.h + 0.01)
+}
+
+type TileDrawer = (
+  ctx: Ctx,
+  floor: Floor,
+  pal: Palette,
+  at: { x: number; y: number },
+) => void
+
+function eachTile(
+  ctx: Ctx,
+  floor: Floor,
+  view: View,
+  pal: Palette,
+  draw: TileDrawer,
+): void {
   const top = Math.max(0, Math.floor(view.y))
   const left = Math.max(0, Math.floor(view.x))
   const bottom = Math.min(floor.height, Math.ceil(view.y + view.height) + 1)
   const right = Math.min(floor.width, Math.ceil(view.x + view.width) + 1)
-  for (let y = top; y < bottom; y += 1) {
-    const row = floor.rows[y] ?? ''
-    for (let x = left; x < right; x += 1) {
-      ctx.fillStyle = tileColour(row[x] ?? TILE.wall, pal) ?? pal.floor
-      ctx.fillRect(x, y, 1.02, 1.02)
-    }
-  }
+  for (let y = top; y < bottom; y += 1)
+    for (let x = left; x < right; x += 1) draw(ctx, floor, pal, { x, y })
+}
+
+// Outside first, then the rooms, then the thin walls over their edges.
+function drawTiles(ctx: Ctx, floor: Floor, view: View, pal: Palette): void {
+  ctx.fillStyle = pal.outside
+  ctx.fillRect(view.x - 1, view.y - 1, view.width + 2, view.height + 2)
+  eachTile(ctx, floor, view, pal, drawTile)
+  eachTile(ctx, floor, view, pal, drawWall)
 }
 
 function figureOf(state: DayState, employee: Employee): Figure {

@@ -14,6 +14,7 @@ import {
   type Tuning,
 } from './state'
 import { idle, step, type Input } from './step'
+import { WALL } from './walls'
 
 const { enabled: _enabled, ...defaults } = gameDefaults
 const DT = 1 / 30
@@ -225,6 +226,23 @@ describe('the boss’s body', () => {
     const day = run(start, 1, left)
 
     expect(day.player.position.x).toBeGreaterThanOrEqual(chair.x + reach)
+  })
+
+  it('walks right up to a thin wall, and bumps into a plant', () => {
+    const start = settled(1)
+    const { plants } = floors[start.floor]
+    const plant = plants[0]
+    if (plant === undefined) throw new Error('no plant')
+    start.player.position = { x: 2.5, y: 4.5 }
+    const atWall = run(start, 2, left)
+    start.player.position = { x: plant.x - 1.5, y: plant.y + 0.5 }
+    const atPlant = run(start, 2, right)
+
+    expect(atWall.player.position.x).toBeLessThan(1 + BODY_RADIUS)
+    expect(atWall.player.position.x).toBeGreaterThanOrEqual(
+      0.5 + WALL / 2 + BODY_RADIUS,
+    )
+    expect(atPlant.player.position.x).toBeLessThan(plant.x + 0.5 - BODY_RADIUS)
   })
 
   it('walks away from someone it stands too close to', () => {
