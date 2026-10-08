@@ -1189,20 +1189,22 @@ the office's people; the **player** is the character the member steers.
   their results and the next day SHALL follow each other there without the
   phone turning. Held in portrait, the game SHALL pause and show the lobby, a
   portrait screen with the pseudonym, where to play from, sharing and the
-  leaderboard; turned back, the same day SHALL carry on (ADR 0046). On a touch screen
-  a joystick appears where the left thumb rests; on a keyboard the arrows or
-  WASD steer. One **action button** SHALL light up and name what the player can
-  do where they stand: _Take file_, _Assign_, _Break it up_, _Help_, _Break_,
-  _Talk_, _Masterclass_. Walking into the meeting room needs no button
-  (R-GAME-6). WHERE two actions are possible at once, as help and break at a
-  desk, the first press SHALL open both as buttons beside it and the second
-  choose; on a keyboard Space helps and E sends on a break, directly. The
-  masterclass's two employees SHALL be chosen by tapping them, or with the
-  arrows and Space. The camera SHALL follow the player, arrows at the screen's
-  edge SHALL point to trouble out of view (a tempted employee, a rebel, rising
-  heat, a grey employee), and a floor map SHALL open and close from a button.
-  A pause button SHALL stop the game, as SHALL hiding the tab or switching to
-  calm mode; a paused game's clock and play time stand still.
+  leaderboard; turned back, the same day SHALL carry on (ADR 0046). While a
+  day or its results show, pinching or double-tapping SHALL NOT zoom the page;
+  the rest of the app keeps its zoom. On a touch screen a joystick appears
+  where the left thumb rests; on a keyboard the arrows or WASD steer. One
+  **action button** SHALL light up and name what the player can do where they
+  stand: _Take file_, _Assign_, _Break it up_, _Help_, _Break_, _Talk_,
+  _Masterclass_, _Leave file_, _Open door_. Walking into the meeting room
+  needs no button (R-GAME-6). WHERE two actions are possible at once, as help
+  and break at a desk, the first press SHALL open both as buttons beside it
+  and the second choose; on a keyboard Space helps and E sends on a break,
+  directly. The masterclass's two employees SHALL be chosen by tapping them,
+  or with the arrows and Space. The camera SHALL follow the player, arrows at
+  the screen's edge SHALL point to trouble out of view (a tempted employee, a
+  rebel, rising heat, a grey employee), and a floor map SHALL open and close
+  from a button. A pause button SHALL stop the game, as SHALL hiding the tab
+  or switching to calm mode; a paused game's clock and play time stand still.
 - **R-GAME-13 (Leaderboard)** — `/9torevolution/leaderboard` SHALL rank each
   player's best result: by job, Rebel above CEO above VP above Director above
   Manager above Team Lead, then by level, then by the shorter total play time
