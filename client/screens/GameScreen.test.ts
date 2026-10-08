@@ -374,7 +374,7 @@ describe('GameScreen (R-GAME-1, R-GAME-15, R-GAME-16)', () => {
         .vm.$emit('ended', { outcome: 'won', score: 2, seconds: 70 })
       await flushPromises()
 
-      expect(screen.find('.stage .results').text()).toContain(
+      expect(screen.find('.stage .results-layer').text()).toContain(
         '17:00. Home time.',
       )
       await button(screen, 'Continue').trigger('click')
@@ -454,7 +454,7 @@ describe('GameScreen (R-GAME-1, R-GAME-15, R-GAME-16)', () => {
       })
       await flushPromises()
 
-      expect(screen.find('.stage .results').exists()).toBe(false)
+      expect(screen.find('.stage .results-layer').exists()).toBe(false)
       expect(
         fetchMock.mock.calls.filter(([url]) => url === '/api/game/days'),
       ).toHaveLength(1)

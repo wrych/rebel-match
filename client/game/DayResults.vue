@@ -116,9 +116,26 @@ const place = computed(() => {
 </template>
 
 <style scoped>
+.results {
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+}
+
 .buttons {
   display: grid;
   gap: 0.5rem;
+}
+
+/* On a phone on its side the card must fit the short screen at once. */
+@media (orientation: landscape) and (max-height: 520px) {
+  .results h2 {
+    font-size: 1.6rem;
+  }
+
+  .buttons {
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+  }
 }
 
 .screen-glow {

@@ -230,7 +230,7 @@ watch(
         @ended="dayEnded"
         @leave="dayLeft"
       />
-      <div v-if="ended" class="results">
+      <div v-if="ended" class="results-layer">
         <DayResults
           v-bind="ended"
           @share="shareAndContinue"
@@ -253,7 +253,7 @@ watch(
   background: #d9d7d2;
 }
 
-.results {
+.results-layer {
   position: absolute;
   inset: 0;
   display: grid;
@@ -263,7 +263,7 @@ watch(
   background: rgb(17 16 16 / 45%);
 }
 
-.results > * {
+.results-layer > * {
   width: min(32rem, 100%);
 }
 </style>
