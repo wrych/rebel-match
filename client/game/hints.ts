@@ -6,12 +6,12 @@ export type { GameHint }
 
 const words: Readonly<Record<GameHint, { title: string; text: string }>> = {
   firstDay: {
-    title: 'You are the boss',
+    title: 'Keep your workers busy',
     text:
-      'When a screen turns to Corporate Rebels, walk into your office, take ' +
-      'a file from the cabinet and assign it to that employee before they ' +
-      'turn rebel. A rebel needs two files. More than half rebels, and the ' +
-      'day is lost.',
+      'You are the boss. When a screen turns to Corporate Rebels, that ' +
+      'worker is tempted: walk to your desk, take a file from the stack and ' +
+      'hand it to them before they turn rebel. A rebel needs two files. ' +
+      'More than half rebels, and the day is lost.',
   },
   meeting: {
     title: 'Meetings',
@@ -34,6 +34,14 @@ const words: Readonly<Record<GameHint, { title: string; text: string }>> = {
       'day is lost.',
   },
 }
+
+/** Every hint, in the order a player meets them. */
+export const allHints: readonly GameHint[] = [
+  'firstDay',
+  'cooler',
+  'meeting',
+  'rebelMode',
+]
 
 /** A hint's words. */
 export const hintWords = (hint: GameHint): { title: string; text: string } =>

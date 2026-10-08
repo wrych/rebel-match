@@ -1251,8 +1251,10 @@ the office's people; the **player** is the character the member steers.
   raises a fist and wears a colourful hairdo, a grey employee in rebel mode
   slumps, and heat shows as a flush, then sweat, then steam over a heat bar.
   The first time a member meets a mechanic (the first day, the water cooler,
-  meetings, rebel mode) the game SHALL show a short hint, once per member. The
-  game makes no sound.
+  meetings, rebel mode) the game SHALL show a short hint, once per member; the
+  first day's hint opens with keeping the workers busy. The lobby SHALL keep
+  every hint under "How to play", to read again at any time. The game makes no
+  sound.
 - **R-GAME-19 (Usage data)** — For a member opted in (R-ANA-4) THE SYSTEM SHALL
   send `game_opened`, `game_day_finished` with the mode, level, outcome and
   whole seconds, and `game_result_shared`, with no name or pseudonym

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { gameDefaults } from '../../src/game/tuning'
-import { hintsDue, hintWords } from './hints'
+import { allHints, hintsDue, hintWords } from './hints'
 
 const { enabled: _enabled, ...tuning } = gameDefaults
 
@@ -20,7 +20,10 @@ describe('hints (R-GAME-18)', () => {
     expect(hintsDue(7, tuning, ['firstDay', 'meeting', 'cooler'])).toEqual([])
   })
 
-  it('has words for every hint', () => {
-    expect(hintWords('rebelMode').title).toBe('You are a rebel now')
+  it('has words for every hint, and tells a new boss to keep workers busy', () => {
+    expect(allHints.map((hint) => hintWords(hint).title)).toContain(
+      'You are a rebel now',
+    )
+    expect(hintWords('firstDay').title).toBe('Keep your workers busy')
   })
 })
