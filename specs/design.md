@@ -320,7 +320,8 @@ masterclass, losing — are unit-tested there, with no canvas (constitution §2,
 button and the rules cannot disagree.
 
 **Movement.** The player moves continuously and collides with walls and
-furniture on the tile grid, and with the people on the floor: it never walks
+furniture on the tile grid, with round obstacles between tiles such as its
+own chair, and with the people on the floor: it never walks
 closer than a body's width to anyone, but can always step away from someone
 who walked into it. Employees walk tile paths found by A\* between
 their cubicle, the coolers, the meeting room and the entrance. "Nearest the

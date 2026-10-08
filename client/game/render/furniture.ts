@@ -119,7 +119,7 @@ function drawOwnDesk(
   const width = floor.desk.length
   const top = floor.cabinet.y
   const centre = left + width / 2
-  drawChair(ctx, { x: centre, y: top + 1.45 }, 1, pal)
+  drawChair(ctx, floor.chair, 1, pal)
   drawBlock(
     ctx,
     { x: left + 0.04, y: top + 0.1 },

@@ -6,6 +6,11 @@ export interface Spot {
   y: number
 }
 
+/** A round obstacle: its centre and radius, in tiles. */
+export interface Obstacle extends Spot {
+  r: number
+}
+
 /** One employee's place: the desk and the chair in front of it. */
 export interface Cubicle {
   desk: Spot
@@ -26,6 +31,10 @@ export interface Floor {
   cabinet: Spot
   /** Every tile of the player's desk, which is two wide. */
   desk: readonly Spot[]
+  /** The centre of the player's chair, in front of their desk. */
+  chair: Spot
+  /** Round things the player bumps into that stand between tiles. */
+  obstacles: readonly Obstacle[]
   /** The meeting room's door, from which "nearest" is measured. */
   meetingDoor: Spot
   /** Where those in a meeting stand, nearest the table first. */
@@ -85,6 +94,9 @@ const CUBICLE_HEIGHT = 3
 const COOLER_GAP = 5
 const MIN_HEIGHT = 2 * ROOM + 3
 const TABLE: Spot = { x: 3, y: ROOM + 4 }
+const CHAIR_RADIUS = 0.3
+// The chair stands a little into the row in front of the desk.
+const CHAIR_DEPTH = 1.45
 
 type Grid = string[][]
 
@@ -185,6 +197,10 @@ export function layOut(layout: Layout): Floor {
   }
   put(grid, entrance, TILE.entrance)
   const rows = grid.map((row) => row.join(''))
+  const chair = {
+    x: cabinet.x + desk.length / 2,
+    y: cabinet.y + CHAIR_DEPTH,
+  }
   return {
     width,
     height,
@@ -193,6 +209,8 @@ export function layOut(layout: Layout): Floor {
     start: { x: cabinet.x + 2, y: cabinet.y + 1 },
     cabinet,
     desk,
+    chair,
+    obstacles: [{ ...chair, r: CHAIR_RADIUS }],
     meetingDoor: door,
     meetingSpots: meetingSpots(rows),
     table: TABLE,
