@@ -29,6 +29,9 @@ export type GameKey =
   | 'speechSeconds'
   | 'meetingSeconds'
   | 'arrivalGapMs'
+  | 'quietStartSeconds'
+  | 'rampStartPercent'
+  | 'rampEndPercent'
   | 'coolerLoneWaitSeconds'
   | 'rebel.masterclassSeats'
   | 'rebel.morningGrey'
@@ -88,6 +91,9 @@ export const gameDefaults: GameSettings = {
   speechSeconds: 2,
   meetingSeconds: 8,
   arrivalGapMs: 600,
+  quietStartSeconds: 8,
+  rampStartPercent: 50,
+  rampEndPercent: 150,
   coolerLoneWaitSeconds: 12,
   'rebel.masterclassSeats': 2,
   'rebel.morningGrey': 3,
@@ -144,6 +150,9 @@ export const gameBounds: Readonly<Record<GameKey, Bounds>> = {
   speechSeconds: SHORT_SECONDS,
   meetingSeconds: SHORT_SECONDS,
   arrivalGapMs: { min: 0, max: 5000 },
+  quietStartSeconds: { min: 0, max: 120 },
+  rampStartPercent: { min: 0, max: 100 },
+  rampEndPercent: { min: 100, max: 400 },
   coolerLoneWaitSeconds: SECONDS,
   'rebel.masterclassSeats': range(4, 1),
   'rebel.morningGrey': range(Math.floor(cubicles.ceo / 2)),
@@ -173,6 +182,7 @@ export const gameBounds: Readonly<Record<GameKey, Bounds>> = {
 export const gameOrder: readonly (readonly [GameKey, GameKey])[] = [
   ['rebel.fileFloorSeconds', 'rebel.fileEverySeconds'],
   ['rebel.morningGrey', 'ceo.employees'],
+  ['quietStartSeconds', 'dayLengthSeconds'],
   ...bossJobs.map(
     (job) => [`${job}.morningRebels`, `${job}.employees`] as const,
   ),

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { gameDefaults } from '../../../src/game/tuning'
 import { availableActions } from './actions'
+import { temptationScale } from './boss'
 import { centreOf } from './grid'
 import { floors } from './floors'
 import { fileInterval } from './rebel'
@@ -106,6 +107,27 @@ describe('a day (R-GAME-3)', () => {
     const b = run(startDay(1, tuning, 42), 20)
 
     expect(a).toEqual(b)
+  })
+})
+
+describe('a day’s pace (R-GAME-4, ADR 0046)', () => {
+  const at = (clock: number): number =>
+    temptationScale({ ...startDay(1, calm, 1), clock })
+
+  it('turns no screen in the quiet start, then rises from morning to afternoon', () => {
+    expect(at(calm.quietStartSeconds - 1)).toBe(0)
+    expect(at(calm.quietStartSeconds)).toBeCloseTo(0.5)
+    expect(at(calm.dayLengthSeconds)).toBeCloseTo(1.5)
+  })
+
+  it('keeps the day’s average rate', () => {
+    const steps = 1000
+    const span = calm.dayLengthSeconds - calm.quietStartSeconds
+    let sum = 0
+    for (let i = 0; i < steps; i += 1)
+      sum += at(calm.quietStartSeconds + (span * (i + 0.5)) / steps)
+
+    expect(sum / steps).toBeCloseTo(1)
   })
 })
 

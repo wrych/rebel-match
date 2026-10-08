@@ -11,11 +11,27 @@ function temptable(state: DayState, employee: Employee): boolean {
   )
 }
 
+/** How much more or less often than its average a screen turns now: never
+ * in the quiet start, then rising in a straight line from the share set for
+ * 09:00 to the one for 17:00, scaled so the day keeps its average (R-GAME-4,
+ * ADR 0046). */
+export function temptationScale(state: DayState): number {
+  const tuning = state.tuning
+  const quiet = tuning.quietStartSeconds
+  if (state.clock < quiet) return 0
+  const span = Math.max(1, tuning.dayLengthSeconds - quiet)
+  const through = Math.min(1, (state.clock - quiet) / span)
+  const start = tuning.rampStartPercent
+  const end = tuning.rampEndPercent
+  const mean = (start + end) / 2
+  return (start + (end - start) * through) / mean
+}
+
 // On average once every `temptationEverySeconds` a grey employee idle at their
-// desk opens Corporate Rebels (R-GAME-4).
+// desk opens Corporate Rebels, fewer in the morning (R-GAME-4).
 function maybeTempt(state: DayState, dt: number): void {
   const every = state.tuning[`${state.floor}.temptationEverySeconds`]
-  if (draw(state) >= dt / every) return
+  if (draw(state) >= (dt / every) * temptationScale(state)) return
   const idle = state.employees.filter((employee) => temptable(state, employee))
   const chosen = idle[pick(draw(state), idle.length)]
   if (chosen === undefined) return
