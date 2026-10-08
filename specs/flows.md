@@ -657,22 +657,23 @@ and expired ones are purged (ADR 0034).
 
 **Actor:** an onboarded member in happy mode, while hosts have the game on.
 **Screens:** S32 Impressum, S33 9toRevolution, S34 9toRevolution leaderboard
-(ADR 0045).
+(ADR 0045, ADR 0046).
 
-1. In happy mode the member browses the impressum to its end, past the community
-   card, and finds the 9toRevolution card. **Be a rebel** → **S33**
-   `/9torevolution` (R-GAME-1). `GET /api/game` returns their progress and the
-   tuning for the day; `game_opened` is posted (R-GAME-19).
-2. The phone is turned to landscape (R-GAME-12). The first day shows its hints
-   (R-GAME-18): walk into your office, take a file, assign it to the tempted
-   employee.
+1. In happy mode the member browses the impressum to its end, the community
+   card, which carries a small turn-the-phone sign. They turn the phone to
+   landscape → **S33** `/9torevolution`, and the day starts (R-GAME-1). On a
+   screen without touch, the card's **Be a rebel** button does the same.
+   `GET /api/game` returns their progress and the tuning for the day;
+   `game_opened` is posted (R-GAME-19).
+2. The first day shows its hints (R-GAME-18): walk into your office, take a
+   file, assign it to the tempted employee.
 3. **A boss day.** Employees walk in at 09:00, some already rebels. Screens
    turn to Corporate Rebels; the player fetches files and assigns them before
    the tempted turn rebel, breaks up the water cooler, and once a day walks
    into the meeting room (R-GAME-3..6).
 4. 17:00 → the day is won; more than half rebels → lost (R-GAME-7). The client
    sends `POST /api/game/days`, and the results card shows the outcome and
-   "You're #n of m" (R-GAME-14).
+   "You're #n of m", in landscape over the floor (R-GAME-14).
 5. A new personal best → **Share and continue** puts the member's name on the
    board in place of their pseudonym; **Continue** keeps it anonymous
    (R-GAME-15). Then the next day.
@@ -683,8 +684,10 @@ and expired ones are purged (ADR 0034).
    people on a break, talks grey employees back into rebels, and once a day
    sends two of them to a masterclass (R-GAME-9..11). Each level shortens the
    interval between files, without end.
-9. From the results card or the game's menu → **S34**
-   `/9torevolution/leaderboard` (R-GAME-13).
+9. Turning the phone upright pauses the day and shows the lobby: the
+   pseudonym, where to play from, sharing, and the way to **S34**
+   `/9torevolution/leaderboard` (R-GAME-12, R-GAME-13). Turning it back
+   carries the same day on.
 
 **Branches**
 
@@ -692,12 +695,13 @@ and expired ones are purged (ADR 0034).
 - _The tab is closed, or the member leaves mid-day_ → the day is sent as
   abandoned where the browser allows; next time the game resumes at the first
   day of that job (R-GAME-16).
-- _Play from a level_ → the game's menu offers the first day of every job up
-  to the highest reached; the best and its time stay as they are.
+- _Play from a level_ → the lobby offers the first day of every job up to the
+  highest reached; the best and its time stay as they are.
+- _Leave the day from the lobby_ → it is recorded as abandoned (R-GAME-14).
 - _Switched to calm mode, or the tab hidden_ → the game pauses; in calm mode it
   says the rebels only come out in happy mode, with a link to the impressum
   (R-GAME-1, R-GAME-12).
-- _The game is switched off by a host_ → the card is gone and every game URL
+- _The game is switched off by a host_ → the door is gone and every game URL
   is not found; a game already running is refused its next record and says
   the office has closed (R-GAME-17).
 - _A record out of bounds_ → refused, and the day is not counted (R-GAME-20).

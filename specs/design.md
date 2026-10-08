@@ -306,8 +306,9 @@ client/game/
               floor map; no game state of its own
   input/      joystick, keyboard, the action button and its two-choice split
   GameScreen.vue   the loop: input → step → render, at a fixed 30 steps a
-                   second; the menus, results card, hints and rotate prompt
-                   are ordinary Vue overlays above the canvas
+                   second; the results card and hints are ordinary Vue
+                   overlays above the canvas, and the lobby replaces it
+                   while the phone is upright (ADR 0046)
 ```
 
 **The core is pure.** `step` takes the state, the player's input and the time
@@ -360,6 +361,9 @@ next day (R-GAME-17).
 | `game.coolerChatSeconds`                 |     `6` | R-GAME-5                   |
 | `game.speechSeconds`                     |     `2` | R-GAME-5                   |
 | `game.meetingSeconds`                    |     `8` | R-GAME-6                   |
+| `game.quietStartSeconds`                 |     `8` | R-GAME-4                   |
+| `game.rampStartPercent` (of the average) |    `50` | R-GAME-4                   |
+| `game.rampEndPercent` (of the average)   |   `150` | R-GAME-4                   |
 | `game.arrivalGapMs`                      |   `600` | R-GAME-3                   |
 | `game.coolerLoneWaitSeconds`             |    `12` | R-GAME-5, R-GAME-11        |
 | `game.rebel.masterclassSeats`            |     `2` | R-GAME-11                  |
@@ -1194,7 +1198,7 @@ deep link reloads cleanly.
 | S30 | **Privacy notice** — the full notice with its version and date; public (R-ONB-9)                                                                                                                                                                                                                                                                                                                                                                                                      | `/privacy`                                            |
 | S31 | **Terms of use** — the terms with their version and date; public (R-ONB-13)                                                                                                                                                                                                                                                                                                                                                                                                           | `/terms`                                              |
 | S32 | **Impressum** — the people who made the app, one card each with portrait, name and responsibilities, browsed as the swipe deck; public (R-PROF-4)                                                                                                                                                                                                                                                                                                                                     | `/impressum`                                          |
-| S33 | **9toRevolution** — the office game on a canvas, landscape only: joystick and action button, pause and menu (play from a job, share or stop sharing, leaderboard, leave), results card after each day, the CEO's choice; only in happy mode, while the game is on (R-GAME-1..12, R-GAME-14..16)                                                                                                                                                                                       | `/9torevolution`                                      |
+| S33 | **9toRevolution** — in landscape, the office game on a canvas: joystick and action button, pause, the results card after each day and the CEO's choice over the floor; in portrait, the lobby: play from a job, share or stop sharing, leaderboard, leave the day; only in happy mode, while the game is on (R-GAME-1..16, ADR 0046)                                                                                                                                                  | `/9torevolution`                                      |
 | S34 | **9toRevolution leaderboard** — every player's best by job, level and time, names only where shared, pseudonyms otherwise, the member's own row marked; only where S33 is shown (R-GAME-13, R-GAME-15)                                                                                                                                                                                                                                                                                | `/9torevolution/leaderboard`                          |
 
 Remaining overlays, deliberately: the "really decline this request?" confirm, the
