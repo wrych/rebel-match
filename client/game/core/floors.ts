@@ -11,7 +11,7 @@ export interface Obstacle extends Spot {
   r: number
 }
 
-/** One employee's place: the desk and the chair in front of it. */
+/** One employee's place: the desk and the chair behind it. */
 export interface Cubicle {
   desk: Spot
   seat: Spot
@@ -145,11 +145,12 @@ function cubicles(grid: Grid, layout: Layout): Cubicle[] {
   const placed: Cubicle[] = []
   for (let row = 0; row < layout.rows; row += 1) {
     for (let column = 0; column < layout.perRow; column += 1) {
-      const desk = {
+      // Seated behind their desk, everyone faces the viewer.
+      const seat = {
         x: LEFT + 2 + column * CUBICLE_WIDTH,
         y: 2 + row * CUBICLE_HEIGHT,
       }
-      const seat = { x: desk.x, y: desk.y + 1 }
+      const desk = { x: seat.x, y: seat.y + 1 }
       put(grid, desk, TILE.desk)
       put(grid, seat, TILE.seat)
       placed.push({ desk, seat })

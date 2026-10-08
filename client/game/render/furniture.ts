@@ -13,6 +13,8 @@ import {
 /** How far the front edge of a block shows below its top. */
 const LIP = 0.1
 const LOGO_SIZE = 0.2
+/** How far a screen's light spills round the monitor's back. */
+const GLOW = 0.05
 /** How many files lie on the player's desk in boss mode. */
 const STACK = 5
 
@@ -75,27 +77,42 @@ function drawKeyboard(ctx: Ctx, at: Spot, width: number, pal: Palette): void {
   ctx.fillRect(at.x + 0.03, at.y + 0.025, width - 0.06, 0.03)
 }
 
-const deskScreen = (
+/** Where a worker's monitor stands, its back to the viewer. */
+const deskMonitor = (
   desk: Spot,
 ): { x: number; y: number; w: number; h: number } => ({
-  x: desk.x + 0.25,
-  y: desk.y + 0.22,
-  w: 0.5,
-  h: 0.34,
+  x: desk.x + 0.27,
+  y: desk.y + 0.32,
+  w: 0.46,
+  h: 0.3,
 })
 
+/** A monitor seen from behind: its back, and the neck and foot towards the
+ * one who works at it. */
+function drawMonitorBack(
+  ctx: Ctx,
+  back: { x: number; y: number; w: number; h: number },
+  pal: Palette,
+): void {
+  const centre = back.x + back.w / 2
+  ctx.fillStyle = pal.bezel
+  roundRect(ctx, centre - 0.12, back.y - 0.1, 0.24, 0.05, 0.02)
+  ctx.fillRect(centre - 0.04, back.y - 0.07, 0.08, 0.08)
+  roundRect(ctx, back.x, back.y, back.w, back.h, 0.05)
+}
+
 function drawCubicle(ctx: Ctx, desk: Spot, seat: Spot, pal: Palette): void {
-  drawChair(ctx, { x: seat.x + 0.5, y: seat.y + 0.45 }, 1, pal)
+  drawChair(ctx, { x: seat.x + 0.5, y: seat.y + 0.55 }, -1, pal)
   drawBlock(
     ctx,
     { x: desk.x + 0.04, y: desk.y + 0.1 },
     { w: 0.92, h: 0.72 },
     pal,
   )
-  drawMonitor(ctx, deskScreen(desk), pal.screen, pal)
-  drawKeyboard(ctx, { x: desk.x + 0.3, y: desk.y + 0.7 }, 0.4, pal)
+  drawKeyboard(ctx, { x: desk.x + 0.3, y: desk.y + 0.12 }, 0.4, pal)
   ctx.fillStyle = pal.bezel
-  circle(ctx, { x: desk.x + 0.8, y: desk.y + 0.74 }, 0.04)
+  circle(ctx, { x: desk.x + 0.82, y: desk.y + 0.16 }, 0.04)
+  drawMonitorBack(ctx, deskMonitor(desk), pal)
 }
 
 function drawStack(ctx: Ctx, at: Spot, pal: Palette): void {
@@ -174,25 +191,33 @@ function screenColour(employee: Employee, pal: Palette): string {
   return pal.rebel[employee.id % pal.rebel.length] ?? pal.screen
 }
 
-/** Each employee's screen in their colour, a tempted one's with the CR logo
- * so the state reads by shape as well as colour, and the file they were
- * handed (R-GAME-18). */
+/** Each employee's screen, seen from behind, lights up in their colour, a
+ * tempted one's carrying the CR logo on its back so the state reads by shape
+ * as well as colour, beside the file they were handed (R-GAME-18). */
 export function drawScreens(ctx: Ctx, state: DayState, pal: Palette): void {
   floors[state.floor].cubicles.forEach(({ desk }, index) => {
     const employee = state.employees.find((e) => e.cubicle === index)
     if (employee === undefined) return
-    const screen = deskScreen(desk)
+    const back = deskMonitor(desk)
     ctx.fillStyle = screenColour(employee, pal)
-    roundRect(ctx, screen.x, screen.y, screen.w, screen.h, 0.03)
+    roundRect(
+      ctx,
+      back.x - GLOW,
+      back.y - GLOW,
+      back.w + 2 * GLOW,
+      back.h + 2 * GLOW,
+      0.08,
+    )
+    drawMonitorBack(ctx, back, pal)
     if (employee.spirit === 'tempted')
       drawLabel(
         ctx,
         'CR',
-        { x: screen.x + screen.w / 2, y: screen.y + screen.h / 2 },
+        { x: back.x + back.w / 2, y: back.y + back.h / 2 },
         LOGO_SIZE,
         pal,
       )
     if (employee.file)
-      drawFile(ctx, { x: desk.x + 0.05, y: desk.y + 0.44 }, pal)
+      drawFile(ctx, { x: desk.x + 0.02, y: desk.y + 0.36 }, pal)
   })
 }
