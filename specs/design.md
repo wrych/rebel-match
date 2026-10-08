@@ -332,14 +332,16 @@ meeting room" (R-GAME-6) is the walking distance, not the straight line.
 suit body with arms and hands, a shirt collar and tie, a head with ears, eyes
 and one of a few hair styles, a soft outline and a shadow. Furniture is seen
 from above and a little in front: every desk has a monitor, a keyboard and a
-chair, and the player's desk in the office is two tiles wide, with a wide
-screen, a chair in front and, in boss mode, the stack of files. Each figure has a colour palette
-and a grey one, so turning grey is a palette swap, never a filter. Rebel colours
-come from the happy-mode tokens (R-LOOK-3). The camera follows the player
-across a floor larger than the screen; off-screen trouble is marked by arrows
-at the edge, and the floor map is the same floor drawn small. If time runs out
-before the summit, a pixel-art renderer can replace this one without touching
-`core/` (ADR 0045).
+chair, and its worker sits behind it facing the viewer, so the monitor shows its
+back, lit round the edge in the screen's colour and carrying the CR logo while
+they are tempted. The player's desk in the office is two tiles wide, with a wide
+screen, a chair in front and, in boss mode, the stack of files. Each figure has
+a colour palette and a grey one, so turning grey is a palette swap, never a
+filter. Rebel colours come from the happy-mode tokens (R-LOOK-3). The camera
+follows the player across a floor larger than the screen; off-screen trouble is
+marked by arrows at the edge, and the floor map is the same floor drawn small.
+If time runs out before the summit, a pixel-art renderer can replace this one
+without touching `core/` (ADR 0045).
 
 **What the server knows.** The colour mode lives in the browser, so the server
 cannot enforce happy mode; it enforces the switch and onboarding, and the

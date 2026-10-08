@@ -67,7 +67,7 @@ describe('drawDay', () => {
     )
 
     expect(texts).toEqual([
-      ['CR', (9 + 0.5 - 2) * 40, (2 + 0.39) * 40, 'bold 8px sans-serif'],
+      ['CR', (9 + 0.5 - 2) * 40, (3 + 0.47) * 40, 'bold 8px sans-serif'],
     ])
   })
 
