@@ -6,10 +6,30 @@ import { applyMood } from '../lib/mood'
 import ImpressumScreen from './ImpressumScreen.vue'
 
 const SWIPE_MIN_PX = 50
+const push = vi.fn()
+let touch = false
+const mounted: ReturnType<typeof mount>[] = []
+
+function stubMedia(): void {
+  vi.stubGlobal('matchMedia', (query: string) => ({
+    matches: query.includes('coarse') && touch,
+  }))
+}
+vi.mock('vue-router', () => ({ useRouter: () => ({ push }) }))
+
+async function turn(way: 'landscape' | 'portrait'): Promise<void> {
+  Object.assign(window, {
+    innerWidth: way === 'landscape' ? 844 : 390,
+    innerHeight: way === 'landscape' ? 390 : 844,
+  })
+  window.dispatchEvent(new Event('resize'))
+  await flushPromises()
+}
 
 async function mountScreen(
   doorOpen = false,
 ): Promise<ReturnType<typeof mount>> {
+  stubMedia()
   vi.stubGlobal(
     'fetch',
     vi.fn((url: string) =>
@@ -28,6 +48,7 @@ async function mountScreen(
     attachTo: document.body,
     global: { stubs: { RouterLink: RouterLinkStub } },
   })
+  mounted.push(screen)
   await flushPromises()
   return screen
 }
@@ -43,7 +64,11 @@ function shownName(screen: ReturnType<typeof mount>): string {
   return screen.find('.deck-text').text()
 }
 
-afterEach(() => {
+afterEach(async () => {
+  for (const screen of mounted.splice(0)) screen.unmount()
+  touch = false
+  push.mockClear()
+  await turn('portrait')
   vi.unstubAllGlobals()
   applyMood('calm')
   localStorage.clear()
@@ -95,43 +120,70 @@ describe('ImpressumScreen', () => {
     expect(screen.find('.portrait-initials').text()).toBe('C')
   })
 
-  it('ends with the door to 9toRevolution in happy mode while it is open (R-GAME-1)', async () => {
+  it('makes the community card the door on a touch screen: turning the phone opens the game (R-GAME-1)', async () => {
+    applyMood('happy')
+    touch = true
+    const screen = await mountScreen(true)
+    await toTheEnd(screen)
+
+    expect(shownName(screen)).toBe('Community')
+    expect(
+      screen.find('[aria-label="Turn your phone sideways"]').exists(),
+    ).toBe(true)
+    await turn('landscape')
+
+    expect(push).toHaveBeenCalledWith('/9torevolution')
+  })
+
+  it('opens nothing when the phone turns on another card', async () => {
+    applyMood('happy')
+    touch = true
+    await mountScreen(true)
+
+    await turn('landscape')
+
+    expect(push).not.toHaveBeenCalled()
+  })
+
+  it('offers a Be a rebel link on a screen without touch', async () => {
     applyMood('happy')
     const screen = await mountScreen(true)
     await toTheEnd(screen)
 
-    expect(shownName(screen)).toBe('9toRevolution')
     expect(screen.findComponent(RouterLinkStub).props('to')).toBe(
       '/9torevolution',
     )
-    expect(screen.text()).toContain('Be a rebel')
+    expect(
+      screen.find('[aria-label="Turn your phone sideways"]').exists(),
+    ).toBe(false)
   })
 
   it('has no door in calm mode, nor while the game is off', async () => {
+    touch = true
     const calm = await mountScreen(true)
     await toTheEnd(calm)
-    expect(shownName(calm)).toBe('Community')
+    await turn('landscape')
+    expect(calm.find('[aria-label="Turn your phone sideways"]').exists()).toBe(
+      false,
+    )
+    for (const screen of mounted.splice(0)) screen.unmount()
     calm.unmount()
 
     applyMood('happy')
+    await turn('portrait')
     const off = await mountScreen(false)
     await toTheEnd(off)
-    expect(shownName(off)).toBe('Community')
-  })
+    await turn('landscape')
 
-  it('closes the door when the member switches back to calm on it', async () => {
-    applyMood('happy')
-    const screen = await mountScreen(true)
-    await toTheEnd(screen)
-
-    applyMood('calm')
-    await flushPromises()
-
-    expect(shownName(screen)).toBe('Community')
+    expect(off.find('[aria-label="Turn your phone sideways"]').exists()).toBe(
+      false,
+    )
+    expect(push).not.toHaveBeenCalled()
   })
 
   it('keeps the door shut in calm mode when its answer comes late', async () => {
     applyMood('happy')
+    touch = true
     let answer: (value: unknown) => void = () => undefined
     vi.stubGlobal(
       'fetch',
@@ -147,15 +199,18 @@ describe('ImpressumScreen', () => {
             }),
       ),
     )
+    stubMedia()
     const screen = mount(ImpressumScreen, {
       attachTo: document.body,
       global: { stubs: { RouterLink: RouterLinkStub } },
     })
+    mounted.push(screen)
     applyMood('calm')
     answer({ ok: true, status: 204 })
     await flushPromises()
     await toTheEnd(screen)
+    await turn('landscape')
 
-    expect(shownName(screen)).toBe('Community')
+    expect(push).not.toHaveBeenCalled()
   })
 })

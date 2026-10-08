@@ -251,6 +251,7 @@ onMounted(() => {
   document.addEventListener('visibilitychange', onVisibility)
   frame = requestAnimationFrame(tick)
 })
+defineExpose({ leave })
 onBeforeUnmount(goneUnfinished)
 onUnmounted(() => {
   cancelAnimationFrame(frame)
@@ -264,103 +265,100 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <Teleport to="body">
-    <div class="play">
-      <canvas ref="canvas" class="floor" @click="tap" />
-      <Joystick @move="stick = $event" />
+  <div class="play">
+    <canvas ref="canvas" class="floor" @click="tap" />
+    <Joystick @move="stick = $event" />
 
-      <div class="hud">
-        <span class="mono">{{
-          clockText(state.clock, props.tuning.dayLengthSeconds)
-        }}</span>
-        <span class="mono">{{ title }}</span>
-        <span class="mono">{{ troubled }}</span>
-        <button type="button" class="hud-button" @click="mapShown = !mapShown">
-          Map
-        </button>
-        <button type="button" class="hud-button" @click="paused = true">
-          Pause
-        </button>
-      </div>
-
-      <FloorMap v-if="mapShown" :state="state" class="map" />
-
-      <div class="actions">
-        <template v-if="choice">
-          <button
-            v-for="kind in choice"
-            :key="kind"
-            type="button"
-            class="action"
-            @click="press(kind)"
-          >
-            {{ actionLabel(kind) }}
-          </button>
-        </template>
-        <button
-          v-else-if="offered.length > 0"
-          type="button"
-          class="action action-lit"
-          @click="press(offered[0] ?? 'takeFile')"
-        >
-          {{
-            offered.length > 1
-              ? `${actionLabel(offered[0] ?? 'help')} …`
-              : actionLabel(offered[0] ?? 'help')
-          }}
-        </button>
-      </div>
-
-      <MasterclassPicker
-        v-if="choosing"
-        :state="state"
-        :chosen="choosing"
-        @toggle="toggleChosen"
-        @send="sendToMasterclass"
-        @cancel="choosing = null"
-      />
-
-      <div
-        v-if="hint && !calm && !portrait"
-        class="overlay"
-        role="dialog"
-        :aria-label="hintWords(hint).title"
-      >
-        <p class="display display-md">{{ hintWords(hint).title }}</p>
-        <p class="hint">{{ hintWords(hint).text }}</p>
-        <button type="button" class="btn btn-dark" @click="dismissHint">
-          Got it
-        </button>
-      </div>
-      <div v-if="calm" class="overlay" role="status">
-        <p class="display display-md">Nobody here</p>
-        <p>The rebels only come out in happy mode. Switch back to carry on.</p>
-        <button type="button" class="btn btn-ghost" @click="leave">
-          Leave the office
-        </button>
-      </div>
-      <div v-else-if="portrait" class="overlay" role="status">
-        <p class="display display-md">Turn your phone</p>
-        <p>The office is played in landscape.</p>
-      </div>
-      <div v-else-if="paused" class="overlay" role="dialog" aria-label="Paused">
-        <p class="display display-md">Paused</p>
-        <button type="button" class="btn btn-dark" @click="paused = false">
-          Back to work
-        </button>
-        <button type="button" class="btn btn-ghost" @click="leave">
-          Leave the office
-        </button>
-      </div>
+    <div class="hud">
+      <span class="mono">{{
+        clockText(state.clock, props.tuning.dayLengthSeconds)
+      }}</span>
+      <span class="mono">{{ title }}</span>
+      <span class="mono">{{ troubled }}</span>
+      <button type="button" class="hud-button" @click="mapShown = !mapShown">
+        Map
+      </button>
+      <button type="button" class="hud-button" @click="paused = true">
+        Pause
+      </button>
     </div>
-  </Teleport>
+
+    <FloorMap v-if="mapShown" :state="state" class="map" />
+
+    <div class="actions">
+      <template v-if="choice">
+        <button
+          v-for="kind in choice"
+          :key="kind"
+          type="button"
+          class="action"
+          @click="press(kind)"
+        >
+          {{ actionLabel(kind) }}
+        </button>
+      </template>
+      <button
+        v-else-if="offered.length > 0"
+        type="button"
+        class="action action-lit"
+        @click="press(offered[0] ?? 'takeFile')"
+      >
+        {{
+          offered.length > 1
+            ? `${actionLabel(offered[0] ?? 'help')} …`
+            : actionLabel(offered[0] ?? 'help')
+        }}
+      </button>
+    </div>
+
+    <MasterclassPicker
+      v-if="choosing"
+      :state="state"
+      :chosen="choosing"
+      @toggle="toggleChosen"
+      @send="sendToMasterclass"
+      @cancel="choosing = null"
+    />
+
+    <div
+      v-if="hint && !calm && !portrait"
+      class="overlay"
+      role="dialog"
+      :aria-label="hintWords(hint).title"
+    >
+      <p class="display display-md">{{ hintWords(hint).title }}</p>
+      <p class="hint">{{ hintWords(hint).text }}</p>
+      <button type="button" class="btn btn-dark" @click="dismissHint">
+        Got it
+      </button>
+    </div>
+    <div v-if="calm" class="overlay" role="status">
+      <p class="display display-md">Nobody here</p>
+      <p>The rebels only come out in happy mode. Switch back to carry on.</p>
+      <button type="button" class="btn btn-ghost" @click="leave">
+        Leave the office
+      </button>
+    </div>
+    <div v-else-if="portrait" class="overlay" role="status">
+      <p class="display display-md">Turn your phone</p>
+      <p>The office is played in landscape.</p>
+    </div>
+    <div v-else-if="paused" class="overlay" role="dialog" aria-label="Paused">
+      <p class="display display-md">Paused</p>
+      <button type="button" class="btn btn-dark" @click="paused = false">
+        Back to work
+      </button>
+      <button type="button" class="btn btn-ghost" @click="leave">
+        Leave the office
+      </button>
+    </div>
+  </div>
 </template>
 
 <style scoped>
 .play {
-  position: fixed;
+  position: absolute;
   inset: 0;
-  z-index: 1000;
   background: #d9d7d2;
   user-select: none;
   -webkit-user-select: none;
