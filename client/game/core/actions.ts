@@ -1,5 +1,6 @@
 import { endMeeting } from './boss'
 import { breakUp, standing } from './cooler'
+import { openDoor } from './door'
 import { workOn } from './files'
 import { centreOf, distance } from './grid'
 import { rekindle, sendAway } from './rebel'
@@ -25,6 +26,7 @@ export type ActionKind =
   | 'break'
   | 'talk'
   | 'masterclass'
+  | 'openDoor'
 
 /** An action the player can take where they stand, and on whom. */
 export interface Action {
@@ -138,11 +140,18 @@ function rebelActions(state: DayState): Action[] {
   return actions
 }
 
+// A door shut or shutting opens from either side (R-GAME-21).
+const doorActions = (state: DayState): Action[] =>
+  !state.door.opening && near(state, centreOf(floorFor(state).officeDoor.tile))
+    ? [{ kind: 'openDoor' }]
+    : []
+
 /** What the player can do where they stand; two at once open as a choice
  * (R-GAME-12). Nothing while they are busy. */
 export function availableActions(state: DayState): Action[] {
   if (state.player.busy !== null || state.outcome !== null) return []
-  return state.mode === 'boss' ? bossActions(state) : rebelActions(state)
+  const own = state.mode === 'boss' ? bossActions(state) : rebelActions(state)
+  return [...doorActions(state), ...own]
 }
 
 function assign(state: DayState, employee: Employee): void {
@@ -216,6 +225,9 @@ const handlers: Readonly<Record<ActionKind, Handler>> = {
   },
   masterclass: (state, _action, chosen) => {
     masterclass(state, chosen)
+  },
+  openDoor: (state) => {
+    openDoor(state)
   },
 }
 

@@ -275,6 +275,12 @@ const gameGroups: Group[] = [
         'When nobody joins them for a chat.',
         SECONDS,
       ),
+      gameEntry(
+        'doorOpenSeconds',
+        'The office door swings shut after about',
+        'Each time it was opened; every wait varies around this.',
+        SECONDS,
+      ),
     ],
   },
   ...bossJobs.map(jobGroup),

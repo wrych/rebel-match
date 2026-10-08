@@ -1,4 +1,5 @@
 import { floors, type Floor, type Spot } from '../core/floors'
+import { LEAF_HALF, leafOf } from '../core/door'
 import type { DayState, Employee } from '../core/state'
 import type { Palette } from './palette'
 import {
@@ -249,4 +250,36 @@ export function drawScreens(ctx: Ctx, state: DayState, pal: Palette): void {
     if (employee.file)
       drawFile(ctx, { x: desk.x + 0.02, y: desk.y + 0.36 }, pal)
   })
+}
+
+/** The office door: the arc it swings through, faint on the floor, then its
+ * leaf with a hinge and a handle (R-GAME-21). */
+export function drawDoor(ctx: Ctx, state: DayState, pal: Palette): void {
+  const { hinge, length, shut, open } = floors[state.floor].officeDoor
+  ctx.strokeStyle = 'rgb(0 0 0 / 12%)'
+  ctx.lineWidth = 0.03
+  ctx.beginPath()
+  ctx.arc(hinge.x, hinge.y, length, shut, open)
+  ctx.stroke()
+  const [from, to] = leafOf(state)
+  ctx.lineCap = 'round'
+  for (const [colour, width] of [
+    [pal.edge, 2 * LEAF_HALF + 0.04],
+    [pal.furniture, 2 * LEAF_HALF],
+  ] as const) {
+    ctx.strokeStyle = colour
+    ctx.lineWidth = width
+    ctx.beginPath()
+    ctx.moveTo(from.x, from.y)
+    ctx.lineTo(to.x, to.y)
+    ctx.stroke()
+  }
+  ctx.fillStyle = pal.wall
+  circle(ctx, from, LEAF_HALF + 0.03)
+  ctx.fillStyle = pal.bezel
+  circle(
+    ctx,
+    { x: from.x + (to.x - from.x) * 0.85, y: from.y + (to.y - from.y) * 0.85 },
+    0.04,
+  )
 }

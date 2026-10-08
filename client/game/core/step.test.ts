@@ -287,6 +287,55 @@ describe('the boss’s body', () => {
   })
 })
 
+describe('the office door (R-GAME-21)', () => {
+  const left = { move: { x: -1, y: 0 } }
+  const right = { move: { x: 1, y: 0 } }
+
+  /** A day whose office door shut a while ago, the player at `at`. */
+  function shutWith(at: { x: number; y: number }): DayState {
+    const day = settled(1, { doorOpenSeconds: 5 })
+    day.player.position = at
+    return day
+  }
+
+  it('shuts by itself, and stops the player walking through', () => {
+    const day = run(shutWith({ x: 5.5, y: 3.5 }), 1, right)
+
+    expect(day.door.openness).toBe(0)
+    expect(day.player.position.x).toBeLessThan(6.5 - BODY_RADIUS)
+  })
+
+  it('opens from outside the office, and lets the player in', () => {
+    let day = shutWith({ x: 7.5, y: 3.5 })
+    expect(availableActions(day).map((a) => a.kind)).toEqual(['openDoor'])
+    day = run(step(day, { ...idle, act: 'openDoor' }, DT), 1)
+    expect(day.door.openness).toBe(1)
+    day = run(day, 1, left)
+
+    expect(day.player.position.x).toBeLessThan(6)
+  })
+
+  it('stops swinging at a player in its way, and goes on once they step aside', () => {
+    let day = shutWith({ x: 6, y: 3.6 })
+    day = run(step(day, { ...idle, act: 'openDoor' }, DT), 1)
+    expect(day.door.openness).toBeGreaterThan(0)
+    expect(day.door.openness).toBeLessThan(1)
+    expect(day.player.position).toEqual({ x: 6, y: 3.6 })
+    day.player.position = { x: 4.5, y: 4.5 }
+    day = run(day, 1)
+
+    expect(day.door.openness).toBe(1)
+  })
+
+  it('will not shut on a player standing in the doorway', () => {
+    const day = settled(1, { doorOpenSeconds: 5 })
+    day.door = { openness: 1, opening: true, shutsAt: day.clock + 0.5 }
+    day.player.position = { x: 6.5, y: 3.5 }
+
+    expect(run(day, 2).door.openness).toBeGreaterThan(0)
+  })
+})
+
 describe('meetings (R-GAME-6)', () => {
   function walkIntoMeeting(day: DayState): DayState {
     const next = structuredClone(day)

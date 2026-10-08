@@ -321,13 +321,13 @@ button and the rules cannot disagree.
 
 **Movement.** The player moves continuously and collides with walls and
 furniture on the tile grid, with walls only as thick as they are drawn, with
-round obstacles such as its own chair and the office plants, and with the people
-on the floor: it never walks closer than a body's width to anyone, but can
-always step away from someone who walked into it. Employees walk in through the
-entrance in the top wall beside the office, past the boss, and walk tile paths
-found by A\* between their cubicle, the coolers, the meeting room and the
-entrance. "Nearest the meeting room" (R-GAME-6) is the walking distance, not the
-straight line.
+round obstacles such as its own chair and the office plants, with the office
+door wherever it stands, and with the people on the floor: it never walks closer
+than a body's width to anyone, but can always step away from someone who walked
+into it. Employees walk in through the entrance in the top wall beside the
+office, past the boss, and walk tile paths found by A\* between their cubicle,
+the coolers, the meeting room and the entrance. "Nearest the meeting room"
+(R-GAME-6) is the walking distance, not the straight line.
 
 **Drawing.** Characters are drawn in code as smooth vector figures: a rounded
 suit body with arms and hands, a shirt collar and tie, a head with ears, eyes
@@ -378,6 +378,7 @@ next day (R-GAME-17).
 | `game.rampEndPercent` (of the average)   |   `150` | R-GAME-4                   |
 | `game.arrivalGapMs`                      |   `600` | R-GAME-3                   |
 | `game.coolerLoneWaitSeconds`             |    `12` | R-GAME-5, R-GAME-11        |
+| `game.doorOpenSeconds` (avg)             |    `25` | R-GAME-21                  |
 | `game.rebel.masterclassSeats`            |     `2` | R-GAME-11                  |
 | `game.rebel.morningGrey`                 |     `3` | R-GAME-3                   |
 | `game.rebel.fileEverySeconds` (level 16) |    `10` | R-GAME-9                   |

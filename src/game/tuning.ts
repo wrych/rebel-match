@@ -33,6 +33,7 @@ export type GameKey =
   | 'rampStartPercent'
   | 'rampEndPercent'
   | 'coolerLoneWaitSeconds'
+  | 'doorOpenSeconds'
   | 'rebel.masterclassSeats'
   | 'rebel.morningGrey'
   | 'rebel.fileEverySeconds'
@@ -95,6 +96,7 @@ export const gameDefaults: GameSettings = {
   rampStartPercent: 50,
   rampEndPercent: 150,
   coolerLoneWaitSeconds: 12,
+  doorOpenSeconds: 25,
   'rebel.masterclassSeats': 2,
   'rebel.morningGrey': 3,
   'rebel.fileEverySeconds': 10,
@@ -154,6 +156,7 @@ export const gameBounds: Readonly<Record<GameKey, Bounds>> = {
   rampStartPercent: { min: 0, max: 100 },
   rampEndPercent: { min: 100, max: 400 },
   coolerLoneWaitSeconds: SECONDS,
+  doorOpenSeconds: SECONDS,
   'rebel.masterclassSeats': range(4, 1),
   'rebel.morningGrey': range(Math.floor(cubicles.ceo / 2)),
   'rebel.fileEverySeconds': SECONDS,
