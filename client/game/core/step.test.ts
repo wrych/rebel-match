@@ -217,6 +217,16 @@ describe('the boss’s body', () => {
     ).toBeGreaterThanOrEqual(2 * BODY_RADIUS)
   })
 
+  it('bumps into the chair in front of its own desk', () => {
+    const start = settled(1)
+    const { chair, obstacles } = floors[start.floor]
+    const reach = (obstacles[0]?.r ?? 0) + BODY_RADIUS
+    start.player.position = { x: chair.x + 1.5, y: chair.y }
+    const day = run(start, 1, left)
+
+    expect(day.player.position.x).toBeGreaterThanOrEqual(chair.x + reach)
+  })
+
   it('walks away from someone it stands too close to', () => {
     const start = besideEmployee(BODY_RADIUS)
     const day = run(start, 0.2, right)

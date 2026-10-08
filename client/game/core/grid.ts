@@ -84,13 +84,18 @@ function free(floor: Floor, at: Spot, radius: number): boolean {
     { x: at.x - radius, y: at.y + radius },
     { x: at.x + radius, y: at.y + radius },
   ]
-  return corners.every(
-    (corner) => !blocked(floor, Math.floor(corner.x), Math.floor(corner.y)),
+  return (
+    corners.every(
+      (corner) => !blocked(floor, Math.floor(corner.x), Math.floor(corner.y)),
+    ) &&
+    floor.obstacles.every(
+      (obstacle) => distance(at, obstacle) >= obstacle.r + radius,
+    )
   )
 }
 
-/** Moves a body of `radius` by `delta`, as far as walls and furniture let
- * it. */
+/** Moves a body of `radius` by `delta`, as far as walls, furniture and
+ * obstacles let it. */
 export function slide(
   floor: Floor,
   at: Spot,
