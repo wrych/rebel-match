@@ -1128,7 +1128,10 @@ the office's people; the **player** is the character the member steers.
   **file**, taken from the stack on their desk. Assigning a file to a tempted
   employee SHALL make them grey and busy with it for a while (setting);
   assigning one to a rebel SHALL make them tempted, so a rebel needs two files.
-  A file SHALL be assignable only to a tempted employee or a rebel. WHEN an
+  A file SHALL be assignable only to a tempted employee or a rebel. The player
+  MAY instead leave a file on the desk of an employee who is not at it, one at
+  a time; WHEN that employee next sits down there THE SYSTEM SHALL hand them
+  the file as if assigned, and a grey employee SHALL be busy with it. WHEN an
   employee stays tempted longer than the grace time (setting, per job) THE
   SYSTEM SHALL make them a rebel. A rebel arises in no other way than this and
   R-GAME-5.

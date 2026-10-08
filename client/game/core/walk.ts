@@ -1,3 +1,4 @@
+import { takeUpLeftFile } from './files'
 import type { Spot } from './floors'
 import { centreOf, distance, path, tileOf } from './grid'
 import {
@@ -61,6 +62,7 @@ function arrived(state: DayState, employee: Employee): void {
     case 'arriving':
     case 'toDesk':
       employee.doing = { kind: 'atDesk' }
+      takeUpLeftFile(state, employee)
       return
     case 'toCooler':
       employee.doing = {

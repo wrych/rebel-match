@@ -42,6 +42,7 @@ export function keyAction(
 const labels: Readonly<Record<ActionKind, string>> = {
   takeFile: 'Take file',
   assign: 'Assign',
+  leaveFile: 'Leave file',
   breakUp: 'Break it up',
   help: 'Help',
   break: 'Break',

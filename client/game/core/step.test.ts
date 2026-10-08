@@ -189,6 +189,40 @@ describe('boss mode (R-GAME-4, R-GAME-7)', () => {
     expect(day.score).toBe(0)
   })
 
+  it('leaves a file on an empty desk, handed over when its employee sits down', () => {
+    let day = standBeside(startDay(1, calm, 7), 0)
+    day.player.carrying = true
+    day.employees[0] = { ...employee(day, 0), spirit: 'tempted' }
+
+    expect(availableActions(day)).toEqual([{ kind: 'leaveFile', target: 0 }])
+    day = step(day, { ...idle, act: 'leaveFile' }, DT)
+    expect(employee(day, 0).file).toBe(true)
+    expect(day.player.carrying).toBe(false)
+    day = run(day, 30)
+
+    expect(employee(day, 0)).toMatchObject({ spirit: 'grey', file: false })
+    expect(day.score).toBe(1)
+  })
+
+  it('keeps a grey employee who sits down to a left file busy, and tempts a rebel', () => {
+    let day = startDay(1, calm, 7)
+    day.employees[0] = { ...employee(day, 0), file: true }
+    day.employees[1] = { ...employee(day, 1), file: true, spirit: 'rebel' }
+    day = run(day, calm['teamLead.temptedGraceSeconds'] - 5)
+
+    expect(employee(day, 0).spirit).toBe('grey')
+    expect(employee(day, 0).workingUntil).toBeGreaterThan(calm.fileWorkSeconds)
+    expect(employee(day, 1).spirit).toBe('tempted')
+    expect(day.score).toBe(0)
+  })
+
+  it('leaves no file on a desk its employee sits at', () => {
+    const day = standBeside(settled(1), 0)
+    day.player.carrying = true
+
+    expect(availableActions(day).map((a) => a.kind)).not.toContain('leaveFile')
+  })
+
   it('offers nothing to assign to a grey employee', () => {
     const day = standBeside(settled(1), 0)
     day.player.carrying = true

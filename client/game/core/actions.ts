@@ -1,5 +1,6 @@
 import { endMeeting } from './boss'
 import { breakUp, standing } from './cooler'
+import { workOn } from './files'
 import { centreOf, distance } from './grid'
 import { rekindle, sendAway } from './rebel'
 import {
@@ -16,7 +17,14 @@ import type { Spot } from './floors'
 
 /** What the action button can do (R-GAME-12). */
 export type ActionKind =
-  'takeFile' | 'assign' | 'breakUp' | 'help' | 'break' | 'talk' | 'masterclass'
+  | 'takeFile'
+  | 'assign'
+  | 'leaveFile'
+  | 'breakUp'
+  | 'help'
+  | 'break'
+  | 'talk'
+  | 'masterclass'
 
 /** An action the player can take where they stand, and on whom. */
 export interface Action {
@@ -63,26 +71,37 @@ function nearCooler(state: DayState): number | undefined {
 const reachable = (employee: Employee): boolean =>
   employee.doing.kind === 'atDesk' || employee.doing.kind === 'atCooler'
 
-function bossActions(state: DayState): Action[] {
+function deskOf(state: DayState, employee: Employee): Spot {
+  const desk = floorFor(state).cubicles[employee.cubicle]?.desk
+  return desk === undefined ? employee.position : centreOf(desk)
+}
+
+// A desk its employee is away from, with no file on it yet.
+const emptyDesk = (employee: Employee): boolean =>
+  employee.doing.kind !== 'atDesk' && !employee.file
+
+function fileActions(state: DayState): Action[] {
   const actions: Action[] = []
-  const { carrying } = state.player
-  if (!carrying && atOwnDesk(state)) actions.push({ kind: 'takeFile' })
-  const target = carrying
-    ? nearest(
-        state,
-        state.employees.filter((e) => reachable(e) && e.spirit !== 'grey'),
-      )
-    : undefined
+  const target = nearest(
+    state,
+    state.employees.filter((e) => reachable(e) && e.spirit !== 'grey'),
+  )
   if (target !== undefined) actions.push({ kind: 'assign', target: target.id })
+  const desk = nearest(state, state.employees.filter(emptyDesk), (e) =>
+    deskOf(state, e),
+  )
+  if (desk !== undefined) actions.push({ kind: 'leaveFile', target: desk.id })
+  return actions
+}
+
+function bossActions(state: DayState): Action[] {
+  const { carrying } = state.player
+  const actions: Action[] = carrying ? fileActions(state) : []
+  if (!carrying && atOwnDesk(state)) actions.push({ kind: 'takeFile' })
   const cooler = nearCooler(state)
   if (cooler !== undefined && standing(state, cooler).length > 0)
     actions.push({ kind: 'breakUp', cooler })
   return actions
-}
-
-function deskOf(state: DayState, employee: Employee): Spot {
-  const desk = floorFor(state).cubicles[employee.cubicle]?.desk
-  return desk === undefined ? employee.position : centreOf(desk)
 }
 
 function rebelActions(state: DayState): Action[] {
@@ -130,14 +149,7 @@ function assign(state: DayState, employee: Employee): void {
   state.player.carrying = false
   const cooler = coolerOf(employee)
   if (cooler !== undefined) breakUp(state, cooler)
-  if (employee.spirit === 'rebel') {
-    employee.spirit = 'tempted'
-    employee.temptedAt = state.clock
-    return
-  }
-  employee.spirit = 'grey'
-  employee.workingUntil = state.clock + state.tuning.fileWorkSeconds
-  state.score += 1
+  workOn(state, employee)
 }
 
 function busy(
@@ -180,6 +192,12 @@ const handlers: Readonly<Record<ActionKind, Handler>> = {
   assign: (state, action) => {
     const target = targetOf(state, action)
     if (target !== undefined) assign(state, target)
+  },
+  leaveFile: (state, action) => {
+    const target = targetOf(state, action)
+    if (target === undefined) return
+    state.player.carrying = false
+    target.file = true
   },
   breakUp: (state, action) => {
     busy(state, 'speech', state.tuning.speechSeconds, action)

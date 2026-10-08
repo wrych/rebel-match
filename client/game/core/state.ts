@@ -41,7 +41,8 @@ export interface Employee {
   heat: number
   /** When the heat last rose, or the file landed. */
   heatAt: number
-  /** A file waits on their desk (rebel mode). */
+  /** A file waits on their desk: one landed in rebel mode, or one the boss
+   * left in boss mode. */
   file: boolean
 }
 
