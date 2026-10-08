@@ -320,28 +320,30 @@ masterclass, losing — are unit-tested there, with no canvas (constitution §2,
 button and the rules cannot disagree.
 
 **Movement.** The player moves continuously and collides with walls and
-furniture on the tile grid, with round obstacles between tiles such as its
-own chair, and with the people on the floor: it never walks
-closer than a body's width to anyone, but can always step away from someone
-who walked into it. Employees walk in through the entrance in the top wall beside the
-office, past the boss, and walk tile paths found by A\* between
-their cubicle, the coolers, the meeting room and the entrance. "Nearest the
-meeting room" (R-GAME-6) is the walking distance, not the straight line.
+furniture on the tile grid, with walls only as thick as they are drawn, with
+round obstacles such as its own chair and the office plants, and with the people
+on the floor: it never walks closer than a body's width to anyone, but can
+always step away from someone who walked into it. Employees walk in through the
+entrance in the top wall beside the office, past the boss, and walk tile paths
+found by A\* between their cubicle, the coolers, the meeting room and the
+entrance. "Nearest the meeting room" (R-GAME-6) is the walking distance, not the
+straight line.
 
 **Drawing.** Characters are drawn in code as smooth vector figures: a rounded
 suit body with arms and hands, a shirt collar and tie, a head with ears, eyes
-and one of a few hair styles, a soft outline and a shadow. Furniture is seen
-from above and a little in front: every desk has a monitor, a keyboard and a
-chair, and its worker sits behind it facing the viewer, so the monitor shows its
-back, lit round the edge in the screen's colour and carrying the CR logo while
-they are tempted. The player's desk in the office is two tiles wide, with a wide
-screen, a chair in front and, in boss mode, the stack of files. Each figure has
-a colour palette and a grey one, so turning grey is a palette swap, never a
-filter. Rebel colours come from the happy-mode tokens (R-LOOK-3). The camera
-follows the player across a floor larger than the screen; off-screen trouble is
-marked by arrows at the edge, and the floor map is the same floor drawn small.
-If time runs out before the summit, a pixel-art renderer can replace this one
-without touching `core/` (ADR 0045).
+and one of a few hair styles, a soft outline and a shadow. Walls are thin bands,
+a door a gap a tile wide in them, and two office plants stand in their pots.
+Furniture is seen from above and a little in front: every desk has a monitor, a
+keyboard and a chair, and its worker sits behind it facing the viewer, so the
+monitor shows its back, lit round the edge in the screen's colour and carrying
+the CR logo while they are tempted. The player's desk in the office is two tiles
+wide, with a wide screen, a chair in front and, in boss mode, the stack of
+files. Each figure has a colour palette and a grey one, so turning grey is a
+palette swap, never a filter. Rebel colours come from the happy-mode tokens
+(R-LOOK-3). The camera follows the player across a floor larger than the screen;
+off-screen trouble is marked by arrows at the edge, and the floor map is the
+same floor drawn small. If time runs out before the summit, a pixel-art renderer
+can replace this one without touching `core/` (ADR 0045).
 
 **What the server knows.** The colour mode lives in the browser, so the server
 cannot enforce happy mode; it enforces the switch and onboarding, and the
