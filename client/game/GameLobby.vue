@@ -4,9 +4,11 @@ import { DAYS_PER_JOB, jobOf } from '../../src/game/levels'
 import SavedTick from '../components/SavedTick.vue'
 import { fetchConfig } from '../lib/api'
 import { jobName, shareName, type GameState } from '../lib/game'
+import { allHints, hintWords } from './hints'
 
 /** The office's lobby: who the player is, where they stand, the sharing
- * switch, and which job to play from (R-GAME-15, R-GAME-16). */
+ * switch, which job to play from, and how to play (R-GAME-15, R-GAME-16,
+ * R-GAME-18). */
 const props = defineProps<{
   game: GameState
   lastDay: string | null
@@ -150,6 +152,16 @@ onMounted(async () => {
     </p>
   </div>
 
+  <details class="rule">
+    <summary class="kicker">How to play</summary>
+    <div class="stack-tight">
+      <section v-for="hint in allHints" :key="hint">
+        <h2 class="small-head">{{ hintWords(hint).title }}</h2>
+        <p class="small">{{ hintWords(hint).text }}</p>
+      </section>
+    </div>
+  </details>
+
   <RouterLink to="/9torevolution/leaderboard" class="btn btn-ghost"
     >Leaderboard</RouterLink
   >
@@ -161,6 +173,15 @@ onMounted(async () => {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
+}
+
+summary {
+  cursor: pointer;
+}
+
+.small-head {
+  font-size: 1rem;
+  margin: 0;
 }
 
 fieldset {

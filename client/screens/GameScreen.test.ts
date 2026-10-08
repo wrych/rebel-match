@@ -110,6 +110,18 @@ describe('GameScreen (R-GAME-1, R-GAME-15, R-GAME-16)', () => {
     expect(screen.text()).toContain('Your best: level 4')
   })
 
+  it('keeps every hint in the lobby, to read again (R-GAME-18)', async () => {
+    applyMood('happy')
+    serve({ ...state, hintsSeen: ['firstDay', 'cooler', 'meeting'] })
+    const screen = await mountScreen()
+    const howTo = screen.find('details')
+
+    expect(howTo.find('summary').text()).toBe('How to play')
+    expect(howTo.text()).toContain('Keep your workers busy')
+    expect(howTo.text()).toContain('The water cooler')
+    expect(howTo.text()).toContain('You are a rebel now')
+  })
+
   it('asks the server nothing in calm mode', async () => {
     const fetchMock = serve(state)
     const screen = await mountScreen()
