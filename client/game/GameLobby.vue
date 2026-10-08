@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { DAYS_PER_JOB, jobOf } from '../../src/game/levels'
 import SavedTick from '../components/SavedTick.vue'
 import { fetchConfig } from '../lib/api'
@@ -7,10 +7,27 @@ import { jobName, shareName, type GameState } from '../lib/game'
 
 /** The office's lobby: who the player is, where they stand, the sharing
  * switch, and which job to play from (R-GAME-15, R-GAME-16). */
-const props = defineProps<{ game: GameState; lastDay: string | null }>()
-const emit = defineEmits<{ start: [level: number]; shared: [on: boolean] }>()
+const props = defineProps<{
+  game: GameState
+  lastDay: string | null
+  /** Turning the phone starts a day, rather than a button (ADR 0046). */
+  touch: boolean
+  dayUnderWay: boolean
+  /** A finished day whose results card waits on the phone's side. */
+  resultsWaiting: boolean
+}>()
+const emit = defineEmits<{
+  start: [level: number]
+  choose: [level: number]
+  leaveDay: []
+  back: []
+  shared: [on: boolean]
+}>()
 
 const chosen = ref(props.game.resumeLevel)
+watch(chosen, (level) => {
+  emit('choose', level)
+})
 const saving = ref(false)
 const savedShown = ref(false)
 const problem = ref<string | null>(null)
@@ -76,7 +93,24 @@ onMounted(async () => {
   <p v-if="lastDay" class="lede" role="status">{{ lastDay }}</p>
   <p v-if="problem" class="alert" role="alert">{{ problem }}</p>
 
-  <fieldset v-if="starts.length > 1" class="stack-tight rule">
+  <div v-if="dayUnderWay" class="card stack-tight" role="status">
+    <p>Your day is paused. Turn your phone sideways to carry on.</p>
+    <button type="button" class="btn btn-ghost" @click="emit('leaveDay')">
+      Leave the day
+    </button>
+  </div>
+
+  <div v-if="resultsWaiting" class="card stack-tight" role="status">
+    <p>Your day is over. Turn your phone sideways to see how it went.</p>
+    <button type="button" class="btn btn-ghost" @click="emit('back')">
+      Back to the office
+    </button>
+  </div>
+
+  <fieldset
+    v-if="starts.length > 1 && !dayUnderWay && !resultsWaiting"
+    class="stack-tight rule"
+  >
     <legend class="kicker">Play from</legend>
     <label v-for="level in starts" :key="level" class="check">
       <input v-model="chosen" type="radio" name="start" :value="level" />
@@ -84,7 +118,15 @@ onMounted(async () => {
     </label>
   </fieldset>
 
-  <button type="button" class="btn btn-dark" @click="emit('start', chosen)">
+  <p v-if="touch && !dayUnderWay && !resultsWaiting" class="lede">
+    Turn your phone sideways to start the day.
+  </p>
+  <button
+    v-else-if="!dayUnderWay && !resultsWaiting"
+    type="button"
+    class="btn btn-dark"
+    @click="emit('start', chosen)"
+  >
     Start the day
   </button>
 

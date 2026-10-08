@@ -63,15 +63,36 @@ function serve(
   return fetchMock
 }
 
-async function mountScreen(): Promise<ReturnType<typeof mount>> {
-  const screen = mount(GameScreen, {
-    global: { stubs: { RouterLink: RouterLinkStub, PlayView: true } },
+let touch = false
+const mounted: ReturnType<typeof mount>[] = []
+
+async function turn(way: 'landscape' | 'portrait'): Promise<void> {
+  Object.assign(window, {
+    innerWidth: way === 'landscape' ? 844 : 390,
+    innerHeight: way === 'landscape' ? 390 : 844,
   })
+  window.dispatchEvent(new Event('resize'))
+  await flushPromises()
+}
+
+async function mountScreen(): Promise<ReturnType<typeof mount>> {
+  vi.stubGlobal('matchMedia', (query: string) => ({
+    matches: query.includes('coarse') && touch,
+  }))
+  const screen = mount(GameScreen, {
+    global: {
+      stubs: { RouterLink: RouterLinkStub, PlayView: true, teleport: true },
+    },
+  })
+  mounted.push(screen)
   await flushPromises()
   return screen
 }
 
-afterEach(() => {
+afterEach(async () => {
+  for (const screen of mounted.splice(0)) screen.unmount()
+  touch = false
+  await turn('portrait')
   vi.unstubAllGlobals()
   replace.mockClear()
   applyMood('calm')
@@ -302,6 +323,141 @@ describe('GameScreen (R-GAME-1, R-GAME-15, R-GAME-16)', () => {
       '/api/game/hints/firstDay',
       expect.objectContaining({ method: 'PUT' }),
     )
-    expect(play.props('hints')).toEqual(['meeting', 'cooler'])
+    expect(screen.findComponent({ name: 'PlayView' }).props('hints')).toEqual([
+      'meeting',
+      'cooler',
+    ])
+  })
+
+  describe('on a touch screen (ADR 0046)', () => {
+    it('starts the day when the phone turns sideways, and asks for no button', async () => {
+      applyMood('happy')
+      touch = true
+      serve(state)
+      const screen = await mountScreen()
+
+      expect(screen.text()).toContain('Turn your phone sideways to start')
+      expect(screen.text()).not.toContain('Start the day')
+      await turn('landscape')
+
+      expect(screen.findComponent({ name: 'PlayView' }).props('level')).toBe(4)
+    })
+
+    it('pauses into the lobby upright, and carries the same day on', async () => {
+      applyMood('happy')
+      touch = true
+      serve(state)
+      const screen = await mountScreen()
+      await turn('landscape')
+      const first = screen.findComponent({ name: 'PlayView' }).props('seed')
+
+      await turn('portrait')
+      expect(screen.text()).toContain('Your day is paused')
+      expect(screen.find('.stage').attributes('style')).toContain(
+        'display: none',
+      )
+      await turn('landscape')
+
+      expect(screen.findComponent({ name: 'PlayView' }).props('seed')).toBe(
+        first,
+      )
+    })
+
+    it('shows the results on the phone’s side, and starts the next day from there', async () => {
+      applyMood('happy')
+      touch = true
+      serve(state)
+      const screen = await mountScreen()
+      await turn('landscape')
+      screen
+        .findComponent({ name: 'PlayView' })
+        .vm.$emit('ended', { outcome: 'won', score: 2, seconds: 70 })
+      await flushPromises()
+
+      expect(screen.find('.stage .results').text()).toContain(
+        '17:00. Home time.',
+      )
+      await button(screen, 'Continue').trigger('click')
+
+      expect(screen.findComponent({ name: 'PlayView' }).props('level')).toBe(5)
+    })
+
+    it('waits after Leave until the phone has been upright and turned again', async () => {
+      applyMood('happy')
+      touch = true
+      serve(state)
+      const screen = await mountScreen()
+      await turn('landscape')
+      screen
+        .findComponent({ name: 'PlayView' })
+        .vm.$emit('ended', { outcome: 'lost', score: 0, seconds: 70 })
+      await flushPromises()
+      await button(screen, 'Leave').trigger('click')
+      await flushPromises()
+
+      expect(screen.findComponent({ name: 'PlayView' }).exists()).toBe(false)
+      await turn('portrait')
+      await turn('landscape')
+      expect(screen.findComponent({ name: 'PlayView' }).exists()).toBe(true)
+    })
+
+    it('never records a finished day twice when the results are left upright', async () => {
+      applyMood('happy')
+      touch = true
+      const fetchMock = serve(state)
+      const screen = await mountScreen()
+      await turn('landscape')
+      screen
+        .findComponent({ name: 'PlayView' })
+        .vm.$emit('ended', { outcome: 'won', score: 2, seconds: 70 })
+      await flushPromises()
+      await turn('portrait')
+
+      expect(screen.text()).toContain('Your day is over')
+      expect(screen.text()).not.toContain('Your day is paused')
+      await button(screen, 'Back to the office').trigger('click')
+      await flushPromises()
+
+      const records = fetchMock.mock.calls.filter(
+        ([url]) => url === '/api/game/days',
+      )
+      expect(records).toHaveLength(1)
+      expect(screen.text()).toContain('Turn your phone sideways to start')
+      await turn('landscape')
+      expect(screen.findComponent({ name: 'PlayView' }).props('level')).toBe(5)
+    })
+
+    it('drops the results of a day the player went back from while it was recording', async () => {
+      applyMood('happy')
+      touch = true
+      let answer: (value: unknown) => void = () => undefined
+      const fetchMock = serve(state)
+      const screen = await mountScreen()
+      await turn('landscape')
+      fetchMock.mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            answer = resolve
+          }),
+      )
+      screen
+        .findComponent({ name: 'PlayView' })
+        .vm.$emit('ended', { outcome: 'won', score: 2, seconds: 70 })
+      await turn('portrait')
+
+      expect(screen.text()).toContain('Your day is over')
+      await button(screen, 'Back to the office').trigger('click')
+      answer({
+        ok: true,
+        status: 200,
+        json: async () => ({ state, newBest: false, place: null }),
+      })
+      await flushPromises()
+
+      expect(screen.find('.stage .results').exists()).toBe(false)
+      expect(
+        fetchMock.mock.calls.filter(([url]) => url === '/api/game/days'),
+      ).toHaveLength(1)
+    })
   })
 })
