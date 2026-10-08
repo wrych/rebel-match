@@ -145,11 +145,17 @@ describe('PlayView (R-GAME-12)', () => {
       props: {
         level: 16,
         seed: 1,
-        tuning: { ...tuning, dayLengthSeconds: 300, 'rebel.morningGrey': 3 },
+        tuning: {
+          ...tuning,
+          dayLengthSeconds: 300,
+          'rebel.morningGrey': 3,
+          'rebel.fileEverySeconds': 600,
+          coolerVisitEverySeconds: 600,
+        },
       },
       attachTo: document.body,
     })
-    for (let i = 0; i < 80; i += 1) frame(0.25)
+    for (let i = 0; i < 160; i += 1) frame(0.25)
     await flushPromises()
     const button = document.querySelector<HTMLButtonElement>('.action-lit')
     expect(button?.textContent?.trim()).toBe('Masterclass')

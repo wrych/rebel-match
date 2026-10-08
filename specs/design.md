@@ -323,7 +323,8 @@ button and the rules cannot disagree.
 furniture on the tile grid, with round obstacles between tiles such as its
 own chair, and with the people on the floor: it never walks
 closer than a body's width to anyone, but can always step away from someone
-who walked into it. Employees walk tile paths found by A\* between
+who walked into it. Employees walk in through the entrance in the top wall beside the
+office, past the boss, and walk tile paths found by A\* between
 their cubicle, the coolers, the meeting room and the entrance. "Nearest the
 meeting room" (R-GAME-6) is the walking distance, not the straight line.
 
