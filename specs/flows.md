@@ -253,7 +253,7 @@ my challenge.
 
 1. **S5**: member writes one challenge in free text, guided by prompts (what they
    observe, what they want to change, where they struggle) (R-ASK-1).
-2. Under **Inspiration**, the newest challenges other members have posted sit
+2. Under **Last submitted**, the newest challenges other members have posted sit
    below the field, read-only and without their authors — there is no "insert
    this" action, by design (R-ASK-2, R-ASK-14).
 3. Submit stays disabled until the text is longer than 30 characters

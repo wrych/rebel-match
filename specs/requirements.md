@@ -402,8 +402,8 @@ capability, not a secret** — and every requirement below exists because of tha
 - **R-ASK-1** — The system SHALL let a member write **one challenge in free
   text**, in their own words, with guidance prompts (what they observe, what they
   want to change, where they struggle).
-- **R-ASK-2** — The system SHALL show, under the heading **Inspiration**, the
-  newest challenges other members have posted (R-ASK-14), as **inspiration
+- **R-ASK-2** — The system SHALL show, under the heading **Last submitted**,
+  the newest challenges other members have posted (R-ASK-14), as **inspiration
   only**: read-only, the text and its trend, never who wrote it. THE SYSTEM
   SHALL NOT offer to insert or prefill one into the member's text, so members
   describe their own situation instead of submitting boilerplate; IF there are
