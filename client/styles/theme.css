@@ -886,6 +886,7 @@ textarea.input {
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 0.4rem;
+  overflow-x: clip;
 }
 
 .deck-arrow {
@@ -914,7 +915,8 @@ textarea.input {
   background: var(--card);
   color: var(--card-fg);
   box-shadow: var(--sticker-shadow);
-  animation: rm-in 0.26s ease both;
+  /* Not `both`: a held last frame would override the drag's inline transform. */
+  animation: rm-in 0.26s ease backwards;
   touch-action: pan-y;
 }
 

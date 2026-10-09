@@ -1,15 +1,47 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref } from 'vue'
+import {
+  computed,
+  nextTick,
+  onMounted,
+  onUnmounted,
+  ref,
+  shallowRef,
+} from 'vue'
 import { fetchConfig } from '../lib/api'
-import { swipeStep } from '../lib/swipe'
+import {
+  cardMotion,
+  cardPose,
+  dragAxis,
+  flyOutX,
+  slideInX,
+  swipeStep,
+  type CardPose,
+} from '../lib/swipe'
 
-/** One card at a time, browsed by arrow buttons, arrow keys or a swipe
- * (R-OFF-1); the card itself is the default slot. */
+/** One card at a time, browsed by arrow buttons, arrow keys or a swipe; the
+ * card follows the finger and flies off unless motion is reduced (R-OFF-1).
+ * The card itself is the default slot. */
 const props = defineProps<{ index: number; count: number; noun: string }>()
 const emit = defineEmits<{ browse: [index: number] }>()
 
+type Point = { x: number; y: number }
+
+const REST: CardPose = { x: 0, rotateDeg: 0 }
+
 const swipeMinPx = ref<number | null>(null)
-let touchedAt: { x: number; y: number } | null = null
+const card = ref<HTMLElement | null>(null)
+const pose = shallowRef<CardPose>(REST)
+const moveMs = ref(0)
+let drag: { from: Point; axis: 'x' | 'y' | null } | null = null
+let flight: ReturnType<typeof setTimeout> | undefined
+
+const cardStyle = computed(() => ({
+  transform:
+    pose.value.x === 0 && pose.value.rotateDeg === 0
+      ? undefined
+      : `translateX(${pose.value.x}px) rotate(${pose.value.rotateDeg}deg)`,
+  transition: moveMs.value > 0 ? `transform ${moveMs.value}ms ease-out` : '',
+}))
 
 // Without the threshold the card takes no swipes; the arrows still browse.
 async function loadSwipeMinPx(): Promise<void> {
@@ -20,10 +52,55 @@ async function loadSwipeMinPx(): Promise<void> {
   }
 }
 
-function browse(step: -1 | 1): void {
+// An unknown preference counts as reduced: no motion is the safe side.
+function still(): boolean {
+  return (
+    typeof window.matchMedia !== 'function' ||
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  )
+}
+
+function move(to: CardPose, ms: number): void {
+  pose.value = to
+  moveMs.value = ms
+}
+
+function canBrowse(step: -1 | 1): boolean {
   const next = props.index + step
-  if (next < 0 || next >= props.count) return
-  emit('browse', next)
+  return flight === undefined && next >= 0 && next < props.count
+}
+
+function browse(step: -1 | 1): void {
+  if (!canBrowse(step)) return
+  const next = props.index + step
+  if (still()) {
+    emit('browse', next)
+    return
+  }
+  const deck = { index: props.index, count: props.count }
+  move(cardPose(flyOutX(step, window.innerWidth)), cardMotion.flyOutMs)
+  flight = setTimeout(() => void arrive(step, deck), cardMotion.flyOutMs)
+}
+
+// A deck the parent changed mid-flight, by an answer say, already shows the
+// card that belongs there; browsing on from the old place would skip one.
+async function arrive(
+  step: -1 | 1,
+  deck: { index: number; count: number },
+): Promise<void> {
+  if (props.index === deck.index && props.count === deck.count)
+    emit('browse', deck.index + step)
+  move({ x: slideInX(step, window.innerWidth), rotateDeg: 0 }, 0)
+  await nextTick()
+  // Reading layout commits the start pose, so the slide in has a from.
+  card.value?.getBoundingClientRect()
+  move(REST, cardMotion.slideInMs)
+  flight = undefined
+}
+
+function springBack(): void {
+  if (flight === undefined && pose.value !== REST)
+    move(REST, cardMotion.springBackMs)
 }
 
 function onKey(event: KeyboardEvent): void {
@@ -32,29 +109,42 @@ function onKey(event: KeyboardEvent): void {
   if (event.key === 'ArrowRight') browse(1)
 }
 
+function pointOf(touch: Touch): Point {
+  return { x: touch.clientX, y: touch.clientY }
+}
+
 function onTouchStart(event: TouchEvent): void {
   const touch = event.touches[0]
-  touchedAt =
-    event.touches.length === 1 && touch !== undefined
-      ? { x: touch.clientX, y: touch.clientY }
+  drag =
+    event.touches.length === 1 && touch !== undefined && flight === undefined
+      ? { from: pointOf(touch), axis: null }
       : null
+}
+
+function onTouchMove(event: TouchEvent): void {
+  const touch = event.touches[0]
+  if (drag === null || touch === undefined || swipeMinPx.value === null) return
+  if (still()) return
+  const to = pointOf(touch)
+  drag.axis ??= dragAxis(drag.from, to, cardMotion.axisLockPx)
+  if (drag.axis === 'x') move(cardPose(to.x - drag.from.x), 0)
 }
 
 function onTouchEnd(event: TouchEvent): void {
   const touch = event.changedTouches[0]
-  const from = touchedAt
-  touchedAt = null
-  if (from === null || touch === undefined || swipeMinPx.value === null) return
-  const step = swipeStep(
-    from,
-    { x: touch.clientX, y: touch.clientY },
-    swipeMinPx.value,
-  )
-  if (step !== 0) browse(step)
+  const from = drag?.from
+  drag = null
+  const step =
+    from === undefined || touch === undefined || swipeMinPx.value === null
+      ? 0
+      : swipeStep(from, pointOf(touch), swipeMinPx.value)
+  if (step !== 0 && canBrowse(step)) browse(step)
+  else springBack()
 }
 
 function onTouchCancel(): void {
-  touchedAt = null
+  drag = null
+  springBack()
 }
 
 onMounted(() => {
@@ -63,6 +153,7 @@ onMounted(() => {
 })
 onUnmounted(() => {
   window.removeEventListener('keydown', onKey)
+  clearTimeout(flight)
 })
 </script>
 
@@ -82,9 +173,12 @@ onUnmounted(() => {
       ‹
     </button>
     <article
+      ref="card"
       class="deck-card"
       aria-live="polite"
+      :style="cardStyle"
       @touchstart.passive="onTouchStart"
+      @touchmove.passive="onTouchMove"
       @touchend="onTouchEnd"
       @touchcancel="onTouchCancel"
     >
