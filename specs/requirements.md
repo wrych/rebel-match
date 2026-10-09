@@ -907,7 +907,8 @@ _(Decided by the maintainer after trying the redesign: ADR 0023.)_
   time it shows in a page load, the two Rs SHALL slide together over an
   otherwise black screen, which then clears and leaves the mark where it
   stands, all within one second. WHEN the member prefers reduced motion, the
-  mark SHALL show at rest with no intro.
+  mark SHALL show at rest with no intro. The header SHALL carry the mark as its
+  link home, and the browser SHALL show it as the page's icon.
 
 ---
 

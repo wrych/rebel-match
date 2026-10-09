@@ -279,7 +279,9 @@ black (R-LOOK-5). At rest the Rs overlap into the figure; the intro slides them
 there from apart. The sign-in screen plays it under a black layer that fades
 out, once per page load (`client/lib/intro.ts`), and skips it when the member
 prefers reduced motion; while it plays, the screen's own entrance is held still
-so the layer can sit above the header.
+so the layer can sit above the header. The header's link home is the same
+component at rest, and `client/public/favicon.svg` is the mark at rest as a
+file, its R path checked against the component's by a test.
 
 The header's right-hand button opens the **menu** (R-PROF-3): the colour mode
 switch, "Profile & privacy" (`/profile`), Feedback (R-FB-1), the host tools
