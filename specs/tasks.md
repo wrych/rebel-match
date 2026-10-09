@@ -301,7 +301,7 @@ printed dev link (R-DEV-6).
       no real address reaches a preview or staging. _(R-SEED-8)_
 - [x] Deploy non-prod from GitHub to Cloud Run: a preview per pull request and
       staging from `main`. _(ADR 0025, rollout step 1)_
-- [ ] Production on Cloud Run, promoted from staging by a reviewed workflow,
+- [x] Production on Cloud Run, promoted from staging by a reviewed workflow,
       in time for the pilot; on the tick, billed per request, when
       `TICK_INVOKER` is set. _(ADR 0025, rollout step 2, ADR 0049)_
 - [x] Scheduled work on a tick from Cloud Scheduler, with an OIDC-checked
