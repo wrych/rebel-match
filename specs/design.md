@@ -177,7 +177,10 @@ Budget: **under 120 kB gzipped** for the whole client. If a dependency would
 breach it, the question is whether that screen needs the dependency or needs
 less of it. The M6 QR dry run on a phone over conference wifi is what proves the
 budget, not the number itself. The 9toRevolution game is a chunk of its own,
-loaded only when it is opened, and is not counted here (ADR 0045).
+loaded only when it is opened, and is not counted here (ADR 0045). A tab
+opened before a deploy asks for chunk files the deploy replaced; when a screen's
+chunk cannot load, the client loads the page afresh at the address asked for,
+once per address, rather than leave the tap without an answer.
 
 ### The running version
 

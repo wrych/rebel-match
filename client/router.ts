@@ -36,6 +36,11 @@ import TermsScreen from './screens/TermsScreen.vue'
 import TrendPickerScreen from './screens/TrendPickerScreen.vue'
 import TrendScreen from './screens/TrendScreen.vue'
 import WelcomeScreen from './screens/WelcomeScreen.vue'
+import {
+  isStaleChunk,
+  reloadForStaleChunk,
+  settledAfterReload,
+} from './lib/stale-chunk'
 
 /**
  * Builds a router record from the shared route table (ADR 0017), so the client
@@ -103,6 +108,15 @@ export const router = createRouter({
     screen('admin-settings', SettingsScreen),
     { path: '/:pathMatch(.*)*', name: 'not-found', component: NotFoundScreen },
   ],
+})
+
+// A tab opened before a deploy asks for screens' files the deploy replaced;
+// load the page afresh there rather than leave the tap without an answer.
+router.onError((error, to) => {
+  if (isStaleChunk(error)) reloadForStaleChunk(to.fullPath)
+})
+router.afterEach((_to, _from, failure) => {
+  if (failure === undefined) settledAfterReload()
 })
 
 router.beforeEach(async (to) => {
