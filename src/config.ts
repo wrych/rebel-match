@@ -27,6 +27,9 @@ const SAVED_TICK_MS = 2500
 const HOLD_TO_SELECT_MS = 500
 /** How far a finger travels across a deck card to browse (R-OFF-1). */
 const SWIPE_MIN_PX = 50
+/** How many entries each matches section shows before the rest are asked
+ * for (R-ASK-15). */
+const MATCHES_SHOWN_FIRST = 1
 /** The share of the visible height one tap on the privacy step's scroll hint
  * moves the summary, so it never jumps to the end (R-ONB-10). */
 const SCROLL_HINT_SHARE = 0.4
@@ -241,7 +244,7 @@ const envSchema = z
       .max(MAX_TIMER_HOURS)
       .default(1),
     // Who runs the scheduled work: the server's own timers, or a tick a
-    // scheduler sends, signed by TICK_INVOKER for TICK_AUDIENCE (ADR 0048).
+    // scheduler sends, signed by TICK_INVOKER for TICK_AUDIENCE (ADR 0049).
     SCHEDULED_WORK: z.enum(['timers', 'tick']).default('timers'),
     TICK_INVOKER: z.email().optional(),
     TICK_AUDIENCE: z.url().optional(),
@@ -382,6 +385,7 @@ export interface Limits {
   savedTickMs: number
   holdToSelectMs: number
   swipeMinPx: number
+  matchesShownFirst: number
   scrollHintShare: number
   inviteMaxUsesCeiling: number
   connectionMessageMaxChars: number
@@ -455,7 +459,7 @@ export interface Config {
   erasureSweepIntervalHours: number
   tokenPurgeIntervalHours: number
   settingsRefreshSeconds: number
-  /** Who runs the scheduled work, and whose tick is believed (ADR 0048). */
+  /** Who runs the scheduled work, and whose tick is believed (ADR 0049). */
   scheduledWork: ScheduledWork
   /** The notification worker's round and retries (R-NOTE-7, R-NOTE-10). */
   notificationWorker: NotificationWorkerSettings
@@ -515,6 +519,7 @@ function limitsFrom(env: Env): Limits {
     savedTickMs: SAVED_TICK_MS,
     holdToSelectMs: HOLD_TO_SELECT_MS,
     swipeMinPx: SWIPE_MIN_PX,
+    matchesShownFirst: MATCHES_SHOWN_FIRST,
     scrollHintShare: SCROLL_HINT_SHARE,
     inviteMaxUsesCeiling: INVITE_MAX_USES_CEILING,
     connectionMessageMaxChars: CONNECTION_MESSAGE_MAX_CHARS,

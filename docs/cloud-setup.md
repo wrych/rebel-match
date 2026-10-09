@@ -349,7 +349,7 @@ Staging scales to zero, and Cloud Run gives an instance CPU only while it
 answers a request, so the server's own timers stall between visits:
 notification mail, erasure and the purges wait for the next visitor. A Cloud
 Scheduler job calling `POST /api/internal/tick` every minute runs that work
-instead, the same way production runs it (ADR 0048). Each tick is a short
+instead, the same way production runs it (ADR 0049). Each tick is a short
 request, and an idle instance costs nothing; Cloud Scheduler is free for three
 jobs per billing account.
 
@@ -504,7 +504,7 @@ gcloud iam service-accounts add-iam-policy-binding \
 gcloud projects add-iam-policy-binding "$NONPROD" --condition=None \
   --member="serviceAccount:$PROD_DEPLOYER" --role=roles/run.viewer
 
-# Who the tick comes from (§22, ADR 0048). It needs no role: the server
+# Who the tick comes from (§22, ADR 0049). It needs no role: the server
 # checks its address in the token the scheduler signs for it.
 gcloud iam service-accounts create scheduler-tick --project="$PROD" \
   --display-name="Cloud Scheduler calls the tick"
@@ -551,7 +551,7 @@ echo "TICK_INVOKER=scheduler-tick@$PROD.iam.gserviceaccount.com"
 ```
 
 `TICK_INVOKER` hands production's scheduled work to the tick of §22, as on
-staging (§13, ADR 0048). The production deploy then sets
+staging (§13, ADR 0049). The production deploy then sets
 `SCHEDULED_WORK=tick` and bills the one warm instance per request, a few
 francs a month instead of the largest line of the bill. Without it, CPU stays
 allocated and the server's own timers run.

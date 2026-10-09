@@ -12,7 +12,7 @@
 # GCP_SQL_INSTANCE, GCP_RUN_SA, GCP_PROJECT_NUMBER; PUBLIC_URL optionally
 # overrides the address links point at (a custom domain), MIXPANEL_TOKEN
 # optionally turns analytics on (ADR 0026), and TICK_INVOKER hands staging's
-# scheduled work to Cloud Scheduler's tick (ADR 0048).
+# scheduled work to Cloud Scheduler's tick (ADR 0049).
 set -euo pipefail
 
 : "${TARGET:?}" "${IMAGE:?}" "${GCP_PROJECT:?}" "${GCP_REGION:?}"

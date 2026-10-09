@@ -29,7 +29,7 @@ const deps = composeApp(config, connection.db, {
 await deps.settings.refresh()
 
 // The server's own timers, unless a scheduler's tick runs the same work
-// (ADR 0048). Notifications are mailed by a timer, not by the request that
+// (ADR 0049). Notifications are mailed by a timer, not by the request that
 // caused them, and kept as long as the outbound log is purged (R-NOTE-7,
 // R-NOTE-11).
 function startTimers(): void {

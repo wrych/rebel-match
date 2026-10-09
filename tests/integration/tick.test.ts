@@ -38,7 +38,7 @@ afterAll(async () => {
   await db.close()
 })
 
-describe('the tick, composed as the server runs it (ADR 0048)', () => {
+describe('the tick, composed as the server runs it (ADR 0049)', () => {
   function tickApp(): ReturnType<typeof createApp> {
     const config = loadConfig({
       ...base,

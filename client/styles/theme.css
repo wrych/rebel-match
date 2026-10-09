@@ -24,11 +24,13 @@
   --faint: #8a8579;
   --line: #ded8cc;
   --line-strong: #c9c2b4;
+  --line-width: 1.5px;
   --field: #fff;
 
   --accent: #d4471f;
   --accent-hover: #b93a16;
   --on-accent: #fff;
+  --accent-line: color-mix(in srgb, var(--accent) 60%, transparent);
   --disabled: #c9c2b4;
   --ok: #2c6e3a;
   --ok-soft: #e7f1e6;
@@ -220,6 +222,11 @@ a {
   color: var(--accent);
 }
 
+/* A section heading in the step header's ink, for a list under a form. */
+.kicker-ink {
+  color: var(--ink);
+}
+
 .lede {
   margin: 0;
   font-size: 1.03rem;
@@ -249,7 +256,7 @@ a {
   font-weight: 700;
   letter-spacing: 0.16em;
   color: var(--accent);
-  border: 1.5px solid var(--accent);
+  border: var(--line-width) solid var(--accent-line);
   border-radius: 999px;
   padding: 5px 11px;
   vertical-align: middle;
@@ -634,7 +641,7 @@ textarea.input {
   grid-template-columns: minmax(0, 1fr);
   gap: 0.7rem;
   padding: 1rem;
-  border: 1.5px solid var(--line-strong);
+  border: var(--line-width) solid var(--line-strong);
   border-radius: var(--radius);
   background: var(--field);
   box-shadow: var(--tiny-shadow);
@@ -642,8 +649,7 @@ textarea.input {
 
 /* Something the member has not opened yet (R-MINE-6, R-CONN-10). */
 .card-new {
-  outline: 3px solid var(--accent);
-  outline-offset: -1px;
+  border-color: var(--accent-line);
 }
 
 .card-solid {
@@ -788,7 +794,7 @@ textarea.input {
 }
 
 .peer-same_boat .peer {
-  border: 2px solid var(--accent);
+  border: var(--line-width) solid var(--accent-line);
   background: var(--soft);
 }
 
@@ -1033,7 +1039,7 @@ textarea.input {
 .notice {
   margin: 0;
   padding: 0.85rem 1rem;
-  border: 1.5px dashed var(--accent);
+  border: var(--line-width) dashed var(--accent-line);
   border-radius: var(--radius);
   font-family: var(--font-mono);
   font-size: 0.74rem;

@@ -43,7 +43,7 @@ beforeAll(async () => {
 
 const scheduler = { aud: AUDIENCE, email: INVOKER, email_verified: true }
 
-describe('createInvokerCheck (ADR 0048)', () => {
+describe('createInvokerCheck (ADR 0049)', () => {
   it('believes the scheduler, signed by Google for this audience', async () => {
     expect(await check(`Bearer ${await sign(scheduler)}`)).toBe(true)
   })

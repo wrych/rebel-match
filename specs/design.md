@@ -100,6 +100,7 @@ thresholds have sane defaults in the file and may be overridden by env.
 | `limits.profileDraftRetentionDays`    | `30`                          | R-ONB-15                  |
 | `limits.holdToSelectMs`               | `500`                         | R-MEM-3                   |
 | `limits.swipeMinPx`                   | `50`                          | R-OFF-1                   |
+| `limits.matchesShownFirst`            | `1`                           | R-ASK-15                  |
 | `abuse.linkEmailsBeforeCheck`         | `3`                           | R-NFR-8                   |
 | `abuse.linkEmailsCeiling`             | `10`                          | R-NFR-8                   |
 | `abuse.linkEmailWindowMinutes`        | `15`                          | R-NFR-8                   |
@@ -707,6 +708,7 @@ CREATE TABLE member_expertise (
   member_id CHAR(36)     NOT NULL,
   trend_id  CHAR(2)      NOT NULL,
   note      VARCHAR(400) NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),  -- when the offer was made
   PRIMARY KEY (member_id, trend_id),
   CONSTRAINT fk_exp_member FOREIGN KEY (member_id) REFERENCES members(id)
     ON DELETE CASCADE,
@@ -868,7 +870,7 @@ erases the email in the recipient's log as well.
 **Retention is a job, not an endpoint (R-MSG-6).** The server deletes entries
 older than `limits.outboxRetentionDays` once at startup and then every
 `outboxPurgeIntervalHours`; where a scheduler's tick runs the scheduled work
-(ADR 0048), on the first tick and then once per interval. Nobody can purge the
+(ADR 0049), on the first tick and then once per interval. Nobody can purge the
 log by hand: a person able to read it should not also be able to erase the
 record of what was sent.
 
@@ -1019,7 +1021,7 @@ step's `PUT /api/me/analytics`), which also take a signed-in pending applicant
 since they carry nothing about anyone (R-CFG-2). `POST /api/internal/tick`
 takes no session but a Cloud Scheduler OIDC token, runs the due scheduled work
 and answers `204`, or `500` when some of it failed; any other caller gets
-`404`. It exists only where the tick runs the scheduled work (ADR 0048).
+`404`. It exists only where the tick runs the scheduled work (ADR 0049).
 
 ### Auth
 
@@ -1191,10 +1193,10 @@ deep link reloads cleanly.
 | S2  | **Sign in** — the magic link's landing: a **Sign in** button; tapping it verifies the token and routes onward (ADR 0027)                                                                                                                                                                                                                                                                                                                                                              | `/sign-in#token=…`                                    |
 | S3  | **Onboarding: profile** — step 1 of 3: name and the optional profile, saved to the draft field by field with a tick, under the line "We keep what you enter here to set up your account" with links to S30 and S31; skipped when the draft holds a name (R-ONB-2, R-ONB-6, R-ONB-7, R-ONB-15)                                                                                                                                                                                         | `/onboarding`                                         |
 | S4  | **Welcome** — two doors: _Ask for help_ / _Offer help_                                                                                                                                                                                                                                                                                                                                                                                                                                | `/welcome`                                            |
-| S5  | **Submit challenge** — textarea + _Inspiration_: the newest challenges, read-only; disabled until the text passes `limits.challengeMinChars`; takes at most `limits.challengeMaxChars`                                                                                                                                                                                                                                                                                                | `/ask`                                                |
+| S5  | **Submit challenge** — textarea + _Last submitted_: the newest challenges, read-only; disabled until the text passes `limits.challengeMinChars`; takes at most `limits.challengeMaxChars`                                                                                                                                                                                                                                                                                             | `/ask`                                                |
 | S6  | **Domain / trend** — detected trend, "from → to", peer line, confirm                                                                                                                                                                                                                                                                                                                                                                                                                  | `/challenges/:id`                                     |
 | S7  | **Trend picker** — all 8 trends, pick a different one _(was a sheet)_                                                                                                                                                                                                                                                                                                                                                                                                                 | `/challenges/:id/trend`                               |
-| S8  | **Matches (for my challenge)** — posted banner; rebels facing this now / who've been there / organizations that did it; follow; connect                                                                                                                                                                                                                                                                                                                                               | `/challenges/:id/matches`                             |
+| S8  | **Matches (for my challenge)** — posted banner; your challenge; same boat / been there / case studies, each its first entry and the rest on a tap; follow; connect                                                                                                                                                                                                                                                                                                                    | `/challenges/:id/matches`                             |
 | S9  | **Trend detail & case studies** — the trend's "from → to", peers, its newest challenges, curated cases _(was a sheet)_                                                                                                                                                                                                                                                                                                                                                                | `/trends/:trendId`                                    |
 | S10 | **Swipe deck** — card stack; Same boat / Been there / Follow (greyed when followed) / skip                                                                                                                                                                                                                                                                                                                                                                                            | `/offer`                                              |
 | S11 | **"Been there" note** — write the ≥`limits.beenThereNoteMinChars` note for one card _(was a sheet)_                                                                                                                                                                                                                                                                                                                                                                                   | `/offer/:challengeId/note`                            |
@@ -1307,6 +1309,24 @@ function detectTrend(text, trends) {
 
 Post-beta upgrade (Could-have C5): replace with an LLM classifier that returns a
 trend id + confidence; keep the same interface so callers don't change.
+
+### 5a. Ranking matches (ADR 0048)
+
+Which peer a section shows first is the **match ranker's** call, one pure
+function the challenge service is given:
+
+```ts
+type MatchRanker = (
+  section: 'sameBoat' | 'beenThere',
+  peers: RankablePeer[], // a PeerCard plus `since`, when it entered the trend
+  challenge: Challenge, // what the ranking is for
+) => PeerCard[]
+```
+
+The store returns peers unordered; the ranker orders them and drops `since`.
+For the beta both sections rank **newest first** — the latest challenge, the
+latest "been there" offer — with the name, then the member id, breaking ties.
+A smarter ranker (profile overlap, an LLM) replaces it in `compose.ts` alone.
 
 ---
 

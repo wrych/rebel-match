@@ -110,11 +110,11 @@ describe('loadConfig', () => {
     ).toThrow()
   })
 
-  it("runs the scheduled work on the server's timers by default (ADR 0048)", () => {
+  it("runs the scheduled work on the server's timers by default (ADR 0049)", () => {
     expect(loadConfig(valid).scheduledWork).toEqual({ mode: 'timers' })
   })
 
-  it('hands the scheduled work to a tick from the named invoker (ADR 0048)', () => {
+  it('hands the scheduled work to a tick from the named invoker (ADR 0049)', () => {
     const config = loadConfig({
       ...valid,
       SCHEDULED_WORK: 'tick',
@@ -129,7 +129,7 @@ describe('loadConfig', () => {
     })
   })
 
-  it('refuses a tick without knowing whose token to believe (ADR 0048)', () => {
+  it('refuses a tick without knowing whose token to believe (ADR 0049)', () => {
     expect(() => loadConfig({ ...valid, SCHEDULED_WORK: 'tick' })).toThrow(
       /TICK_INVOKER[\s\S]*TICK_AUDIENCE/,
     )

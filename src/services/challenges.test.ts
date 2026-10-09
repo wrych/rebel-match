@@ -7,6 +7,7 @@ import {
   type ChallengeStore,
   type PeerCard,
 } from './challenges.js'
+import type { MatchRanker, MatchSection } from './match-ranker.js'
 
 const stored = seedTrends.map((t) => ({
   id: t.id,
@@ -24,18 +25,22 @@ const peer: PeerCard = {
   companySize: '51-250',
   note: 'Ran a decision-mapping sprint.',
 }
+const since = new Date('2026-11-01T09:00:00.000Z')
+const other: PeerCard = { ...peer, memberId: 'm-joris', name: 'Joris Bakker' }
 
 function setup(): {
   service: ReturnType<typeof createChallenges>
   rows: Map<string, Challenge>
   peerCalls: [string, string][]
   newestCalls: [string, string | null, number][]
+  rankCalls: [MatchSection, string[], string][]
   tracked: [string, AnalyticsEvent][]
 } {
   const tracked: [string, AnalyticsEvent][] = []
   const rows = new Map<string, Challenge>()
   const peerCalls: [string, string][] = []
   const newestCalls: [string, string | null, number][] = []
+  const rankCalls: [MatchSection, string[], string][] = []
   const store: ChallengeStore = {
     trends: () => Promise.resolve(stored),
     insert: (c) => {
@@ -55,7 +60,13 @@ function setup(): {
     },
     peers: (trendId, viewerId) => {
       peerCalls.push([trendId, viewerId])
-      return Promise.resolve({ sameBoat: [peer], beenThere: [peer] })
+      return Promise.resolve({
+        sameBoat: [{ ...peer, since }],
+        beenThere: [
+          { ...peer, since },
+          { ...other, since },
+        ],
+      })
     },
     cases: () =>
       Promise.resolve([
@@ -72,11 +83,16 @@ function setup(): {
     tracked.push([memberId, event])
     return Promise.resolve()
   }
+  const rank: MatchRanker = (section, peers, challenge) => {
+    rankCalls.push([section, peers.map((p) => p.memberId), challenge.id])
+    return peers.map(({ since: _since, ...card }) => card).reverse()
+  }
   return {
-    service: createChallenges({ store, newestShown: 3, track }),
+    service: createChallenges({ store, rank, newestShown: 3, track }),
     rows,
     peerCalls,
     newestCalls,
+    rankCalls,
     tracked,
   }
 }
@@ -203,6 +219,19 @@ describe('createChallenges', () => {
     expect(matches?.sameBoat).toEqual([peer])
     expect(matches?.cases).toHaveLength(1)
     expect(peerCalls).toEqual([['07', 'm-ada']])
+  })
+
+  it('orders each peer section by the ranker it was given (ADR 0048)', async () => {
+    const { service, rankCalls } = setup()
+    await service.create('m-ada', decide, () => 'c-1')
+
+    const matches = await service.matches('m-ada', 'c-1')
+
+    expect(matches?.beenThere).toEqual([other, peer])
+    expect(rankCalls).toEqual([
+      ['sameBoat', ['m-marieke'], 'c-1'],
+      ['beenThere', ['m-marieke', 'm-joris'], 'c-1'],
+    ])
   })
 
   it('matches on the picked trend before one is confirmed', async () => {

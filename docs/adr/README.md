@@ -61,7 +61,7 @@ still holds except where the later ADR says otherwise.
 | [0022](0022-agents-merge-routine-prs.md)                          | Agents merge routine pull requests; people approve decisions                    | Accepted, amended by 0028             |
 | [0023](0023-prototype-look-and-colour-modes.md)                   | Wear the prototype's look, with happy mode as a colour mode                     | Accepted, amended by 0045             |
 | [0024](0024-postgres-via-drizzle-with-pglite-for-dev.md)          | Postgres through Drizzle, with PGlite for development and tests                 | Accepted                              |
-| [0025](0025-cloud-run-promote-staging.md)                         | Cloud Run from GitHub; production promoted from staging                         | Accepted, amended by 0028, 0044, 0048 |
+| [0025](0025-cloud-run-promote-staging.md)                         | Cloud Run from GitHub; production promoted from staging                         | Accepted, amended by 0028, 0044, 0049 |
 | [0026](0026-analytics-opt-in-sent-from-the-server.md)             | Analytics is opt-in, and every event goes from the server                       | Accepted, amended by 0041             |
 | [0027](0027-sign-in-with-a-button.md)                             | Sign in with a button, never by opening the link                                | Accepted, amended by 0034             |
 | [0028](0028-merge-without-updating.md)                            | Merge without updating the branch; previews on request                          | Accepted                              |
@@ -83,4 +83,5 @@ still holds except where the later ADR says otherwise.
 | [0045](0045-9torevolution-an-office-game-hidden-in-happy-mode.md) | Hide 9toRevolution, an office game, behind the impressum in happy mode          | Accepted, amended by 0046, 0047       |
 | [0046](0046-enter-9torevolution-by-turning-the-phone.md)          | Enter 9toRevolution by turning the phone; play in landscape, choose in portrait | Accepted                              |
 | [0047](0047-an-office-door-that-shuts.md)                         | Give the boss's office a door that shuts now and then                           | Accepted                              |
-| [0048](0048-scheduled-work-on-a-tick.md)                          | Run the scheduled work on a tick from Cloud Scheduler                           | Accepted                              |
+| [0048](0048-show-the-best-match-first-behind-one-ranker.md)       | Show the most relevant match first, ranked behind one seam                      | Accepted                              |
+| [0049](0049-scheduled-work-on-a-tick.md)                          | Run the scheduled work on a tick from Cloud Scheduler                           | Accepted                              |

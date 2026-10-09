@@ -645,6 +645,13 @@ const catalogue: Group[] = [
         unit: ['pixel', 'pixels'],
       },
       {
+        name: 'Matches shown before “more”',
+        explanation:
+          'How many rebels or case studies each section of a challenge’s matches shows before the rest are a tap away.',
+        fixed: true,
+        read: (c) => c.limits.matchesShownFirst,
+      },
+      {
         name: 'Scroll hint on the privacy step moves',
         explanation:
           'How far one tap on the arrow scrolls the privacy summary, as a share of the screen height.',

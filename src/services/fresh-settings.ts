@@ -4,7 +4,7 @@ const MS_PER_SECOND = 1000
 
 /** Re-reads the hosts' changes when the copy in force is older than
  * `maxAgeSeconds`, for servers that run no refresh timer (ADR 0031,
- * ADR 0048). Concurrent callers share one read; a failed read is reported
+ * ADR 0049). Concurrent callers share one read; a failed read is reported
  * and the values in force stay. */
 export function createFreshSettings(deps: {
   settings: Pick<SettingsService, 'refresh'>

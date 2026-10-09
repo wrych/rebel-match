@@ -10,7 +10,7 @@ function job(
   return { job: { run, everyMs } satisfies ScheduledJob, run }
 }
 
-describe('createTick (ADR 0048)', () => {
+describe('createTick (ADR 0049)', () => {
   it('runs every job on the first tick', async () => {
     const often = job(0)
     const hourly = job(HOUR)

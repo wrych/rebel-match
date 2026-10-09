@@ -303,10 +303,10 @@ printed dev link (R-DEV-6).
       staging from `main`. _(ADR 0025, rollout step 1)_
 - [ ] Production on Cloud Run, promoted from staging by a reviewed workflow,
       in time for the pilot; on the tick, billed per request, when
-      `TICK_INVOKER` is set. _(ADR 0025, rollout step 2, ADR 0048)_
+      `TICK_INVOKER` is set. _(ADR 0025, rollout step 2, ADR 0049)_
 - [x] Scheduled work on a tick from Cloud Scheduler, with an OIDC-checked
       `POST /api/internal/tick`, the settings refresh on the request path, and
-      staging on it. _(R-NOTE-7, R-NOTE-10, R-MSG-6, ADR 0048)_
+      staging on it. _(R-NOTE-7, R-NOTE-10, R-MSG-6, ADR 0049)_
 - [ ] Uptime check and alerts on production: a Cloud Monitoring uptime check
       on `/api/health` expecting `"database":"up"`, alert policies on the 5xx
       share and on failed job executions, a notification channel reaching the

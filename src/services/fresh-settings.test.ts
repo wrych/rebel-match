@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { createFreshSettings } from './fresh-settings.js'
 
-describe('createFreshSettings (ADR 0031, ADR 0048)', () => {
+describe('createFreshSettings (ADR 0031, ADR 0049)', () => {
   it('reads at first, then again only once the copy is older than the limit', async () => {
     let at = 0
     const refresh = vi.fn(() => Promise.resolve())

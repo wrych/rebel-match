@@ -9,7 +9,7 @@ export type InvokerCheck = (
 ) => Promise<boolean>
 
 /** Believes a tick only from `invoker`: a bearer ID token Google signed for
- * that verified address and `audience` (ADR 0048). Anything else is false,
+ * that verified address and `audience` (ADR 0049). Anything else is false,
  * never an error. `keys` defaults to Google's published keys. */
 export function createInvokerCheck(deps: {
   invoker: string

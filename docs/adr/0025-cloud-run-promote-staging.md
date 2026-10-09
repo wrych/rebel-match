@@ -1,6 +1,6 @@
 # 0025. Host on Google Cloud Run, deploy from GitHub, promote staging to production
 
-- **Status:** Accepted, amended by 0028, 0044 and 0048
+- **Status:** Accepted, amended by 0028, 0044 and 0049
 - **Date:** 2026-10-03
 - **Deciders:** Andy Moesch
 

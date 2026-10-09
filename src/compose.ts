@@ -43,6 +43,7 @@ import { createApprovals } from './services/approvals.js'
 import { mailLinks } from './services/link-delivery.js'
 import { createChallengeStore } from './services/challenge-store.js'
 import { createChallenges } from './services/challenges.js'
+import { newestFirst } from './services/match-ranker.js'
 import { createConnectionStore } from './services/connection-store.js'
 import { createConnections } from './services/connections.js'
 import { createMemberDirectory } from './services/member-directory-store.js'
@@ -148,6 +149,7 @@ function composeJourneys(
   const notes = composeNotifications(db, settings)
   const challenges = createChallenges({
     store: createChallengeStore(db),
+    rank: newestFirst,
     newestShown: config.limits.newestChallengesShown,
     track,
   })
@@ -349,7 +351,7 @@ function composeOnboarding(
 
 const MS_PER_HOUR = 3_600_000
 
-// The work the server's timers do, as jobs a tick runs (ADR 0048).
+// The work the server's timers do, as jobs a tick runs (ADR 0049).
 function scheduledJobs(
   config: Config,
   deps: Pick<AppDeps, 'auth' | 'erasure' | 'outbox' | 'notificationMail'>,
@@ -383,7 +385,7 @@ function scheduledJobs(
 }
 
 // The tick, its caller check and the settings refresh it replaces, when the
-// configuration hands the scheduled work to a scheduler (ADR 0048).
+// configuration hands the scheduled work to a scheduler (ADR 0049).
 function withScheduled(
   config: Config,
   deps: Omit<AppDeps, 'scheduled'>,

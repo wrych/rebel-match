@@ -11,7 +11,7 @@ export interface Tick {
   run(): Promise<boolean>
 }
 
-/** The scheduled work driven from outside, one call at a time (ADR 0048). A
+/** The scheduled work driven from outside, one call at a time (ADR 0049). A
  * job is due on the first tick, then once its interval has passed since it
  * last started; a failed job is reported and waits for its next turn. */
 export function createTick(deps: {

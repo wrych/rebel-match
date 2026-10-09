@@ -65,6 +65,7 @@ type Served = {
   found?: Matches | null
   followed?: Trend[]
   followStatus?: number
+  shownFirst?: number | null
 }
 
 function json(body: unknown): Promise<object> {
@@ -74,11 +75,20 @@ function json(body: unknown): Promise<object> {
 /** Serves the challenge, its matches and the followed trends, and answers a
  * follow or unfollow with `followStatus`. */
 function server(served: Served = {}): ReturnType<typeof vi.fn> {
-  const { found = matches, followed = [], followStatus = 204 } = served
+  const {
+    found = matches,
+    followed = [],
+    followStatus = 204,
+    shownFirst = 1,
+  } = served
   const fetchMock = vi.fn((url: string, init?: RequestInit) => {
     if (init?.method !== undefined)
       return Promise.resolve({ ok: followStatus < 300, status: followStatus })
     if (url === '/api/follows') return json({ trends: followed })
+    if (url === '/api/config')
+      return shownFirst === null
+        ? Promise.resolve({ ok: false, status: 500 })
+        : json({ limits: { matchesShownFirst: shownFirst } })
     if (found === null) return Promise.resolve({ ok: false, status: 404 })
     return url.endsWith('/matches') ? json(found) : json({ challenge })
   })
@@ -121,17 +131,76 @@ describe('MatchesScreen', () => {
     server()
     const screen = await mountScreen()
 
-    expect(screen.find('h1').text()).toBe('Rebels who can help')
+    expect(screen.find('.kicker').text()).toBe(
+      'Your challenge · Network of Teams',
+    )
+    expect(screen.find('h1').text()).toBe('Your matches')
     expect(screen.findAll('h2').map((heading) => heading.text())).toEqual([
-      'Rebels facing this now',
-      'Rebels who’ve been there',
-      'Rebel organizations that did it',
+      'Same boat: rebels facing this now',
+      'Been there: rebels who’ve solved it',
+      'Case studies',
     ])
     expect(screen.findAll('.purpose').map((line) => line.text())).toEqual([
       'Connect and compare notes.',
-      'Ask how they solved it.',
+      'Ask how they did it.',
       'Read how they made the shift.',
     ])
+  })
+
+  it('shows the first of each section and folds the rest (R-ASK-15)', async () => {
+    const more = (name: string, at: number): Matches['sameBoat'][number] => ({
+      ...matches.sameBoat[0]!,
+      memberId: `m-${String(at)}`,
+      name,
+    })
+    server({
+      found: {
+        ...matches,
+        sameBoat: [more('Ana', 1), more('Ben', 2), more('Cy', 3)],
+        cases: [...matches.cases, { ...matches.cases[0]!, url: 'https://x' }],
+      },
+    })
+    const screen = await mountScreen()
+    const folds = (): string[] =>
+      screen.findAll('button[aria-expanded]').map((each) => each.text())
+
+    expect(screen.findAll('.peer-same_boat .peer')).toHaveLength(1)
+    expect(screen.text()).toContain('Ana')
+    expect(screen.text()).not.toContain('Ben')
+    expect(screen.findAll('.case')).toHaveLength(1)
+    expect(folds()).toEqual([
+      '2 more rebels in the same boat',
+      '1 more case study',
+    ])
+
+    await screen.find('button[aria-expanded]').trigger('click')
+
+    expect(screen.findAll('.peer-same_boat .peer')).toHaveLength(3)
+    expect(folds()).toEqual(['Show fewer', '1 more case study'])
+    expect(
+      screen.find('button[aria-expanded]').attributes('aria-expanded'),
+    ).toBe('true')
+
+    await screen.find('button[aria-expanded]').trigger('click')
+
+    expect(screen.findAll('.peer-same_boat .peer')).toHaveLength(1)
+  })
+
+  it('folds nothing when the limit cannot be loaded', async () => {
+    server({
+      shownFirst: null,
+      found: {
+        ...matches,
+        sameBoat: [
+          ...matches.sameBoat,
+          { ...matches.sameBoat[0]!, memberId: 'm9' },
+        ],
+      },
+    })
+    const screen = await mountScreen()
+
+    expect(screen.findAll('.peer-same_boat .peer')).toHaveLength(2)
+    expect(screen.find('button[aria-expanded]').exists()).toBe(false)
   })
 
   it('confirms the post on arrival from the trend step (R-ASK-11)', async () => {

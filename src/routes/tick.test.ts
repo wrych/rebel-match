@@ -18,7 +18,7 @@ function setup(outcome = true): { app: Express; run: () => Promise<boolean> } {
   return { app, run }
 }
 
-describe('POST /api/internal/tick (ADR 0048)', () => {
+describe('POST /api/internal/tick (ADR 0049)', () => {
   it('runs the due work for the scheduler and answers 204', async () => {
     const { app, run } = setup()
 
@@ -50,7 +50,7 @@ describe('POST /api/internal/tick (ADR 0048)', () => {
   })
 })
 
-describe('freshSettings (ADR 0048)', () => {
+describe('freshSettings (ADR 0049)', () => {
   it('brings the settings up to date before the request is handled', async () => {
     const order: string[] = []
     const app = express()

@@ -93,7 +93,7 @@ export interface AppDeps {
     purgeBefore(cutoff: Date): Promise<number>
   }
   /** Present when a scheduler's tick, not the server's timers, runs the
-   * scheduled work (ADR 0048). */
+   * scheduled work (ADR 0049). */
   scheduled?: {
     tick: Tick
     isInvoker: InvokerCheck
@@ -135,7 +135,7 @@ export const handleErrors: ErrorRequestHandler = (
     .json({ error: clientError ? 'bad_request' : 'internal_error' })
 }
 
-// Ahead of the API guard: the scheduler is not a member (ADR 0048).
+// Ahead of the API guard: the scheduler is not a member (ADR 0049).
 function mountScheduled(
   app: Express,
   scheduled: NonNullable<AppDeps['scheduled']>,
