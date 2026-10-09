@@ -19,11 +19,12 @@ afterEach(() => {
 })
 
 describe('App shell', () => {
-  it('carries the Corporate Rebels mark home', () => {
-    const app = mountApp()
+  it('carries the Rebel Match mark home (R-LOOK-5)', () => {
+    const link = mountApp().findComponent(RouterLinkStub)
 
-    expect(app.find('img').attributes('alt')).toBe('Corporate Rebels')
-    expect(app.findComponent(RouterLinkStub).props('to')).toBe('/')
+    expect(link.props('to')).toBe('/')
+    expect(link.attributes('aria-label')).toBe('Rebel Match, home')
+    expect(link.find('svg.rebel-mark').exists()).toBe(true)
   })
 
   it('switches happy mode on and off from the menu (R-LOOK-2, R-PROF-3)', async () => {
