@@ -112,12 +112,12 @@ describe('AskScreen', () => {
     expect(submitButton(screen).disabled).toBe(false)
   })
 
-  it('shows the newest challenges as inspiration, nothing inserting them (R-ASK-2)', async () => {
+  it('shows the newest challenges as last submitted, nothing inserting them (R-ASK-2)', async () => {
     server()
     const screen = await mountScreen()
-    const section = screen.find('[aria-labelledby="inspiration-heading"]')
+    const section = screen.find('[aria-labelledby="last-submitted-heading"]')
 
-    expect(section.find('h2').text()).toBe('Inspiration')
+    expect(section.find('h2').text()).toBe('Last submitted')
     expect(section.findAll('.mine').map((each) => each.text())).toEqual([
       'Peer feedback instead of annual reviews.',
       'A shadow organisation beside the official one.',
@@ -130,11 +130,11 @@ describe('AskScreen', () => {
   it.each([
     ['none yet', []],
     ['they cannot be loaded', null],
-  ])('leaves inspiration out when %s (R-ASK-2)', async (_, latest) => {
+  ])('leaves last submitted out when %s (R-ASK-2)', async (_, latest) => {
     server(201, latest)
     const screen = await mountScreen()
 
-    expect(screen.find('#inspiration-heading').exists()).toBe(false)
+    expect(screen.find('#last-submitted-heading').exists()).toBe(false)
     expect(screen.find('[role="alert"]').exists()).toBe(false)
     expect(screen.find('textarea#challenge').exists()).toBe(true)
   })

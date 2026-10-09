@@ -16,7 +16,7 @@ const draft = ref('')
 const limits = ref<{ min: number; max: number } | null>(null)
 const sending = ref(false)
 const problem = ref<string | null>(null)
-const inspiration = ref<NewestChallenge[]>([])
+const lastSubmitted = ref<NewestChallenge[]>([])
 
 // The server trims before it counts, so the counter does too (R-CFG-2).
 const length = computed(() => draft.value.trim().length)
@@ -28,18 +28,18 @@ const ready = computed(
     !sending.value,
 )
 
-// Inspiration is a nicety: without it the form still works, so a failure
-// only leaves the section out.
-async function loadInspiration(): Promise<void> {
+// The last submitted list is a nicety: without it the form still works, so a
+// failure only leaves the section out.
+async function loadLastSubmitted(): Promise<void> {
   try {
-    inspiration.value = await fetchNewestChallenges()
+    lastSubmitted.value = await fetchNewestChallenges()
   } catch {
-    inspiration.value = []
+    lastSubmitted.value = []
   }
 }
 
 onMounted(async () => {
-  void loadInspiration()
+  void loadLastSubmitted()
   try {
     const config = await fetchConfig()
     limits.value = {
@@ -72,8 +72,9 @@ async function submit(): Promise<void> {
     <div class="stack">
       <h1 class="display display-lg">What’s your challenge?</h1>
       <p id="challenge-hint" class="lede">
-        One challenge, in your own words. Be specific: what do you observe, what
-        do you want to change, and where are you struggling?
+        One challenge, in your own words.<br />
+        Be specific: what do you observe, what do you want to change, and where
+        are you struggling?
       </p>
     </div>
 
@@ -101,12 +102,14 @@ async function submit(): Promise<void> {
     </form>
 
     <section
-      v-if="inspiration.length > 0"
+      v-if="lastSubmitted.length > 0"
       class="stack-tight rule"
-      aria-labelledby="inspiration-heading"
+      aria-labelledby="last-submitted-heading"
     >
-      <h2 id="inspiration-heading" class="kicker">Inspiration</h2>
-      <NewestChallenges :challenges="inspiration" />
+      <h2 id="last-submitted-heading" class="kicker kicker-ink">
+        Last submitted
+      </h2>
+      <NewestChallenges :challenges="lastSubmitted" />
     </section>
   </section>
 </template>

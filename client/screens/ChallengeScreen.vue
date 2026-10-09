@@ -72,9 +72,10 @@ async function confirm(): Promise<void> {
       <div class="stack">
         <h1 class="display display-lg">Your domain</h1>
         <p class="lede">
-          We try to categorize each challenge under one of the 8 trends. This
-          helps us find case studies and potential sparring partners for you.
-          Please correct us if our assumption is wrong.
+          We categorise each challenge under one of the trends typical of
+          pioneering organisations. This helps us to find case studies and
+          potential sparring partners for you. Please adjust if our assumption
+          is incorrect.
         </p>
       </div>
 
