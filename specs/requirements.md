@@ -439,6 +439,10 @@ capability, not a secret** — and every requirement below exists because of tha
     now).
   - **Been there** — members who offer experience in that trend.
   - **Case studies** — curated Corporate Rebels case links for that trend.
+
+  Peers in each section come most relevant first, as the match ranker orders
+  them (design §5a); case studies keep their curated order.
+
 - **R-ASK-9** — The system SHALL let the member **follow** the trend to be
   notified of future challenges in it (R-NOTE-1).
 - **R-ASK-10** — Each "same boat" and "been there" peer card SHALL expose a
@@ -447,11 +451,12 @@ capability, not a secret** — and every requirement below exists because of tha
   SYSTEM SHALL open the matches view with a success banner saying the challenge
   is live and that members who can help will now see it. The banner SHALL show
   only on that arrival, not when the member returns to the view later.
-- **R-ASK-12 (Purpose in every word)** — The matches view SHALL name its
-  sections by the people in them and what to do with them: _Rebels facing this
-  now — connect and compare notes_, _Rebels who've been there — ask how they
-  solved it_, _Rebel organizations that did it — read how they made the shift_.
-  The "Same boat" and "Been there" labels stay as tags elsewhere (deck, cockpit).
+- **R-ASK-12 (Purpose in every word)** — The matches view SHALL open with the
+  member's own challenge under the kicker _Your challenge_, then head the
+  matches _Your matches_, and SHALL name each section by its label, the people
+  in it and what to do with them: _Same boat: rebels facing this now — connect
+  and compare notes_, _Been there: rebels who've solved it — ask how they did
+  it_, _Case studies — read how they made the shift_.
 - **R-ASK-13 (No dead end)** — IF a peer section is empty THE SYSTEM SHALL say
   that other members will find the challenge, not merely that nobody is there;
   and IF both peer sections are empty THE SYSTEM SHALL offer a way on to the
@@ -464,6 +469,12 @@ capability, not a secret** — and every requirement below exists because of tha
   trend, as the connection request shows the challenge it is about, never who
   wrote it. Only an active challenge of an active, onboarded member counts, as
   for the deck (R-OFF-1), and never the viewer's own.
+- **R-ASK-15 (Most relevant first)** — Each section of the matches view SHALL
+  show its first `limits.matchesShownFirst` entries, and below them, IF it holds
+  more, a control naming how many more there are and what they are (_3 more
+  rebels in the same boat_, _2 more who've been there_, _4 more case studies_)
+  that shows the rest in place, and then shows fewer again. _(Founders' review,
+  2026-10-09: the overview should fit without scrolling.)_
 
 ---
 

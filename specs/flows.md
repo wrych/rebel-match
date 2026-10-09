@@ -266,10 +266,11 @@ my challenge.
 6. Member confirms, or goes to **S7** (`/challenges/:id/trend`) and overrides the
    trend → `PATCH /api/challenges/:id` records the override (R-ASK-7).
 7. **S8** opens with a green banner — the challenge is live and members who can
-   help will now see it (R-ASK-11) — and shows `GET /api/challenges/:id/matches`:
-   **rebels facing this now** (same boat), **rebels who've been there**, and
-   curated case studies as **rebel organizations that did it** — names and roles
-   only, never email addresses (R-ASK-8, R-ASK-12, R-NFR-1).
+   help will now see it (R-ASK-11) — then the member's challenge, and under
+   **Your matches** `GET /api/challenges/:id/matches`: **same boat**, **been
+   there** and curated **case studies**, each with its most relevant entry first
+   and the rest a tap away — names and roles only, never email addresses
+   (R-ASK-8, R-ASK-12, R-ASK-15, R-NFR-1).
 8. From a match card the member can **Follow** the trend (**F9**) or **Connect**,
    which opens **F7** — not a `mailto:` (R-ASK-9, R-ASK-10).
 
