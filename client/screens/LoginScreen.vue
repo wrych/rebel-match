@@ -7,7 +7,9 @@ import {
   TooManyRequests,
   type LinkRequest,
 } from '../lib/admission'
+import RebelMark from '../components/RebelMark.vue'
 import { fetchConfig } from '../lib/api'
+import { prefersReducedMotion, takeIntro } from '../lib/intro'
 import { countInviteOpen } from '../lib/invite-open'
 import { solveHumanCheck } from '../lib/human-check'
 import { accountNotice, linkNotice } from '../lib/link-notice'
@@ -23,6 +25,8 @@ const deadLink = linkNotice(window.location.search)
 const accountGone = accountNotice(window.location.search)
 const consentVersion = ref<string | null>(null)
 const problem = ref<string | null>(null)
+const introPlays = takeIntro(prefersReducedMotion())
+const introShowing = ref(introPlays)
 
 let stopCounting = (): void => undefined
 
@@ -120,12 +124,25 @@ async function send(): Promise<void> {
     </p>
   </section>
 
-  <section v-else class="screen screen-hero">
+  <section
+    v-else
+    class="screen screen-hero"
+    :class="{ 'screen-held': introPlays }"
+  >
+    <div
+      v-if="introShowing"
+      class="intro"
+      aria-hidden="true"
+      @animationend.self="introShowing = false"
+    />
     <div class="stack">
-      <h1 class="display display-xl">
-        Rebel<br /><span class="mark">Match</span>
-        <span class="beta">Beta</span>
-      </h1>
+      <div class="masthead">
+        <RebelMark class="masthead-mark" :play="introPlays" />
+        <h1 class="display display-xl">
+          Rebel<br /><span class="mark">Match</span>
+          <span class="beta">Beta</span>
+        </h1>
+      </div>
       <p class="lede">
         Corporate Rebels connects the organizations replacing bureaucracy with
         better systems. Rebel Match is where the members help each other do the
@@ -189,6 +206,48 @@ async function send(): Promise<void> {
 </template>
 
 <style scoped>
+.masthead {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.masthead h1 {
+  min-width: 0;
+}
+
+.masthead-mark {
+  flex: 0 0 auto;
+  width: clamp(6rem, 32vw, 9rem);
+  height: auto;
+  aspect-ratio: 1;
+}
+
+/* The screen's own entrance would make it a stacking context and trap the mark
+   under the intro's layer, so it is held still while the intro plays. */
+.screen-held {
+  animation: none;
+}
+
+.screen-held .masthead-mark {
+  position: relative;
+  z-index: 41;
+}
+
+.intro {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: #000;
+  animation: intro-clear 0.35s ease var(--mark-meet) both;
+}
+
+@keyframes intro-clear {
+  to {
+    opacity: 0;
+  }
+}
+
 .sent-to {
   font-size: 1.2rem;
   font-weight: 700;
