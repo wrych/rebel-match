@@ -54,6 +54,9 @@ import type { SettingsService } from './services/settings.js'
 import type { NotificationService } from './services/notifications.js'
 import type { NotificationSettingsService } from './services/notification-settings.js'
 import { notificationRoutes } from './routes/notifications.js'
+import { freshSettings, tickRoutes } from './routes/tick.js'
+import type { Tick } from './services/tick.js'
+import type { InvokerCheck } from './services/tick-invoker.js'
 
 export interface AppDeps {
   config: Config
@@ -88,6 +91,13 @@ export interface AppDeps {
   notificationMail: {
     deliverDue(): Promise<void>
     purgeBefore(cutoff: Date): Promise<number>
+  }
+  /** Present when a scheduler's tick, not the server's timers, runs the
+   * scheduled work (ADR 0049). */
+  scheduled?: {
+    tick: Tick
+    isInvoker: InvokerCheck
+    freshSettings: () => Promise<void>
   }
 }
 
@@ -125,6 +135,15 @@ export const handleErrors: ErrorRequestHandler = (
     .json({ error: clientError ? 'bad_request' : 'internal_error' })
 }
 
+// Ahead of the API guard: the scheduler is not a member (ADR 0049).
+function mountScheduled(
+  app: Express,
+  scheduled: NonNullable<AppDeps['scheduled']>,
+): void {
+  app.use(freshSettings(scheduled.freshSettings))
+  app.use(tickRoutes(scheduled))
+}
+
 /** Builds the app from injected dependencies, so tests can supply fakes
  * (constitution §4). */
 export function createApp(deps: AppDeps): Express {
@@ -132,6 +151,7 @@ export function createApp(deps: AppDeps): Express {
 
   app.set('trust proxy', deps.config.trustProxy)
   app.use(securityHeaders(deps.config))
+  if (deps.scheduled !== undefined) mountScheduled(app, deps.scheduled)
   app.post(
     [...SIGN_IN_POSTS],
     limitPerIp(
@@ -155,8 +175,7 @@ export function createApp(deps: AppDeps): Express {
   app.use(connectionRoutes(deps))
   app.use(swipeRoutes(deps))
   app.use(cockpitRoutes(deps), notificationRoutes(deps))
-  app.use(adminRoleRoutes(deps))
-  app.use(adminMemberRoutes(deps))
+  app.use(adminRoleRoutes(deps), adminMemberRoutes(deps))
   app.use(adminWhitelistRoutes(deps))
   app.use(adminApplicantRoutes(deps))
   app.use(adminInviteRoutes(deps))

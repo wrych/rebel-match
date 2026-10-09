@@ -119,6 +119,10 @@ gcloud sql instances patch rebel-match --project="$NONPROD" --activation-policy=
 gcloud sql instances patch rebel-match --project="$NONPROD" --activation-policy=ALWAYS  # start
 ```
 
+Pause staging's tick (§13) while it is stopped, or every minute logs a failed
+tick: `gcloud scheduler jobs pause tick --project="$NONPROD"
+--location="$REGION"`, and `resume` when it starts again.
+
 ## 5. Secrets
 
 ```sh
@@ -339,6 +343,64 @@ the service `rebel-match`.
   execution has its own log. The dev-login workflow's summary links straight to
   the sign-in job's log, which is where the magic link is printed (R-DEV-6).
 
+## 13. The tick on staging
+
+Staging scales to zero, and Cloud Run gives an instance CPU only while it
+answers a request, so the server's own timers stall between visits:
+notification mail, erasure and the purges wait for the next visitor. A Cloud
+Scheduler job calling `POST /api/internal/tick` every minute runs that work
+instead, the same way production runs it (ADR 0049). Each tick is a short
+request, and an idle instance costs nothing; Cloud Scheduler is free for three
+jobs per billing account.
+
+```sh
+gcloud services enable cloudscheduler.googleapis.com --project="$NONPROD"
+gcloud iam service-accounts create scheduler-tick --project="$NONPROD" \
+  --display-name="Cloud Scheduler calls the tick"
+NONPROD_NUMBER=$(gcloud projects describe "$NONPROD" --format='value(projectNumber)')
+STAGING_URL=https://rebel-match-staging-$NONPROD_NUMBER.$REGION.run.app
+echo "TICK_INVOKER=scheduler-tick@$NONPROD.iam.gserviceaccount.com"
+```
+
+The account needs no role: the server checks its address in the token the
+scheduler signs for it. Add `TICK_INVOKER` as a variable on the **`staging`**
+environment only (§10), then let the next merge to `main` deploy, or re-run
+the last `deploy` job on `main`. The deploy then sets `SCHEDULED_WORK=tick`,
+and `STAGING_URL` as the token's audience. From that deploy on, nothing
+scheduled runs on staging until the job exists, so create it straight after:
+
+```sh
+gcloud scheduler jobs create http tick --project="$NONPROD" \
+  --location="$REGION" --schedule='* * * * *' --time-zone=Etc/UTC \
+  --uri="$STAGING_URL/api/internal/tick" --http-method=POST \
+  --oidc-service-account-email="scheduler-tick@$NONPROD.iam.gserviceaccount.com" \
+  --oidc-token-audience="$STAGING_URL" \
+  --attempt-deadline=120s --max-retry-attempts=0
+```
+
+A failed tick is not retried: the next minute is the retry. The attempt
+deadline covers one round of `NOTIFICATION_BATCH` mails; the rest go the
+minute after. Previews keep the timers: they are short-lived, and a job per
+pull request is not worth it.
+
+Check it once:
+
+```sh
+gcloud scheduler jobs run tick --project="$NONPROD" --location="$REGION"
+gcloud scheduler jobs describe tick --project="$NONPROD" --location="$REGION" \
+  --format='value(lastAttemptTime,status)'
+```
+
+An empty `status` is success. The request log ("Where to look") shows the
+`POST /api/internal/tick` answered `204`. A `404` means the token was refused,
+and the server says nothing more, by design: check that `TICK_INVOKER` names
+`scheduler-tick` and that the job's audience is `STAGING_URL`. A `500` means a
+job failed, and the service's log has a `scheduled work` line saying so.
+
+To stop the scheduled work, `gcloud scheduler jobs pause tick` and later
+`resume tick`, each with the same `--project` and `--location`. While it is
+paused, notifications wait and nothing is purged.
+
 ---
 
 # Part 2 — production
@@ -346,7 +408,7 @@ the service `rebel-match`.
 When the pilot needs it (ADR 0025, rollout step 2). Set the variables and
 functions from "Before you start" again in a new shell.
 
-## 13. Project, billing, budget alert, services
+## 14. Project, billing, budget alert, services
 
 ```sh
 gcloud projects create "$PROD"
@@ -359,10 +421,11 @@ gcloud billing budgets create --billing-account="$BILLING" \
 gcloud services enable --project="$PROD" \
   run.googleapis.com sqladmin.googleapis.com secretmanager.googleapis.com \
   iam.googleapis.com iamcredentials.googleapis.com sts.googleapis.com \
-  cloudresourcemanager.googleapis.com compute.googleapis.com
+  cloudresourcemanager.googleapis.com compute.googleapis.com \
+  cloudscheduler.googleapis.com
 ```
 
-## 14. The two grants on non-prod
+## 15. The two grants on non-prod
 
 Production pulls staging's images, and its deployer reads which digest staging
 serves — nothing more of non-prod.
@@ -375,11 +438,11 @@ gcloud artifacts repositories add-iam-policy-binding rebel-match \
   --role=roles/artifactregistry.reader
 ```
 
-The `serverless-robot-prod` account appears once the Run API is enabled (§13).
+The `serverless-robot-prod` account appears once the Run API is enabled (§14).
 If the binding says it does not exist yet, wait a minute and run it again. The
-second grant follows the deployer's creation in §17.
+second grant follows the deployer's creation in §18.
 
-## 15. Database
+## 16. Database
 
 A bit more room than non-prod, nightly backups, point-in-time recovery, and
 protection against deletion.
@@ -397,7 +460,7 @@ gcloud sql users create rebel --instance=rebel-match --project="$PROD" \
   --password="$PROD_DB_PASSWORD"
 ```
 
-## 16. Secrets
+## 17. Secrets
 
 ```sh
 printf %s "postgres://rebel:$PROD_DB_PASSWORD@/rebel_match?host=/cloudsql/$PROD:$REGION:rebel-match" \
@@ -416,7 +479,7 @@ The two seed files are the real attendee whitelist and collected challenges
 (R-SEED-5, `specs/design.md` §6.4). They never enter the repository, only
 Secret Manager; delete your local copies afterwards.
 
-## 17. Identities
+## 18. Identities
 
 ```sh
 PROD_DEPLOYER=github-deployer@$PROD.iam.gserviceaccount.com
@@ -437,12 +500,17 @@ gcloud iam service-accounts add-iam-policy-binding \
   "rebel-match-run@$PROD.iam.gserviceaccount.com" --project="$PROD" \
   --member="serviceAccount:$PROD_DEPLOYER" --role=roles/iam.serviceAccountUser
 
-# The second grant on non-prod (§14): read which digest staging serves.
+# The second grant on non-prod (§15): read which digest staging serves.
 gcloud projects add-iam-policy-binding "$NONPROD" --condition=None \
   --member="serviceAccount:$PROD_DEPLOYER" --role=roles/run.viewer
+
+# Who the tick comes from (§22, ADR 0049). It needs no role: the server
+# checks its address in the token the scheduler signs for it.
+gcloud iam service-accounts create scheduler-tick --project="$PROD" \
+  --display-name="Cloud Scheduler calls the tick"
 ```
 
-## 18. Let GitHub in — production environment only
+## 19. Let GitHub in — production environment only
 
 ```sh
 gcloud iam workload-identity-pools create github --project="$PROD" \
@@ -463,7 +531,7 @@ This is the line that keeps a pull request away from production: only a job in
 the `production` environment, which waits for your approval, gets this
 identity.
 
-## 19. The production environment on GitHub
+## 20. The production environment on GitHub
 
 **Settings → Environments → New environment → `production`**: **Required
 reviewers → you**; **Deployment branches → `main`**; leave **Prevent
@@ -479,28 +547,43 @@ echo "GCP_WIF_PROVIDER=$(pool "$PROD")/providers/rebel-match"
 echo "GCP_DEPLOY_SA=$PROD_DEPLOYER"
 echo "GCP_RUN_SA=rebel-match-run@$PROD.iam.gserviceaccount.com"
 echo "GCP_SQL_INSTANCE=$PROD:$REGION:rebel-match"
+echo "TICK_INVOKER=scheduler-tick@$PROD.iam.gserviceaccount.com"
 ```
+
+`TICK_INVOKER` hands production's scheduled work to the tick of §22, as on
+staging (§13, ADR 0049). The production deploy then sets
+`SCHEDULED_WORK=tick` and bills the one warm instance per request, a few
+francs a month instead of the largest line of the bill. Without it, CPU stays
+allocated and the server's own timers run.
 
 Plus `SMTP_HOST`, `SMTP_PORT` (587), `SMTP_USER` and `MAIL_FROM`, from
 `docs/email-setup.md`, and `TRUST_PROXY=1`. Production refuses to start with
 `TRUST_PROXY=0` or an http `PUBLIC_URL` (ADR 0034): without the first, every
 visitor shares the proxy's per-IP limits; without the second, the session
-cookie loses `Secure`. Behind the load balancer of step 20 there is one more
+cookie loses `Secure`. Behind the load balancer of step 21 there is one more
 hop; if the per-IP limits then count everyone together, raise it to `2`. If the SMTP server accepts relaying by sender IP rather
 than by login, it needs a fixed address to allow; that is Cloud NAT, and a
 separate step (ADR 0025, consequences).
 
-## 20. Domain, and the first real sign-in
+## 21. Domain, and the first real sign-in
 
 - **Own domain:** a global external Application Load Balancer in front of the
-  service, with a Google-managed certificate. In the console: **Network
+  service, with a Google-managed certificate; Cloud Run's own domain mapping
+  is not offered in `europe-west6` (ADR 0025). In the console: **Network
   services → Load balancing → Create → Application Load Balancer (HTTP/S) →
   Global**; backend **Serverless network endpoint group → Cloud Run →
   `rebel-match`** in `europe-west6`; frontend **HTTPS**, IP **reserve a new
-  static address**, certificate **Google-managed** for your domain. Point the
-  domain's `A` record at the reserved address; the certificate becomes active
-  within an hour of DNS resolving. Set production's `PUBLIC_URL` variable to
-  `https://<your domain>`.
+  static address**, certificate **Google-managed** for the domain and its
+  `www`, and tick **HTTP to HTTPS redirect**. About USD 18 a month, most of it
+  the forwarding rule.
+- **DNS, at the registrar:** the apex `A` record to the reserved address, and
+  `www` as a `CNAME` to the apex. Remove any other `A` or `AAAA` on either name,
+  such as the registrar's parking page, or some visitors land there and the
+  certificate does not issue. A `CAA` record, if there is one, must allow
+  `pki.goog`. Leave the mail records of `docs/email-setup.md` alone. The
+  certificate becomes active within an hour of DNS resolving; then set
+  production's `PUBLIC_URL` variable to `https://<your domain>` and promote
+  again, so links point at it.
 - **Then one real sign-in** from a team mailbox. Staging never sends mail, so
   this is the first time the SMTP path runs.
 - **The first admins:** set production's `SEED_ADMINS` variable to the
@@ -508,6 +591,30 @@ separate step (ADR 0025, consequences).
   makes each new one an admin who onboards on first sign-in; from there they
   approve applicants and grant roles in the app. Changing the list later adds
   new addresses only; it never takes a role away or gives one back.
+
+## 22. The tick
+
+As on staging (§13): from the first promotion with `TICK_INVOKER` set, nothing
+scheduled runs until this job exists, so create it straight after. The
+scheduler calls the service's `run.app` address, not the domain, so the tick
+does not depend on the load balancer.
+
+```sh
+PROD_URL=https://rebel-match-$PROD_NUMBER.$REGION.run.app
+gcloud scheduler jobs create http tick --project="$PROD" \
+  --location="$REGION" --schedule='* * * * *' --time-zone=Etc/UTC \
+  --uri="$PROD_URL/api/internal/tick" --http-method=POST \
+  --oidc-service-account-email="scheduler-tick@$PROD.iam.gserviceaccount.com" \
+  --oidc-token-audience="$PROD_URL" \
+  --attempt-deadline=120s --max-retry-attempts=0
+gcloud scheduler jobs run tick --project="$PROD" --location="$REGION"
+```
+
+Check it, read a `404` or `500`, and pause it as §13 says, with `"$PROD"` for
+`"$NONPROD"`. `PROD_NUMBER` is from §15. Production holds real people: while
+the job is paused or failing, their notifications wait and nothing is erased
+or purged, so the uptime check task (R-NFR-10) must alert on failed ticks
+too.
 
 ---
 

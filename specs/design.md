@@ -869,8 +869,10 @@ erases the email in the recipient's log as well.
 
 **Retention is a job, not an endpoint (R-MSG-6).** The server deletes entries
 older than `limits.outboxRetentionDays` once at startup and then every
-`outboxPurgeIntervalHours`. Nobody can purge the log by hand: a person able to
-read it should not also be able to erase the record of what was sent.
+`outboxPurgeIntervalHours`; where a scheduler's tick runs the scheduled work
+(ADR 0049), on the first tick and then once per interval. Nobody can purge the
+log by hand: a person able to read it should not also be able to erase the
+record of what was sent.
 
 The same interval runs the **erasure sweep** (ADR 0032): every member with
 status `deleted` whose `erase_after` has passed is erased as
@@ -1016,7 +1018,10 @@ step's `PUT /api/me/analytics`), which also take a signed-in pending applicant
 (R-ROLE-5, R-NAV-7): nobody signed in → `401`; signed in but not yet onboarded
 → `403 {error: 'onboarding_required'}`; onboarded but still an applicant →
 `403 {error: 'not_admitted'}`. Only `/api/health` and `/api/config` are open,
-since they carry nothing about anyone (R-CFG-2).
+since they carry nothing about anyone (R-CFG-2). `POST /api/internal/tick`
+takes no session but a Cloud Scheduler OIDC token, runs the due scheduled work
+and answers `204`, or `500` when some of it failed; any other caller gets
+`404`. It exists only where the tick runs the scheduled work (ADR 0049).
 
 ### Auth
 

@@ -173,6 +173,7 @@ jobs:
       GCP_RUN_SA: ${{ vars.GCP_RUN_SA }}
       PUBLIC_URL: ${{ vars.PUBLIC_URL }}
       MIXPANEL_TOKEN: ${{ vars.MIXPANEL_TOKEN }}
+      TICK_INVOKER: ${{ vars.TICK_INVOKER }}
 
     steps:
       - uses: actions/checkout@v6
