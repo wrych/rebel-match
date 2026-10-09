@@ -10,8 +10,9 @@
 #
 # Reads: TARGET, IMAGE (with digest), GCP_PROJECT, GCP_REGION,
 # GCP_SQL_INSTANCE, GCP_RUN_SA, GCP_PROJECT_NUMBER; PUBLIC_URL optionally
-# overrides the address links point at (a custom domain), and MIXPANEL_TOKEN
-# optionally turns analytics on (ADR 0026).
+# overrides the address links point at (a custom domain), MIXPANEL_TOKEN
+# optionally turns analytics on (ADR 0026), and TICK_INVOKER hands staging's
+# scheduled work to Cloud Scheduler's tick (ADR 0048).
 set -euo pipefail
 
 : "${TARGET:?}" "${IMAGE:?}" "${GCP_PROJECT:?}" "${GCP_REGION:?}"
@@ -68,6 +69,14 @@ ANALYTICS_ENV=()
 if [[ -n "${MIXPANEL_TOKEN:-}" ]]; then
   ANALYTICS_ENV=("MIXPANEL_TOKEN=$MIXPANEL_TOKEN")
 fi
+# Staging's scheduled work runs on the tick once the scheduler's account is
+# named; the token's audience is the service's own run.app address, which the
+# scheduler job is given too (docs/cloud-setup.md). Previews keep the timers.
+SCHEDULE_ENV=()
+if [[ "$TARGET" == staging && -n "${TICK_INVOKER:-}" ]]; then
+  SCHEDULE_ENV=(SCHEDULED_WORK=tick "TICK_INVOKER=$TICK_INVOKER"
+    "TICK_AUDIENCE=https://$SERVICE-$GCP_PROJECT_NUMBER.$GCP_REGION.run.app")
+fi
 SECRETS=$(join SESSION_SECRET=session-secret:latest "${DATABASE_SECRETS[@]}")
 runtime() { # runtime <public url> — the flags every job and revision shares
   RUNTIME=(
@@ -78,7 +87,7 @@ runtime() { # runtime <public url> — the flags every job and revision shares
     # (R-NFR-8); without it every visitor shares one address.
     --set-env-vars="$(join NODE_ENV=development MAIL_DELIVERY=none \
       SEED_PROFILE=dev TRUST_PROXY=1 "PUBLIC_URL=$1" \
-      "${DATABASE_ENV[@]}" "${ANALYTICS_ENV[@]}")"
+      "${DATABASE_ENV[@]}" "${ANALYTICS_ENV[@]}" "${SCHEDULE_ENV[@]}")"
     --set-secrets="$SECRETS"
   )
 }
