@@ -63,6 +63,7 @@
 
   /* The header's height, which whatever else sticks to the top sits below. */
   --header-height: calc(34px + 1.75rem);
+  --mark-meet: 0.6s;
 }
 
 :root[data-mood='happy'] {

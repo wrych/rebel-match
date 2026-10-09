@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import logo from './assets/corporate-rebels.png'
 import HeaderMenu from './components/HeaderMenu.vue'
+import RebelMark from './components/RebelMark.vue'
 import TabBar from './components/TabBar.vue'
 import { applyMood, currentMood as mood, savedMood } from './lib/mood'
 
@@ -14,8 +14,8 @@ function toggleMood(): void {
 <template>
   <div class="shell">
     <header class="bar">
-      <RouterLink to="/" class="brand">
-        <img :src="logo" alt="Corporate Rebels" width="43" height="19" />
+      <RouterLink to="/" class="brand" aria-label="Rebel Match, home">
+        <RebelMark class="brand-mark" />
       </RouterLink>
       <HeaderMenu :mood="mood" @toggle-mood="toggleMood" />
     </header>
@@ -75,10 +75,9 @@ function toggleMood(): void {
   line-height: 0;
 }
 
-.brand img {
-  display: block;
-  height: 19px;
-  width: auto;
+.brand-mark {
+  width: 34px;
+  height: 34px;
 }
 
 .cap {
