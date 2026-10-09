@@ -95,6 +95,18 @@ export function peerLine(
     .join(' · ')
 }
 
+export type MatchesSection = 'sameBoat' | 'beenThere' | 'cases'
+
+/** What the control below a matches section offers: how many more there are,
+ * named by what they are (R-ASK-15). */
+export function moreMatches(section: MatchesSection, count: number): string {
+  const one = count === 1
+  if (section === 'sameBoat')
+    return `${String(count)} more ${one ? 'rebel' : 'rebels'} in the same boat`
+  if (section === 'beenThere') return `${String(count)} more who’ve been there`
+  return `${String(count)} more ${one ? 'case study' : 'case studies'}`
+}
+
 /** Stores the trend the member confirmed, picked or suggested (R-ASK-7). */
 export async function confirmTrend(id: string, trendId: string): Promise<void> {
   const response = await fetch(`/api/challenges/${encodeURIComponent(id)}`, {

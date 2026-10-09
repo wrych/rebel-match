@@ -18,6 +18,7 @@ export interface ClientConfig {
     erasureGraceDays: number
     holdToSelectMs: number
     swipeMinPx: number
+    matchesShownFirst: number
     scrollHintShare: number
     inviteMaxUsesCeiling: number
   }
