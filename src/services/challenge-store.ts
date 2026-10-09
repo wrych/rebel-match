@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, isNotNull, ne, sql, type SQL } from 'drizzle-orm'
+import { and, desc, eq, isNotNull, ne, sql, type SQL } from 'drizzle-orm'
 import { insertTrendNotifications } from './notification-store.js'
 import type { Database } from '../db/connect.js'
 import {
@@ -12,9 +12,9 @@ import type {
   Challenge,
   ChallengeStore,
   NewestChallenge,
-  PeerCard,
   StoredTrend,
 } from './challenges.js'
+import type { RankablePeer } from './match-ranker.js'
 import { companySizeLabel, sectorLabel } from './profile-labels.js'
 
 /** The trend a challenge sits in: the confirmed one, else the matcher's. */
@@ -41,11 +41,11 @@ const peerFilter = (viewerId: string): SQL | undefined =>
   )
 
 function peerOf(
-  row: Omit<PeerCard, 'name' | 'note'> & {
+  row: Omit<RankablePeer, 'name' | 'note'> & {
     name: string | null
     note: string | null
   },
-): PeerCard {
+): RankablePeer {
   return { ...row, name: row.name ?? '', note: row.note ?? '' }
 }
 
@@ -64,9 +64,13 @@ async function peersOf(
   db: Database,
   trendId: string,
   viewerId: string,
-): Promise<{ sameBoat: PeerCard[]; beenThere: PeerCard[] }> {
+): Promise<{ sameBoat: RankablePeer[]; beenThere: RankablePeer[] }> {
   const same = await db
-    .select({ ...peerColumns, note: challenges.body })
+    .select({
+      ...peerColumns,
+      note: challenges.body,
+      since: challenges.createdAt,
+    })
     .from(challenges)
     .innerJoin(members, eq(members.id, challenges.memberId))
     .where(
@@ -76,13 +80,15 @@ async function peersOf(
         peerFilter(viewerId),
       ),
     )
-    .orderBy(desc(challenges.createdAt))
   const been = await db
-    .select({ ...peerColumns, note: memberExpertise.note })
+    .select({
+      ...peerColumns,
+      note: memberExpertise.note,
+      since: memberExpertise.createdAt,
+    })
     .from(memberExpertise)
     .innerJoin(members, eq(members.id, memberExpertise.memberId))
     .where(and(eq(memberExpertise.trendId, trendId), peerFilter(viewerId)))
-    .orderBy(asc(members.name))
   return { sameBoat: same.map(peerOf), beenThere: been.map(peerOf) }
 }
 

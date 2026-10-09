@@ -5,6 +5,7 @@ import {
   fetchMatches,
   fetchTrendDetail,
   fetchTrends,
+  moreMatches,
   peerLine,
   shownTrend,
   submitChallenge,
@@ -198,5 +199,18 @@ describe('fetchTrendDetail', () => {
     answer(500)
 
     await expect(fetchTrendDetail('01')).rejects.toThrow('500')
+  })
+})
+
+describe('moreMatches', () => {
+  it.each([
+    ['sameBoat', 3, '3 more rebels in the same boat'],
+    ['sameBoat', 1, '1 more rebel in the same boat'],
+    ['beenThere', 2, '2 more who’ve been there'],
+    ['beenThere', 1, '1 more who’ve been there'],
+    ['cases', 4, '4 more case studies'],
+    ['cases', 1, '1 more case study'],
+  ] as const)('names %s ×%i as “%s” (R-ASK-15)', (section, count, label) => {
+    expect(moreMatches(section, count)).toBe(label)
   })
 })

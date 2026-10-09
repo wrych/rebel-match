@@ -120,6 +120,13 @@
       "when": 1791407771213,
       "tag": "0016_game",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1791576381741,
+      "tag": "0017_expertise_created",
+      "breakpoints": true
     }
   ]
 }

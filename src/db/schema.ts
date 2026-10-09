@@ -328,6 +328,7 @@ export const memberExpertise = pgTable(
       .notNull()
       .references(() => trends.id),
     note: varchar('note', { length: 400 }),
+    createdAt: at('created_at').notNull().defaultNow(),
   },
   (t) => [
     primaryKey({ columns: [t.memberId, t.trendId] }),

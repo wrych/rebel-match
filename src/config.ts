@@ -27,6 +27,9 @@ const SAVED_TICK_MS = 2500
 const HOLD_TO_SELECT_MS = 500
 /** How far a finger travels across a deck card to browse (R-OFF-1). */
 const SWIPE_MIN_PX = 50
+/** How many entries each matches section shows before the rest are asked
+ * for (R-ASK-15). */
+const MATCHES_SHOWN_FIRST = 1
 /** The share of the visible height one tap on the privacy step's scroll hint
  * moves the summary, so it never jumps to the end (R-ONB-10). */
 const SCROLL_HINT_SHARE = 0.4
@@ -359,6 +362,7 @@ export interface Limits {
   savedTickMs: number
   holdToSelectMs: number
   swipeMinPx: number
+  matchesShownFirst: number
   scrollHintShare: number
   inviteMaxUsesCeiling: number
   connectionMessageMaxChars: number
@@ -487,6 +491,7 @@ function limitsFrom(env: Env): Limits {
     savedTickMs: SAVED_TICK_MS,
     holdToSelectMs: HOLD_TO_SELECT_MS,
     swipeMinPx: SWIPE_MIN_PX,
+    matchesShownFirst: MATCHES_SHOWN_FIRST,
     scrollHintShare: SCROLL_HINT_SHARE,
     inviteMaxUsesCeiling: INVITE_MAX_USES_CEILING,
     connectionMessageMaxChars: CONNECTION_MESSAGE_MAX_CHARS,

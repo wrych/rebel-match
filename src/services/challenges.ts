@@ -1,4 +1,5 @@
 import { trackNothing, type Track } from './analytics.js'
+import type { MatchRanker, RankablePeer } from './match-ranker.js'
 import { detectTrend, type TrendKeywords } from './matcher.js'
 
 /** A trend as screens show it (R-ASK-6). */
@@ -72,11 +73,11 @@ export interface ChallengeStore {
   find(id: string): Promise<Challenge | null>
   setTrend(id: string, trendId: string, overridden: boolean): Promise<void>
   /** Other members with an active challenge in the trend, and members who
-   * offer experience in it; never `viewerId` (R-ASK-8). */
+   * offer experience in it, in no order; never `viewerId` (R-ASK-8). */
   peers(
     trendId: string,
     viewerId: string,
-  ): Promise<{ sameBoat: PeerCard[]; beenThere: PeerCard[] }>
+  ): Promise<{ sameBoat: RankablePeer[]; beenThere: RankablePeer[] }>
   cases(trendId: string): Promise<CaseStudy[]>
   /** The newest active challenges of other active, onboarded members, in
    * `trendId` when it is given; never `viewerId`'s own (R-ASK-14). */
@@ -117,7 +118,7 @@ function shown(trend: StoredTrend): Trend {
 }
 
 async function matchesFor(
-  store: ChallengeStore,
+  { store, rank }: Pick<ChallengeDeps, 'store' | 'rank'>,
   challenge: Challenge,
   memberId: string,
 ): Promise<Matches | null> {
@@ -129,7 +130,12 @@ async function matchesFor(
     store.peers(trendId, memberId),
     store.cases(trendId),
   ])
-  return { trend: shown(trend), ...peers, cases }
+  return {
+    trend: shown(trend),
+    sameBoat: rank('sameBoat', peers.sameBoat, challenge),
+    beenThere: rank('beenThere', peers.beenThere, challenge),
+    cases,
+  }
 }
 
 async function trendDetail(
@@ -143,6 +149,7 @@ async function trendDetail(
 
 interface ChallengeDeps {
   store: ChallengeStore
+  rank: MatchRanker
   newestShown: number
   track?: Track
 }
@@ -192,9 +199,7 @@ export function createChallenges(deps: ChallengeDeps): ChallengeService {
     },
     matches: async (memberId, id) => {
       const challenge = await own(memberId, id)
-      return challenge === null
-        ? null
-        : matchesFor(deps.store, challenge, memberId)
+      return challenge === null ? null : matchesFor(deps, challenge, memberId)
     },
     trend: (trendId) => trendDetail(deps.store, trendId),
     newest: (viewerId, trendId) =>
