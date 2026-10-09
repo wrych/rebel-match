@@ -902,6 +902,12 @@ _(Decided by the maintainer after trying the redesign: ADR 0023.)_
   place, such as a step header, a button, a card or a set of versioned words,
   SHALL be drawn by one component, so that it looks and behaves the same
   wherever it appears (constitution §4, ADR 0040).
+- **R-LOOK-5 (The mark)** — The sign-in screen SHALL show the Rebel Match mark,
+  two mirrored Rs whose overlap draws a figure, beside its title. The first
+  time it shows in a page load, the two Rs SHALL slide together over an
+  otherwise black screen, which then clears and leaves the mark where it
+  stands, all within one second. WHEN the member prefers reduced motion, the
+  mark SHALL show at rest with no intro.
 
 ---
 

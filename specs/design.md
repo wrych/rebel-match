@@ -273,6 +273,14 @@ fixed labels and takes them, with the name it announces, from the screen. The
 Ask journey passes Describe, Domain, Matches; onboarding passes Profile,
 Privacy, Usage (R-ONB-6). Its look stays the `.steps` block of the theme.
 
+The **mark** is `RebelMark`, an inline SVG of one R drawn twice, the second
+mirrored and blended by difference, so where the two overlap they cancel to
+black (R-LOOK-5). At rest the Rs overlap into the figure; the intro slides them
+there from apart. The sign-in screen plays it under a black layer that fades
+out, once per page load (`client/lib/intro.ts`), and skips it when the member
+prefers reduced motion; while it plays, the screen's own entrance is held still
+so the layer can sit above the header.
+
 The header's right-hand button opens the **menu** (R-PROF-3): the colour mode
 switch, "Profile & privacy" (`/profile`), Feedback (R-FB-1), the host tools
 the member's permissions allow (paths and permissions from the route table, ADR

@@ -235,6 +235,8 @@ printed dev link (R-DEV-6).
 - [x] Header menu in place of the "CR" mark: colour mode, Profile & privacy,
       host tools by permission, sign out; host tools and sign out leave the
       welcome screen. _(R-PROF-3, R-LOOK-2, R-ROLE-4)_
+- [x] The Rebel Match mark beside the sign-in title, with its one-second intro
+      over a black screen, skipped for reduced motion. _(R-LOOK-5)_
 - [x] Profile & privacy screen (`/profile`, S24) with `GET`/`PUT /api/profile`:
       edit name, job title, organization; the accepted consent read-only; the
       analytics toggle, moved off the welcome screen, with its words reworded
