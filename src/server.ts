@@ -19,64 +19,74 @@ const deps = composeApp(config, connection.db, {
   onNotificationError: () => {
     console.warn('notifications: one could not be mailed, will retry')
   },
+  onScheduledError: () => {
+    console.warn('scheduled work: a job failed, will retry at its next turn')
+  },
 })
 
 // The hosts' changes apply before the first request, then follow other servers
 // (ADR 0031).
 await deps.settings.refresh()
-startSettingsRefresh({
-  settings: deps.settings,
-  intervalSeconds: config.settingsRefreshSeconds,
-  onError: () => {
-    console.warn('settings: refresh failed, keeping the values in force')
-  },
-})
 
-startErasureSweep({
-  erasure: deps.erasure,
-  intervalHours: config.erasureSweepIntervalHours,
-  onError: () => {
-    console.warn('erasure sweep: failed, will retry next interval')
-  },
-})
+// The server's own timers, unless a scheduler's tick runs the same work
+// (ADR 0048). Notifications are mailed by a timer, not by the request that
+// caused them, and kept as long as the outbound log is purged (R-NOTE-7,
+// R-NOTE-11).
+function startTimers(): void {
+  startSettingsRefresh({
+    settings: deps.settings,
+    intervalSeconds: config.settingsRefreshSeconds,
+    onError: () => {
+      console.warn('settings: refresh failed, keeping the values in force')
+    },
+  })
 
-startTokenPurge({
-  auth: deps.auth,
-  intervalHours: config.tokenPurgeIntervalHours,
-  onError: () => {
-    console.warn('token purge: failed, will retry next interval')
-  },
-})
+  startErasureSweep({
+    erasure: deps.erasure,
+    intervalHours: config.erasureSweepIntervalHours,
+    onError: () => {
+      console.warn('erasure sweep: failed, will retry next interval')
+    },
+  })
 
-startOutboxRetention({
-  log: deps.outbox,
-  retentionDays: config.limits.outboxRetentionDays,
-  intervalHours: config.outboxPurgeIntervalHours,
-  onError: () => {
-    console.warn('outbox retention: purge failed, will retry next interval')
-  },
-})
+  startTokenPurge({
+    auth: deps.auth,
+    intervalHours: config.tokenPurgeIntervalHours,
+    onError: () => {
+      console.warn('token purge: failed, will retry next interval')
+    },
+  })
 
-// Notifications are mailed by this timer, not by the request that caused
-// them, and kept as long as the outbound log is purged (R-NOTE-7, R-NOTE-11).
-startNotificationWorker({
-  worker: deps.notificationMail,
-  intervalSeconds: config.notificationWorker.intervalSeconds,
-  onError: () => {
-    console.warn('notifications: the worker failed, will retry next interval')
-  },
-})
+  startOutboxRetention({
+    log: deps.outbox,
+    retentionDays: config.limits.outboxRetentionDays,
+    intervalHours: config.outboxPurgeIntervalHours,
+    onError: () => {
+      console.warn('outbox retention: purge failed, will retry next interval')
+    },
+  })
 
-startOutboxRetention({
-  log: deps.notificationMail,
-  retentionDays: config.limits.notificationRetentionDays,
-  intervalHours: config.outboxPurgeIntervalHours,
-  onError: () => {
-    console.warn(
-      'notification retention: purge failed, will retry next interval',
-    )
-  },
-})
+  startNotificationWorker({
+    worker: deps.notificationMail,
+    intervalSeconds: config.notificationWorker.intervalSeconds,
+    onError: () => {
+      console.warn('notifications: the worker failed, will retry next interval')
+    },
+  })
+
+  startOutboxRetention({
+    log: deps.notificationMail,
+    retentionDays: config.limits.notificationRetentionDays,
+    intervalHours: config.outboxPurgeIntervalHours,
+    onError: () => {
+      console.warn(
+        'notification retention: purge failed, will retry next interval',
+      )
+    },
+  })
+}
+
+if (config.scheduledWork.mode === 'timers') startTimers()
 
 // Close the database before exiting, so a local PGlite folder is released
 // for the restart `tsx watch` is about to make (ADR 0024).
@@ -91,4 +101,5 @@ createApp(deps).listen(config.port, () => {
   console.log(`  mail delivery: ${config.mail.delivery}`)
   console.log(`  seed profile:  ${config.seedProfile}`)
   console.log(`  database:      ${config.database.kind}`)
+  console.log(`  scheduled by:  ${config.scheduledWork.mode}`)
 })

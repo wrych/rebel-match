@@ -124,6 +124,17 @@ function isTimeZone(name: string): boolean {
   }
 }
 
+function tickSettingsMissing(env: {
+  SCHEDULED_WORK: string
+  TICK_INVOKER?: string | undefined
+  TICK_AUDIENCE?: string | undefined
+}): ('TICK_INVOKER' | 'TICK_AUDIENCE')[] {
+  if (env.SCHEDULED_WORK !== 'tick') return []
+  return (['TICK_INVOKER', 'TICK_AUDIENCE'] as const).filter(
+    (path) => env[path] === undefined,
+  )
+}
+
 const envSchema = z
   .object({
     NODE_ENV: z
@@ -229,6 +240,11 @@ const envSchema = z
       .positive()
       .max(MAX_TIMER_HOURS)
       .default(1),
+    // Who runs the scheduled work: the server's own timers, or a tick a
+    // scheduler sends, signed by TICK_INVOKER for TICK_AUDIENCE (ADR 0048).
+    SCHEDULED_WORK: z.enum(['timers', 'tick']).default('timers'),
+    TICK_INVOKER: z.email().optional(),
+    TICK_AUDIENCE: z.url().optional(),
     MAGIC_LINK_TTL_MINUTES: z.coerce.number().int().positive().default(15),
     APPROVAL_LINK_TTL_HOURS: z.coerce.number().int().positive().default(24),
     INVITE_DEFAULT_MAX_USES: z.coerce.number().int().positive().default(400),
@@ -299,6 +315,13 @@ const envSchema = z
         code: 'custom',
         path: ['SMTP_HOST'],
         message: 'SMTP_HOST is required when MAIL_DELIVERY=smtp',
+      })
+    }
+    for (const path of tickSettingsMissing(env)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: [path],
+        message: `${path} is required when SCHEDULED_WORK=tick`,
       })
     }
     if (env.NODE_ENV === 'production') {
@@ -415,6 +438,9 @@ export interface ClientConfig {
   build: BuildVersion
 }
 
+export type ScheduledWork =
+  { mode: 'timers' } | { mode: 'tick'; invoker: string; audience: string }
+
 export interface Config {
   env: Env['NODE_ENV']
   isProduction: boolean
@@ -429,6 +455,8 @@ export interface Config {
   erasureSweepIntervalHours: number
   tokenPurgeIntervalHours: number
   settingsRefreshSeconds: number
+  /** Who runs the scheduled work, and whose tick is believed (ADR 0048). */
+  scheduledWork: ScheduledWork
   /** The notification worker's round and retries (R-NOTE-7, R-NOTE-10). */
   notificationWorker: NotificationWorkerSettings
   mail: {
@@ -545,6 +573,20 @@ function mailFrom(env: Env): Config['mail'] {
   }
 }
 
+function scheduledWorkFrom(env: Env): ScheduledWork {
+  if (
+    env.SCHEDULED_WORK === 'timers' ||
+    env.TICK_INVOKER === undefined ||
+    env.TICK_AUDIENCE === undefined
+  )
+    return { mode: 'timers' }
+  return {
+    mode: 'tick',
+    invoker: env.TICK_INVOKER,
+    audience: env.TICK_AUDIENCE,
+  }
+}
+
 /** Reads and validates configuration, failing before the server accepts a
  * request rather than on the first use of a bad value (R-CFG-1, R-CFG-4). */
 export function loadConfig(source: NodeJS.ProcessEnv = process.env): Config {
@@ -566,6 +608,7 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): Config {
     erasureSweepIntervalHours: env.ERASURE_SWEEP_INTERVAL_HOURS,
     tokenPurgeIntervalHours: env.TOKEN_PURGE_INTERVAL_HOURS,
     settingsRefreshSeconds: env.SETTINGS_REFRESH_SECONDS,
+    scheduledWork: scheduledWorkFrom(env),
     notificationWorker: notificationWorkerFrom(env),
     mail: mailFrom(env),
     feedbackTo: env.FEEDBACK_TO,

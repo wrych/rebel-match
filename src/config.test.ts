@@ -110,6 +110,31 @@ describe('loadConfig', () => {
     ).toThrow()
   })
 
+  it("runs the scheduled work on the server's timers by default (ADR 0048)", () => {
+    expect(loadConfig(valid).scheduledWork).toEqual({ mode: 'timers' })
+  })
+
+  it('hands the scheduled work to a tick from the named invoker (ADR 0048)', () => {
+    const config = loadConfig({
+      ...valid,
+      SCHEDULED_WORK: 'tick',
+      TICK_INVOKER: 'scheduler-tick@p.iam.gserviceaccount.com',
+      TICK_AUDIENCE: 'https://rebel-match-1.europe-west6.run.app',
+    })
+
+    expect(config.scheduledWork).toEqual({
+      mode: 'tick',
+      invoker: 'scheduler-tick@p.iam.gserviceaccount.com',
+      audience: 'https://rebel-match-1.europe-west6.run.app',
+    })
+  })
+
+  it('refuses a tick without knowing whose token to believe (ADR 0048)', () => {
+    expect(() => loadConfig({ ...valid, SCHEDULED_WORK: 'tick' })).toThrow(
+      /TICK_INVOKER[\s\S]*TICK_AUDIENCE/,
+    )
+  })
+
   it('keeps a session for 30 days unless told otherwise (R-AUTH-7)', () => {
     expect(loadConfig(valid).sessionTtlDays).toBe(30)
     expect(loadConfig({ ...valid, SESSION_TTL_DAYS: '7' }).sessionTtlDays).toBe(
