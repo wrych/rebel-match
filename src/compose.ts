@@ -39,6 +39,7 @@ import { createApprovals } from './services/approvals.js'
 import { mailLinks } from './services/link-delivery.js'
 import { createChallengeStore } from './services/challenge-store.js'
 import { createChallenges } from './services/challenges.js'
+import { newestFirst } from './services/match-ranker.js'
 import { createConnectionStore } from './services/connection-store.js'
 import { createConnections } from './services/connections.js'
 import { createMemberDirectory } from './services/member-directory-store.js'
@@ -144,6 +145,7 @@ function composeJourneys(
   const notes = composeNotifications(db, settings)
   const challenges = createChallenges({
     store: createChallengeStore(db),
+    rank: newestFirst,
     newestShown: config.limits.newestChallengesShown,
     track,
   })

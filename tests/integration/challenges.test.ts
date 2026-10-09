@@ -129,6 +129,30 @@ describe('the ask journey over Postgres (F5)', () => {
     expect(JSON.stringify(matches)).not.toContain('@')
   })
 
+  it('puts the latest been-there offer first (ADR 0048)', async () => {
+    const rows = await db.query('SELECT id FROM members WHERE email = ?', [
+      stranger,
+    ])
+    const strangerId = String(rows[0]?.['id'])
+    await db.query(
+      "INSERT INTO member_expertise (member_id, trend_id, note, created_at) VALUES (?, '04', 'Moved budgets to the teams.', now() + interval '1 day')",
+      [strangerId],
+    )
+
+    const response = await request(app)
+      .get(`/api/challenges/${challengeId}/matches`)
+      .set('Cookie', cookies['author']!)
+    await db.query(
+      "DELETE FROM member_expertise WHERE member_id = ? AND trend_id = '04'",
+      [strangerId],
+    )
+
+    const offers = (response.body as Matches).beenThere
+    expect(offers.length).toBeGreaterThan(1)
+    expect(offers[0]?.memberId).toBe(strangerId)
+    expect(offers[0]).not.toHaveProperty('since')
+  })
+
   it('leads the newest challenges for others, without its author (R-ASK-14)', async () => {
     const response = await request(app)
       .get('/api/challenges/newest?trend=04')
