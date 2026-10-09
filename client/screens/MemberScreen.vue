@@ -340,7 +340,7 @@ async function erase(): Promise<void> {
 
 <style scoped>
 .deleted {
-  border: 2px solid var(--accent);
+  border: var(--line-width) solid var(--accent-line);
 }
 
 .back {

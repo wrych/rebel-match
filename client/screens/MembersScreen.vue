@@ -447,7 +447,7 @@ async function erase(): Promise<void> {
   position: sticky;
   top: calc(var(--header-height) + 0.5rem);
   z-index: 5;
-  border: 2px solid var(--accent);
+  border: var(--line-width) solid var(--accent-line);
   box-shadow: 0 8px 24px rgb(0 0 0 / 18%);
 }
 
