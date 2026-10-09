@@ -52,13 +52,10 @@ function chose(journey: 'ask' | 'offer'): void {
 <template>
   <section class="screen screen-hero">
     <div class="stack">
-      <p class="kicker kicker-accent">You are in</p>
       <h1 class="display display-xl">
         Welcome{{ me?.name ? `, ${me.name}` : '' }}
       </h1>
-      <p class="lede">
-        Two doors: bring a challenge, or help someone with theirs.
-      </p>
+      <p class="lede">Bring a challenge, or help someone with theirs.</p>
     </div>
 
     <div class="stack">

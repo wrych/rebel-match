@@ -84,6 +84,16 @@ describe('WelcomeScreen', () => {
     expect((await mountWelcome()).find('h1').text()).toBe('Welcome, Ada')
   })
 
+  it('opens on the greeting and a one-line invitation (F3)', async () => {
+    signedIn([])
+    const screen = await mountWelcome()
+
+    expect(screen.find('.kicker').exists()).toBe(false)
+    expect(screen.find('.lede').text()).toBe(
+      'Bring a challenge, or help someone with theirs.',
+    )
+  })
+
   it('leads to the member’s matches (F8)', async () => {
     signedIn([])
     const links = (await mountWelcome()).findAllComponents(RouterLinkStub)

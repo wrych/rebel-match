@@ -220,6 +220,11 @@ a {
   color: var(--accent);
 }
 
+/* A section heading in the step header's ink, for a list under a form. */
+.kicker-ink {
+  color: var(--ink);
+}
+
 .lede {
   margin: 0;
   font-size: 1.03rem;
