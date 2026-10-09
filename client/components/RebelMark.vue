@@ -15,7 +15,7 @@ const MIRRORED = `translate(480 0) scale(-1 1) ${PLACED}`
     aria-hidden="true"
     focusable="false"
   >
-    <rect x="38" y="43" width="404" height="404" fill="#000" />
+    <rect x="38" y="43" width="404" height="404" rx="72" fill="#000" />
     <g class="rebel-mark-rs" fill="#fff">
       <g class="rebel-mark-left">
         <path fill-rule="evenodd" :d="R" :transform="PLACED" />
