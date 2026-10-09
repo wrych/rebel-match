@@ -12,7 +12,7 @@ const mounted: ReturnType<typeof mount>[] = []
 
 function stubMedia(): void {
   vi.stubGlobal('matchMedia', (query: string) => ({
-    matches: query.includes('coarse') && touch,
+    matches: query.includes('reduce') || (query.includes('coarse') && touch),
   }))
 }
 vi.mock('vue-router', () => ({ useRouter: () => ({ push }) }))
