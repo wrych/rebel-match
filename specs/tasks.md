@@ -355,6 +355,13 @@ printed dev link (R-DEV-6).
       and opening it clears it; cards keep their own marks. _(R-MINE-4)_
 - [x] Show the running version at the foot of the menu: CI passes the commit
       to the image, `/api/config` returns it. _(R-NFR-11)_
+- [ ] Live lists: Matches, a challenge's matches, notifications, the
+      outbound log, members, applicants, invites and the leaderboard refresh
+      on their own at
+      their own interval, outline what arrives until tapped, and refresh on a
+      pull down on a touch screen; the host-tool lists get a refresh button.
+      The badges refresh every 8 seconds
+      by default. _(R-NAV-12, R-MINE-4, R-MSG-5, R-NOTE-5, R-CFG-6, ADR 0050)_
 
 ## M7 — 9toRevolution, the office game _(S8, F18, ADR 0045 — behind its switch)_
 

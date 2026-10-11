@@ -609,9 +609,10 @@ connect.")_
   - While the member is on the Matches screen its tab SHALL carry no badge.
   - Seeing a notification SHALL NOT clear the badge, nor opening Matches the
     notifications' (R-NOTE-5, R-NOTE-6).
-  - While the app is open and visible, the badges and the list of waiting
-    requests SHALL refresh on their own, at most `limits.matchesPollSeconds`
-    apart, so a new request shows without a reload.
+  - While the app is open and visible, the badges SHALL refresh on their own,
+    at most `limits.matchesPollSeconds` apart (8 seconds by default), and the
+    list of waiting requests as a live list (R-NAV-12), so a new request shows
+    without a reload.
 - **R-MINE-5** — The "Matches" screen SHALL list the member's **connections** —
   accepted requests, whichever side sent them — below the requests waiting for
   them, each other member once, as a member card, however many challenges they
@@ -765,6 +766,37 @@ at a screen instead of at the front door.
   scrolls, so that home is one tap away on a long screen without the tab bar,
   such as the privacy notice or the terms. Nothing on a screen SHALL stick where
   the header would cover it.
+- **R-NAV-12 (Live lists)** — WHILE one of the lists below is open and the page
+  visible THE SYSTEM SHALL refresh it on its own, at its own interval, and at
+  once when the page comes back into view; and on demand, by pulling the list
+  down from the top of the page on a touch screen, and where the table says so
+  by a refresh button. A refresh SHALL keep the screen's filters and search, and
+  a failed one SHALL keep what is shown.
+
+  | List                                 | Interval, default                       | Outlined when it arrives | Button |
+  | ------------------------------------ | --------------------------------------- | ------------------------ | ------ |
+  | Matches: waiting requests (R-MINE-2) | `limits.cockpitPollSeconds`, 8          | each request             | no     |
+  | A challenge's matches (R-ASK-8)      | `limits.challengeMatchesPollSeconds`, 8 | each rebel               | no     |
+  | Notifications (R-NOTE-5)             | `limits.notificationsPollSeconds`, 8    | each entry               | no     |
+  | Outbound message log (R-MSG-5)       | `limits.outboxPollSeconds`, 8           | each message             | yes    |
+  | Members (R-MEM-1)                    | `limits.membersPollSeconds`, 60         | each member              | yes    |
+  | Applicants (R-AUTH-11)               | `limits.applicantsPollSeconds`, 60      | each applicant           | yes    |
+  | Invites (R-INV-2)                    | `limits.invitesPollSeconds`, 60         | each invite              | yes    |
+  | Leaderboard (R-GAME-13)              | `limits.leaderboardPollSeconds`, 30     | each new best            | no     |
+  - **What is new** — an entry a refresh brings that was not listed before
+    SHALL be outlined as new until it is tapped, anywhere on it. What was
+    listed when the screen opened is not new, except where its own rule says
+    so (R-MINE-6, R-NOTE-5), and neither is what a changed filter or search
+    shows. Only the open screen remembers what is new: leaving and coming back
+    shows every entry as seen until the next one arrives.
+  - **A new best** — the leaderboard names no member to the client, so a row
+    is new when no row before showed the same name, job and level: a new
+    player, or a player's new best. A row that only moved place is not new.
+    It refreshes only while it is shown (R-GAME-1).
+  - **Pulling down** SHALL be offered only on a touch screen, where it takes
+    over no other gesture, and only while the page is scrolled to its top;
+    on those screens the browser's own pull-to-reload SHALL NOT fire as well.
+    Without a touch screen the automatic refresh and the button remain.
 
 ---
 
@@ -800,7 +832,9 @@ What differs by environment is only whether mail **leaves the machine**.
 - **R-MSG-5 (Admin visibility)** — The admin interface SHALL present the log,
   newest first, with recipient, type, subject, status, timestamps and any error,
   filterable by recipient and status. It SHALL be guarded by a permission
-  (`outbox:read`), never by environment.
+  (`outbox:read`), never by environment. It is a live list (R-NAV-12): a
+  message a refresh brings SHALL show with its body open, so a sign-in link in
+  development is one tap away (F14).
 - **R-MSG-6 (It holds personal data)** — Log entries contain email addresses and
   message content, so they SHALL be included in erasure (R-NFR-7) and SHALL be
   retained for a bounded, configurable period rather than forever. An entry that
@@ -879,7 +913,8 @@ What differs by environment is only whether mail **leaves the machine**.
 - **R-CFG-6 (Changing settings in the host tools)** — A host with
   `settings:manage` SHALL be able to change, on the settings screen, the
   spam-protection numbers except the trusted proxies, the invite defaults, and
-  the minimum challenge and "been there" note lengths (ADR 0031), and the
+  the minimum challenge and "been there" note lengths (ADR 0031), how often
+  the badges and each live list refresh (R-MINE-4, R-NAV-12, ADR 0050), and the
   9toRevolution switch and tuning (R-GAME-17, ADR 0045). Each change SHALL be
   checked against bounds and the order of paired limits (the minimum challenge
   length never above the maximum), take effect without a restart on every server
@@ -1063,6 +1098,9 @@ notifications: they go out at once, whatever is chosen here (R-NFR-3).
     was listed, or the screen it opens. A hidden entry (R-NOTE-4), an entry
     about a member whose account is deleted, or one about anything the member
     may no longer open SHALL NOT be shown (R-NAV-8, R-NFR-7).
+  - The screen is a live list (R-NAV-12). An entry a refresh brings is listed
+    while the screen is open, so it SHALL count as seen at once, like those
+    listed when it opened, and stay outlined until tapped.
 - **R-NOTE-6 (In the menu)** — WHILE the member has new notifications the
   header's menu button SHALL carry a badge with their number, and the menu
   item SHALL read **Notifications (n new)**; without any it SHALL read
