@@ -1,9 +1,13 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
+import PullToRefresh from '../components/PullToRefresh.vue'
+import RefreshButton from '../components/RefreshButton.vue'
+import { arrivals, useLiveList } from '../lib/live-list'
 import {
   bodyParts,
   fetchOutbox,
   type OutboxEntry,
+  type OutboxQuery,
   type OutboxStatus,
 } from '../lib/outbox'
 import { when } from '../lib/when'
@@ -21,27 +25,57 @@ const chipFor: Record<OutboxStatus, string> = {
   failed: 'chip-ink',
 }
 
+// The filter last asked for, which every refresh keeps; a read begun under
+// an earlier one is dropped (R-NAV-12).
+let filter: OutboxQuery = {}
+let asked = 0
+const seen = arrivals<OutboxEntry>((entry) => entry.id)
+const opened = reactive(new Set<string>())
+
 async function load(): Promise<void> {
+  const ask = asked
   try {
-    entries.value = await fetchOutbox({ to: to.value, status: status.value })
+    const found = await fetchOutbox(filter)
+    if (ask !== asked) return
+    seen.see(found)
+    // An arrival shows its message, so a sign-in link is one tap away (R-MSG-5).
+    for (const entry of found) if (seen.isNew(entry)) opened.add(entry.id)
+    entries.value = found
     problem.value = null
   } catch {
-    problem.value = 'The log could not be loaded.'
+    if (ask === asked) problem.value = 'The log could not be loaded.'
   }
 }
 
-onMounted(load)
+const live = useLiveList(load, 'outboxPollSeconds')
+
+async function applyFilter(): Promise<void> {
+  filter = { to: to.value, status: status.value }
+  asked += 1
+  seen.forget()
+  opened.clear()
+  await live.refresh()
+}
+
+function toggled(entry: OutboxEntry, event: Event): void {
+  if ((event.target as HTMLDetailsElement).open) opened.add(entry.id)
+  else opened.delete(entry.id)
+}
+
+onMounted(() => live.refresh())
 </script>
 
 <template>
   <section class="screen">
+    <PullToRefresh :live="live" />
     <div class="stack">
       <p class="kicker kicker-accent">Host tools</p>
       <h1 class="display display-lg">Outbound message log</h1>
       <p class="lede">Every email the app sends, and what became of it.</p>
     </div>
+    <RefreshButton :live="live" />
 
-    <form class="filters" @submit.prevent="load">
+    <form class="filters" @submit.prevent="applyFilter">
       <div class="field">
         <label for="to">Recipient</label>
         <input
@@ -70,7 +104,13 @@ onMounted(load)
       Nothing in the log matches.
     </p>
 
-    <article v-for="entry in entries" :key="entry.id" class="card">
+    <article
+      v-for="entry in entries"
+      :key="entry.id"
+      class="card"
+      :class="{ 'card-new': seen.isNew(entry) }"
+      @click="seen.clear(entry)"
+    >
       <div class="card-head">
         <span class="card-title">{{ entry.subject }}</span>
         <span :class="['chip', 'status', chipFor[entry.status]]">{{
@@ -78,11 +118,12 @@ onMounted(load)
         }}</span>
       </div>
       <p class="mono meta">
-        To {{ entry.to }} · {{ entry.kind }} ·
+        <span v-if="seen.isNew(entry)" class="new">New · </span>To
+        {{ entry.to }} · {{ entry.kind }} ·
         <time :datetime="entry.createdAt">{{ when(entry.createdAt) }}</time>
       </p>
       <p v-if="entry.error" class="alert">{{ entry.error }}</p>
-      <details>
+      <details :open="opened.has(entry.id)" @toggle="toggled(entry, $event)">
         <summary class="label">Message</summary>
         <pre><template v-for="(part, index) in bodyParts(entry.bodyText, origin)" :key="index"><a v-if="'href' in part" :href="part.href">{{ part.href }}</a><template v-else>{{ part.text }}</template></template></pre>
       </details>
@@ -100,6 +141,10 @@ onMounted(load)
 
 .filters .btn {
   grid-column: 1 / -1;
+}
+
+.new {
+  font-weight: 700;
 }
 
 .meta {

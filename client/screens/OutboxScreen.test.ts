@@ -26,7 +26,33 @@ function respondWith(entries: unknown[], ok = true): ReturnType<typeof vi.fn> {
   return fetchMock
 }
 
+// The log answers with whatever `log()` holds when it is read.
+function serve(log: () => unknown[]): ReturnType<typeof vi.fn> {
+  const fetchMock = vi.fn((url: string) =>
+    Promise.resolve({
+      ok: true,
+      status: 200,
+      json: () =>
+        Promise.resolve(
+          url === '/api/config'
+            ? { limits: { outboxPollSeconds: 8, pullRefreshPx: 70 } }
+            : { entries: log() },
+        ),
+    }),
+  )
+  vi.stubGlobal('fetch', fetchMock)
+  return fetchMock
+}
+
+const later = {
+  ...entry,
+  id: 'o2',
+  to: 'bea@example.invalid',
+  createdAt: '2026-11-08T10:05:00.000Z',
+}
+
 afterEach(() => {
+  vi.useRealTimers()
   vi.unstubAllGlobals()
 })
 
@@ -76,5 +102,88 @@ describe('OutboxScreen', () => {
     expect(screen.find('[role="alert"]').text()).toContain(
       'could not be loaded',
     )
+  })
+
+  it('shows a message that arrives while open, outlined with its body open (R-NAV-12, R-MSG-5)', async () => {
+    vi.useFakeTimers()
+    let log = [entry]
+    serve(() => log)
+    const screen = mount(OutboxScreen)
+    await flushPromises()
+    expect(screen.find('.card-new').exists()).toBe(false)
+
+    log = [later, entry]
+    await vi.advanceTimersByTimeAsync(8000)
+
+    const cards = screen.findAll('article')
+    expect(cards).toHaveLength(2)
+    expect(cards[0]?.classes()).toContain('card-new')
+    expect(cards[0]?.text()).toContain('New ·')
+    expect(cards[0]?.find('details').attributes('open')).toBeDefined()
+    expect(cards[1]?.classes()).not.toContain('card-new')
+    expect(cards[1]?.find('details').attributes('open')).toBeUndefined()
+    screen.unmount()
+  })
+
+  it('stops outlining a message once it is tapped', async () => {
+    vi.useFakeTimers()
+    let log = [entry]
+    serve(() => log)
+    const screen = mount(OutboxScreen)
+    await flushPromises()
+    log = [later, entry]
+    await vi.advanceTimersByTimeAsync(8000)
+
+    await screen.find('article').trigger('click')
+
+    expect(screen.find('.card-new').exists()).toBe(false)
+    screen.unmount()
+  })
+
+  it('keeps the filter asked for on every refresh', async () => {
+    vi.useFakeTimers()
+    const fetchMock = serve(() => [])
+    const screen = mount(OutboxScreen)
+    await flushPromises()
+    await screen.find('#to').setValue('ada@example.invalid')
+    await screen.find('form').trigger('submit')
+    await flushPromises()
+
+    await screen.find('#to').setValue('typed but not asked for')
+    await vi.advanceTimersByTimeAsync(8000)
+
+    expect(fetchMock).toHaveBeenLastCalledWith(
+      '/api/admin/outbox?to=ada%40example.invalid',
+    )
+    screen.unmount()
+  })
+
+  it('outlines nothing a changed filter shows', async () => {
+    let log = [entry]
+    serve(() => log)
+    const screen = mount(OutboxScreen)
+    await flushPromises()
+
+    log = [later]
+    await screen.find('#status').setValue('suppressed')
+    await screen.find('form').trigger('submit')
+    await flushPromises()
+
+    expect(screen.text()).toContain('bea@example.invalid')
+    expect(screen.find('.card-new').exists()).toBe(false)
+  })
+
+  it('refreshes on the button', async () => {
+    let log = [entry]
+    serve(() => log)
+    const screen = mount(OutboxScreen)
+    await flushPromises()
+
+    log = [later, entry]
+    await screen.find('button.refresh').trigger('click')
+    await flushPromises()
+
+    expect(screen.findAll('article')).toHaveLength(2)
+    expect(screen.find('.card-new').text()).toContain('bea@example.invalid')
   })
 })
