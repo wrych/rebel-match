@@ -108,6 +108,7 @@ thresholds have sane defaults in the file and may be overridden by env.
 | `limits.profileDraftRetentionDays`    | `30`                          | R-ONB-15                  |
 | `limits.holdToSelectMs`               | `500`                         | R-MEM-3                   |
 | `limits.swipeMinPx`                   | `50`                          | R-OFF-1                   |
+| `limits.pullRefreshPx`                | `70`                          | R-NAV-12                  |
 | `limits.matchesShownFirst`            | `1`                           | R-ASK-15                  |
 | `abuse.linkEmailsBeforeCheck`         | `3`                           | R-NFR-8                   |
 | `abuse.linkEmailsCeiling`             | `10`                          | R-NFR-8                   |

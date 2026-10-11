@@ -415,13 +415,40 @@ describe('deck page size', () => {
 })
 
 describe('matches refresh', () => {
-  it('re-reads waiting requests every 30 seconds unless told otherwise (R-MINE-4)', () => {
-    expect(loadConfig(valid).limits.matchesPollSeconds).toBe(30)
+  it('refreshes the badges every 8 seconds unless told otherwise (R-MINE-4)', () => {
+    expect(loadConfig(valid).limits.matchesPollSeconds).toBe(8)
     expect(
       loadConfig({ ...valid, MATCHES_POLL_SECONDS: '10' }).limits
         .matchesPollSeconds,
     ).toBe(10)
     expect(() => loadConfig({ ...valid, MATCHES_POLL_SECONDS: '0' })).toThrow()
+  })
+})
+
+describe('live lists', () => {
+  it('re-read every 8 seconds, the host tools’ rosters every minute (R-NAV-12)', () => {
+    const limits = loadConfig(valid).limits
+
+    expect(limits.cockpitPollSeconds).toBe(8)
+    expect(limits.challengeMatchesPollSeconds).toBe(8)
+    expect(limits.notificationsPollSeconds).toBe(8)
+    expect(limits.outboxPollSeconds).toBe(8)
+    expect(limits.membersPollSeconds).toBe(60)
+    expect(limits.applicantsPollSeconds).toBe(60)
+    expect(limits.invitesPollSeconds).toBe(60)
+  })
+
+  it('takes each interval from its own variable', () => {
+    const limits = loadConfig({
+      ...valid,
+      OUTBOX_POLL_SECONDS: '3',
+      MEMBERS_POLL_SECONDS: '120',
+    }).limits
+
+    expect(limits.outboxPollSeconds).toBe(3)
+    expect(limits.membersPollSeconds).toBe(120)
+    expect(limits.notificationsPollSeconds).toBe(8)
+    expect(() => loadConfig({ ...valid, OUTBOX_POLL_SECONDS: '0' })).toThrow()
   })
 })
 

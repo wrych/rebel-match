@@ -25,6 +25,12 @@ describe('changeable settings (R-CFG-6, ADR 0031)', () => {
     expect(isSettingKey('sessionSecret')).toBe(false)
   })
 
+  it('lets hosts slow or speed each live list and the badges (R-NAV-12)', () => {
+    expect(isSettingKey('limits.outboxPollSeconds')).toBe(true)
+    expect(isSettingKey('limits.matchesPollSeconds')).toBe(true)
+    expect(boundsOf('limits.membersPollSeconds')).toEqual({ min: 2, max: 3600 })
+  })
+
   it('lets hosts tune the game within what a floor holds (R-GAME-17)', () => {
     expect(isSettingKey('game.enabled')).toBe(true)
     expect(isSettingKey('game.ceo.meetingSeats')).toBe(true)

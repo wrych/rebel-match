@@ -14,10 +14,18 @@ export interface ClientConfig {
     inviteLabelMaxChars: number
     savedTickMs: number
     matchesPollSeconds: number
+    cockpitPollSeconds: number
+    challengeMatchesPollSeconds: number
+    notificationsPollSeconds: number
+    outboxPollSeconds: number
+    membersPollSeconds: number
+    applicantsPollSeconds: number
+    invitesPollSeconds: number
     notificationsPageSize: number
     erasureGraceDays: number
     holdToSelectMs: number
     swipeMinPx: number
+    pullRefreshPx: number
     matchesShownFirst: number
     scrollHintShare: number
     inviteMaxUsesCeiling: number
