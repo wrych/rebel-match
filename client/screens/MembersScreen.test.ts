@@ -41,6 +41,8 @@ type Reply = { status: number; body?: unknown }
 
 const GRACE = { eraseAfter: '2026-11-04T10:00:00.000Z' }
 
+let roster = [ben, mia]
+
 /** Serves the roster and answers each change by method, recording it. */
 function server(
   replies: Partial<Record<'POST' | 'DELETE', Reply>> = {},
@@ -57,11 +59,15 @@ function server(
           ? {
               status: 200,
               body: {
-                limits: { holdToSelectMs: HOLD_MS, erasureGraceDays: 30 },
+                limits: {
+                  holdToSelectMs: HOLD_MS,
+                  erasureGraceDays: 30,
+                  membersPollSeconds: 60,
+                },
               },
             }
           : method === 'GET'
-            ? { status: ok ? 200 : 500, body: { members: [ben, mia] } }
+            ? { status: ok ? 200 : 500, body: { members: roster } }
             : (replies[method as 'POST' | 'DELETE'] ?? { status: 204 })
       return Promise.resolve({
         ok: reply.status < 300,
@@ -95,6 +101,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  roster = [ben, mia]
   vi.unstubAllGlobals()
   vi.useRealTimers()
   push.mockReset()
@@ -305,7 +312,11 @@ describe('MembersScreen, selecting several (R-MEM-3)', () => {
                   ok: true,
                   status: 200,
                   json: async () => ({
-                    limits: { holdToSelectMs: HOLD_MS, erasureGraceDays: 30 },
+                    limits: {
+                      holdToSelectMs: HOLD_MS,
+                      erasureGraceDays: 30,
+                      membersPollSeconds: 60,
+                    },
                   }),
                 }
               : { ok: false, status: 500, json: async () => ({}) },
@@ -351,5 +362,20 @@ describe('MembersScreen, selecting several (R-MEM-3)', () => {
 
     expect(screen.find('.action-bar').text()).not.toContain('Delete')
     expect(screen.find('#bulk-role').exists()).toBe(true)
+  })
+
+  it('outlines a member who joins while it is open, keeping the selection (R-NAV-12)', async () => {
+    vi.useFakeTimers()
+    server()
+    const screen = await shown()
+    await screen.findAll('.selector')[0]?.trigger('click')
+
+    roster = [{ ...mia, id: 'm-zoe', name: 'Zoe Joiner' }, ben, mia]
+    await vi.advanceTimersByTimeAsync(60_000)
+
+    expect(cards(screen)).toHaveLength(3)
+    expect(screen.find('.card-new').text()).toContain('Zoe Joiner')
+    expect(screen.findAll('.member.selected')).toHaveLength(1)
+    screen.unmount()
   })
 })
