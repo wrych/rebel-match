@@ -1264,8 +1264,8 @@ the office's people; the **player** is the character the member steers.
   belongs to rebellion. Characters SHALL be drawn as smooth vector figures in
   suits, with a range of skin tones and hair, and a grey employee is the whole
   figure desaturated, never a change of skin colour. Every state SHALL also
-  show as a shape: a tempted employee's screen carries the Rebel Match mark in
-  its happy colours (R-LOOK-5), a rebel raises a fist and wears a colourful hairdo, a grey employee in rebel mode
+  show as a shape: a tempted employee's screen carries the CR logo, a rebel
+  raises a fist and wears a colourful hairdo, a grey employee in rebel mode
   slumps, and heat shows as a flush, then sweat, then steam over a heat bar.
   The first time a member meets a mechanic (the first day, the water cooler,
   meetings, rebel mode) the game SHALL show a short hint, once per member; the
