@@ -10,12 +10,15 @@ import { MARK_HAPPY_BANDS } from '../../lib/mark'
 const { enabled: _enabled, ...tuning } = gameDefaults
 
 /** A 2D context that does nothing but remember the rectangles it was asked
- * to draw, and the transform in force. */
+ * to draw, the widths of the rounded ones and its clips in order, and the
+ * transform in force. */
 function recorder(): {
   ctx: CanvasRenderingContext2D
   rects: { fill: unknown; x: number; y: number }[]
+  shapes: (number | 'clip')[]
 } {
   const rects: { fill: unknown; x: number; y: number }[] = []
+  const shapes: (number | 'clip')[] = []
   let matrix = { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 }
   const state: Record<string, unknown> = {}
   const ctx = new Proxy(state, {
@@ -32,6 +35,9 @@ function recorder(): {
           matrix = { a, b, c, d, e, f }
         }
       if (key === 'getTransform') return () => matrix
+      if (key === 'roundRect')
+        return (_x: number, _y: number, w: number) => shapes.push(w)
+      if (key === 'clip') return () => shapes.push('clip')
       if (key === 'fillRect')
         return (x: number, y: number) =>
           rects.push({ fill: target['fillStyle'], x, y })
@@ -43,7 +49,7 @@ function recorder(): {
       return true
     },
   })
-  return { ctx: ctx as unknown as CanvasRenderingContext2D, rects }
+  return { ctx: ctx as unknown as CanvasRenderingContext2D, rects, shapes }
 }
 
 describe('drawDay', () => {
@@ -72,6 +78,34 @@ describe('drawDay', () => {
 
     expect(bandsDrawn(true)).toEqual(MARK_HAPPY_BANDS)
     expect(bandsDrawn(false)).toEqual([])
+    vi.unstubAllGlobals()
+  })
+
+  it('fills a tempted employee’s screen with the mark, cropped to the screen (R-GAME-18)', () => {
+    vi.stubGlobal(
+      'Path2D',
+      class {
+        addPath(): void {}
+      },
+    )
+    const day = startDay(1, tuning, 1)
+    const employee = day.employees[0]
+    if (employee === undefined) throw new Error('no employee')
+    employee.spirit = 'tempted'
+    const { ctx, shapes } = recorder()
+
+    drawDay(
+      ctx,
+      day,
+      { x: 2, y: 0, width: 10, height: 9 },
+      palette(() => ''),
+      40,
+    )
+
+    const clip = shapes.indexOf('clip')
+    const [screen, mark] = [shapes[clip - 1], shapes[clip + 1]]
+    expect(typeof screen).toBe('number')
+    expect(mark).toBeGreaterThan(screen as number)
     vi.unstubAllGlobals()
   })
 
