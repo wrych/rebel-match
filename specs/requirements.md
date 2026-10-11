@@ -903,12 +903,13 @@ _(Decided by the maintainer after trying the redesign: ADR 0023.)_
   SHALL be drawn by one component, so that it looks and behaves the same
   wherever it appears (constitution §4, ADR 0040).
 - **R-LOOK-5 (The mark)** — The sign-in screen SHALL show the Rebel Match mark,
-  two mirrored Rs whose overlap draws a figure, beside its title. The first
-  time it shows in a page load, the two Rs SHALL slide together over an
-  otherwise black screen, which then clears and leaves the mark where it
-  stands, all within one second. WHEN the member prefers reduced motion, the
-  mark SHALL show at rest with no intro. The header SHALL carry the mark as its
-  link home, and the browser SHALL show it as the page's icon.
+  two mirrored Rs standing just apart, beside its title. The first time it
+  shows in a page load, over an otherwise black screen, the two Rs SHALL slide
+  together into a figure that winks, then slide apart again while the black
+  clears, leaving the mark where it stands, all within two and a half seconds.
+  WHEN the member prefers reduced motion, the mark SHALL show at rest with no
+  intro. The header SHALL carry the mark as its link home, and the browser
+  SHALL show it as the page's icon.
 
 ---
 
