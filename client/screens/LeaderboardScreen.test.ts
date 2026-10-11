@@ -20,17 +20,30 @@ const board: Leaderboard = {
   of: 12,
 }
 
-function serve(answer: Leaderboard | null): void {
+const config = { limits: { leaderboardPollSeconds: 30 } }
+
+function serve(answer: Leaderboard | null | (() => Leaderboard)): void {
   vi.stubGlobal(
     'fetch',
-    vi.fn(() =>
+    vi.fn((url: string) =>
       Promise.resolve(
-        answer === null
-          ? { ok: false, status: 404 }
-          : { ok: true, status: 200, json: async () => answer },
+        url === '/api/config'
+          ? { ok: true, status: 200, json: async () => config }
+          : answer === null
+            ? { ok: false, status: 404 }
+            : {
+                ok: true,
+                status: 200,
+                json: async () =>
+                  typeof answer === 'function' ? answer() : answer,
+              },
       ),
     ),
   )
+}
+
+function gameReads(): unknown[] {
+  return vi.mocked(fetch).mock.calls.filter(([url]) => url !== '/api/config')
 }
 
 async function mountScreen(): Promise<ReturnType<typeof mount>> {
@@ -42,6 +55,7 @@ async function mountScreen(): Promise<ReturnType<typeof mount>> {
 }
 
 afterEach(() => {
+  vi.useRealTimers()
   vi.unstubAllGlobals()
   replace.mockClear()
   applyMood('calm')
@@ -64,12 +78,14 @@ describe('LeaderboardScreen (R-GAME-13, R-GAME-15)', () => {
     expect(screen.text()).toContain('12 players')
   })
 
-  it('says the rebels only come out in happy mode, and asks the server nothing', async () => {
+  it('says the rebels only come out in happy mode, and asks nothing about the game', async () => {
+    vi.useFakeTimers()
     serve(null)
     const screen = await mountScreen()
+    await vi.advanceTimersByTimeAsync(60_000)
 
     expect(screen.text()).toContain('only come out in happy mode')
-    expect(fetch).not.toHaveBeenCalled()
+    expect(gameReads()).toHaveLength(0)
     expect(replace).not.toHaveBeenCalled()
   })
 
@@ -99,5 +115,31 @@ describe('LeaderboardScreen (R-GAME-13, R-GAME-15)', () => {
     const screen = await mountScreen()
 
     expect(screen.text()).toContain('Nobody has won a day yet')
+  })
+
+  it('outlines a new best that turns up while it is open, not a row that moved (R-NAV-12)', async () => {
+    vi.useFakeTimers()
+    applyMood('happy')
+    let shown = board
+    serve(() => shown)
+    const screen = await mountScreen()
+    expect(screen.find('.card-new').exists()).toBe(false)
+
+    shown = {
+      ...board,
+      rows: [
+        { place: 1, name: 'Bea Bold', job: 'rebel', level: 19, mine: false },
+        { ...board.rows[0]!, place: 2 },
+        { ...board.rows[1]!, place: 3 },
+      ],
+    }
+    await vi.advanceTimersByTimeAsync(30_000)
+
+    const fresh = screen.findAll('.card-new')
+    expect(fresh).toHaveLength(1)
+    expect(fresh[0]?.text()).toContain('Bea Bold')
+    await fresh[0]?.trigger('click')
+    expect(screen.find('.card-new').exists()).toBe(false)
+    screen.unmount()
   })
 })

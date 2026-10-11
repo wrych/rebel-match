@@ -2,13 +2,25 @@
 import { ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import HappyOnly from '../components/HappyOnly.vue'
+import PullToRefresh from '../components/PullToRefresh.vue'
 import { fetchLeaderboard, jobName, type Leaderboard } from '../lib/game'
+import { arrivals, useLiveList } from '../lib/live-list'
 import { currentMood } from '../lib/mood'
 
 const route = useRoute()
 const router = useRouter()
 const board = ref<Leaderboard | null>(null)
 const problem = ref<string | null>(null)
+
+type Row = Leaderboard['rows'][number]
+
+// The board names no member, so a row is known by what it shows: a new
+// name, job or level is a new player or a new best (R-NAV-12).
+const arrived = arrivals<Row>((row) =>
+  JSON.stringify([row.name, row.job, row.level]),
+)
+const rowsOf = (shown: Leaderboard): Row[] =>
+  shown.own === null ? shown.rows : [...shown.rows, shown.own]
 
 async function load(): Promise<void> {
   try {
@@ -18,13 +30,22 @@ async function load(): Promise<void> {
         name: 'not-found',
         params: { pathMatch: route.path.slice(1).split('/') },
       })
+    else arrived.see(rowsOf(board.value))
   } catch {
-    problem.value = 'The leaderboard could not be loaded.'
+    // Once shown, the board stays as it is when a refresh fails.
+    if (board.value === null)
+      problem.value = 'The leaderboard could not be loaded.'
   }
 }
 
-// Nothing is asked of the server until the member is in happy mode, so calm
-// mode shows the same notice whether the game is on or off (R-GAME-1).
+// Only once shown in happy mode, so calm mode still asks nothing.
+const live = useLiveList(async () => {
+  if (currentMood.value === 'happy' && board.value !== null) await load()
+}, 'leaderboardPollSeconds')
+
+// Nothing about the game is asked of the server until the member is in happy
+// mode, so calm mode shows the same notice whether the game is on or off
+// (R-GAME-1).
 watch(
   currentMood,
   async (mood) => {
@@ -37,6 +58,7 @@ watch(
 <template>
   <HappyOnly>
     <section class="screen">
+      <PullToRefresh :live="live" />
       <div class="stack">
         <p class="kicker kicker-accent">9toRevolution</p>
         <h1 class="display display-lg">Leaderboard</h1>
@@ -56,8 +78,9 @@ watch(
           v-for="(row, index) in board.rows"
           :key="index"
           class="row"
-          :class="{ mine: row.mine }"
+          :class="{ mine: row.mine, 'card-new': arrived.isNew(row) }"
           :aria-current="row.mine ? 'true' : undefined"
+          @click="arrived.clear(row)"
         >
           <span class="place mono">{{ row.place }}</span>
           <span class="name">{{ row.name }}</span>
@@ -65,7 +88,13 @@ watch(
             >{{ jobName(row.job) }} · level {{ row.level }}</span
           >
         </li>
-        <li v-if="board.own" class="row mine own" aria-current="true">
+        <li
+          v-if="board.own"
+          class="row mine own"
+          :class="{ 'card-new': arrived.isNew(board.own) }"
+          aria-current="true"
+          @click="arrived.clear(board.own)"
+        >
           <span class="place mono">{{ board.own.place }}</span>
           <span class="name">{{ board.own.name }}</span>
           <span class="job mono"

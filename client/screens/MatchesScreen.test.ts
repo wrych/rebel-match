@@ -68,8 +68,13 @@ type Served = {
   shownFirst?: number | null
 }
 
+// Each read gets its own copy, as from the network.
 function json(body: unknown): Promise<object> {
-  return Promise.resolve({ ok: true, status: 200, json: async () => body })
+  return Promise.resolve({
+    ok: true,
+    status: 200,
+    json: async () => structuredClone(body),
+  })
 }
 
 /** Serves the challenge, its matches and the followed trends, and answers a
@@ -88,7 +93,12 @@ function server(served: Served = {}): ReturnType<typeof vi.fn> {
     if (url === '/api/config')
       return shownFirst === null
         ? Promise.resolve({ ok: false, status: 500 })
-        : json({ limits: { matchesShownFirst: shownFirst } })
+        : json({
+            limits: {
+              matchesShownFirst: shownFirst,
+              challengeMatchesPollSeconds: 8,
+            },
+          })
     if (found === null) return Promise.resolve({ ok: false, status: 404 })
     return url.endsWith('/matches') ? json(found) : json({ challenge })
   })
@@ -111,6 +121,7 @@ function followButton(
 }
 
 afterEach(() => {
+  vi.useRealTimers()
   vi.unstubAllGlobals()
   route.query = {}
   replace.mockClear()
@@ -336,5 +347,23 @@ describe('MatchesScreen', () => {
     expect(screen.find('[role="alert"]').text()).toContain(
       'could not be loaded',
     )
+  })
+
+  it('outlines a rebel who turns up while it is open, until tapped (R-NAV-12)', async () => {
+    vi.useFakeTimers()
+    const served = { ...matches, sameBoat: [...matches.sameBoat] }
+    server({ found: served })
+    const screen = await mountScreen()
+    expect(screen.find('.card-new').exists()).toBe(false)
+
+    const nia = { ...matches.sameBoat[0]!, memberId: 'm9', name: 'Nia New' }
+    served.sameBoat = [nia, ...matches.sameBoat]
+    await vi.advanceTimersByTimeAsync(8000)
+
+    const fresh = screen.find('.peer-same_boat .card-new')
+    expect(fresh.text()).toContain('Nia New')
+    await fresh.trigger('click')
+    expect(screen.find('.card-new').exists()).toBe(false)
+    screen.unmount()
   })
 })

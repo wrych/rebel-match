@@ -436,6 +436,7 @@ describe('live lists', () => {
     expect(limits.membersPollSeconds).toBe(60)
     expect(limits.applicantsPollSeconds).toBe(60)
     expect(limits.invitesPollSeconds).toBe(60)
+    expect(limits.leaderboardPollSeconds).toBe(30)
   })
 
   it('takes each interval from its own variable', () => {

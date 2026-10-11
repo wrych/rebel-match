@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import PullToRefresh from '../components/PullToRefresh.vue'
+import RefreshButton from '../components/RefreshButton.vue'
 import { rolePermissions } from '../../src/access'
 import { peerLine } from '../lib/challenges'
 import { longPress } from '../lib/long-press'
@@ -15,6 +17,7 @@ import {
   type RosterMember,
 } from '../lib/members'
 import { fetchConfig } from '../lib/api'
+import { arrivals, useLiveList } from '../lib/live-list'
 import { loadMe } from '../lib/session'
 import { day, graceSpan } from '../lib/when'
 
@@ -48,9 +51,17 @@ const who = (member: RosterMember): string => member.name ?? member.email
 const pathOf = (member: RosterMember): string =>
   `/admin/members/${encodeURIComponent(member.id)}`
 
+// Every member counts, not only those the search shows, so clearing a
+// search outlines nobody (R-NAV-12).
+const arrived = arrivals<RosterMember>((member) => member.id)
+
 async function load(): Promise<void> {
-  members.value = await fetchMembers()
+  const found = await fetchMembers()
+  arrived.see(found)
+  members.value = found
 }
+
+const live = useLiveList(load, 'membersPollSeconds')
 
 onMounted(async () => {
   try {
@@ -206,6 +217,7 @@ async function erase(): Promise<void> {
 
 <template>
   <section class="screen">
+    <PullToRefresh :live="live" />
     <div class="stack">
       <p class="kicker kicker-accent">Host tools</p>
       <h1 class="display display-lg">Members</h1>
@@ -215,6 +227,7 @@ async function erase(): Promise<void> {
         on several at once.
       </p>
     </div>
+    <RefreshButton :live="live" />
 
     <div class="field">
       <label for="member-search">Search by email or name</label>
@@ -318,7 +331,11 @@ async function erase(): Promise<void> {
         v-for="member in shown"
         :key="member.id"
         class="card member"
-        :class="{ selected: selected.has(member.id) }"
+        :class="{
+          selected: selected.has(member.id),
+          'card-new': arrived.isNew(member),
+        }"
+        @click="arrived.clear(member)"
       >
         <button
           type="button"
