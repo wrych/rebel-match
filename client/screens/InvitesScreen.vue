@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { onMounted, reactive, ref } from 'vue'
 import CopyButton from '../components/CopyButton.vue'
+import PullToRefresh from '../components/PullToRefresh.vue'
+import RefreshButton from '../components/RefreshButton.vue'
 import { fetchConfig, type ClientConfig } from '../lib/api'
 import {
   createInvite,
@@ -9,6 +11,7 @@ import {
   revokeInvite,
   type Invite,
 } from '../lib/invites'
+import { arrivals, useLiveList } from '../lib/live-list'
 import { when } from '../lib/when'
 
 const invites = ref<Invite[]>([])
@@ -33,14 +36,23 @@ const chipFor: Record<Invite['state'], string> = {
   revoked: 'chip-ink',
 }
 
+const arrived = arrivals<Invite>((invite) => invite.id)
+let loaded = false
+
+// Once shown, the list stays as it is when a refresh fails (R-NAV-12).
 async function load(): Promise<void> {
   try {
-    invites.value = await fetchInvites()
+    const found = await fetchInvites()
+    arrived.see(found)
+    invites.value = found
     problem.value = null
   } catch {
-    problem.value = 'The invites could not be loaded.'
+    if (!loaded) problem.value = 'The invites could not be loaded.'
   }
+  loaded = true
 }
+
+const live = useLiveList(load, 'invitesPollSeconds')
 
 async function create(): Promise<void> {
   busy.value = true
@@ -61,7 +73,7 @@ async function create(): Promise<void> {
       validUntil: '',
       maxUses: '',
     })
-    await load()
+    await live.refresh()
   } catch {
     notice.value = 'The invite was not created. Try again.'
   } finally {
@@ -91,7 +103,7 @@ async function raise(invite: Invite): Promise<void> {
         ? `“${invite.label}” is revoked, so its cap stays.`
         : `“${invite.label}” now admits up to ${String(outcome.maxUses)}. The same code keeps working.`
     raising.value = null
-    await load()
+    await live.refresh()
   } catch {
     notice.value = `The cap of “${invite.label}” was not raised. Try again.`
   } finally {
@@ -104,7 +116,7 @@ async function revoke(invite: Invite): Promise<void> {
   try {
     await revokeInvite(invite.id)
     notice.value = `Revoked “${invite.label}”: the next scan joins the queue instead.`
-    await load()
+    await live.refresh()
   } catch {
     notice.value = `“${invite.label}” was not revoked. Try again.`
   } finally {
@@ -113,7 +125,7 @@ async function revoke(invite: Invite): Promise<void> {
 }
 
 onMounted(async () => {
-  await load()
+  await live.refresh()
   try {
     limits.value = (await fetchConfig()).limits
   } catch {
@@ -124,6 +136,7 @@ onMounted(async () => {
 
 <template>
   <section class="screen">
+    <PullToRefresh :live="live" />
     <div class="stack">
       <p class="kicker kicker-accent">Host tools</p>
       <h1 class="display display-lg">Invite links</h1>
@@ -132,6 +145,7 @@ onMounted(async () => {
         its cap. Revoke it the moment it escapes.
       </p>
     </div>
+    <RefreshButton :live="live" />
 
     <form class="stack card" @submit.prevent="create">
       <p class="kicker">New invite</p>
@@ -200,7 +214,13 @@ onMounted(async () => {
     <p v-if="problem" class="alert" role="alert">{{ problem }}</p>
     <p v-else-if="invites.length === 0" class="empty">No invites yet.</p>
 
-    <article v-for="invite in invites" :key="invite.id" class="card">
+    <article
+      v-for="invite in invites"
+      :key="invite.id"
+      class="card"
+      :class="{ 'card-new': arrived.isNew(invite) }"
+      @click="arrived.clear(invite)"
+    >
       <div class="card-head">
         <span class="card-title">{{ invite.label }}</span>
         <span :class="['chip', chipFor[invite.state]]">{{ invite.state }}</span>

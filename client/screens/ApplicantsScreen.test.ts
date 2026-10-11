@@ -39,7 +39,14 @@ async function mountScreen(): Promise<ReturnType<typeof mount>> {
   return screen
 }
 
+function press(screen: ReturnType<typeof mount>, label: string): Promise<void> {
+  const button = screen.findAll('button').find((b) => b.text() === label)
+  if (button === undefined) throw new Error(`no ${label} button`)
+  return button.trigger('click')
+}
+
 afterEach(() => {
+  vi.useRealTimers()
   vi.unstubAllGlobals()
 })
 
@@ -58,7 +65,7 @@ describe('ApplicantsScreen', () => {
     const fetchMock = server()
     const screen = await mountScreen()
 
-    await screen.findAll('button')[0]!.trigger('click')
+    await press(screen, 'Approve')
     await flushPromises()
 
     expect(fetchMock).toHaveBeenCalledWith(
@@ -75,7 +82,7 @@ describe('ApplicantsScreen', () => {
     const fetchMock = server()
     const screen = await mountScreen()
 
-    await screen.findAll('button')[1]!.trigger('click')
+    await press(screen, 'Reject')
     await flushPromises()
 
     expect(fetchMock).toHaveBeenCalledWith(
@@ -93,7 +100,7 @@ describe('ApplicantsScreen', () => {
     server(status)
     const screen = await mountScreen()
 
-    await screen.findAll('button')[0]!.trigger('click')
+    await press(screen, 'Approve')
     await flushPromises()
 
     expect(screen.find('[role="status"]').text()).toContain(words)
@@ -110,5 +117,46 @@ describe('ApplicantsScreen', () => {
     expect(screen.find('[role="alert"]').text()).toContain(
       'could not be loaded',
     )
+  })
+
+  it('outlines an applicant who asks while it is open, until tapped (R-NAV-12)', async () => {
+    vi.useFakeTimers()
+    const bea = { ...ada, id: 'm-bea', name: 'Bea Rebel' }
+    let pending = [ada]
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          json: async () =>
+            url === '/api/config'
+              ? { limits: { applicantsPollSeconds: 60 } }
+              : { applicants: pending },
+        }),
+      ),
+    )
+    const screen = await mountScreen()
+
+    pending = [ada, bea]
+    await vi.advanceTimersByTimeAsync(60_000)
+
+    const fresh = screen.find('.card-new')
+    expect(fresh.text()).toContain('Bea Rebel')
+    await fresh.trigger('click')
+    expect(screen.find('.card-new').exists()).toBe(false)
+    screen.unmount()
+  })
+
+  it('keeps the list shown when a refresh fails', async () => {
+    const fetchMock = server()
+    const screen = await mountScreen()
+    fetchMock.mockResolvedValueOnce({ ok: false, status: 500 })
+
+    await press(screen, 'Refresh')
+    await flushPromises()
+
+    expect(screen.text()).toContain('Ada Rebel')
+    expect(screen.find('[role="alert"]').exists()).toBe(false)
   })
 })

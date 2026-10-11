@@ -17,6 +17,7 @@ const invite = {
   createdAt: '2026-11-08T08:00:00.000Z',
 }
 const limits = {
+  invitesPollSeconds: 60,
   inviteDefaultHours: 12,
   inviteDefaultMaxUses: 400,
   inviteLabelMaxChars: 120,
@@ -27,6 +28,8 @@ interface Reply {
   status: number
   body?: unknown
 }
+
+let listed = [invite]
 
 /** Serves the list and config, and answers each POST with `post` and each
  * PATCH with `patch`. */
@@ -42,7 +45,7 @@ function server(
           ? patch
           : {
               status: 200,
-              body: url === '/api/config' ? { limits } : { invites: [invite] },
+              body: url === '/api/config' ? { limits } : { invites: listed },
             }
     return Promise.resolve({
       ok: reply.status < 300,
@@ -74,7 +77,9 @@ function postBody(fetchMock: ReturnType<typeof vi.fn>): unknown {
 }
 
 afterEach(() => {
+  vi.useRealTimers()
   vi.unstubAllGlobals()
+  listed = [invite]
 })
 
 describe('InvitesScreen', () => {
@@ -304,5 +309,18 @@ describe('InvitesScreen', () => {
     await flushPromises()
 
     expect(screen.find('[role="status"]').text()).toContain('not copied')
+  })
+
+  it('outlines an invite another host creates while it is open (R-NAV-12)', async () => {
+    vi.useFakeTimers()
+    server()
+    const screen = await mountScreen()
+    expect(screen.find('.card-new').exists()).toBe(false)
+
+    listed = [{ ...invite, id: 'i2', label: 'Side stage' }, invite]
+    await vi.advanceTimersByTimeAsync(60_000)
+
+    expect(screen.find('.card-new .card-title').text()).toBe('Side stage')
+    screen.unmount()
   })
 })
