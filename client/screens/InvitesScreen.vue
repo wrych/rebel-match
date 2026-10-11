@@ -139,13 +139,15 @@ onMounted(async () => {
     <PullToRefresh :live="live" />
     <div class="stack">
       <p class="kicker kicker-accent">Host tools</p>
-      <h1 class="display display-lg">Invite links</h1>
+      <div class="title-row">
+        <h1 class="display display-lg">Invite links</h1>
+        <RefreshButton :live="live" />
+      </div>
       <p class="lede">
         A link in a QR code admits whoever scans it, inside its window and up to
         its cap. Revoke it the moment it escapes.
       </p>
     </div>
-    <RefreshButton :live="live" />
 
     <form class="stack card" @submit.prevent="create">
       <p class="kicker">New invite</p>

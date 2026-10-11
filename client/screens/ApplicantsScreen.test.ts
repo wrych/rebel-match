@@ -40,7 +40,9 @@ async function mountScreen(): Promise<ReturnType<typeof mount>> {
 }
 
 function press(screen: ReturnType<typeof mount>, label: string): Promise<void> {
-  const button = screen.findAll('button').find((b) => b.text() === label)
+  const button = screen
+    .findAll('button')
+    .find((b) => (b.attributes('aria-label') ?? b.text()) === label)
   if (button === undefined) throw new Error(`no ${label} button`)
   return button.trigger('click')
 }

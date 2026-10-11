@@ -220,14 +220,16 @@ async function erase(): Promise<void> {
     <PullToRefresh :live="live" />
     <div class="stack">
       <p class="kicker kicker-accent">Host tools</p>
-      <h1 class="display display-lg">Members</h1>
+      <div class="title-row">
+        <h1 class="display display-lg">Members</h1>
+        <RefreshButton :live="live" />
+      </div>
       <p class="lede">
         Everyone who has joined or asked to. Open a member to see all that is
         held about them, or tick the circle on a card (or hold the card) to act
         on several at once.
       </p>
     </div>
-    <RefreshButton :live="live" />
 
     <div class="field">
       <label for="member-search">Search by email or name</label>
