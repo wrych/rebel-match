@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { peerLine, type PeerCard } from '../lib/challenges'
+import type { Arrivals } from '../lib/live-list'
 
 const props = defineProps<{
   peers: PeerCard[]
@@ -7,6 +8,8 @@ const props = defineProps<{
   kind: 'same_boat' | 'been_there'
   action: string
   nobody: string
+  /** Outlines the rebels a refresh brought (R-NAV-12). */
+  arrived?: Arrivals<PeerCard>
 }>()
 
 // Connecting goes through the double opt-in screen, never a direct email
@@ -21,7 +24,13 @@ function connectPath(peer: PeerCard): string {
 <template>
   <p v-if="peers.length === 0" class="empty">{{ nobody }}</p>
   <ul v-else class="stack peer-list" :class="`peer-${kind}`">
-    <li v-for="peer in peers" :key="peer.memberId" class="card peer">
+    <li
+      v-for="peer in peers"
+      :key="peer.memberId"
+      class="card peer"
+      :class="{ 'card-new': arrived?.isNew(peer) }"
+      @click="arrived?.clear(peer)"
+    >
       <div class="stack-tight">
         <span class="card-title">{{ peer.name }}</span>
         <span v-if="peerLine(peer)" class="mono peer-meta">{{
