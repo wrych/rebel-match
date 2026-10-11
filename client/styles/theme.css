@@ -1108,3 +1108,9 @@ textarea.input {
   text-transform: uppercase;
   color: var(--faint);
 }
+
+/* While a live list is open its own pull refreshes, so the browser's
+   pull-to-reload must not fire as well (R-NAV-12, ADR 0050). */
+html.live-pull {
+  overscroll-behavior-y: contain;
+}

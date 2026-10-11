@@ -703,6 +703,14 @@ const catalogue: Group[] = [
         unit: ['pixel', 'pixels'],
       },
       {
+        name: 'Pull a list down to refresh it',
+        explanation:
+          'How far a finger pulls a live list down from the top of the page before it refreshes.',
+        fixed: true,
+        read: (c) => c.limits.pullRefreshPx,
+        unit: ['pixel', 'pixels'],
+      },
+      {
         name: 'Matches shown before “more”',
         explanation:
           'How many rebels or case studies each section of a challenge’s matches shows before the rest are a tap away.',
