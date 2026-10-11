@@ -639,6 +639,13 @@ const catalogue: Group[] = [
         read: (c) => c.limits.invitesPollSeconds,
         unit: SECONDS,
       },
+      {
+        name: 'Leaderboard',
+        explanation: 'The 9toRevolution leaderboard.',
+        key: 'limits.leaderboardPollSeconds',
+        read: (c) => c.limits.leaderboardPollSeconds,
+        unit: SECONDS,
+      },
     ],
   },
   {

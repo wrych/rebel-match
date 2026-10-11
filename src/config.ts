@@ -230,6 +230,7 @@ const envSchema = z
     MEMBERS_POLL_SECONDS: z.coerce.number().int().positive().default(60),
     APPLICANTS_POLL_SECONDS: z.coerce.number().int().positive().default(60),
     INVITES_POLL_SECONDS: z.coerce.number().int().positive().default(60),
+    LEADERBOARD_POLL_SECONDS: z.coerce.number().int().positive().default(30),
     NOTIFICATIONS_PAGE_SIZE: z.coerce.number().int().positive().default(50),
     WHITELIST_BATCH_MAX: z.coerce.number().int().positive().default(1000),
     OUTBOX_RETENTION_DAYS: z.coerce.number().int().positive().default(30),
@@ -396,6 +397,7 @@ export interface Limits {
   membersPollSeconds: number
   applicantsPollSeconds: number
   invitesPollSeconds: number
+  leaderboardPollSeconds: number
   notificationsPageSize: number
   whitelistBatchMax: number
   emailMaxChars: number
@@ -538,6 +540,7 @@ function limitsFrom(env: Env): Limits {
     membersPollSeconds: env.MEMBERS_POLL_SECONDS,
     applicantsPollSeconds: env.APPLICANTS_POLL_SECONDS,
     invitesPollSeconds: env.INVITES_POLL_SECONDS,
+    leaderboardPollSeconds: env.LEADERBOARD_POLL_SECONDS,
     notificationsPageSize: env.NOTIFICATIONS_PAGE_SIZE,
     whitelistBatchMax: env.WHITELIST_BATCH_MAX,
     emailMaxChars: EMAIL_MAX_CHARS,

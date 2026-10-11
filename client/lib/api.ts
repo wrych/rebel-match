@@ -21,6 +21,7 @@ export interface ClientConfig {
     membersPollSeconds: number
     applicantsPollSeconds: number
     invitesPollSeconds: number
+    leaderboardPollSeconds: number
     notificationsPageSize: number
     erasureGraceDays: number
     holdToSelectMs: number

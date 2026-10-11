@@ -23,6 +23,7 @@ type PollKey =
   | 'membersPollSeconds'
   | 'applicantsPollSeconds'
   | 'invitesPollSeconds'
+  | 'leaderboardPollSeconds'
 
 /** A setting hosts may change in the app (R-CFG-6, ADR 0031). */
 export type SettingKey =
@@ -57,6 +58,7 @@ const pollKeys: readonly PollKey[] = [
   'membersPollSeconds',
   'applicantsPollSeconds',
   'invitesPollSeconds',
+  'leaderboardPollSeconds',
 ]
 
 // What a host can set: wide enough for a crowded room, narrow enough that no
