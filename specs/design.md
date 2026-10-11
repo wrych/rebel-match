@@ -88,6 +88,13 @@ thresholds have sane defaults in the file and may be overridden by env.
 | `limits.deckPageSize`                 | `20`                          | R-OFF-1                   |
 | `limits.newestChallengesShown`        | `3`                           | R-ASK-2, R-ASK-14         |
 | `limits.matchesPollSeconds`           | `30`                          | R-MINE-4                  |
+| `limits.cockpitPollSeconds`           | `8`                           | R-NAV-12                  |
+| `limits.challengeMatchesPollSeconds`  | `8`                           | R-NAV-12                  |
+| `limits.notificationsPollSeconds`     | `8`                           | R-NAV-12                  |
+| `limits.outboxPollSeconds`            | `8`                           | R-NAV-12                  |
+| `limits.membersPollSeconds`           | `60`                          | R-NAV-12                  |
+| `limits.applicantsPollSeconds`        | `60`                          | R-NAV-12                  |
+| `limits.invitesPollSeconds`           | `60`                          | R-NAV-12                  |
 | `limits.notificationsPageSize`        | `50`                          | R-NOTE-5                  |
 | `limits.notificationRetentionDays`    | `90`                          | R-NOTE-11                 |
 | `notifications.dailyAt`               | `08:00`                       | R-NOTE-7                  |
