@@ -12,6 +12,17 @@ type LimitKey =
   | 'beenThereNoteMinChars'
   | 'inviteDefaultMaxUses'
   | 'inviteDefaultHours'
+  | PollKey
+
+type PollKey =
+  | 'matchesPollSeconds'
+  | 'cockpitPollSeconds'
+  | 'challengeMatchesPollSeconds'
+  | 'notificationsPollSeconds'
+  | 'outboxPollSeconds'
+  | 'membersPollSeconds'
+  | 'applicantsPollSeconds'
+  | 'invitesPollSeconds'
 
 /** A setting hosts may change in the app (R-CFG-6, ADR 0031). */
 export type SettingKey =
@@ -33,6 +44,20 @@ interface Bounds {
 }
 
 const MINUTES_PER_DAY = 1440
+// Often enough to feel live, never so often that open screens flood the
+// server (ADR 0050).
+const POLL_BOUNDS: Bounds = { min: 2, max: 3600 }
+
+const pollKeys: readonly PollKey[] = [
+  'matchesPollSeconds',
+  'cockpitPollSeconds',
+  'challengeMatchesPollSeconds',
+  'notificationsPollSeconds',
+  'outboxPollSeconds',
+  'membersPollSeconds',
+  'applicantsPollSeconds',
+  'invitesPollSeconds',
+]
 
 // What a host can set: wide enough for a crowded room, narrow enough that no
 // value locks everyone out, hangs a phone on the human check, or overflows the
@@ -52,6 +77,9 @@ const bounds: Readonly<Record<SettingKey, Bounds>> = {
   'limits.inviteDefaultHours': { min: 1, max: 720 },
   'limits.challengeMinChars': { min: 1, max: 300 },
   'limits.beenThereNoteMinChars': { min: 1, max: 300 },
+  ...(Object.fromEntries(
+    pollKeys.map((key) => [`limits.${key}`, POLL_BOUNDS]),
+  ) as Record<`limits.${PollKey}`, Bounds>),
   ...(Object.fromEntries(
     Object.entries(gameBounds).map(([key, value]) => [`game.${key}`, value]),
   ) as Record<`game.${GameKey}`, Bounds>),

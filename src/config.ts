@@ -216,6 +216,18 @@ const envSchema = z
     DECK_PAGE_SIZE: z.coerce.number().int().positive().default(20),
     NEWEST_CHALLENGES_SHOWN: z.coerce.number().int().positive().default(3),
     MATCHES_POLL_SECONDS: z.coerce.number().int().positive().default(30),
+    // How often each live list re-reads while it is open (R-NAV-12).
+    COCKPIT_POLL_SECONDS: z.coerce.number().int().positive().default(8),
+    CHALLENGE_MATCHES_POLL_SECONDS: z.coerce
+      .number()
+      .int()
+      .positive()
+      .default(8),
+    NOTIFICATIONS_POLL_SECONDS: z.coerce.number().int().positive().default(8),
+    OUTBOX_POLL_SECONDS: z.coerce.number().int().positive().default(8),
+    MEMBERS_POLL_SECONDS: z.coerce.number().int().positive().default(60),
+    APPLICANTS_POLL_SECONDS: z.coerce.number().int().positive().default(60),
+    INVITES_POLL_SECONDS: z.coerce.number().int().positive().default(60),
     NOTIFICATIONS_PAGE_SIZE: z.coerce.number().int().positive().default(50),
     WHITELIST_BATCH_MAX: z.coerce.number().int().positive().default(1000),
     OUTBOX_RETENTION_DAYS: z.coerce.number().int().positive().default(30),
@@ -375,6 +387,13 @@ export interface Limits {
   deckPageSize: number
   newestChallengesShown: number
   matchesPollSeconds: number
+  cockpitPollSeconds: number
+  challengeMatchesPollSeconds: number
+  notificationsPollSeconds: number
+  outboxPollSeconds: number
+  membersPollSeconds: number
+  applicantsPollSeconds: number
+  invitesPollSeconds: number
   notificationsPageSize: number
   whitelistBatchMax: number
   emailMaxChars: number
@@ -509,6 +528,13 @@ function limitsFrom(env: Env): Limits {
     deckPageSize: env.DECK_PAGE_SIZE,
     newestChallengesShown: env.NEWEST_CHALLENGES_SHOWN,
     matchesPollSeconds: env.MATCHES_POLL_SECONDS,
+    cockpitPollSeconds: env.COCKPIT_POLL_SECONDS,
+    challengeMatchesPollSeconds: env.CHALLENGE_MATCHES_POLL_SECONDS,
+    notificationsPollSeconds: env.NOTIFICATIONS_POLL_SECONDS,
+    outboxPollSeconds: env.OUTBOX_POLL_SECONDS,
+    membersPollSeconds: env.MEMBERS_POLL_SECONDS,
+    applicantsPollSeconds: env.APPLICANTS_POLL_SECONDS,
+    invitesPollSeconds: env.INVITES_POLL_SECONDS,
     notificationsPageSize: env.NOTIFICATIONS_PAGE_SIZE,
     whitelistBatchMax: env.WHITELIST_BATCH_MAX,
     emailMaxChars: EMAIL_MAX_CHARS,
