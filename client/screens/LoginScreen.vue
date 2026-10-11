@@ -221,6 +221,7 @@ async function send(): Promise<void> {
   width: clamp(6rem, 32vw, 9rem);
   height: auto;
   aspect-ratio: 1;
+  border-radius: var(--mark-radius);
 }
 
 /* The screen's own entrance would make it a stacking context and trap the mark
@@ -239,7 +240,7 @@ async function send(): Promise<void> {
   inset: 0;
   z-index: 40;
   background: #000;
-  animation: intro-clear 0.35s ease var(--mark-meet) both;
+  animation: intro-clear 0.35s ease var(--mark-clear-at) both;
 }
 
 @keyframes intro-clear {

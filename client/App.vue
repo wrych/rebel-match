@@ -78,6 +78,7 @@ function toggleMood(): void {
 .brand-mark {
   width: 34px;
   height: 34px;
+  border-radius: var(--mark-radius);
 }
 
 .cap {
