@@ -8,6 +8,7 @@ import CaseList from '../components/CaseList.vue'
 import FoldedList from '../components/FoldedList.vue'
 import FollowButton from '../components/FollowButton.vue'
 import PeerCards from '../components/PeerCards.vue'
+import PullToRefresh from '../components/PullToRefresh.vue'
 import { fetchConfig } from '../lib/api'
 import {
   fetchChallenge,
@@ -15,7 +16,9 @@ import {
   moreMatches,
   type Challenge,
   type Matches,
+  type PeerCard,
 } from '../lib/challenges'
+import { arrivals, useLiveList } from '../lib/live-list'
 
 const route = useRoute()
 const router = useRouter()
@@ -32,6 +35,26 @@ const nobodyYet = computed(
     matches.value.sameBoat.length === 0 &&
     matches.value.beenThere.length === 0,
 )
+
+const byMember = (peer: PeerCard): string => peer.memberId
+const sameBoatArrived = arrivals(byMember)
+const beenThereArrived = arrivals(byMember)
+
+function show(matched: Matches): void {
+  sameBoatArrived.see(matched.sameBoat)
+  beenThereArrived.see(matched.beenThere)
+  matches.value = matched
+}
+
+// Only once the first read showed them; a failed refresh keeps them shown
+// (R-NAV-12).
+async function newer(): Promise<void> {
+  if (matches.value === null) return
+  const matched = await fetchMatches(id)
+  if (matched !== null) show(matched)
+}
+
+const live = useLiveList(newer, 'challengeMatchesPollSeconds')
 
 // Without the limit nothing is folded: every match shows, as before.
 async function loadShownFirst(): Promise<void> {
@@ -54,7 +77,7 @@ onMounted(async () => {
     ])
     missing.value = found === null || matched === null
     challenge.value = found
-    matches.value = matched
+    if (matched !== null) show(matched)
   } catch {
     problem.value = 'Your matches could not be loaded. Reload to try again.'
   }
@@ -64,6 +87,7 @@ onMounted(async () => {
 <template>
   <AskSteps v-if="!posted" :journey="askJourney" :current="3" />
   <section class="screen">
+    <PullToRefresh :live="live" />
     <p v-if="missing" class="empty">There is no challenge of yours here.</p>
 
     <template v-else-if="challenge && matches">
@@ -96,6 +120,7 @@ onMounted(async () => {
             :peers="matches.sameBoat.slice(0, shown)"
             :challenge-id="id"
             kind="same_boat"
+            :arrived="sameBoatArrived"
             action="Connect"
             nobody="You’re the first rebel here. Others will find your challenge in their deck."
           />
@@ -119,6 +144,7 @@ onMounted(async () => {
             :peers="matches.beenThere.slice(0, shown)"
             :challenge-id="id"
             kind="been_there"
+            :arrived="beenThereArrived"
             action="Ask them"
             nobody="No one has shared experience here yet. Rebels who have will see your challenge."
           />
