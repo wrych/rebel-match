@@ -389,7 +389,11 @@ capability, not a secret** — and every requirement below exists because of tha
   signed in or not, that shows the people who made the app one card at a time,
   each with their portrait, name and what they are responsible for, browsed as
   the swipe deck is (R-OFF-1, R-LOOK-4), and closes with a card for the
-  community. It is public and has its own URL (R-NAV-1). In happy mode, for a
+  community; each maker's card carries their email address. Around the deck it
+  SHALL say what the app is and who supports it, invite feedback (R-FB-1), ask
+  members to share responsibly, and link to the privacy notice (R-ONB-9) and
+  the terms of use (R-ONB-13) rather than repeat them. It is public and has
+  its own URL (R-NAV-1). In happy mode, for a
   member who completed onboarding and while the game is on, the community's
   card is the door to 9toRevolution (R-GAME-1).
 
