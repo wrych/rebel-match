@@ -36,4 +36,15 @@ describe('RebelMark (R-LOOK-5)', () => {
     expect(ids).toHaveLength(8)
     expect(new Set(ids).size).toBe(ids.length)
   })
+
+  it("paints the happy favicon in happy mode's own colours", () => {
+    const theme = readFileSync('client/styles/theme.css', 'utf8')
+    const happy = theme.slice(theme.indexOf(":root[data-mood='happy']"))
+    const favicon = readFileSync('client/public/favicon-happy.svg', 'utf8')
+    const colours = ['accent', 'card', 'door', 'token'].map(
+      (token) => new RegExp(`--${token}: (#[0-9a-f]+);`).exec(happy)?.[1],
+    )
+
+    for (const colour of colours) expect(favicon).toContain(`"${colour}"`)
+  })
 })
