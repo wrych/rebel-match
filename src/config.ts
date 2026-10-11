@@ -27,6 +27,8 @@ const SAVED_TICK_MS = 2500
 const HOLD_TO_SELECT_MS = 500
 /** How far a finger travels across a deck card to browse (R-OFF-1). */
 const SWIPE_MIN_PX = 50
+/** How far a finger pulls a live list down to refresh it (R-NAV-12). */
+const PULL_REFRESH_PX = 70
 /** How many entries each matches section shows before the rest are asked
  * for (R-ASK-15). */
 const MATCHES_SHOWN_FIRST = 1
@@ -404,6 +406,7 @@ export interface Limits {
   savedTickMs: number
   holdToSelectMs: number
   swipeMinPx: number
+  pullRefreshPx: number
   matchesShownFirst: number
   scrollHintShare: number
   inviteMaxUsesCeiling: number
@@ -545,6 +548,7 @@ function limitsFrom(env: Env): Limits {
     savedTickMs: SAVED_TICK_MS,
     holdToSelectMs: HOLD_TO_SELECT_MS,
     swipeMinPx: SWIPE_MIN_PX,
+    pullRefreshPx: PULL_REFRESH_PX,
     matchesShownFirst: MATCHES_SHOWN_FIRST,
     scrollHintShare: SCROLL_HINT_SHARE,
     inviteMaxUsesCeiling: INVITE_MAX_USES_CEILING,
