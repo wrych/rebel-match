@@ -14,6 +14,13 @@ export interface ClientConfig {
     inviteLabelMaxChars: number
     savedTickMs: number
     matchesPollSeconds: number
+    cockpitPollSeconds: number
+    challengeMatchesPollSeconds: number
+    notificationsPollSeconds: number
+    outboxPollSeconds: number
+    membersPollSeconds: number
+    applicantsPollSeconds: number
+    invitesPollSeconds: number
     notificationsPageSize: number
     erasureGraceDays: number
     holdToSelectMs: number

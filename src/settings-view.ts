@@ -562,13 +562,6 @@ const catalogue: Group[] = [
         unit: ['challenge', 'challenges'],
       },
       {
-        name: 'How often the badges check for news',
-        explanation:
-          'While the app is open, the matches and notifications badges and the waiting requests refresh this often.',
-        read: (c) => c.limits.matchesPollSeconds,
-        unit: ['second', 'seconds'],
-      },
-      {
         name: 'Notifications shown per page',
         explanation: 'How many notifications the list loads at a time.',
         read: (c) => c.limits.notificationsPageSize,
@@ -580,6 +573,71 @@ const catalogue: Group[] = [
         fixed: true,
         read: (c) => c.limits.connectionMessageMaxChars,
         unit: CHARACTERS,
+      },
+    ],
+  },
+  {
+    title: 'Live lists',
+    explanation:
+      'While a screen is open and in view, it re-reads its list this often.',
+    entries: [
+      {
+        name: 'How often the badges check for news',
+        explanation:
+          'While the app is open, the matches and notifications badges refresh this often.',
+        key: 'limits.matchesPollSeconds',
+        read: (c) => c.limits.matchesPollSeconds,
+        unit: SECONDS,
+      },
+      {
+        name: 'Matches screen',
+        explanation: 'The requests waiting for a member and their connections.',
+        key: 'limits.cockpitPollSeconds',
+        read: (c) => c.limits.cockpitPollSeconds,
+        unit: SECONDS,
+      },
+      {
+        name: 'A challenge’s matches',
+        explanation:
+          'The same boat and been there rebels of a member’s challenge.',
+        key: 'limits.challengeMatchesPollSeconds',
+        read: (c) => c.limits.challengeMatchesPollSeconds,
+        unit: SECONDS,
+      },
+      {
+        name: 'Notifications',
+        explanation: 'A member’s notifications screen.',
+        key: 'limits.notificationsPollSeconds',
+        read: (c) => c.limits.notificationsPollSeconds,
+        unit: SECONDS,
+      },
+      {
+        name: 'Outbound message log',
+        explanation: 'The host tools’ log of every email.',
+        key: 'limits.outboxPollSeconds',
+        read: (c) => c.limits.outboxPollSeconds,
+        unit: SECONDS,
+      },
+      {
+        name: 'Members',
+        explanation: 'The host tools’ members list.',
+        key: 'limits.membersPollSeconds',
+        read: (c) => c.limits.membersPollSeconds,
+        unit: SECONDS,
+      },
+      {
+        name: 'Applicants',
+        explanation: 'The host tools’ list of applicants.',
+        key: 'limits.applicantsPollSeconds',
+        read: (c) => c.limits.applicantsPollSeconds,
+        unit: SECONDS,
+      },
+      {
+        name: 'Invites',
+        explanation: 'The host tools’ invite links.',
+        key: 'limits.invitesPollSeconds',
+        read: (c) => c.limits.invitesPollSeconds,
+        unit: SECONDS,
       },
     ],
   },
