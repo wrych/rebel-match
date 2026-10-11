@@ -1,0 +1,71 @@
+name: promote
+
+# Production (ADR 0025): the image staging serves, deployed with production's
+# configuration once a required reviewer of the `production` environment
+# approves. To roll back while no migration has run since, give an earlier
+# digest (ADR 0044); otherwise shift traffic to the previous revision.
+on:
+  workflow_dispatch:
+    inputs:
+      digest:
+        description: 'sha256:… of an earlier build to roll back to; empty promotes what staging serves'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: promote-production
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      GCP_PROJECT: ${{ vars.GCP_PROJECT }}
+      GCP_REGION: ${{ vars.GCP_REGION }}
+      GCP_IMAGE_REPO: ${{ vars.GCP_IMAGE_REPO }}
+      GCP_SQL_INSTANCE: ${{ vars.GCP_SQL_INSTANCE }}
+      GCP_RUN_SA: ${{ vars.GCP_RUN_SA }}
+      SMTP_HOST: ${{ vars.SMTP_HOST }}
+      SMTP_PORT: ${{ vars.SMTP_PORT }}
+      SMTP_USER: ${{ vars.SMTP_USER }}
+      MAIL_FROM: ${{ vars.MAIL_FROM }}
+      FEEDBACK_TO: ${{ vars.FEEDBACK_TO }}
+      TRUST_PROXY: ${{ vars.TRUST_PROXY }}
+      PUBLIC_URL: ${{ vars.PUBLIC_URL }}
+      SEED_ADMINS: ${{ vars.SEED_ADMINS }}
+      MIXPANEL_TOKEN: ${{ vars.MIXPANEL_TOKEN }}
+      TICK_INVOKER: ${{ vars.TICK_INVOKER }}
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOY_SA }}
+
+      - uses: google-github-actions/setup-gcloud@v3
+
+      - name: Project number, from the identity provider
+        env:
+          PROVIDER: ${{ vars.GCP_WIF_PROVIDER }}
+        run: echo "GCP_PROJECT_NUMBER=$(echo "$PROVIDER" | cut -d/ -f2)" >> "$GITHUB_ENV"
+
+      - name: The image to promote
+        id: image
+        env:
+          DIGEST: ${{ inputs.digest }}
+        run: scripts/staging-image.sh
+
+      - name: Promote
+        env:
+          IMAGE: ${{ steps.image.outputs.image }}
+        run: scripts/promote.sh

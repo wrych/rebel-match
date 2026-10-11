@@ -477,7 +477,10 @@ gcloud secrets create seed-challenges --project="$PROD" --data-file=challenges.c
 
 The two seed files are the real attendee whitelist and collected challenges
 (R-SEED-5, `specs/design.md` §6.4). They never enter the repository, only
-Secret Manager; delete your local copies afterwards.
+Secret Manager; delete your local copies afterwards. The promotion does not
+read them yet: the prod seed's loader for them is its own task
+(`specs/tasks.md`), and until then production starts with no whitelist and no
+challenges, only `SEED_ADMINS`.
 
 ## 18. Identities
 
@@ -557,13 +560,43 @@ francs a month instead of the largest line of the bill. Without it, CPU stays
 allocated and the server's own timers run.
 
 Plus `SMTP_HOST`, `SMTP_PORT` (587), `SMTP_USER` and `MAIL_FROM`, from
-`docs/email-setup.md`, and `TRUST_PROXY=1`. Production refuses to start with
+`docs/email-setup.md`; `FEEDBACK_TO`, the team address feedback goes to
+(R-FB-1); and `TRUST_PROXY=1`. Production refuses to start with
 `TRUST_PROXY=0` or an http `PUBLIC_URL` (ADR 0034): without the first, every
 visitor shares the proxy's per-IP limits; without the second, the session
 cookie loses `Secure`. Behind the load balancer of step 21 there is one more
 hop; if the per-IP limits then count everyone together, raise it to `2`. If the SMTP server accepts relaying by sender IP rather
 than by login, it needs a fixed address to allow; that is Cloud NAT, and a
 separate step (ADR 0025, consequences).
+
+**The first admins:** `SEED_ADMINS`, the comma-separated addresses that
+should hold `admin` (R-SEED-9). The prod seed makes each new one an admin who
+onboards on first sign-in; from there they approve applicants and grant roles
+in the app. Changing the list later adds new addresses only; it never takes a
+role away or gives one back.
+
+### Promoting, and rolling back
+
+**Actions → promote → Run workflow**, on `main`. The run waits for a required
+reviewer to approve; then it reads the digest staging's serving revision runs,
+and `scripts/promote.sh` deploys that image with production's configuration:
+the migrations and the prod seed as the `prepare-production` job, then the
+`rebel-match` service with one warm instance and at most two, then a check of
+`/api/health` on its `run.app` address. A failing step leaves the previous
+revision serving. Nothing is built: production runs the bytes staging ran.
+
+The first promotion is the first time the SMTP path runs, since staging never
+sends mail. Sign in on the service's `run.app` address from an address in
+`SEED_ADMINS`; the link arrives by real mail. The `smtp-password` secret (§17)
+must exist by then, or the promotion fails. With `TICK_INVOKER` set, create
+the tick of §22 straight after, or nothing scheduled runs.
+
+**Rolling back** (ADR 0044): shift traffic to the previous revision under
+**Cloud Run → `rebel-match` → Revisions → Manage traffic**, in seconds. Or run
+the workflow with an earlier build's `digest` (`sha256:…`, from the summary of
+the promotion that deployed it), which works only while no migration has run
+since: the earlier image's migration job refuses a newer schema, and the
+serving revision stays.
 
 ## 21. Domain, and the first real sign-in
 
@@ -584,13 +617,7 @@ separate step (ADR 0025, consequences).
   certificate becomes active within an hour of DNS resolving; then set
   production's `PUBLIC_URL` variable to `https://<your domain>` and promote
   again, so links point at it.
-- **Then one real sign-in** from a team mailbox. Staging never sends mail, so
-  this is the first time the SMTP path runs.
-- **The first admins:** set production's `SEED_ADMINS` variable to the
-  comma-separated addresses that should hold `admin` (R-SEED-9). The prod seed
-  makes each new one an admin who onboards on first sign-in; from there they
-  approve applicants and grant roles in the app. Changing the list later adds
-  new addresses only; it never takes a role away or gives one back.
+- **Then one real sign-in** on the domain, from an address in `SEED_ADMINS`.
 
 ## 22. The tick
 
