@@ -40,7 +40,7 @@ const request: ConnectionView = {
   unseen: false,
 }
 
-const config = { limits: { matchesPollSeconds: 30 } }
+const config = { limits: { matchesPollSeconds: 30, cockpitPollSeconds: 8 } }
 
 function serve(
   mine: Cockpit,
@@ -265,7 +265,7 @@ describe('CockpitScreen', () => {
     expect(screen.text()).toContain('No requests waiting.')
 
     waiting = [request]
-    await vi.advanceTimersByTimeAsync(30_000)
+    await vi.advanceTimersByTimeAsync(8000)
     await flushPromises()
 
     expect(screen.text()).toContain('Bea There')
@@ -284,10 +284,32 @@ describe('CockpitScreen', () => {
     const screen = await mountScreen()
 
     people = [{ ...request, status: 'accepted', direction: 'outgoing' }]
-    await vi.advanceTimersByTimeAsync(30_000)
+    await vi.advanceTimersByTimeAsync(8000)
     await flushPromises()
 
     expect(paths(screen)).toContain('/matches/requests/r1/contact')
+    screen.unmount()
+    vi.useRealTimers()
+  })
+
+  it('outlines a request that arrives while open until it is tapped (R-NAV-12)', async () => {
+    vi.useFakeTimers()
+    const other = { ...request, id: 'r0' }
+    let waiting: ConnectionView[] = [other]
+    serve(cockpit, () => waiting)
+    const screen = await mountScreen()
+    expect(screen.find('.card-new').exists()).toBe(false)
+
+    waiting = [request, other]
+    await vi.advanceTimersByTimeAsync(8000)
+    const fresh = screen.find('.card-new')
+    expect(fresh.findComponent(RouterLinkStub).props('to')).toBe(
+      '/matches/requests/r1',
+    )
+    expect(screen.findAll('.card-new')).toHaveLength(1)
+
+    await fresh.trigger('click')
+    expect(screen.find('.card-new').exists()).toBe(false)
     screen.unmount()
     vi.useRealTimers()
   })

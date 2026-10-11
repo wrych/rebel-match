@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
-import { fetchConfig } from '../lib/api'
+import { computed, onMounted, ref } from 'vue'
+import PullToRefresh from '../components/PullToRefresh.vue'
 import { peerLine } from '../lib/challenges'
 import {
   fetchCockpit,
@@ -16,7 +16,7 @@ import {
   type ConnectedMember,
   type ConnectionView,
 } from '../lib/connections'
-import { poll } from '../lib/poll'
+import { arrivals, useLiveList } from '../lib/live-list'
 
 const cockpit = ref<Cockpit | null>(null)
 const incoming = ref<ConnectionView[]>([])
@@ -32,23 +32,31 @@ const requestPath = (id: string): string =>
 const matchesPath = (id: string): string =>
   `/challenges/${encodeURIComponent(id)}/matches`
 
-const MS_PER_SECOND = 1000
-let stopPolling: (() => void) | undefined
-let gone = false
+const arrived = arrivals<ConnectionView>((request) => request.id)
 
 // Marked before reading, so what arrives in between still badges the tab; a
 // failed mark only leaves the badge up (R-MINE-4).
 async function load(): Promise<void> {
   await markMatchesSeen().catch(() => undefined)
-  const [mine, waiting, people] = await Promise.all([
-    fetchCockpit(),
-    fetchIncoming(),
-    fetchConnected(),
-  ])
-  cockpit.value = mine
-  incoming.value = waiting
-  connected.value = people
+  try {
+    const [mine, waiting, people] = await Promise.all([
+      fetchCockpit(),
+      fetchIncoming(),
+      fetchConnected(),
+    ])
+    arrived.see(waiting)
+    cockpit.value = mine
+    incoming.value = waiting
+    connected.value = people
+    problem.value = null
+  } catch {
+    // A failed refresh keeps what is on screen; the next one tries again.
+    if (cockpit.value === null)
+      problem.value = 'Your matches could not be loaded. Reload to try again.'
+  }
 }
+
+const live = useLiveList(load, 'cockpitPollSeconds')
 
 // The badge's count is read out with the name, as the tab bar's is.
 function connectionLabel(person: ConnectedMember): string | undefined {
@@ -60,11 +68,6 @@ function connectionLabel(person: ConnectedMember): string | undefined {
   ]
     .filter((part) => part !== '')
     .join(', ')
-}
-
-// A failed refresh keeps what is on screen; the next one tries again.
-function refresh(): void {
-  load().catch(() => undefined)
 }
 
 function afterAnswer(
@@ -91,7 +94,7 @@ async function answer(
     const outcome = await answerRequest(request.id, verdict)
     incoming.value = incoming.value.filter((each) => each.id !== request.id)
     notice.value = afterAnswer(request, verdict, outcome)
-    refresh()
+    void live.refresh()
   } catch {
     failed.value = 'That did not save. Try again.'
   } finally {
@@ -99,26 +102,12 @@ async function answer(
   }
 }
 
-onMounted(async () => {
-  try {
-    await load()
-  } catch {
-    problem.value = 'Your matches could not be loaded. Reload to try again.'
-    return
-  }
-  const config = await fetchConfig().catch(() => null)
-  if (config === null || gone) return
-  stopPolling = poll(refresh, config.limits.matchesPollSeconds * MS_PER_SECOND)
-})
-
-onUnmounted(() => {
-  gone = true
-  stopPolling?.()
-})
+onMounted(() => live.refresh())
 </script>
 
 <template>
   <section class="screen">
+    <PullToRefresh :live="live" />
     <div class="stack">
       <h1 class="display display-lg">Your matches</h1>
     </div>
@@ -137,7 +126,13 @@ onUnmounted(() => {
           {{ notice }}
         </p>
         <p v-if="failed" class="alert" role="alert">{{ failed }}</p>
-        <div v-for="request in incoming" :key="request.id" class="card">
+        <div
+          v-for="request in incoming"
+          :key="request.id"
+          class="card"
+          :class="{ 'card-new': arrived.isNew(request) }"
+          @click="arrived.clear(request)"
+        >
           <RouterLink :to="requestPath(request.id)" class="request-row">
             <span class="card-head">
               <span class="card-title">{{ request.other.name }}</span>
