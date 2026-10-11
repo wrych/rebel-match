@@ -2,6 +2,7 @@
 import { useId } from 'vue'
 import {
   MARK_APART,
+  MARK_BAND_OVERLAP,
   MARK_BAND_HEIGHT,
   MARK_BAND_TOP,
   MARK_BANDS,
@@ -89,7 +90,7 @@ const id = useId()
         x="0"
         :y="BAND_TOP + (band - 1) * BAND_HEIGHT"
         width="480"
-        :height="BAND_HEIGHT + 0.5"
+        :height="BAND_HEIGHT + MARK_BAND_OVERLAP"
         :style="{ fill: `var(--mark-band-${band})` }"
       />
     </g>

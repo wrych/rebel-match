@@ -11,6 +11,9 @@ export const MARK_R = `${MARK_OUTLINE} ${MARK_COUNTER}`
 
 /** The side of the mark's square. */
 export const MARK_SIZE = 480
+/** Its corners' radius where they are rounded, as a share of the side; the
+ * page's `--mark-radius`. */
+export const MARK_RADIUS = 0.18
 /** Where the left R sits in the square, and its scale. */
 export const MARK_PLACE = { x: 44.6, y: 142, scale: 1.61 }
 /** How far each R stands out from the centre at rest, the Rs just apart. */
@@ -21,3 +24,66 @@ export const MARK_OVERLAP = 64
 export const MARK_BAND_TOP = 142
 export const MARK_BAND_HEIGHT = 41.25
 export const MARK_BANDS = 5
+/** How far each band reaches into the next, so no seam shows between them. */
+export const MARK_BAND_OVERLAP = 1
+/** The bands as happy mode colours them, top to bottom: its accent, card,
+ * door and token colours and a purple. Where the mode cannot be read, as in
+ * the game, the mark is drawn in these. */
+export const MARK_HAPPY_BANDS = [
+  '#ff2e93',
+  '#ffd23f',
+  '#38d6a6',
+  '#4ea8ff',
+  '#9b6bff',
+] as const
+
+/** The intro's phases, as shares of its length: the Rs meet, the right eye
+ * closes and opens, the Rs part; the same as RebelMark's keyframes. */
+export const MARK_PHASES = {
+  meet: [0.045, 0.5],
+  wink: [0.636, 0.841],
+  shut: [0.713, 0.764],
+} as const
+
+/** The right eye's lid, the left's squint, and the closed eye's line, in the
+ * mark's units with the Rs met; a lid drops `MARK_LID_DROP` to close. */
+export const MARK_WINK_LID = 'M240 140H302V230Q271 242 240 230Z'
+export const MARK_SQUINT_LID = 'M185 140H245V193Q215 197 185 193Z'
+export const MARK_SHUT_EYE = 'M250 222Q271 232 292 222'
+export const MARK_LID_DROP = 50
+
+/** Where the intro stands at `progress` (0 to 1): how far each R has moved
+ * in, how far the lids have closed (0 open, 1 shut), and whether the right
+ * eye shows as shut. */
+export interface MarkPose {
+  offset: number
+  lid: number
+  shut: boolean
+}
+
+const easeInOut = (t: number): number =>
+  t < 0.5 ? 4 * t ** 3 : 1 - (-2 * t + 2) ** 3 / 2
+const share = (p: number, [from, to]: readonly [number, number]): number =>
+  Math.min(1, Math.max(0, (p - from) / (to - from)))
+
+/** The mark's pose at `progress` through its intro (R-LOOK-5). */
+export function markPose(progress: number): MarkPose {
+  const p = Math.min(1, Math.max(0, progress))
+  const travel = MARK_OVERLAP - MARK_APART
+  const [, winkEnd] = MARK_PHASES.wink
+  const moved =
+    p < winkEnd
+      ? easeInOut(share(p, MARK_PHASES.meet))
+      : 1 - easeInOut(share(p, [winkEnd, 1]))
+  const [winkStart] = MARK_PHASES.wink
+  const [shutStart, shutEnd] = MARK_PHASES.shut
+  const lid =
+    p < shutStart
+      ? share(p, [winkStart, shutStart]) ** 2
+      : 1 - share(p, [shutEnd, winkEnd]) ** 2
+  return {
+    offset: MARK_APART + travel * moved,
+    lid: p >= winkEnd ? 0 : lid,
+    shut: p >= shutStart && p < shutEnd,
+  }
+}
