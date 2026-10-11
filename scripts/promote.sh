@@ -105,7 +105,7 @@ for attempt in 1 2 3 4 5 6; do
         echo
         echo "Image: \`$IMAGE\`"
         echo
-        echo "Serving at $CHECK_URL; links point at $PUBLIC_URL."
+        echo "Serving at [$CHECK_URL]($CHECK_URL); links point at [$PUBLIC_URL]($PUBLIC_URL)."
       } >>"$GITHUB_STEP_SUMMARY"
     fi
     exit 0
