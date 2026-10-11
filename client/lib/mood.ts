@@ -3,6 +3,10 @@ import { ref } from 'vue'
 export type Mood = 'calm' | 'happy'
 
 const MOOD_KEY = 'rm_mood'
+const ICONS: Record<Mood, string> = {
+  calm: '/favicon.svg',
+  happy: '/favicon-happy.svg',
+}
 
 /** The colour mode this browser chose last, calm unless it chose happy. A
  * browser refusing storage simply starts calm. */
@@ -21,6 +25,9 @@ export const currentMood = ref<Mood>('calm')
 export function applyMood(mood: Mood): void {
   currentMood.value = mood
   document.documentElement.dataset['mood'] = mood
+  document
+    .querySelector<HTMLLinkElement>('link[rel="icon"]')
+    ?.setAttribute('href', ICONS[mood])
   try {
     localStorage.setItem(MOOD_KEY, mood)
   } catch {

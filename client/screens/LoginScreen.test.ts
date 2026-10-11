@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { enableAutoUnmount, flushPromises, mount } from '@vue/test-utils'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import LoginScreen from './LoginScreen.vue'
 
 enableAutoUnmount(afterEach)
@@ -74,6 +74,15 @@ function respondWith(body: unknown, ok = true): void {
     }),
   )
 }
+
+/** Answers the reduced-motion query with `still`. */
+function motion(still: boolean): void {
+  vi.stubGlobal('matchMedia', () => ({ matches: still }))
+}
+
+beforeEach(() => {
+  motion(false)
+})
 
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -329,6 +338,54 @@ describe('LoginScreen', () => {
     expect(opened()).toHaveLength(1)
     expect(JSON.parse(String((opened()[0]?.[1] as RequestInit).body))).toEqual({
       invite: 'poster-token',
+    })
+  })
+
+  describe('the mark (R-LOOK-5)', () => {
+    async function mountFresh(): Promise<ReturnType<typeof mount>> {
+      vi.resetModules()
+      const { default: Fresh } = await import('./LoginScreen.vue')
+      return mount(Fresh)
+    }
+
+    it('shows the mark beside the title', async () => {
+      respondWith(config)
+
+      const screen = await mountFresh()
+
+      expect(screen.find('.masthead svg').exists()).toBe(true)
+      expect(screen.find('.masthead h1').text()).toContain('Match')
+    })
+
+    it('plays its intro over a black layer that then clears', async () => {
+      respondWith(config)
+      const screen = await mountFresh()
+      expect(screen.find('.rebel-mark-play').exists()).toBe(true)
+
+      await screen.find('.intro').trigger('animationend')
+
+      expect(screen.find('.intro').exists()).toBe(false)
+    })
+
+    it('plays the intro only once per page load', async () => {
+      respondWith(config)
+      ;(await mountFresh()).unmount()
+
+      const again = mount((await import('./LoginScreen.vue')).default)
+
+      expect(again.find('.intro').exists()).toBe(false)
+      expect(again.find('.rebel-mark-play').exists()).toBe(false)
+    })
+
+    it('shows the mark at rest, with no intro, for reduced motion', async () => {
+      respondWith(config)
+      motion(true)
+
+      const screen = await mountFresh()
+
+      expect(screen.find('.masthead svg').exists()).toBe(true)
+      expect(screen.find('.intro').exists()).toBe(false)
+      expect(screen.find('.rebel-mark-play').exists()).toBe(false)
     })
   })
 })

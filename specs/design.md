@@ -274,6 +274,21 @@ fixed labels and takes them, with the name it announces, from the screen. The
 Ask journey passes Describe, Domain, Matches; onboarding passes Profile,
 Privacy, Usage (R-ONB-6). Its look stays the `.steps` block of the theme.
 
+The **mark** is `RebelMark`, an inline SVG of one R drawn twice, the second
+mirrored and blended by difference, so where the two overlap they cancel to
+black (R-LOOK-5). At rest the Rs stand just apart and read as two letters. The
+intro slides them into the overlapping figure, closes its right eye (the left
+squints) and slides them apart again; the black layer under it fades out while
+they part, once per page load (`client/lib/intro.ts`), and it is skipped when
+the member prefers reduced motion. While it plays, the screen's own entrance is
+held still so the layer can sit above the header. The mark itself is square;
+where it shows, the sign-in screen and the header round its corners, and
+`client/public/favicon.svg` is the mark at rest with rounded corners, its R
+path checked against the component's by a test. Over the mark lies a layer of
+five horizontal bands, multiplied in, whose colours are tokens: white in calm,
+so nothing shows, and the rainbow in happy mode (R-LOOK-3). The favicon cannot
+read tokens, so happy mode swaps it for `favicon-happy.svg`.
+
 The header's right-hand button opens the **menu** (R-PROF-3): the colour mode
 switch, "Profile & privacy" (`/profile`), Feedback (R-FB-1), the host tools
 the member's permissions allow (paths and permissions from the route table, ADR

@@ -46,6 +46,11 @@
   --token-meta: #9a948a;
   --mark: #111010;
   --soft: #fff;
+  --mark-band-1: #fff;
+  --mark-band-2: #fff;
+  --mark-band-3: #fff;
+  --mark-band-4: #fff;
+  --mark-band-5: #fff;
 
   --sticker-border: 0;
   --sticker-shadow: none;
@@ -65,6 +70,9 @@
 
   /* The header's height, which whatever else sticks to the top sits below. */
   --header-height: calc(34px + 1.75rem);
+  --mark-intro: 2.2s;
+  --mark-clear-at: 1.85s;
+  --mark-radius: 18%;
 }
 
 :root[data-mood='happy'] {
@@ -84,6 +92,11 @@
   --token-meta: #0b4c85;
   --mark: #ff2e93;
   --soft: #ffe3f1;
+  --mark-band-1: var(--accent);
+  --mark-band-2: var(--card);
+  --mark-band-3: var(--door);
+  --mark-band-4: var(--token);
+  --mark-band-5: #9b6bff;
   --ok: #04301f;
   --ok-soft: #38d6a6;
   --line-strong: #111010;
