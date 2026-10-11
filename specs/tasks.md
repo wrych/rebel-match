@@ -391,6 +391,9 @@ up the summit. One pull request per item, in this order.
 - [x] After the first playtest: enter by turning the phone on the community
       card; results and the next day in landscape; upright pauses into the
       lobby. _(R-GAME-1, R-GAME-12, R-GAME-14, ADR 0046)_
+- [x] A tempted employee's screen shows the Rebel Match mark in its happy
+      colours in place of the CR logo, its intro playing over the grace time.
+      _(R-GAME-18, R-LOOK-5)_
 - [ ] Playtest on phones in landscape; tune the defaults; switch on for the
       summit. _(R-GAME-17)_
 

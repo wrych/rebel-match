@@ -20,7 +20,7 @@ export interface Palette {
   screen: string
   paper: string
   ink: string
-  /** Rebel colours, for hair, screens and the CR logo. */
+  /** Rebel colours, for hair and screens. */
   rebel: readonly string[]
   heat: readonly string[]
 }

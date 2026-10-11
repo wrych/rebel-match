@@ -1,19 +1,14 @@
 import { floors, type Floor, type Spot } from '../core/floors'
 import { LEAF_HALF, leafOf } from '../core/door'
 import type { DayState, Employee } from '../core/state'
+import { drawMark } from './mark'
 import type { Palette } from './palette'
-import {
-  circle,
-  drawFile,
-  drawLabel,
-  outline,
-  roundRect,
-  type Ctx,
-} from './shapes'
+import { circle, drawFile, outline, roundRect, type Ctx } from './shapes'
 
 /** How far the front edge of a block shows below its top. */
 const LIP = 0.1
-const LOGO_SIZE = 0.2
+/** How wide the mark is on a tempted employee's screen. */
+const SCREEN_MARK = 0.26
 /** How far a screen's light spills round the monitor's back. */
 const GLOW = 0.05
 /** How many files lie on the player's desk in boss mode. */
@@ -222,9 +217,11 @@ function screenColour(employee: Employee, pal: Palette): string {
 }
 
 /** Each employee's screen, seen from behind, lights up in their colour, a
- * tempted one's carrying the CR logo on its back so the state reads by shape
- * as well as colour, beside the file they were handed (R-GAME-18). */
+ * tempted one's carrying the Rebel Match mark on its back so the state reads
+ * by shape as well as colour, its intro playing out over the grace time as
+ * they turn, beside the file they were handed (R-GAME-18). */
 export function drawScreens(ctx: Ctx, state: DayState, pal: Palette): void {
+  const grace = state.tuning[`${state.floor}.temptedGraceSeconds`]
   floors[state.floor].cubicles.forEach(({ desk }, index) => {
     const employee = state.employees.find((e) => e.cubicle === index)
     if (employee === undefined) return
@@ -240,12 +237,12 @@ export function drawScreens(ctx: Ctx, state: DayState, pal: Palette): void {
     )
     drawMonitorBack(ctx, back, pal)
     if (employee.spirit === 'tempted')
-      drawLabel(
+      drawMark(
         ctx,
-        'CR',
         { x: back.x + back.w / 2, y: back.y + back.h / 2 },
-        LOGO_SIZE,
+        SCREEN_MARK,
         pal,
+        (state.clock - employee.temptedAt) / grace,
       )
     if (employee.file)
       drawFile(ctx, { x: desk.x + 0.02, y: desk.y + 0.36 }, pal)

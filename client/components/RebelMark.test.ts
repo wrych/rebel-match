@@ -4,6 +4,7 @@ import { mount } from '@vue/test-utils'
 import { defineComponent } from 'vue'
 import { describe, expect, it } from 'vitest'
 import RebelMark from './RebelMark.vue'
+import { MARK_HAPPY_BANDS } from '../lib/mark'
 
 describe('RebelMark (R-LOOK-5)', () => {
   it.each(['favicon.svg', 'favicon-happy.svg'])(
@@ -37,14 +38,20 @@ describe('RebelMark (R-LOOK-5)', () => {
     expect(new Set(ids).size).toBe(ids.length)
   })
 
-  it("paints the happy favicon in happy mode's own colours", () => {
+  it('keeps happy mode, its favicon and the game on one set of bands', () => {
     const theme = readFileSync('client/styles/theme.css', 'utf8')
     const happy = theme.slice(theme.indexOf(":root[data-mood='happy']"))
+    const value = (token: string): string | undefined => {
+      const raw = new RegExp(`${token}: ([^;]+);`).exec(happy)?.[1]
+      const named =
+        raw === undefined ? undefined : /^var\((--[\w-]+)\)$/.exec(raw)
+      return named?.[1] === undefined ? raw : value(named[1])
+    }
     const favicon = readFileSync('client/public/favicon-happy.svg', 'utf8')
-    const colours = ['accent', 'card', 'door', 'token'].map(
-      (token) => new RegExp(`--${token}: (#[0-9a-f]+);`).exec(happy)?.[1],
-    )
 
-    for (const colour of colours) expect(favicon).toContain(`"${colour}"`)
+    MARK_HAPPY_BANDS.forEach((colour, index) => {
+      expect(value(`--mark-band-${String(index + 1)}`)).toBe(colour)
+      expect(favicon).toContain(`"${colour}"`)
+    })
   })
 })

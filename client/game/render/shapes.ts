@@ -35,30 +35,6 @@ export function circle(ctx: Ctx, at: Spot, r: number): void {
   ctx.fill()
 }
 
-// Text is set in screen pixels: some browsers, Firefox among them, place a
-// font of a fraction of a pixel wrongly once the canvas is scaled.
-export function drawLabel(
-  ctx: Ctx,
-  text: string,
-  at: Spot,
-  size: number,
-  pal: Palette,
-): void {
-  const m = ctx.getTransform()
-  ctx.save()
-  ctx.setTransform(1, 0, 0, 1, 0, 0)
-  ctx.fillStyle = pal.paper
-  ctx.font = `bold ${String(Math.max(1, Math.round(size * m.a)))}px sans-serif`
-  ctx.textAlign = 'center'
-  ctx.textBaseline = 'middle'
-  ctx.fillText(
-    text,
-    m.a * at.x + m.c * at.y + m.e,
-    m.b * at.x + m.d * at.y + m.f,
-  )
-  ctx.restore()
-}
-
 export const FILE = { width: 0.26, height: 0.32 }
 
 /** A file: a sheet with lines of text and a folded corner. */
