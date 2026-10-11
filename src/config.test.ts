@@ -415,8 +415,8 @@ describe('deck page size', () => {
 })
 
 describe('matches refresh', () => {
-  it('re-reads waiting requests every 30 seconds unless told otherwise (R-MINE-4)', () => {
-    expect(loadConfig(valid).limits.matchesPollSeconds).toBe(30)
+  it('refreshes the badges every 8 seconds unless told otherwise (R-MINE-4)', () => {
+    expect(loadConfig(valid).limits.matchesPollSeconds).toBe(8)
     expect(
       loadConfig({ ...valid, MATCHES_POLL_SECONDS: '10' }).limits
         .matchesPollSeconds,

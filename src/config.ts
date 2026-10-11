@@ -217,7 +217,7 @@ const envSchema = z
     OUTBOX_PAGE_SIZE: z.coerce.number().int().positive().default(100),
     DECK_PAGE_SIZE: z.coerce.number().int().positive().default(20),
     NEWEST_CHALLENGES_SHOWN: z.coerce.number().int().positive().default(3),
-    MATCHES_POLL_SECONDS: z.coerce.number().int().positive().default(30),
+    MATCHES_POLL_SECONDS: z.coerce.number().int().positive().default(8),
     // How often each live list re-reads while it is open (R-NAV-12).
     COCKPIT_POLL_SECONDS: z.coerce.number().int().positive().default(8),
     CHALLENGE_MATCHES_POLL_SECONDS: z.coerce
