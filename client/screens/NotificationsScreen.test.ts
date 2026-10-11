@@ -28,7 +28,12 @@ function serve(
         ok: true,
         status: 200,
         json: () =>
-          Promise.resolve({ limits: { notificationsPageSize: pageSize } }),
+          Promise.resolve({
+            limits: {
+              notificationsPageSize: pageSize,
+              notificationsPollSeconds: 8,
+            },
+          }),
       })
     if (url === '/api/notifications/seen')
       return Promise.resolve({ ok: true, status: 204 })
@@ -58,6 +63,7 @@ function seenPosts(fetchMock: ReturnType<typeof vi.fn>): unknown[] {
 }
 
 afterEach(() => {
+  vi.useRealTimers()
   vi.unstubAllGlobals()
 })
 
@@ -136,5 +142,39 @@ describe('NotificationsScreen', () => {
       'could not be loaded',
     )
     expect(screen.text()).not.toContain('Nothing yet.')
+  })
+
+  it('puts what arrives on top, outlined and seen at once (R-NAV-12, R-NOTE-5)', async () => {
+    vi.useFakeTimers()
+    const pages = { '': [entry('r1')] }
+    const fetchMock = serve(pages)
+    const screen = await mountScreen()
+
+    pages[''] = [entry('r2', { isNew: true }), entry('r1')]
+    await vi.advanceTimersByTimeAsync(8000)
+
+    const notes = screen.findAll('.note')
+    expect(notes).toHaveLength(2)
+    expect(notes[0]?.classes()).toContain('card-new')
+    expect(notes[1]?.classes()).not.toContain('card-new')
+    expect(seenPosts(fetchMock).at(-1)).toEqual({ ids: ['r2'] })
+    screen.unmount()
+  })
+
+  it('keeps the older pages already shown when it refreshes', async () => {
+    vi.useFakeTimers()
+    const pages = {
+      '': [entry('r2')],
+      r2: [entry('r1')],
+    }
+    serve(pages, 1)
+    const screen = await mountScreen()
+    await screen.find('button').trigger('click')
+    await flushPromises()
+
+    await vi.advanceTimersByTimeAsync(8000)
+
+    expect(screen.findAll('.note')).toHaveLength(2)
+    screen.unmount()
   })
 })
