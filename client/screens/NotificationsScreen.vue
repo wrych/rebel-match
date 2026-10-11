@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import PullToRefresh from '../components/PullToRefresh.vue'
 import { fetchConfig } from '../lib/api'
+import { useLiveList } from '../lib/live-list'
 import {
   fetchNotifications,
   headline,
@@ -22,10 +24,29 @@ let pageSize = 0
 async function show(page: NotificationView[]): Promise<void> {
   notes.value = [...notes.value, ...page]
   more.value = pageSize > 0 && page.length >= pageSize
+  await markSeen(page)
+}
+
+async function markSeen(page: NotificationView[]): Promise<void> {
   await markNotificationsSeen(
     page.filter((note) => note.isNew).map((note) => note.id),
   ).catch(() => undefined)
 }
+
+// What arrived since goes on top, listed and so seen like the rest; what is
+// already shown stays as it is (R-NAV-12, R-NOTE-5).
+async function newer(): Promise<void> {
+  if (!loaded.value) return
+  const listed = new Set(notes.value.map((note) => note.id))
+  const arrived = (await fetchNotifications()).filter(
+    (note) => !listed.has(note.id),
+  )
+  if (arrived.length === 0) return
+  notes.value = [...arrived, ...notes.value]
+  await markSeen(arrived)
+}
+
+const live = useLiveList(newer, 'notificationsPollSeconds')
 
 async function older(): Promise<void> {
   const last = notes.value.at(-1)
@@ -58,6 +79,7 @@ onMounted(async () => {
 
 <template>
   <section class="screen">
+    <PullToRefresh :live="live" />
     <div class="stack">
       <h1 class="display display-lg">Notifications</h1>
     </div>
