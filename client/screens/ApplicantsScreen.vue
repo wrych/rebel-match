@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import PullToRefresh from '../components/PullToRefresh.vue'
+import RefreshButton from '../components/RefreshButton.vue'
 import {
   decide,
   fetchApplicants,
   type Applicant,
   type Decision,
 } from '../lib/applicants'
+import { arrivals, useLiveList } from '../lib/live-list'
 import { when } from '../lib/when'
 
 const applicants = ref<Applicant[]>([])
@@ -19,15 +22,22 @@ const doneNotice: Record<Decision, (email: string) => string> = {
   reject: (email) => `Rejected ${email}.`,
 }
 
+const arrived = arrivals<Applicant>((applicant) => applicant.id)
+
+// Once shown, the list stays as it is when a refresh fails (R-NAV-12).
 async function load(): Promise<void> {
   try {
-    applicants.value = await fetchApplicants()
+    const found = await fetchApplicants()
+    arrived.see(found)
+    applicants.value = found
     problem.value = null
   } catch {
-    problem.value = 'The applicants could not be loaded.'
+    if (!loaded.value) problem.value = 'The applicants could not be loaded.'
   }
   loaded.value = true
 }
+
+const live = useLiveList(load, 'applicantsPollSeconds')
 
 function noticeFor(
   outcome: Awaited<ReturnType<typeof decide>>,
@@ -45,7 +55,7 @@ async function act(applicant: Applicant, decision: Decision): Promise<void> {
   try {
     const outcome = await decide(applicant.id, decision)
     notice.value = noticeFor(outcome, decision, applicant.email)
-    await load()
+    await live.refresh()
   } catch {
     notice.value = `That did not go through for ${applicant.email}. Try again.`
   } finally {
@@ -53,11 +63,12 @@ async function act(applicant: Applicant, decision: Decision): Promise<void> {
   }
 }
 
-onMounted(load)
+onMounted(() => live.refresh())
 </script>
 
 <template>
   <section class="screen">
+    <PullToRefresh :live="live" />
     <div class="stack">
       <p class="kicker kicker-accent">Host tools</p>
       <h1 class="display display-lg">Applicants</h1>
@@ -65,6 +76,7 @@ onMounted(load)
         People asking to join. Approving sends their sign-in link straight away.
       </p>
     </div>
+    <RefreshButton :live="live" />
 
     <p v-if="notice" class="notice notice-solid" role="status">{{ notice }}</p>
     <p v-if="problem" class="alert" role="alert">{{ problem }}</p>
@@ -72,7 +84,13 @@ onMounted(load)
       Nobody is waiting.
     </p>
 
-    <article v-for="applicant in applicants" :key="applicant.id" class="card">
+    <article
+      v-for="applicant in applicants"
+      :key="applicant.id"
+      class="card"
+      :class="{ 'card-new': arrived.isNew(applicant) }"
+      @click="arrived.clear(applicant)"
+    >
       <div class="card-head">
         <div class="stack-tight">
           <span class="card-title">{{
