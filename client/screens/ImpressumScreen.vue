@@ -41,6 +41,11 @@ onUnmounted(stop)
     <div class="stack">
       <p class="kicker kicker-accent">Impressum</p>
       <h1 class="display display-lg">Made by rebels</h1>
+      <p class="lede">
+        Rebel Match connects rebels through shared challenges. It is a free,
+        non-commercial community project, built in our spare time. The beta
+        launches at the Global CR Summit 2026.
+      </p>
     </div>
 
     <CardDeck
@@ -64,6 +69,9 @@ onUnmounted(stop)
       <div class="deck-author">
         <p class="deck-text">{{ maker.name }}</p>
         <span class="mono">{{ maker.responsibilities.join(' · ') }}</span>
+        <a v-if="maker.email" :href="`mailto:${maker.email}`" class="mono">{{
+          maker.email
+        }}</a>
       </div>
       <svg
         v-if="door && touch"
@@ -82,6 +90,49 @@ onUnmounted(stop)
         >Be a rebel</RouterLink
       >
     </CardDeck>
+
+    <p class="small">
+      A joint initiative supported by
+      <a href="https://xigo.ch" target="_blank" rel="noopener noreferrer"
+        >xigo.ch</a
+      >
+      and
+      <a
+        href="https://transformation-architects.ch"
+        target="_blank"
+        rel="noopener noreferrer"
+        >transformation-architects.ch</a
+      >.
+    </p>
+
+    <div class="stack-tight">
+      <h2 class="kicker kicker-ink">Tell us what you think</h2>
+      <p class="small">
+        Rebel Match is a beta, and your feedback shapes what comes next. Tell us
+        what works, what doesn’t and what you miss: use Feedback in the menu
+        once you are signed in, or write to any of us.
+      </p>
+    </div>
+
+    <div class="stack-tight">
+      <h2 class="kicker kicker-ink">Please share responsibly</h2>
+      <p class="small">
+        Describe your challenges in general terms. Don’t share confidential
+        company information, names of other people, or anything you’re not
+        allowed to share.
+      </p>
+    </div>
+
+    <div class="stack-tight">
+      <RouterLink to="/privacy" class="row-link">
+        <span class="row-link-label">Your data: the privacy notice</span>
+      </RouterLink>
+      <RouterLink to="/terms" class="row-link">
+        <span class="row-link-label">Terms of use and disclaimer</span>
+      </RouterLink>
+    </div>
+
+    <p class="footnote">Beta, October 2026 · No ads, no fees</p>
   </section>
 </template>
 
@@ -103,6 +154,15 @@ onUnmounted(stop)
   color: var(--ink);
   font-family: var(--font-display);
   font-size: 4rem;
+}
+
+.deck-author a {
+  color: var(--card-meta);
+  overflow-wrap: anywhere;
+}
+
+.small a {
+  color: inherit;
 }
 
 .turn {
