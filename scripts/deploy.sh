@@ -132,12 +132,14 @@ for attempt in 1 2 3 4 5 6; do
   if curl -fsS "$PUBLIC_URL/api/health" | grep -q '"database":"up"'; then
     echo "deploy: $TARGET is up at $PUBLIC_URL"
     if [[ -n "${GITHUB_STEP_SUMMARY:-}" ]]; then
+      # Written as Markdown links: the summary does not link a bare address.
+      DEV_LOGIN="${GITHUB_SERVER_URL:-https://github.com}/${GITHUB_REPOSITORY:-}/actions/workflows/dev-login.yml"
       {
         echo "### Deployed \`$TARGET\`"
         echo
-        echo "$PUBLIC_URL"
+        echo "**[$PUBLIC_URL]($PUBLIC_URL)**"
         echo
-        echo "First sign-in: run the **dev-login** workflow with target \`$TARGET\`."
+        echo "First sign-in: run the [**dev-login** workflow]($DEV_LOGIN) with target \`$TARGET\`."
       } >>"$GITHUB_STEP_SUMMARY"
     fi
     exit 0
