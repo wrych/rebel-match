@@ -909,7 +909,9 @@ _(Decided by the maintainer after trying the redesign: ADR 0023.)_
   clears, leaving the mark where it stands, all within two and a half seconds.
   WHEN the member prefers reduced motion, the mark SHALL show at rest with no
   intro. The header SHALL carry the mark as its link home, and the browser
-  SHALL show it as the page's icon.
+  SHALL show it as the page's icon. In happy mode (R-LOOK-2) the mark's white
+  SHALL be bands of colour, top to bottom pink, yellow, green, blue and purple,
+  wherever it shows, the page's icon included.
 
 ---
 

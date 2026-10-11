@@ -283,7 +283,10 @@ the member prefers reduced motion. While it plays, the screen's own entrance is
 held still so the layer can sit above the header. The mark itself is square;
 where it shows, the sign-in screen and the header round its corners, and
 `client/public/favicon.svg` is the mark at rest with rounded corners, its R
-path checked against the component's by a test.
+path checked against the component's by a test. Over the mark lies a layer of
+five horizontal bands, multiplied in, whose colours are tokens: white in calm,
+so nothing shows, and the rainbow in happy mode (R-LOOK-3). The favicon cannot
+read tokens, so happy mode swaps it for `favicon-happy.svg`.
 
 The header's right-hand button opens the **menu** (R-PROF-3): the colour mode
 switch, "Profile & privacy" (`/profile`), Feedback (R-FB-1), the host tools
