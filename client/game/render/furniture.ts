@@ -7,8 +7,11 @@ import { circle, drawFile, outline, roundRect, type Ctx } from './shapes'
 
 /** How far the front edge of a block shows below its top. */
 const LIP = 0.1
-/** How wide the mark is on a tempted employee's screen. */
-const SCREEN_MARK = 0.26
+/** How round a monitor's corners are. */
+const MONITOR_RADIUS = 0.05
+/** How much wider than a tempted employee's screen the mark is drawn, cropped
+ * to the screen, so its letters fill it rather than its black square. */
+const SCREEN_MARK_COVER = 1.12
 /** How far a screen's light spills round the monitor's back. */
 const GLOW = 0.05
 /** How many files lie on the player's desk in boss mode. */
@@ -94,7 +97,7 @@ function drawMonitorBack(
   ctx.fillStyle = pal.bezel
   roundRect(ctx, centre - 0.12, back.y - 0.1, 0.24, 0.05, 0.02)
   ctx.fillRect(centre - 0.04, back.y - 0.07, 0.08, 0.08)
-  roundRect(ctx, back.x, back.y, back.w, back.h, 0.05)
+  roundRect(ctx, back.x, back.y, back.w, back.h, MONITOR_RADIUS)
 }
 
 function drawCubicle(ctx: Ctx, desk: Spot, seat: Spot, pal: Palette): void {
@@ -216,6 +219,26 @@ function screenColour(employee: Employee, pal: Palette): string {
   return pal.rebel[employee.id % pal.rebel.length] ?? pal.screen
 }
 
+function drawScreenMark(
+  ctx: Ctx,
+  back: { x: number; y: number; w: number; h: number },
+  pal: Palette,
+  progress: number,
+): void {
+  ctx.save()
+  ctx.beginPath()
+  ctx.roundRect(back.x, back.y, back.w, back.h, MONITOR_RADIUS)
+  ctx.clip()
+  drawMark(
+    ctx,
+    { x: back.x + back.w / 2, y: back.y + back.h / 2 },
+    back.w * SCREEN_MARK_COVER,
+    pal,
+    progress,
+  )
+  ctx.restore()
+}
+
 /** Each employee's screen, seen from behind, lights up in their colour, a
  * tempted one's carrying the Rebel Match mark on its back so the state reads
  * by shape as well as colour, its intro playing out over the grace time as
@@ -237,13 +260,7 @@ export function drawScreens(ctx: Ctx, state: DayState, pal: Palette): void {
     )
     drawMonitorBack(ctx, back, pal)
     if (employee.spirit === 'tempted')
-      drawMark(
-        ctx,
-        { x: back.x + back.w / 2, y: back.y + back.h / 2 },
-        SCREEN_MARK,
-        pal,
-        (state.clock - employee.temptedAt) / grace,
-      )
+      drawScreenMark(ctx, back, pal, (state.clock - employee.temptedAt) / grace)
     if (employee.file)
       drawFile(ctx, { x: desk.x + 0.02, y: desk.y + 0.36 }, pal)
   })
