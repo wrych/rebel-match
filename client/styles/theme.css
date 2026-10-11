@@ -697,6 +697,18 @@ textarea.input {
   min-width: 0;
 }
 
+/* A screen's heading with one control beside it, e.g. a refresh. */
+.title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.title-row > :first-child {
+  min-width: 0;
+}
+
 .card-title {
   font-size: 1rem;
   font-weight: 700;

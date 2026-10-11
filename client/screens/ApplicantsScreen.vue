@@ -71,12 +71,14 @@ onMounted(() => live.refresh())
     <PullToRefresh :live="live" />
     <div class="stack">
       <p class="kicker kicker-accent">Host tools</p>
-      <h1 class="display display-lg">Applicants</h1>
+      <div class="title-row">
+        <h1 class="display display-lg">Applicants</h1>
+        <RefreshButton :live="live" />
+      </div>
       <p class="lede">
         People asking to join. Approving sends their sign-in link straight away.
       </p>
     </div>
-    <RefreshButton :live="live" />
 
     <p v-if="notice" class="notice notice-solid" role="status">{{ notice }}</p>
     <p v-if="problem" class="alert" role="alert">{{ problem }}</p>

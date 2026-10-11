@@ -73,7 +73,6 @@ onMounted(() => live.refresh())
       <h1 class="display display-lg">Outbound message log</h1>
       <p class="lede">Every email the app sends, and what became of it.</p>
     </div>
-    <RefreshButton :live="live" />
 
     <form class="filters" @submit.prevent="applyFilter">
       <div class="field">
@@ -96,7 +95,10 @@ onMounted(() => live.refresh())
           <option value="failed">failed</option>
         </select>
       </div>
-      <button type="submit" class="btn btn-dark">Filter</button>
+      <div class="filter-actions">
+        <button type="submit" class="btn btn-dark">Filter</button>
+        <RefreshButton :live="live" />
+      </div>
     </form>
 
     <p v-if="problem" class="alert" role="alert">{{ problem }}</p>
@@ -139,8 +141,14 @@ onMounted(() => live.refresh())
   align-items: end;
 }
 
-.filters .btn {
+.filter-actions {
+  display: flex;
   grid-column: 1 / -1;
+  gap: 0.6rem;
+}
+
+.filter-actions .btn-dark {
+  flex: 1;
 }
 
 .new {
