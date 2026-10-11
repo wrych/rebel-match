@@ -53,10 +53,11 @@ both from what the server records as seen (R-MINE-6, R-NOTE-5).
 
 ## Consequences
 
-- A member on an open live list sends one read every 8 seconds; a host on a
-  host-tool list one a minute, plus the outbound log's every 8 seconds. On the
-  summit's few hundred phones that is well within one instance, and the
-  intervals can be raised from the settings screen if it is not.
+- A member on an open live list sends one read every 8 seconds, and the
+  badges two more (R-MINE-4, down from 30); a host on a host-tool list one a
+  minute, plus the outbound log's every 8 seconds. On the summit's few
+  hundred phones that is well within one instance, and the intervals can be
+  raised from the settings screen if it is not.
 - A refresh replaces the list; a screen that holds a selection or an open
   form keys it by id, so it survives the refresh.
 - The notifications screen marks what a refresh brings as seen, since it is

@@ -610,9 +610,9 @@ connect.")_
   - Seeing a notification SHALL NOT clear the badge, nor opening Matches the
     notifications' (R-NOTE-5, R-NOTE-6).
   - While the app is open and visible, the badges SHALL refresh on their own,
-    at most `limits.matchesPollSeconds` apart, and the list of waiting
-    requests as a live list (R-NAV-12), so a new request shows without a
-    reload.
+    at most `limits.matchesPollSeconds` apart (8 seconds by default), and the
+    list of waiting requests as a live list (R-NAV-12), so a new request shows
+    without a reload.
 - **R-MINE-5** — The "Matches" screen SHALL list the member's **connections** —
   accepted requests, whichever side sent them — below the requests waiting for
   them, each other member once, as a member card, however many challenges they
@@ -782,12 +782,17 @@ at a screen instead of at the front door.
   | Members (R-MEM-1)                    | `limits.membersPollSeconds`, 60         | each member              | yes    |
   | Applicants (R-AUTH-11)               | `limits.applicantsPollSeconds`, 60      | each applicant           | yes    |
   | Invites (R-INV-2)                    | `limits.invitesPollSeconds`, 60         | each invite              | yes    |
+  | Leaderboard (R-GAME-13)              | `limits.leaderboardPollSeconds`, 30     | each new best            | no     |
   - **What is new** — an entry a refresh brings that was not listed before
     SHALL be outlined as new until it is tapped, anywhere on it. What was
     listed when the screen opened is not new, except where its own rule says
     so (R-MINE-6, R-NOTE-5), and neither is what a changed filter or search
     shows. Only the open screen remembers what is new: leaving and coming back
     shows every entry as seen until the next one arrives.
+  - **A new best** — the leaderboard names no member to the client, so a row
+    is new when no row before showed the same name, job and level: a new
+    player, or a player's new best. A row that only moved place is not new.
+    It refreshes only while it is shown (R-GAME-1).
   - **Pulling down** SHALL be offered only on a touch screen, where it takes
     over no other gesture, and only while the page is scrolled to its top;
     on those screens the browser's own pull-to-reload SHALL NOT fire as well.

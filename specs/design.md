@@ -87,7 +87,8 @@ thresholds have sane defaults in the file and may be overridden by env.
 | `limits.outboxPageSize`               | `100`                         | R-MSG-5                   |
 | `limits.deckPageSize`                 | `20`                          | R-OFF-1                   |
 | `limits.newestChallengesShown`        | `3`                           | R-ASK-2, R-ASK-14         |
-| `limits.matchesPollSeconds`           | `30`                          | R-MINE-4                  |
+| `limits.matchesPollSeconds`           | `8`                           | R-MINE-4                  |
+| `limits.leaderboardPollSeconds`       | `30`                          | R-NAV-12, R-GAME-13       |
 | `limits.cockpitPollSeconds`           | `8`                           | R-NAV-12                  |
 | `limits.challengeMatchesPollSeconds`  | `8`                           | R-NAV-12                  |
 | `limits.notificationsPollSeconds`     | `8`                           | R-NAV-12                  |
