@@ -8,28 +8,33 @@ export interface Maker {
   responsibilities: readonly string[]
   /** Without one, the card shows the maker's initials. */
   portrait: string | null
+  email: string | null
 }
 
 export const makers: readonly Maker[] = [
   {
     name: 'Pascal Dulex',
-    responsibilities: ['Idea', 'Design', 'Marketing'],
+    responsibilities: ['Idea', 'Community'],
     portrait: pascalDulex,
-  },
-  {
-    name: 'Ivo Pejakovic',
-    responsibilities: ['Coordination', 'Community'],
-    portrait: ivoPejakovic,
+    email: 'pascal.dulex@transformation-architects.ch',
   },
   {
     name: 'Andy Moesch',
-    responsibilities: ['Engineering', 'Operations'],
+    responsibilities: ['Design', 'Engineering'],
     portrait: andyMoesch,
+    email: 'andy.moesch@xigo.ch',
+  },
+  {
+    name: 'Ivo Pejakovic',
+    responsibilities: ['User Experience', 'Testing'],
+    portrait: ivoPejakovic,
+    email: 'ivo.pejakovic@xigo.ch',
   },
   {
     name: 'Community',
     responsibilities: ['Challenges', 'Experience', 'Connections'],
     portrait: null,
+    email: null,
   },
 ]
 

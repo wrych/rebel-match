@@ -80,10 +80,38 @@ describe('ImpressumScreen', () => {
     const screen = await mountScreen()
 
     expect(shownName(screen)).toBe('Pascal Dulex')
-    expect(screen.find('.mono').text()).toBe('Idea · Design · Marketing')
+    expect(screen.find('.mono').text()).toBe('Idea · Community')
     expect(screen.find('img.portrait').attributes('alt')).toBe(
       'Portrait of Pascal Dulex',
     )
+  })
+
+  it("carries the maker's email address as a mail link (R-PROF-4)", async () => {
+    const screen = await mountScreen()
+
+    expect(screen.find('.deck-author a').attributes('href')).toBe(
+      'mailto:pascal.dulex@transformation-architects.ch',
+    )
+  })
+
+  it('gives the community card no mail link', async () => {
+    const screen = await mountScreen()
+    const next = screen.find('[aria-label="Next maker"]')
+
+    for (let shown = 1; shown < makers.length; shown += 1)
+      await next.trigger('click')
+
+    expect(screen.find('.deck-author a').exists()).toBe(false)
+  })
+
+  it('invites feedback, and links to the privacy notice and terms rather than repeating them (R-PROF-4)', async () => {
+    const screen = await mountScreen()
+    const links = screen
+      .findAllComponents(RouterLinkStub)
+      .map((link) => link.props('to') as unknown)
+
+    expect(screen.text()).toContain('your feedback shapes what comes next')
+    expect(links).toEqual(expect.arrayContaining(['/privacy', '/terms']))
   })
 
   it('browses the makers with the arrows, as the swipe deck does', async () => {
