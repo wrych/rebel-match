@@ -6,13 +6,16 @@ import { describe, expect, it } from 'vitest'
 import RebelMark from './RebelMark.vue'
 
 describe('RebelMark (R-LOOK-5)', () => {
-  it('is drawn with the same R as the favicon', () => {
-    const favicon = readFileSync('client/public/favicon.svg', 'utf8')
-    const r = mount(RebelMark).find('path').attributes('d')
+  it.each(['favicon.svg', 'favicon-happy.svg'])(
+    'is drawn with the same R as %s',
+    (file) => {
+      const favicon = readFileSync(`client/public/${file}`, 'utf8')
+      const r = mount(RebelMark).find('path').attributes('d')
 
-    expect(r).toBeTruthy()
-    expect(favicon).toContain(`d="${String(r)}"`)
-  })
+      expect(r).toBeTruthy()
+      expect(favicon).toContain(`d="${String(r)}"`)
+    },
+  )
 
   it('draws the wink only while it plays', () => {
     expect(mount(RebelMark).find('.rebel-mark-lid').exists()).toBe(false)

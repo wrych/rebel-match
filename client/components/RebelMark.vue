@@ -16,6 +16,9 @@ const apart = `${APART}px`
 const overlap = `${OVERLAP}px`
 const LEFT_MET = `translate(${OVERLAP} 0) ${PLACED}`
 const RIGHT_MET = `translate(${-OVERLAP} 0) ${MIRRORED}`
+const BAND_TOP = 142
+const BAND_HEIGHT = 41.25
+const BANDS = [1, 2, 3, 4, 5]
 const id = useId()
 </script>
 
@@ -73,6 +76,17 @@ const id = useId()
       </g>
       <path class="rebel-mark-shut" d="M250 222Q271 232 292 222" />
     </template>
+    <g class="rebel-mark-bands">
+      <rect
+        v-for="band in BANDS"
+        :key="band"
+        x="0"
+        :y="BAND_TOP + (band - 1) * BAND_HEIGHT"
+        width="480"
+        :height="BAND_HEIGHT + 0.5"
+        :style="{ fill: `var(--mark-band-${band})` }"
+      />
+    </g>
   </svg>
 </template>
 
@@ -95,6 +109,11 @@ const id = useId()
 .rebel-mark-right {
   mix-blend-mode: difference;
   transform: translateX(calc(-1 * v-bind(apart)));
+}
+
+/* Multiplied in, a band tints the white and leaves the black; calm's are white. */
+.rebel-mark-bands {
+  mix-blend-mode: multiply;
 }
 
 /* A stroke widens each matte by a screen pixel or so, so a lid hides the eye's

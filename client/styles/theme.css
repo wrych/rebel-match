@@ -44,6 +44,11 @@
   --token-meta: #9a948a;
   --mark: #111010;
   --soft: #fff;
+  --mark-band-1: #fff;
+  --mark-band-2: #fff;
+  --mark-band-3: #fff;
+  --mark-band-4: #fff;
+  --mark-band-5: #fff;
 
   --sticker-border: 0;
   --sticker-shadow: none;
@@ -85,6 +90,11 @@
   --token-meta: #0b4c85;
   --mark: #ff2e93;
   --soft: #ffe3f1;
+  --mark-band-1: #e4579b;
+  --mark-band-2: #f5d45e;
+  --mark-band-3: #7dd6b5;
+  --mark-band-4: #79b2f6;
+  --mark-band-5: #b49cf4;
   --ok: #04301f;
   --ok-soft: #38d6a6;
   --line-strong: #111010;

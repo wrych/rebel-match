@@ -21,6 +21,20 @@ describe('mood', () => {
     expect(savedMood()).toBe('happy')
   })
 
+  it('shows the mark in its colours in the browser tab (R-LOOK-5)', () => {
+    const icon = document.createElement('link')
+    icon.rel = 'icon'
+    icon.href = '/favicon.svg'
+    document.head.append(icon)
+
+    applyMood('happy')
+    expect(icon.getAttribute('href')).toBe('/favicon-happy.svg')
+    applyMood('calm')
+    expect(icon.getAttribute('href')).toBe('/favicon.svg')
+
+    icon.remove()
+  })
+
   it('still switches when the browser refuses storage', () => {
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new Error('denied')
