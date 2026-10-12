@@ -367,7 +367,10 @@ monitor shows its back, lit round the edge in the screen's colour and carrying
 the Rebel Match mark in its happy colours while they are tempted, its intro
 running from the moment the temptation starts to the end of the grace time. The player's desk in the office is two tiles
 wide, with a wide screen, a chair in front and, in boss mode, the stack of
-files. Each figure has a colour palette and a grey one, so turning grey is a
+files. A turning employee's bar and a file's reading are drawn from the state
+alone: the bar from when the temptation began, the file from when its work or
+the player's help ends; their green, yellow and pink are happy mode's door,
+card and accent colours. Each figure has a colour palette and a grey one, so turning grey is a
 palette swap, never a filter. Rebel colours come from the happy-mode tokens
 (R-LOOK-3). The camera follows the player across a floor larger than the screen;
 off-screen trouble is marked by arrows at the edge, and the floor map is the

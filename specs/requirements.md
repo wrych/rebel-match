@@ -1321,6 +1321,11 @@ the office's people; the **player** is the character the member steers.
   its happy colours, playing its intro (R-LOOK-5) over the grace time so that
   it ends as they turn rebel, a rebel raises a fist and wears a colourful hairdo, a grey employee in rebel mode
   slumps, and heat shows as a flush, then sweat, then steam over a heat bar.
+  In boss mode a tempted employee SHALL show, in the heat bar's place, a bar
+  filling from green through yellow to pink over the grace time, and only
+  while they are tempted. A file on a desk SHALL show how far it has been read:
+  its lines turn green from the top down as an employee works through it in
+  boss mode, or as the player helps with it in rebel mode.
   The first time a member meets a mechanic (the first day, the water cooler,
   meetings, rebel mode) the game SHALL show a short hint, once per member; the
   first day's hint opens with keeping the workers busy. The lobby SHALL keep
