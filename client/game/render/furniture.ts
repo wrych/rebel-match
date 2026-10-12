@@ -239,6 +239,27 @@ function drawScreenMark(
   ctx.restore()
 }
 
+/** How far the file on an employee's desk has been read (0 to 1), or null
+ * when there is none: worked through in boss mode, helped with by the player
+ * in rebel mode, and unread while it waits (R-GAME-18). */
+export function fileRead(state: DayState, employee: Employee): number | null {
+  const { busy } = state.player
+  if (employee.file) {
+    if (busy?.kind !== 'help' || busy.target !== employee.id) return 0
+    return readSoFar(state.clock, busy.until, state.tuning['rebel.helpSeconds'])
+  }
+  if (state.mode === 'boss' && employee.workingUntil > state.clock)
+    return readSoFar(
+      state.clock,
+      employee.workingUntil,
+      state.tuning.fileWorkSeconds,
+    )
+  return null
+}
+
+const readSoFar = (clock: number, until: number, length: number): number =>
+  Math.min(1, Math.max(0, 1 - (until - clock) / length))
+
 /** Each employee's screen, seen from behind, lights up in their colour, a
  * tempted one's carrying the Rebel Match mark on its back so the state reads
  * by shape as well as colour, its intro playing out over the grace time as
@@ -261,8 +282,9 @@ export function drawScreens(ctx: Ctx, state: DayState, pal: Palette): void {
     drawMonitorBack(ctx, back, pal)
     if (employee.spirit === 'tempted')
       drawScreenMark(ctx, back, pal, (state.clock - employee.temptedAt) / grace)
-    if (employee.file)
-      drawFile(ctx, { x: desk.x + 0.02, y: desk.y + 0.36 }, pal)
+    const read = fileRead(state, employee)
+    if (read !== null)
+      drawFile(ctx, { x: desk.x + 0.02, y: desk.y + 0.36 }, pal, read)
   })
 }
 

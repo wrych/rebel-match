@@ -22,6 +22,11 @@ export interface Palette {
   ink: string
   /** Rebel colours, for hair and screens. */
   rebel: readonly string[]
+  /** Happy mode's green, yellow and pink, for things going from fine to
+   * danger: a bar filling, a file being read. */
+  fine: string
+  caution: string
+  danger: string
   heat: readonly string[]
 }
 
@@ -52,7 +57,15 @@ export function palette(read: (token: string) => string): Palette {
     (token, index) =>
       read(token).trim() || (FALLBACK_REBEL[index] ?? '#ff2e93'),
   )
-  return { ...greys, rebel, heat: HEAT }
+  const [danger, fine, caution] = rebel
+  return {
+    ...greys,
+    rebel,
+    fine: fine ?? '#38d6a6',
+    caution: caution ?? '#ffd23f',
+    danger: danger ?? '#ff2e93',
+    heat: HEAT,
+  }
 }
 
 const SKIN = ['#f1d3b8', '#e0b18c', '#c68a63', '#9a6544', '#6e4a33', '#4a3022']

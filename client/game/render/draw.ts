@@ -117,6 +117,14 @@ function drawTiles(ctx: Ctx, floor: Floor, view: View, pal: Palette): void {
   eachTile(ctx, floor, view, pal, drawWall)
 }
 
+/** How far a tempted employee has got to turning rebel over the grace time
+ * (0 to 1), or null when nobody is turning them (R-GAME-18). */
+export function turningOf(state: DayState, employee: Employee): number | null {
+  if (state.mode !== 'boss' || employee.spirit !== 'tempted') return null
+  const grace = state.tuning[`${state.floor}.temptedGraceSeconds`]
+  return Math.min(1, (state.clock - employee.temptedAt) / grace)
+}
+
 function figureOf(state: DayState, employee: Employee): Figure {
   const rebel = employee.spirit !== 'grey'
   return {
@@ -125,6 +133,7 @@ function figureOf(state: DayState, employee: Employee): Figure {
     rebel: employee.spirit === 'rebel',
     slumped: state.mode === 'rebel' && employee.spirit === 'grey',
     heat: employee.heat,
+    turning: turningOf(state, employee),
     carrying: false,
     boss: false,
   }
@@ -147,6 +156,7 @@ function drawPlayer(ctx: Ctx, state: DayState, pal: Palette): void {
       rebel,
       slumped: false,
       heat: 0,
+      turning: null,
       carrying: state.player.carrying,
       boss: true,
     },
