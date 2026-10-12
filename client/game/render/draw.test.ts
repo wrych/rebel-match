@@ -3,7 +3,8 @@ import { gameDefaults } from '../../../src/game/tuning'
 import { FIRST_REBEL_LEVEL } from '../../../src/game/levels'
 import { floors } from '../core/floors'
 import { startDay } from '../core/state'
-import { drawDay } from './draw'
+import { drawDay, turningOf } from './draw'
+import { fileRead } from './furniture'
 import { palette } from './palette'
 import { MARK_HAPPY_BANDS } from '../../lib/mark'
 
@@ -129,5 +130,62 @@ describe('drawDay', () => {
 
     expect(filesOnDesk(1)).toBe(5)
     expect(filesOnDesk(FIRST_REBEL_LEVEL)).toBe(0)
+  })
+})
+
+describe('progress over the office (R-GAME-18)', () => {
+  const grace = tuning['teamLead.temptedGraceSeconds']
+
+  it('shows a tempted employee turning over the grace time, and nobody else', () => {
+    const day = startDay(1, tuning, 1)
+    const employee = day.employees[0]
+    if (employee === undefined) throw new Error('no employee')
+
+    expect(turningOf(day, employee)).toBeNull()
+    employee.spirit = 'tempted'
+    employee.temptedAt = day.clock - grace / 4
+    expect(turningOf(day, employee)).toBeCloseTo(0.25)
+    employee.temptedAt = day.clock - 2 * grace
+    expect(turningOf(day, employee)).toBe(1)
+  })
+
+  it('shows no turning in rebel mode, where heat has its own bar', () => {
+    const day = startDay(FIRST_REBEL_LEVEL, tuning, 1)
+    const employee = day.employees[0]
+    if (employee === undefined) throw new Error('no employee')
+    employee.spirit = 'tempted'
+
+    expect(turningOf(day, employee)).toBeNull()
+  })
+
+  it('reads a file as it is worked through in boss mode', () => {
+    const day = startDay(1, tuning, 1)
+    const employee = day.employees[0]
+    if (employee === undefined) throw new Error('no employee')
+
+    expect(fileRead(day, employee)).toBeNull()
+    employee.workingUntil = day.clock + tuning.fileWorkSeconds / 4
+    expect(fileRead(day, employee)).toBeCloseTo(0.75)
+    employee.workingUntil = day.clock
+    employee.file = true
+    expect(fileRead(day, employee)).toBe(0)
+  })
+
+  it('reads a file as the player helps with it in rebel mode', () => {
+    const day = startDay(FIRST_REBEL_LEVEL, tuning, 1)
+    const [helped, other] = day.employees
+    if (helped === undefined || other === undefined)
+      throw new Error('no employees')
+    helped.file = true
+    other.file = true
+    const help = tuning['rebel.helpSeconds']
+    day.player.busy = {
+      kind: 'help',
+      until: day.clock + help / 2,
+      target: helped.id,
+    }
+
+    expect(fileRead(day, helped)).toBeCloseTo(0.5)
+    expect(fileRead(day, other)).toBe(0)
   })
 })

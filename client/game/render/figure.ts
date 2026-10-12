@@ -8,6 +8,8 @@ const HEAD = 0.17
 const SHIRT = '#f4f2ee'
 const TIE = '#2a2a2a'
 const BOSS_TIE = '#b8262d'
+/** The heat bar's and the turning bar's segments. */
+const BAR_SEGMENTS = HEAT.boiling
 
 export interface Figure {
   look: Look
@@ -15,6 +17,9 @@ export interface Figure {
   rebel: boolean
   slumped: boolean
   heat: number
+  /** How far a tempted employee has got to turning rebel (0 to 1), or null
+   * when they are not turning (R-GAME-18). */
+  turning: number | null
   carrying: boolean
   boss: boolean
 }
@@ -170,11 +175,40 @@ function drawHeat(ctx: Ctx, at: Spot, heat: number, pal: Palette): void {
   ctx.arc(at.x + 0.08, at.y - 0.12, 0.05, 0, TAU)
   ctx.fill()
   ctx.globalAlpha = 1
-  for (let stage = 0; stage < HEAT.boiling; stage += 1) {
-    ctx.fillStyle = stage < heat ? (pal.heat[stage] ?? pal.ink) : pal.screen
-    ctx.fillRect(at.x - 0.24 + stage * 0.17, at.y - 0.6, 0.14, 0.06)
-  }
+  drawBar(ctx, at, heat, pal.heat, pal)
   if (heat >= HEAT.hot) drawDrops(ctx, at, heat, pal)
+}
+
+// Over the head, three segments filled as far as `filled` (0 to 3), each in
+// its own colour.
+function drawBar(
+  ctx: Ctx,
+  at: Spot,
+  filled: number,
+  colours: readonly string[],
+  pal: Palette,
+): void {
+  for (let stage = 0; stage < BAR_SEGMENTS; stage += 1) {
+    const x = at.x - 0.24 + stage * 0.17
+    ctx.fillStyle = pal.screen
+    ctx.fillRect(x, at.y - 0.6, 0.14, 0.06)
+    const through = Math.min(1, Math.max(0, filled - stage))
+    if (through <= 0) continue
+    ctx.fillStyle = colours[stage] ?? pal.ink
+    ctx.fillRect(x, at.y - 0.6, 0.14 * through, 0.06)
+  }
+}
+
+// A tempted employee's turning shows over the same bar, from fine to danger,
+// as heat does in rebel mode (R-GAME-18).
+function drawTurning(ctx: Ctx, at: Spot, turning: number, pal: Palette): void {
+  drawBar(
+    ctx,
+    at,
+    turning * BAR_SEGMENTS,
+    [pal.fine, pal.caution, pal.danger],
+    pal,
+  )
 }
 
 function drawDrops(ctx: Ctx, at: Spot, heat: number, pal: Palette): void {
@@ -198,5 +232,6 @@ export function drawFigure(
   drawBody(ctx, pose)
   drawHead(ctx, pose, pal)
   drawHeat(ctx, at, figure.heat, pal)
+  if (figure.turning !== null) drawTurning(ctx, at, figure.turning, pal)
   if (figure.carrying) drawFile(ctx, { x: at.x + 0.2, y: at.y - 0.02 }, pal)
 }

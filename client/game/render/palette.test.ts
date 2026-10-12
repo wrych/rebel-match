@@ -9,6 +9,21 @@ describe('palette (R-GAME-18)', () => {
     expect(pal.rebel).toHaveLength(4)
   })
 
+  it('names happy mode’s green, yellow and pink for fine to danger', () => {
+    const tokens: Record<string, string> = {
+      '--accent': '#aa0000',
+      '--door': '#00aa00',
+      '--card': '#aaaa00',
+    }
+    const pal = palette((token) => tokens[token] ?? '')
+
+    expect([pal.fine, pal.caution, pal.danger]).toEqual([
+      '#00aa00',
+      '#aaaa00',
+      '#aa0000',
+    ])
+  })
+
   it('drains a colour to the grey of its own lightness', () => {
     expect(greyOf('#ffffff')).toBe('#ffffff')
     expect(greyOf('#000000')).toBe('#000000')
