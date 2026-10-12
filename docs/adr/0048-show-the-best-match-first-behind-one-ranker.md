@@ -1,6 +1,6 @@
 # 0048. Show the most relevant match first, ranked behind one seam
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by 0051
 - **Date:** 2026-10-09
 - **Deciders:** Andy Moesch, Pascal Dulex
 

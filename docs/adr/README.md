@@ -83,6 +83,7 @@ still holds except where the later ADR says otherwise.
 | [0045](0045-9torevolution-an-office-game-hidden-in-happy-mode.md) | Hide 9toRevolution, an office game, behind the impressum in happy mode          | Accepted, amended by 0046, 0047       |
 | [0046](0046-enter-9torevolution-by-turning-the-phone.md)          | Enter 9toRevolution by turning the phone; play in landscape, choose in portrait | Accepted                              |
 | [0047](0047-an-office-door-that-shuts.md)                         | Give the boss's office a door that shuts now and then                           | Accepted                              |
-| [0048](0048-show-the-best-match-first-behind-one-ranker.md)       | Show the most relevant match first, ranked behind one seam                      | Accepted                              |
+| [0048](0048-show-the-best-match-first-behind-one-ranker.md)       | Show the most relevant match first, ranked behind one seam                      | Accepted, amended by 0051             |
 | [0049](0049-scheduled-work-on-a-tick.md)                          | Run the scheduled work on a tick from Cloud Scheduler                           | Accepted                              |
 | [0050](0050-live-lists-poll-and-outline-what-arrives.md)          | Live lists poll, outline what arrives, and refresh on a pull                    | Accepted                              |
+| [0051](0051-summarise-each-matches-section-in-a-sentence.md)      | Summarise each matches section in a sentence, its cards on a tap                | Accepted                              |

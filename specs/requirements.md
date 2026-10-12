@@ -456,7 +456,8 @@ capability, not a secret** — and every requirement below exists because of tha
   is live and that members who can help will now see it. The banner SHALL show
   only on that arrival, not when the member returns to the view later.
 - **R-ASK-12 (Purpose in every word)** — The matches view SHALL open with the
-  member's own challenge under the kicker _Your challenge_, then head the
+  member's own challenge, as the same card the cockpit shows it on (R-MINE-1),
+  under the kicker _Your challenge_, then head the
   matches _Your matches_, and SHALL name each section by its label, the people
   in it and what to do with them: _Same boat: rebels facing this now — connect
   and compare notes_, _Been there: rebels who've solved it — ask how they did
@@ -473,12 +474,15 @@ capability, not a secret** — and every requirement below exists because of tha
   trend, as the connection request shows the challenge it is about, never who
   wrote it. Only an active challenge of an active, onboarded member counts, as
   for the deck (R-OFF-1), and never the viewer's own.
-- **R-ASK-15 (Most relevant first)** — Each section of the matches view SHALL
-  show its first `limits.matchesShownFirst` entries, and below them, IF it holds
-  more, a control naming how many more there are and what they are (_3 more
-  rebels in the same boat_, _2 more who've been there_, _4 more case studies_)
-  that shows the rest in place, and then shows fewer again. _(Founders' review,
-  2026-10-09: the overview should fit without scrolling.)_
+- **R-ASK-15 (A sentence per section)** — Each non-empty section of the
+  matches view SHALL show, instead of its cards, one sentence naming its first
+  `limits.matchesNamedFirst` entries, most relevant first, and counting the rest
+  (_Ana Diaz, Ben Ortiz and 7 others are in the same boat_, _Bea There has been
+  there_, _Haier, Buurtzorg and 2 others made the shift_), ending in a _Read
+  more_ control that shows the section's cards in place, and then shows fewer
+  again. An empty section says what R-ASK-13 says. _(Founders' review,
+  2026-10-09: the overview should fit without scrolling; Andy, 2026-10-12: a
+  sentence per section instead of its first card, ADR 0051.)_
 
 ---
 

@@ -268,9 +268,9 @@ my challenge.
 7. **S8** opens with a green banner — the challenge is live and members who can
    help will now see it (R-ASK-11) — then the member's challenge, and under
    **Your matches** `GET /api/challenges/:id/matches`: **same boat**, **been
-   there** and curated **case studies**, each with its most relevant entry first
-   and the rest a tap away — names and roles only, never email addresses
-   (R-ASK-8, R-ASK-12, R-ASK-15, R-NFR-1).
+   there** and curated **case studies**, each one sentence naming its most
+   relevant entries and counting the rest, its cards a tap away — names and
+   roles only, never email addresses (R-ASK-8, R-ASK-12, R-ASK-15, R-NFR-1).
 8. From a match card the member can **Follow** the trend (**F9**) or **Connect**,
    which opens **F7** — not a `mailto:` (R-ASK-9, R-ASK-10).
 

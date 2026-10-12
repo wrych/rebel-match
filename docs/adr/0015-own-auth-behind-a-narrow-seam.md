@@ -70,7 +70,7 @@ interface AuthProvider {
 | Inside `auth` only                           | Stays in the application                          |
 | -------------------------------------------- | ------------------------------------------------- |
 | `magic_tokens`, token generation and hashing | the whitelist, applicants, approval               |
-| TTLs per link kind (R-AUTH-5, R-AUTH-10)     | invite tokens and their windows/caps (R-INV-*)    |
+| TTLs per link kind (R-AUTH-5, R-AUTH-10)     | invite tokens and their windows/caps (R-INV-\*)   |
 | Cookie format, signing, session storage      | consent version and timestamp (R-ONB-3)           |
 | Whether a presented credential is valid      | what a valid member is _allowed_ to do (R-ROLE-3) |
 
