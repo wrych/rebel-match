@@ -5,15 +5,15 @@ import AskSteps from '../components/AskSteps.vue'
 import DoneNotice from '../components/DoneNotice.vue'
 import { askJourney } from '../lib/steps'
 import CaseList from '../components/CaseList.vue'
-import FoldedList from '../components/FoldedList.vue'
+import ChallengeCard from '../components/ChallengeCard.vue'
 import FollowButton from '../components/FollowButton.vue'
+import MatchesSummary from '../components/MatchesSummary.vue'
 import PeerCards from '../components/PeerCards.vue'
 import PullToRefresh from '../components/PullToRefresh.vue'
 import { fetchConfig } from '../lib/api'
 import {
   fetchChallenge,
   fetchMatches,
-  moreMatches,
   type Challenge,
   type Matches,
   type PeerCard,
@@ -28,7 +28,7 @@ const challenge = ref<Challenge | null>(null)
 const matches = ref<Matches | null>(null)
 const missing = ref(false)
 const problem = ref<string | null>(null)
-const shownFirst = ref<number | null>(null)
+const namedFirst = ref<number | null>(null)
 const nobodyYet = computed(
   () =>
     matches.value !== null &&
@@ -37,6 +37,7 @@ const nobodyYet = computed(
 )
 
 const byMember = (peer: PeerCard): string => peer.memberId
+const nameOf = (peer: PeerCard): string => peer.name
 const sameBoatArrived = arrivals(byMember)
 const beenThereArrived = arrivals(byMember)
 
@@ -57,11 +58,11 @@ async function newer(): Promise<void> {
 const live = useLiveList(newer, 'challengeMatchesPollSeconds')
 
 // Without the limit nothing is folded: every match shows, as before.
-async function loadShownFirst(): Promise<void> {
+async function loadNamedFirst(): Promise<void> {
   try {
-    shownFirst.value = (await fetchConfig()).limits.matchesShownFirst
+    namedFirst.value = (await fetchConfig()).limits.matchesNamedFirst
   } catch {
-    shownFirst.value = null
+    namedFirst.value = null
   }
 }
 
@@ -69,7 +70,7 @@ onMounted(async () => {
   // Dropped from the URL at once, so going back, reloading or bookmarking
   // never announces the post a second time.
   if (posted) void router.replace({ query: {} })
-  void loadShownFirst()
+  void loadNamedFirst()
   try {
     const [found, matched] = await Promise.all([
       fetchChallenge(id),
@@ -96,10 +97,15 @@ onMounted(async () => {
         see it.
       </DoneNotice>
 
-      <div class="stack-tight">
-        <p class="kicker">Your challenge · {{ matches.trend.short }}</p>
-        <p class="mine">{{ challenge.body }}</p>
-      </div>
+      <ChallengeCard
+        :kicker="`Your challenge · ${matches.trend.short}`"
+        :body="challenge.body"
+        :counts="{
+          sameBoat: matches.sameBoat.length,
+          beenThere: matches.beenThere.length,
+          cases: matches.cases.length,
+        }"
+      />
 
       <h1 class="display display-lg rule">Your matches</h1>
 
@@ -110,21 +116,20 @@ onMounted(async () => {
           </h2>
           <p class="small purpose">Connect and compare notes.</p>
         </div>
-        <FoldedList
-          v-slot="{ shown }"
-          :count="matches.sameBoat.length"
-          :first="shownFirst"
-          :more="(hidden) => moreMatches('sameBoat', hidden)"
+        <MatchesSummary
+          section="sameBoat"
+          :names="matches.sameBoat.map(nameOf)"
+          :named="namedFirst"
         >
           <PeerCards
-            :peers="matches.sameBoat.slice(0, shown)"
+            :peers="matches.sameBoat"
             :challenge-id="id"
             kind="same_boat"
             :arrived="sameBoatArrived"
             action="Connect"
             nobody="You’re the first rebel here. Others will find your challenge in their deck."
           />
-        </FoldedList>
+        </MatchesSummary>
       </section>
 
       <section class="stack rule" aria-labelledby="been-there">
@@ -134,21 +139,20 @@ onMounted(async () => {
           </h2>
           <p class="small purpose">Ask how they did it.</p>
         </div>
-        <FoldedList
-          v-slot="{ shown }"
-          :count="matches.beenThere.length"
-          :first="shownFirst"
-          :more="(hidden) => moreMatches('beenThere', hidden)"
+        <MatchesSummary
+          section="beenThere"
+          :names="matches.beenThere.map(nameOf)"
+          :named="namedFirst"
         >
           <PeerCards
-            :peers="matches.beenThere.slice(0, shown)"
+            :peers="matches.beenThere"
             :challenge-id="id"
             kind="been_there"
             :arrived="beenThereArrived"
             action="Ask them"
             nobody="No one has shared experience here yet. Rebels who have will see your challenge."
           />
-        </FoldedList>
+        </MatchesSummary>
       </section>
 
       <RouterLink v-if="nobodyYet" to="/offer" class="btn btn-dark"
@@ -160,14 +164,13 @@ onMounted(async () => {
           <h2 id="cases" class="display display-md">Case studies</h2>
           <p class="small purpose">Read how they made the shift.</p>
         </div>
-        <FoldedList
-          v-slot="{ shown }"
-          :count="matches.cases.length"
-          :first="shownFirst"
-          :more="(hidden) => moreMatches('cases', hidden)"
+        <MatchesSummary
+          section="cases"
+          :names="matches.cases.map((study) => study.org)"
+          :named="namedFirst"
         >
-          <CaseList :cases="matches.cases.slice(0, shown)" />
-        </FoldedList>
+          <CaseList :cases="matches.cases" />
+        </MatchesSummary>
         <RouterLink
           :to="`/trends/${encodeURIComponent(matches.trend.id)}`"
           class="row-link"
@@ -188,9 +191,5 @@ onMounted(async () => {
 .purpose {
   margin: 0;
   color: var(--muted);
-}
-
-.fold {
-  justify-self: start;
 }
 </style>

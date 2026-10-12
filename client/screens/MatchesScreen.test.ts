@@ -65,7 +65,7 @@ type Served = {
   found?: Matches | null
   followed?: Trend[]
   followStatus?: number
-  shownFirst?: number | null
+  named?: number | null
 }
 
 // Each read gets its own copy, as from the network.
@@ -84,18 +84,18 @@ function server(served: Served = {}): ReturnType<typeof vi.fn> {
     found = matches,
     followed = [],
     followStatus = 204,
-    shownFirst = 1,
+    named = 2,
   } = served
   const fetchMock = vi.fn((url: string, init?: RequestInit) => {
     if (init?.method !== undefined)
       return Promise.resolve({ ok: followStatus < 300, status: followStatus })
     if (url === '/api/follows') return json({ trends: followed })
     if (url === '/api/config')
-      return shownFirst === null
+      return named === null
         ? Promise.resolve({ ok: false, status: 500 })
         : json({
             limits: {
-              matchesShownFirst: shownFirst,
+              matchesNamedFirst: named,
               challengeMatchesPollSeconds: 8,
             },
           })
@@ -114,6 +114,12 @@ async function mountScreen(): Promise<ReturnType<typeof mount>> {
   return screen
 }
 
+/** Opens every section that sums itself up in a sentence (R-ASK-15). */
+async function readAll(screen: ReturnType<typeof mount>): Promise<void> {
+  for (const more of screen.findAll('button[aria-expanded="false"]'))
+    await more.trigger('click')
+}
+
 function followButton(
   screen: ReturnType<typeof mount>,
 ): ReturnType<ReturnType<typeof mount>['find']> {
@@ -130,12 +136,24 @@ afterEach(() => {
 describe('MatchesScreen', () => {
   it('shows the challenge and its three sections (R-ASK-8)', async () => {
     server()
-    const text = (await mountScreen()).text()
+    const screen = await mountScreen()
+    await readAll(screen)
+    const text = screen.text()
 
     expect(text).toContain(challenge.body)
     expect(text).toContain('Sam Boat')
     expect(text).toContain('Buurtzorg · Care')
     expect(text).toContain('Haier')
+  })
+
+  it('shows the challenge as the cockpit’s card (R-ASK-12)', async () => {
+    server()
+    const card = (await mountScreen()).find('.challenge-row')
+
+    expect(card.find('.mine').text()).toBe(challenge.body)
+    expect(card.find('.counts').text()).toBe(
+      '1 same boat · 1 been there · 1 case studies',
+    )
   })
 
   it('names each section by its people and what to do (R-ASK-12)', async () => {
@@ -158,7 +176,7 @@ describe('MatchesScreen', () => {
     ])
   })
 
-  it('shows the first of each section and folds the rest (R-ASK-15)', async () => {
+  it('sums up each section in a sentence, its cards on a tap (R-ASK-15)', async () => {
     const more = (name: string, at: number): Matches['sameBoat'][number] => ({
       ...matches.sameBoat[0]!,
       memberId: `m-${String(at)}`,
@@ -167,39 +185,47 @@ describe('MatchesScreen', () => {
     server({
       found: {
         ...matches,
-        sameBoat: [more('Ana', 1), more('Ben', 2), more('Cy', 3)],
-        cases: [...matches.cases, { ...matches.cases[0]!, url: 'https://x' }],
+        sameBoat: [
+          more('Ana', 1),
+          more('Ben', 2),
+          more('Cy', 3),
+          more('Di', 4),
+        ],
+        cases: [
+          ...matches.cases,
+          { ...matches.cases[0]!, org: 'FAVI', url: 'https://x' },
+        ],
       },
     })
     const screen = await mountScreen()
-    const folds = (): string[] =>
-      screen.findAll('button[aria-expanded]').map((each) => each.text())
+    const sentences = (): string[] =>
+      screen.findAll('.summary').map((each) => each.text())
 
-    expect(screen.findAll('.peer-same_boat .peer')).toHaveLength(1)
-    expect(screen.text()).toContain('Ana')
-    expect(screen.text()).not.toContain('Ben')
-    expect(screen.findAll('.case')).toHaveLength(1)
-    expect(folds()).toEqual([
-      '2 more rebels in the same boat',
-      '1 more case study',
+    expect(sentences()).toEqual([
+      'Ana, Ben and 2 others are in the same boat. Read more…',
+      'Bea There has been there. Read more…',
+      'Haier and FAVI made the shift. Read more…',
     ])
+    expect(screen.find('.peer').exists()).toBe(false)
+    expect(screen.find('.case').exists()).toBe(false)
 
     await screen.find('button[aria-expanded]').trigger('click')
 
-    expect(screen.findAll('.peer-same_boat .peer')).toHaveLength(3)
-    expect(folds()).toEqual(['Show fewer', '1 more case study'])
+    expect(screen.findAll('.peer-same_boat .peer')).toHaveLength(4)
+    expect(screen.find('.peer-been_there').exists()).toBe(false)
     expect(
       screen.find('button[aria-expanded]').attributes('aria-expanded'),
     ).toBe('true')
+    expect(sentences()[0]).toContain('Show fewer')
 
     await screen.find('button[aria-expanded]').trigger('click')
 
-    expect(screen.findAll('.peer-same_boat .peer')).toHaveLength(1)
+    expect(screen.find('.peer').exists()).toBe(false)
   })
 
   it('folds nothing when the limit cannot be loaded', async () => {
     server({
-      shownFirst: null,
+      named: null,
       found: {
         ...matches,
         sameBoat: [
@@ -211,7 +237,7 @@ describe('MatchesScreen', () => {
     const screen = await mountScreen()
 
     expect(screen.findAll('.peer-same_boat .peer')).toHaveLength(2)
-    expect(screen.find('button[aria-expanded]').exists()).toBe(false)
+    expect(screen.find('.summary').exists()).toBe(false)
   })
 
   it('confirms the post on arrival from the trend step (R-ASK-11)', async () => {
@@ -238,6 +264,7 @@ describe('MatchesScreen', () => {
   it('connects through the double opt-in screen, never by email (R-ASK-10)', async () => {
     server()
     const screen = await mountScreen()
+    await readAll(screen)
     const links = screen
       .findAllComponents(RouterLinkStub)
       .filter((link) => link.classes().includes('btn'))
@@ -261,7 +288,9 @@ describe('MatchesScreen', () => {
 
   it('opens case studies in a new tab without handing over the page', async () => {
     server()
-    const link = (await mountScreen()).find('a.case')
+    const screen = await mountScreen()
+    await readAll(screen)
+    const link = screen.find('a.case')
 
     expect(link.attributes('href')).toBe(matches.cases[0]?.url)
     expect(link.attributes('target')).toBe('_blank')
@@ -354,6 +383,7 @@ describe('MatchesScreen', () => {
     const served = { ...matches, sameBoat: [...matches.sameBoat] }
     server({ found: served })
     const screen = await mountScreen()
+    await readAll(screen)
     expect(screen.find('.card-new').exists()).toBe(false)
 
     const nia = { ...matches.sameBoat[0]!, memberId: 'm9', name: 'Nia New' }

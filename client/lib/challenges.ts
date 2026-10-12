@@ -97,14 +97,31 @@ export function peerLine(
 
 export type MatchesSection = 'sameBoat' | 'beenThere' | 'cases'
 
-/** What the control below a matches section offers: how many more there are,
- * named by what they are (R-ASK-15). */
-export function moreMatches(section: MatchesSection, count: number): string {
-  const one = count === 1
-  if (section === 'sameBoat')
-    return `${String(count)} more ${one ? 'rebel' : 'rebels'} in the same boat`
-  if (section === 'beenThere') return `${String(count)} more who’ve been there`
-  return `${String(count)} more ${one ? 'case study' : 'case studies'}`
+const sectionVerb: Record<MatchesSection, [one: string, many: string]> = {
+  sameBoat: ['is in the same boat', 'are in the same boat'],
+  beenThere: ['has been there', 'have been there'],
+  cases: ['made the shift', 'made the shift'],
+}
+
+/** One sentence over a matches section: the first `named` names, most
+ * relevant first, and how many others there are (R-ASK-15). */
+export function matchesSentence(
+  section: MatchesSection,
+  names: string[],
+  named: number,
+): string {
+  const shown = names.slice(0, named)
+  const others = names.length - shown.length
+  const parts =
+    others > 0
+      ? [...shown, `${String(others)} ${others === 1 ? 'other' : 'others'}`]
+      : shown
+  const listed =
+    parts.length === 1
+      ? parts.join('')
+      : `${parts.slice(0, -1).join(', ')} and ${parts.at(-1) ?? ''}`
+  const [one, many] = sectionVerb[section]
+  return `${listed} ${names.length === 1 ? one : many}.`
 }
 
 /** Stores the trend the member confirmed, picked or suggested (R-ASK-7). */

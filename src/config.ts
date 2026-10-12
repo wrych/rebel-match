@@ -29,9 +29,9 @@ const HOLD_TO_SELECT_MS = 500
 const SWIPE_MIN_PX = 50
 /** How far a finger pulls a live list down to refresh it (R-NAV-12). */
 const PULL_REFRESH_PX = 70
-/** How many entries each matches section shows before the rest are asked
- * for (R-ASK-15). */
-const MATCHES_SHOWN_FIRST = 1
+/** How many entries the sentence over each matches section names before it
+ * counts the rest (R-ASK-15). */
+const MATCHES_NAMED_FIRST = 2
 /** The share of the visible height one tap on the privacy step's scroll hint
  * moves the summary, so it never jumps to the end (R-ONB-10). */
 const SCROLL_HINT_SHARE = 0.4
@@ -409,7 +409,7 @@ export interface Limits {
   holdToSelectMs: number
   swipeMinPx: number
   pullRefreshPx: number
-  matchesShownFirst: number
+  matchesNamedFirst: number
   scrollHintShare: number
   inviteMaxUsesCeiling: number
   connectionMessageMaxChars: number
@@ -552,7 +552,7 @@ function limitsFrom(env: Env): Limits {
     holdToSelectMs: HOLD_TO_SELECT_MS,
     swipeMinPx: SWIPE_MIN_PX,
     pullRefreshPx: PULL_REFRESH_PX,
-    matchesShownFirst: MATCHES_SHOWN_FIRST,
+    matchesNamedFirst: MATCHES_NAMED_FIRST,
     scrollHintShare: SCROLL_HINT_SHARE,
     inviteMaxUsesCeiling: INVITE_MAX_USES_CEILING,
     connectionMessageMaxChars: CONNECTION_MESSAGE_MAX_CHARS,

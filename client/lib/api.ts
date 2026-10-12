@@ -27,7 +27,7 @@ export interface ClientConfig {
     holdToSelectMs: number
     swipeMinPx: number
     pullRefreshPx: number
-    matchesShownFirst: number
+    matchesNamedFirst: number
     scrollHintShare: number
     inviteMaxUsesCeiling: number
   }

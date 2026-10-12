@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import ChallengeCard from '../components/ChallengeCard.vue'
 import PullToRefresh from '../components/PullToRefresh.vue'
 import { peerLine } from '../lib/challenges'
 import {
@@ -204,22 +205,14 @@ onMounted(() => live.refresh())
           <p class="empty">You have not asked for help yet.</p>
           <RouterLink to="/ask" class="row-link">Ask for help</RouterLink>
         </template>
-        <RouterLink
+        <ChallengeCard
           v-for="challenge in cockpit.challenges"
           :key="challenge.id"
+          :kicker="challenge.trend?.short ?? 'No trend yet'"
+          :body="challenge.body"
+          :counts="challenge.counts"
           :to="matchesPath(challenge.id)"
-          class="card challenge-row"
-        >
-          <span class="kicker">{{
-            challenge.trend?.short ?? 'No trend yet'
-          }}</span>
-          <span class="mine">{{ challenge.body }}</span>
-          <span class="mono counts">
-            {{ challenge.counts.sameBoat }} same boat ·
-            {{ challenge.counts.beenThere }} been there ·
-            {{ challenge.counts.cases }} case studies
-          </span>
-        </RouterLink>
+        />
       </section>
 
       <section class="stack rule" aria-labelledby="following">

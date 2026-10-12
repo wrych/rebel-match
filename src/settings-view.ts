@@ -718,11 +718,11 @@ const catalogue: Group[] = [
         unit: ['pixel', 'pixels'],
       },
       {
-        name: 'Matches shown before “more”',
+        name: 'Matches named before “and others”',
         explanation:
-          'How many rebels or case studies each section of a challenge’s matches shows before the rest are a tap away.',
+          'How many rebels or case studies the sentence over each section of a challenge’s matches names before it counts the rest.',
         fixed: true,
-        read: (c) => c.limits.matchesShownFirst,
+        read: (c) => c.limits.matchesNamedFirst,
       },
       {
         name: 'Scroll hint on the privacy step moves',
