@@ -14,6 +14,11 @@ const MONITOR_RADIUS = 0.05
 const SCREEN_MARK_COVER = 1.12
 /** How far a screen's light spills round the monitor's back. */
 const GLOW = 0.05
+/** An employee's desk as drawn on its two tiles: where it starts, how wide
+ * it is, and where a file lies on it, right of the monitor (R-GAME-2). */
+const DESK_LEFT = 0.2
+const DESK_WIDTH = 1.5
+const FILE_SPOT = { x: 1.1, y: 0.3 }
 /** How many files lie on the player's desk in boss mode. */
 const STACK = 5
 
@@ -104,8 +109,8 @@ function drawCubicle(ctx: Ctx, desk: Spot, seat: Spot, pal: Palette): void {
   drawChair(ctx, { x: seat.x + 0.5, y: seat.y + 0.55 }, -1, pal)
   drawBlock(
     ctx,
-    { x: desk.x + 0.04, y: desk.y + 0.1 },
-    { w: 0.92, h: 0.72 },
+    { x: desk.x + DESK_LEFT, y: desk.y + 0.1 },
+    { w: DESK_WIDTH, h: 0.72 },
     pal,
   )
   drawKeyboard(ctx, { x: desk.x + 0.3, y: desk.y + 0.12 }, 0.4, pal)
@@ -262,7 +267,7 @@ export function drawScreens(ctx: Ctx, state: DayState, pal: Palette): void {
     if (employee.spirit === 'tempted')
       drawScreenMark(ctx, back, pal, (state.clock - employee.temptedAt) / grace)
     if (employee.file)
-      drawFile(ctx, { x: desk.x + 0.02, y: desk.y + 0.36 }, pal)
+      drawFile(ctx, { x: desk.x + FILE_SPOT.x, y: desk.y + FILE_SPOT.y }, pal)
   })
 }
 

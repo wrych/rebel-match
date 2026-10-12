@@ -22,11 +22,21 @@ export interface Obstacle extends Spot {
   r: number
 }
 
-/** One employee's place: the desk and the chair behind it. */
+/** One employee's place: the desk, from its left tile, and the chair behind
+ * it. */
 export interface Cubicle {
   desk: Spot
   seat: Spot
 }
+
+/** How many tiles an employee's desk blocks, rightwards from its first. */
+export const DESK_TILES = 2
+
+/** The middle of a cubicle's desk, from which "at the desk" is measured. */
+export const deskCentre = ({ desk }: Cubicle): Spot => ({
+  x: desk.x + DESK_TILES / 2,
+  y: desk.y + 0.5,
+})
 
 /** A floor plan as the rules read it (R-GAME-2). */
 export interface Floor {
@@ -171,7 +181,8 @@ function cubicles(grid: Grid, layout: Layout): Cubicle[] {
         y: 2 + row * CUBICLE_HEIGHT,
       }
       const desk = { x: seat.x, y: seat.y + 1 }
-      put(grid, desk, TILE.desk)
+      for (let tile = 0; tile < DESK_TILES; tile += 1)
+        put(grid, { x: desk.x + tile, y: desk.y }, TILE.desk)
       put(grid, seat, TILE.seat)
       placed.push({ desk, seat })
     }

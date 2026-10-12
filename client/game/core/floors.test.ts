@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { bossJobs, gameBounds, gameDefaults } from '../../../src/game/tuning'
-import { blocked, floors, TILE } from './floors'
+import { blocked, DESK_TILES, floors, TILE } from './floors'
 import { distancesFrom, path, walkingDistance } from './grid'
 
 describe('floors (R-GAME-2)', () => {
@@ -31,6 +31,17 @@ describe('floors (R-GAME-2)', () => {
 
       for (const place of places)
         expect(walkingDistance(fromEntrance, place)).toBeLessThan(Infinity)
+    },
+  )
+
+  it.each(bossJobs)(
+    'gives everyone on the %s floor a desk two tiles wide',
+    (job) => {
+      const floor = floors[job]
+
+      for (const { desk } of floor.cubicles)
+        for (let tile = 0; tile < DESK_TILES; tile += 1)
+          expect(floor.rows[desk.y]?.[desk.x + tile]).toBe(TILE.desk)
     },
   )
 

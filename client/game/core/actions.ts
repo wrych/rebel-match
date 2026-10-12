@@ -14,7 +14,7 @@ import {
   type Employee,
 } from './state'
 import { present } from './walk'
-import type { Spot } from './floors'
+import { deskCentre, type Spot } from './floors'
 
 /** What the action button can do (R-GAME-12). */
 export type ActionKind =
@@ -74,8 +74,8 @@ const reachable = (employee: Employee): boolean =>
   employee.doing.kind === 'atDesk' || employee.doing.kind === 'atCooler'
 
 function deskOf(state: DayState, employee: Employee): Spot {
-  const desk = floorFor(state).cubicles[employee.cubicle]?.desk
-  return desk === undefined ? employee.position : centreOf(desk)
+  const cubicle = floorFor(state).cubicles[employee.cubicle]
+  return cubicle === undefined ? employee.position : deskCentre(cubicle)
 }
 
 // A desk its employee is away from, with no file on it yet.
