@@ -267,4 +267,35 @@ describe('PlayView (R-GAME-12)', () => {
     expect(document.querySelector('.hud .mono')?.textContent).not.toBe('09:00')
     view.unmount()
   })
+
+  it('announces a promotion before the day’s hints, the clock standing still (R-GAME-18)', async () => {
+    const view = mount(PlayView, {
+      props: {
+        level: 4,
+        seed: 1,
+        tuning,
+        hints: ['meeting'],
+        promotion: {
+          job: 'manager',
+          lines: ['Headcount 4 → 8. More people to keep busy.'],
+          button: 'Crush it',
+        },
+      },
+      attachTo: document.body,
+    })
+    frame(3)
+    await flushPromises()
+
+    expect(document.body.textContent).toContain('Manager')
+    expect(document.body.textContent).toContain('Headcount 4 → 8')
+    expect(document.body.textContent).not.toContain('Meetings')
+    expect(document.querySelector('.hud .mono')?.textContent).toBe('09:00')
+    document.querySelectorAll<HTMLButtonElement>('button').forEach((button) => {
+      if (button.textContent?.trim() === 'Crush it') button.click()
+    })
+    await flushPromises()
+
+    expect(document.body.textContent).toContain('Meetings')
+    view.unmount()
+  })
 })

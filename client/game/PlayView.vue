@@ -17,6 +17,7 @@ import { startDay, type Tuning } from './core/state'
 import { actionLabel, heading, keyAction, steers } from './input/keys'
 import Joystick from './Joystick.vue'
 import { hintWords, type GameHint } from './hints'
+import type { Promotion } from './promotion'
 import { advance } from './loop'
 import { drawDay } from './render/draw'
 import { contextOf, pagePalette } from './render/palette'
@@ -37,6 +38,7 @@ const props = defineProps<{
   tuning: Tuning
   seed: number
   hints?: readonly GameHint[]
+  promotion?: Promotion | null
 }>()
 const emit = defineEmits<{
   seen: [hint: GameHint]
@@ -59,6 +61,7 @@ let pendingChosen: number[] = []
 const choosing = ref<number[] | null>(null)
 const hintQueue = ref<GameHint[]>([...(props.hints ?? [])])
 const hint = computed(() => hintQueue.value[0])
+const announcing = ref((props.promotion ?? null) !== null)
 let lastView: View | null = null
 let lastScale = 1
 let carry = 0
@@ -82,7 +85,11 @@ const unpaused = computed(
   () => !paused.value && !portrait.value && !hidden.value && !calm.value,
 )
 const running = computed(
-  () => choosing.value === null && hint.value === undefined && unpaused.value,
+  () =>
+    choosing.value === null &&
+    !announcing.value &&
+    hint.value === undefined &&
+    unpaused.value,
 )
 
 function dismissHint(): void {
@@ -321,7 +328,22 @@ onUnmounted(() => {
     />
 
     <div
-      v-if="hint && !calm && !portrait"
+      v-if="announcing && promotion && !calm && !portrait"
+      class="overlay"
+      role="dialog"
+      :aria-label="`Promoted to ${jobName(promotion.job)}`"
+    >
+      <p class="kicker">Promoted</p>
+      <p class="display display-md">{{ jobName(promotion.job) }}</p>
+      <ul v-if="promotion.lines.length > 0" class="changes">
+        <li v-for="line in promotion.lines" :key="line">{{ line }}</li>
+      </ul>
+      <button type="button" class="btn btn-dark" @click="announcing = false">
+        {{ promotion.button }}
+      </button>
+    </div>
+    <div
+      v-else-if="hint && !calm && !portrait"
       class="overlay"
       role="dialog"
       :aria-label="hintWords(hint).title"
@@ -431,6 +453,13 @@ onUnmounted(() => {
 
 .hint {
   max-width: 34rem;
+}
+
+.changes {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-weight: 600;
 }
 
 .overlay {
