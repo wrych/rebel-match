@@ -7,6 +7,7 @@ import DayResults from '../game/DayResults.vue'
 import GameLobby from '../game/GameLobby.vue'
 import PlayView from '../game/PlayView.vue'
 import { hintsDue, type GameHint } from '../game/hints'
+import { promotionDue } from '../game/promotion'
 import { reportEvent } from '../lib/events'
 import {
   fetchGame,
@@ -237,6 +238,14 @@ watch(
         :seed="playing.seed"
         :tuning="game.tuning"
         :hints="hintsDue(playing.level, game.tuning, game.hintsSeen)"
+        :promotion="
+          promotionDue(
+            playing.level,
+            game.highestLevel,
+            game.tuning,
+            playing.seed,
+          )
+        "
         @seen="hintSeen"
         @ended="dayEnded"
         @leave="dayLeft"
