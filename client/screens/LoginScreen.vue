@@ -135,12 +135,11 @@ async function send(): Promise<void> {
       aria-hidden="true"
       @animationend.self="introShowing = false"
     />
-    <div class="stack">
+    <div class="stack hero">
       <div class="masthead">
         <RebelMark class="masthead-mark" :play="introPlays" />
         <h1 class="display display-xl">
           Rebel<br /><span class="mark">Match</span>
-          <span class="beta">Beta</span>
         </h1>
       </div>
       <p class="lede">
@@ -214,6 +213,10 @@ async function send(): Promise<void> {
 
 .masthead h1 {
   min-width: 0;
+}
+
+.hero .lede {
+  max-width: none;
 }
 
 .masthead-mark {

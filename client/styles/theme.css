@@ -263,18 +263,6 @@ a {
   letter-spacing: 0.04em;
 }
 
-.beta {
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  color: var(--accent);
-  border: var(--line-width) solid var(--accent-line);
-  border-radius: 999px;
-  padding: 5px 11px;
-  vertical-align: middle;
-}
-
 /* ── Layout ───────────────────────────────────────────────────────────── */
 
 .screen {

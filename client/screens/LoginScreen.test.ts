@@ -357,6 +357,15 @@ describe('LoginScreen', () => {
       expect(screen.find('.masthead h1').text()).toContain('Match')
     })
 
+    it('names the app without a Beta badge', async () => {
+      respondWith(config)
+
+      const screen = await mountFresh()
+
+      expect(screen.find('.masthead h1').text()).toBe('RebelMatch')
+      expect(screen.find('.hero').text()).not.toMatch(/beta/i)
+    })
+
     it('plays its intro over a black layer that then clears', async () => {
       respondWith(config)
       const screen = await mountFresh()
