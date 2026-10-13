@@ -1,6 +1,11 @@
 import type { Component } from 'vue'
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
-import { routeTable, type Access } from '../src/routes'
+import {
+  NOT_FOUND_TITLE,
+  pageTitle,
+  routeTable,
+  type Access,
+} from '../src/routes'
 import { decide } from './guards'
 import { typedProfile } from './lib/onboarding'
 import { scrollFor } from './lib/scroll'
@@ -61,6 +66,7 @@ function screen(
     name: route.name,
     component,
     meta: {
+      title: route.title,
       access: route.access,
       ...(route.permission === undefined
         ? {}
@@ -106,7 +112,12 @@ export const router = createRouter({
     screen('admin-member', MemberScreen),
     screen('admin-outbox', OutboxScreen),
     screen('admin-settings', SettingsScreen),
-    { path: '/:pathMatch(.*)*', name: 'not-found', component: NotFoundScreen },
+    {
+      path: '/:pathMatch(.*)*',
+      name: 'not-found',
+      component: NotFoundScreen,
+      meta: { title: NOT_FOUND_TITLE },
+    },
   ],
 })
 
@@ -115,8 +126,10 @@ export const router = createRouter({
 router.onError((error, to) => {
   if (isStaleChunk(error)) reloadForStaleChunk(to.fullPath)
 })
-router.afterEach((_to, _from, failure) => {
-  if (failure === undefined) settledAfterReload()
+router.afterEach((to, _from, failure) => {
+  if (failure !== undefined) return
+  settledAfterReload()
+  document.title = pageTitle(to.meta['title'] as string)
 })
 
 router.beforeEach(async (to) => {

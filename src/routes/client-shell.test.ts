@@ -7,6 +7,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { clientShellRoutes } from './client-shell.js'
 
 const SHELL = '<!doctype html><title>Rebel Match</title><div id="app"></div>'
+const titled = (title: string): string =>
+  SHELL.replace('Rebel Match', `${title} | Rebel Match`)
 
 let dir: string
 let app: Express
@@ -35,7 +37,7 @@ describe('clientShellRoutes (ADR 0017)', () => {
       const response = await request(app).get(path)
 
       expect(response.status, path).toBe(200)
-      expect(response.text).toBe(SHELL)
+      expect(response.text).toContain('<div id="app"></div>')
       expect(response.headers['cache-control']).toBe('no-cache')
     }
   })
@@ -44,7 +46,13 @@ describe('clientShellRoutes (ADR 0017)', () => {
     const response = await request(app).get('/no-such-screen')
 
     expect(response.status).toBe(404)
-    expect(response.text).toBe(SHELL)
+    expect(response.text).toBe(titled('Not found'))
+  })
+
+  it('names the screen in the shell it sends (R-NAV-13)', async () => {
+    const response = await request(app).get('/challenges/7/matches?posted=1')
+
+    expect(response.text).toBe(titled('Your matches'))
   })
 
   it('keeps the query string out of the route match', async () => {
