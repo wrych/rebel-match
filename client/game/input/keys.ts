@@ -49,6 +49,7 @@ const labels: Readonly<Record<ActionKind, string>> = {
   talk: 'Talk',
   masterclass: 'Masterclass',
   openDoor: 'Open door',
+  meeting: 'Hold meeting',
 }
 
 /** The action button's words (R-GAME-12). */

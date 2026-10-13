@@ -16,8 +16,9 @@ const words: Readonly<Record<GameHint, { title: string; text: string }>> = {
   meeting: {
     title: 'Meetings',
     text:
-      'Once a day, walk into the meeting room: the employees nearest it come ' +
-      'in and leave grey. You are stuck there until it ends.',
+      'Once a day, hold a meeting at the meeting room door: the employees ' +
+      'nearest it come in and leave grey. You lead it from the head of the ' +
+      'table until it ends.',
   },
   cooler: {
     title: 'The water cooler',

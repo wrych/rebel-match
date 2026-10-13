@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { gameDefaults } from '../../../src/game/tuning'
 import { availableActions } from './actions'
-import { temptationScale } from './boss'
+import { meetingDoorOpen, temptationScale } from './boss'
 import { centreOf, distance } from './grid'
-import { DESK_TILES, floors } from './floors'
+import { DESK_TILES, floors, inMeetingRoom } from './floors'
 import { fileInterval } from './rebel'
 import {
   BODY_RADIUS,
@@ -350,21 +350,43 @@ describe('the office door (R-GAME-21)', () => {
 })
 
 describe('meetings (R-GAME-6)', () => {
-  function walkIntoMeeting(day: DayState): DayState {
+  function atMeetingDoor(day: DayState): DayState {
     const next = structuredClone(day)
-    const door = floors[next.floor].meetingDoor
-    next.player.position = { x: door.x + 1.5, y: door.y + 0.5 }
-    return run(next, 1, { move: { x: -1, y: 0 } })
+    next.player.position = centreOf(floors[next.floor].meetingOutside)
+    return next
   }
+
+  function holdMeeting(day: DayState): DayState {
+    return step(atMeetingDoor(day), { ...idle, act: 'meeting' }, DT)
+  }
+
+  it('offers a meeting at the meeting room door, once a day from Manager on', () => {
+    const kinds = (day: DayState): string[] =>
+      availableActions(atMeetingDoor(day)).map((action) => action.kind)
+
+    expect(kinds(settled(4))).toContain('meeting')
+    expect(kinds({ ...settled(4), meetingHeld: true })).not.toContain('meeting')
+    expect(kinds(settled(1))).not.toContain('meeting')
+  })
+
+  it('keeps the player out of the meeting room otherwise, its door shut', () => {
+    const day = run(atMeetingDoor(settled(4)), 1, { move: { x: -1, y: 0 } })
+    const { x, y } = day.player.position
+
+    expect(inMeetingRoom(floors[day.floor], x, y)).toBe(false)
+    expect(meetingDoorOpen(day)).toBe(false)
+    expect(day.player.busy).toBeNull()
+  })
 
   it('calls the nearest employees in and sends them out grey', () => {
     const day = settled(4)
     for (const e of day.employees) e.spirit = 'tempted'
     for (const e of day.employees) e.temptedAt = 1000
 
-    const meeting = walkIntoMeeting(day)
+    const meeting = holdMeeting(day)
     expect(meeting.player.busy?.kind).toBe('meeting')
     expect(meeting.meetingHeld).toBe(true)
+    expect(meetingDoorOpen(meeting)).toBe(true)
     const after = run(meeting, calm.meetingSeconds)
 
     expect(after.employees.filter((e) => e.spirit === 'grey')).toHaveLength(
@@ -374,11 +396,19 @@ describe('meetings (R-GAME-6)', () => {
     expect(after.player.busy).toBeNull()
   })
 
-  it('holds one meeting a day, and none as Team Lead', () => {
-    const held = { ...settled(4), meetingHeld: true }
+  it('walks the player to the head of the table and back out over the meeting', () => {
+    const meeting = holdMeeting(settled(4))
+    const floor = floors[meeting.floor]
+    const at = (seconds: number): number =>
+      distance(run(meeting, seconds).player.position, centreOf(floor.tableHead))
 
-    expect(walkIntoMeeting(held).player.busy).toBeNull()
-    expect(walkIntoMeeting(settled(1)).player.busy).toBeNull()
+    expect(at(calm.meetingSeconds / 2)).toBeLessThan(0.5)
+    expect(
+      distance(
+        run(meeting, calm.meetingSeconds).player.position,
+        centreOf(floor.meetingOutside),
+      ),
+    ).toBeLessThan(0.01)
   })
 })
 
