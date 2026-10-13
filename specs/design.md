@@ -1230,7 +1230,7 @@ deep link reloads cleanly.
 **Page titles (R-NAV-13).** Each entry of the shared route table (`src/routes.ts`,
 ADR 0017) carries its screen's title, in the words the screen itself shows. The
 server writes it into the shell it sends for the address, and the client router
-sets it again after every navigation, as _Screen | Rebel Match_.
+sets it again after every navigation, as _Rebel Match | Screen_.
 
 | #   | Screen                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | URL                                                   |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
