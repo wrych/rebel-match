@@ -1,14 +1,10 @@
 import type { Component } from 'vue'
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
-import {
-  NOT_FOUND_TITLE,
-  pageTitle,
-  routeTable,
-  type Access,
-} from '../src/routes'
+import { NOT_FOUND_TITLE, routeTable, type Access } from '../src/routes'
 import { decide } from './guards'
 import { typedProfile } from './lib/onboarding'
 import { scrollFor } from './lib/scroll'
+import { showScreen } from './lib/tab-title'
 import { loadMe } from './lib/session'
 import AccessRequestedScreen from './screens/AccessRequestedScreen.vue'
 import ApplicantsScreen from './screens/ApplicantsScreen.vue'
@@ -129,7 +125,7 @@ router.onError((error, to) => {
 router.afterEach((to, _from, failure) => {
   if (failure !== undefined) return
   settledAfterReload()
-  document.title = pageTitle(to.meta['title'] as string)
+  showScreen(to.meta['title'] as string)
 })
 
 router.beforeEach(async (to) => {

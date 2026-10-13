@@ -288,6 +288,28 @@ describe('HeaderMenu', () => {
     expect(item?.text()).toBe('Notifications (3 new)')
   })
 
+  it('puts the new notifications in front of the tab title (R-NOTE-6)', async () => {
+    const me = signedIn([]) as unknown as (url: string) => Promise<unknown>
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) =>
+        url === '/api/notifications/new'
+          ? Promise.resolve({
+              ok: true,
+              status: 200,
+              json: () => Promise.resolve({ count: 4 }),
+            })
+          : me(url),
+      ),
+    )
+    await mountMenu()
+    await flushPromises()
+    const { showScreen } = await import('../lib/tab-title')
+    showScreen('Offer help')
+
+    expect(document.title).toBe('(4) Offer help | Rebel Match')
+  })
+
   it('shows no badge and no number with nothing new (R-NOTE-6)', async () => {
     signedIn([])
     const menu = await opened()

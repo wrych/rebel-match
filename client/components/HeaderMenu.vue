@@ -13,6 +13,7 @@ import {
 } from '../lib/notifications'
 import { poll } from '../lib/poll'
 import { forgetMe, loadMe, signOut, type Me } from '../lib/session'
+import { showUnread } from '../lib/tab-title'
 
 const props = defineProps<{ mood: Mood }>()
 const emit = defineEmits<{ toggleMood: [] }>()
@@ -31,6 +32,7 @@ const MS_PER_SECOND = 1000
 // Nobody signed in, or not yet onboarded, reads as nothing new (R-NOTE-6).
 async function readFresh(): Promise<void> {
   fresh.value = await fetchNewNotifications().catch(() => 0)
+  showUnread(fresh.value)
 }
 
 // Refreshed as the matches badge is, and at once when the notifications
