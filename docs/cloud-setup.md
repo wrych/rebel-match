@@ -21,13 +21,15 @@ It comes in the two parts of the ADR's rollout:
   `gcloud auth login`.
 
 Run each part top to bottom in one shell: later steps use variables earlier
-ones set. Project IDs are global across all of Google Cloud, so add a suffix
-of your own.
+ones set. Project IDs are global across all of Google Cloud: if
+`rebel-match-nonprod` or `rebel-match-prod` is taken, set `SUFFIX` to something
+of your own, and every later step uses it. Left empty, the IDs have none.
 
 ```sh
 export REGION=europe-west6                 # Zurich (ADR 0025)
-export NONPROD=rebel-match-nonprod-<suffix>
-export PROD=rebel-match-prod-<suffix>      # used only in part 2
+export SUFFIX=                             # e.g. xigo; empty for none
+export NONPROD=rebel-match-nonprod${SUFFIX:+-$SUFFIX}
+export PROD=rebel-match-prod${SUFFIX:+-$SUFFIX}  # used only in part 2
 export REPO=wrych/rebel-match
 export BILLING=$(gcloud billing accounts list --format='value(name)' --limit=1)
 echo "$BILLING"                            # check it is the account you meant
