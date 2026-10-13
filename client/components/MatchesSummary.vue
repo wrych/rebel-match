@@ -11,7 +11,14 @@ const props = defineProps<{
   named: number | null
 }>()
 
+const emit = defineEmits<{ opened: [] }>()
+
 const open = ref(false)
+
+function toggle(): void {
+  open.value = !open.value
+  if (open.value) emit('opened')
+}
 const folds = computed(() => props.named !== null && props.names.length > 0)
 const sentence = computed(() =>
   matchesSentence(props.section, props.names, props.named ?? 0),
@@ -25,7 +32,7 @@ const sentence = computed(() =>
       type="button"
       class="read-more"
       :aria-expanded="open"
-      @click="open = !open"
+      @click="toggle"
     >
       {{ open ? 'Show fewer' : 'Read more…' }}
     </button>

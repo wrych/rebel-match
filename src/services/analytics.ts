@@ -28,6 +28,12 @@ export type AnalyticsEvent =
       seconds: number
     }
   | { name: 'game_result_shared' }
+  | { name: 'experiment_exposed'; experiment: string; variant: string }
+  | {
+      name: 'matches_section_opened'
+      section: 'same_boat' | 'been_there' | 'cases'
+    }
+  | { name: 'match_connect_tapped'; kind: 'same_boat' | 'been_there' }
 
 /** Reports what a member did. It never rejects and is not awaited by the
  * request it describes, so analytics can neither fail nor slow it. */

@@ -28,6 +28,7 @@ export interface ClientConfig {
     swipeMinPx: number
     pullRefreshPx: number
     matchesNamedFirst: number
+    matchesShownFirst: number
     scrollHintShare: number
     inviteMaxUsesCeiling: number
   }

@@ -66,6 +66,7 @@ type Served = {
   followed?: Trend[]
   followStatus?: number
   named?: number | null
+  layout?: 'cards' | 'summary' | null
 }
 
 // Each read gets its own copy, as from the network.
@@ -85,17 +86,23 @@ function server(served: Served = {}): ReturnType<typeof vi.fn> {
     followed = [],
     followStatus = 204,
     named = 2,
+    layout = 'summary',
   } = served
   const fetchMock = vi.fn((url: string, init?: RequestInit) => {
     if (init?.method !== undefined)
       return Promise.resolve({ ok: followStatus < 300, status: followStatus })
     if (url === '/api/follows') return json({ trends: followed })
+    if (url === '/api/flags')
+      return layout === null
+        ? Promise.resolve({ ok: false, status: 500 })
+        : json({ flags: { matches_layout: layout } })
     if (url === '/api/config')
       return named === null
         ? Promise.resolve({ ok: false, status: 500 })
         : json({
             limits: {
               matchesNamedFirst: named,
+              matchesShownFirst: 1,
               challengeMatchesPollSeconds: 8,
             },
           })
@@ -112,6 +119,13 @@ async function mountScreen(): Promise<ReturnType<typeof mount>> {
   })
   await flushPromises()
   return screen
+}
+
+/** The UI events the screen posted, as sent. */
+function events(fetchMock: ReturnType<typeof vi.fn>): unknown[] {
+  return fetchMock.mock.calls
+    .filter(([url]) => url === '/api/events')
+    .map(([, init]) => JSON.parse(String((init as RequestInit).body)))
 }
 
 /** Opens every section that sums itself up in a sentence (R-ASK-15). */
@@ -221,6 +235,97 @@ describe('MatchesScreen', () => {
     await screen.find('button[aria-expanded]').trigger('click')
 
     expect(screen.find('.peer').exists()).toBe(false)
+  })
+
+  it('shows the first of each section and folds the rest in the cards layout (R-ASK-15)', async () => {
+    const more = (name: string, at: number): Matches['sameBoat'][number] => ({
+      ...matches.sameBoat[0]!,
+      memberId: `m-${String(at)}`,
+      name,
+    })
+    server({
+      layout: 'cards',
+      found: {
+        ...matches,
+        sameBoat: [more('Ana', 1), more('Ben', 2), more('Cy', 3)],
+        cases: [...matches.cases, { ...matches.cases[0]!, url: 'https://x' }],
+      },
+    })
+    const screen = await mountScreen()
+    const folds = (): string[] =>
+      screen.findAll('button[aria-expanded]').map((each) => each.text())
+
+    expect(screen.find('.challenge-row').exists()).toBe(false)
+    expect(screen.find('.mine').text()).toBe(challenge.body)
+    expect(screen.find('.summary').exists()).toBe(false)
+    expect(screen.findAll('.peer-same_boat .peer')).toHaveLength(1)
+    expect(screen.text()).toContain('Ana')
+    expect(screen.text()).not.toContain('Ben')
+    expect(screen.findAll('.case')).toHaveLength(1)
+    expect(folds()).toEqual([
+      '2 more rebels in the same boat',
+      '1 more case study',
+    ])
+
+    await screen.find('button[aria-expanded]').trigger('click')
+
+    expect(screen.findAll('.peer-same_boat .peer')).toHaveLength(3)
+    expect(folds()).toEqual(['Show fewer', '1 more case study'])
+
+    await screen.find('button[aria-expanded]').trigger('click')
+
+    expect(screen.findAll('.peer-same_boat .peer')).toHaveLength(1)
+  })
+
+  it('shows the cards layout when the flags cannot be read (R-EXP-1)', async () => {
+    const fetchMock = server({ layout: null })
+    const screen = await mountScreen()
+
+    expect(screen.find('.summary').exists()).toBe(false)
+    expect(screen.findAll('.peer')).toHaveLength(2)
+    expect(events(fetchMock)).toEqual([])
+  })
+
+  it.each(['cards', 'summary'] as const)(
+    'reports the %s layout as seen once it shows (R-EXP-2)',
+    async (layout) => {
+      const fetchMock = server({ layout })
+      await mountScreen()
+
+      expect(events(fetchMock)).toEqual([
+        {
+          event: 'experiment_exposed',
+          props: { experiment: 'matches_layout', variant: layout },
+        },
+      ])
+    },
+  )
+
+  it('reports a section opened and a connect tapped, nothing more (R-ASK-16)', async () => {
+    const fetchMock = server()
+    const screen = await mountScreen()
+    await screen.findAll('button[aria-expanded]')[1]!.trigger('click')
+    await screen.find('.peer-been_there a').trigger('click')
+    await screen.find('button[aria-expanded="true"]').trigger('click')
+
+    expect(events(fetchMock).slice(1)).toEqual([
+      { event: 'matches_section_opened', props: { section: 'been_there' } },
+      { event: 'match_connect_tapped', props: { kind: 'been_there' } },
+    ])
+    expect(JSON.stringify(events(fetchMock))).not.toMatch(/Bea|m3|c1/)
+  })
+
+  it('keeps the layout the screen opened with while it refreshes (R-ASK-16)', async () => {
+    vi.useFakeTimers()
+    const fetchMock = server()
+    const screen = await mountScreen()
+    await vi.advanceTimersByTimeAsync(8000)
+
+    expect(
+      fetchMock.mock.calls.filter(([url]) => url === '/api/flags'),
+    ).toHaveLength(1)
+    expect(screen.find('.summary').exists()).toBe(true)
+    screen.unmount()
   })
 
   it('folds nothing when the limit cannot be loaded', async () => {

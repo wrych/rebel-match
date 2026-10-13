@@ -4,6 +4,7 @@ import { rolePermissions } from './access.js'
 import { latestAnalyticsVersion } from './analytics-consent.js'
 import { consentWordsOf, latestConsentVersion } from './consent.js'
 import type { DatabaseTarget } from './db/connect.js'
+import type { FlagSettings } from './experiments.js'
 import { gameDefaults, type GameSettings } from './game/tuning.js'
 
 // Node clamps a timer delay above 2^31-1 ms (about 24.8 days) to 1 ms, so a
@@ -32,6 +33,12 @@ const PULL_REFRESH_PX = 70
 /** How many entries the sentence over each matches section names before it
  * counts the rest (R-ASK-15). */
 const MATCHES_NAMED_FIRST = 2
+/** How many entries each matches section shows before the rest are asked
+ * for, in the cards layout (R-ASK-15). */
+const MATCHES_SHOWN_FIRST = 1
+/** The share of members shown each experiment's treatment until a host moves
+ * it: an even split (R-EXP-1). */
+const EVEN_SPLIT_PERCENT = 50
 /** The share of the visible height one tap on the privacy step's scroll hint
  * moves the summary, so it never jumps to the end (R-ONB-10). */
 const SCROLL_HINT_SHARE = 0.4
@@ -410,6 +417,7 @@ export interface Limits {
   swipeMinPx: number
   pullRefreshPx: number
   matchesNamedFirst: number
+  matchesShownFirst: number
   scrollHintShare: number
   inviteMaxUsesCeiling: number
   connectionMessageMaxChars: number
@@ -438,6 +446,7 @@ export interface LiveSettings {
   limits(): Limits
   abuse(): AbuseLimits
   game(): GameSettings
+  flags(): FlagSettings
 }
 
 /** The deployment's values, never changed: settings as loaded at startup. */
@@ -446,6 +455,7 @@ export function fixedSettings(config: Config): LiveSettings {
     limits: () => config.limits,
     abuse: () => config.abuse,
     game: () => config.game,
+    flags: () => config.flags,
   }
 }
 
@@ -505,6 +515,9 @@ export interface Config {
   /** The game's tuning; its values are set in the app, never the environment
    * (R-GAME-17). */
   game: GameSettings
+  /** The share of members each experiment shows its treatment to, set in the
+   * app, never the environment (R-EXP-3). */
+  flags: FlagSettings
   /** Game days one member may record per minute (R-GAME-20). */
   gameRecordsPerMinute: number
   /** How many bests the leaderboard shows above the caller's (R-GAME-13). */
@@ -553,6 +566,7 @@ function limitsFrom(env: Env): Limits {
     swipeMinPx: SWIPE_MIN_PX,
     pullRefreshPx: PULL_REFRESH_PX,
     matchesNamedFirst: MATCHES_NAMED_FIRST,
+    matchesShownFirst: MATCHES_SHOWN_FIRST,
     scrollHintShare: SCROLL_HINT_SHARE,
     inviteMaxUsesCeiling: INVITE_MAX_USES_CEILING,
     connectionMessageMaxChars: CONNECTION_MESSAGE_MAX_CHARS,
@@ -663,6 +677,7 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): Config {
     limits: limitsFrom(env),
     abuse: abuseLimitsFrom(env),
     game: gameDefaults,
+    flags: { matches_layout: EVEN_SPLIT_PERCENT },
     gameRecordsPerMinute: env.GAME_RECORDS_PER_MINUTE,
     gameLeaderboardSize: env.GAME_LEADERBOARD_SIZE,
     gameDayAllowance: {

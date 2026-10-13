@@ -97,6 +97,16 @@ export function peerLine(
 
 export type MatchesSection = 'sameBoat' | 'beenThere' | 'cases'
 
+/** What the control below a matches section offers in the cards layout: how
+ * many more there are, named by what they are (R-ASK-15). */
+export function moreMatches(section: MatchesSection, count: number): string {
+  const one = count === 1
+  if (section === 'sameBoat')
+    return `${String(count)} more ${one ? 'rebel' : 'rebels'} in the same boat`
+  if (section === 'beenThere') return `${String(count)} more who’ve been there`
+  return `${String(count)} more ${one ? 'case study' : 'case studies'}`
+}
+
 const sectionVerb: Record<MatchesSection, [one: string, many: string]> = {
   sameBoat: ['is in the same boat', 'are in the same boat'],
   beenThere: ['has been there', 'have been there'],

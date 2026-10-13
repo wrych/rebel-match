@@ -52,6 +52,25 @@ describe('POST /api/events', () => {
       { name: 'feedback_opened', screen: 'cockpit' },
     ],
     [{ event: 'game_opened', props: {} }, { name: 'game_opened' }],
+    [
+      {
+        event: 'experiment_exposed',
+        props: { experiment: 'matches_layout', variant: 'summary' },
+      },
+      {
+        name: 'experiment_exposed',
+        experiment: 'matches_layout',
+        variant: 'summary',
+      },
+    ],
+    [
+      { event: 'matches_section_opened', props: { section: 'been_there' } },
+      { name: 'matches_section_opened', section: 'been_there' },
+    ],
+    [
+      { event: 'match_connect_tapped', props: { kind: 'same_boat' } },
+      { name: 'match_connect_tapped', kind: 'same_boat' },
+    ],
   ])('relays %j for the signed-in member (ADR 0026)', async (body, event) => {
     const { app, tracked } = setup()
 
@@ -80,6 +99,27 @@ describe('POST /api/events', () => {
     [
       'a game opened with a pseudonym',
       { event: 'game_opened', props: { pseudonym: 'Furious Rebel' } },
+    ],
+    [
+      'an experiment not in code (R-EXP-1)',
+      {
+        event: 'experiment_exposed',
+        props: { experiment: 'pricing', variant: 'cards' },
+      },
+    ],
+    [
+      'a variant of another experiment (R-EXP-1)',
+      {
+        event: 'experiment_exposed',
+        props: { experiment: 'matches_layout', variant: 'blue' },
+      },
+    ],
+    [
+      'a connect tap with the peer it was for',
+      {
+        event: 'match_connect_tapped',
+        props: { kind: 'same_boat', memberId: 'm-bob' },
+      },
     ],
     [
       'a journey outside the two',

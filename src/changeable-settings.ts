@@ -1,5 +1,11 @@
 import type { AbuseLimits, Limits } from './config.js'
 import {
+  experimentKeys,
+  isExperimentKey,
+  type ExperimentKey,
+  type FlagSettings,
+} from './experiments.js'
+import {
   gameBounds,
   gameOrder,
   isGameKey,
@@ -27,7 +33,10 @@ type PollKey =
 
 /** A setting hosts may change in the app (R-CFG-6, ADR 0031). */
 export type SettingKey =
-  `limits.${LimitKey}` | `abuse.${keyof AbuseLimits}` | `game.${GameKey}`
+  | `limits.${LimitKey}`
+  | `abuse.${keyof AbuseLimits}`
+  | `game.${GameKey}`
+  | `flags.${ExperimentKey}`
 
 // A value a changeable setting is ordered against, though hosts cannot change it.
 type OrderedKey = SettingKey | 'limits.challengeMaxChars'
@@ -37,6 +46,7 @@ export interface SettingValues {
   limits: Limits
   abuse: AbuseLimits
   game: GameSettings
+  flags: FlagSettings
 }
 
 interface Bounds {
@@ -45,6 +55,8 @@ interface Bounds {
 }
 
 const MINUTES_PER_DAY = 1440
+// An experiment's share of members, from nobody to everyone (R-EXP-3).
+const PERCENT_BOUNDS: Bounds = { min: 0, max: 100 }
 // Often enough to feel live, never so often that open screens flood the
 // server (ADR 0050).
 const POLL_BOUNDS: Bounds = { min: 2, max: 3600 }
@@ -85,6 +97,9 @@ const bounds: Readonly<Record<SettingKey, Bounds>> = {
   ...(Object.fromEntries(
     Object.entries(gameBounds).map(([key, value]) => [`game.${key}`, value]),
   ) as Record<`game.${GameKey}`, Bounds>),
+  ...(Object.fromEntries(
+    experimentKeys.map((key) => [`flags.${key}`, PERCENT_BOUNDS]),
+  ) as Record<`flags.${ExperimentKey}`, Bounds>),
 }
 
 // Each ceiling must stay at or above the floor beneath it.
@@ -107,13 +122,17 @@ export function boundsOf(key: SettingKey): Bounds {
 }
 
 type Located =
-  ['limits', keyof Limits] | ['abuse', keyof AbuseLimits] | ['game', GameKey]
+  | ['limits', keyof Limits]
+  | ['abuse', keyof AbuseLimits]
+  | ['game', GameKey]
+  | ['flags', ExperimentKey]
 
 function split(key: OrderedKey): Located {
   const dot = key.indexOf('.')
   const group = key.slice(0, dot)
   const name = key.slice(dot + 1)
   if (group === 'game' && isGameKey(name)) return ['game', name]
+  if (group === 'flags' && isExperimentKey(name)) return ['flags', name]
   return group === 'limits'
     ? ['limits', name as keyof Limits]
     : ['abuse', name as keyof AbuseLimits]
@@ -123,6 +142,7 @@ function split(key: OrderedKey): Located {
 export function valueOf(values: SettingValues, key: OrderedKey): number {
   const [group, name] = split(key)
   if (group === 'game') return values.game[name]
+  if (group === 'flags') return values.flags[name]
   return group === 'limits' ? values.limits[name] : values.abuse[name]
 }
 
@@ -134,6 +154,8 @@ function withValue(
   const [group, name] = split(key)
   if (group === 'game')
     return { ...values, game: { ...values.game, [name]: value } }
+  if (group === 'flags')
+    return { ...values, flags: { ...values.flags, [name]: value } }
   return group === 'limits'
     ? { ...values, limits: { ...values.limits, [name]: value } }
     : { ...values, abuse: { ...values.abuse, [name]: value } }

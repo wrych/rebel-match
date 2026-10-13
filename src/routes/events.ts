@@ -1,6 +1,11 @@
 import { Router } from 'express'
 import { z } from 'zod'
 import type { AuthProvider } from '../auth/index.js'
+import {
+  experimentKeys,
+  experiments,
+  type ExperimentKey,
+} from '../experiments.js'
 import { routeTable } from '../routes.js'
 import type { AnalyticsEvent, Track } from '../services/analytics.js'
 import { requireSession, type GuardedLocals } from './require-permission.js'
@@ -10,8 +15,19 @@ const screens: readonly string[] = [
   'not-found',
 ]
 
-/** The three UI events of design §7, with their listed properties only. A
- * screen is a route name, never a path, so no id rides along. */
+// A variant counts only beside its own experiment.
+const exposure = z
+  .object({
+    experiment: z.enum(experimentKeys as [ExperimentKey, ...ExperimentKey[]]),
+    variant: z.string(),
+  })
+  .strict()
+  .refine(({ experiment, variant }) =>
+    (experiments[experiment] as readonly string[]).includes(variant),
+  )
+
+/** The UI events of design §7, with their listed properties only. A screen
+ * is a route name, never a path, so no id rides along. */
 const uiEvent: z.ZodType<AnalyticsEvent> = z
   .discriminatedUnion('event', [
     z.object({
@@ -29,6 +45,17 @@ const uiEvent: z.ZodType<AnalyticsEvent> = z
     z.object({
       event: z.literal('game_opened'),
       props: z.object({}).strict(),
+    }),
+    z.object({ event: z.literal('experiment_exposed'), props: exposure }),
+    z.object({
+      event: z.literal('matches_section_opened'),
+      props: z
+        .object({ section: z.enum(['same_boat', 'been_there', 'cases']) })
+        .strict(),
+    }),
+    z.object({
+      event: z.literal('match_connect_tapped'),
+      props: z.object({ kind: z.enum(['same_boat', 'been_there']) }).strict(),
     }),
   ])
   .transform(
