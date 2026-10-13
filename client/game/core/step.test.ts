@@ -396,6 +396,14 @@ describe('meetings (R-GAME-6)', () => {
     expect(after.player.busy).toBeNull()
   })
 
+  it('swings the door open for a meeting and shut once the room is empty', () => {
+    const meeting = holdMeeting(settled(4))
+
+    expect(meeting.meetingDoor).toBeGreaterThan(0)
+    expect(run(meeting, 1).meetingDoor).toBe(1)
+    expect(run(meeting, calm.meetingSeconds + 20).meetingDoor).toBe(0)
+  })
+
   it('walks the player to the head of the table and back out over the meeting', () => {
     const meeting = holdMeeting(settled(4))
     const floor = floors[meeting.floor]

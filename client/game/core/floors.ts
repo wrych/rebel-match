@@ -8,13 +8,18 @@ export interface Spot {
 
 const centreOf = (tile: Spot): Spot => ({ x: tile.x + 0.5, y: tile.y + 0.5 })
 
-export interface OfficeDoor {
-  /** The doorway's tile. */
-  tile: Spot
+/** How a hinged door swings: its hinge, its leaf's length, and the angles it
+ * stands at shut and open, in radians. */
+export interface Swing {
   hinge: Spot
   length: number
   shut: number
   open: number
+}
+
+export interface OfficeDoor extends Swing {
+  /** The doorway's tile. */
+  tile: Spot
 }
 
 /** A round obstacle: its centre and radius, in tiles. */
@@ -72,6 +77,9 @@ export interface Floor {
   tableHead: Spot
   /** The tile outside the meeting room's door, where a meeting is called. */
   meetingOutside: Spot
+  /** How the meeting room's door swings: like the office's, hung at the
+   * doorway's top and opening into the room. */
+  meetingSwing: Swing
   cubicles: readonly Cubicle[]
   /** The tile beside each cooler where two can stand. */
   coolers: readonly { cooler: Spot; stands: readonly [Spot, Spot] }[]
@@ -207,6 +215,15 @@ function coolers(grid: Grid, width: number, count: number): Floor['coolers'] {
   })
 }
 
+// Hung at a doorway's top in a wall running down, a door shuts down the
+// wall's line and opens into the room to its left.
+const hungIn = (doorway: Spot): Swing => ({
+  hinge: { x: doorway.x + 0.5, y: doorway.y },
+  length: 1,
+  shut: Math.PI / 2,
+  open: Math.PI,
+})
+
 const TABLE_HEAD: Spot = { x: TABLE.x - 1, y: TABLE.y }
 
 function meetingSpots(rows: readonly string[]): Spot[] {
@@ -261,20 +278,13 @@ export function layOut(layout: Layout): Floor {
       ...plants.map((plant) => ({ ...centreOf(plant), r: PLANT_RADIUS })),
     ],
     plants,
-    // Hung at the doorway's top, it shuts down the wall's line and opens into
-    // the office.
-    officeDoor: {
-      tile: OFFICE_DOOR,
-      hinge: { x: OFFICE_DOOR.x + 0.5, y: OFFICE_DOOR.y },
-      length: 1,
-      shut: Math.PI / 2,
-      open: Math.PI,
-    },
+    officeDoor: { tile: OFFICE_DOOR, ...hungIn(OFFICE_DOOR) },
     meetingDoor: door,
     meetingSpots: meetingSpots(rows),
     table: TABLE,
     tableHead: TABLE_HEAD,
     meetingOutside: { x: door.x + 1, y: door.y },
+    meetingSwing: hungIn(door),
     cubicles: placed,
     coolers: spots,
   }
