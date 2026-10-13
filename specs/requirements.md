@@ -1160,8 +1160,10 @@ notifications: they go out at once, whatever is chosen here (R-NFR-3).
 - **R-NOTE-6 (In the menu)** — WHILE the member has new notifications the
   header's menu button SHALL carry a badge with their number, and the menu
   item SHALL read **Notifications (n new)**; without any it SHALL read
-  **Notifications**, with no badge and no number. Both SHALL refresh as the
-  navigation badge does (R-MINE-4).
+  **Notifications**, with no badge and no number; and the tab title (R-NAV-13)
+  SHALL lead with the number in brackets, _(3) Your matches | Rebel Match_, so
+  a tab in the background says something is waiting. All three SHALL refresh as
+  the navigation badge does (R-MINE-4).
 - **R-NOTE-7 (When mail goes out)** — A member's mail SHALL be grouped by
   cadence, never by type: every type on the same cadence goes out in one mail.
   - **Immediately** — each notification in its own mail, within a minute.
