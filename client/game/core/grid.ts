@@ -107,3 +107,25 @@ export function slide(
   const down = { x: afterX.x, y: afterX.y + delta.y }
   return free(floor, down, radius) ? down : afterX
 }
+
+/** The point `share` (0 to 1) of the way along a route of straight legs. */
+export function pointAlong(route: readonly Spot[], share: number): Spot {
+  const legs = route.slice(1).map((to, index) => {
+    const from = route[index] ?? to
+    return { from, to, length: distance(from, to) }
+  })
+  let left =
+    Math.min(1, Math.max(0, share)) *
+    legs.reduce((sum, leg) => sum + leg.length, 0)
+  for (const { from, to, length } of legs) {
+    if (left <= length && length > 0) {
+      const t = left / length
+      return {
+        x: from.x + (to.x - from.x) * t,
+        y: from.y + (to.y - from.y) * t,
+      }
+    }
+    left -= length
+  }
+  return route[route.length - 1] ?? { x: 0, y: 0 }
+}

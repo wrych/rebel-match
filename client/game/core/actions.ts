@@ -1,4 +1,4 @@
-import { endMeeting } from './boss'
+import { endMeeting, meetingDue, startMeeting } from './boss'
 import { breakUp, standing } from './cooler'
 import { openDoor } from './door'
 import { workOn } from './files'
@@ -27,6 +27,7 @@ export type ActionKind =
   | 'talk'
   | 'masterclass'
   | 'openDoor'
+  | 'meeting'
 
 /** An action the player can take where they stand, and on whom. */
 export interface Action {
@@ -103,6 +104,8 @@ function bossActions(state: DayState): Action[] {
   const cooler = nearCooler(state)
   if (cooler !== undefined && standing(state, cooler).length > 0)
     actions.push({ kind: 'breakUp', cooler })
+  if (meetingDue(state) && near(state, centreOf(floorFor(state).meetingDoor)))
+    actions.push({ kind: 'meeting' })
   return actions
 }
 
@@ -228,6 +231,9 @@ const handlers: Readonly<Record<ActionKind, Handler>> = {
   },
   openDoor: (state) => {
     openDoor(state)
+  },
+  meeting: (state) => {
+    startMeeting(state)
   },
 }
 

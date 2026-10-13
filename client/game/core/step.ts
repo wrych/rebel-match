@@ -1,9 +1,9 @@
 import { act, finish, type ActionKind } from './actions'
-import { bossRules, meetingDue, startMeeting } from './boss'
+import { bossRules } from './boss'
 import { coolers } from './cooler'
 import { fromLeaf, swingDoor, touchesLeaf } from './door'
 import { inMeetingRoom, type Spot } from './floors'
-import { distance, slide } from './grid'
+import { distance, pointAlong, slide } from './grid'
 import { rebelRules } from './rebel'
 import {
   BODY_RADIUS,
@@ -44,14 +44,29 @@ function clearOfPeople(state: DayState, from: Spot, to: Spot): boolean {
 const clearOfDoor = (state: DayState, from: Spot, to: Spot): boolean =>
   !touchesLeaf(state, to) || fromLeaf(state, to) >= fromLeaf(state, from)
 
+// The meeting room's door stays shut but for a meeting, so the player only
+// goes in to lead one (R-GAME-6).
+const outsideMeetingRoom = (state: DayState, spot: Spot): boolean =>
+  !inMeetingRoom(floorFor(state), spot.x, spot.y)
+
 function stepAround(state: DayState, from: Spot, to: Spot): Spot {
   const options = [to, { x: to.x, y: from.y }, { x: from.x, y: to.y }]
   return (
     options.find(
       (spot) =>
-        clearOfPeople(state, from, spot) && clearOfDoor(state, from, spot),
+        clearOfPeople(state, from, spot) &&
+        clearOfDoor(state, from, spot) &&
+        outsideMeetingRoom(state, spot),
     ) ?? from
   )
+}
+
+// A spell with a route walks the player along it, paced to end with it.
+function followRoute(state: DayState): void {
+  const spell = state.player.busy
+  if (spell?.route === undefined || spell.since === undefined) return
+  const share = (state.clock - spell.since) / (spell.until - spell.since)
+  state.player.position = pointAlong(spell.route, share)
 }
 
 function movePlayer(state: DayState, move: Spot, dt: number): void {
@@ -68,8 +83,6 @@ function movePlayer(state: DayState, move: Spot, dt: number): void {
     BODY_RADIUS,
   )
   state.player.position = stepAround(state, from, to)
-  const { x, y } = state.player.position
-  if (inMeetingRoom(floor, x, y) && meetingDue(state)) startMeeting(state)
 }
 
 // More than half the office rebel in boss mode, or grey in rebel mode, loses
@@ -88,6 +101,7 @@ export function step(previous: DayState, input: Input, dt: number): DayState {
   const { tuning, ...rest } = previous
   const state: DayState = { ...structuredClone(rest), tuning }
   state.clock = Math.min(state.clock + dt, state.tuning.dayLengthSeconds)
+  followRoute(state)
   finish(state)
   movePlayer(state, input.move, dt)
   if (input.act !== undefined) act(state, input.act, input.chosen)

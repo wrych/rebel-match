@@ -2,7 +2,12 @@ import { floors, TILE, type Floor } from '../core/floors'
 import { wallParts } from '../core/walls'
 import type { DayState, Employee } from '../core/state'
 import { drawFigure, type Figure } from './figure'
-import { drawDoor, drawFurniture, drawScreens } from './furniture'
+import {
+  drawDoor,
+  drawFurniture,
+  drawMeetingDoor,
+  drawScreens,
+} from './furniture'
 import { lookOf, type Palette } from './palette'
 import { TAU, type Ctx } from './shapes'
 import { markers, type View } from './view'
@@ -243,6 +248,7 @@ export function drawDay(
   drawFurniture(ctx, state, pal)
   drawScreens(ctx, state, pal)
   drawDoor(ctx, state, pal)
+  drawMeetingDoor(ctx, state, pal)
   const people = [...state.employees].sort(
     (a, b) => a.position.y - b.position.y,
   )

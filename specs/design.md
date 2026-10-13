@@ -358,7 +358,12 @@ than a body's width to anyone, but can always step away from someone who walked
 into it. Employees walk in through the entrance in the top wall beside the
 office, past the boss, and walk tile paths found by A\* between their cubicle,
 the coolers, the meeting room and the entrance. "Nearest the meeting room"
-(R-GAME-6) is the walking distance, not the straight line.
+(R-GAME-6) is the walking distance, not the straight line. The player never
+steps into the meeting room under their own steam; holding a meeting gives
+their busy spell a route, through the door to the head of the table and back
+out, and each step puts them the spell's share of the way along it, so the
+walk ends with the meeting. The door is open while a meeting runs or anyone
+is still in the room, which needs no state of its own.
 
 **Drawing.** Characters are drawn in code as smooth vector figures: a rounded
 suit body with arms and hands, a shirt collar and tie, a head with ears, eyes

@@ -67,6 +67,11 @@ export interface Floor {
   meetingSpots: readonly Spot[]
   /** The meeting table. */
   table: Spot
+  /** The tile at the head of the table, the far side from the door, where
+   * the player stands to lead a meeting (R-GAME-6). */
+  tableHead: Spot
+  /** The tile outside the meeting room's door, where a meeting is called. */
+  meetingOutside: Spot
   cubicles: readonly Cubicle[]
   /** The tile beside each cooler where two can stand. */
   coolers: readonly { cooler: Spot; stands: readonly [Spot, Spot] }[]
@@ -202,11 +207,17 @@ function coolers(grid: Grid, width: number, count: number): Floor['coolers'] {
   })
 }
 
+const TABLE_HEAD: Spot = { x: TABLE.x - 1, y: TABLE.y }
+
 function meetingSpots(rows: readonly string[]): Spot[] {
   const spots: Spot[] = []
   rows.forEach((row, y) => {
     for (let x = 1; x <= ROOM; x += 1)
-      if (row[x] === TILE.meeting) spots.push({ x, y })
+      if (
+        row[x] === TILE.meeting &&
+        !(x === TABLE_HEAD.x && y === TABLE_HEAD.y)
+      )
+        spots.push({ x, y })
   })
   const far = (spot: Spot): number =>
     Math.abs(spot.x - TABLE.x) + Math.abs(spot.y - TABLE.y)
@@ -262,6 +273,8 @@ export function layOut(layout: Layout): Floor {
     meetingDoor: door,
     meetingSpots: meetingSpots(rows),
     table: TABLE,
+    tableHead: TABLE_HEAD,
+    meetingOutside: { x: door.x + 1, y: door.y },
     cubicles: placed,
     coolers: spots,
   }

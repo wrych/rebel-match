@@ -1,4 +1,5 @@
-import { distancesFrom, tileOf, walkingDistance } from './grid'
+import { inMeetingRoom, type Spot } from './floors'
+import { centreOf, distancesFrom, path, tileOf, walkingDistance } from './grid'
 import { pick } from './random'
 import { draw, floorFor, type DayState, type Employee } from './state'
 import { present, sendTo, sendToDesk } from './walk'
@@ -57,7 +58,7 @@ export function bossRules(state: DayState, dt: number): void {
   turnRebels(state)
 }
 
-/** Whether walking into the meeting room now starts a meeting (R-GAME-6). */
+/** Whether a meeting can be held now (R-GAME-6). */
 export function meetingDue(state: DayState): boolean {
   return (
     state.mode === 'boss' &&
@@ -90,7 +91,36 @@ export function startMeeting(state: DayState): void {
   state.player.busy = {
     kind: 'meeting',
     until: state.clock + state.tuning.meetingSeconds,
+    since: state.clock,
+    route: meetingRoute(state),
   }
+}
+
+// In through the door to the head of the table, and back out again.
+function meetingRoute(state: DayState): Spot[] {
+  const floor = floorFor(state)
+  const { meetingDoor, tableHead, meetingOutside } = floor
+  const there = path(floor, meetingDoor, tableHead).map(centreOf)
+  const back = path(floor, tableHead, meetingDoor).map(centreOf)
+  return [
+    state.player.position,
+    centreOf(meetingDoor),
+    ...there,
+    ...back,
+    centreOf(meetingOutside),
+  ]
+}
+
+/** Whether the meeting room's door stands open: during a meeting, and while
+ * anyone is still in the room (R-GAME-6). */
+export function meetingDoorOpen(state: DayState): boolean {
+  const floor = floorFor(state)
+  return (
+    state.player.busy?.kind === 'meeting' ||
+    state.employees.some((employee) =>
+      inMeetingRoom(floor, employee.position.x, employee.position.y),
+    )
+  )
 }
 
 /** Ends the meeting: everyone who attended leaves it grey (R-GAME-6). */

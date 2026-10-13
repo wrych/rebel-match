@@ -53,6 +53,9 @@ export interface Busy {
   /** The employee helped or talked to, or the cooler spoken at. */
   target?: number
   cooler?: number
+  /** Where the player walks meanwhile, from when the spell began. */
+  route?: Spot[]
+  since?: number
 }
 
 export interface Player {
