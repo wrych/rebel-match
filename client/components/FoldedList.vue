@@ -10,6 +10,8 @@ const props = defineProps<{
   more: (hidden: number) => string
 }>()
 
+const emit = defineEmits<{ opened: [] }>()
+
 const open = ref(false)
 const hidden = computed(() =>
   props.first === null ? 0 : Math.max(props.count - props.first, 0),
@@ -17,6 +19,11 @@ const hidden = computed(() =>
 const shown = computed(() =>
   open.value || hidden.value === 0 ? props.count : (props.first ?? props.count),
 )
+
+function toggle(): void {
+  open.value = !open.value
+  if (open.value) emit('opened')
+}
 </script>
 
 <template>
@@ -26,7 +33,7 @@ const shown = computed(() =>
     type="button"
     class="btn btn-ghost btn-small fold"
     :aria-expanded="open"
-    @click="open = !open"
+    @click="toggle"
   >
     {{ open ? 'Show fewer' : more(hidden) }}
   </button>
