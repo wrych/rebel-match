@@ -52,6 +52,17 @@ describe('POST /api/events', () => {
       { name: 'feedback_opened', screen: 'cockpit' },
     ],
     [{ event: 'game_opened', props: {} }, { name: 'game_opened' }],
+    [
+      {
+        event: 'experiment_exposed',
+        props: { experiment: 'matches_layout', variant: 'summary' },
+      },
+      {
+        name: 'experiment_exposed',
+        experiment: 'matches_layout',
+        variant: 'summary',
+      },
+    ],
   ])('relays %j for the signed-in member (ADR 0026)', async (body, event) => {
     const { app, tracked } = setup()
 
@@ -80,6 +91,31 @@ describe('POST /api/events', () => {
     [
       'a game opened with a pseudonym',
       { event: 'game_opened', props: { pseudonym: 'Furious Rebel' } },
+    ],
+    [
+      'an experiment not in code (R-EXP-2)',
+      {
+        event: 'experiment_exposed',
+        props: { experiment: 'pricing', variant: 'cards' },
+      },
+    ],
+    [
+      'a variant of another experiment (R-EXP-2)',
+      {
+        event: 'experiment_exposed',
+        props: { experiment: 'matches_layout', variant: 'blue' },
+      },
+    ],
+    [
+      'an exposure with who saw it',
+      {
+        event: 'experiment_exposed',
+        props: {
+          experiment: 'matches_layout',
+          variant: 'cards',
+          memberId: 'm-ada',
+        },
+      },
     ],
     [
       'a journey outside the two',

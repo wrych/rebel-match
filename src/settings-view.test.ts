@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { defaultConfig, loadConfig, type Config } from './config.js'
+import { experimentKeys } from './experiments.js'
 import { gameBounds } from './game/tuning.js'
 import { settingsView, type SettingsState } from './settings-view.js'
 
@@ -8,6 +9,7 @@ function unchanged(config: Config): SettingsState {
     limits: config.limits,
     abuse: config.abuse,
     game: config.game,
+    flags: config.flags,
   }
   return { current: values, deployment: values, overrides: [] }
 }
@@ -110,6 +112,7 @@ describe('settingsView (R-CFG-5)', () => {
       limits: config.limits,
       abuse: config.abuse,
       game: config.game,
+      flags: config.flags,
     }
     const groups = settingsView(config, config, {
       current: {
@@ -155,7 +158,7 @@ describe('settingsView (R-CFG-5)', () => {
     const config = defaultConfig()
     const on = { ...config.game, enabled: 1 }
     const groups = settingsView(config, config, {
-      current: { limits: config.limits, abuse: config.abuse, game: on },
+      current: { ...unchanged(config).current, game: on },
       deployment: unchanged(config).deployment,
       overrides: [
         {
@@ -183,6 +186,8 @@ describe('settingsView (R-CFG-5)', () => {
       )
 
     expect(new Set(keys).size).toBe(keys.length)
-    expect(keys).toHaveLength(23 + Object.keys(gameBounds).length)
+    expect(keys).toHaveLength(
+      23 + Object.keys(gameBounds).length + experimentKeys.length,
+    )
   })
 })

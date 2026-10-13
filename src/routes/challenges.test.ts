@@ -184,6 +184,7 @@ describe('challenge routes', () => {
       limits: () => limits,
       abuse: () => config.abuse,
       game: () => config.game,
+      flags: () => config.flags,
     })
     const cookie = await cookieFor('m-ada')
     limits.challengeMinChars = 40

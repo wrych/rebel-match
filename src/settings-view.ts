@@ -58,6 +58,7 @@ const MINUTES: Unit = ['minute', 'minutes']
 const HOURS: Unit = ['hour', 'hours']
 const DAYS: Unit = ['day', 'days']
 const CHARACTERS: Unit = ['character', 'characters']
+const PERCENT: Unit = ['percent', 'percent']
 const MS_PER_SECOND = 1000
 
 interface Entry {
@@ -926,6 +927,23 @@ const catalogue: Group[] = [
       },
     ],
   },
+  {
+    title: 'Experiments',
+    explanation:
+      'Each splits members in two by their id and shows one part a change, so ' +
+      'usage data can tell which works better. 0% ends it with nobody seeing ' +
+      'the change, 100% with everybody.',
+    entries: [
+      {
+        name: 'Matches as sentences',
+        explanation:
+          'The share of members who see a challenge’s matches as one sentence per section, with the cards a tap away, rather than each section’s first card.',
+        key: 'flags.matches_layout',
+        read: (c) => c.flags.matches_layout,
+        unit: PERCENT,
+      },
+    ],
+  },
   ...gameGroups,
 ]
 
@@ -999,6 +1017,7 @@ export function settingsView(
     limits: state.current.limits,
     abuse: state.current.abuse,
     game: state.current.game,
+    flags: state.current.flags,
   }
   return catalogue.map((group) => ({
     title: group.title,

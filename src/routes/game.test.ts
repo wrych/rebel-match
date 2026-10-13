@@ -50,6 +50,7 @@ function setup(enabled = 1): {
         limits: () => config.limits,
         abuse: () => config.abuse,
         game: () => settings,
+        flags: () => config.flags,
       },
     }),
   )
