@@ -1,6 +1,6 @@
-import { floors, type Floor, type Spot } from '../core/floors'
+import { floors, type Floor, type Spot, type Swing } from '../core/floors'
 import { meetingDoorOpen } from '../core/boss'
-import { LEAF_HALF, leafOf } from '../core/door'
+import { LEAF_HALF, leafAt } from '../core/door'
 import type { DayState, Employee } from '../core/state'
 import { drawMark } from './mark'
 import type { Palette } from './palette'
@@ -300,16 +300,21 @@ export function drawScreens(ctx: Ctx, state: DayState, pal: Palette): void {
   })
 }
 
-/** The office door: the arc it swings through, faint on the floor, then its
- * leaf with a hinge and a handle (R-GAME-21). */
-export function drawDoor(ctx: Ctx, state: DayState, pal: Palette): void {
-  const { hinge, length, shut, open } = floors[state.floor].officeDoor
+// A hinged door: the arc it swings through, faint on the floor, then its leaf
+// with a hinge and a handle.
+function drawSwing(
+  ctx: Ctx,
+  swing: Swing,
+  openness: number,
+  pal: Palette,
+): void {
+  const { hinge, length, shut, open } = swing
   ctx.strokeStyle = 'rgb(0 0 0 / 12%)'
   ctx.lineWidth = 0.03
   ctx.beginPath()
   ctx.arc(hinge.x, hinge.y, length, shut, open)
   ctx.stroke()
-  const [from, to] = leafOf(state)
+  const [from, to] = leafAt(swing, openness)
   ctx.lineCap = 'round'
   for (const [colour, width] of [
     [pal.edge, 2 * LEAF_HALF + 0.04],
@@ -330,6 +335,11 @@ export function drawDoor(ctx: Ctx, state: DayState, pal: Palette): void {
     { x: from.x + (to.x - from.x) * 0.85, y: from.y + (to.y - from.y) * 0.85 },
     0.04,
   )
+}
+
+/** The office door (R-GAME-21). */
+export function drawDoor(ctx: Ctx, state: DayState, pal: Palette): void {
+  drawSwing(ctx, floors[state.floor].officeDoor, state.door.openness, pal)
 }
 
 /** How far into the wall pocket the meeting room's door slides to open. */

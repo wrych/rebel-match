@@ -1,4 +1,4 @@
-import type { Spot } from './floors'
+import type { Spot, Swing } from './floors'
 import { BODY_RADIUS, draw, floorFor, type DayState } from './state'
 
 /** How much of its swing the door makes in a second. */
@@ -8,12 +8,12 @@ export const LEAF_HALF = 0.06
 /** How far a shut door's next wait varies either way, as a share of it. */
 const WAIT_SPREAD = 0.5
 
-/** The door's leaf, from its hinge to its far end, as open as `openness`. */
-export function leafOf(
-  state: DayState,
-  openness = state.door.openness,
+/** A hinged door's leaf, from its hinge to its far end, as open as
+ * `openness`. */
+export function leafAt(
+  { hinge, length, shut, open }: Swing,
+  openness: number,
 ): [Spot, Spot] {
-  const { hinge, length, shut, open } = floorFor(state).officeDoor
   const angle = shut + (open - shut) * openness
   return [
     hinge,
@@ -23,6 +23,12 @@ export function leafOf(
     },
   ]
 }
+
+/** The office door's leaf, as open as `openness`. */
+export const leafOf = (
+  state: DayState,
+  openness = state.door.openness,
+): [Spot, Spot] => leafAt(floorFor(state).officeDoor, openness)
 
 /** How far a spot is from the door's leaf. */
 export function fromLeaf(
