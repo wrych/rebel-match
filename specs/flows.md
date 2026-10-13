@@ -269,7 +269,9 @@ my challenge.
    help will now see it (R-ASK-11) — then the member's challenge, and under
    **Your matches** `GET /api/challenges/:id/matches`: **same boat**, **been
    there** and curated **case studies**, each with its most relevant entry first
-   and the rest a tap away — names and roles only, never email addresses
+   and the rest a tap away, or summed up in a sentence with its cards a tap
+   away, by the member's layout (R-ASK-16) — names and roles only, never email
+   addresses
    (R-ASK-8, R-ASK-12, R-ASK-15, R-NFR-1).
 8. From a match card the member can **Follow** the trend (**F9**) or **Connect**,
    which opens **F7** — not a `mailto:` (R-ASK-9, R-ASK-10).
