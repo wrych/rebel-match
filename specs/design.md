@@ -67,67 +67,67 @@ Postgres** (ADR 0024), single-page mobile-first client served by the Node app.
 One module owns every tunable (R-CFG-1..4). Secrets come from env; product
 thresholds have sane defaults in the file and may be overridden by env.
 
-| Key                                   | Default                       | Serves                    |
-| ------------------------------------- | ----------------------------- | ------------------------- |
-| `limits.challengeMinChars`            | `31` (i.e. "more than 30")    | R-ASK-3                   |
-| `limits.challengeMaxChars`            | `500`                         | R-ASK-3                   |
-| `limits.beenThereNoteMinChars`        | `31`                          | R-OFF-4                   |
-| `limits.magicLinkTtlMinutes`          | `15`                          | R-AUTH-5                  |
-| `limits.approvalLinkTtlHours`         | `24`                          | R-AUTH-10                 |
-| `sessionTtlDays` (idle)               | `30`                          | R-AUTH-7                  |
-| `limits.inviteDefaultMaxUses`         | `400`                         | R-INV-4                   |
-| `limits.inviteDefaultHours`           | `12`                          | R-INV-2                   |
-| `consent.currentVersion`              | e.g. `"2026-11-01"`           | R-ONB-3, R-ONB-4          |
-| `mail.delivery`                       | `smtp` \| `none`              | R-DEV-1, R-DEV-4, R-DEV-5 |
-| `limits.outboxRetentionDays`          | `30`                          | R-MSG-6                   |
-| `limits.erasureGraceDays`             | `30`                          | R-NFR-7                   |
-| `outboxPurgeIntervalHours`            | `1`                           | R-MSG-6                   |
-| `erasureSweepIntervalHours`           | `1`                           | R-NFR-7                   |
-| `tokenPurgeIntervalHours`             | `1`                           | R-NFR-5                   |
-| `limits.outboxPageSize`               | `100`                         | R-MSG-5                   |
-| `limits.deckPageSize`                 | `20`                          | R-OFF-1                   |
-| `limits.newestChallengesShown`        | `3`                           | R-ASK-2, R-ASK-14         |
-| `limits.matchesPollSeconds`           | `8`                           | R-MINE-4                  |
-| `limits.leaderboardPollSeconds`       | `30`                          | R-NAV-12, R-GAME-13       |
-| `limits.cockpitPollSeconds`           | `8`                           | R-NAV-12                  |
-| `limits.challengeMatchesPollSeconds`  | `8`                           | R-NAV-12                  |
-| `limits.notificationsPollSeconds`     | `8`                           | R-NAV-12                  |
-| `limits.outboxPollSeconds`            | `8`                           | R-NAV-12                  |
-| `limits.membersPollSeconds`           | `60`                          | R-NAV-12                  |
-| `limits.applicantsPollSeconds`        | `60`                          | R-NAV-12                  |
-| `limits.invitesPollSeconds`           | `60`                          | R-NAV-12                  |
-| `limits.notificationsPageSize`        | `50`                          | R-NOTE-5                  |
-| `limits.notificationRetentionDays`    | `90`                          | R-NOTE-11                 |
-| `notifications.dailyAt`               | `08:00`                       | R-NOTE-7                  |
-| `notifications.timeZone`              | `Europe/Zurich`               | R-NOTE-7                  |
-| `notifications.workerIntervalSeconds` | `60`                          | R-NOTE-7                  |
-| `notifications.maxAttempts`           | `5`                           | R-NOTE-10                 |
-| `limits.whitelistBatchMax`            | `1000`                        | R-AUTH-1                  |
-| `limits.savedTickMs`                  | `2500`                        | R-PROF-1                  |
-| `limits.scrollHintShare`              | `0.4`                         | R-ONB-10                  |
-| `limits.profileDraftRetentionDays`    | `30`                          | R-ONB-15                  |
-| `limits.holdToSelectMs`               | `500`                         | R-MEM-3                   |
-| `limits.swipeMinPx`                   | `50`                          | R-OFF-1                   |
-| `limits.pullRefreshPx`                | `70`                          | R-NAV-12                  |
-| `limits.matchesShownFirst`            | `1`                           | R-ASK-15                  |
-| `limits.matchesNamedFirst`            | `2`                           | R-ASK-15                  |
-| `limits.matchesSummaryPercent`        | `50`, a host may change it    | R-ASK-16                  |
-| `abuse.linkEmailsBeforeCheck`         | `3`                           | R-NFR-8                   |
-| `abuse.linkEmailsCeiling`             | `10`                          | R-NFR-8                   |
-| `abuse.linkEmailWindowMinutes`        | `15`                          | R-NFR-8                   |
-| `abuse.authRequestsPerIp`             | `1000`                        | R-NFR-8                   |
-| `abuse.draftSavesPerToken`            | `200`                         | R-NFR-8, R-ONB-15         |
-| `abuse.ipWindowMinutes`               | `15`                          | R-NFR-8                   |
-| `abuse.applicantsBeforeCheck`         | `30`                          | R-NFR-8                   |
-| `abuse.applicantsCeiling`             | `300`                         | R-NFR-8                   |
-| `abuse.applicantWindowMinutes`        | `60`                          | R-NFR-8                   |
-| `abuse.humanCheckCost`                | `1000`                        | R-NFR-8                   |
-| `abuse.humanCheckMinutes`             | `5`                           | R-NFR-8                   |
-| `trustProxy` (`TRUST_PROXY`)          | `0`; `1` on Cloud Run         | R-NFR-8                   |
-| `settingsRefreshSeconds`              | `60`                          | R-CFG-6                   |
-| `seed.profile`                        | `dev` \| `prod`               | R-SEED-4                  |
-| `analytics.apiHost`                   | `api-eu.mixpanel.com`         | R-ANA-5                   |
-| `rolePermissions`                     | role → permission matrix (§2) | R-ROLE-3, R-ROLE-6        |
+| Key                                   | Default                              | Serves                    |
+| ------------------------------------- | ------------------------------------ | ------------------------- |
+| `limits.challengeMinChars`            | `31` (i.e. "more than 30")           | R-ASK-3                   |
+| `limits.challengeMaxChars`            | `500`                                | R-ASK-3                   |
+| `limits.beenThereNoteMinChars`        | `31`                                 | R-OFF-4                   |
+| `limits.magicLinkTtlMinutes`          | `15`                                 | R-AUTH-5                  |
+| `limits.approvalLinkTtlHours`         | `24`                                 | R-AUTH-10                 |
+| `sessionTtlDays` (idle)               | `30`                                 | R-AUTH-7                  |
+| `limits.inviteDefaultMaxUses`         | `400`                                | R-INV-4                   |
+| `limits.inviteDefaultHours`           | `12`                                 | R-INV-2                   |
+| `consent.currentVersion`              | e.g. `"2026-11-01"`                  | R-ONB-3, R-ONB-4          |
+| `mail.delivery`                       | `smtp` \| `none`                     | R-DEV-1, R-DEV-4, R-DEV-5 |
+| `limits.outboxRetentionDays`          | `30`                                 | R-MSG-6                   |
+| `limits.erasureGraceDays`             | `30`                                 | R-NFR-7                   |
+| `outboxPurgeIntervalHours`            | `1`                                  | R-MSG-6                   |
+| `erasureSweepIntervalHours`           | `1`                                  | R-NFR-7                   |
+| `tokenPurgeIntervalHours`             | `1`                                  | R-NFR-5                   |
+| `limits.outboxPageSize`               | `100`                                | R-MSG-5                   |
+| `limits.deckPageSize`                 | `20`                                 | R-OFF-1                   |
+| `limits.newestChallengesShown`        | `3`                                  | R-ASK-2, R-ASK-14         |
+| `limits.matchesPollSeconds`           | `8`                                  | R-MINE-4                  |
+| `limits.leaderboardPollSeconds`       | `30`                                 | R-NAV-12, R-GAME-13       |
+| `limits.cockpitPollSeconds`           | `8`                                  | R-NAV-12                  |
+| `limits.challengeMatchesPollSeconds`  | `8`                                  | R-NAV-12                  |
+| `limits.notificationsPollSeconds`     | `8`                                  | R-NAV-12                  |
+| `limits.outboxPollSeconds`            | `8`                                  | R-NAV-12                  |
+| `limits.membersPollSeconds`           | `60`                                 | R-NAV-12                  |
+| `limits.applicantsPollSeconds`        | `60`                                 | R-NAV-12                  |
+| `limits.invitesPollSeconds`           | `60`                                 | R-NAV-12                  |
+| `limits.notificationsPageSize`        | `50`                                 | R-NOTE-5                  |
+| `limits.notificationRetentionDays`    | `90`                                 | R-NOTE-11                 |
+| `notifications.dailyAt`               | `08:00`                              | R-NOTE-7                  |
+| `notifications.timeZone`              | `Europe/Zurich`                      | R-NOTE-7                  |
+| `notifications.workerIntervalSeconds` | `60`                                 | R-NOTE-7                  |
+| `notifications.maxAttempts`           | `5`                                  | R-NOTE-10                 |
+| `limits.whitelistBatchMax`            | `1000`                               | R-AUTH-1                  |
+| `limits.savedTickMs`                  | `2500`                               | R-PROF-1                  |
+| `limits.scrollHintShare`              | `0.4`                                | R-ONB-10                  |
+| `limits.profileDraftRetentionDays`    | `30`                                 | R-ONB-15                  |
+| `limits.holdToSelectMs`               | `500`                                | R-MEM-3                   |
+| `limits.swipeMinPx`                   | `50`                                 | R-OFF-1                   |
+| `limits.pullRefreshPx`                | `70`                                 | R-NAV-12                  |
+| `limits.matchesShownFirst`            | `1`                                  | R-ASK-15                  |
+| `limits.matchesNamedFirst`            | `2`                                  | R-ASK-15                  |
+| `flags.matches_layout`                | `50` (percent), a host may change it | R-EXP-1, R-ASK-16         |
+| `abuse.linkEmailsBeforeCheck`         | `3`                                  | R-NFR-8                   |
+| `abuse.linkEmailsCeiling`             | `10`                                 | R-NFR-8                   |
+| `abuse.linkEmailWindowMinutes`        | `15`                                 | R-NFR-8                   |
+| `abuse.authRequestsPerIp`             | `1000`                               | R-NFR-8                   |
+| `abuse.draftSavesPerToken`            | `200`                                | R-NFR-8, R-ONB-15         |
+| `abuse.ipWindowMinutes`               | `15`                                 | R-NFR-8                   |
+| `abuse.applicantsBeforeCheck`         | `30`                                 | R-NFR-8                   |
+| `abuse.applicantsCeiling`             | `300`                                | R-NFR-8                   |
+| `abuse.applicantWindowMinutes`        | `60`                                 | R-NFR-8                   |
+| `abuse.humanCheckCost`                | `1000`                               | R-NFR-8                   |
+| `abuse.humanCheckMinutes`             | `5`                                  | R-NFR-8                   |
+| `trustProxy` (`TRUST_PROXY`)          | `0`; `1` on Cloud Run                | R-NFR-8                   |
+| `settingsRefreshSeconds`              | `60`                                 | R-CFG-6                   |
+| `seed.profile`                        | `dev` \| `prod`                      | R-SEED-4                  |
+| `analytics.apiHost`                   | `api-eu.mixpanel.com`                | R-ANA-5                   |
+| `rolePermissions`                     | role → permission matrix (§2)        | R-ROLE-3, R-ROLE-6        |
 
 - `GET /api/config` returns the **client-relevant subset** (`limits`,
   `consent.currentVersion`) so the submit button, the note counter, and the
@@ -1074,7 +1074,8 @@ and answers `204`, or `500` when some of it failed; any other caller gets
 | PUT    | `/api/profile`          | `{name, jobTitle?, org?, sector?, companySize?}`           | Update the profile within the onboarding limits and lists; a blank or left-out optional field clears it (R-PROF-1).                                                                                                                                                                                                                                                           |
 | DELETE | `/api/me/history`       | —                                                          | Delete the member's own deck views, nothing else (R-STAT-4). Answers `204`.                                                                                                                                                                                                                                                                                                   |
 | DELETE | `/api/profile`          | —                                                          | Delete the member's own account as `DELETE /api/admin/members/:id` does: deactivate now, erase after the grace period; then end the session (R-PROF-2, ADR 0032). Refused with 409 `last_admin` or `created_invites`, as there. Answers `{eraseAfter}`.                                                                                                                       |
-| POST   | `/api/events`           | `{event, props}`                                           | The UI events of §7 (`journey_chosen`, `feedback_opened`, `game_opened` and the matches layout test's three) with their listed properties only; anything else → `400`. Forwarded to Mixpanel only for a member opted in; always `204` otherwise, so the client cannot tell (ADR 0026).                                                                                        |
+| POST   | `/api/events`           | `{event, props}`                                           | The UI events of §7 (`journey_chosen`, `feedback_opened`, `game_opened`, `experiment_exposed`, `matches_section_opened`, `match_connect_tapped`) with their listed properties only; anything else → `400`. Forwarded to Mixpanel only for a member opted in; always `204` otherwise, so the client cannot tell (ADR 0026).                                                    |
+| GET    | `/api/flags`            | —                                                          | `{flags: {<experiment>: <variant>}}`: the caller's variant of each experiment in code, assigned from their id (R-EXP-1, ADR 0052). Any session.                                                                                                                                                                                                                               |
 
 The profile form — on the check-your-email screen and as the profile step — is
 one component. Each field saves on change, through `PUT /auth/draft` before
@@ -1092,15 +1093,15 @@ member prefers reduced motion (R-ONB-10).
 
 ### Ask journey
 
-| Method | Path                            | Body        | Behavior                                                                                                                                                                                                                                             |
-| ------ | ------------------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| GET    | `/api/trends`                   | —           | The 8 trends with `short`, `from` and `peers`, for the domain screen and the picker (R-ASK-6).                                                                                                                                                       |
-| GET    | `/api/trends/:trendId`          | —           | One trend with its curated case studies, for the trend screen (S9); no member appears. `404` for an id outside the eight.                                                                                                                            |
-| GET    | `/api/challenges/newest?trend=` | —           | `{challenges: [{body, trend: {id, short}}]}`: the newest active challenges of other active, onboarded members, at most `limits.newestChallengesShown`, in `trend` when given; no author, no id (R-ASK-2, R-ASK-14). _Requires `challenge:swipe`._    |
-| POST   | `/api/challenges`               | `{body}`    | Create challenge (`limits.challengeMinChars` to `limits.challengeMaxChars` characters, trimmed), run matcher, return challenge with `autoTrend` (R-ASK-3,4,5). _Requires `challenge:create`._                                                        |
-| GET    | `/api/challenges/:id`           | —           | The author's own challenge; `404` for anyone else (R-NAV-8).                                                                                                                                                                                         |
-| PATCH  | `/api/challenges/:id`           | `{trendId}` | Confirm/override trend; set `overridden` if it differs from `autoTrend`. Author only.                                                                                                                                                                |
-| GET    | `/api/challenges/:id/matches`   | —           | `{trend, sameBoat[], beenThere[], cases[], layout}` for the confirmed trend, else the matched one, with the member's layout (R-ASK-16); peers are other active, onboarded members, never the author, with no email (R-ASK-8, R-CONN-6). Author only. |
+| Method | Path                            | Body        | Behavior                                                                                                                                                                                                                                          |
+| ------ | ------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/trends`                   | —           | The 8 trends with `short`, `from` and `peers`, for the domain screen and the picker (R-ASK-6).                                                                                                                                                    |
+| GET    | `/api/trends/:trendId`          | —           | One trend with its curated case studies, for the trend screen (S9); no member appears. `404` for an id outside the eight.                                                                                                                         |
+| GET    | `/api/challenges/newest?trend=` | —           | `{challenges: [{body, trend: {id, short}}]}`: the newest active challenges of other active, onboarded members, at most `limits.newestChallengesShown`, in `trend` when given; no author, no id (R-ASK-2, R-ASK-14). _Requires `challenge:swipe`._ |
+| POST   | `/api/challenges`               | `{body}`    | Create challenge (`limits.challengeMinChars` to `limits.challengeMaxChars` characters, trimmed), run matcher, return challenge with `autoTrend` (R-ASK-3,4,5). _Requires `challenge:create`._                                                     |
+| GET    | `/api/challenges/:id`           | —           | The author's own challenge; `404` for anyone else (R-NAV-8).                                                                                                                                                                                      |
+| PATCH  | `/api/challenges/:id`           | `{trendId}` | Confirm/override trend; set `overridden` if it differs from `autoTrend`. Author only.                                                                                                                                                             |
+| GET    | `/api/challenges/:id/matches`   | —           | `{trend, sameBoat[], beenThere[], cases[]}` for the confirmed trend, else the matched one; peers are other active, onboarded members, never the author, with no email (R-ASK-8, R-CONN-6). Author only.                                           |
 
 ### Offer journey
 
@@ -1526,23 +1527,23 @@ Alternatives considered (kept only as fallbacks):
   or name.
 - Capture these events with non-identifying properties only:
 
-  | event                    | properties                                        |
-  | ------------------------ | ------------------------------------------------- |
-  | `login_completed`        | —                                                 |
-  | `onboarding_completed`   | `consent_version`, `seconds_to_onboard`?          |
-  | `journey_chosen`         | `journey: ask\|offer`                             |
-  | `challenge_submitted`    | `char_count`                                      |
-  | `trend_assigned`         | `trend_id`, `overridden: bool`                    |
-  | `swipe`                  | `action`, `trend_id`                              |
-  | `connection_requested`   | `kind`                                            |
-  | `connection_responded`   | `status: accepted\|declined`                      |
-  | `feedback_opened`        | `screen`                                          |
-  | `game_opened`            | —                                                 |
-  | `game_day_finished`      | `mode`, `level`, `outcome`, `seconds`             |
-  | `game_result_shared`     | —                                                 |
-  | `matches_viewed`         | `layout: cards\|summary`                          |
-  | `matches_section_opened` | `section: same_boat\|been_there\|cases`, `layout` |
-  | `match_connect_tapped`   | `kind`, `layout`                                  |
+  | event                    | properties                               |
+  | ------------------------ | ---------------------------------------- |
+  | `login_completed`        | —                                        |
+  | `onboarding_completed`   | `consent_version`, `seconds_to_onboard`? |
+  | `journey_chosen`         | `journey: ask\|offer`                    |
+  | `challenge_submitted`    | `char_count`                             |
+  | `trend_assigned`         | `trend_id`, `overridden: bool`           |
+  | `swipe`                  | `action`, `trend_id`                     |
+  | `connection_requested`   | `kind`                                   |
+  | `connection_responded`   | `status: accepted\|declined`             |
+  | `feedback_opened`        | `screen`                                 |
+  | `game_opened`            | —                                        |
+  | `game_day_finished`      | `mode`, `level`, `outcome`, `seconds`    |
+  | `game_result_shared`     | —                                        |
+  | `experiment_exposed`     | `experiment`, `variant` (R-EXP-2)        |
+  | `matches_section_opened` | `section: same_boat\|been_there\|cases`  |
+  | `match_connect_tapped`   | `kind`                                   |
 
 - `seconds_to_onboard` is `consent_at` minus the time the latest sign-in email
   (`outbox` kind `magic_link`) to the member was recorded, in whole seconds
@@ -1565,7 +1566,7 @@ Alternatives considered (kept only as fallbacks):
   (`PUT /api/me/analytics`, R-PROF-2). An event is sent only while both are set.
 - **Server only.** The server sends every event through the Mixpanel HTTP
   ingestion API at `analytics.apiHost` (`api-eu.mixpanel.com`). The UI events,
-  `journey_chosen`, `feedback_opened`, `game_opened`, `matches_viewed`,
+  `journey_chosen`, `feedback_opened`, `game_opened`, `experiment_exposed`,
   `matches_section_opened` and `match_connect_tapped`, are posted by
   the client to `POST /api/events`, which accepts only those names with their
   listed properties. No Mixpanel script, cookie or device identifier is in the browser,

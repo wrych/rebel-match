@@ -67,7 +67,7 @@ still holds except where the later ADR says otherwise.
 | [0028](0028-merge-without-updating.md)                            | Merge without updating the branch; previews on request                          | Accepted                              |
 | [0029](0029-rate-limits-with-a-self-hosted-human-check.md)        | Rate-limit sign-in, with a self-hosted human check                              | Accepted, amended by 0030             |
 | [0030](0030-human-check-before-more-link-emails.md)               | Ask for the human check before more link emails to one address                  | Accepted                              |
-| [0031](0031-hosts-change-selected-settings.md)                    | Hosts change selected settings in the app, stored in the database               | Accepted, amended by 0045, 0050       |
+| [0031](0031-hosts-change-selected-settings.md)                    | Hosts change selected settings in the app, stored in the database               | Accepted, amended by 0045, 0050, 0052 |
 | [0032](0032-erasure-waits-30-days.md)                             | Erasure waits 30 days, during which it can be undone                            | Accepted                              |
 | [0033](0033-record-activity-show-it-later.md)                     | Record activity in our own tables; showing it is separate                       | Accepted                              |
 | [0034](0034-hardened-headers-transport-and-sessions.md)           | Hardened headers, transport and sessions                                        | Accepted                              |
@@ -87,4 +87,4 @@ still holds except where the later ADR says otherwise.
 | [0049](0049-scheduled-work-on-a-tick.md)                          | Run the scheduled work on a tick from Cloud Scheduler                           | Accepted                              |
 | [0050](0050-live-lists-poll-and-outline-what-arrives.md)          | Live lists poll, outline what arrives, and refresh on a pull                    | Accepted                              |
 | [0051](0051-summarise-each-matches-section-in-a-sentence.md)      | Summarise each matches section in a sentence, its cards on a tap                | Accepted, amended by 0052             |
-| [0052](0052-test-the-matches-layout-on-a-share-of-members.md)     | Test the matches layout on a share of members, chosen by their id               | Accepted                              |
+| [0052](0052-experiments-assigned-on-the-server.md)                | Run experiments in code, assigned on the server from the member's id            | Accepted                              |
