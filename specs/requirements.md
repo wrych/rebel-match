@@ -818,6 +818,15 @@ at a screen instead of at the front door.
     on those screens the browser's own pull-to-reload SHALL NOT fire as well.
     Without a touch screen the automatic refresh and the button remain.
 
+- **R-NAV-13 (Named tabs)** — Every screen SHALL give the page a title of the
+  form _Screen | Rebel Match_, so a tab, a bookmark and a history entry say
+  which screen they hold; an address no screen serves is _Not found | Rebel
+  Match_. The title SHALL be in the page the server sends for an address, not
+  only set once the app runs, so a link opened in a new tab or previewed in a
+  chat is named too. A title SHALL name the screen only, never a member, a
+  challenge or anything else a member wrote (R-NFR-1): it outlives the visit in
+  history, synced tabs and shared screens. _(Founders' review, 2026-10-13.)_
+
 ---
 
 ## 8c. Outbound message log and development deployment

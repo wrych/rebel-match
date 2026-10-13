@@ -1221,6 +1221,11 @@ someone, bookmark, or reload lives in a modal.
 Each screen is addressable; the server serves the SPA for any unmatched GET so a
 deep link reloads cleanly.
 
+**Page titles (R-NAV-13).** Each entry of the shared route table (`src/routes.ts`,
+ADR 0017) carries its screen's title, in the words the screen itself shows. The
+server writes it into the shell it sends for the address, and the client router
+sets it again after every navigation, as _Screen | Rebel Match_.
+
 | #   | Screen                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | URL                                                   |
 | --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
 | S1  | **Login** — the email field; then **check your email** for every address that is not rejected: the link is on its way, and the profile form for the wait; for an applicant, that a person approves access, and the "invitation link is not valid" notice when one was refused (R-AUTH-4, R-ONB-7, R-INV-5)                                                                                                                                                                            | `/login`, `/login/sent`, `/login/sent?invite=invalid` |
