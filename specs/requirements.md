@@ -1257,13 +1257,16 @@ the office's people; the **player** is the character the member steers.
   (setting, default 2 seconds): "It doesn't work without hierarchy." Both go
   back to their cubicles unchanged. Assigning a file at the cooler SHALL both
   break it up and count as assigned (R-GAME-4).
-- **R-GAME-6 (Meetings, boss mode)** — From Manager on, WHEN the player walks
-  into the meeting room, and has not held a meeting that day, THE SYSTEM SHALL
-  start a meeting: the employees nearest the meeting room, as many as the job
-  seats (Manager 2, Director 3, VP 4, CEO 5, setting), walk in, and the player
-  stays in the room for the meeting's length (setting, default 8 seconds).
-  Every tempted employee and rebel who attended SHALL leave it grey; the rest
-  of the office carries on meanwhile.
+- **R-GAME-6 (Meetings, boss mode)** — The meeting room SHALL have a door
+  that stays shut, so the player goes in only to lead a meeting. From Manager
+  on, standing at that door, the player SHALL be able to hold the day's one
+  meeting with the action button: the door opens, the employees nearest the
+  meeting room, as many as the job seats (Manager 2, Director 3, VP 4, CEO 5,
+  setting), walk in, and over the meeting's length (setting, default 8
+  seconds) the player walks to the head of the table and back out through the
+  door. Every tempted employee and rebel who attended SHALL leave it grey, and
+  the door SHALL shut once the room is empty; the rest of the office carries
+  on meanwhile.
 - **R-GAME-7 (Losing)** — WHEN more than half of the employees are rebels in
   boss mode, or grey in rebel mode, THE SYSTEM SHALL end the day as **lost**
   at once. After a loss the player SHALL continue from the first day of the
@@ -1306,8 +1309,7 @@ the office's people; the **player** is the character the member steers.
   where the left thumb rests; on a keyboard the arrows or WASD steer. One
   **action button** SHALL light up and name what the player can do where they
   stand: _Take file_, _Assign_, _Break it up_, _Help_, _Break_, _Talk_,
-  _Masterclass_, _Leave file_, _Open door_. Walking into the meeting room
-  needs no button (R-GAME-6). WHERE two actions are possible at once, as help
+  _Masterclass_, _Leave file_, _Open door_, _Hold meeting_. WHERE two actions are possible at once, as help
   and break at a desk, the first press SHALL open both as buttons beside it
   and the second choose; on a keyboard Space helps and E sends on a break,
   directly. The masterclass's two employees SHALL be chosen by tapping them,
