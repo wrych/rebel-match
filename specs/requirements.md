@@ -647,7 +647,8 @@ fallback).
 - **R-ANA-1** — The system SHALL capture product-analytics **events** for the key
   funnel: login completed, onboarding completed, challenge submitted, trend
   confirmed/overridden, swipe actions (same boat / been there / skip / follow),
-  connection requested, connection accepted/declined, feedback opened.
+  connection requested, connection accepted/declined, feedback opened, and the
+  variant of an experiment a member was shown (R-EXP-2).
 - **R-ANA-2** — Analytics SHALL be attributable to a stable, **pseudonymous**
   member id (not raw email) so funnels and retention work without spreading PII
   into the analytics tool.
@@ -914,14 +915,41 @@ What differs by environment is only whether mail **leaves the machine**.
   `settings:manage` SHALL be able to change, on the settings screen, the
   spam-protection numbers except the trusted proxies, the invite defaults, and
   the minimum challenge and "been there" note lengths (ADR 0031), how often
-  the badges and each live list refresh (R-MINE-4, R-NAV-12, ADR 0050), and the
-  9toRevolution switch and tuning (R-GAME-17, ADR 0045). Each change SHALL be
+  the badges and each live list refresh (R-MINE-4, R-NAV-12, ADR 0050), each
+  experiment's share (R-EXP-3, ADR 0051), and the 9toRevolution switch and
+  tuning (R-GAME-17, ADR 0045). Each change SHALL be
   checked against bounds and the order of paired limits (the minimum challenge
   length never above the maximum), take effect without a restart on every server
   within a minute, and show who made it and when. The host SHALL be able to go
   back to the deployment's value. Each changeable value SHALL be an editable
   field, saved on change and confirmed with the same "Saved" tick as the profile
   screen (R-PROF-1); a host without `settings:manage` sees it as text.
+
+---
+
+## 8j. Experiments
+
+An experiment shows part of the members a change and the rest what was there
+before, so usage data can tell which works better (ADR 0051). At summit scale
+only a large difference shows; a result is a hint, not proof.
+
+- **R-EXP-1 (Assigned on the server)** — Each experiment SHALL be listed in
+  code with a control and one treatment. THE SYSTEM SHALL assign every signed-in
+  member a variant of each experiment from the experiment's key and the
+  member's id alone, the treatment for `flags.<experiment>` percent of members,
+  so that a member gets the same variant on every visit and device, raising
+  the share only moves members to the treatment, and nothing about the
+  assignment is stored or sent to a third party. `GET /api/flags` SHALL answer
+  the caller's variants. IF they cannot be read, the client SHALL show the
+  control.
+- **R-EXP-2 (Exposure)** — WHEN a member is shown a variant THE SYSTEM SHALL
+  send `experiment_exposed` with the experiment and variant, for a member opted
+  in only (R-ANA-4), and SHALL refuse an experiment or variant not listed in
+  code. Outcomes are the usage events the member sends anyway, compared by the
+  variant they were exposed to.
+- **R-EXP-3 (A host moves the share)** — A host with `settings:manage` SHALL be
+  able to set each experiment's share from 0% to 100% on the settings screen,
+  as R-CFG-6 allows; 0% or 100% ends it for everyone without a deploy.
 
 ---
 

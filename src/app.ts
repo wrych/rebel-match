@@ -25,6 +25,7 @@ import { authRoutes, renewSessions } from './routes/auth.js'
 import { onboardingRoutes } from './routes/onboarding.js'
 import { analyticsConsentRoutes } from './routes/analytics-consent.js'
 import { eventRoutes } from './routes/events.js'
+import { flagRoutes } from './routes/flags.js'
 import { profileRoutes } from './routes/profile.js'
 import { requestLinkRoutes } from './routes/request-link.js'
 import { limitPerIp, SIGN_IN_POSTS } from './routes/ip-limit.js'
@@ -168,7 +169,7 @@ export function createApp(deps: AppDeps): Express {
   app.use('/api', guardApi(deps))
   app.use(onboardingRoutes(deps))
   app.use(analyticsConsentRoutes(deps))
-  app.use(eventRoutes(deps))
+  app.use(eventRoutes(deps), flagRoutes(deps))
   app.use(profileRoutes(deps))
   app.use(challengeRoutes(deps))
   app.use(deckRoutes(deps), activityRoutes(deps))

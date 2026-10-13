@@ -28,6 +28,7 @@ export type AnalyticsEvent =
       seconds: number
     }
   | { name: 'game_result_shared' }
+  | { name: 'experiment_exposed'; experiment: string; variant: string }
 
 /** Reports what a member did. It never rejects and is not awaited by the
  * request it describes, so analytics can neither fail nor slow it. */

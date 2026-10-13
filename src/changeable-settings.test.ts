@@ -14,6 +14,7 @@ const base: SettingValues = {
   limits: config.limits,
   abuse: config.abuse,
   game: config.game,
+  flags: config.flags,
 }
 
 describe('changeable settings (R-CFG-6, ADR 0031)', () => {
@@ -48,6 +49,19 @@ describe('changeable settings (R-CFG-6, ADR 0031)', () => {
       withOverrides(base, [{ key: 'game.dayLengthSeconds', value: 120 }]).game
         .dayLengthSeconds,
     ).toBe(120)
+  })
+
+  it('lets hosts move an experiment’s share from 0% to 100% (R-EXP-3)', () => {
+    expect(isSettingKey('flags.matches_layout')).toBe(true)
+    expect(isSettingKey('flags.pricing')).toBe(false)
+    expect(valueOf(base, 'flags.matches_layout')).toBe(50)
+    expect(checkChange(base, 'flags.matches_layout', 0)).toBe('ok')
+    expect(checkChange(base, 'flags.matches_layout', 100)).toBe('ok')
+    expect(checkChange(base, 'flags.matches_layout', 101)).toBe('out_of_bounds')
+    expect(
+      withOverrides(base, [{ key: 'flags.matches_layout', value: 100 }]).flags
+        .matches_layout,
+    ).toBe(100)
   })
 
   it('accepts a value within bounds', () => {
