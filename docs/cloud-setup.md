@@ -21,13 +21,15 @@ It comes in the two parts of the ADR's rollout:
   `gcloud auth login`.
 
 Run each part top to bottom in one shell: later steps use variables earlier
-ones set. Project IDs are global across all of Google Cloud, so add a suffix
-of your own.
+ones set. Project IDs are global across all of Google Cloud: if
+`rebel-match-nonprod` or `rebel-match-prod` is taken, set `SUFFIX` to something
+of your own, and every later step uses it. Left empty, the IDs have none.
 
 ```sh
 export REGION=europe-west6                 # Zurich (ADR 0025)
-export NONPROD=rebel-match-nonprod-<suffix>
-export PROD=rebel-match-prod-<suffix>      # used only in part 2
+export SUFFIX=                             # e.g. xigo; empty for none
+export NONPROD=rebel-match-nonprod${SUFFIX:+-$SUFFIX}
+export PROD=rebel-match-prod${SUFFIX:+-$SUFFIX}  # used only in part 2
 export REPO=wrych/rebel-match
 export BILLING=$(gcloud billing accounts list --format='value(name)' --limit=1)
 echo "$BILLING"                            # check it is the account you meant
@@ -425,10 +427,13 @@ gcloud services enable --project="$PROD" \
   cloudscheduler.googleapis.com
 ```
 
-## 15. The two grants on non-prod
+## 15. The grants on non-prod
 
-Production pulls staging's images, and its deployer reads which digest staging
-serves — nothing more of non-prod.
+Production gets the two kinds of access to non-prod ADR 0025 names, and nothing
+more: reading staging's images, and reading which digest staging serves. The
+images are read by two accounts: Cloud Run's service agent, which pulls them,
+and production's deployer, since Cloud Run checks that whoever deploys an image
+may read it.
 
 ```sh
 PROD_NUMBER=$(gcloud projects describe "$PROD" --format='value(projectNumber)')
@@ -440,7 +445,7 @@ gcloud artifacts repositories add-iam-policy-binding rebel-match \
 
 The `serverless-robot-prod` account appears once the Run API is enabled (§14).
 If the binding says it does not exist yet, wait a minute and run it again. The
-second grant follows the deployer's creation in §18.
+deployer's two grants follow its creation in §18.
 
 ## 16. Database
 
@@ -503,9 +508,13 @@ gcloud iam service-accounts add-iam-policy-binding \
   "rebel-match-run@$PROD.iam.gserviceaccount.com" --project="$PROD" \
   --member="serviceAccount:$PROD_DEPLOYER" --role=roles/iam.serviceAccountUser
 
-# The second grant on non-prod (§15): read which digest staging serves.
+# The deployer's access to non-prod (§15): which digest staging serves, and
+# the images themselves.
 gcloud projects add-iam-policy-binding "$NONPROD" --condition=None \
   --member="serviceAccount:$PROD_DEPLOYER" --role=roles/run.viewer
+gcloud artifacts repositories add-iam-policy-binding rebel-match \
+  --project="$NONPROD" --location="$REGION" \
+  --member="serviceAccount:$PROD_DEPLOYER" --role=roles/artifactregistry.reader
 
 # Who the tick comes from (§22, ADR 0049). It needs no role: the server
 # checks its address in the token the scheduler signs for it.
