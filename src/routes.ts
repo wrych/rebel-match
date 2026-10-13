@@ -12,98 +12,185 @@ export interface RouteDef {
   /** vue-router path, `:param` segments included. */
   path: string
   name: string
+  /** The screen's name in its tab, before " | Rebel Match" (R-NAV-13). */
+  title: string
   access: Access
   /** Permission the member must hold, resolved from their roles (R-ROLE-3). */
   permission?: Permission
 }
 
 export const routeTable: readonly RouteDef[] = [
-  { path: '/', name: 'entry', access: 'public' },
-  { path: '/login', name: 'login', access: 'public' },
-  { path: '/sign-in', name: 'sign-in', access: 'public' },
-  { path: '/access-requested', name: 'access-requested', access: 'public' },
-  { path: '/onboarding', name: 'onboarding', access: 'session' },
+  { path: '/', name: 'entry', title: 'Sign in', access: 'public' },
+  { path: '/login', name: 'login', title: 'Sign in', access: 'public' },
+  { path: '/sign-in', name: 'sign-in', title: 'Signing in', access: 'public' },
+  {
+    path: '/access-requested',
+    name: 'access-requested',
+    title: 'Access requested',
+    access: 'public',
+  },
+  {
+    path: '/onboarding',
+    name: 'onboarding',
+    title: 'Your profile',
+    access: 'session',
+  },
   {
     path: '/onboarding/privacy',
     name: 'onboarding-privacy',
+    title: 'Privacy',
     access: 'session',
   },
-  { path: '/onboarding/usage', name: 'onboarding-usage', access: 'onboarded' },
-  { path: '/privacy', name: 'privacy', access: 'public' },
-  { path: '/terms', name: 'terms', access: 'public' },
-  { path: '/impressum', name: 'impressum', access: 'public' },
+  {
+    path: '/onboarding/usage',
+    name: 'onboarding-usage',
+    title: 'Usage data',
+    access: 'onboarded',
+  },
+  {
+    path: '/privacy',
+    name: 'privacy',
+    title: 'Privacy notice',
+    access: 'public',
+  },
+  { path: '/terms', name: 'terms', title: 'Terms of use', access: 'public' },
+  {
+    path: '/impressum',
+    name: 'impressum',
+    title: 'Impressum',
+    access: 'public',
+  },
   {
     path: '/9torevolution',
     name: 'game',
+    title: '9toRevolution',
     access: 'onboarded',
     permission: 'game:play',
   },
   {
     path: '/9torevolution/leaderboard',
     name: 'game-leaderboard',
+    title: 'Leaderboard',
     access: 'onboarded',
     permission: 'game:play',
   },
-  { path: '/welcome', name: 'welcome', access: 'onboarded' },
-  { path: '/profile', name: 'profile', access: 'onboarded' },
-  { path: '/notifications', name: 'notifications', access: 'onboarded' },
-  { path: '/ask', name: 'ask', access: 'onboarded' },
-  { path: '/challenges/:id', name: 'challenge', access: 'onboarded' },
-  { path: '/challenges/:id/trend', name: 'trend-picker', access: 'onboarded' },
-  { path: '/challenges/:id/matches', name: 'matches', access: 'onboarded' },
+  { path: '/welcome', name: 'welcome', title: 'Welcome', access: 'onboarded' },
+  { path: '/profile', name: 'profile', title: 'Profile', access: 'onboarded' },
+  {
+    path: '/notifications',
+    name: 'notifications',
+    title: 'Notifications',
+    access: 'onboarded',
+  },
+  { path: '/ask', name: 'ask', title: 'Ask for help', access: 'onboarded' },
+  {
+    path: '/challenges/:id',
+    name: 'challenge',
+    title: 'Your domain',
+    access: 'onboarded',
+  },
+  {
+    path: '/challenges/:id/trend',
+    name: 'trend-picker',
+    title: 'Pick a trend',
+    access: 'onboarded',
+  },
+  {
+    path: '/challenges/:id/matches',
+    name: 'matches',
+    title: 'Your matches',
+    access: 'onboarded',
+  },
   {
     path: '/challenges/:challengeId/connect/:memberId',
     name: 'connect',
+    title: 'Connect',
     access: 'onboarded',
   },
-  { path: '/trends/:trendId', name: 'trend', access: 'onboarded' },
-  { path: '/offer', name: 'offer', access: 'onboarded' },
-  { path: '/offer/:challengeId/note', name: 'offer-note', access: 'onboarded' },
-  { path: '/offer/done', name: 'offer-done', access: 'onboarded' },
-  { path: '/matches', name: 'cockpit', access: 'onboarded' },
-  { path: '/matches/requests/:id', name: 'request', access: 'onboarded' },
+  {
+    path: '/trends/:trendId',
+    name: 'trend',
+    title: 'Trend',
+    access: 'onboarded',
+  },
+  { path: '/offer', name: 'offer', title: 'Offer help', access: 'onboarded' },
+  {
+    path: '/offer/:challengeId/note',
+    name: 'offer-note',
+    title: 'Been there',
+    access: 'onboarded',
+  },
+  {
+    path: '/offer/done',
+    name: 'offer-done',
+    title: 'Deck done',
+    access: 'onboarded',
+  },
+  { path: '/matches', name: 'cockpit', title: 'Matches', access: 'onboarded' },
+  {
+    path: '/matches/requests/:id',
+    name: 'request',
+    title: 'Request',
+    access: 'onboarded',
+  },
   {
     path: '/matches/requests/:id/contact',
     name: 'request-contact',
+    title: 'Contact',
     access: 'onboarded',
   },
   {
     path: '/admin/applicants',
     name: 'admin-applicants',
+    title: 'Applicants',
     access: 'onboarded',
     permission: 'applicant:review',
   },
   {
     path: '/admin/invites',
     name: 'admin-invites',
+    title: 'Invites',
     access: 'onboarded',
     permission: 'invite:manage',
   },
   {
     path: '/admin/members',
     name: 'admin-members',
+    title: 'Members',
     access: 'onboarded',
     permission: 'member:delete',
   },
   {
     path: '/admin/members/:id',
     name: 'admin-member',
+    title: 'Member',
     access: 'onboarded',
     permission: 'member:delete',
   },
   {
     path: '/admin/outbox',
     name: 'admin-outbox',
+    title: 'Outbox',
     access: 'onboarded',
     permission: 'outbox:read',
   },
   {
     path: '/admin/settings',
     name: 'admin-settings',
+    title: 'Settings',
     access: 'onboarded',
     permission: 'settings:read',
   },
 ]
+
+const APP_NAME = 'Rebel Match'
+/** What a tab says for a path no screen serves (R-NAV-13). */
+export const NOT_FOUND_TITLE = 'Not found'
+
+/** A screen's title as a tab shows it (R-NAV-13). */
+export function pageTitle(screen: string): string {
+  return `${screen} | ${APP_NAME}`
+}
 
 const SEGMENT = /^:[A-Za-z][A-Za-z0-9]*$/
 
@@ -118,13 +205,22 @@ function matches(route: RouteDef, path: string): boolean {
   })
 }
 
+function routeFor(path: string): RouteDef | undefined {
+  const [withoutFragment = ''] = path.split('#')
+  const [pathname = ''] = withoutFragment.split('?')
+  return routeTable.find((route) => matches(route, pathname))
+}
+
+/** The tab title for a path: its screen's, or "Not found" for a path no
+ * screen serves (R-NAV-13). Query strings and fragments are ignored. */
+export function titleForPath(path: string): string {
+  return pageTitle(routeFor(path)?.title ?? NOT_FOUND_TITLE)
+}
+
 /** True when the path is one this application serves. Query strings and
  * fragments are not part of a route and are ignored. */
 export function isKnownPath(path: string): boolean {
-  const [withoutFragment = ''] = path.split('#')
-  const [pathname = ''] = withoutFragment.split('?')
-
-  return routeTable.some((route) => matches(route, pathname))
+  return routeFor(path) !== undefined
 }
 
 /**

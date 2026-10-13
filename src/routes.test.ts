@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest'
-import { isKnownPath, routeTable, safeNextPath } from './routes.js'
+import {
+  isKnownPath,
+  pageTitle,
+  routeTable,
+  safeNextPath,
+  titleForPath,
+} from './routes.js'
 
 describe('isKnownPath', () => {
   it('recognises a static route', () => {
@@ -94,5 +100,26 @@ describe('routeTable', () => {
       .map((route) => route.path)
 
     expect(public_).toEqual(expect.arrayContaining(['/privacy', '/terms']))
+  })
+})
+
+describe('titleForPath (R-NAV-13)', () => {
+  it('gives every route a title of its own words', () => {
+    for (const route of routeTable)
+      expect(route.title.trim(), route.name).not.toBe('')
+  })
+
+  it('names the screen first, then the app', () => {
+    expect(pageTitle('Welcome')).toBe('Welcome | Rebel Match')
+  })
+
+  it('titles a parameterised path by its screen, ignoring the query', () => {
+    expect(titleForPath('/challenges/abc-123/matches?posted=1')).toBe(
+      'Your matches | Rebel Match',
+    )
+  })
+
+  it('titles a path no screen serves as not found', () => {
+    expect(titleForPath('/admin/secrets')).toBe('Not found | Rebel Match')
   })
 })

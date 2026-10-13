@@ -2,10 +2,16 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import express, { Router } from 'express'
 import { IMMUTABLE_ASSET_MAX_AGE_MS } from '../config.js'
-import { isKnownPath } from '../routes.js'
+import { isKnownPath, titleForPath } from '../routes.js'
 
 /** Paths the server answers itself; the shell never stands in for them. */
 const SERVER_PATH = /^\/(api|auth)(\/|$)/
+const TITLE = /<title>[^<]*<\/title>/
+
+// The title is ours, from the route table, never from the request (R-NAV-13).
+function shellTitled(shell: string, path: string): string {
+  return shell.replace(TITLE, `<title>${titleForPath(path)}</title>`)
+}
 
 /** Serves the built client in `dir` (ADR 0017): its files, and the shell for
  * any other GET — `200` for a path in the route table, `404` otherwise.
@@ -46,7 +52,7 @@ export function clientShellRoutes(dir: string): Router {
       .status(isKnownPath(request.path) ? 200 : 404)
       .type('html')
       .set('Cache-Control', 'no-cache')
-      .send(shell)
+      .send(shellTitled(shell, request.path))
   })
 
   return router
