@@ -726,6 +726,13 @@ const catalogue: Group[] = [
         read: (c) => c.limits.matchesShownFirst,
       },
       {
+        name: 'Matches named before “and others”',
+        explanation:
+          'How many rebels or case studies the sentence over each section of a challenge’s matches names before it counts the rest, where it shows sentences.',
+        fixed: true,
+        read: (c) => c.limits.matchesNamedFirst,
+      },
+      {
         name: 'Scroll hint on the privacy step moves',
         explanation:
           'How far one tap on the arrow scrolls the privacy summary, as a share of the screen height.',

@@ -11,6 +11,7 @@ const props = defineProps<{
   /** Outlines the rebels a refresh brought (R-NAV-12). */
   arrived?: Arrivals<PeerCard>
 }>()
+const emit = defineEmits<{ connect: [] }>()
 
 // Connecting goes through the double opt-in screen, never a direct email
 // (R-ASK-10, R-CONN-1).
@@ -45,6 +46,7 @@ function connectPath(peer: PeerCard): string {
           'btn-small',
           kind === 'same_boat' ? 'btn-primary' : 'btn-dark',
         ]"
+        @click="emit('connect')"
         >{{ action }}</RouterLink
       >
     </li>

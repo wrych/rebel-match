@@ -5,6 +5,7 @@ import {
   fetchMatches,
   fetchTrendDetail,
   fetchTrends,
+  matchesSentence,
   moreMatches,
   peerLine,
   shownTrend,
@@ -213,4 +214,43 @@ describe('moreMatches', () => {
   ] as const)('names %s ×%i as “%s” (R-ASK-15)', (section, count, label) => {
     expect(moreMatches(section, count)).toBe(label)
   })
+})
+
+describe('matchesSentence', () => {
+  const names = ['Ana Diaz', 'Ben Ortiz', 'Cy Lee', 'Dee Ray']
+  it.each([
+    [
+      'sameBoat',
+      names,
+      2,
+      'Ana Diaz, Ben Ortiz and 2 others are in the same boat.',
+    ],
+    [
+      'sameBoat',
+      names.slice(0, 3),
+      2,
+      'Ana Diaz, Ben Ortiz and 1 other are in the same boat.',
+    ],
+    [
+      'sameBoat',
+      names.slice(0, 2),
+      2,
+      'Ana Diaz and Ben Ortiz are in the same boat.',
+    ],
+    ['sameBoat', names.slice(0, 1), 2, 'Ana Diaz is in the same boat.'],
+    ['beenThere', names, 1, 'Ana Diaz and 3 others have been there.'],
+    ['beenThere', names.slice(0, 1), 1, 'Ana Diaz has been there.'],
+    [
+      'cases',
+      ['Haier', 'Buurtzorg', 'FAVI'],
+      2,
+      'Haier, Buurtzorg and 1 other made the shift.',
+    ],
+    ['cases', ['Haier'], 2, 'Haier made the shift.'],
+  ] as const)(
+    'sums up %s from %j naming %i (R-ASK-15)',
+    (section, given, named, sentence) => {
+      expect(matchesSentence(section, [...given], named)).toBe(sentence)
+    },
+  )
 })

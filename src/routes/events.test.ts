@@ -63,6 +63,14 @@ describe('POST /api/events', () => {
         variant: 'summary',
       },
     ],
+    [
+      { event: 'matches_section_opened', props: { section: 'been_there' } },
+      { name: 'matches_section_opened', section: 'been_there' },
+    ],
+    [
+      { event: 'match_connect_tapped', props: { kind: 'same_boat' } },
+      { name: 'match_connect_tapped', kind: 'same_boat' },
+    ],
   ])('relays %j for the signed-in member (ADR 0026)', async (body, event) => {
     const { app, tracked } = setup()
 
@@ -116,6 +124,17 @@ describe('POST /api/events', () => {
           memberId: 'm-ada',
         },
       },
+    ],
+    [
+      'a connect tap with the peer it was for (R-ASK-16)',
+      {
+        event: 'match_connect_tapped',
+        props: { kind: 'same_boat', memberId: 'm-bob' },
+      },
+    ],
+    [
+      'a section outside the three',
+      { event: 'matches_section_opened', props: { section: 'members' } },
     ],
     [
       'a journey outside the two',

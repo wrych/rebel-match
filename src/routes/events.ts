@@ -47,6 +47,16 @@ const uiEvent: z.ZodType<AnalyticsEvent> = z
       props: z.object({}).strict(),
     }),
     z.object({ event: z.literal('experiment_exposed'), props: exposure }),
+    z.object({
+      event: z.literal('matches_section_opened'),
+      props: z
+        .object({ section: z.enum(['same_boat', 'been_there', 'cases']) })
+        .strict(),
+    }),
+    z.object({
+      event: z.literal('match_connect_tapped'),
+      props: z.object({ kind: z.enum(['same_boat', 'been_there']) }).strict(),
+    }),
   ])
   .transform(
     ({ event, props }) => ({ name: event, ...props }) as AnalyticsEvent,
