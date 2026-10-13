@@ -80,7 +80,7 @@ describe('ImpressumScreen', () => {
     const screen = await mountScreen()
 
     expect(shownName(screen)).toBe('Pascal Dulex')
-    expect(screen.find('.mono').text()).toBe('Idea · Community')
+    expect(screen.find('.mono').text()).toBe('Idea · Design · Community')
     expect(screen.find('img.portrait').attributes('alt')).toBe(
       'Portrait of Pascal Dulex',
     )

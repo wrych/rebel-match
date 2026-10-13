@@ -14,13 +14,13 @@ export interface Maker {
 export const makers: readonly Maker[] = [
   {
     name: 'Pascal Dulex',
-    responsibilities: ['Idea', 'Community'],
+    responsibilities: ['Idea', 'Design', 'Community'],
     portrait: pascalDulex,
     email: 'pascal.dulex@transformation-architects.ch',
   },
   {
     name: 'Andy Moesch',
-    responsibilities: ['Design', 'Engineering'],
+    responsibilities: ['Engineering'],
     portrait: andyMoesch,
     email: 'andy.moesch@xigo.ch',
   },
