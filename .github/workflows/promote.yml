@@ -41,6 +41,7 @@ jobs:
       TRUST_PROXY: ${{ vars.TRUST_PROXY }}
       PUBLIC_URL: ${{ vars.PUBLIC_URL }}
       SEED_ADMINS: ${{ vars.SEED_ADMINS }}
+      MAIL_FROM_NAME: ${{ vars.MAIL_FROM_NAME }}
       MIXPANEL_TOKEN: ${{ vars.MIXPANEL_TOKEN }}
       TICK_INVOKER: ${{ vars.TICK_INVOKER }}
 

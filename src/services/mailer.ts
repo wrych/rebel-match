@@ -46,9 +46,15 @@ export interface OutboxStore {
   markFailed(id: string, error: string): Promise<void>
 }
 
+/** Who an email comes from: the name inboxes show, and the address. */
+export interface Sender {
+  name: string
+  address: string
+}
+
 export interface MailTransport {
   send(mail: {
-    from: string
+    from: Sender
     to: string
     subject: string
     text: string
@@ -59,7 +65,7 @@ export interface MailerDeps {
   store: OutboxStore
   /** Null when delivery is off: messages are recorded and suppressed. */
   transport: MailTransport | null
-  from: string
+  from: Sender
   /** True only in a development deployment (R-DEV-1). */
   keepCredentials: boolean
   now?: () => Date

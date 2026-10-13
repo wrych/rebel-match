@@ -570,7 +570,8 @@ allocated and the server's own timers run.
 
 Plus `SMTP_HOST`, `SMTP_PORT` (587), `SMTP_USER` and `MAIL_FROM`, from
 `docs/email-setup.md`; `FEEDBACK_TO`, the team address feedback goes to
-(R-FB-1); and `TRUST_PROXY=1`. Production refuses to start with
+(R-FB-1); and `TRUST_PROXY=1`. Optionally `MAIL_FROM_NAME`, the name inboxes
+show beside `MAIL_FROM`; without it, "Rebel Match". Production refuses to start with
 `TRUST_PROXY=0` or an http `PUBLIC_URL` (ADR 0034): without the first, every
 visitor shares the proxy's per-IP limits; without the second, the session
 cookie loses `Secure`. Behind the load balancer of step 21 there is one more

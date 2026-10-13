@@ -8,6 +8,7 @@ import {
   type OutboundMessage,
   type OutboxEntry,
   type OutboxStore,
+  type Sender,
 } from './mailer.js'
 
 interface Logged extends OutboxEntry {
@@ -44,6 +45,7 @@ const message: OutboundMessage = {
   credential: link,
 }
 const now = new Date('2026-11-08T10:00:00Z')
+const sender: Sender = { name: 'Rebel Match', address: 'hello@example.invalid' }
 
 describe('createMailer', () => {
   it('records before it hands the message to the transport (R-MSG-2)', async () => {
@@ -58,7 +60,7 @@ describe('createMailer', () => {
     const mailer = createMailer({
       store,
       transport,
-      from: 'f',
+      from: sender,
       keepCredentials: false,
     })
 
@@ -67,13 +69,35 @@ describe('createMailer', () => {
     expect(seen).toEqual(['recorded'])
   })
 
+  it('sends from the configured name and address', async () => {
+    const sent: Parameters<MailTransport['send']>[0][] = []
+    const mailer = createMailer({
+      store: memoryOutbox(),
+      transport: {
+        send: (mail) => {
+          sent.push(mail)
+          return Promise.resolve()
+        },
+      },
+      from: sender,
+      keepCredentials: false,
+    })
+
+    await mailer.send(message)
+
+    expect(sent[0]?.from).toEqual({
+      name: 'Rebel Match',
+      address: 'hello@example.invalid',
+    })
+  })
+
   it('marks a delivered message sent, with the time (R-MSG-3)', async () => {
     const store = memoryOutbox()
     const transport: MailTransport = { send: () => Promise.resolve() }
     const mailer = createMailer({
       store,
       transport,
-      from: 'f',
+      from: sender,
       keepCredentials: false,
       now: () => now,
     })
@@ -87,7 +111,7 @@ describe('createMailer', () => {
     const mailer = createMailer({
       store,
       transport: null,
-      from: 'f',
+      from: sender,
       keepCredentials: true,
     })
 
@@ -105,7 +129,7 @@ describe('createMailer', () => {
     await createMailer({
       store,
       transport: null,
-      from: 'f',
+      from: sender,
       keepCredentials: true,
     }).send(message)
 
@@ -118,7 +142,7 @@ describe('createMailer', () => {
     await createMailer({
       store,
       transport,
-      from: 'f',
+      from: sender,
       keepCredentials: false,
     }).send(message)
 
@@ -134,7 +158,7 @@ describe('createMailer', () => {
     const mailer = createMailer({
       store,
       transport,
-      from: 'f',
+      from: sender,
       keepCredentials: false,
     })
 
@@ -156,7 +180,7 @@ describe('createMailer', () => {
     await createMailer({
       store: memoryOutbox(),
       transport,
-      from: 'f',
+      from: sender,
       keepCredentials: false,
     }).send(message)
 

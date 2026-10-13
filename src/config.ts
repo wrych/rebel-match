@@ -178,6 +178,13 @@ const envSchema = z
 
     MAIL_DELIVERY: z.enum(['smtp', 'none']).default('none'),
     MAIL_FROM: z.email().default('hello@rebel-match.invalid'),
+    // The name inboxes show beside MAIL_FROM; one line, as a header holds it.
+    MAIL_FROM_NAME: z
+      .string()
+      .trim()
+      .min(1)
+      .regex(/^[^\r\n]+$/, 'one line only')
+      .default('Rebel Match'),
     // Where members' feedback goes (R-FB-1). The default reaches nobody, so
     // production must name a real inbox.
     FEEDBACK_TO: z.email().default(FEEDBACK_NOWHERE),
@@ -489,7 +496,8 @@ export interface Config {
   notificationWorker: NotificationWorkerSettings
   mail: {
     delivery: Env['MAIL_DELIVERY']
-    from: string
+    /** The sender, as inboxes show it: a name beside the address. */
+    from: { name: string; address: string }
     smtp: { host?: string; port: number; user?: string; password?: string }
   }
   feedbackTo: string
@@ -599,7 +607,7 @@ function notificationWorkerFrom(env: Env): NotificationWorkerSettings {
 function mailFrom(env: Env): Config['mail'] {
   return {
     delivery: env.MAIL_DELIVERY,
-    from: env.MAIL_FROM,
+    from: { name: env.MAIL_FROM_NAME, address: env.MAIL_FROM },
     smtp: {
       ...(env.SMTP_HOST === undefined ? {} : { host: env.SMTP_HOST }),
       port: env.SMTP_PORT,
