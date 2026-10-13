@@ -362,8 +362,9 @@ the coolers, the meeting room and the entrance. "Nearest the meeting room"
 steps into the meeting room under their own steam; holding a meeting gives
 their busy spell a route, through the door to the head of the table and back
 out, and each step puts them the spell's share of the way along it, so the
-walk ends with the meeting. The door is open while a meeting runs or anyone
-is still in the room, which needs no state of its own.
+walk ends with the meeting. The door is hung and drawn like the office's and
+swings at the same pace: towards open while a meeting runs or anyone is still
+in the room, and shut once it is empty.
 
 **Drawing.** Characters are drawn in code as smooth vector figures: a rounded
 suit body with arms and hands, a shirt collar and tie, a head with ears, eyes
