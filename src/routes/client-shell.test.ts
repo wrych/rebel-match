@@ -8,7 +8,7 @@ import { clientShellRoutes } from './client-shell.js'
 
 const SHELL = '<!doctype html><title>Rebel Match</title><div id="app"></div>'
 const titled = (title: string): string =>
-  SHELL.replace('Rebel Match', `${title} | Rebel Match`)
+  SHELL.replace('Rebel Match', `Rebel Match | ${title}`)
 
 let dir: string
 let app: Express

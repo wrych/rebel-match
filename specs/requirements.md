@@ -819,13 +819,14 @@ at a screen instead of at the front door.
     Without a touch screen the automatic refresh and the button remain.
 
 - **R-NAV-13 (Named tabs)** — Every screen SHALL give the page a title of the
-  form _Screen | Rebel Match_, so a tab, a bookmark and a history entry say
-  which screen they hold; an address no screen serves is _Not found | Rebel
-  Match_. The title SHALL be in the page the server sends for an address, not
+  form _Rebel Match | Screen_, so a tab, a bookmark and a history entry say
+  which screen they hold; an address no screen serves is _Rebel Match | Not
+  found_. The title SHALL be in the page the server sends for an address, not
   only set once the app runs, so a link opened in a new tab or previewed in a
   chat is named too. A title SHALL name the screen only, never a member, a
   challenge or anything else a member wrote (R-NFR-1): it outlives the visit in
-  history, synced tabs and shared screens. _(Founders' review, 2026-10-13.)_
+  history, synced tabs and shared screens. _(Founders' review, 2026-10-13; the
+  app's name first, as the maintainer asked.)_
 
 ---
 
@@ -1161,7 +1162,7 @@ notifications: they go out at once, whatever is chosen here (R-NFR-3).
   header's menu button SHALL carry a badge with their number, and the menu
   item SHALL read **Notifications (n new)**; without any it SHALL read
   **Notifications**, with no badge and no number; and the tab title (R-NAV-13)
-  SHALL lead with the number in brackets, _(3) Your matches | Rebel Match_, so
+  SHALL lead with the number in brackets, _(3) Rebel Match | Your matches_, so
   a tab in the background says something is waiting. All three SHALL refresh as
   the navigation badge does (R-MINE-4).
 - **R-NOTE-7 (When mail goes out)** — A member's mail SHALL be grouped by

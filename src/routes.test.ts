@@ -109,17 +109,17 @@ describe('titleForPath (R-NAV-13)', () => {
       expect(route.title.trim(), route.name).not.toBe('')
   })
 
-  it('names the screen first, then the app', () => {
-    expect(pageTitle('Welcome')).toBe('Welcome | Rebel Match')
+  it('names the app first, then the screen', () => {
+    expect(pageTitle('Welcome')).toBe('Rebel Match | Welcome')
   })
 
   it('titles a parameterised path by its screen, ignoring the query', () => {
     expect(titleForPath('/challenges/abc-123/matches?posted=1')).toBe(
-      'Your matches | Rebel Match',
+      'Rebel Match | Your matches',
     )
   })
 
   it('titles a path no screen serves as not found', () => {
-    expect(titleForPath('/admin/secrets')).toBe('Not found | Rebel Match')
+    expect(titleForPath('/admin/secrets')).toBe('Rebel Match | Not found')
   })
 })
