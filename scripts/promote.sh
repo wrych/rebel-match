@@ -12,7 +12,8 @@
 # GCP_SQL_INSTANCE, GCP_RUN_SA, GCP_PROJECT_NUMBER, SMTP_HOST, SMTP_USER,
 # MAIL_FROM, FEEDBACK_TO. Optionally SMTP_PORT (587), TRUST_PROXY (1; 2 behind
 # the load balancer if per-IP limits count everyone together), PUBLIC_URL
-# (the domain, once it serves), SEED_ADMINS (R-SEED-9), MIXPANEL_TOKEN
+# (the domain, once it serves), SEED_ADMINS (R-SEED-9), MAIL_FROM_NAME (the
+# sender's name, "Rebel Match" by default), MIXPANEL_TOKEN
 # (ADR 0026), and TICK_INVOKER, which hands the scheduled work to Cloud
 # Scheduler's tick and bills the warm instance per request (ADR 0049).
 set -euo pipefail
@@ -46,6 +47,7 @@ join() { local IFS=,; echo "$*"; }
 OPTIONAL_ENV=()
 [[ -n "${MIXPANEL_TOKEN:-}" ]] && OPTIONAL_ENV+=("MIXPANEL_TOKEN=$MIXPANEL_TOKEN")
 [[ -n "${SEED_ADMINS:-}" ]] && OPTIONAL_ENV+=("SEED_ADMINS=$SEED_ADMINS")
+[[ -n "${MAIL_FROM_NAME:-}" ]] && OPTIONAL_ENV+=("MAIL_FROM_NAME=$MAIL_FROM_NAME")
 if [[ -n "${TICK_INVOKER:-}" ]]; then
   OPTIONAL_ENV+=(SCHEDULED_WORK=tick "TICK_INVOKER=$TICK_INVOKER"
     "TICK_AUDIENCE=$RUN_APP_URL")

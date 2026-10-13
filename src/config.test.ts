@@ -374,6 +374,26 @@ describe('smtp configuration', () => {
     })
   })
 
+  it('sends as Rebel Match unless told another name', () => {
+    expect(loadConfig(valid).mail.from).toEqual({
+      name: 'Rebel Match',
+      address: 'hello@rebel-match.invalid',
+    })
+    expect(
+      loadConfig({ ...valid, MAIL_FROM_NAME: '  Rebel Match Team ' }).mail.from
+        .name,
+    ).toBe('Rebel Match Team')
+  })
+
+  it('refuses a sender name that would break the From header', () => {
+    expect(() =>
+      loadConfig({ ...valid, MAIL_FROM_NAME: 'Rebel\r\nBcc: x@example.org' }),
+    ).toThrow(/MAIL_FROM_NAME/)
+    expect(() => loadConfig({ ...valid, MAIL_FROM_NAME: ' ' })).toThrow(
+      /MAIL_FROM_NAME/,
+    )
+  })
+
   it('omits credentials entirely rather than carrying undefined', () => {
     expect(loadConfig(valid).mail.smtp).toEqual({ port: 587 })
   })

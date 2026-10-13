@@ -745,9 +745,14 @@ const catalogue: Group[] = [
         read: (c) => onOff(c.mail.delivery === 'smtp'),
       },
       {
+        name: 'Sender name',
+        explanation: 'The name inboxes show beside the sender address.',
+        read: (c) => c.mail.from.name,
+      },
+      {
         name: 'Sender address',
         explanation: 'The address emails come from.',
-        read: (c) => c.mail.from,
+        read: (c) => c.mail.from.address,
       },
       {
         name: 'Feedback goes to',

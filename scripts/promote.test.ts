@@ -160,6 +160,18 @@ describe('promote.sh (ADR 0025)', () => {
     )
   })
 
+  it('passes on a sender name with spaces, and leaves the default without one', async () => {
+    const named = deploy(
+      (await promote({ MAIL_FROM_NAME: 'Rebel Match Team' })).calls,
+    )
+    const unnamed = deploy((await promote()).calls)
+
+    expect(envOf(named)).toContain('MAIL_FROM_NAME=Rebel Match Team')
+    expect(envOf(unnamed).some((v) => v.startsWith('MAIL_FROM_NAME'))).toBe(
+      false,
+    )
+  })
+
   it('points links at the domain once PUBLIC_URL names it', async () => {
     const service = deploy(
       (await promote({ PUBLIC_URL: 'https://rebel-match.example.org' })).calls,
