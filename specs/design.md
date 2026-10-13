@@ -336,8 +336,9 @@ client/game/
               floor map; no game state of its own
   input/      joystick, keyboard, the action button and its two-choice split
   GameScreen.vue   the loop: input → step → render, at a fixed 30 steps a
-                   second; the results card and hints are ordinary Vue
-                   overlays above the canvas, and the lobby replaces it
+                   second; the results card, the promotion panel and hints
+                   are ordinary Vue overlays above the canvas, and the
+                   lobby replaces it
                    while the phone is upright (ADR 0046)
 ```
 

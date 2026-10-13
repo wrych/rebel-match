@@ -1377,8 +1377,14 @@ the office's people; the **player** is the character the member steers.
   The first time a member meets a mechanic (the first day, the water cooler,
   meetings, rebel mode) the game SHALL show a short hint, once per member; the
   first day's hint opens with keeping the workers busy. The lobby SHALL keep
-  every hint under "How to play", to read again at any time. The game makes no
-  sound.
+  every hint under "How to play", to read again at any time. WHEN a member
+  starts the first day of a boss job after Team Lead that is the highest level
+  they have reached, the game SHALL first show a panel naming the promotion
+  ("Promoted to Manager") and, in the dry voice of an HR memo, only the most
+  important of what changed from the job before, as the settings stand:
+  employees, water coolers and meeting seats, each listed only if it changed.
+  Its button's words SHALL be picked at random from a handful. The game makes
+  no sound.
 - **R-GAME-19 (Usage data)** — For a member opted in (R-ANA-4) THE SYSTEM SHALL
   send `game_opened`, `game_day_finished` with the mode, level, outcome and
   whole seconds, and `game_result_shared`, with no name or pseudonym
