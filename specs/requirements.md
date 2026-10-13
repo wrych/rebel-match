@@ -456,8 +456,9 @@ capability, not a secret** — and every requirement below exists because of tha
   is live and that members who can help will now see it. The banner SHALL show
   only on that arrival, not when the member returns to the view later.
 - **R-ASK-12 (Purpose in every word)** — The matches view SHALL open with the
-  member's own challenge, as the same card the cockpit shows it on (R-MINE-1),
-  under the kicker _Your challenge_, then head the
+  member's own challenge under the kicker _Your challenge_ — in the _summary_
+  layout (R-ASK-16) as the same card the cockpit shows it on (R-MINE-1) — then
+  head the
   matches _Your matches_, and SHALL name each section by its label, the people
   in it and what to do with them: _Same boat: rebels facing this now — connect
   and compare notes_, _Been there: rebels who've solved it — ask how they did
@@ -474,8 +475,13 @@ capability, not a secret** — and every requirement below exists because of tha
   trend, as the connection request shows the challenge it is about, never who
   wrote it. Only an active challenge of an active, onboarded member counts, as
   for the deck (R-OFF-1), and never the viewer's own.
-- **R-ASK-15 (A sentence per section)** — Each non-empty section of the
-  matches view SHALL show, instead of its cards, one sentence naming its first
+- **R-ASK-15 (Two layouts)** — In the _cards_ layout (R-ASK-16), each section
+  of the matches view SHALL show its first `limits.matchesShownFirst` entries,
+  and below them, IF it holds more, a control naming how many more there are
+  and what they are (_3 more rebels in the same boat_, _2 more who've been
+  there_, _4 more case studies_) that shows the rest in place, and then shows
+  fewer again. In the _summary_ layout, each non-empty section SHALL show,
+  instead of its cards, one sentence naming its first
   `limits.matchesNamedFirst` entries, most relevant first, and counting the rest
   (_Ana Diaz, Ben Ortiz and 7 others are in the same boat_, _Bea There has been
   there_, _Haier, Buurtzorg and 2 others made the shift_), ending in a _Read
@@ -483,6 +489,16 @@ capability, not a secret** — and every requirement below exists because of tha
   again. An empty section says what R-ASK-13 says. _(Founders' review,
   2026-10-09: the overview should fit without scrolling; Andy, 2026-10-12: a
   sentence per section instead of its first card, ADR 0051.)_
+- **R-ASK-16 (Which layout works best)** — Until the founders pick one, THE
+  SYSTEM SHALL show each member one of the two layouts of R-ASK-15, _summary_
+  for `limits.matchesSummaryPercent` percent of members and _cards_ for the
+  rest, chosen from the member's id alone so that a member sees the same
+  layout on every visit and device, and SHALL keep the layout a screen opened
+  with while it stays open. For a member opted in (R-ANA-4) it SHALL send
+  `matches_viewed` on opening the matches view, `matches_section_opened` on
+  opening a section's fold and `match_connect_tapped` on a peer's connect
+  action, each with the layout and nothing that identifies the member or the
+  challenge (R-ANA-3). _(Andy, 2026-10-13: an A/B test of ADR 0051, ADR 0052.)_
 
 ---
 
@@ -651,7 +667,8 @@ fallback).
 - **R-ANA-1** — The system SHALL capture product-analytics **events** for the key
   funnel: login completed, onboarding completed, challenge submitted, trend
   confirmed/overridden, swipe actions (same boat / been there / skip / follow),
-  connection requested, connection accepted/declined, feedback opened.
+  connection requested, connection accepted/declined, feedback opened, and the
+  matches layout test (R-ASK-16).
 - **R-ANA-2** — Analytics SHALL be attributable to a stable, **pseudonymous**
   member id (not raw email) so funnels and retention work without spreading PII
   into the analytics tool.
@@ -918,8 +935,9 @@ What differs by environment is only whether mail **leaves the machine**.
   `settings:manage` SHALL be able to change, on the settings screen, the
   spam-protection numbers except the trusted proxies, the invite defaults, and
   the minimum challenge and "been there" note lengths (ADR 0031), how often
-  the badges and each live list refresh (R-MINE-4, R-NAV-12, ADR 0050), and the
-  9toRevolution switch and tuning (R-GAME-17, ADR 0045). Each change SHALL be
+  the badges and each live list refresh (R-MINE-4, R-NAV-12, ADR 0050), the
+  share of members shown the summary layout of a challenge's matches (R-ASK-16,
+  ADR 0052), and the 9toRevolution switch and tuning (R-GAME-17, ADR 0045). Each change SHALL be
   checked against bounds and the order of paired limits (the minimum challenge
   length never above the maximum), take effect without a restart on every server
   within a minute, and show who made it and when. The host SHALL be able to go

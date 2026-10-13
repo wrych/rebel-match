@@ -1,6 +1,6 @@
 # 0051. Summarise each matches section in a sentence, its cards on a tap
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by 0052
 - **Date:** 2026-10-12
 - **Deciders:** Andy Moesch
 

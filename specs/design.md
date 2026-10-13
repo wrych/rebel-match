@@ -109,7 +109,9 @@ thresholds have sane defaults in the file and may be overridden by env.
 | `limits.holdToSelectMs`               | `500`                         | R-MEM-3                   |
 | `limits.swipeMinPx`                   | `50`                          | R-OFF-1                   |
 | `limits.pullRefreshPx`                | `70`                          | R-NAV-12                  |
+| `limits.matchesShownFirst`            | `1`                           | R-ASK-15                  |
 | `limits.matchesNamedFirst`            | `2`                           | R-ASK-15                  |
+| `limits.matchesSummaryPercent`        | `50`, a host may change it    | R-ASK-16                  |
 | `abuse.linkEmailsBeforeCheck`         | `3`                           | R-NFR-8                   |
 | `abuse.linkEmailsCeiling`             | `10`                          | R-NFR-8                   |
 | `abuse.linkEmailWindowMinutes`        | `15`                          | R-NFR-8                   |
@@ -1072,7 +1074,7 @@ and answers `204`, or `500` when some of it failed; any other caller gets
 | PUT    | `/api/profile`          | `{name, jobTitle?, org?, sector?, companySize?}`           | Update the profile within the onboarding limits and lists; a blank or left-out optional field clears it (R-PROF-1).                                                                                                                                                                                                                                                           |
 | DELETE | `/api/me/history`       | —                                                          | Delete the member's own deck views, nothing else (R-STAT-4). Answers `204`.                                                                                                                                                                                                                                                                                                   |
 | DELETE | `/api/profile`          | —                                                          | Delete the member's own account as `DELETE /api/admin/members/:id` does: deactivate now, erase after the grace period; then end the session (R-PROF-2, ADR 0032). Refused with 409 `last_admin` or `created_invites`, as there. Answers `{eraseAfter}`.                                                                                                                       |
-| POST   | `/api/events`           | `{event, props}`                                           | The UI events of §7 (`journey_chosen`, `feedback_opened`) with their listed properties only; anything else → `400`. Forwarded to Mixpanel only for a member opted in; always `204` otherwise, so the client cannot tell (ADR 0026).                                                                                                                                           |
+| POST   | `/api/events`           | `{event, props}`                                           | The UI events of §7 (`journey_chosen`, `feedback_opened`, `game_opened` and the matches layout test's three) with their listed properties only; anything else → `400`. Forwarded to Mixpanel only for a member opted in; always `204` otherwise, so the client cannot tell (ADR 0026).                                                                                        |
 
 The profile form — on the check-your-email screen and as the profile step — is
 one component. Each field saves on change, through `PUT /auth/draft` before
@@ -1090,15 +1092,15 @@ member prefers reduced motion (R-ONB-10).
 
 ### Ask journey
 
-| Method | Path                            | Body        | Behavior                                                                                                                                                                                                                                          |
-| ------ | ------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| GET    | `/api/trends`                   | —           | The 8 trends with `short`, `from` and `peers`, for the domain screen and the picker (R-ASK-6).                                                                                                                                                    |
-| GET    | `/api/trends/:trendId`          | —           | One trend with its curated case studies, for the trend screen (S9); no member appears. `404` for an id outside the eight.                                                                                                                         |
-| GET    | `/api/challenges/newest?trend=` | —           | `{challenges: [{body, trend: {id, short}}]}`: the newest active challenges of other active, onboarded members, at most `limits.newestChallengesShown`, in `trend` when given; no author, no id (R-ASK-2, R-ASK-14). _Requires `challenge:swipe`._ |
-| POST   | `/api/challenges`               | `{body}`    | Create challenge (`limits.challengeMinChars` to `limits.challengeMaxChars` characters, trimmed), run matcher, return challenge with `autoTrend` (R-ASK-3,4,5). _Requires `challenge:create`._                                                     |
-| GET    | `/api/challenges/:id`           | —           | The author's own challenge; `404` for anyone else (R-NAV-8).                                                                                                                                                                                      |
-| PATCH  | `/api/challenges/:id`           | `{trendId}` | Confirm/override trend; set `overridden` if it differs from `autoTrend`. Author only.                                                                                                                                                             |
-| GET    | `/api/challenges/:id/matches`   | —           | `{trend, sameBoat[], beenThere[], cases[]}` for the confirmed trend, else the matched one; peers are other active, onboarded members, never the author, with no email (R-ASK-8, R-CONN-6). Author only.                                           |
+| Method | Path                            | Body        | Behavior                                                                                                                                                                                                                                             |
+| ------ | ------------------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/trends`                   | —           | The 8 trends with `short`, `from` and `peers`, for the domain screen and the picker (R-ASK-6).                                                                                                                                                       |
+| GET    | `/api/trends/:trendId`          | —           | One trend with its curated case studies, for the trend screen (S9); no member appears. `404` for an id outside the eight.                                                                                                                            |
+| GET    | `/api/challenges/newest?trend=` | —           | `{challenges: [{body, trend: {id, short}}]}`: the newest active challenges of other active, onboarded members, at most `limits.newestChallengesShown`, in `trend` when given; no author, no id (R-ASK-2, R-ASK-14). _Requires `challenge:swipe`._    |
+| POST   | `/api/challenges`               | `{body}`    | Create challenge (`limits.challengeMinChars` to `limits.challengeMaxChars` characters, trimmed), run matcher, return challenge with `autoTrend` (R-ASK-3,4,5). _Requires `challenge:create`._                                                        |
+| GET    | `/api/challenges/:id`           | —           | The author's own challenge; `404` for anyone else (R-NAV-8).                                                                                                                                                                                         |
+| PATCH  | `/api/challenges/:id`           | `{trendId}` | Confirm/override trend; set `overridden` if it differs from `autoTrend`. Author only.                                                                                                                                                                |
+| GET    | `/api/challenges/:id/matches`   | —           | `{trend, sameBoat[], beenThere[], cases[], layout}` for the confirmed trend, else the matched one, with the member's layout (R-ASK-16); peers are other active, onboarded members, never the author, with no email (R-ASK-8, R-CONN-6). Author only. |
 
 ### Offer journey
 
@@ -1221,7 +1223,7 @@ deep link reloads cleanly.
 | S5  | **Submit challenge** — textarea + _Last submitted_: the newest challenges, read-only; disabled until the text passes `limits.challengeMinChars`; takes at most `limits.challengeMaxChars`                                                                                                                                                                                                                                                                                             | `/ask`                                                |
 | S6  | **Domain / trend** — detected trend, "from → to", peer line, confirm                                                                                                                                                                                                                                                                                                                                                                                                                  | `/challenges/:id`                                     |
 | S7  | **Trend picker** — all 8 trends, pick a different one _(was a sheet)_                                                                                                                                                                                                                                                                                                                                                                                                                 | `/challenges/:id/trend`                               |
-| S8  | **Matches (for my challenge)** — posted banner; your challenge's card; same boat / been there / case studies, each a sentence naming the first and counting the rest, its cards on a tap; follow; connect                                                                                                                                                                                                                                                                             | `/challenges/:id/matches`                             |
+| S8  | **Matches (for my challenge)** — posted banner; your challenge; same boat / been there / case studies in the member's layout (R-ASK-16): _cards_, each its first entry and the rest on a tap, or _summary_, the challenge as its card and each section a sentence, its cards on a tap; follow; connect                                                                                                                                                                                | `/challenges/:id/matches`                             |
 | S9  | **Trend detail & case studies** — the trend's "from → to", peers, its newest challenges, curated cases _(was a sheet)_                                                                                                                                                                                                                                                                                                                                                                | `/trends/:trendId`                                    |
 | S10 | **Swipe deck** — card stack; Same boat / Been there / Follow (greyed when followed) / skip                                                                                                                                                                                                                                                                                                                                                                                            | `/offer`                                              |
 | S11 | **"Been there" note** — write the ≥`limits.beenThereNoteMinChars` note for one card _(was a sheet)_                                                                                                                                                                                                                                                                                                                                                                                   | `/offer/:challengeId/note`                            |
@@ -1524,20 +1526,23 @@ Alternatives considered (kept only as fallbacks):
   or name.
 - Capture these events with non-identifying properties only:
 
-  | event                  | properties                               |
-  | ---------------------- | ---------------------------------------- |
-  | `login_completed`      | —                                        |
-  | `onboarding_completed` | `consent_version`, `seconds_to_onboard`? |
-  | `journey_chosen`       | `journey: ask\|offer`                    |
-  | `challenge_submitted`  | `char_count`                             |
-  | `trend_assigned`       | `trend_id`, `overridden: bool`           |
-  | `swipe`                | `action`, `trend_id`                     |
-  | `connection_requested` | `kind`                                   |
-  | `connection_responded` | `status: accepted\|declined`             |
-  | `feedback_opened`      | `screen`                                 |
-  | `game_opened`          | —                                        |
-  | `game_day_finished`    | `mode`, `level`, `outcome`, `seconds`    |
-  | `game_result_shared`   | —                                        |
+  | event                    | properties                                        |
+  | ------------------------ | ------------------------------------------------- |
+  | `login_completed`        | —                                                 |
+  | `onboarding_completed`   | `consent_version`, `seconds_to_onboard`?          |
+  | `journey_chosen`         | `journey: ask\|offer`                             |
+  | `challenge_submitted`    | `char_count`                                      |
+  | `trend_assigned`         | `trend_id`, `overridden: bool`                    |
+  | `swipe`                  | `action`, `trend_id`                              |
+  | `connection_requested`   | `kind`                                            |
+  | `connection_responded`   | `status: accepted\|declined`                      |
+  | `feedback_opened`        | `screen`                                          |
+  | `game_opened`            | —                                                 |
+  | `game_day_finished`      | `mode`, `level`, `outcome`, `seconds`             |
+  | `game_result_shared`     | —                                                 |
+  | `matches_viewed`         | `layout: cards\|summary`                          |
+  | `matches_section_opened` | `section: same_boat\|been_there\|cases`, `layout` |
+  | `match_connect_tapped`   | `kind`, `layout`                                  |
 
 - `seconds_to_onboard` is `consent_at` minus the time the latest sign-in email
   (`outbox` kind `magic_link`) to the member was recorded, in whole seconds
@@ -1559,8 +1564,9 @@ Alternatives considered (kept only as fallbacks):
   `analytics_consent_at`; the member changes it later on the profile screen
   (`PUT /api/me/analytics`, R-PROF-2). An event is sent only while both are set.
 - **Server only.** The server sends every event through the Mixpanel HTTP
-  ingestion API at `analytics.apiHost` (`api-eu.mixpanel.com`). The three UI
-  events, `journey_chosen`, `feedback_opened` and `game_opened`, are posted by
+  ingestion API at `analytics.apiHost` (`api-eu.mixpanel.com`). The UI events,
+  `journey_chosen`, `feedback_opened`, `game_opened`, `matches_viewed`,
+  `matches_section_opened` and `match_connect_tapped`, are posted by
   the client to `POST /api/events`, which accepts only those names with their
   listed properties. No Mixpanel script, cookie or device identifier is in the browser,
   and the token never leaves the server.

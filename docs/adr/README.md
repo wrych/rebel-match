@@ -86,4 +86,5 @@ still holds except where the later ADR says otherwise.
 | [0048](0048-show-the-best-match-first-behind-one-ranker.md)       | Show the most relevant match first, ranked behind one seam                      | Accepted, amended by 0051             |
 | [0049](0049-scheduled-work-on-a-tick.md)                          | Run the scheduled work on a tick from Cloud Scheduler                           | Accepted                              |
 | [0050](0050-live-lists-poll-and-outline-what-arrives.md)          | Live lists poll, outline what arrives, and refresh on a pull                    | Accepted                              |
-| [0051](0051-summarise-each-matches-section-in-a-sentence.md)      | Summarise each matches section in a sentence, its cards on a tap                | Accepted                              |
+| [0051](0051-summarise-each-matches-section-in-a-sentence.md)      | Summarise each matches section in a sentence, its cards on a tap                | Accepted, amended by 0052             |
+| [0052](0052-test-the-matches-layout-on-a-share-of-members.md)     | Test the matches layout on a share of members, chosen by their id               | Accepted                              |
