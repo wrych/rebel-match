@@ -1175,8 +1175,9 @@ the office's people; the **player** is the character the member steers.
   **cubicle** per employee, the boss's **office**, and the job's number of
   **water coolers**: Team Lead 4 employees and no cooler, Manager 8 and 1,
   Director 14 and 1, VP 22 and 2, CEO 32 and 2 (setting, within what the floor
-  plan holds). Rebel mode SHALL use the CEO floor with the office replaced by
-  the player's own **desk**. Walls SHALL be thin and block the player only as
+  plan holds). An employee's desk SHALL be wide enough to hold a file beside
+  the monitor, so a file on it is always in view. Rebel mode SHALL use the CEO
+  floor with the office replaced by the player's own **desk**. Walls SHALL be thin and block the player only as
   far as they are drawn, and an office plant SHALL stand in the office and in
   the open plan, in everyone's way.
 - **R-GAME-3 (A day)** — Each day SHALL begin at 09:00 with every employee

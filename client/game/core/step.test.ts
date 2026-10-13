@@ -3,7 +3,7 @@ import { gameDefaults } from '../../../src/game/tuning'
 import { availableActions } from './actions'
 import { temptationScale } from './boss'
 import { centreOf, distance } from './grid'
-import { floors } from './floors'
+import { DESK_TILES, floors } from './floors'
 import { fileInterval } from './rebel'
 import {
   BODY_RADIUS,
@@ -215,6 +215,19 @@ describe('boss mode (R-GAME-4, R-GAME-7)', () => {
     expect(employee(day, 0).workingUntil).toBeGreaterThan(calm.fileWorkSeconds)
     expect(employee(day, 1).spirit).toBe('tempted')
     expect(day.score).toBe(0)
+  })
+
+  it('reaches a desk from beside its far end, the desk being wide (R-GAME-2)', () => {
+    const day = startDay(1, calm, 7)
+    const desk = floors[day.floor].cubicles[employee(day, 0).cubicle]?.desk
+    if (desk === undefined) throw new Error('no desk')
+    day.player.position = { x: desk.x + DESK_TILES + 0.5, y: desk.y + 0.5 }
+    day.player.carrying = true
+
+    expect(availableActions(day)).toContainEqual({
+      kind: 'leaveFile',
+      target: 0,
+    })
   })
 
   it('leaves no file on a desk its employee sits at', () => {

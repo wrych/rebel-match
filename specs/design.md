@@ -365,7 +365,10 @@ Furniture is seen from above and a little in front: every desk has a monitor, a
 keyboard and a chair, and its worker sits behind it facing the viewer, so the
 monitor shows its back, lit round the edge in the screen's colour and carrying
 the Rebel Match mark in its happy colours while they are tempted, its intro
-running from the moment the temptation starts to the end of the grace time. The player's desk in the office is two tiles
+running from the moment the temptation starts to the end of the grace time. An
+employee's desk blocks two tiles and is drawn one and a half wide, the monitor
+in front of its worker and a file to its right; "at the desk" is measured from
+the middle of its two tiles (R-GAME-2). The player's desk in the office is two tiles
 wide, with a wide screen, a chair in front and, in boss mode, the stack of
 files. A turning employee's bar and a file's reading are drawn from the state
 alone: the bar from when the temptation began, the file from when its work or
