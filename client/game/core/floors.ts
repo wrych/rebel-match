@@ -77,6 +77,9 @@ export interface Floor {
   tableHead: Spot
   /** The tile outside the meeting room's door, where a meeting is called. */
   meetingOutside: Spot
+  /** How the meeting room's door swings: like the office's, hung at the
+   * doorway's top and opening into the room. */
+  meetingSwing: Swing
   cubicles: readonly Cubicle[]
   /** The tile beside each cooler where two can stand. */
   coolers: readonly { cooler: Spot; stands: readonly [Spot, Spot] }[]
@@ -281,6 +284,7 @@ export function layOut(layout: Layout): Floor {
     table: TABLE,
     tableHead: TABLE_HEAD,
     meetingOutside: { x: door.x + 1, y: door.y },
+    meetingSwing: hungIn(door),
     cubicles: placed,
     coolers: spots,
   }

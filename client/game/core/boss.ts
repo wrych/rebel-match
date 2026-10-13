@@ -1,3 +1,4 @@
+import { SWING_PER_SECOND } from './door'
 import { inMeetingRoom, type Spot } from './floors'
 import { centreOf, distancesFrom, path, tileOf, walkingDistance } from './grid'
 import { pick } from './random'
@@ -132,4 +133,11 @@ export function endMeeting(state: DayState): void {
     employee.spirit = 'grey'
     sendToDesk(state, employee)
   }
+}
+
+/** Swings the meeting room's door towards open while it should be, and shut
+ * once the room is empty, at the office door's pace (R-GAME-6). */
+export function swingMeetingDoor(state: DayState, dt: number): void {
+  const step = SWING_PER_SECOND * dt * (meetingDoorOpen(state) ? 1 : -1)
+  state.meetingDoor = Math.min(1, Math.max(0, state.meetingDoor + step))
 }

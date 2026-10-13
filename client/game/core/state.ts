@@ -87,6 +87,8 @@ export interface DayState {
   /** When two first stood together at each cooler, if they still do. */
   chats: (number | null)[]
   door: Door
+  /** How far open the meeting room's door stands, 0 shut to 1 open. */
+  meetingDoor: number
   meetingHeld: boolean
   masterclassHeld: boolean
   breakReadyAt: number
@@ -194,6 +196,7 @@ export function startDay(
     ),
     chats: floor.coolers.map(() => null),
     door: { openness: 1, opening: true, shutsAt: tuning.doorOpenSeconds },
+    meetingDoor: 0,
     meetingHeld: false,
     masterclassHeld: false,
     breakReadyAt: 0,

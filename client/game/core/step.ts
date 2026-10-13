@@ -1,5 +1,5 @@
 import { act, finish, type ActionKind } from './actions'
-import { bossRules } from './boss'
+import { bossRules, swingMeetingDoor } from './boss'
 import { coolers } from './cooler'
 import { fromLeaf, swingDoor, touchesLeaf } from './door'
 import { inMeetingRoom, type Spot } from './floors'
@@ -107,6 +107,7 @@ export function step(previous: DayState, input: Input, dt: number): DayState {
   if (input.act !== undefined) act(state, input.act, input.chosen)
   swingDoor(state, dt)
   walk(state, dt)
+  swingMeetingDoor(state, dt)
   coolers(state, dt)
   if (state.mode === 'boss') bossRules(state, dt)
   else rebelRules(state)

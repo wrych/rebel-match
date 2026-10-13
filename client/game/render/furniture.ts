@@ -1,11 +1,9 @@
 import { floors, type Floor, type Spot, type Swing } from '../core/floors'
-import { meetingDoorOpen } from '../core/boss'
 import { LEAF_HALF, leafAt } from '../core/door'
 import type { DayState, Employee } from '../core/state'
 import { drawMark } from './mark'
 import type { Palette } from './palette'
 import { circle, drawFile, outline, roundRect, type Ctx } from './shapes'
-import { WALL } from '../core/walls'
 
 /** How far the front edge of a block shows below its top. */
 const LIP = 0.1
@@ -342,25 +340,7 @@ export function drawDoor(ctx: Ctx, state: DayState, pal: Palette): void {
   drawSwing(ctx, floors[state.floor].officeDoor, state.door.openness, pal)
 }
 
-/** How far into the wall pocket the meeting room's door slides to open. */
-const POCKET = 0.85
-
-/** The meeting room's sliding door, in its doorway in the wall: shut, with a
- * handle, or slid into the wall but for its edge during a meeting
- * (R-GAME-6). */
+/** The meeting room's door, hung like the office's (R-GAME-6). */
 export function drawMeetingDoor(ctx: Ctx, state: DayState, pal: Palette): void {
-  const door = floors[state.floor].meetingDoor
-  const leaf = {
-    x: door.x + (1 - WALL) / 2 + 0.04,
-    y: door.y + (meetingDoorOpen(state) ? POCKET : 0),
-    w: WALL - 0.08,
-    h: 1,
-  }
-  ctx.fillStyle = pal.furniture
-  ctx.fillRect(leaf.x, leaf.y, leaf.w, leaf.h)
-  ctx.strokeStyle = pal.edge
-  ctx.lineWidth = 0.03
-  ctx.strokeRect(leaf.x, leaf.y, leaf.w, leaf.h)
-  ctx.fillStyle = pal.bezel
-  circle(ctx, { x: leaf.x + leaf.w / 2, y: leaf.y + 0.15 }, 0.04)
+  drawSwing(ctx, floors[state.floor].meetingSwing, state.meetingDoor, pal)
 }

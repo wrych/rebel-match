@@ -2,7 +2,7 @@ import type { Spot, Swing } from './floors'
 import { BODY_RADIUS, draw, floorFor, type DayState } from './state'
 
 /** How much of its swing the door makes in a second. */
-const SWING_PER_SECOND = 1.5
+export const SWING_PER_SECOND = 1.5
 /** Half the leaf's thickness, in tiles. */
 export const LEAF_HALF = 0.06
 /** How far a shut door's next wait varies either way, as a share of it. */
