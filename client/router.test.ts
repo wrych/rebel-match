@@ -20,10 +20,10 @@ describe('router titles (R-NAV-13)', () => {
     signedOut()
 
     await router.push('/privacy')
-    expect(document.title).toBe('Privacy notice | Rebel Match')
+    expect(document.title).toBe('Rebel Match | Privacy notice')
 
     await router.push('/terms')
-    expect(document.title).toBe('Terms of use | Rebel Match')
+    expect(document.title).toBe('Rebel Match | Terms of use')
   })
 
   it('names an address no screen serves as not found', async () => {
@@ -31,6 +31,6 @@ describe('router titles (R-NAV-13)', () => {
 
     await router.push('/no-such-screen')
 
-    expect(document.title).toBe('Not found | Rebel Match')
+    expect(document.title).toBe('Rebel Match | Not found')
   })
 })

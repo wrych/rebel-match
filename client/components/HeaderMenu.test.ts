@@ -307,7 +307,7 @@ describe('HeaderMenu', () => {
     const { showScreen } = await import('../lib/tab-title')
     showScreen('Offer help')
 
-    expect(document.title).toBe('(4) Offer help | Rebel Match')
+    expect(document.title).toBe('(4) Rebel Match | Offer help')
   })
 
   it('shows no badge and no number with nothing new (R-NOTE-6)', async () => {

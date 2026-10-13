@@ -4,11 +4,11 @@ import { showScreen, showUnread, tabTitle } from './tab-title'
 
 describe('tabTitle (R-NAV-13, R-NOTE-6)', () => {
   it('leads with the number of new notifications', () => {
-    expect(tabTitle('Your matches', 3)).toBe('(3) Your matches | Rebel Match')
+    expect(tabTitle('Your matches', 3)).toBe('(3) Rebel Match | Your matches')
   })
 
   it('shows no number with nothing new', () => {
-    expect(tabTitle('Your matches', 0)).toBe('Your matches | Rebel Match')
+    expect(tabTitle('Your matches', 0)).toBe('Rebel Match | Your matches')
   })
 })
 
@@ -20,12 +20,12 @@ describe('the tab title as the app runs', () => {
     expect(document.title).toBe('Rebel Match')
 
     showScreen('Welcome')
-    expect(document.title).toBe('(2) Welcome | Rebel Match')
+    expect(document.title).toBe('(2) Rebel Match | Welcome')
 
     showScreen('Offer help')
-    expect(document.title).toBe('(2) Offer help | Rebel Match')
+    expect(document.title).toBe('(2) Rebel Match | Offer help')
 
     showUnread(0)
-    expect(document.title).toBe('Offer help | Rebel Match')
+    expect(document.title).toBe('Rebel Match | Offer help')
   })
 })

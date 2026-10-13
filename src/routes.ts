@@ -12,7 +12,7 @@ export interface RouteDef {
   /** vue-router path, `:param` segments included. */
   path: string
   name: string
-  /** The screen's name in its tab, before " | Rebel Match" (R-NAV-13). */
+  /** The screen's name in its tab, after "Rebel Match | " (R-NAV-13). */
   title: string
   access: Access
   /** Permission the member must hold, resolved from their roles (R-ROLE-3). */
@@ -189,7 +189,7 @@ export const NOT_FOUND_TITLE = 'Not found'
 
 /** A screen's title as a tab shows it (R-NAV-13). */
 export function pageTitle(screen: string): string {
-  return `${screen} | ${APP_NAME}`
+  return `${APP_NAME} | ${screen}`
 }
 
 const SEGMENT = /^:[A-Za-z][A-Za-z0-9]*$/
