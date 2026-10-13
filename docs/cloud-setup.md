@@ -425,10 +425,10 @@ gcloud services enable --project="$PROD" \
   cloudscheduler.googleapis.com
 ```
 
-## 15. The two grants on non-prod
+## 15. The grants on non-prod
 
 Production pulls staging's images, and its deployer reads which digest staging
-serves — nothing more of non-prod.
+serves and may name those images in a deploy — nothing more of non-prod.
 
 ```sh
 PROD_NUMBER=$(gcloud projects describe "$PROD" --format='value(projectNumber)')
@@ -440,7 +440,7 @@ gcloud artifacts repositories add-iam-policy-binding rebel-match \
 
 The `serverless-robot-prod` account appears once the Run API is enabled (§14).
 If the binding says it does not exist yet, wait a minute and run it again. The
-second grant follows the deployer's creation in §18.
+deployer's two grants follow its creation in §18.
 
 ## 16. Database
 
@@ -503,9 +503,13 @@ gcloud iam service-accounts add-iam-policy-binding \
   "rebel-match-run@$PROD.iam.gserviceaccount.com" --project="$PROD" \
   --member="serviceAccount:$PROD_DEPLOYER" --role=roles/iam.serviceAccountUser
 
-# The second grant on non-prod (§15): read which digest staging serves.
+# The deployer's grants on non-prod (§15): read which digest staging serves,
+# and read the image itself, which Cloud Run checks of whoever deploys it.
 gcloud projects add-iam-policy-binding "$NONPROD" --condition=None \
   --member="serviceAccount:$PROD_DEPLOYER" --role=roles/run.viewer
+gcloud artifacts repositories add-iam-policy-binding rebel-match \
+  --project="$NONPROD" --location="$REGION" \
+  --member="serviceAccount:$PROD_DEPLOYER" --role=roles/artifactregistry.reader
 
 # Who the tick comes from (§22, ADR 0049). It needs no role: the server
 # checks its address in the token the scheduler signs for it.
