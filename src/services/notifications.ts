@@ -2,12 +2,15 @@ import type { ConnectionService } from './connections.js'
 import type { DeckService } from './deck.js'
 
 /** What a notification says happened, as the screen words it (R-NOTE-1). */
-export type NotificationKind =
-  | 'connection_request'
-  | 'connection_accepted'
-  | 'connection_added'
-  | 'trend_challenge'
-  | 'applicant'
+export const notificationKinds = [
+  'connection_request',
+  'connection_accepted',
+  'connection_added',
+  'trend_challenge',
+  'applicant',
+] as const
+
+export type NotificationKind = (typeof notificationKinds)[number]
 
 /** A notification as its recipient sees it in the list (R-NOTE-5): the member
  * it is about by name only, and where tapping it leads. */

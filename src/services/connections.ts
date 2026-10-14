@@ -269,8 +269,37 @@ async function settleAccepted(
   await store.acceptPending(record.targetId, record.requesterId)
 }
 
+const MS_PER_HOUR = 3_600_000
+
+// How long the request waited for its answer, in whole hours (R-ANA-1).
+function hoursSince(createdAt: string, now: Date): number {
+  return Math.max(
+    0,
+    Math.round((now.getTime() - new Date(createdAt).getTime()) / MS_PER_HOUR),
+  )
+}
+
+async function respondTo(
+  deps: Asking & { now: () => Date },
+  memberId: string,
+  id: string,
+  answer: 'accepted' | 'declined',
+): Promise<'done' | 'not_found'> {
+  const record = await deps.store.find(id)
+  if (record === null || !(await deps.store.respond(id, memberId, answer)))
+    return 'not_found'
+  void deps.track(memberId, {
+    name: 'connection_responded',
+    status: answer,
+    hours_to_respond: hoursSince(record.createdAt, deps.now()),
+  })
+  if (answer === 'accepted') await settleAccepted(deps.store, id)
+  return 'done'
+}
+
 async function readContact(
   store: ConnectionStore,
+  track: Track,
   memberId: string,
   id: string,
 ): Promise<Contact | null> {
@@ -281,6 +310,10 @@ async function readContact(
   const otherId = otherOf(record, memberId)
   const over = await store.connectedOver(memberId, otherId)
   await store.markSeen(memberId, otherId)
+  void track(memberId, {
+    name: 'contact_opened',
+    unseen: over.some((each) => each.unseen),
+  })
   return { ...other, mailto: mailtoFor(other.email), over }
 }
 
@@ -293,10 +326,12 @@ export function createConnections(deps: {
   store: ConnectionStore
   newId: () => string
   track?: Track
+  now?: () => Date
 }): ConnectionService {
   const { store } = deps
   const track = deps.track ?? trackNothing
   const asking: Asking = { store, newId: deps.newId, track }
+  const now = deps.now ?? ((): Date => new Date())
   return {
     request: async (requesterId, input) => {
       if (!(await mayRequest(store, requesterId, input)))
@@ -308,12 +343,8 @@ export function createConnections(deps: {
     incoming: (memberId) => store.incoming(memberId),
     connected: (memberId) => store.connected(memberId),
     get: (memberId, id) => store.view(id, memberId),
-    respond: async (memberId, id, answer) => {
-      if (!(await store.respond(id, memberId, answer))) return 'not_found'
-      void track(memberId, { name: 'connection_responded', status: answer })
-      if (answer === 'accepted') await settleAccepted(store, id)
-      return 'done'
-    },
-    contact: (memberId, id) => readContact(store, memberId, id),
+    respond: (memberId, id, answer) =>
+      respondTo({ ...asking, now }, memberId, id, answer),
+    contact: (memberId, id) => readContact(store, track, memberId, id),
   }
 }

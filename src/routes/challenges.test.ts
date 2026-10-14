@@ -59,8 +59,9 @@ function setup(settings: LiveSettings = fixedSettings(config)): {
             }
           : null,
       ),
-    trend: (trendId) =>
-      Promise.resolve(
+    trend: (memberId, trendId) => {
+      calls.push(['trend', memberId, trendId])
+      return Promise.resolve(
         trendId === '06'
           ? {
               trend: { id: '06', short: 'DDM', from: 'Central', peers: 29 },
@@ -69,7 +70,8 @@ function setup(settings: LiveSettings = fixedSettings(config)): {
               ],
             }
           : null,
-      ),
+      )
+    },
     newest: (memberId, trendId) => {
       calls.push(['newest', memberId, trendId])
       return Promise.resolve([
@@ -92,10 +94,14 @@ async function cookieFor(memberId: string): Promise<string> {
 }
 
 describe('challenge routes', () => {
-  it('shows a trend with its case studies (design S9)', async () => {
-    const response = await request(setup().app).get('/api/trends/06')
+  it('shows a trend with its case studies to a member (design S9, R-ANA-1)', async () => {
+    const { app, calls } = setup()
+    const response = await request(app)
+      .get('/api/trends/06')
+      .set('Cookie', await cookieFor('m-ada'))
 
     expect(response.status).toBe(200)
+    expect(calls).toEqual([['trend', 'm-ada', '06']])
     expect(response.body).toEqual({
       trend: { id: '06', short: 'DDM', from: 'Central', peers: 29 },
       cases: [{ org: 'Haier', url: 'https://x.invalid', takeaway: 'T.' }],
@@ -103,7 +109,9 @@ describe('challenge routes', () => {
   })
 
   it('answers 404 for a trend that does not exist', async () => {
-    const response = await request(setup().app).get('/api/trends/99')
+    const response = await request(setup().app)
+      .get('/api/trends/99')
+      .set('Cookie', await cookieFor('m-ada'))
 
     expect(response.status).toBe(404)
   })

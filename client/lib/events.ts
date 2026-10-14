@@ -1,4 +1,5 @@
 import type { ExperimentKey } from '../../src/experiments'
+import type { NotificationKind } from '../../src/services/notifications'
 
 /** The UI events of design §7, sent to our own server, which relays them to
  * analytics for an opted-in member only (ADR 0026). */
@@ -17,6 +18,12 @@ export type UiEvent =
   | {
       event: 'match_connect_tapped'
       props: { kind: 'same_boat' | 'been_there' }
+    }
+  | { event: 'contact_reached_out'; props: { method: 'email' | 'copy' } }
+  | { event: 'notifications_list_opened'; props: { new_count: number } }
+  | {
+      event: 'notification_opened'
+      props: { type: NotificationKind; via: 'app' | 'email' }
     }
 
 /** Fire and forget: `keepalive` lets the request finish while the page moves

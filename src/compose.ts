@@ -122,10 +122,11 @@ export function composeAuth(
   })
 }
 
-function composeDeck(config: Config, db: Database): DeckService {
+function composeDeck(config: Config, db: Database, track: Track): DeckService {
   return createDeck({
     store: createDeckStore(db),
     pageSize: config.limits.deckPageSize,
+    track,
   })
 }
 
@@ -156,6 +157,7 @@ function composeJourneys(
   const follows = createFollows({
     store: createFollowStore(db),
     trends: () => challenges.trends(),
+    track,
   })
   const connections = createConnections({
     store: createConnectionStore(db),
@@ -164,7 +166,7 @@ function composeJourneys(
   })
   return {
     challenges,
-    deck: markingDeckOpened(composeDeck(config, db), notes),
+    deck: markingDeckOpened(composeDeck(config, db, track), notes),
     connections: markingOpened(connections, notes),
     swipes: createSwipes({ store: createSwipeStore(db), connections, track }),
     follows,
@@ -175,6 +177,7 @@ function composeJourneys(
     notifications: notes,
     notificationSettings: createNotificationSettings(
       createNotificationSettingsStore(db),
+      track,
     ),
   }
 }

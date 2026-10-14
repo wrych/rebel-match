@@ -1077,18 +1077,18 @@ and answers `204`, or `500` when some of it failed; any other caller gets
 
 ### Onboarding
 
-| Method | Path                    | Body                                                       | Behavior                                                                                                                                                                                                                                                                                                                                                                      |
-| ------ | ----------------------- | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| GET    | `/api/onboarding`       | —                                                          | The member's profile draft — or, without one, their profile — and the consent version in force (F2, R-ONB-15). The client starts at the privacy step when it holds a name (R-ONB-6). Reading never stores anything.                                                                                                                                                           |
-| POST   | `/api/onboarding`       | `{consentVersion}`                                         | The privacy step's confirmation: make the draft the profile, record consent version + timestamp, delete the draft (R-ONB-8, R-ONB-15). Required before other `/api` routes. A `consentVersion` other than the current one → `409` (R-ONB-4); a draft without a name → `400`. It carries no analytics choice; the usage step uses `PUT /api/me/analytics` (R-ANA-4, ADR 0041). |
-| PUT    | `/api/onboarding/draft` | `{name?, jobTitle?, org?, sector?, companySize?}`          | The profile step: save the given fields to the signed-in member's draft, starting it from their profile when they have one, within the onboarding limits and lists (R-ONB-7, R-ONB-15).                                                                                                                                                                                       |
-| PUT    | `/api/me/analytics`     | `{optIn: true, version, from?}` or `{optIn: false, from?}` | Give or withdraw the analytics opt-in, from the usage step of onboarding or the profile screen, as easily in one as in the other. `from: 'onboarding'` marks the usage step: the first answer there is recorded, and only sharing as that first answer sends `onboarding_completed` (R-ANA-6). A `version` other than the current analytics words → `409` (R-ANA-4).          |
-| GET    | `/api/profile`          | —                                                          | The member's own name, job title, organization, sector, company size, email (read-only), the consent version and time they accepted, and `analyticsOptIn` (R-PROF-1,2).                                                                                                                                                                                                       |
-| PUT    | `/api/profile`          | `{name, jobTitle?, org?, sector?, companySize?}`           | Update the profile within the onboarding limits and lists; a blank or left-out optional field clears it (R-PROF-1).                                                                                                                                                                                                                                                           |
-| DELETE | `/api/me/history`       | —                                                          | Delete the member's own deck views, nothing else (R-STAT-4). Answers `204`.                                                                                                                                                                                                                                                                                                   |
-| DELETE | `/api/profile`          | —                                                          | Delete the member's own account as `DELETE /api/admin/members/:id` does: deactivate now, erase after the grace period; then end the session (R-PROF-2, ADR 0032). Refused with 409 `last_admin` or `created_invites`, as there. Answers `{eraseAfter}`.                                                                                                                       |
-| POST   | `/api/events`           | `{event, props}`                                           | The UI events of §7 (`journey_chosen`, `feedback_opened`, `game_opened`, `experiment_exposed`, `matches_section_opened`, `match_connect_tapped`) with their listed properties only; anything else → `400`. Forwarded to Mixpanel only for a member opted in; always `204` otherwise, so the client cannot tell (ADR 0026).                                                    |
-| GET    | `/api/flags`            | —                                                          | `{flags: {<experiment>: <variant>}}`: the caller's variant of each experiment in code, assigned from their id (R-EXP-1, ADR 0051). Any session.                                                                                                                                                                                                                               |
+| Method | Path                    | Body                                                       | Behavior                                                                                                                                                                                                                                                                                                                                                                                              |
+| ------ | ----------------------- | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/onboarding`       | —                                                          | The member's profile draft — or, without one, their profile — and the consent version in force (F2, R-ONB-15). The client starts at the privacy step when it holds a name (R-ONB-6). Reading never stores anything.                                                                                                                                                                                   |
+| POST   | `/api/onboarding`       | `{consentVersion}`                                         | The privacy step's confirmation: make the draft the profile, record consent version + timestamp, delete the draft (R-ONB-8, R-ONB-15). Required before other `/api` routes. A `consentVersion` other than the current one → `409` (R-ONB-4); a draft without a name → `400`. It carries no analytics choice; the usage step uses `PUT /api/me/analytics` (R-ANA-4, ADR 0041).                         |
+| PUT    | `/api/onboarding/draft` | `{name?, jobTitle?, org?, sector?, companySize?}`          | The profile step: save the given fields to the signed-in member's draft, starting it from their profile when they have one, within the onboarding limits and lists (R-ONB-7, R-ONB-15).                                                                                                                                                                                                               |
+| PUT    | `/api/me/analytics`     | `{optIn: true, version, from?}` or `{optIn: false, from?}` | Give or withdraw the analytics opt-in, from the usage step of onboarding or the profile screen, as easily in one as in the other. `from: 'onboarding'` marks the usage step: the first answer there is recorded, and only sharing as that first answer sends `onboarding_completed` (R-ANA-6). A `version` other than the current analytics words → `409` (R-ANA-4).                                  |
+| GET    | `/api/profile`          | —                                                          | The member's own name, job title, organization, sector, company size, email (read-only), the consent version and time they accepted, and `analyticsOptIn` (R-PROF-1,2).                                                                                                                                                                                                                               |
+| PUT    | `/api/profile`          | `{name, jobTitle?, org?, sector?, companySize?}`           | Update the profile within the onboarding limits and lists; a blank or left-out optional field clears it (R-PROF-1).                                                                                                                                                                                                                                                                                   |
+| DELETE | `/api/me/history`       | —                                                          | Delete the member's own deck views, nothing else (R-STAT-4). Answers `204`.                                                                                                                                                                                                                                                                                                                           |
+| DELETE | `/api/profile`          | —                                                          | Delete the member's own account as `DELETE /api/admin/members/:id` does: deactivate now, erase after the grace period; then end the session (R-PROF-2, ADR 0032). Refused with 409 `last_admin` or `created_invites`, as there. Answers `{eraseAfter}`.                                                                                                                                               |
+| POST   | `/api/events`           | `{event, props}`                                           | The UI events of §7 (`journey_chosen`, `feedback_opened`, `game_opened`, `experiment_exposed`, `matches_section_opened`, `match_connect_tapped`, `contact_reached_out`, `notifications_list_opened`, `notification_opened`) with their listed properties only; anything else → `400`. Forwarded to Mixpanel only for a member opted in; always `204` otherwise, so the client cannot tell (ADR 0026). |
+| GET    | `/api/flags`            | —                                                          | `{flags: {<experiment>: <variant>}}`: the caller's variant of each experiment in code, assigned from their id (R-EXP-1, ADR 0051). Any session.                                                                                                                                                                                                                                                       |
 
 The profile form — on the check-your-email screen and as the profile step — is
 one component. Each field saves on change, through `PUT /auth/draft` before
@@ -1545,23 +1545,31 @@ Alternatives considered (kept only as fallbacks):
   or name.
 - Capture these events with non-identifying properties only:
 
-  | event                    | properties                               |
-  | ------------------------ | ---------------------------------------- |
-  | `login_completed`        | —                                        |
-  | `onboarding_completed`   | `consent_version`, `seconds_to_onboard`? |
-  | `journey_chosen`         | `journey: ask\|offer`                    |
-  | `challenge_submitted`    | `char_count`                             |
-  | `trend_assigned`         | `trend_id`, `overridden: bool`           |
-  | `swipe`                  | `action`, `trend_id`                     |
-  | `connection_requested`   | `kind`                                   |
-  | `connection_responded`   | `status: accepted\|declined`             |
-  | `feedback_opened`        | `screen`                                 |
-  | `game_opened`            | —                                        |
-  | `game_day_finished`      | `mode`, `level`, `outcome`, `seconds`    |
-  | `game_result_shared`     | —                                        |
-  | `experiment_exposed`     | `experiment`, `variant` (R-EXP-2)        |
-  | `matches_section_opened` | `section: same_boat\|been_there\|cases`  |
-  | `match_connect_tapped`   | `kind` (R-ASK-16)                        |
+  | event                          | properties                                       |
+  | ------------------------------ | ------------------------------------------------ |
+  | `login_completed`              | —                                                |
+  | `onboarding_completed`         | `consent_version`, `seconds_to_onboard`?         |
+  | `journey_chosen`               | `journey: ask\|offer`                            |
+  | `challenge_submitted`          | `char_count`                                     |
+  | `trend_assigned`               | `trend_id`, `overridden: bool`                   |
+  | `swipe`                        | `action`, `trend_id`                             |
+  | `connection_requested`         | `kind`                                           |
+  | `connection_responded`         | `status: accepted\|declined`, `hours_to_respond` |
+  | `contact_opened`               | `unseen: bool` (R-CONN-7)                        |
+  | `contact_reached_out`          | `method: email\|copy`                            |
+  | `feedback_opened`              | `screen`                                         |
+  | `game_opened`                  | —                                                |
+  | `game_day_finished`            | `mode`, `level`, `outcome`, `seconds`            |
+  | `game_result_shared`           | —                                                |
+  | `experiment_exposed`           | `experiment`, `variant` (R-EXP-2)                |
+  | `matches_section_opened`       | `section: same_boat\|been_there\|cases`          |
+  | `match_connect_tapped`         | `kind` (R-ASK-16)                                |
+  | `notifications_list_opened`    | `new_count`                                      |
+  | `notification_opened`          | `type` (its kind), `via: app\|email`             |
+  | `notification_cadence_changed` | `type`, `from`, `to` (R-NOTE-2)                  |
+  | `deck_emptied`                 | —                                                |
+  | `trend_opened`                 | `trend_id`                                       |
+  | `trend_follow_changed`         | `trend_id`, `followed: bool`                     |
 
 - `seconds_to_onboard` is `consent_at` minus the time the latest sign-in email
   (`outbox` kind `magic_link`) to the member was recorded, in whole seconds
@@ -1583,12 +1591,35 @@ Alternatives considered (kept only as fallbacks):
   `analytics_consent_at`; the member changes it later on the profile screen
   (`PUT /api/me/analytics`, R-PROF-2). An event is sent only while both are set.
 - **Server only.** The server sends every event through the Mixpanel HTTP
-  ingestion API at `analytics.apiHost` (`api-eu.mixpanel.com`). The UI events,
-  `journey_chosen`, `feedback_opened`, `game_opened`, `experiment_exposed`,
-  `matches_section_opened` and `match_connect_tapped`, are posted by
-  the client to `POST /api/events`, which accepts only those names with their
-  listed properties. No Mixpanel script, cookie or device identifier is in the browser,
-  and the token never leaves the server.
+  ingestion API at `analytics.apiHost` (`api-eu.mixpanel.com`). An event is
+  raised where the server sees what happened; only what the browser alone
+  sees is a UI event: `journey_chosen`, `feedback_opened`, `game_opened`,
+  `experiment_exposed`, `matches_section_opened`, `match_connect_tapped`,
+  `contact_reached_out`, `notifications_list_opened` and
+  `notification_opened`, posted by the client to `POST /api/events`, which
+  accepts only those names with their listed properties. No Mixpanel script,
+  cookie or device identifier is in the browser, and the token never leaves
+  the server.
+- `hours_to_respond` is the whole hours from the request to its answer.
+  `contact_opened` is sent on every read of a contact, `unseen` when it showed
+  an acceptance the reader had not opened yet; the target who accepted has
+  seen it already (R-CONN-3). `contact_reached_out` is a tap on _Write_
+  (`email`) or a copied address (`copy`): the closest the app sees to the two
+  getting in touch.
+- `notifications_list_opened` is sent once per visit to the screen, not for
+  what its polling reads (R-NAV-12), with how many on the first page are new.
+  `notification_opened` carries the kind as the list words it
+  (`NotificationKind`); `via: email` comes from a link in a notification's
+  email, which carries `notice=<kind>` (single mail and digest alike). The
+  client reports it once the router lets the member see the page, after any
+  sign-in, and drops the mark from the address.
+- `notification_cadence_changed` is sent only when the cadence changes, `from`
+  being the default for a type never chosen.
+- `deck_emptied` is sent whenever `GET /api/deck` deals nothing, on arrival or
+  after the last card. `trend_follow_changed` is sent by the follow routes
+  (`/api/follows/:trendId`), for a known trend; a follow from the deck is a
+  `swipe`, not this.
+- `trend_opened` is sent when `GET /api/trends/:trendId` finds the trend.
 - `invite_rejected` is not captured: a visitor turned away has not onboarded,
   so cannot have opted in.
 - A failed send never fails the request it describes; it is reported without

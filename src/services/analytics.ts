@@ -1,3 +1,6 @@
+import type { Cadence, ChoosableType } from './notification-cadence.js'
+import type { NotificationKind } from './notifications.js'
+
 /** The events of design §7, each with only its listed, non-identifying
  * properties (R-ANA-1, R-ANA-3). The types are the allowlist: there is no
  * field for a name, an email address or a challenge's words. */
@@ -17,7 +20,28 @@ export type AnalyticsEvent =
       trend_id: string
     }
   | { name: 'connection_requested'; kind: 'same_boat' | 'been_there' }
-  | { name: 'connection_responded'; status: 'accepted' | 'declined' }
+  | {
+      name: 'connection_responded'
+      status: 'accepted' | 'declined'
+      hours_to_respond: number
+    }
+  | { name: 'contact_opened'; unseen: boolean }
+  | { name: 'contact_reached_out'; method: 'email' | 'copy' }
+  | {
+      name: 'notification_opened'
+      type: NotificationKind
+      via: 'app' | 'email'
+    }
+  | { name: 'notifications_list_opened'; new_count: number }
+  | {
+      name: 'notification_cadence_changed'
+      type: ChoosableType
+      from: Cadence
+      to: Cadence
+    }
+  | { name: 'deck_emptied' }
+  | { name: 'trend_follow_changed'; trend_id: string; followed: boolean }
+  | { name: 'trend_opened'; trend_id: string }
   | { name: 'feedback_opened'; screen: string }
   | { name: 'game_opened' }
   | {

@@ -666,8 +666,12 @@ fallback).
 - **R-ANA-1** — The system SHALL capture product-analytics **events** for the key
   funnel: login completed, onboarding completed, challenge submitted, trend
   confirmed/overridden, swipe actions (same boat / been there / skip / follow),
-  connection requested, connection accepted/declined, feedback opened, and the
-  variant of an experiment a member was shown (R-EXP-2).
+  connection requested, connection accepted/declined with how long it waited,
+  a contact opened, a member writing to or copying the address of a contact,
+  the notifications list opened, a notification opened from the app or an
+  email, a notification cadence changed, the swipe deck running out, a trend
+  opened or (un)followed, feedback opened, and the variant of an experiment a
+  member was shown (R-EXP-2). _(Andy, 2026-10-14.)_
 - **R-ANA-2** — Analytics SHALL be attributable to a stable, **pseudonymous**
   member id (not raw email) so funnels and retention work without spreading PII
   into the analytics tool.

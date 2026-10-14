@@ -1,3 +1,4 @@
+import { trackNothing, type Track } from './analytics.js'
 import {
   DEFAULT_CADENCE,
   offeredCadences,
@@ -54,9 +55,10 @@ export function receivable(canReview: boolean): ChoosableType[] {
 /** Each member's choice of how each type of notification reaches them
  * (R-NOTE-2, R-NOTE-3). A choice applies to what is still waiting; setting a
  * type to Off hides what of it they have not seen; choosing the default
- * again forgets the choice. */
+ * again forgets the choice. A change is reported to analytics (R-ANA-1). */
 export function createNotificationSettings(
   store: NotificationSettingsStore,
+  track: Track = trackNothing,
 ): NotificationSettingsService {
   return {
     list: async (memberId, canReview) => {
@@ -73,6 +75,8 @@ export function createNotificationSettings(
       if (known === undefined) return 'not_found'
       const offered = offeredCadences(known).find((each) => each === cadence)
       if (offered === undefined) return 'not_offered'
+      const from =
+        (await store.chosen(memberId))[known] ?? DEFAULT_CADENCE[known]
       await store.choose(
         memberId,
         known,
@@ -80,6 +84,13 @@ export function createNotificationSettings(
       )
       if (offered === 'off') await store.hideUnseen(memberId, known)
       else await store.releaseWaiting(memberId, known)
+      if (from !== offered)
+        void track(memberId, {
+          name: 'notification_cadence_changed',
+          type: known,
+          from,
+          to: offered,
+        })
       return 'done'
     },
   }

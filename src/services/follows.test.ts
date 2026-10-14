@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import type { AnalyticsEvent } from './analytics.js'
 import { createFollows } from './follows.js'
 
 const decide = { id: '06', short: 'DDM', from: 'Central', peers: 29 }
@@ -6,9 +7,15 @@ const decide = { id: '06', short: 'DDM', from: 'Central', peers: 29 }
 function setup(): {
   follows: ReturnType<typeof createFollows>
   rows: Set<string>
+  tracked: [string, AnalyticsEvent][]
 } {
   const rows = new Set<string>()
+  const tracked: [string, AnalyticsEvent][] = []
   const follows = createFollows({
+    track: (memberId, event) => {
+      tracked.push([memberId, event])
+      return Promise.resolve()
+    },
     trends: () => Promise.resolve([decide]),
     store: {
       follow: (m, t) => {
@@ -22,7 +29,7 @@ function setup(): {
       followed: (m) => Promise.resolve(rows.has(`${m}:06`) ? [decide] : []),
     },
   })
-  return { follows, rows }
+  return { follows, rows, tracked }
 }
 
 describe('createFollows', () => {
@@ -47,5 +54,25 @@ describe('createFollows', () => {
     await follows.unfollow('m-ada', '06')
 
     expect(await follows.followed('m-ada')).toEqual([])
+  })
+
+  it('reports following and unfollowing a known trend only (R-ANA-1)', async () => {
+    const { follows, tracked } = setup()
+
+    await follows.follow('m-ada', '06')
+    await follows.unfollow('m-ada', '06')
+    await follows.follow('m-ada', '99')
+    await follows.unfollow('m-ada', '99')
+
+    expect(tracked).toEqual([
+      [
+        'm-ada',
+        { name: 'trend_follow_changed', trend_id: '06', followed: true },
+      ],
+      [
+        'm-ada',
+        { name: 'trend_follow_changed', trend_id: '06', followed: false },
+      ],
+    ])
   })
 })

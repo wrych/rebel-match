@@ -8,6 +8,7 @@ import {
 } from '../experiments.js'
 import { routeTable } from '../routes.js'
 import type { AnalyticsEvent, Track } from '../services/analytics.js'
+import { notificationKinds } from '../services/notifications.js'
 import { requireSession, type GuardedLocals } from './require-permission.js'
 
 const screens: readonly string[] = [
@@ -56,6 +57,23 @@ const uiEvent: z.ZodType<AnalyticsEvent> = z
     z.object({
       event: z.literal('match_connect_tapped'),
       props: z.object({ kind: z.enum(['same_boat', 'been_there']) }).strict(),
+    }),
+    z.object({
+      event: z.literal('contact_reached_out'),
+      props: z.object({ method: z.enum(['email', 'copy']) }).strict(),
+    }),
+    z.object({
+      event: z.literal('notifications_list_opened'),
+      props: z.object({ new_count: z.number().int().nonnegative() }).strict(),
+    }),
+    z.object({
+      event: z.literal('notification_opened'),
+      props: z
+        .object({
+          type: z.enum(notificationKinds),
+          via: z.enum(['app', 'email']),
+        })
+        .strict(),
     }),
   ])
   .transform(

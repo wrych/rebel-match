@@ -104,7 +104,9 @@ export interface ChallengeService {
     trendId: string,
   ): Promise<ConfirmOutcome>
   matches(memberId: string, id: string): Promise<Matches | null>
-  trend(trendId: string): Promise<TrendDetail | null>
+  /** A trend with its case studies; a found one is reported as opened by
+   * the viewer (R-ANA-1). */
+  trend(viewerId: string, trendId: string): Promise<TrendDetail | null>
   newest(viewerId: string, trendId: string | null): Promise<NewestChallenge[]>
 }
 
@@ -154,6 +156,19 @@ interface ChallengeDeps {
   track?: Track
 }
 
+// A trend found is a trend opened (R-ANA-1).
+async function openTrend(
+  store: ChallengeStore,
+  track: Track,
+  viewerId: string,
+  trendId: string,
+): Promise<TrendDetail | null> {
+  const detail = await trendDetail(store, trendId)
+  if (detail !== null)
+    void track(viewerId, { name: 'trend_opened', trend_id: trendId })
+  return detail
+}
+
 /** The Ask journey (F5): a challenge is written, matched to a trend
  * (R-ASK-4,5), confirmed or overridden (R-ASK-6,7), and shown its matches
  * (R-ASK-8). Only the author sees their challenge here: anyone else gets
@@ -201,7 +216,8 @@ export function createChallenges(deps: ChallengeDeps): ChallengeService {
       const challenge = await own(memberId, id)
       return challenge === null ? null : matchesFor(deps, challenge, memberId)
     },
-    trend: (trendId) => trendDetail(deps.store, trendId),
+    trend: (viewerId, trendId) =>
+      openTrend(deps.store, track, viewerId, trendId),
     newest: (viewerId, trendId) =>
       deps.store.newest(viewerId, trendId, deps.newestShown),
   }

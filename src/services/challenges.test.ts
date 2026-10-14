@@ -111,8 +111,9 @@ describe('createChallenges', () => {
     expect(newestCalls).toEqual([['m-ada', '06', 3]])
   })
 
-  it('describes a trend with its cases, without keywords (design S9)', async () => {
-    const detail = await setup().service.trend('06')
+  it('describes a trend with its cases, without keywords, as opened (design S9, R-ANA-1)', async () => {
+    const { service, tracked } = setup()
+    const detail = await service.trend('m-ada', '06')
 
     expect(detail?.trend).toEqual({
       id: '06',
@@ -121,10 +122,16 @@ describe('createChallenges', () => {
       peers: 29,
     })
     expect(detail?.cases).toHaveLength(1)
+    expect(tracked).toEqual([
+      ['m-ada', { name: 'trend_opened', trend_id: '06' }],
+    ])
   })
 
-  it('knows no trend outside the eight', async () => {
-    expect(await setup().service.trend('99')).toBeNull()
+  it('knows no trend outside the eight, and reports none', async () => {
+    const { service, tracked } = setup()
+
+    expect(await service.trend('m-ada', '99')).toBeNull()
+    expect(tracked).toEqual([])
   })
 
   it('lists trends without their keywords (R-ASK-6)', async () => {
