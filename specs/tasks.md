@@ -250,6 +250,11 @@ printed dev link (R-DEV-6).
       with EU residency), pseudonymous id, the event set from design §7 with
       `POST /api/events` for the two UI events, opted-in members only.
       _(S3, R-ANA-1..3,5, ADR 0026)_
+- [x] Events for the rest of the funnel and the notifications: a contact
+      opened and written to or copied, the wait for an answer, the
+      notifications list and an entry opened from the app or an email, a
+      cadence changed, the deck run out, a trend opened or (un)followed.
+      _(R-ANA-1, design §7)_
 - [x] Email notification on incoming connection request, deep-linking to
       `/matches/requests/:id` with no challenge text or contact detail.
       _(S4, R-CONN-2, R-NAV-9)_
