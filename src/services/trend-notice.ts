@@ -1,4 +1,5 @@
 import type { Mailer } from './mailer.js'
+import { noticeLink } from './notice-link.js'
 
 /** One follower's notification of a challenge posted in a trend. */
 export interface TrendNote {
@@ -23,7 +24,11 @@ export function createTrendNotice(deps: {
   publicUrl: string
 }): (note: TrendNote) => Promise<void> {
   return async (note) => {
-    const link = new URL(deckAt(note.challengeId), deps.publicUrl).toString()
+    const link = noticeLink(
+      deps.publicUrl,
+      deckAt(note.challengeId),
+      'trend_challenge',
+    )
     await deps.mailer.send({
       memberId: note.recipientId,
       aboutMemberId: note.authorId,

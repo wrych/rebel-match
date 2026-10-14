@@ -1,4 +1,6 @@
 import type { Mailer } from './mailer.js'
+import { noticeLink } from './notice-link.js'
+import type { NotificationKind } from './notifications.js'
 
 export interface MemberDirectory {
   /** The address of an active member, or null. */
@@ -48,9 +50,14 @@ async function displayName(
   return name === '' ? 'A Rebel Match member' : name
 }
 
-function linkTo(deps: NoticeDeps, id: string, tail = ''): string {
+function linkTo(
+  deps: NoticeDeps,
+  id: string,
+  kind: NotificationKind,
+  tail = '',
+): string {
   const path = `/matches/requests/${encodeURIComponent(id)}${tail}`
-  return new URL(path, deps.publicUrl).toString()
+  return noticeLink(deps.publicUrl, path, kind)
 }
 
 /** Emails the target of a new connection request the requester's name, their
@@ -70,7 +77,11 @@ export function createConnectionNotice(
       to,
       kind: 'connection_request',
       subject: `${from} wants to connect with you on Rebel Match`,
-      text: bodyOf(from, request.message, linkTo(deps, request.id)),
+      text: bodyOf(
+        from,
+        request.message,
+        linkTo(deps, request.id, 'connection_request'),
+      ),
     })
   }
 }
@@ -85,7 +96,7 @@ export function createAcceptNotice(
     const to = await deps.members.emailOf(request.requesterId)
     if (to === null) return
     const by = await displayName(deps.members, request.targetId)
-    const link = linkTo(deps, request.id, '/contact')
+    const link = linkTo(deps, request.id, 'connection_accepted', '/contact')
 
     await deps.mailer.send({
       memberId: request.requesterId,
@@ -130,7 +141,7 @@ export function createAddedNotice(
       text: addedBody(
         from,
         request.message,
-        linkTo(deps, request.id, '/contact'),
+        linkTo(deps, request.id, 'connection_added', '/contact'),
       ),
     })
   }

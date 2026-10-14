@@ -4,7 +4,11 @@ import { z } from 'zod'
 import type { AuthProvider } from '../auth/index.js'
 import type { Limits, LiveSettings } from '../config.js'
 import type { ChallengeService } from '../services/challenges.js'
-import { requirePermission, type GuardedLocals } from './require-permission.js'
+import {
+  requirePermission,
+  requireSession,
+  type GuardedLocals,
+} from './require-permission.js'
 
 const challengeParams = z.object({ id: z.string().min(1) })
 const confirmBody = z.object({ trendId: z.string().min(1) })
@@ -114,15 +118,22 @@ export function challengeRoutes(deps: Deps): Router {
   router.get('/api/trends', async (_request, response) => {
     response.json({ trends: await deps.challenges.trends() })
   })
-  router.get('/api/trends/:trendId', async (request, response) => {
-    const { trendId } = trendParams.parse(request.params)
-    const detail = await deps.challenges.trend(trendId)
-    if (detail === null) {
-      response.status(404).json({ error: 'not_found' })
-      return
-    }
-    response.json(detail)
-  })
+  router.get(
+    '/api/trends/:trendId',
+    requireSession(deps.auth),
+    async (request, response) => {
+      const { trendId } = trendParams.parse(request.params)
+      const detail = await deps.challenges.trend(
+        memberOf(response.locals),
+        trendId,
+      )
+      if (detail === null) {
+        response.status(404).json({ error: 'not_found' })
+        return
+      }
+      response.json(detail)
+    },
+  )
   router.get(
     '/api/challenges/newest',
     requirePermission(deps.auth, 'challenge:swipe'),

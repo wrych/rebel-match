@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import type { AnalyticsEvent } from './analytics.js'
 import type { Cadence, ChoosableType } from './notification-cadence.js'
 import {
   createNotificationSettings,
@@ -84,6 +85,32 @@ describe('createNotificationSettings (R-NOTE-2, R-NOTE-3)', () => {
     await settings.choose('m-ada', false, 'connection_request', 'immediately')
 
     expect(released).toEqual(['m-ada:connection_request'])
+  })
+
+  it('reports a change of cadence, not a choice that changes nothing (R-ANA-1)', async () => {
+    const { store } = fakeStore()
+    const tracked: [string, AnalyticsEvent][] = []
+    const settings = createNotificationSettings(store, (memberId, event) => {
+      tracked.push([memberId, event])
+      return Promise.resolve()
+    })
+
+    await settings.choose('m-ada', false, 'connection_request', 'hourly')
+    await settings.choose('m-ada', false, 'connection_request', 'off')
+    await settings.choose('m-ada', false, 'connection_request', 'off')
+    await settings.choose('m-ada', false, 'applicant', 'daily')
+
+    expect(tracked).toEqual([
+      [
+        'm-ada',
+        {
+          name: 'notification_cadence_changed',
+          type: 'connection_request',
+          from: 'hourly',
+          to: 'off',
+        },
+      ],
+    ])
   })
 
   it('hides what was not seen yet when a type is set to off', async () => {

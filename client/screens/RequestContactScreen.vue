@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import CopyButton from '../components/CopyButton.vue'
 import { fetchConfig } from '../lib/api'
 import { fetchContact, overInOrder, type Contact } from '../lib/connections'
+import { reportEvent } from '../lib/events'
 
 const route = useRoute()
 const id = String(route.params.id)
@@ -13,6 +14,16 @@ const problem = ref<string | null>(null)
 const over = computed(() => overInOrder(contact.value?.over ?? []))
 const tickMs = ref<number | null>(null)
 const copyNote = ref<string | null>(null)
+
+// The closest the app sees to the two getting in touch (R-ANA-1).
+function reachedOut(method: 'email' | 'copy'): void {
+  reportEvent({ event: 'contact_reached_out', props: { method } })
+}
+
+function copied(name: string): void {
+  copyNote.value = `Copied ${name}’s email.`
+  reachedOut('copy')
+}
 
 onMounted(async () => {
   try {
@@ -54,7 +65,7 @@ onMounted(async () => {
             :text="contact.email"
             :label="`Copy ${contact.name}’s email`"
             :tick-ms="tickMs"
-            @copied="copyNote = `Copied ${contact.name}’s email.`"
+            @copied="copied(contact.name)"
             @failed="
               copyNote =
                 'The email was not copied. Select it and copy it by hand.'
@@ -64,7 +75,10 @@ onMounted(async () => {
         <p v-if="copyNote" class="small" role="status">{{ copyNote }}</p>
       </div>
 
-      <a :href="contact.mailto" class="btn btn-primary"
+      <a
+        :href="contact.mailto"
+        class="btn btn-primary"
+        @click="reachedOut('email')"
         >Write to {{ contact.name }}</a
       >
 

@@ -62,12 +62,38 @@ function seenPosts(fetchMock: ReturnType<typeof vi.fn>): unknown[] {
     .map(([, init]) => JSON.parse(String((init as RequestInit).body)))
 }
 
+function events(fetchMock: ReturnType<typeof vi.fn>): unknown[] {
+  return fetchMock.mock.calls
+    .filter(([url]) => url === '/api/events')
+    .map(([, init]) => JSON.parse(String((init as RequestInit).body)))
+}
+
 afterEach(() => {
   vi.useRealTimers()
   vi.unstubAllGlobals()
 })
 
 describe('NotificationsScreen', () => {
+  it('reports the list opened with how many are new, and an entry opened by its kind only (R-ANA-1)', async () => {
+    const fetchMock = serve({
+      '': [
+        entry('r1', { isNew: true }),
+        entry('r2', { kind: 'connection_accepted' }),
+      ],
+    })
+    const screen = await mountScreen()
+
+    await screen.findAllComponents(RouterLinkStub)[1]?.trigger('click')
+
+    expect(events(fetchMock)).toEqual([
+      { event: 'notifications_list_opened', props: { new_count: 1 } },
+      {
+        event: 'notification_opened',
+        props: { type: 'connection_accepted', via: 'app' },
+      },
+    ])
+  })
+
   it('lists each in one line, opening where it comes from (R-NOTE-5)', async () => {
     serve({
       '': [

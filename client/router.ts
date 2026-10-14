@@ -2,6 +2,8 @@ import type { Component } from 'vue'
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
 import { NOT_FOUND_TITLE, routeTable, type Access } from '../src/routes'
 import { decide } from './guards'
+import { reportEvent } from './lib/events'
+import { fromNotice } from './lib/notice'
 import { typedProfile } from './lib/onboarding'
 import { scrollFor } from './lib/scroll'
 import { showScreen } from './lib/tab-title'
@@ -152,5 +154,14 @@ router.beforeEach(async (to) => {
       replace: true,
     }
   }
-  return true
+  // A link from a notification's email, opened by whoever may see it: that
+  // is reported, and the mark leaves the address (R-ANA-1).
+  const notice = fromNotice(to.query)
+  if (notice === null) return true
+  if (notice.kind !== null)
+    reportEvent({
+      event: 'notification_opened',
+      props: { type: notice.kind, via: 'email' },
+    })
+  return { path: to.path, query: notice.rest, hash: to.hash, replace: true }
 })

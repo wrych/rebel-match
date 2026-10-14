@@ -1,3 +1,4 @@
+import { trackNothing, type Track } from './analytics.js'
 import type { Trend } from './challenges.js'
 
 export interface FollowStore {
@@ -17,19 +18,36 @@ export interface FollowService {
 
 /** F9: follow and unfollow a trend, and list the ones followed (R-ASK-9,
  * R-MINE-3). Following twice, or unfollowing what is not followed, changes
- * nothing. */
+ * nothing. Each is reported to analytics (R-ANA-1); a follow from the deck
+ * is a swipe, reported as one, and does not come through here. */
 export function createFollows(deps: {
   store: FollowStore
   trends: () => Promise<Trend[]>
+  track?: Track
 }): FollowService {
+  const track = deps.track ?? trackNothing
   return {
     follow: async (memberId, trendId) => {
       const known = (await deps.trends()).some((t) => t.id === trendId)
       if (!known) return 'unknown_trend'
       await deps.store.follow(memberId, trendId)
+      void track(memberId, {
+        name: 'trend_follow_changed',
+        trend_id: trendId,
+        followed: true,
+      })
       return 'followed'
     },
-    unfollow: (memberId, trendId) => deps.store.unfollow(memberId, trendId),
+    unfollow: async (memberId, trendId) => {
+      const known = (await deps.trends()).some((t) => t.id === trendId)
+      await deps.store.unfollow(memberId, trendId)
+      if (known)
+        void track(memberId, {
+          name: 'trend_follow_changed',
+          trend_id: trendId,
+          followed: false,
+        })
+    },
     followed: (memberId) => deps.store.followed(memberId),
   }
 }

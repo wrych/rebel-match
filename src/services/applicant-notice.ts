@@ -1,4 +1,5 @@
 import type { Mailer } from './mailer.js'
+import { noticeLink } from './notice-link.js'
 
 /** One reviewer's notification of one applicant. */
 export interface ApplicantNote {
@@ -17,7 +18,7 @@ export function createApplicantNotice(deps: {
   mailer: Mailer
   publicUrl: string
 }): (note: ApplicantNote) => Promise<void> {
-  const review = new URL('/admin/applicants', deps.publicUrl).toString()
+  const review = noticeLink(deps.publicUrl, '/admin/applicants', 'applicant')
   return async (note) => {
     await deps.mailer.send({
       memberId: note.reviewerId,

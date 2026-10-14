@@ -1,4 +1,6 @@
 import { createApplicantNotice } from './applicant-notice.js'
+import { noticeLink } from './notice-link.js'
+import type { NotificationKind } from './notifications.js'
 import { createTrendNotice, deckAt } from './trend-notice.js'
 import {
   createAcceptNotice,
@@ -64,6 +66,12 @@ async function nameOf(deps: SenderDeps, memberId: string): Promise<string> {
 const link = (deps: SenderDeps, path: string): string =>
   new URL(path, deps.publicUrl).toString()
 
+const linkFor = (
+  deps: SenderDeps,
+  path: string,
+  kind: NotificationKind,
+): string => noticeLink(deps.publicUrl, path, kind)
+
 const requestPath = (id: string, tail = ''): string =>
   `/matches/requests/${encodeURIComponent(id)}${tail}`
 
@@ -77,11 +85,11 @@ async function itemOf(
   if (note.type === 'applicant')
     return note.applicantEmail === null
       ? null
-      : `${note.applicantEmail} asked to join.\n${link(deps, '/admin/applicants')}`
+      : `${note.applicantEmail} asked to join.\n${linkFor(deps, '/admin/applicants', 'applicant')}`
   if (note.type === 'trend_challenge')
     return note.challengeId === null || note.trend === null
       ? null
-      : `${await nameOf(deps, note.aboutMemberId)} posted a challenge in ${note.trend}.\n${link(deps, deckAt(note.challengeId))}`
+      : `${await nameOf(deps, note.aboutMemberId)} posted a challenge in ${note.trend}.\n${linkFor(deps, deckAt(note.challengeId), 'trend_challenge')}`
   return requestItem(deps, note)
 }
 
@@ -97,10 +105,10 @@ async function requestItem(
   const name = await nameOf(deps, note.aboutMemberId)
   const wrote = record.message === null ? '' : `\nThey wrote: ${record.message}`
   if (note.type === 'connection_request')
-    return `${name} wants to connect with you.${wrote}\n${link(deps, requestPath(record.id))}`
+    return `${name} wants to connect with you.${wrote}\n${linkFor(deps, requestPath(record.id), 'connection_request')}`
   return note.recipientId === record.requesterId
-    ? `${name} accepted your request.\n${link(deps, requestPath(record.id, '/contact'))}`
-    : `${name} connected with you over another challenge.${wrote}\n${link(deps, requestPath(record.id, '/contact'))}`
+    ? `${name} accepted your request.\n${linkFor(deps, requestPath(record.id, '/contact'), 'connection_accepted')}`
+    : `${name} connected with you over another challenge.${wrote}\n${linkFor(deps, requestPath(record.id, '/contact'), 'connection_added')}`
 }
 
 // Several notifications in one mail, each with its own link; every member it

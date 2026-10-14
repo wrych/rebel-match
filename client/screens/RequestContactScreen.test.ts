@@ -15,6 +15,14 @@ async function mountScreen(): Promise<ReturnType<typeof mount>> {
   return screen
 }
 
+/** The UI events the screen posted, as sent. */
+function events(): unknown[] {
+  return vi
+    .mocked(fetch)
+    .mock.calls.filter(([url]) => url === '/api/events')
+    .map(([, init]) => JSON.parse(String(init?.body)))
+}
+
 afterEach(() => {
   vi.unstubAllGlobals()
 })
@@ -53,6 +61,35 @@ describe('RequestContactScreen', () => {
 
     expect(writeText).toHaveBeenCalledWith('sam@example.invalid')
     expect(screen.find('[role="status"]').text()).toContain('Copied')
+  })
+
+  it('reports writing and copying, without whom to (R-ANA-1, R-ANA-3)', async () => {
+    const contact = {
+      name: 'Sam Boat',
+      email: 'sam@example.invalid',
+      mailto: 'mailto:sam@example.invalid',
+      over: [],
+    }
+    serve({ ok: true, status: 200, json: async () => ({ contact }) })
+    vi.stubGlobal('navigator', {
+      clipboard: { writeText: vi.fn().mockResolvedValue(undefined) },
+    })
+    const screen = await mountScreen()
+    expect(events()).toEqual([])
+
+    await screen
+      .find('button[aria-label="Copy Sam Boat’s email"]')
+      .trigger('click')
+    await flushPromises()
+    screen.find('a.btn-primary').element.addEventListener('click', (event) => {
+      event.preventDefault()
+    })
+    await screen.find('a.btn-primary').trigger('click')
+
+    expect(events()).toEqual([
+      { event: 'contact_reached_out', props: { method: 'copy' } },
+      { event: 'contact_reached_out', props: { method: 'email' } },
+    ])
   })
 
   it('says so when the email cannot be copied', async () => {

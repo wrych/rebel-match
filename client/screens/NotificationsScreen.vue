@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue'
 import PullToRefresh from '../components/PullToRefresh.vue'
 import { fetchConfig } from '../lib/api'
+import { reportEvent } from '../lib/events'
 import { useLiveList } from '../lib/live-list'
 import {
   fetchNotifications,
@@ -68,6 +69,10 @@ onMounted(async () => {
       fetchConfig().catch(() => null),
     ])
     pageSize = config?.limits.notificationsPageSize ?? 0
+    reportEvent({
+      event: 'notifications_list_opened',
+      props: { new_count: page.filter((note) => note.isNew).length },
+    })
     await show(page)
   } catch {
     problem.value = 'Your notifications could not be loaded. Try again.'
@@ -94,6 +99,12 @@ onMounted(async () => {
         :to="note.path"
         class="card note"
         :class="{ 'card-new': note.isNew }"
+        @click="
+          reportEvent({
+            event: 'notification_opened',
+            props: { type: note.kind, via: 'app' },
+          })
+        "
       >
         <span class="card-title">{{ headline(note) }}</span>
         <span class="mono small"

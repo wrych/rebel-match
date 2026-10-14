@@ -167,7 +167,7 @@ describe('a new challenge in a followed trend (R-ASK-9, R-OFF-7)', () => {
         text:
           'Ada posted a challenge in Radical Transparency, a trend you follow on Rebel Match.\n\n' +
           'See it, and say if you are in the same boat or have been there, here:\n' +
-          'http://localhost:5173/offer?challenge=c1\n',
+          'http://localhost:5173/offer?challenge=c1&notice=trend_challenge\n',
       },
     ])
   })

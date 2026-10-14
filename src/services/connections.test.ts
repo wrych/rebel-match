@@ -160,6 +160,7 @@ function setup(): {
       tracked.push([memberId, event])
       return Promise.resolve()
     },
+    now: () => new Date('2026-11-08T13:20:00.000Z'),
   })
   return { service, store, tracked }
 }
@@ -342,17 +343,47 @@ describe('the double opt-in (ADR 0004)', () => {
     expect(store.rows.size).toBe(0)
   })
 
-  it('reports a created request and its answer, not a repeat (R-ANA-1)', async () => {
+  it('reports a created request and its answer with its wait, not a repeat (R-ANA-1)', async () => {
     const { service, tracked } = setup()
 
     await service.request('m-ada', sameBoat)
     await service.request('m-ada', sameBoat)
     await service.respond('m-eve', 'r-1', 'accepted')
     await service.respond('m-bob', 'r-1', 'accepted')
+    await service.respond('m-bob', 'r-9', 'accepted')
 
     expect(tracked).toEqual([
       ['m-ada', { name: 'connection_requested', kind: 'same_boat' }],
-      ['m-bob', { name: 'connection_responded', status: 'accepted' }],
+      [
+        'm-bob',
+        {
+          name: 'connection_responded',
+          status: 'accepted',
+          hours_to_respond: 3,
+        },
+      ],
+    ])
+  })
+
+  it('reports a contact opened, and whether it held news (R-ANA-1)', async () => {
+    const { service, store, tracked } = setup()
+    await service.request('m-ada', sameBoat)
+    await service.respond('m-bob', 'r-1', 'accepted')
+    tracked.length = 0
+    const over = store.connectedOver.bind(store)
+    store.connectedOver = async (viewer, other) =>
+      (await over(viewer, other)).map((view) => ({
+        ...view,
+        unseen: viewer === 'm-ada',
+      }))
+
+    await service.contact('m-ada', 'r-1')
+    await service.contact('m-bob', 'r-1')
+    await service.contact('m-eve', 'r-1')
+
+    expect(tracked).toEqual([
+      ['m-ada', { name: 'contact_opened', unseen: true }],
+      ['m-bob', { name: 'contact_opened', unseen: false }],
     ])
   })
 

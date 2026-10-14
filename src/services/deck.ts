@@ -1,3 +1,5 @@
+import { trackNothing, type Track } from './analytics.js'
+
 /** A card in the swipe deck: the challenge, its trend, and who wrote it
  * (R-OFF-2). Never how to reach them (R-CONN-6). */
 export interface DeckCard {
@@ -28,13 +30,19 @@ export interface DeckService {
 }
 
 /** F6's deck: others' challenges, never the viewer's own and never one they
- * already swiped (R-OFF-1, R-OFF-2), a page at a time. */
+ * already swiped (R-OFF-1, R-OFF-2), a page at a time. A deck with nothing
+ * left to deal is reported to analytics (R-ANA-1). */
 export function createDeck(deps: {
   store: DeckStore
   pageSize: number
+  track?: Track
 }): DeckService {
+  const track = deps.track ?? trackNothing
   return {
-    next: (viewerId, first) =>
-      deps.store.nextFor(viewerId, deps.pageSize, first),
+    next: async (viewerId, first) => {
+      const cards = await deps.store.nextFor(viewerId, deps.pageSize, first)
+      if (cards.length === 0) void track(viewerId, { name: 'deck_emptied' })
+      return cards
+    },
   }
 }

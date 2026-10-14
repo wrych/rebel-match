@@ -34,3 +34,23 @@ describe('router titles (R-NAV-13)', () => {
     expect(document.title).toBe('Rebel Match | Not found')
   })
 })
+
+describe('a link from a notification’s email (R-ANA-1)', () => {
+  it('reports its kind once it may be seen, and drops the mark from the address', async () => {
+    signedOut()
+
+    await router.push('/privacy?section=data&notice=applicant')
+
+    expect(router.currentRoute.value.fullPath).toBe('/privacy?section=data')
+    const posted = vi
+      .mocked(fetch)
+      .mock.calls.filter(([url]) => url === '/api/events')
+      .map(([, init]) => JSON.parse(String(init?.body)))
+    expect(posted).toEqual([
+      {
+        event: 'notification_opened',
+        props: { type: 'applicant', via: 'email' },
+      },
+    ])
+  })
+})

@@ -71,6 +71,25 @@ describe('POST /api/events', () => {
       { event: 'match_connect_tapped', props: { kind: 'same_boat' } },
       { name: 'match_connect_tapped', kind: 'same_boat' },
     ],
+    [
+      { event: 'notifications_list_opened', props: { new_count: 2 } },
+      { name: 'notifications_list_opened', new_count: 2 },
+    ],
+    [
+      { event: 'contact_reached_out', props: { method: 'copy' } },
+      { name: 'contact_reached_out', method: 'copy' },
+    ],
+    [
+      {
+        event: 'notification_opened',
+        props: { type: 'connection_accepted', via: 'email' },
+      },
+      {
+        name: 'notification_opened',
+        type: 'connection_accepted',
+        via: 'email',
+      },
+    ],
   ])('relays %j for the signed-in member (ADR 0026)', async (body, event) => {
     const { app, tracked } = setup()
 
@@ -135,6 +154,31 @@ describe('POST /api/events', () => {
     [
       'a section outside the three',
       { event: 'matches_section_opened', props: { section: 'members' } },
+    ],
+    [
+      'a reach-out with the address it went to (R-ANA-3)',
+      {
+        event: 'contact_reached_out',
+        props: { method: 'email', email: 'b@example.invalid' },
+      },
+    ],
+    [
+      'a count that is not a whole number',
+      { event: 'notifications_list_opened', props: { new_count: -1 } },
+    ],
+    [
+      'a notification of a kind there is not',
+      {
+        event: 'notification_opened',
+        props: { type: 'newsletter', via: 'app' },
+      },
+    ],
+    [
+      'a notification opened with the request it was about',
+      {
+        event: 'notification_opened',
+        props: { type: 'connection_request', via: 'app', id: 'r-1' },
+      },
     ],
     [
       'a journey outside the two',
