@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { matchesSentence, type MatchesSection } from '../lib/challenges'
+import FoldChevron from './FoldChevron.vue'
 
 /** A matches section as one sentence naming its first `named` entries, with
  * a control that shows the section's cards, the default slot, in place. A
@@ -34,7 +35,7 @@ const sentence = computed(() =>
       :aria-expanded="open"
       @click="toggle"
     >
-      {{ open ? 'Show fewer' : 'Read more…' }}
+      {{ open ? 'Show fewer' : 'Read more' }}<FoldChevron :open="open" />
     </button>
   </p>
   <slot v-if="!folds || open" />
@@ -54,6 +55,7 @@ const sentence = computed(() =>
   font: inherit;
   font-weight: 700;
   text-decoration: underline;
+  white-space: nowrap;
   cursor: pointer;
 }
 </style>

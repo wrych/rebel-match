@@ -216,12 +216,14 @@ describe('MatchesScreen', () => {
       screen.findAll('.summary').map((each) => each.text())
 
     expect(sentences()).toEqual([
-      'Ana, Ben and 2 others are in the same boat. Read more…',
-      'Bea There has been there. Read more…',
-      'Haier and FAVI made the shift. Read more…',
+      'Ana, Ben and 2 others are in the same boat. Read more',
+      'Bea There has been there. Read more',
+      'Haier and FAVI made the shift. Read more',
     ])
     expect(screen.find('.peer').exists()).toBe(false)
     expect(screen.find('.case').exists()).toBe(false)
+    expect(screen.findAll('button[aria-expanded] .chevron')).toHaveLength(3)
+    expect(screen.find('.chevron.open').exists()).toBe(false)
 
     await screen.find('button[aria-expanded]').trigger('click')
 
@@ -231,6 +233,9 @@ describe('MatchesScreen', () => {
       screen.find('button[aria-expanded]').attributes('aria-expanded'),
     ).toBe('true')
     expect(sentences()[0]).toContain('Show fewer')
+    expect(screen.find('button[aria-expanded] .chevron.open').exists()).toBe(
+      true,
+    )
 
     await screen.find('button[aria-expanded]').trigger('click')
 
