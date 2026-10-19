@@ -7,7 +7,7 @@ import {
   type ChallengeStore,
   type PeerCard,
 } from './challenges.js'
-import type { MatchRanker, MatchSection } from './match-ranker.js'
+import type { MatchRanker, MatchSection, RankablePeer } from './match-ranker.js'
 
 const stored = seedTrends.map((t) => ({
   id: t.id,
@@ -28,7 +28,7 @@ const peer: PeerCard = {
 const since = new Date('2026-11-01T09:00:00.000Z')
 const other: PeerCard = { ...peer, memberId: 'm-joris', name: 'Joris Bakker' }
 
-function setup(): {
+function setup(sameBoat: RankablePeer[] = [{ ...peer, since }]): {
   service: ReturnType<typeof createChallenges>
   rows: Map<string, Challenge>
   peerCalls: [string, string][]
@@ -61,7 +61,7 @@ function setup(): {
     peers: (trendId, viewerId) => {
       peerCalls.push([trendId, viewerId])
       return Promise.resolve({
-        sameBoat: [{ ...peer, since }],
+        sameBoat,
         beenThere: [
           { ...peer, since },
           { ...other, since },
@@ -239,6 +239,20 @@ describe('createChallenges', () => {
       ['sameBoat', ['m-marieke'], 'c-1'],
       ['beenThere', ['m-marieke', 'm-joris'], 'c-1'],
     ])
+  })
+
+  it('names a member with two challenges in the trend once, at the more relevant (R-ASK-8)', async () => {
+    const again = { ...peer, note: 'A second challenge, ranked first.' }
+    const { service } = setup([
+      { ...peer, since },
+      { ...other, since },
+      { ...again, since },
+    ])
+    await service.create('m-ada', decide, () => 'c-1')
+
+    const matches = await service.matches('m-ada', 'c-1')
+
+    expect(matches?.sameBoat).toEqual([again, other])
   })
 
   it('matches on the picked trend before one is confirmed', async () => {

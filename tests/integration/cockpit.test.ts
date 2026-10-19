@@ -69,6 +69,28 @@ describe('the cockpit over Postgres (F8)', () => {
     expect(mine?.counts.cases).toBe(4)
   })
 
+  it('counts a peer with two challenges in the trend once (R-MINE-1, R-ASK-8)', async () => {
+    const before = (await cockpit()).challenges[0]?.counts.sameBoat
+    const rows = await db.query(
+      `SELECT c.member_id FROM challenges c
+        WHERE c.status = 'active' AND c.member_id <> ?
+          AND coalesce(c.trend_id, c.auto_trend) = '06' LIMIT 1`,
+      [memberId],
+    )
+    const peerId = String(rows[0]?.['member_id'])
+    await db.query(
+      `INSERT INTO challenges (id, member_id, body, trend_id, status)
+        VALUES ('c-second-of-a-peer', ?, 'A second challenge.', '06', 'active')`,
+      [peerId],
+    )
+
+    try {
+      expect((await cockpit()).challenges[0]?.counts.sameBoat).toBe(before)
+    } finally {
+      await db.query("DELETE FROM challenges WHERE id = 'c-second-of-a-peer'")
+    }
+  })
+
   it('shows what the member follows, and stops when they unfollow (R-MINE-3, F9)', async () => {
     await request(app).post('/api/follows/07').set('Cookie', cookie).expect(204)
     expect((await cockpit()).following.map((t) => t.id)).toEqual(['07'])

@@ -119,6 +119,15 @@ function shown(trend: StoredTrend): Trend {
   }
 }
 
+// A member with several challenges in the trend is one peer, met at the most
+// relevant of them (R-ASK-8).
+function oncePerMember(cards: PeerCard[]): PeerCard[] {
+  const seen = new Set<string>()
+  return cards.filter(
+    (card) => !seen.has(card.memberId) && seen.add(card.memberId),
+  )
+}
+
 async function matchesFor(
   { store, rank }: Pick<ChallengeDeps, 'store' | 'rank'>,
   challenge: Challenge,
@@ -134,8 +143,8 @@ async function matchesFor(
   ])
   return {
     trend: shown(trend),
-    sameBoat: rank('sameBoat', peers.sameBoat, challenge),
-    beenThere: rank('beenThere', peers.beenThere, challenge),
+    sameBoat: oncePerMember(rank('sameBoat', peers.sameBoat, challenge)),
+    beenThere: oncePerMember(rank('beenThere', peers.beenThere, challenge)),
     cases,
   }
 }
