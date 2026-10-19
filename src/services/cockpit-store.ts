@@ -25,7 +25,7 @@ const peer = alias(members, 'peer')
 const isPeer = sql`${peer.status} = 'active' AND ${peer.name} IS NOT NULL
   AND ${peer.id} <> ${challenges.memberId}`
 
-const sameBoat = sql<number>`(SELECT count(*)::int FROM ${challenges} ${other}
+const sameBoat = sql<number>`(SELECT count(DISTINCT ${other.memberId})::int FROM ${challenges} ${other}
   JOIN ${members} ${peer} ON ${peer.id} = ${other.memberId}
   WHERE ${other.status} = 'active'
     AND coalesce(${other.trendId}, ${other.autoTrend}) = ${trends.id}
