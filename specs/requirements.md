@@ -486,9 +486,12 @@ capability, not a secret** — and every requirement below exists because of tha
   (_Ana Diaz, Ben Ortiz and 7 others are in the same boat_, _Bea There has been
   there_, _Haier, Buurtzorg and 2 others made the shift_), ending in a _Read
   more_ control that shows the section's cards in place, and then shows fewer
-  again. An empty section says what R-ASK-13 says. _(Founders' review,
-  2026-10-09: the overview should fit without scrolling; Andy, 2026-10-12: a
-  sentence per section instead of its first card, ADR 0052.)_
+  again. In both layouts the control SHALL carry a chevron that points down
+  while the section is folded and up while it is open, so that it reads as
+  expanding and collapsing. An empty section says what R-ASK-13 says.
+  _(Founders' review, 2026-10-09: the overview should fit without scrolling;
+  Andy, 2026-10-12: a sentence per section instead of its first card, ADR
+  0052; Andy, 2026-10-19: make it plain that sections expand and collapse.)_
 - **R-ASK-16 (Which layout works best)** — Until the founders pick one, the
   two layouts of R-ASK-15 SHALL be the experiment `matches_layout` (§8j):
   _cards_ its control, _summary_ its treatment. The matches view SHALL keep

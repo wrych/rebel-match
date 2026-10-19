@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import FoldChevron from './FoldChevron.vue'
 
 /** A list that shows its first `first` entries and folds the rest behind a
  * control labelled `more(hidden)`; the slot gets how many to show. A null
@@ -35,6 +36,6 @@ function toggle(): void {
     :aria-expanded="open"
     @click="toggle"
   >
-    {{ open ? 'Show fewer' : more(hidden) }}
+    {{ open ? 'Show fewer' : more(hidden) }}<FoldChevron :open="open" />
   </button>
 </template>
