@@ -693,9 +693,9 @@ Notifications, S22 Admin invites (ADR 0053).
 
 **Branches**
 
-- _A challenge is taken down, or a connection's other member deleted_ → the
-  count falls; levels stay, and the crown may move on the next check
-  (R-BADGE-2, R-BADGE-3).
+- _A challenge is deleted, or a connection's other member_ → the count falls;
+  levels stay, and the crown may move on the next check (R-BADGE-2,
+  R-BADGE-3).
 - _The game is switched off_ → the Promotions row is not shown (R-BADGE-9).
 - _A signed-in member opens an invalid invite_ → nothing happens and nothing is
   said (R-BADGE-6).

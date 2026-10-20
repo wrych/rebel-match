@@ -1467,15 +1467,15 @@ invite link (R-INV-1).
   The first four rows' levels SHALL be earned at counts from configuration
   (R-CFG-1), 1, 5 and 10 by default, the same for each row. A request a member
   makes from the matches screen to someone who has been there asks for help
-  and SHALL NOT count as help offered. A challenge counts once posted,
-  whatever its state since; a connection counts each member once, however many
+  and SHALL NOT count as help offered. A posted challenge counts while it
+  exists, archived or not; a connection counts each member once, however many
   challenges it is over (R-CONN-10). A job counts as reached when the member's
   highest level reached is its first day (R-GAME-16): Team Lead with the first
   game.
 
 - **R-BADGE-2 (Levels are kept)** — WHEN a member's count reaches a level THE
   SYSTEM SHALL record the level as earned, with the time. A level once earned
-  SHALL stay earned when the count falls, as when a challenge is taken down or
+  SHALL stay earned when the count falls, as when a challenge is deleted or
   the other member's account is erased.
 - **R-BADGE-3 (Crowns move)** — A row's crown SHALL belong to the one member
   with the highest count, at least the first level's count. On a tie the

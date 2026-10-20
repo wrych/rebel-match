@@ -479,7 +479,7 @@ to a "been there" peer writes only the request, so counting swipes keeps
 asking for help out of `help` (R-BADGE-1).
 
 **Crowns are checked on the tick too.** Counts fall without anyone acting (a
-challenge taken down, an account deleted), so each tick (ADR 0049) runs
+challenge or an account deleted), so each tick (ADR 0049) runs
 `badges.checkCrowns()`: per row, the active member with the highest count,
 the holder keeping a tie, and among others the one whose counted act that
 reached the count came first. A crown moving writes a notification for the
