@@ -12,6 +12,7 @@ import {
 } from '../db/schema.js'
 import { countedRows, type CountedRow } from '../badges/rows.js'
 import type { Standing } from '../badges/crowns.js'
+import { insertBadgeNotification } from './notification-store.js'
 import type { BadgeStore, Crown, EarnedLevel } from './badges.js'
 
 // What each row counts, one row per counted act: whose it is, what it counts
@@ -92,6 +93,8 @@ async function crowns(db: Database): Promise<Crown[]> {
   )
 }
 
+// A crown that is news comes with its notification, in one transaction
+// (R-BADGE-10, R-NOTE-10).
 async function setCrown(
   db: Database,
   row: CountedRow,
@@ -103,10 +106,18 @@ async function setCrown(
     since: new Date(),
     seenAt: seen ? new Date() : null,
   }
-  await db
-    .insert(badgeCrowns)
-    .values({ rowKey: row, ...crown })
-    .onConflictDoUpdate({ target: badgeCrowns.rowKey, set: crown })
+  await db.transaction(async (tx) => {
+    await tx
+      .insert(badgeCrowns)
+      .values({ rowKey: row, ...crown })
+      .onConflictDoUpdate({ target: badgeCrowns.rowKey, set: crown })
+    if (!seen && memberId !== null)
+      await insertBadgeNotification(tx, {
+        recipientId: memberId,
+        row,
+        level: 0,
+      })
+  })
 }
 
 const isCounted = (key: string): key is CountedRow =>
@@ -120,19 +131,24 @@ async function award(
   seen: boolean,
 ): Promise<number[]> {
   if (levels.length === 0) return []
-  const added = await db
-    .insert(memberBadges)
-    .values(
-      levels.map((level) => ({
-        memberId,
-        rowKey: row,
-        level,
-        ...(seen ? { seenAt: new Date() } : {}),
-      })),
-    )
-    .onConflictDoNothing()
-    .returning({ level: memberBadges.level })
-  return added.map((each) => each.level)
+  return db.transaction(async (tx) => {
+    const added = await tx
+      .insert(memberBadges)
+      .values(
+        levels.map((level) => ({
+          memberId,
+          rowKey: row,
+          level,
+          ...(seen ? { seenAt: new Date() } : {}),
+        })),
+      )
+      .onConflictDoNothing()
+      .returning({ level: memberBadges.level })
+    if (!seen)
+      for (const { level } of added)
+        await insertBadgeNotification(tx, { recipientId: memberId, row, level })
+    return added.map((each) => each.level)
+  })
 }
 
 async function earned(db: Database, memberId: string): Promise<EarnedLevel[]> {

@@ -9,7 +9,6 @@ import {
   type BadgeStore,
   type Crown,
   type EarnedLevel,
-  type Gain,
 } from './badges.js'
 import type { ChallengeService } from './challenges.js'
 import type {
@@ -23,6 +22,13 @@ const levelCounts = [1, 5, 10]
 
 type Held = EarnedLevel & { memberId: string }
 
+/** A gain the store notified with it: a level, or 0 for a crown. */
+interface Gain {
+  memberId: string
+  row: CountedRow
+  level: number
+}
+
 const minute = (n: number): Date => new Date(Date.UTC(2026, 10, 8, 10, n))
 
 function memoryStore(): BadgeStore & {
@@ -30,13 +36,16 @@ function memoryStore(): BadgeStore & {
   reached: Map<string, number>
   held: Held[]
   crownList: Crown[]
+  notified: Gain[]
   launches: number
 } {
   const counts = new Map<string, number>()
   const reached = new Map<string, number>()
   const held: Held[] = []
   const crownList: Crown[] = []
+  const notified: Gain[] = []
   const store = {
+    notified,
     counts,
     reached,
     held,
@@ -60,6 +69,7 @@ function memoryStore(): BadgeStore & {
       const at = crownList.findIndex((each) => each.row === row)
       if (at === -1) crownList.push(crown)
       else crownList[at] = crown
+      if (!seen && memberId !== null) notified.push({ memberId, row, level: 0 })
       return Promise.resolve()
     },
     award: (
@@ -85,6 +95,8 @@ function memoryStore(): BadgeStore & {
           earnedAt: new Date('2026-11-08T10:00:00.000Z'),
           seenAt: seen ? new Date('2026-11-08T10:00:00.000Z') : null,
         })
+      if (!seen)
+        for (const level of added) notified.push({ memberId, row, level })
       return Promise.resolve(added)
     },
     earned: (memberId: string) =>
@@ -132,17 +144,8 @@ describe('notifying gains (R-BADGE-10)', () => {
     store: ReturnType<typeof memoryStore>
     gains: Gain[]
   } {
-    const store = memoryStore()
-    const gains: Gain[] = []
-    const badges = createBadges({
-      store,
-      levelCounts: () => levelCounts,
-      notify: (gain) => {
-        gains.push(gain)
-        return Promise.resolve()
-      },
-    })
-    return { badges, store, gains }
+    const { badges, store } = setup()
+    return { badges, store, gains: store.notified }
   }
 
   it('notifies each level gained, once', async () => {

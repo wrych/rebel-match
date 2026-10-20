@@ -25,14 +25,16 @@ export interface BadgeStore {
   standings(row: CountedRow): Promise<Standing[]>
   /** The crowns given so far, one per row ever checked. */
   crowns(): Promise<Crown[]>
-  /** Gives a row's crown, or takes it from everyone with null. */
+  /** Gives a row's crown, or takes it from everyone with null; a crown not
+   * seen is news, notified to its holder in the same transaction
+   * (R-BADGE-10, R-NOTE-10). */
   setCrown(
     row: CountedRow,
     memberId: string | null,
     seen: boolean,
   ): Promise<void>
-  /** Records the levels not yet held; seen ones are not new. Returns the
-   * levels it added. */
+  /** Records the levels not yet held; seen ones are not new, the rest are
+   * notified in the same transaction (R-NOTE-10). Returns those it added. */
   award(
     memberId: string,
     row: CountedRow,
@@ -130,25 +132,12 @@ function rowView(
   }
 }
 
-/** A badge gained: a level, or 0 for the row's crown. */
-export interface Gain {
-  memberId: string
-  row: CountedRow
-  level: number
-}
-
-/** Tells a member of a badge they gained (R-BADGE-10). */
-export type Notify = (gain: Gain) => Promise<void>
-
-const notifyNobody: Notify = () => Promise.resolve()
-
 // A row's first crown is given quietly, as everything from before launch is
 // (R-BADGE-11); a crown moving after that is news to the gainer only.
 async function checkCrown(
   store: BadgeStore,
   levelCounts: () => readonly number[],
   row: CountedRow,
-  notify: Notify,
 ): Promise<void> {
   const current = (await store.crowns()).find((crown) => crown.row === row)
   const holder = current?.memberId ?? null
@@ -158,10 +147,7 @@ async function checkCrown(
     levelCounts()[0] ?? 1,
   )
   if (current === undefined) await store.setCrown(row, next, true)
-  else if (next !== holder) {
-    await store.setCrown(row, next, false)
-    if (next !== null) await notify({ memberId: next, row, level: 0 })
-  }
+  else if (next !== holder) await store.setCrown(row, next, false)
 }
 
 async function awardAtLaunch(
@@ -183,21 +169,15 @@ async function awardAtLaunch(
 export function createBadges(deps: {
   store: BadgeStore
   levelCounts: () => readonly number[]
-  notify?: Notify
 }): BadgeService {
   const { store } = deps
-  const notify = deps.notify ?? notifyNobody
   return {
     recount: async (memberId, rows) => {
       for (const row of rows) {
         const count = await store.count(memberId, row)
         const reached = levelsReached(count, deps.levelCounts())
-        const added =
-          reached.length > 0
-            ? await store.award(memberId, row, reached, false)
-            : []
-        for (const level of added) await notify({ memberId, row, level })
-        await checkCrown(store, deps.levelCounts, row, notify)
+        if (reached.length > 0) await store.award(memberId, row, reached, false)
+        await checkCrown(store, deps.levelCounts, row)
       }
     },
     mine: async (memberId) => {
@@ -224,7 +204,7 @@ export function createBadges(deps: {
     seen: (memberId, rows) => store.markSeen(memberId, rows),
     checkCrowns: async () => {
       for (const row of countedRows)
-        await checkCrown(store, deps.levelCounts, row, notify)
+        await checkCrown(store, deps.levelCounts, row)
     },
   }
 }
