@@ -435,7 +435,7 @@ in this order.
 - [x] Event badges on invite creation: the badge fields, the cleaned SVG logo,
       the logo endpoint and its headers, S22's badge section.
       _(R-BADGE-4, R-BADGE-5, R-INV-13)_
-- [ ] Earning event badges: on admission, by a signed-in member opening the
+- [x] Earning event badges: on admission, by a signed-in member opening the
       invite, and S37. _(R-BADGE-6, R-BADGE-8)_
 - [ ] `badge_earned` usage event. _(R-BADGE-13)_
 

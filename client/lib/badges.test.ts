@@ -70,6 +70,19 @@ describe('a row of badges (R-BADGE-7)', () => {
     ).toBe(5)
   })
 
+  it('counts each event badge earned as one more (R-BADGE-7)', () => {
+    const summit = {
+      id: 'summit',
+      name: 'Stormed the Summit',
+      ticketLine: 'SUMMIT',
+      bigLine: '2026',
+      hasLogo: false,
+      earnedAt: '2026-11-08T10:00:00.000Z',
+      new: false,
+    }
+    expect(earnedCount({ rows: [row()], events: [summit] })).toBe(3)
+  })
+
   it('knows the next level to work towards, and when there is none', () => {
     expect(nextLevel(row())?.name).toBe('Firebrand')
     expect(

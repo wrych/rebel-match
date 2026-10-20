@@ -1,16 +1,23 @@
 import type { Component } from 'vue'
-import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
+import {
+  createRouter,
+  createWebHistory,
+  type RouteLocationNormalized,
+  type RouteRecordRaw,
+} from 'vue-router'
 import { NOT_FOUND_TITLE, routeTable, type Access } from '../src/routes'
 import { decide } from './guards'
+import { claimEventBadge } from './lib/badges'
 import { reportEvent } from './lib/events'
 import { fromNotice } from './lib/notice'
 import { typedProfile } from './lib/onboarding'
 import { scrollFor } from './lib/scroll'
 import { showScreen } from './lib/tab-title'
-import { loadMe } from './lib/session'
+import { loadMe, type Me } from './lib/session'
 import AccessRequestedScreen from './screens/AccessRequestedScreen.vue'
 import ApplicantsScreen from './screens/ApplicantsScreen.vue'
 import AskScreen from './screens/AskScreen.vue'
+import BadgeEventsScreen from './screens/BadgeEventsScreen.vue'
 import BadgeRowScreen from './screens/BadgeRowScreen.vue'
 import BadgesScreen from './screens/BadgesScreen.vue'
 import ChallengeScreen from './screens/ChallengeScreen.vue'
@@ -95,6 +102,7 @@ export const router = createRouter({
     screen('profile', ProfileScreen),
     screen('notifications', NotificationsScreen),
     screen('badges', BadgesScreen),
+    screen('badge-events', BadgeEventsScreen),
     screen('badge-row', BadgeRowScreen),
     screen('ask', AskScreen),
     screen('challenge', ChallengeScreen),
@@ -134,9 +142,19 @@ router.afterEach((to, _from, failure) => {
   showScreen(to.meta['title'] as string)
 })
 
+// A member already in who scans an event's code is taken home as ever, and
+// the event's badge is theirs (R-BADGE-6).
+function claimOnEntry(to: RouteLocationNormalized, me: Me | null): void {
+  const invite = to.query['invite']
+  if (to.path !== '/' || me?.onboarded !== true) return
+  if (typeof invite === 'string' && invite !== '') claimEventBadge(invite)
+}
+
 router.beforeEach(async (to) => {
   if (to.name === 'not-found') return true
 
+  const me = await loadMe()
+  claimOnEntry(to, me)
   const decision = decide(
     {
       path: to.path,
@@ -144,7 +162,7 @@ router.beforeEach(async (to) => {
       access: (to.meta['access'] as Access | undefined) ?? 'public',
       permission: to.meta['permission'] as string | undefined,
     },
-    await loadMe(),
+    me,
     typedProfile() !== null,
   )
 

@@ -1,18 +1,33 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import BadgeArt from '../components/BadgeArt.vue'
+import EventTicket from '../components/EventTicket.vue'
 import {
   bestOf,
   earnedCount,
   fetchBadges,
   hasNew,
+  hasNewEvent,
   markBadgesSeen,
   type BadgeOverview,
   type RowView,
 } from '../lib/badges'
+import { logoUrl } from '../lib/invites'
 
 const overview = ref<BadgeOverview | null>(null)
 const problem = ref<string | null>(null)
+
+// The newest few, fanned out; the rest are on the event badges' screen.
+const TICKETS_SHOWN = 3
+const tickets = computed(() =>
+  (overview.value?.events ?? []).slice(0, TICKETS_SHOWN),
+)
+const eventsNew = computed(() => hasNewEvent(overview.value?.events ?? []))
+
+const eventsSummary = computed(() => {
+  const n = overview.value?.events.length ?? 0
+  return n === 0 ? 'None yet' : `${String(n)} earned`
+})
 
 const earned = computed(() =>
   overview.value === null ? 0 : earnedCount(overview.value),
@@ -41,9 +56,10 @@ onMounted(async () => {
     problem.value = 'Your badges could not be loaded. Try again.'
     return
   }
-  await markBadgesSeen(
-    overview.value.rows.filter(hasNew).map((row) => row.row),
-  ).catch(() => undefined)
+  await markBadgesSeen([
+    ...overview.value.rows.filter(hasNew).map((row) => row.row),
+    ...(eventsNew.value ? (['event'] as const) : []),
+  ]).catch(() => undefined)
 })
 </script>
 
@@ -90,11 +106,72 @@ onMounted(async () => {
       </ul>
     </section>
 
+    <section v-if="overview" class="stack" aria-labelledby="events">
+      <h2 id="events" class="kicker">Event badges</h2>
+      <RouterLink
+        to="/badges/events"
+        class="card events"
+        :class="{ 'card-new': eventsNew }"
+        :aria-label="`Event badges: ${eventsSummary}`"
+      >
+        <span v-if="eventsNew" class="chip chip-accent new">New</span>
+        <span class="fan" aria-hidden="true">
+          <EventTicket
+            v-for="badge in tickets"
+            :key="badge.id"
+            :ticket-line="badge.ticketLine"
+            :big-line="badge.bigLine"
+            :logo="badge.hasLogo ? logoUrl(badge) : null"
+            :size="64"
+          />
+          <EventTicket
+            v-if="tickets.length === 0"
+            class="locked"
+            ticket-line="EVENT"
+            big-line="?"
+            :logo="null"
+            :size="64"
+          />
+        </span>
+        <span class="events-text">
+          <span class="card-title">{{ eventsSummary }}</span>
+          <span class="small">From the events you joined.</span>
+        </span>
+      </RouterLink>
+    </section>
+
     <p v-if="problem" class="alert" role="alert">{{ problem }}</p>
   </section>
 </template>
 
 <style scoped>
+.events {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  color: inherit;
+  text-decoration: none;
+}
+
+.fan {
+  display: flex;
+}
+
+.fan > * + * {
+  margin-left: -28px;
+}
+
+.locked {
+  opacity: 0.35;
+  filter: grayscale(1);
+}
+
+.events-text {
+  display: grid;
+  gap: 0.2rem;
+}
+
 .tiles {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
