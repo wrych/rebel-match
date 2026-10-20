@@ -17,14 +17,76 @@ export interface Invite {
   joinUrl: string
   createdBy: string
   createdAt: string
+  /** The event badge joining through it earns, if any (R-INV-13). */
+  eventBadge: EventBadge | null
 }
+
+/** An event's badge as the host tools list it (R-BADGE-4). */
+export interface EventBadge {
+  id: string
+  name: string
+  ticketLine: string
+  bigLine: string
+  hasLogo: boolean
+}
+
+/** What a new invite gives: no badge, a new one, or another invite's. */
+export type BadgeChoice =
+  | { kind: 'none' }
+  | {
+      kind: 'new'
+      name: string
+      ticketLine: string
+      bigLine: string
+      /** The SVG as uploaded; the server cleans it (R-BADGE-5). */
+      logoSvg: string | null
+    }
+  | { kind: 'same'; id: string }
 
 export interface InviteDraft {
   label: string
   validFrom: string
   validUntil: string
   maxUses: string
+  badge: BadgeChoice
 }
+
+/** Where an event badge's cleaned logo is served (R-BADGE-5). */
+export function logoUrl(badge: Pick<EventBadge, 'id'>): string {
+  return `/api/event-badges/${encodeURIComponent(badge.id)}/logo.svg`
+}
+
+/** Each event badge once, as the invites carry them, newest first. */
+export function badgesOf(invites: readonly Invite[]): EventBadge[] {
+  const seen = new Map<string, EventBadge>()
+  for (const invite of invites)
+    if (invite.eventBadge !== null && !seen.has(invite.eventBadge.id))
+      seen.set(invite.eventBadge.id, invite.eventBadge)
+  return [...seen.values()]
+}
+
+function badgeFields(
+  badge: BadgeChoice,
+): { eventBadgeId: string } | { eventBadge: object } | object {
+  if (badge.kind === 'same') return { eventBadgeId: badge.id }
+  if (badge.kind === 'none') return {}
+  return {
+    eventBadge: {
+      name: badge.name,
+      ticketLine: badge.ticketLine,
+      bigLine: badge.bigLine,
+      ...(badge.logoSvg === null ? {} : { logoSvg: badge.logoSvg }),
+    },
+  }
+}
+
+const refusals = {
+  bad_window: 'bad-window',
+  bad_logo: 'bad-logo',
+  unknown_badge: 'bad-badge',
+} as const
+
+type Refusal = (typeof refusals)[keyof typeof refusals]
 
 export async function fetchInvites(): Promise<Invite[]> {
   const { invites } = await getJson<{ invites: Invite[] }>(
@@ -63,10 +125,11 @@ function instant(text: string, end: boolean): string | undefined | null {
 
 /** Creates an invite; blanks take the server's defaults (R-INV-2,4). 'bad
  * date' when a day is not YYYY-MM-DD, 'bad-window' when it would end before
- * it starts. */
+ * it starts, 'bad-logo' for a logo the server refused, 'bad-badge' for a
+ * badge that is gone (R-BADGE-4,5). */
 export async function createInvite(
   draft: InviteDraft,
-): Promise<Invite | 'bad-date' | 'bad-window'> {
+): Promise<Invite | 'bad-date' | Refusal> {
   const validFrom = instant(draft.validFrom, false)
   const validUntil = instant(draft.validUntil, true)
   if (validFrom === null || validUntil === null) return 'bad-date'
@@ -75,10 +138,13 @@ export async function createInvite(
     validFrom,
     validUntil,
     maxUses: draft.maxUses === '' ? undefined : Number(draft.maxUses),
+    ...badgeFields(draft.badge),
   })
   if (response.status === 400) {
-    const body = (await response.json()) as { error?: string }
-    if (body.error === 'bad_window') return 'bad-window'
+    const { error } = (await response.json()) as { error?: string }
+    const refusal = refusals[error as keyof typeof refusals] as
+      Refusal | undefined
+    if (refusal !== undefined) return refusal
   }
   return (await jsonOf<{ invite: Invite }>(response, 'invite not created'))
     .invite

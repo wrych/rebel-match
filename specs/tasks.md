@@ -432,7 +432,7 @@ in this order.
       _(R-BADGE-10, R-NOTE-1, R-NOTE-2, R-NOTE-5)_
 - [x] The Promotions row from 9toRevolution progress, shown while the game
       is on. _(R-BADGE-1, R-BADGE-9)_
-- [ ] Event badges on invite creation: the badge fields, the cleaned SVG logo,
+- [x] Event badges on invite creation: the badge fields, the cleaned SVG logo,
       the logo endpoint and its headers, S22's badge section.
       _(R-BADGE-4, R-BADGE-5, R-INV-13)_
 - [ ] Earning event badges: on admission, by a signed-in member opening the

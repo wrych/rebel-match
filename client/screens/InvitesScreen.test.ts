@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { EventBadge } from '../lib/invites'
 import InvitesScreen from './InvitesScreen.vue'
 
 const invite = {
@@ -15,6 +16,7 @@ const invite = {
   joinUrl: 'http://localhost:5173/?invite=abc',
   createdBy: 'host@example.invalid',
   createdAt: '2026-11-08T08:00:00.000Z',
+  eventBadge: null as EventBadge | null,
 }
 const limits = {
   invitesPollSeconds: 60,
@@ -22,6 +24,7 @@ const limits = {
   inviteDefaultMaxUses: 400,
   inviteLabelMaxChars: 120,
   savedTickMs: 2000,
+  badgeLogoMaxBytes: 2048,
 }
 
 interface Reply {
@@ -322,5 +325,135 @@ describe('InvitesScreen', () => {
 
     expect(screen.find('.card-new .card-title').text()).toBe('Side stage')
     screen.unmount()
+  })
+})
+
+describe('event badges on a new invite (R-BADGE-4, R-BADGE-5)', () => {
+  const summit = {
+    id: 'b-1',
+    name: 'Stormed the Summit',
+    ticketLine: 'SUMMIT',
+    bigLine: '2026',
+    hasLogo: true,
+  }
+  const logo =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M2 2h20v20z"/></svg>'
+
+  async function upload(
+    screen: ReturnType<typeof mount>,
+    text: string,
+  ): Promise<void> {
+    const input = screen.find('#badge-logo')
+    Object.defineProperty(input.element, 'files', {
+      value: [new File([text], 'summit.svg', { type: 'image/svg+xml' })],
+    })
+    await input.trigger('change')
+    await flushPromises()
+  }
+
+  it('sends a new badge with its logo as uploaded, previewing the ticket', async () => {
+    const fetchMock = server()
+    const screen = await mountScreen()
+
+    await screen.find('#label').setValue('Main stage')
+    await screen.findAll('input[type="radio"]')[1]!.setValue(true)
+    await screen.find('#badge-name').setValue('Stormed the Summit')
+    await screen.find('#badge-ticket').setValue('SUMMIT')
+    await screen.find('#badge-big').setValue('2026')
+    await upload(screen, logo)
+
+    expect(screen.find('.preview image').attributes('href')).toMatch(
+      /^data:image\/svg\+xml/,
+    )
+    await screen.find('form').trigger('submit')
+    await flushPromises()
+
+    expect(postBody(fetchMock)).toEqual({
+      label: 'Main stage',
+      eventBadge: {
+        name: 'Stormed the Summit',
+        ticketLine: 'SUMMIT',
+        bigLine: '2026',
+        logoSvg: logo,
+      },
+    })
+  })
+
+  it('keeps what the host typed while the logo was being read', async () => {
+    const fetchMock = server()
+    const screen = await mountScreen()
+    await screen.find('#label').setValue('Main stage')
+    await screen.findAll('input[type="radio"]')[1]!.setValue(true)
+    let finish: (text: string) => void = () => undefined
+    const file = new File([logo], 'summit.svg', { type: 'image/svg+xml' })
+    Object.defineProperty(file, 'text', {
+      value: () => new Promise<string>((resolve) => (finish = resolve)),
+    })
+    const input = screen.find('#badge-logo')
+    Object.defineProperty(input.element, 'files', { value: [file] })
+
+    await input.trigger('change')
+    await screen.find('#badge-name').setValue('Stormed the Summit')
+    await screen.find('#badge-ticket').setValue('SUMMIT')
+    await screen.find('#badge-big').setValue('2026')
+    finish(logo)
+    await flushPromises()
+    await screen.find('form').trigger('submit')
+    await flushPromises()
+
+    expect(postBody(fetchMock)).toMatchObject({
+      eventBadge: { name: 'Stormed the Summit', logoSvg: logo },
+    })
+  })
+
+  it('says a logo is too big before sending it', async () => {
+    const fetchMock = server()
+    const screen = await mountScreen()
+
+    await screen.findAll('input[type="radio"]')[1]!.setValue(true)
+    await upload(screen, `${logo}${' '.repeat(4096)}`)
+
+    expect(screen.find('.badge-fields [role="alert"]').text()).toContain(
+      'at most 2 kB',
+    )
+    expect(
+      fetchMock.mock.calls.some(
+        ([, init]) => (init as RequestInit | undefined)?.method === 'POST',
+      ),
+    ).toBe(false)
+  })
+
+  it('gives a second invite the badge of another, and shows it on the card', async () => {
+    listed = [{ ...invite, eventBadge: summit }]
+    const fetchMock = server()
+    const screen = await mountScreen()
+
+    expect(screen.find('.event-badge').text()).toContain('Stormed the Summit')
+    expect(screen.find('.event-badge image').attributes('href')).toBe(
+      '/api/event-badges/b-1/logo.svg',
+    )
+    await screen.find('#label').setValue('Workshop room')
+    await screen.findAll('input[type="radio"]')[2]!.setValue(true)
+    await screen.find('form').trigger('submit')
+    await flushPromises()
+
+    expect(postBody(fetchMock)).toEqual({
+      label: 'Workshop room',
+      eventBadgeId: 'b-1',
+    })
+    listed = [invite]
+  })
+
+  it('says why the server refused a logo', async () => {
+    server({ status: 400, body: { error: 'bad_logo' } })
+    const screen = await mountScreen()
+
+    await screen.find('#label').setValue('Main stage')
+    await screen.find('form').trigger('submit')
+    await flushPromises()
+
+    expect(screen.find('[role="status"]').text()).toContain(
+      'The logo was not taken',
+    )
   })
 })
