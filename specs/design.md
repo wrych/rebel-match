@@ -1048,8 +1048,11 @@ the default again deletes the row. `every_15_minutes` is accepted for
 
 The cascades erase a row with its recipient, the member it is about, and the
 request or challenge it refers to (R-NOTE-11, R-NFR-7). A `badge` row names the
-badge it is about and no other member; one announcing a crown the member no
-longer holds is stale and not mailed (R-NOTE-9).
+badge it is about and no other member: its `about_member_id` is its recipient,
+so the list and the worker read it as they read every other type. One
+announcing a crown the member no longer holds is stale and not mailed
+(R-NOTE-9). Opening a row's badges marks its badge notifications seen, as the
+screen they lead to (R-NOTE-5).
 
 A digest quotes several members, which `outbox.about_member_id` cannot hold,
 so `outbox_quotes (outbox_id, member_id)` lists them, each cascading from both
