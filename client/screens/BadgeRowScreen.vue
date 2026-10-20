@@ -18,6 +18,8 @@ const row = ref<RowView | null>(null)
 const problem = ref<string | null>(null)
 
 const best = computed(() => (row.value === null ? null : bestOf(row.value)))
+// The promotions are a teaser: which are reached, never how (R-BADGE-9).
+const teaser = computed(() => row.value?.row === 'game')
 const next = computed(() => (row.value === null ? null : nextLevel(row.value)))
 
 const counted = (count: number, counts: readonly [string, string]): string =>
@@ -34,6 +36,7 @@ const progress = computed(() => {
 })
 
 function levelStatus(level: RowView['levels'][number]): string {
+  if (teaser.value) return level.earnedAt === null ? 'Not yet' : 'Reached'
   if (level.earnedAt !== null) return `Earned ${day(level.earnedAt)}`
   return `${String(Math.min(row.value?.count ?? 0, level.needs))} of ${String(level.needs)}`
 }
@@ -70,11 +73,13 @@ onMounted(async () => {
         <BadgeArt :row="row.row" :tier="best.tier" :size="150" />
         <p class="kicker kicker-accent">{{ row.title }}</p>
         <h1 class="display display-lg">{{ best.name }}</h1>
-        <p class="lede">{{ counted(row.count, row.counts) }} so far.</p>
+        <p v-if="!teaser" class="lede">
+          {{ counted(row.count, row.counts) }} so far.
+        </p>
       </div>
 
       <section
-        v-if="next && progress"
+        v-if="!teaser && next && progress"
         class="card next"
         aria-label="Next level"
       >
@@ -101,14 +106,14 @@ onMounted(async () => {
           <li v-for="level in row.levels" :key="level.level" class="rung">
             <BadgeArt
               :row="row.row"
-              :tier="
-                level.earnedAt === null ? 'locked' : (level.level as 1 | 2 | 3)
-              "
+              :tier="level.earnedAt === null ? 'locked' : level.level"
               :size="56"
             />
             <span class="rung-text">
               <span class="card-title">{{ level.name }}</span>
-              <span class="kicker">{{ counted(level.needs, row.counts) }}</span>
+              <span v-if="!teaser" class="kicker">{{
+                counted(level.needs, row.counts)
+              }}</span>
             </span>
             <span class="small status" :class="{ ok: level.earnedAt }">{{
               levelStatus(level)
@@ -122,7 +127,7 @@ onMounted(async () => {
             />
             <span class="rung-text">
               <span class="card-title">{{ row.crown.name }}</span>
-              <span class="kicker">The most of anyone</span>
+              <span v-if="!teaser" class="kicker">The most of anyone</span>
             </span>
             <span class="small status" :class="{ ok: row.crown.held }">{{
               row.crown.held ? 'Yours, for now' : 'Not yours yet'
@@ -131,7 +136,7 @@ onMounted(async () => {
         </ul>
       </section>
 
-      <p class="small">
+      <p v-if="!teaser" class="small">
         {{ row.explains }} The crown goes to whoever has the most, and moves
         when someone overtakes them.
       </p>

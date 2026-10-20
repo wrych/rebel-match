@@ -114,6 +114,55 @@ describe('BadgeRowScreen (S36, R-BADGE-8)', () => {
     ).toEqual([{ rows: ['speak'] }])
   })
 
+  it('names the promotions reached and says nothing of how (R-BADGE-9)', async () => {
+    params = { row: 'game' }
+    const job = (
+      n: number,
+      name: string,
+      earned: boolean,
+    ): RowView['levels'][number] => ({
+      level: n,
+      name,
+      needs: [1, 4, 7][n - 1]!,
+      earnedAt: earned ? '2026-11-08T10:00:00.000Z' : null,
+      new: false,
+    })
+    serve([
+      speak({
+        row: 'game',
+        title: 'Promotions',
+        counts: ['', ''],
+        explains: '',
+        count: 4,
+        levels: [
+          job(1, 'Team Lead', true),
+          job(2, 'Manager', true),
+          job(3, 'Director', false),
+        ],
+        crown: { name: 'Leader of the Revolution', held: false, new: false },
+      }),
+    ])
+    const screen = await mountScreen()
+
+    expect(screen.find('h1').text()).toBe('Manager')
+    expect(screen.find('.lede').exists()).toBe(false)
+    expect(screen.find('[role="progressbar"]').exists()).toBe(false)
+    expect(
+      screen
+        .findAll('.rung')
+        .map((rung) => [
+          rung.find('.rung-text').text(),
+          rung.find('.status').text(),
+        ]),
+    ).toEqual([
+      ['Team Lead', 'Reached'],
+      ['Manager', 'Reached'],
+      ['Director', 'Not yet'],
+      ['Leader of the Revolution', 'Not yours yet'],
+    ])
+    expect(screen.text()).not.toContain('crown goes to')
+  })
+
   it('answers an unknown row as not found (R-NAV-8)', async () => {
     params = { row: 'gossip' }
     serve([speak()])

@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import type { CountedRow } from '../badges/rows.js'
+import type { BadgeRow } from '../badges/rows.js'
 import {
   countingChallenges,
   countingConnections,
+  countingGame,
   countingSwipes,
   createBadges,
   type BadgeService,
@@ -25,7 +26,7 @@ type Held = EarnedLevel & { memberId: string }
 /** A gain the store notified with it: a level, or 0 for a crown. */
 interface Gain {
   memberId: string
-  row: CountedRow
+  row: BadgeRow
   level: number
 }
 
@@ -51,9 +52,9 @@ function memoryStore(): BadgeStore & {
     held,
     crownList,
     launches: 0,
-    count: (memberId: string, row: CountedRow) =>
+    count: (memberId: string, row: BadgeRow) =>
       Promise.resolve(counts.get(`${memberId}:${row}`) ?? 0),
-    standings: (row: CountedRow) =>
+    standings: (row: BadgeRow) =>
       Promise.resolve(
         [...counts]
           .filter(([key, count]) => key.endsWith(`:${row}`) && count > 0)
@@ -64,7 +65,7 @@ function memoryStore(): BadgeStore & {
           })),
       ),
     crowns: () => Promise.resolve(crownList.map((crown) => ({ ...crown }))),
-    setCrown: (row: CountedRow, memberId: string | null, seen: boolean) => {
+    setCrown: (row: BadgeRow, memberId: string | null, seen: boolean) => {
       const crown = { row, memberId, seenAt: seen ? minute(59) : null }
       const at = crownList.findIndex((each) => each.row === row)
       if (at === -1) crownList.push(crown)
@@ -74,7 +75,7 @@ function memoryStore(): BadgeStore & {
     },
     award: (
       memberId: string,
-      row: CountedRow,
+      row: BadgeRow,
       levels: readonly number[],
       seen: boolean,
     ) => {
@@ -109,7 +110,7 @@ function memoryStore(): BadgeStore & {
             (crown) => crown.memberId === memberId && !crown.seenAt,
           ).length,
       ),
-    markSeen: (memberId: string, rows: readonly CountedRow[]) => {
+    markSeen: (memberId: string, rows: readonly BadgeRow[]) => {
       for (const each of held)
         if (each.memberId === memberId && rows.includes(each.row))
           each.seenAt ??= minute(58)
@@ -127,13 +128,17 @@ function memoryStore(): BadgeStore & {
   return store
 }
 
-function setup(): {
+function setup(gameOn = false): {
   badges: BadgeService
   store: ReturnType<typeof memoryStore>
 } {
   const store = memoryStore()
   return {
-    badges: createBadges({ store, levelCounts: () => levelCounts }),
+    badges: createBadges({
+      store,
+      levelCounts: () => levelCounts,
+      gameOn: () => gameOn,
+    }),
     store,
   }
 }
@@ -269,6 +274,49 @@ describe('new badges (R-BADGE-10)', () => {
   })
 })
 
+describe('promotions (R-BADGE-1, R-BADGE-9)', () => {
+  it('shows the row only while the game is on', async () => {
+    const rowsOf = async (gameOn: boolean): Promise<string[]> =>
+      (await setup(gameOn).badges.mine('ana')).rows.map((row) => row.row)
+
+    expect(await rowsOf(false)).not.toContain('game')
+    expect(await rowsOf(true)).toContain('game')
+  })
+
+  it('reaches a job on its first day, counting the highest level', async () => {
+    const { badges, store } = setup(true)
+    store.counts.set('ana:game', 7)
+
+    await badges.recount('ana', ['game'])
+
+    const game = (await badges.mine('ana')).rows.find((r) => r.row === 'game')!
+    expect(
+      game.levels.map((level) => [level.name, level.needs, !!level.earnedAt]),
+    ).toEqual([
+      ['Team Lead', 1, true],
+      ['Manager', 4, true],
+      ['Director', 7, true],
+      ['VP', 10, false],
+      ['CEO', 13, false],
+      ['Rebel', 16, false],
+    ])
+    expect(game.crown).toEqual({
+      name: 'Leader of the Revolution',
+      held: true,
+      new: false,
+    })
+  })
+
+  it('checks no game crown while the game is off', async () => {
+    const { badges, store } = setup(false)
+    store.counts.set('ana:game', 7)
+
+    await badges.checkCrowns()
+
+    expect(store.crownList.map((crown) => crown.row)).not.toContain('game')
+  })
+})
+
 describe('badges at launch (R-BADGE-11)', () => {
   it('records what was earned before, none of it new, once', async () => {
     const { badges, store } = setup()
@@ -367,11 +415,11 @@ describe('crowns (R-BADGE-3)', () => {
 
 function recorder(): {
   badges: Pick<BadgeService, 'recount'>
-  calls: [string, CountedRow][]
+  calls: [string, BadgeRow][]
   errors: unknown[]
   fail: () => void
 } {
-  const calls: [string, CountedRow][] = []
+  const calls: [string, BadgeRow][] = []
   const errors: unknown[] = []
   let failing = false
   return {
@@ -540,6 +588,35 @@ describe('counting where acts are recorded (R-BADGE-1)', () => {
     await service.swipe('ana', { challengeId: 'c1', action: 'been_there' })
 
     expect(counted.calls).toEqual([])
+  })
+
+  it("counts promotions on a player's visit and each plausible day", async () => {
+    const counted = recorder()
+    let result: 'implausible' | 'recorded' = 'recorded'
+    const game = countingGame(
+      {
+        state: () => Promise.resolve({} as never),
+        recordDay: () =>
+          Promise.resolve(
+            result === 'implausible' ? 'implausible' : ({} as never),
+          ),
+        share: unused,
+        seeHint: unused,
+        leaderboard: unused,
+      },
+      counted.badges,
+      () => undefined,
+    )
+
+    await game.state('ana')
+    await game.recordDay('ana', { level: 1, outcome: 'won', playSeconds: 60 })
+    result = 'implausible'
+    await game.recordDay('ana', { level: 9, outcome: 'won', playSeconds: 1 })
+
+    expect(counted.calls).toEqual([
+      ['ana', 'game'],
+      ['ana', 'game'],
+    ])
   })
 
   it('reports a failed count and still answers the act', async () => {

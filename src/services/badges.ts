@@ -1,17 +1,19 @@
 import {
-  countedRows,
+  badgeRows,
   levelsReached,
+  promotionLevels,
   rowNames,
-  type CountedRow,
+  type BadgeRow,
 } from '../badges/rows.js'
 import { crownAfter, type Standing } from '../badges/crowns.js'
 import type { ChallengeService } from './challenges.js'
+import type { GameService } from './game.js'
 import type { ConnectionService } from './connections.js'
 import type { SwipeService } from './swipes.js'
 
 /** A level a member holds, as stored. */
 export interface EarnedLevel {
-  row: CountedRow
+  row: BadgeRow
   level: number
   earnedAt: Date
   seenAt: Date | null
@@ -19,25 +21,21 @@ export interface EarnedLevel {
 
 export interface BadgeStore {
   /** The member's count for a row, from the records it counts (R-BADGE-1). */
-  count(memberId: string, row: CountedRow): Promise<number>
+  count(memberId: string, row: BadgeRow): Promise<number>
   /** Each active member's count for a row and when it reached it, leaving
    * out those at zero. */
-  standings(row: CountedRow): Promise<Standing[]>
+  standings(row: BadgeRow): Promise<Standing[]>
   /** The crowns given so far, one per row ever checked. */
   crowns(): Promise<Crown[]>
   /** Gives a row's crown, or takes it from everyone with null; a crown not
    * seen is news, notified to its holder in the same transaction
    * (R-BADGE-10, R-NOTE-10). */
-  setCrown(
-    row: CountedRow,
-    memberId: string | null,
-    seen: boolean,
-  ): Promise<void>
+  setCrown(row: BadgeRow, memberId: string | null, seen: boolean): Promise<void>
   /** Records the levels not yet held; seen ones are not new, the rest are
    * notified in the same transaction (R-NOTE-10). Returns those it added. */
   award(
     memberId: string,
-    row: CountedRow,
+    row: BadgeRow,
     levels: readonly number[],
     seen: boolean,
   ): Promise<number[]>
@@ -47,12 +45,12 @@ export interface BadgeStore {
   /** How many of the member's levels and crowns are new. */
   newCount(memberId: string): Promise<number>
   /** Marks the member's levels and crown in these rows as seen. */
-  markSeen(memberId: string, rows: readonly CountedRow[]): Promise<void>
+  markSeen(memberId: string, rows: readonly BadgeRow[]): Promise<void>
 }
 
 /** A row's crown as stored: its holder, if anyone. */
 export interface Crown {
-  row: CountedRow
+  row: BadgeRow
   memberId: string | null
   seenAt: Date | null
 }
@@ -68,7 +66,7 @@ export interface LevelView {
 }
 
 export interface RowView {
-  row: CountedRow
+  row: BadgeRow
   title: string
   /** What the row counts, singular and plural. */
   counts: readonly [string, string]
@@ -86,7 +84,7 @@ export interface BadgeOverview {
 
 export interface BadgeService {
   /** Counts the rows again for one member and records any level reached. */
-  recount(memberId: string, rows: readonly CountedRow[]): Promise<void>
+  recount(memberId: string, rows: readonly BadgeRow[]): Promise<void>
   /** The member's own badges, never anyone else's (R-BADGE-12). */
   mine(memberId: string): Promise<BadgeOverview>
   /** Records, once and quietly, what was earned before badges existed
@@ -99,11 +97,11 @@ export interface BadgeService {
   newCount(memberId: string): Promise<number>
   /** The member opened these rows' badges, so none of them is new any more
    * (R-BADGE-10). */
-  seen(memberId: string, rows: readonly CountedRow[]): Promise<void>
+  seen(memberId: string, rows: readonly BadgeRow[]): Promise<void>
 }
 
 function rowView(
-  row: CountedRow,
+  row: BadgeRow,
   count: number,
   held: readonly EarnedLevel[],
   levelCounts: readonly number[],
@@ -132,32 +130,46 @@ function rowView(
   }
 }
 
+// Where each row's levels sit, and which rows are shown now: the game's
+// promotions only while the game is on (R-BADGE-9).
+interface Rules {
+  countsOf(row: BadgeRow): readonly number[]
+  shown(): BadgeRow[]
+}
+
+function rulesOf(deps: {
+  levelCounts: () => readonly number[]
+  gameOn: () => boolean
+}): Rules {
+  return {
+    countsOf: (row) => (row === 'game' ? promotionLevels : deps.levelCounts()),
+    shown: () => badgeRows.filter((row) => row !== 'game' || deps.gameOn()),
+  }
+}
+
 // A row's first crown is given quietly, as everything from before launch is
 // (R-BADGE-11); a crown moving after that is news to the gainer only.
 async function checkCrown(
   store: BadgeStore,
-  levelCounts: () => readonly number[],
-  row: CountedRow,
+  rules: Rules,
+  row: BadgeRow,
 ): Promise<void> {
   const current = (await store.crowns()).find((crown) => crown.row === row)
   const holder = current?.memberId ?? null
   const next = crownAfter(
     holder,
     await store.standings(row),
-    levelCounts()[0] ?? 1,
+    rules.countsOf(row)[0] ?? 1,
   )
   if (current === undefined) await store.setCrown(row, next, true)
   else if (next !== holder) await store.setCrown(row, next, false)
 }
 
-async function awardAtLaunch(
-  store: BadgeStore,
-  levelCounts: () => readonly number[],
-): Promise<void> {
+async function awardAtLaunch(store: BadgeStore, rules: Rules): Promise<void> {
   if (await store.launched()) return
-  for (const row of countedRows) {
+  for (const row of badgeRows) {
     for (const { memberId, count } of await store.standings(row)) {
-      const reached = levelsReached(count, levelCounts())
+      const reached = levelsReached(count, rules.countsOf(row))
       if (reached.length > 0) await store.award(memberId, row, reached, true)
     }
   }
@@ -169,15 +181,17 @@ async function awardAtLaunch(
 export function createBadges(deps: {
   store: BadgeStore
   levelCounts: () => readonly number[]
+  gameOn: () => boolean
 }): BadgeService {
   const { store } = deps
+  const rules = rulesOf(deps)
   return {
     recount: async (memberId, rows) => {
       for (const row of rows) {
         const count = await store.count(memberId, row)
-        const reached = levelsReached(count, deps.levelCounts())
+        const reached = levelsReached(count, rules.countsOf(row))
         if (reached.length > 0) await store.award(memberId, row, reached, false)
-        await checkCrown(store, deps.levelCounts, row)
+        await checkCrown(store, rules, row)
       }
     },
     mine: async (memberId) => {
@@ -186,12 +200,12 @@ export function createBadges(deps: {
         store.crowns(),
       ])
       const rows = await Promise.all(
-        countedRows.map(async (row) =>
+        rules.shown().map(async (row) =>
           rowView(
             row,
             await store.count(memberId, row),
             earned.filter((each) => each.row === row),
-            deps.levelCounts(),
+            rules.countsOf(row),
             crowns.find((crown) => crown.row === row),
             memberId,
           ),
@@ -199,17 +213,16 @@ export function createBadges(deps: {
       )
       return { rows }
     },
-    awardAtLaunch: () => awardAtLaunch(store, deps.levelCounts),
+    awardAtLaunch: () => awardAtLaunch(store, rules),
     newCount: (memberId) => store.newCount(memberId),
     seen: (memberId, rows) => store.markSeen(memberId, rows),
     checkCrowns: async () => {
-      for (const row of countedRows)
-        await checkCrown(store, deps.levelCounts, row)
+      for (const row of rules.shown()) await checkCrown(store, rules, row)
     },
   }
 }
 
-type Recount = (memberId: string, rows: readonly CountedRow[]) => Promise<void>
+type Recount = (memberId: string, rows: readonly BadgeRow[]) => Promise<void>
 
 // The act has happened whatever becomes of its count: a failure is reported,
 // and the member's next counted act catches up on the level.
@@ -284,6 +297,30 @@ export function countingSwipes(
       if (outcome.result === 'recorded' && input.action === 'been_there')
         await recount(memberId, ['help'])
       return outcome
+    },
+  }
+}
+
+/** The game, counting the player's promotions whenever their progress may
+ * have moved: their first visit, which makes them a Team Lead, and every
+ * day recorded (R-BADGE-1, R-GAME-16). */
+export function countingGame(
+  game: GameService,
+  badges: Pick<BadgeService, 'recount'>,
+  onError: (error: unknown) => void,
+): GameService {
+  const recount = recountAfter(badges, onError)
+  return {
+    ...game,
+    state: async (memberId) => {
+      const state = await game.state(memberId)
+      await recount(memberId, ['game'])
+      return state
+    },
+    recordDay: async (memberId, day) => {
+      const result = await game.recordDay(memberId, day)
+      if (result !== 'implausible') await recount(memberId, ['game'])
+      return result
     },
   }
 }
