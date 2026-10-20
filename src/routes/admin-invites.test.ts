@@ -9,7 +9,7 @@ import type {
   InviteView,
   NewInvite,
 } from '../services/invites.js'
-import { adminInviteRoutes } from './admin-invites.js'
+import { adminInviteRoutes, eventBadgeLogoRoutes } from './admin-invites.js'
 
 const config = loadConfig({
   DATABASE_URL: 'postgres://user:pw@localhost:5432/rebel_match',
@@ -36,6 +36,7 @@ const listed: InviteView = {
   joinUrl: 'http://localhost:5173/?invite=abc',
   createdBy: 'a@example.invalid',
   createdAt: '2026-11-08T08:00:00.000Z',
+  eventBadge: null,
 }
 
 function setup(): {
@@ -52,10 +53,16 @@ function setup(): {
       return Promise.resolve(
         input.label === 'backwards'
           ? { result: 'bad_window' }
-          : { result: 'created', invite: listed },
+          : input.label === 'bad logo'
+            ? { result: 'bad_logo' }
+            : { result: 'created', invite: listed },
       )
     },
     revoke: (id) => Promise.resolve(id === 'i-1' ? 'revoked' : 'not_found'),
+    logo: (id) =>
+      Promise.resolve(
+        id === 'b-1' ? '<svg xmlns="x"><path d="M0 0"/></svg>' : null,
+      ),
     raiseCap: (id, maxUses) => {
       raised.push([id, maxUses])
       if (id === 'i-gone') return Promise.resolve({ result: 'revoked' })
@@ -213,6 +220,52 @@ describe('admin invite routes', () => {
     expect(response.body).toEqual({ error })
   })
 
+  it('passes a new event badge on, and says why a logo was refused (R-BADGE-4,5)', async () => {
+    const { app, created } = setup()
+    const eventBadge = {
+      name: ' Stormed the Summit ',
+      ticketLine: 'SUMMIT',
+      bigLine: '2026',
+      logoSvg: '<svg/>',
+    }
+
+    await request(app)
+      .post('/api/admin/invites')
+      .set('Cookie', await cookieFor('m-admin'))
+      .send({ label: 'Main stage', eventBadge })
+      .expect(201)
+    const refused = await request(app)
+      .post('/api/admin/invites')
+      .set('Cookie', await cookieFor('m-admin'))
+      .send({ label: 'bad logo', eventBadge })
+
+    expect(created[0]?.[0].eventBadge).toEqual({
+      ...eventBadge,
+      name: 'Stormed the Summit',
+    })
+    expect(refused.status).toBe(400)
+    expect(refused.body).toEqual({ error: 'bad_logo' })
+  })
+
+  it('refuses a badge both new and taken from another invite, or too long', async () => {
+    const { app, created } = setup()
+    const cookie = await cookieFor('m-admin')
+    const badge = { name: 'Summit', ticketLine: 'SUMMIT', bigLine: '2026' }
+
+    for (const body of [
+      { label: 'A', eventBadgeId: 'b-1', eventBadge: badge },
+      { label: 'B', eventBadge: { ...badge, ticketLine: 'MUCH TOO LONG' } },
+      { label: 'C', eventBadge: { ...badge, bigLine: '' } },
+    ])
+      await request(app)
+        .post('/api/admin/invites')
+        .set('Cookie', cookie)
+        .send(body)
+        .expect(400)
+
+    expect(created).toEqual([])
+  })
+
   it('answers 404 to a member without invite:manage (R-ROLE-5)', async () => {
     const { app, raised } = setup()
 
@@ -223,5 +276,43 @@ describe('admin invite routes', () => {
 
     expect(response.status).toBe(404)
     expect(raised).toEqual([])
+  })
+})
+
+describe('eventBadgeLogoRoutes (R-BADGE-5)', () => {
+  function logoApp(): Express {
+    const app = express()
+    app.use(
+      eventBadgeLogoRoutes({
+        invites: {
+          list: () => Promise.resolve([]),
+          create: () => Promise.resolve({ result: 'bad_window' }),
+          revoke: () => Promise.resolve('not_found'),
+          raiseCap: () => Promise.resolve({ result: 'not_found' }),
+          logo: (id) =>
+            Promise.resolve(
+              id === 'b-1' ? '<svg xmlns="x"><path d="M0 0"/></svg>' : null,
+            ),
+        },
+      }),
+    )
+    return app
+  }
+
+  it('serves a logo as a sandboxed picture, to anyone', async () => {
+    const response = await request(logoApp())
+      .get('/api/event-badges/b-1/logo.svg')
+      .expect(200)
+
+    expect(response.headers['content-type']).toMatch(/^image\/svg\+xml/)
+    expect(response.headers['x-content-type-options']).toBe('nosniff')
+    expect(response.headers['content-security-policy']).toBe(
+      "default-src 'none'; style-src 'unsafe-inline'; sandbox",
+    )
+    expect(String(response.body)).toBe('<svg xmlns="x"><path d="M0 0"/></svg>')
+  })
+
+  it('answers not found for a badge without one', async () => {
+    await request(logoApp()).get('/api/event-badges/b-2/logo.svg').expect(404)
   })
 })

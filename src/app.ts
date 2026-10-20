@@ -15,7 +15,10 @@ import { swipeRoutes } from './routes/swipes.js'
 import { cockpitRoutes } from './routes/cockpit.js'
 import { guardApi } from './routes/api-guard.js'
 import { adminApplicantRoutes } from './routes/admin-applicants.js'
-import { adminInviteRoutes } from './routes/admin-invites.js'
+import {
+  adminInviteRoutes,
+  eventBadgeLogoRoutes,
+} from './routes/admin-invites.js'
 import { adminOutboxRoutes } from './routes/admin-outbox.js'
 import { adminSettingsRoutes } from './routes/admin-settings.js'
 import { adminMemberRoutes } from './routes/admin-members.js'
@@ -168,7 +171,7 @@ export function createApp(deps: AppDeps): Express {
   app.use(express.json({ limit: '64kb' }))
   app.use(renewSessions(deps.auth))
   app.use(authRoutes(deps))
-  app.use(requestLinkRoutes(deps))
+  app.use(requestLinkRoutes(deps), eventBadgeLogoRoutes(deps))
   app.use('/api', guardApi(deps))
   app.use(onboardingRoutes(deps))
   app.use(analyticsConsentRoutes(deps))
