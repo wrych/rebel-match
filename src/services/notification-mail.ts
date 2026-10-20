@@ -1,8 +1,13 @@
-import { rowNames, type RowNames } from '../badges/rows.js'
+import {
+  eventRow,
+  eventTitle,
+  rowNames,
+  type RowNames,
+} from '../badges/rows.js'
 import { createApplicantNotice } from './applicant-notice.js'
 import { badgeLine, createBadgeNotice, type BadgeNote } from './badge-notice.js'
 import { noticeLink } from './notice-link.js'
-import { badgeName, type NotificationKind } from './notifications.js'
+import { badgeName, badgePath, type NotificationKind } from './notifications.js'
 import { createTrendNotice, deckAt } from './trend-notice.js'
 import {
   createAcceptNotice,
@@ -67,11 +72,12 @@ function badgeOf(
       : (rowNames as Readonly<Record<string, RowNames | undefined>>)[
           note.badge.row
         ]
-  if (note.badge === null || names === undefined) return null
+  const rowTitle = note.badge?.row === eventRow ? eventTitle : names?.title
+  if (note.badge === null || rowTitle === undefined) return null
   return {
     name: badgeName(note.badge),
-    rowTitle: names.title,
-    path: `/badges/${encodeURIComponent(note.badge.row)}`,
+    rowTitle,
+    path: badgePath(note.badge.row),
     crown: note.badge.level === 0,
   }
 }

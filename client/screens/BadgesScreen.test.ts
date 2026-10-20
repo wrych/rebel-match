@@ -41,6 +41,7 @@ const overview: BadgeOverview = {
       crown: { name: 'Crown connect', held: true, new: false },
     }),
   ],
+  events: [],
 }
 
 function serve(answer: BadgeOverview | null): ReturnType<typeof vi.fn> {
@@ -117,7 +118,7 @@ describe('BadgesScreen (S35, R-BADGE-7)', () => {
   })
 
   it('asks nothing to be marked with nothing new', async () => {
-    const fetchMock = serve({ rows: [row('speak')] })
+    const fetchMock = serve({ rows: [row('speak')], events: [] })
     await mountScreen()
 
     expect(fetchMock.mock.calls.map(([url]) => url)).toEqual(['/api/badges'])

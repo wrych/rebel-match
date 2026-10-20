@@ -107,13 +107,19 @@ describe('createNotifications', () => {
         type: 'badge',
         aboutName: 'Bob Self',
         connectionId: null,
-        badge: { row: 'speak', level: 2 },
+        badge: { row: 'speak', level: 2, eventName: null },
       }),
       row({
         id: 'g',
         type: 'badge',
         connectionId: null,
-        badge: { row: 'connect', level: 0 },
+        badge: { row: 'connect', level: 0, eventName: null },
+      }),
+      row({
+        id: 'h',
+        type: 'badge',
+        connectionId: null,
+        badge: { row: 'event', level: 1, eventName: 'Stormed the Summit' },
       }),
     ])
     const notes = createNotifications({ store, pageSize: () => 20 })
@@ -123,6 +129,7 @@ describe('createNotifications', () => {
     expect(list.map((n) => [n.kind, n.name, n.path])).toEqual([
       ['badge', 'Agitator', '/badges/speak'],
       ['badge', 'Heart of the Movement', '/badges/connect'],
+      ['badge', 'Stormed the Summit', '/badges/events'],
     ])
   })
 
@@ -246,7 +253,8 @@ describe('markingBadgesOpened (R-BADGE-10, R-NOTE-5)', () => {
     const badges = markingBadgesOpened(
       {
         recount: () => Promise.resolve(),
-        mine: () => Promise.resolve({ rows: [] }),
+        mine: () => Promise.resolve({ rows: [], events: [] }),
+        claim: () => Promise.resolve(),
         awardAtLaunch: () => Promise.resolve(),
         checkCrowns: () => Promise.resolve(),
         newCount: () => Promise.resolve(0),

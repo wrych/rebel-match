@@ -1,4 +1,4 @@
-import type { StoredType } from './notifications.js'
+import type { GainedBadge, StoredType } from './notifications.js'
 import type { NotificationWorkerSettings } from '../config.js'
 import type { DeliveryStatus } from './mailer.js'
 import { dueAt, type Cadence } from './notification-cadence.js'
@@ -30,7 +30,7 @@ export interface DueNotification {
   trend: string | null
   /** For a badge gained: its row and level, 0 for the crown, and whether the
    * recipient still holds that crown (R-NOTE-9). */
-  badge: { row: string; level: number } | null
+  badge: GainedBadge | null
   crownHeld: boolean
 }
 

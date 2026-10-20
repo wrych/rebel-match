@@ -191,7 +191,7 @@ const badgeNote = due({
   aboutMemberId: 'm-bob',
   connectionId: null,
   requestStatus: null,
-  badge: { row: 'speak', level: 2 },
+  badge: { row: 'speak', level: 2, eventName: null },
 })
 
 describe('a badge gained (R-BADGE-10)', () => {
@@ -217,17 +217,42 @@ describe('a badge gained (R-BADGE-10)', () => {
   it('says a crown is a crown, and takes a line of its own in a digest', async () => {
     const { send, sent } = sender()
 
-    await send([due(), due({ ...badgeNote, badge: { row: 'help', level: 0 } })])
+    await send([
+      due(),
+      due({ ...badgeNote, badge: { row: 'help', level: 0, eventName: null } }),
+    ])
 
     expect(sent[0]?.text).toContain(
       'You hold the crown of Offer help: Liberator.\nhttp://localhost:5173/badges/help?notice=badge',
     )
   })
 
+  it('names an event badge and links the event badges (R-BADGE-6)', async () => {
+    const { send, sent } = sender()
+
+    await send([
+      due({
+        ...badgeNote,
+        badge: { row: 'event', level: 1, eventName: 'Stormed the Summit' },
+      }),
+    ])
+
+    expect(sent[0]).toMatchObject({
+      subject: 'New badge on Rebel Match: Stormed the Summit',
+      text:
+        'You earned a new badge in Events: Stormed the Summit.\n\n' +
+        'See your badges here:\n' +
+        'http://localhost:5173/badges/events?notice=badge\n',
+    })
+  })
+
   it('sends nothing for a row that no longer exists', async () => {
     expect(
       await sender().send([
-        due({ ...badgeNote, badge: { row: 'gone', level: 1 } }),
+        due({
+          ...badgeNote,
+          badge: { row: 'gone', level: 1, eventName: null },
+        }),
       ]),
     ).toBeNull()
   })

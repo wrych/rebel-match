@@ -83,3 +83,15 @@ export function levelsReached(
     .filter(({ needed }) => count >= needed)
     .map(({ level }) => level)
 }
+
+/** Where event badges are marked seen and notified, beside the rows
+ * (R-BADGE-6, R-BADGE-10). */
+export const eventRow = 'event'
+
+/** What the event badges are called beside the rows' titles. */
+export const eventTitle = 'Events'
+
+/** A row of badges, or the event badges, as the member opens them. */
+export type SeenRow = BadgeRow | typeof eventRow
+
+export const seenRows = [...badgeRows, eventRow] as const

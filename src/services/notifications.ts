@@ -1,4 +1,4 @@
-import { rowNames, type RowNames } from '../badges/rows.js'
+import { eventRow, rowNames, type RowNames } from '../badges/rows.js'
 import type { BadgeService } from './badges.js'
 import type { ConnectionService } from './connections.js'
 import type { DeckService } from './deck.js'
@@ -44,8 +44,15 @@ export interface NotificationRow {
   challengeId: string | null
   /** The short name of a new challenge's trend. */
   trend: string | null
-  /** A badge gained: its row and level, 0 for the crown. */
-  badge: { row: string; level: number } | null
+  badge: GainedBadge | null
+}
+
+/** A badge gained: its row and level, 0 for the crown; or under the row
+ * `event`, an event badge by its name (R-BADGE-6). */
+export interface GainedBadge {
+  row: string
+  level: number
+  eventName: string | null
 }
 
 /** A notification's type as stored (R-NOTE-1). */
@@ -98,10 +105,10 @@ export interface NotificationService {
   openedBadges(memberId: string, rows: readonly string[]): Promise<void>
 }
 
-/** A gained badge's name: the row's crown at level 0, else the level's. */
-export function badgeName(
-  badge: { row: string; level: number } | null,
-): string {
+/** A gained badge's name: the row's crown at level 0, else the level's; an
+ * event badge's own. */
+export function badgeName(badge: GainedBadge | null): string {
+  if (badge?.row === eventRow) return badge.eventName ?? ''
   const names =
     badge === null
       ? undefined
@@ -109,6 +116,10 @@ export function badgeName(
   if (names === undefined || badge === null) return ''
   return badge.level === 0 ? names.crown : (names.levels[badge.level - 1] ?? '')
 }
+
+/** Where a gained badge is seen: its row's screen, or the event badges'. */
+export const badgePath = (row: string): string =>
+  row === eventRow ? '/badges/events' : `/badges/${encodeURIComponent(row)}`
 
 const requestPath = (id: string): string =>
   `/matches/requests/${encodeURIComponent(id)}`
@@ -120,8 +131,7 @@ function kindOf(row: NotificationRow): NotificationKind {
 
 // Where tapping an entry leads: the screen it comes from (R-NOTE-5, R-OFF-7).
 function pathOf(row: NotificationRow): string {
-  if (row.type === 'badge')
-    return `/badges/${encodeURIComponent(row.badge?.row ?? '')}`
+  if (row.type === 'badge') return badgePath(row.badge?.row ?? '')
   if (row.type === 'trend_challenge')
     return `/offer?challenge=${encodeURIComponent(row.challengeId ?? '')}`
   if (row.type === 'applicant' || row.connectionId === null)

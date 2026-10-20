@@ -12,6 +12,7 @@ import {
   type EarnedLevel,
 } from './badges.js'
 import type { ChallengeService } from './challenges.js'
+import type { EarnedEventBadge, EventBadgeStore } from './event-badge-store.js'
 import type {
   ConnectionService,
   ConnectionView,
@@ -128,14 +129,41 @@ function memoryStore(): BadgeStore & {
   return store
 }
 
+// One member's event badges, and the claims made.
+function memoryEvents(): EventBadgeStore & {
+  earned: EarnedEventBadge[]
+  claims: string[][]
+} {
+  const events = {
+    earned: [] as EarnedEventBadge[],
+    claims: [] as string[][],
+    claim: (memberId: string, token: string) => {
+      events.claims.push([memberId, token])
+      return Promise.resolve()
+    },
+    mine: () => Promise.resolve(events.earned),
+    newCount: () =>
+      Promise.resolve(events.earned.filter((badge) => badge.new).length),
+    markSeen: () => {
+      events.earned = events.earned.map((badge) => ({ ...badge, new: false }))
+      return Promise.resolve()
+    },
+  }
+  return events
+}
+
 function setup(gameOn = false): {
   badges: BadgeService
   store: ReturnType<typeof memoryStore>
+  events: ReturnType<typeof memoryEvents>
 } {
   const store = memoryStore()
+  const events = memoryEvents()
   return {
+    events,
     badges: createBadges({
       store,
+      events,
       levelCounts: () => levelCounts,
       gameOn: () => gameOn,
     }),
@@ -271,6 +299,35 @@ describe('new badges (R-BADGE-10)', () => {
     const help = (await badges.mine('ana')).rows.find((r) => r.row === 'help')!
     expect(help.levels.some((level) => level.new)).toBe(false)
     expect(help.crown).toEqual({ name: 'Liberator', held: true, new: false })
+  })
+
+  it('counts event badges until the event badges are seen (R-BADGE-6)', async () => {
+    const { badges, events } = setup()
+    events.earned = [
+      {
+        id: 'summit',
+        name: 'Stormed the Summit',
+        ticketLine: 'SUMMIT',
+        bigLine: '2026',
+        hasLogo: false,
+        earnedAt: minute(1).toISOString(),
+        new: true,
+      },
+    ]
+
+    expect(await badges.newCount('ana')).toBe(1)
+    expect((await badges.mine('ana')).events).toEqual(events.earned)
+
+    await badges.seen('ana', ['speak'])
+    expect(await badges.newCount('ana')).toBe(1)
+    await badges.seen('ana', ['event'])
+    expect(await badges.newCount('ana')).toBe(0)
+  })
+
+  it("claims an invite's badge for the member asking", async () => {
+    const { badges, events } = setup()
+    await badges.claim('ana', 'token-1')
+    expect(events.claims).toEqual([['ana', 'token-1']])
   })
 })
 

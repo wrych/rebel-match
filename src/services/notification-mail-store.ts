@@ -5,6 +5,7 @@ import {
   badgeCrowns,
   challenges,
   connectionRequests,
+  eventBadges,
   members,
   notificationSettings,
   notifications,
@@ -74,6 +75,7 @@ interface ReadRow {
   trend: string | null
   badgeRow: string | null
   badgeLevel: number | null
+  eventName: string | null
   crownHolder: string | null
 }
 
@@ -100,7 +102,11 @@ function dueOf(row: ReadRow): DueNotification {
     badge:
       row.badgeRow === null || row.badgeLevel === null
         ? null
-        : { row: row.badgeRow, level: row.badgeLevel },
+        : {
+            row: row.badgeRow,
+            level: row.badgeLevel,
+            eventName: row.eventName,
+          },
     crownHeld: row.crownHolder === row.recipientId,
   }
 }
@@ -127,6 +133,7 @@ function readRows(db: Database, ids: string[]): Promise<ReadRow[]> {
       trend: trends.short,
       badgeRow: n.badgeRow,
       badgeLevel: n.badgeLevel,
+      eventName: eventBadges.name,
       crownHolder: badgeCrowns.memberId,
     })
     .from(n)
@@ -134,6 +141,7 @@ function readRows(db: Database, ids: string[]): Promise<ReadRow[]> {
     .innerJoin(about, eq(about.id, n.aboutMemberId))
     .leftJoin(request, eq(request.id, n.connectionId))
     .leftJoin(challenges, eq(challenges.id, n.challengeId))
+    .leftJoin(eventBadges, eq(eventBadges.id, n.eventBadgeId))
     .leftJoin(
       trends,
       eq(
