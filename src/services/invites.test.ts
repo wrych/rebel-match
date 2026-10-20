@@ -6,7 +6,11 @@ import {
   type Invite,
   type InviteStore,
   type ListedInvite,
+  type StoredEventBadge,
 } from './invites.js'
+import { cleanLogo } from './logo.js'
+
+const LOGO_MAX_BYTES = 32_768
 
 const now = new Date('2026-11-08T10:00:00Z')
 const hour = 3_600_000
@@ -21,6 +25,7 @@ function invite(overrides: Partial<Invite> = {}): Invite {
     maxUses: 10,
     uses: 0,
     revokedAt: null,
+    eventBadgeId: null,
     createdBy: 'm-host',
     createdAt: new Date(now.getTime() - 2 * hour),
     ...overrides,
@@ -52,12 +57,27 @@ describe('joinUrl', () => {
 function setup(): {
   invites: ReturnType<typeof createInvites>
   rows: Map<string, ListedInvite>
+  badges: Map<string, StoredEventBadge>
 } {
   const rows = new Map<string, ListedInvite>()
+  const badges = new Map<string, StoredEventBadge>()
+  const viewOf = (id: string | null): ListedInvite['eventBadge'] => {
+    const badge = id === null ? undefined : badges.get(id)
+    return badge === undefined
+      ? null
+      : {
+          id: badge.id,
+          name: badge.name,
+          ticketLine: badge.ticketLine,
+          bigLine: badge.bigLine,
+          hasLogo: badge.logoSvg !== null,
+        }
+  }
   const store: InviteStore = {
     list: () => Promise.resolve([...rows.values()]),
     find: (id) => Promise.resolve(rows.get(id) ?? null),
-    insert: (row) => {
+    insert: (row, newBadge) => {
+      if (newBadge !== null) badges.set(newBadge.id, newBadge)
       rows.set(row.id, {
         ...row,
         uses: 0,
@@ -65,9 +85,12 @@ function setup(): {
         revokedAt: null,
         createdAt: now,
         creatorEmail: 'host@example.invalid',
+        eventBadge: viewOf(row.eventBadgeId),
       })
       return Promise.resolve()
     },
+    badgeExists: (id) => Promise.resolve(badges.has(id)),
+    logo: (id) => Promise.resolve(badges.get(id)?.logoSvg ?? null),
     revoke: (id, at) => {
       const row = rows.get(id)
       if (row === undefined) return Promise.resolve(false)
@@ -87,9 +110,10 @@ function setup(): {
     publicUrl: 'https://match.example.org',
     defaults: () => ({ inviteDefaultMaxUses: 400, inviteDefaultHours: 12 }),
     now: () => now,
-    newId: () => `i-${String(rows.size + 1)}`,
+    newId: () => `i-${String(rows.size + badges.size + 1)}`,
+    cleanLogo: (text) => cleanLogo(text, LOGO_MAX_BYTES),
   })
-  return { invites, rows }
+  return { invites, rows, badges }
 }
 
 describe('createInvites', () => {
@@ -179,5 +203,85 @@ describe('createInvites', () => {
     expect(await invites.raiseCap('i-9', 500)).toEqual({ result: 'not_found' })
     await invites.revoke('i-1')
     expect(await invites.raiseCap('i-1', 500)).toEqual({ result: 'revoked' })
+  })
+})
+
+describe('event badges on invites (R-BADGE-4, R-BADGE-5)', () => {
+  const logo =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" onload="alert(1)">' +
+    '<script>alert(1)</script><path d="M2 2h20v20z"/></svg>'
+  const summit = {
+    name: 'Stormed the Summit',
+    ticketLine: 'SUMMIT',
+    bigLine: '2026',
+  }
+
+  it('gives an invite a new badge, its logo cleaned to drawing only', async () => {
+    const { invites } = setup()
+
+    const outcome = await invites.create(
+      { label: 'Main stage', eventBadge: { ...summit, logoSvg: logo } },
+      'm-host',
+    )
+
+    expect(outcome).toMatchObject({
+      result: 'created',
+      invite: { eventBadge: { ...summit, hasLogo: true } },
+    })
+    const id =
+      outcome.result === 'created' ? (outcome.invite.eventBadge?.id ?? '') : ''
+    const stored = await invites.logo(id)
+    expect(stored).toContain('<path d="M2 2h20v20z"')
+    expect(stored).not.toMatch(/script|onload|alert/)
+  })
+
+  it('gives a second poster the same badge, and none without asking', async () => {
+    const { invites, badges } = setup()
+    const first = await invites.create(
+      { label: 'Main stage', eventBadge: summit },
+      'm-host',
+    )
+    const badgeId =
+      first.result === 'created' ? (first.invite.eventBadge?.id ?? '') : ''
+
+    const second = await invites.create(
+      { label: 'Workshop room', eventBadgeId: badgeId },
+      'm-host',
+    )
+    const plain = await invites.create({ label: 'Lobby' }, 'm-host')
+
+    expect(second).toMatchObject({
+      invite: { eventBadge: { id: badgeId, hasLogo: false } },
+    })
+    expect(plain).toMatchObject({ invite: { eventBadge: null } })
+    expect(badges.size).toBe(1)
+  })
+
+  it('refuses a logo with nothing drawable, storing nothing', async () => {
+    const { invites, rows, badges } = setup()
+
+    const outcome = await invites.create(
+      {
+        label: 'Main stage',
+        eventBadge: {
+          ...summit,
+          logoSvg: '<svg><script>alert(1)</script></svg>',
+        },
+      },
+      'm-host',
+    )
+
+    expect(outcome).toEqual({ result: 'bad_logo' })
+    expect(rows.size).toBe(0)
+    expect(badges.size).toBe(0)
+  })
+
+  it('refuses a badge that does not exist', async () => {
+    const { invites, rows } = setup()
+
+    expect(
+      await invites.create({ label: 'Lobby', eventBadgeId: 'nope' }, 'm-host'),
+    ).toEqual({ result: 'unknown_badge' })
+    expect(rows.size).toBe(0)
   })
 })

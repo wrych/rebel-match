@@ -42,7 +42,15 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
-  await db.query('DELETE FROM invites WHERE label = ?', [label])
+  const badges = await db.query(
+    'SELECT event_badge_id FROM invites WHERE label LIKE ? AND event_badge_id IS NOT NULL',
+    [`${label}%`],
+  )
+  await db.query('DELETE FROM invites WHERE label LIKE ?', [`${label}%`])
+  for (const badge of badges)
+    await db.query('DELETE FROM event_badges WHERE id = ?', [
+      badge['event_badge_id'],
+    ])
   await db.close()
 })
 
@@ -112,5 +120,85 @@ describe('invite links over Postgres (F16)', () => {
       .send({ maxUses: config.limits.inviteDefaultMaxUses + 500 })
 
     expect(response.status).toBe(409)
+  })
+})
+
+describe('event badges on invite links (R-BADGE-4, R-BADGE-5)', () => {
+  const logo =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" onload="alert(1)">' +
+    '<script>alert(1)</script><path d="M2 2h20v20z"/></svg>'
+  let badgeId = ''
+
+  it('creates an invite with a new badge, cleaning its logo', async () => {
+    const response = await request(app)
+      .post('/api/admin/invites')
+      .set('Cookie', cookie)
+      .send({
+        label: `${label} main stage`,
+        eventBadge: {
+          name: 'Stormed the Summit',
+          ticketLine: 'SUMMIT',
+          bigLine: '2026',
+          logoSvg: logo,
+        },
+      })
+      .expect(201)
+
+    const { eventBadge } = (response.body as { invite: InviteView }).invite
+    expect(eventBadge).toMatchObject({
+      name: 'Stormed the Summit',
+      ticketLine: 'SUMMIT',
+      bigLine: '2026',
+      hasLogo: true,
+    })
+    badgeId = eventBadge?.id ?? ''
+  })
+
+  it('serves the logo to anyone, as a sandboxed picture with nothing but drawing', async () => {
+    const response = await request(app)
+      .get(`/api/event-badges/${badgeId}/logo.svg`)
+      .expect(200)
+
+    expect(response.headers['content-type']).toMatch(/^image\/svg\+xml/)
+    expect(response.headers['content-security-policy']).toBe(
+      "default-src 'none'; style-src 'unsafe-inline'; sandbox",
+    )
+    expect(String(response.body)).toContain('<path d="M2 2h20v20z"')
+    expect(String(response.body)).not.toMatch(/script|onload|alert/)
+  })
+
+  it('gives a second poster the same badge', async () => {
+    const response = await request(app)
+      .post('/api/admin/invites')
+      .set('Cookie', cookie)
+      .send({ label: `${label} workshop`, eventBadgeId: badgeId })
+      .expect(201)
+
+    expect(
+      (response.body as { invite: InviteView }).invite.eventBadge?.id,
+    ).toBe(badgeId)
+  })
+
+  it('refuses a logo with nothing drawable, creating nothing', async () => {
+    const response = await request(app)
+      .post('/api/admin/invites')
+      .set('Cookie', cookie)
+      .send({
+        label: `${label} refused`,
+        eventBadge: {
+          name: 'Nothing',
+          ticketLine: 'NONE',
+          bigLine: '0',
+          logoSvg: '<svg xmlns="http://www.w3.org/2000/svg"><script/></svg>',
+        },
+      })
+
+    expect(response.status).toBe(400)
+    expect(response.body).toEqual({ error: 'bad_logo' })
+    expect(
+      await db.query('SELECT id FROM invites WHERE label = ?', [
+        `${label} refused`,
+      ]),
+    ).toEqual([])
   })
 })

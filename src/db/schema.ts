@@ -182,6 +182,9 @@ export const invites = pgTable(
     maxUses: bigint('max_uses', { mode: 'number' }).notNull(),
     uses: bigint('uses', { mode: 'number' }).notNull().default(0),
     revokedAt: at('revoked_at'),
+    eventBadgeId: id('event_badge_id').references(
+      (): AnyPgColumn => eventBadges.id,
+    ),
     createdBy: id('created_by')
       .notNull()
       .references((): AnyPgColumn => members.id),
@@ -644,6 +647,18 @@ export const badgeCrowns = pgTable('badge_crowns', {
   }),
   since: at('since').notNull().defaultNow(),
   seenAt: at('seen_at'),
+})
+
+// An event's badge, given by the invites that point at it (R-BADGE-4). It
+// holds no personal data and does not change once made; its logo is the
+// cleaned SVG text (R-BADGE-5).
+export const eventBadges = pgTable('event_badges', {
+  id: id('id').primaryKey(),
+  name: varchar('name', { length: 60 }).notNull(),
+  ticketLine: varchar('ticket_line', { length: 10 }).notNull(),
+  bigLine: varchar('big_line', { length: 6 }).notNull(),
+  logoSvg: text('logo_svg'),
+  createdAt: at('created_at').notNull().defaultNow(),
 })
 
 // One row once the badges already earned before launch were recorded, so

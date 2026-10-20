@@ -74,6 +74,7 @@ import { createGameStore } from './services/game-store.js'
 import { createInviteRedemption } from './services/invite-redemption-store.js'
 import { createInviteStore } from './services/invite-store.js'
 import { createInvites } from './services/invites.js'
+import { cleanLogo } from './services/logo.js'
 import { createMailer, type Mailer } from './services/mailer.js'
 import { createMemberProfiles } from './services/member-profiles.js'
 import {
@@ -428,6 +429,22 @@ function composeGame(
   )
 }
 
+// An event badge's logo is cleaned to drawing only before it is kept
+// (R-BADGE-5, ADR 0053).
+function composeInvites(
+  config: Config,
+  db: Database,
+  settings: LiveSettings,
+): AppDeps['invites'] {
+  return createInvites({
+    store: createInviteStore(db),
+    publicUrl: config.publicUrl,
+    defaults: () => settings.limits(),
+    newId: randomUUID,
+    cleanLogo: (text) => cleanLogo(text, settings.limits().badgeLogoMaxBytes),
+  })
+}
+
 const MS_PER_HOUR = 3_600_000
 const MS_PER_MINUTE = 60_000
 
@@ -540,12 +557,7 @@ export function composeApp(
     outbox: createOutboxLog(db),
     ...composeAdmission(config, settings, db, auth),
     ...composeOnboarding(config, db, track),
-    invites: createInvites({
-      store: createInviteStore(db),
-      publicUrl: config.publicUrl,
-      defaults: () => settings.limits(),
-      newId: randomUUID,
-    }),
+    invites: composeInvites(config, db, settings),
     activity: createActivity({
       store: createActivityStore(db),
       newId: randomUUID,

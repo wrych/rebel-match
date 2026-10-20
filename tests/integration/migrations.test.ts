@@ -50,6 +50,7 @@ describe('migrations', () => {
       'company_sizes',
       'connection_requests',
       'deck_views',
+      'event_badges',
       'follows',
       'game_days',
       'game_players',
