@@ -41,6 +41,7 @@ async function cleanup(): Promise<void> {
   await db.query('DELETE FROM swipes WHERE member_id = ?', [marieke])
   await db.query('DELETE FROM challenges WHERE member_id = ?', [ana])
   await db.query('DELETE FROM member_badges')
+  await db.query('DELETE FROM badge_crowns')
   await db.query('DELETE FROM badge_launch')
 }
 
@@ -82,6 +83,28 @@ const earned = (row: RowView): [string, boolean][] =>
     .filter((level) => level.earnedAt !== null)
     .map((level) => [level.name, level.new])
 
+async function post(person: string, body: string): Promise<void> {
+  const posted = await request(app)
+    .post('/api/challenges')
+    .set('Cookie', cookies[person]!)
+    .send({ body })
+    .expect(201)
+  await request(app)
+    .patch(
+      `/api/challenges/${(posted.body as { challenge: { id: string } }).challenge.id}`,
+    )
+    .set('Cookie', cookies[person]!)
+    .send({ trendId: '05' })
+    .expect(204)
+}
+
+async function speakCrownHolder(): Promise<unknown> {
+  const [crown] = await db.query(
+    "SELECT member_id FROM badge_crowns WHERE row_key = 'speak'",
+  )
+  return crown?.['member_id']
+}
+
 async function challengeOf(person: string): Promise<string> {
   const rows = await db.query('SELECT id FROM challenges WHERE member_id = ?', [
     ids[person],
@@ -93,11 +116,15 @@ describe('badges over Postgres (R-BADGE-1, R-BADGE-2)', () => {
   it('records what was earned before launch quietly, once (R-BADGE-11)', async () => {
     await deps.badges.awardAtLaunch()
     await deps.badges.awardAtLaunch()
+    await deps.badges.checkCrowns()
 
     expect(earned(await rowOf('sanne.kuipers', 'speak'))).toEqual([
       ['Spark', false],
     ])
     expect(await db.query('SELECT done_at FROM badge_launch')).toHaveLength(1)
+    expect(
+      await db.query('SELECT row_key FROM badge_crowns WHERE seen_at IS NULL'),
+    ).toEqual([])
   })
 
   it('counts a challenge once its trend is confirmed, as new', async () => {
@@ -190,6 +217,34 @@ describe('badges over Postgres (R-BADGE-1, R-BADGE-2)', () => {
 
     expect(milan.rows.find((row) => row.row === 'connect')?.count).toBe(0)
     expect(JSON.stringify(milan)).not.toContain(ids['ana.ferreira'])
+  })
+
+  it('moves a crown to a member who passes everyone, as new (R-BADGE-3)', async () => {
+    await post(
+      'ana.ferreira',
+      'Every team has a different definition of done, and nobody wants to be the one to align them.',
+    )
+    await post(
+      'ana.ferreira',
+      'We promised autonomy, but the budget still sits with three people who never meet the teams.',
+    )
+
+    expect((await rowOf('ana.ferreira', 'speak')).crown).toEqual({
+      name: 'Ringleader',
+      held: true,
+      new: true,
+    })
+    expect((await rowOf('sanne.kuipers', 'speak')).crown.held).toBe(false)
+  })
+
+  it("takes a deleted member's crowns at once, and checks pass them back on restore", async () => {
+    await deps.erasure.delete(ids['ana.ferreira']!, true)
+    expect(await speakCrownHolder()).toBeNull()
+
+    await deps.erasure.restore(ids['ana.ferreira']!)
+    await deps.badges.checkCrowns()
+
+    expect(await speakCrownHolder()).toBe(ids['ana.ferreira'])
   })
 
   it('answers no one signed out', async () => {

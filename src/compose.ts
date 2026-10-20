@@ -414,11 +414,15 @@ function composeGame(
 }
 
 const MS_PER_HOUR = 3_600_000
+const MS_PER_MINUTE = 60_000
 
 // The work the server's timers do, as jobs a tick runs (ADR 0049).
 function scheduledJobs(
   config: Config,
-  deps: Pick<AppDeps, 'auth' | 'erasure' | 'outbox' | 'notificationMail'>,
+  deps: Pick<
+    AppDeps,
+    'auth' | 'erasure' | 'outbox' | 'notificationMail' | 'badges'
+  >,
 ): ScheduledJob[] {
   const purgeHours = config.outboxPurgeIntervalHours * MS_PER_HOUR
   const purgeOlderThan =
@@ -426,6 +430,10 @@ function scheduledJobs(
       log.purgeBefore(retentionCutoff(new Date(), days))
   return [
     { run: () => deps.notificationMail.deliverDue(), everyMs: 0 },
+    {
+      run: () => deps.badges.checkCrowns(),
+      everyMs: config.badgeCrownCheckMinutes * MS_PER_MINUTE,
+    },
     {
       run: () => deps.erasure.eraseDue(),
       everyMs: config.erasureSweepIntervalHours * MS_PER_HOUR,

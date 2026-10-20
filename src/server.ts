@@ -5,6 +5,7 @@ import { composeApp } from './compose.js'
 import { loadRuntimeConfig } from './runtime-config.js'
 import { openDatabase } from './db/open.js'
 import { startOutboxRetention } from './services/outbox-retention.js'
+import { startCrownCheck } from './services/crown-check.js'
 import { startTokenPurge } from './services/token-purge.js'
 import { startErasureSweep } from './services/erasure-sweep.js'
 import { startSettingsRefresh } from './services/settings-refresh.js'
@@ -95,7 +96,21 @@ function startTimers(): void {
   })
 }
 
-if (config.scheduledWork.mode === 'timers') startTimers()
+// Crowns move when counts fall with nobody acting (R-BADGE-3).
+function startBadgeTimers(): void {
+  startCrownCheck({
+    badges: deps.badges,
+    intervalMinutes: config.badgeCrownCheckMinutes,
+    onError: () => {
+      console.warn('badges: the crown check failed, will retry next interval')
+    },
+  })
+}
+
+if (config.scheduledWork.mode === 'timers') {
+  startTimers()
+  startBadgeTimers()
+}
 
 // Close the database before exiting, so a local PGlite folder is released
 // for the restart `tsx watch` is about to make (ADR 0024).
