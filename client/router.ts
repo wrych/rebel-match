@@ -11,6 +11,8 @@ import { loadMe } from './lib/session'
 import AccessRequestedScreen from './screens/AccessRequestedScreen.vue'
 import ApplicantsScreen from './screens/ApplicantsScreen.vue'
 import AskScreen from './screens/AskScreen.vue'
+import BadgeRowScreen from './screens/BadgeRowScreen.vue'
+import BadgesScreen from './screens/BadgesScreen.vue'
 import ChallengeScreen from './screens/ChallengeScreen.vue'
 import CockpitScreen from './screens/CockpitScreen.vue'
 import ConnectScreen from './screens/ConnectScreen.vue'
@@ -92,6 +94,8 @@ export const router = createRouter({
     screen('welcome', WelcomeScreen),
     screen('profile', ProfileScreen),
     screen('notifications', NotificationsScreen),
+    screen('badges', BadgesScreen),
+    screen('badge-row', BadgeRowScreen),
     screen('ask', AskScreen),
     screen('challenge', ChallengeScreen),
     screen('trend-picker', TrendPickerScreen),

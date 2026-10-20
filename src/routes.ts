@@ -82,6 +82,13 @@ export const routeTable: readonly RouteDef[] = [
     title: 'Notifications',
     access: 'onboarded',
   },
+  { path: '/badges', name: 'badges', title: 'Badges', access: 'onboarded' },
+  {
+    path: '/badges/:row',
+    name: 'badge-row',
+    title: 'Badges',
+    access: 'onboarded',
+  },
   { path: '/ask', name: 'ask', title: 'Ask for help', access: 'onboarded' },
   {
     path: '/challenges/:id',

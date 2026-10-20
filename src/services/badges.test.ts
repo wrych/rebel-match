@@ -88,6 +88,23 @@ function memoryStore(): BadgeStore & {
     },
     earned: (memberId: string) =>
       Promise.resolve(held.filter((each) => each.memberId === memberId)),
+    newCount: (memberId: string) =>
+      Promise.resolve(
+        held.filter((each) => each.memberId === memberId && !each.seenAt)
+          .length +
+          crownList.filter(
+            (crown) => crown.memberId === memberId && !crown.seenAt,
+          ).length,
+      ),
+    markSeen: (memberId: string, rows: readonly CountedRow[]) => {
+      for (const each of held)
+        if (each.memberId === memberId && rows.includes(each.row))
+          each.seenAt ??= minute(58)
+      for (const crown of crownList)
+        if (crown.memberId === memberId && rows.includes(crown.row))
+          crown.seenAt ??= minute(58)
+      return Promise.resolve()
+    },
     launched: () => Promise.resolve(store.launches > 0),
     markLaunched: () => {
       store.launches += 1
@@ -167,6 +184,25 @@ describe('badge levels (R-BADGE-1, R-BADGE-2)', () => {
     expect(
       overview.rows.flatMap((row) => row.levels).some((l) => l.earnedAt),
     ).toBe(false)
+  })
+})
+
+describe('new badges (R-BADGE-10)', () => {
+  it('counts levels and crowns gained until their row is seen', async () => {
+    const { badges, store } = setup()
+    store.counts.set('ana:speak', 1)
+    await badges.checkCrowns()
+    store.counts.set('ana:help', 5)
+    await badges.recount('ana', ['help'])
+
+    expect(await badges.newCount('ana')).toBe(3)
+
+    await badges.seen('ana', ['help'])
+
+    expect(await badges.newCount('ana')).toBe(0)
+    const help = (await badges.mine('ana')).rows.find((r) => r.row === 'help')!
+    expect(help.levels.some((level) => level.new)).toBe(false)
+    expect(help.crown).toEqual({ name: 'Liberator', held: true, new: false })
   })
 })
 

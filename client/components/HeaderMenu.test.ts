@@ -346,6 +346,44 @@ describe('HeaderMenu', () => {
     expect(menu.find('.menu-badge').exists()).toBe(false)
   })
 
+  it('leads an onboarded member to their badges, naming how many are new (R-BADGE-10)', async () => {
+    let count = 2
+    const me = signedIn([]) as unknown as (url: string) => Promise<unknown>
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) =>
+        url === '/api/badges/new'
+          ? Promise.resolve({
+              ok: true,
+              status: 200,
+              json: () => Promise.resolve({ count }),
+            })
+          : me(url),
+      ),
+    )
+    const menu = await opened()
+    const badges = (): string | undefined =>
+      menu
+        .findAllComponents(RouterLinkStub)
+        .find((link) => link.props('to') === '/badges')
+        ?.text()
+    expect(badges()).toBe('Badges (2 new)')
+
+    count = 0
+    window.dispatchEvent(new Event('badges-seen'))
+    await flushPromises()
+
+    expect(badges()).toBe('Badges')
+    expect(menu.find('.menu-badge').exists()).toBe(false)
+  })
+
+  it('offers no badges to nobody signed in', async () => {
+    signedIn(null)
+    const menu = await opened()
+
+    expect(paths(menu)).not.toContain('/badges')
+  })
+
   it('offers an onboarded member a Feedback mail naming the screen (R-FB-1)', async () => {
     withConfig(signedIn([]))
     const menu = await opened()
