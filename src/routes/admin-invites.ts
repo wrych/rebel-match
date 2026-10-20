@@ -3,6 +3,7 @@ import { z } from 'zod'
 import type { AuthProvider } from '../auth/index.js'
 import type { Limits } from '../config.js'
 import type {
+  BadgeChoice,
   InviteService,
   NewEventBadge,
   NewInvite,
@@ -34,6 +35,24 @@ function newBadge(limits: InviteLimits): z.ZodType<NewEventBadge> {
   })
 }
 
+// Another invite's badge or a new one, never both; neither is none.
+function badgeFields(limits: InviteLimits): {
+  eventBadgeId: z.ZodOptional<z.ZodString>
+  eventBadge: z.ZodOptional<z.ZodType<NewEventBadge>>
+} {
+  return {
+    eventBadgeId: z.string().min(1).max(BADGE_ID_MAX_CHARS).optional(),
+    eventBadge: newBadge(limits).optional(),
+  }
+}
+
+const notBoth = (input: BadgeChoice): boolean =>
+  input.eventBadgeId === undefined || input.eventBadge === undefined
+
+function badgeBody(limits: InviteLimits): z.ZodType<BadgeChoice> {
+  return z.object(badgeFields(limits)).refine(notBoth)
+}
+
 function createBody(limits: InviteLimits): z.ZodType<NewInvite> {
   return z
     .object({
@@ -46,13 +65,9 @@ function createBody(limits: InviteLimits): z.ZodType<NewInvite> {
         .positive()
         .max(limits.inviteMaxUsesCeiling)
         .optional(),
-      eventBadgeId: z.string().min(1).max(BADGE_ID_MAX_CHARS).optional(),
-      eventBadge: newBadge(limits).optional(),
+      ...badgeFields(limits),
     })
-    .refine(
-      (input) =>
-        input.eventBadgeId === undefined || input.eventBadge === undefined,
-    )
+    .refine(notBoth)
 }
 
 const inviteParams = z.object({ id: z.string().min(1) })
@@ -69,6 +84,28 @@ const raiseError = {
   revoked: 'revoked',
   not_higher: 'bad_cap',
 } as const
+
+const badgeStatus = { not_found: 404, bad_logo: 400, unknown_badge: 400 }
+
+function giveBadge(
+  invites: InviteService,
+  choice: z.ZodType<BadgeChoice>,
+): RequestHandler {
+  return async (request, response) => {
+    const params = inviteParams.safeParse(request.params)
+    const input = choice.safeParse(request.body)
+    if (!params.success || !input.success) {
+      response.status(400).json({ error: 'bad_request' })
+      return
+    }
+    const outcome = await invites.setBadge(params.data.id, input.data)
+    if (outcome.result === 'set') {
+      response.json({ invite: outcome.invite })
+      return
+    }
+    response.status(badgeStatus[outcome.result]).json({ error: outcome.result })
+  }
+}
 
 function raise(
   invites: InviteService,
@@ -92,8 +129,8 @@ function raise(
   }
 }
 
-/** F16 (design §3): list, create, revoke invite links and raise their caps,
- * behind `invite:manage` (R-INV-4, R-INV-9). */
+/** F16 (design §3): list, create, revoke invite links, raise their caps and
+ * set their badges, behind `invite:manage` (R-INV-4, R-INV-9, R-INV-13). */
 export function adminInviteRoutes(deps: {
   auth: AuthProvider
   invites: InviteService
@@ -138,6 +175,11 @@ export function adminInviteRoutes(deps: {
   )
 
   router.patch('/api/admin/invites/:id', guard, raise(deps.invites, cap))
+  router.put(
+    '/api/admin/invites/:id/event-badge',
+    guard,
+    giveBadge(deps.invites, badgeBody(deps.config.limits)),
+  )
 
   return router
 }

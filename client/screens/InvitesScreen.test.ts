@@ -34,22 +34,19 @@ interface Reply {
 
 let listed = [invite]
 
-/** Serves the list and config, and answers each POST with `post` and each
- * PATCH with `patch`. */
+/** Serves the list and config, and answers each POST with `post`, each
+ * PATCH with `patch` and each PUT with `put`. */
 function server(
   post: Reply = { status: 201, body: { invite } },
   patch: Reply = { status: 200, body: { invite: { ...invite, maxUses: 600 } } },
+  put: Reply = { status: 200, body: { invite } },
 ): ReturnType<typeof vi.fn> {
+  const replies: Record<string, Reply> = { POST: post, PATCH: patch, PUT: put }
   const fetchMock = vi.fn((url: string, init?: RequestInit) => {
-    const reply: Reply =
-      init?.method === 'POST'
-        ? post
-        : init?.method === 'PATCH'
-          ? patch
-          : {
-              status: 200,
-              body: url === '/api/config' ? { limits } : { invites: listed },
-            }
+    const reply: Reply = replies[init?.method ?? 'GET'] ?? {
+      status: 200,
+      body: url === '/api/config' ? { limits } : { invites: listed },
+    }
     return Promise.resolve({
       ok: reply.status < 300,
       status: reply.status,
@@ -455,5 +452,106 @@ describe('event badges on a new invite (R-BADGE-4, R-BADGE-5)', () => {
     expect(screen.find('[role="status"]').text()).toContain(
       'The logo was not taken',
     )
+  })
+})
+
+describe("an existing invite's badge (R-INV-13)", () => {
+  const summit: EventBadge = {
+    id: 'b-1',
+    name: 'Stormed the Summit',
+    ticketLine: 'SUMMIT',
+    bigLine: '2026',
+    hasLogo: false,
+  }
+
+  function putCall(fetchMock: ReturnType<typeof vi.fn>): [string, unknown] {
+    const [url, init] = fetchMock.mock.calls.find(
+      ([, options]) => (options as RequestInit | undefined)?.method === 'PUT',
+    ) as [string, RequestInit]
+    return [url, JSON.parse(String(init.body))]
+  }
+
+  const button = (
+    screen: ReturnType<typeof mount>,
+    label: string,
+  ): ReturnType<ReturnType<typeof mount>['find']> =>
+    screen.findAll('article button').find((each) => each.text() === label)!
+
+  it('gives an invite without one a new badge from its card', async () => {
+    const fetchMock = server(undefined, undefined, {
+      status: 200,
+      body: { invite: { ...invite, eventBadge: summit } },
+    })
+    const screen = await mountScreen()
+
+    await button(screen, 'Give a badge…').trigger('click')
+    await screen.find('#badge-i-1-name').setValue('Stormed the Summit')
+    await screen.find('#badge-i-1-ticket').setValue('SUMMIT')
+    await screen.find('#badge-i-1-big').setValue('2026')
+    await screen.find('article form').trigger('submit')
+    await flushPromises()
+
+    expect(putCall(fetchMock)).toEqual([
+      '/api/admin/invites/i-1/event-badge',
+      {
+        eventBadge: {
+          name: 'Stormed the Summit',
+          ticketLine: 'SUMMIT',
+          bigLine: '2026',
+        },
+      },
+    ])
+    expect(screen.find('[role="status"]').text()).toContain(
+      'now gives “Stormed the Summit”, also to those who already joined',
+    )
+    expect(screen.find('article form').exists()).toBe(false)
+  })
+
+  it('opens on the badge it gives, and can take it away', async () => {
+    listed = [{ ...invite, eventBadge: summit }]
+    const fetchMock = server()
+    const screen = await mountScreen()
+
+    await button(screen, 'Change badge…').trigger('click')
+    const radios = screen.findAll('article input[type="radio"]')
+    expect((radios[2]!.element as HTMLInputElement).checked).toBe(true)
+    await radios[0]!.setValue(true)
+    await screen.find('article form').trigger('submit')
+    await flushPromises()
+
+    expect(putCall(fetchMock)[1]).toEqual({})
+    expect(screen.find('[role="status"]').text()).toContain(
+      'gives no badge now. Those who earned one keep it.',
+    )
+  })
+
+  it('offers a badge on a revoked invite, and nothing else', async () => {
+    listed = [{ ...invite, state: 'revoked' }]
+    server()
+    const screen = await mountScreen()
+
+    expect(
+      screen.findAll('article .actions button').map((b) => b.text()),
+    ).toEqual(['Give a badge…'])
+  })
+
+  it('says why the server refused, keeping the form open', async () => {
+    server(undefined, undefined, {
+      status: 400,
+      body: { error: 'unknown_badge' },
+    })
+    const screen = await mountScreen()
+
+    await button(screen, 'Give a badge…').trigger('click')
+    await screen.find('#badge-i-1-name').setValue('Summit')
+    await screen.find('#badge-i-1-ticket').setValue('SUMMIT')
+    await screen.find('#badge-i-1-big').setValue('2026')
+    await screen.find('article form').trigger('submit')
+    await flushPromises()
+
+    expect(screen.find('[role="status"]').text()).toContain(
+      'That badge is gone',
+    )
+    expect(screen.find('article form').exists()).toBe(true)
   })
 })

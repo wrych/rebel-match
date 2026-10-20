@@ -150,6 +150,26 @@ export async function createInvite(
     .invite
 }
 
+/** Gives an invite made earlier the chosen badge, or none; those it admitted
+ * earn it now (R-INV-13). 'bad-logo' for a logo the server refused,
+ * 'bad-badge' for a badge that is gone. */
+export async function setInviteBadge(
+  id: string,
+  badge: BadgeChoice,
+): Promise<Invite | 'bad-logo' | 'bad-badge'> {
+  const response = await send(
+    `/api/admin/invites/${encodeURIComponent(id)}/event-badge`,
+    'PUT',
+    badgeFields(badge),
+  )
+  if (response.status === 400) {
+    const { error } = (await response.json()) as { error?: string }
+    if (error === 'bad_logo') return 'bad-logo'
+    if (error === 'unknown_badge') return 'bad-badge'
+  }
+  return (await jsonOf<{ invite: Invite }>(response, 'badge not set')).invite
+}
+
 /** Raises an invite's cap so its printed code keeps admitting (R-INV-4):
  * 'bad-cap' for a cap that is not higher or over the ceiling, 'revoked' for
  * a revoked invite. */

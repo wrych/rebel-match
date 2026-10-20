@@ -14,6 +14,8 @@ import {
   type InviteDraft,
   raiseCap,
   revokeInvite,
+  setInviteBadge,
+  type BadgeChoice,
   type Invite,
 } from '../lib/invites'
 import { arrivals, useLiveList } from '../lib/live-list'
@@ -31,6 +33,8 @@ const blank = (): InviteDraft => ({
 const draft = reactive<InviteDraft>(blank())
 const badges = computed(() => badgesOf(invites.value))
 const raising = ref<string | null>(null)
+const badging = ref<string | null>(null)
+const badgeChoice = ref<BadgeChoice>({ kind: 'none' })
 const newCap = ref('')
 const problem = ref<string | null>(null)
 const notice = ref<string | null>(null)
@@ -92,8 +96,40 @@ async function create(): Promise<void> {
 }
 
 function startRaising(invite: Invite): void {
+  badging.value = null
   raising.value = invite.id
   newCap.value = ''
+}
+
+// Opens on the badge it gives now, or on a new one for an invite without.
+function startBadging(invite: Invite): void {
+  raising.value = null
+  badging.value = invite.id
+  badgeChoice.value =
+    invite.eventBadge === null
+      ? { kind: 'new', name: '', ticketLine: '', bigLine: '', logoSvg: null }
+      : { kind: 'same', id: invite.eventBadge.id }
+}
+
+async function giveBadge(invite: Invite): Promise<void> {
+  busy.value = true
+  try {
+    const outcome = await setInviteBadge(invite.id, badgeChoice.value)
+    if (typeof outcome === 'string') {
+      notice.value = refusedBecause[outcome]
+      return
+    }
+    notice.value =
+      outcome.eventBadge === null
+        ? `“${invite.label}” gives no badge now. Those who earned one keep it.`
+        : `“${invite.label}” now gives “${outcome.eventBadge.name}”, also to those who already joined through it.`
+    badging.value = null
+    await live.refresh()
+  } catch {
+    notice.value = `The badge of “${invite.label}” was not changed. Try again.`
+  } finally {
+    busy.value = false
+  }
 }
 
 async function raise(invite: Invite): Promise<void> {
@@ -312,23 +348,61 @@ onMounted(async () => {
           Cancel
         </button>
       </form>
-      <div v-else-if="invite.state !== 'revoked'" class="actions">
+      <form
+        v-else-if="badging === invite.id"
+        class="stack"
+        @submit.prevent="giveBadge(invite)"
+      >
+        <EventBadgeFields
+          v-model="badgeChoice"
+          :badges="badges"
+          :limits="limits"
+          :id-prefix="`badge-${invite.id}`"
+        />
+        <p class="small">
+          Who already joined through this link gets the badge now. Changing or
+          removing it takes no badge from anyone.
+        </p>
+        <div class="actions">
+          <button type="submit" class="btn btn-small" :disabled="busy">
+            Save badge
+          </button>
+          <button
+            type="button"
+            class="btn btn-ghost btn-small"
+            @click="badging = null"
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
+      <div v-else class="actions">
         <button
           type="button"
           class="btn btn-ghost btn-small"
           :disabled="busy"
-          @click="startRaising(invite)"
+          @click="startBadging(invite)"
         >
-          Raise cap…
+          {{ invite.eventBadge === null ? 'Give a badge…' : 'Change badge…' }}
         </button>
-        <button
-          type="button"
-          class="btn btn-ghost btn-small"
-          :disabled="busy"
-          @click="revoke(invite)"
-        >
-          Revoke
-        </button>
+        <template v-if="invite.state !== 'revoked'">
+          <button
+            type="button"
+            class="btn btn-ghost btn-small"
+            :disabled="busy"
+            @click="startRaising(invite)"
+          >
+            Raise cap…
+          </button>
+          <button
+            type="button"
+            class="btn btn-ghost btn-small"
+            :disabled="busy"
+            @click="revoke(invite)"
+          >
+            Revoke
+          </button>
+        </template>
       </div>
     </article>
   </section>

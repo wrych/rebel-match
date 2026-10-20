@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import type { AnalyticsEvent } from './analytics.js'
 import {
   createInvites,
   inviteState,
@@ -58,9 +59,16 @@ function setup(): {
   invites: ReturnType<typeof createInvites>
   rows: Map<string, ListedInvite>
   badges: Map<string, StoredEventBadge>
+  joined: Map<string, string[]>
+  holders: Set<string>
+  tracked: [string, AnalyticsEvent][]
 } {
   const rows = new Map<string, ListedInvite>()
   const badges = new Map<string, StoredEventBadge>()
+  // Who each invite admitted, and each member:badge already held.
+  const joined = new Map<string, string[]>()
+  const holders = new Set<string>()
+  const tracked: [string, AnalyticsEvent][] = []
   const viewOf = (id: string | null): ListedInvite['eventBadge'] => {
     const badge = id === null ? undefined : badges.get(id)
     return badge === undefined
@@ -89,6 +97,19 @@ function setup(): {
       })
       return Promise.resolve()
     },
+    setBadge: (inviteId, badgeId, newBadge) => {
+      const row = rows.get(inviteId)
+      if (row === undefined) return Promise.resolve(null)
+      if (newBadge !== null) badges.set(newBadge.id, newBadge)
+      row.eventBadgeId = badgeId
+      row.eventBadge = viewOf(badgeId)
+      if (badgeId === null) return Promise.resolve([])
+      const earned = (joined.get(inviteId) ?? []).filter(
+        (member) => !holders.has(`${member}:${badgeId}`),
+      )
+      for (const member of earned) holders.add(`${member}:${badgeId}`)
+      return Promise.resolve(earned)
+    },
     badgeExists: (id) => Promise.resolve(badges.has(id)),
     logo: (id) => Promise.resolve(badges.get(id)?.logoSvg ?? null),
     revoke: (id, at) => {
@@ -112,8 +133,12 @@ function setup(): {
     now: () => now,
     newId: () => `i-${String(rows.size + badges.size + 1)}`,
     cleanLogo: (text) => cleanLogo(text, LOGO_MAX_BYTES),
+    track: (memberId, event) => {
+      tracked.push([memberId, event])
+      return Promise.resolve()
+    },
   })
-  return { invites, rows, badges }
+  return { invites, rows, badges, joined, holders, tracked }
 }
 
 describe('createInvites', () => {
@@ -283,5 +308,71 @@ describe('event badges on invites (R-BADGE-4, R-BADGE-5)', () => {
       await invites.create({ label: 'Lobby', eventBadgeId: 'nope' }, 'm-host'),
     ).toEqual({ result: 'unknown_badge' })
     expect(rows.size).toBe(0)
+  })
+})
+
+describe("an existing invite's badge (R-INV-13)", () => {
+  const summit = { name: 'Summit', ticketLine: 'SUMMIT', bigLine: '2026' }
+
+  async function made(
+    invites: ReturnType<typeof setup>['invites'],
+  ): Promise<string> {
+    const outcome = await invites.create({ label: 'Main stage' }, 'm-host')
+    return outcome.result === 'created' ? outcome.invite.id : ''
+  }
+
+  it('gives it a new badge, earned by those it admitted who lack it, each reported', async () => {
+    const { invites, joined, holders, tracked } = setup()
+    const id = await made(invites)
+    joined.set(id, ['m-ana', 'm-bob'])
+
+    const outcome = await invites.setBadge(id, { eventBadge: summit })
+
+    expect(outcome).toMatchObject({
+      result: 'set',
+      invite: { id, eventBadge: { ...summit, hasLogo: false } },
+    })
+    expect([...holders].map((held) => held.split(':')[0])).toEqual([
+      'm-ana',
+      'm-bob',
+    ])
+    expect(tracked).toEqual([
+      ['m-ana', { name: 'badge_earned', row: 'event' }],
+      ['m-bob', { name: 'badge_earned', row: 'event' }],
+    ])
+  })
+
+  it("changes it to another invite's badge, or removes it", async () => {
+    const { invites } = setup()
+    const first = await invites.create(
+      { label: 'Poster', eventBadge: summit },
+      'm-host',
+    )
+    const badgeId =
+      first.result === 'created' ? (first.invite.eventBadge?.id ?? '') : ''
+    const id = await made(invites)
+
+    expect(await invites.setBadge(id, { eventBadgeId: badgeId })).toMatchObject(
+      { invite: { eventBadge: { id: badgeId } } },
+    )
+    expect(await invites.setBadge(id, {})).toMatchObject({
+      invite: { eventBadge: null },
+    })
+  })
+
+  it('says why not, storing nothing', async () => {
+    const { invites, badges } = setup()
+    const id = await made(invites)
+
+    expect(await invites.setBadge('nope', {})).toEqual({ result: 'not_found' })
+    expect(await invites.setBadge(id, { eventBadgeId: 'nope' })).toEqual({
+      result: 'unknown_badge',
+    })
+    expect(
+      await invites.setBadge(id, {
+        eventBadge: { ...summit, logoSvg: '<svg><script/></svg>' },
+      }),
+    ).toEqual({ result: 'bad_logo' })
+    expect(badges.size).toBe(0)
   })
 })

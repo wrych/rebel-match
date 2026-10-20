@@ -683,7 +683,9 @@ Notifications, S22 Admin invites (ADR 0053).
 1. A host creates an invite on **S22** and gives it an event badge: a new one
    with a name, two ticket lines and an SVG logo, or the badge of another
    invite. The logo is cleaned to drawing only; a file with nothing drawable
-   left is refused, saying why (R-BADGE-4, R-BADGE-5).
+   left is refused, saying why (R-BADGE-4, R-BADGE-5). An invite made
+   without one, or with another, can be given one later from its card; those
+   who already joined through it earn it then (R-INV-13).
 2. A newcomer joins through it (**F15**) and earns the badge with their
    membership (R-BADGE-6).
 3. A member already signed in scans the same QR code: the entry screen takes
