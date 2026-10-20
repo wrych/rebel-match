@@ -1,3 +1,4 @@
+import type { BadgeRow, eventRow } from '../badges/rows.js'
 import type { Cadence, ChoosableType } from './notification-cadence.js'
 import type { NotificationKind } from './notifications.js'
 
@@ -52,6 +53,8 @@ export type AnalyticsEvent =
       seconds: number
     }
   | { name: 'game_result_shared' }
+  | { name: 'badge_earned'; row: BadgeRow; level: number }
+  | { name: 'badge_earned'; row: typeof eventRow }
   | { name: 'experiment_exposed'; experiment: string; variant: string }
   | {
       name: 'matches_section_opened'

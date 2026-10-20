@@ -11,6 +11,7 @@ import {
   type Crown,
   type EarnedLevel,
 } from './badges.js'
+import type { AnalyticsEvent } from './analytics.js'
 import type { ChallengeService } from './challenges.js'
 import type { EarnedEventBadge, EventBadgeStore } from './event-badge-store.js'
 import type {
@@ -137,9 +138,13 @@ function memoryEvents(): EventBadgeStore & {
   const events = {
     earned: [] as EarnedEventBadge[],
     claims: [] as string[][],
+    // A token claimed again gives nothing new.
     claim: (memberId: string, token: string) => {
+      const fresh = !events.claims.some(
+        ([who, what]) => who === memberId && what === token,
+      )
       events.claims.push([memberId, token])
-      return Promise.resolve()
+      return Promise.resolve(fresh)
     },
     mine: () => Promise.resolve(events.earned),
     newCount: () =>
@@ -156,16 +161,23 @@ function setup(gameOn = false): {
   badges: BadgeService
   store: ReturnType<typeof memoryStore>
   events: ReturnType<typeof memoryEvents>
+  tracked: [string, AnalyticsEvent][]
 } {
   const store = memoryStore()
   const events = memoryEvents()
+  const tracked: [string, AnalyticsEvent][] = []
   return {
     events,
+    tracked,
     badges: createBadges({
       store,
       events,
       levelCounts: () => levelCounts,
       gameOn: () => gameOn,
+      track: (memberId, event) => {
+        tracked.push([memberId, event])
+        return Promise.resolve()
+      },
     }),
     store,
   }
@@ -218,6 +230,41 @@ describe('notifying gains (R-BADGE-10)', () => {
     expect(gains.filter((gain) => gain.level === 0)).toEqual([
       { memberId: 'ben', row: 'speak', level: 0 },
     ])
+  })
+})
+
+describe('usage data (R-BADGE-13)', () => {
+  it('reports each level newly earned with its row, never a crown', async () => {
+    const { badges, store, tracked } = setup()
+    await badges.checkCrowns()
+    store.counts.set('ana:help', 5)
+
+    await badges.recount('ana', ['help'])
+    await badges.recount('ana', ['help'])
+
+    expect(tracked).toEqual([
+      ['ana', { name: 'badge_earned', row: 'help', level: 1 }],
+      ['ana', { name: 'badge_earned', row: 'help', level: 2 }],
+    ])
+  })
+
+  it('reports nothing for what was earned before launch', async () => {
+    const { badges, store, tracked } = setup()
+    store.counts.set('ana:speak', 1)
+
+    await badges.awardAtLaunch()
+
+    expect(store.held).not.toEqual([])
+    expect(tracked).toEqual([])
+  })
+
+  it('reports an event badge claimed, naming no event, once', async () => {
+    const { badges, tracked } = setup()
+
+    await badges.claim('ana', 'token-1')
+    await badges.claim('ana', 'token-1')
+
+    expect(tracked).toEqual([['ana', { name: 'badge_earned', row: 'event' }]])
   })
 })
 

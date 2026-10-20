@@ -401,12 +401,14 @@ function composeBadges(
   config: Config,
   db: Database,
   settings: LiveSettings,
+  track: Track,
 ): BadgeService {
   return createBadges({
     store: createBadgeStore(db),
     events: createEventBadgeStore(db),
     levelCounts: () => config.badgeLevelCounts,
     gameOn: () => settings.game().enabled === 1,
+    track,
   })
 }
 
@@ -538,7 +540,7 @@ export function composeApp(
     config,
     store: createSettingOverrideStore(db),
   })
-  const badges = composeBadges(config, db, settings)
+  const badges = composeBadges(config, db, settings, track)
   const counting = {
     service: badges,
     onError: hooks.onBadgeError ?? ignoreError,

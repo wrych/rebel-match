@@ -8,6 +8,7 @@ import {
   type SeenRow,
 } from '../badges/rows.js'
 import { crownAfter, type Standing } from '../badges/crowns.js'
+import type { Track } from './analytics.js'
 import type { ChallengeService } from './challenges.js'
 import type { EarnedEventBadge, EventBadgeStore } from './event-badge-store.js'
 import type { GameService } from './game.js'
@@ -195,25 +196,50 @@ async function seen(
   if (rows.includes(eventRow)) await deps.events.markSeen(memberId)
 }
 
-/** Badge levels counted from what members already do and kept once earned
- * (R-BADGE-1, R-BADGE-2, ADR 0053). */
-export function createBadges(deps: {
+interface BadgeDeps {
   store: BadgeStore
   events: EventBadgeStore
   levelCounts: () => readonly number[]
   gameOn: () => boolean
-}): BadgeService {
+  track: Track
+}
+
+// Each level newly earned is reported, never a crown (R-BADGE-13).
+async function recount(
+  deps: BadgeDeps,
+  rules: Rules,
+  memberId: string,
+  rows: readonly BadgeRow[],
+): Promise<void> {
+  for (const row of rows) {
+    const count = await deps.store.count(memberId, row)
+    const reached = levelsReached(count, rules.countsOf(row))
+    const added =
+      reached.length > 0
+        ? await deps.store.award(memberId, row, reached, false)
+        : []
+    for (const level of added)
+      void deps.track(memberId, { name: 'badge_earned', row, level })
+    await checkCrown(deps.store, rules, row)
+  }
+}
+
+async function claim(
+  deps: BadgeDeps,
+  memberId: string,
+  token: string,
+): Promise<void> {
+  if (await deps.events.claim(memberId, token, new Date()))
+    void deps.track(memberId, { name: 'badge_earned', row: eventRow })
+}
+
+/** Badge levels counted from what members already do and kept once earned
+ * (R-BADGE-1, R-BADGE-2, ADR 0053). */
+export function createBadges(deps: BadgeDeps): BadgeService {
   const { store } = deps
   const rules = rulesOf(deps)
   return {
-    recount: async (memberId, rows) => {
-      for (const row of rows) {
-        const count = await store.count(memberId, row)
-        const reached = levelsReached(count, rules.countsOf(row))
-        if (reached.length > 0) await store.award(memberId, row, reached, false)
-        await checkCrown(store, rules, row)
-      }
-    },
+    recount: (memberId, rows) => recount(deps, rules, memberId, rows),
     mine: async (memberId) => {
       const [earned, crowns] = await Promise.all([
         store.earned(memberId),
@@ -237,7 +263,7 @@ export function createBadges(deps: {
     newCount: async (memberId) =>
       (await store.newCount(memberId)) + (await deps.events.newCount(memberId)),
     seen: (memberId, rows) => seen(deps, memberId, rows),
-    claim: (memberId, token) => deps.events.claim(memberId, token, new Date()),
+    claim: (memberId, token) => claim(deps, memberId, token),
     checkCrowns: async () => {
       for (const row of rules.shown()) await checkCrown(store, rules, row)
     },
