@@ -282,6 +282,9 @@ printed dev link (R-DEV-6).
 - [x] Hosts change the spam-protection numbers, invite defaults and minimum
       lengths from the settings screen, stored in the database. _(R-CFG-6,
       ADR 0031)_
+- [ ] Settings groups fold to their titles with a count of changed values,
+      and a search over names and explanations opens the groups it finds.
+      _(R-CFG-5, S25)_
 - [x] Rate-limit auth, verify token hashing, session flags, permission + party
       checks on every read. _(R-NFR-5, R-ROLE-5, design §8)_
 - [ ] Resolve the caller once per request: `guardApi` keeps the `MemberRef`

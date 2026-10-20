@@ -958,7 +958,12 @@ What differs by environment is only whether mail **leaves the machine**.
   fixed in code SHALL be marked as such. The screen SHALL NOT show environment
   variable names: they are a technical detail. No secret SHALL appear, nor
   whether one is set beyond on/off. Changing a value is a deployment change,
-  except as R-CFG-6 allows.
+  except as R-CFG-6 allows. The groups SHALL start folded, each showing its
+  title, how many values it holds and how many differ from the default;
+  opening one shows its values. A search above the groups SHALL show only the
+  values whose name or explanation contains it, ignoring case, and every value
+  of a group whose title contains it, with those groups open; when nothing
+  matches the screen SHALL say so.
 
 - **R-CFG-6 (Changing settings in the host tools)** — A host with
   `settings:manage` SHALL be able to change, on the settings screen, the
