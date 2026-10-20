@@ -6,9 +6,10 @@ import { consentWordsOf, latestConsentVersion } from './consent.js'
 import type { DatabaseTarget } from './db/connect.js'
 import type { FlagSettings } from './experiments.js'
 import { gameDefaults, type GameSettings } from './game/tuning.js'
+import { abuseEnv, abuseLimitsFrom, type AbuseLimits } from './abuse.js'
 import { limitsEnv, limitsFrom, type Limits } from './limits.js'
 
-export type { Limits }
+export type { AbuseLimits, Limits }
 
 // Node clamps a timer delay above 2^31-1 ms (about 24.8 days) to 1 ms, so a
 // longer purge interval would run the purge continuously.
@@ -234,17 +235,7 @@ const envSchema = z
     TICK_INVOKER: z.email().optional(),
     TICK_AUDIENCE: z.url().optional(),
 
-    // Abuse limits on sign-in (R-NFR-8, ADR 0029).
-    LINK_EMAILS_BEFORE_CHECK: z.coerce.number().int().nonnegative().default(3),
-    LINK_EMAILS_CEILING: z.coerce.number().int().positive().default(10),
-    LINK_EMAIL_WINDOW_MINUTES: z.coerce.number().int().positive().default(15),
-    AUTH_REQUESTS_PER_IP: z.coerce.number().int().positive().default(1000),
-    IP_WINDOW_MINUTES: z.coerce.number().int().positive().default(15),
-    APPLICANTS_BEFORE_CHECK: z.coerce.number().int().nonnegative().default(30),
-    APPLICANTS_CEILING: z.coerce.number().int().positive().default(300),
-    APPLICANT_WINDOW_MINUTES: z.coerce.number().int().positive().default(60),
-    HUMAN_CHECK_COST: z.coerce.number().int().positive().default(1000),
-    HUMAN_CHECK_MINUTES: z.coerce.number().int().positive().default(5),
+    ...abuseEnv,
     // Proxy hops in front of the server whose X-Forwarded-For is believed;
     // 0 uses the socket address, Cloud Run needs 1.
     TRUST_PROXY: z.coerce.number().int().nonnegative().default(0),
@@ -360,23 +351,6 @@ const envSchema = z
 
 export type Env = z.infer<typeof envSchema>
 
-/** The sign-in abuse limits (R-NFR-8, ADR 0029). Kept out of `Limits`, so
- * `GET /api/config` never tells a script how far it can go. */
-export interface AbuseLimits {
-  linkEmailsBeforeCheck: number
-  linkEmailsCeiling: number
-  linkEmailWindowMinutes: number
-  authRequestsPerIp: number
-  ipWindowMinutes: number
-  applicantsBeforeCheck: number
-  applicantsCeiling: number
-  applicantWindowMinutes: number
-  /** PBKDF2 iterations per try of the human check's proof of work. */
-  humanCheckCost: number
-  /** How long a human-check challenge can be solved and sent back. */
-  humanCheckMinutes: number
-}
-
 /** The values hosts may change while the server runs (ADR 0031). Read when
  * used, never kept from startup, so a change applies without a restart. */
 export interface LiveSettings {
@@ -470,21 +444,6 @@ export interface Config {
   rolePermissions: typeof rolePermissions
   /** The commit the build was made from, if it was made from one (R-NFR-11). */
   build: { commit?: string; commitUrlBase: string }
-}
-
-function abuseLimitsFrom(env: Env): AbuseLimits {
-  return {
-    linkEmailsBeforeCheck: env.LINK_EMAILS_BEFORE_CHECK,
-    linkEmailsCeiling: env.LINK_EMAILS_CEILING,
-    linkEmailWindowMinutes: env.LINK_EMAIL_WINDOW_MINUTES,
-    authRequestsPerIp: env.AUTH_REQUESTS_PER_IP,
-    ipWindowMinutes: env.IP_WINDOW_MINUTES,
-    applicantsBeforeCheck: env.APPLICANTS_BEFORE_CHECK,
-    applicantsCeiling: env.APPLICANTS_CEILING,
-    applicantWindowMinutes: env.APPLICANT_WINDOW_MINUTES,
-    humanCheckCost: env.HUMAN_CHECK_COST,
-    humanCheckMinutes: env.HUMAN_CHECK_MINUTES,
-  }
 }
 
 export interface NotificationWorkerSettings {
