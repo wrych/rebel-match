@@ -1,8 +1,19 @@
 // @vitest-environment jsdom
 import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import type { BadgeOverview, RowView } from '../lib/badges'
+import EventTicket from '../components/EventTicket.vue'
+import type { BadgeOverview, EarnedEventBadge, RowView } from '../lib/badges'
 import BadgesScreen from './BadgesScreen.vue'
+
+const eventBadge = (id: string, isNew: boolean): EarnedEventBadge => ({
+  id,
+  name: `Badge ${id}`,
+  ticketLine: id.toUpperCase(),
+  bigLine: '2026',
+  hasLogo: false,
+  earnedAt: '2026-11-08T10:00:00.000Z',
+  new: isNew,
+})
 
 const level = (
   n: number,
@@ -74,7 +85,9 @@ describe('BadgesScreen (S35, R-BADGE-7)', () => {
     const screen = await mountScreen()
 
     expect(screen.text()).toContain('6 earned')
-    const tiles = screen.findAllComponents(RouterLinkStub)
+    const tiles = screen
+      .findAllComponents(RouterLinkStub)
+      .filter((link) => link.classes().includes('tile'))
     expect(tiles.map((tile) => tile.props('to'))).toEqual([
       '/badges/speak',
       '/badges/help',
@@ -122,6 +135,34 @@ describe('BadgesScreen (S35, R-BADGE-7)', () => {
     await mountScreen()
 
     expect(fetchMock.mock.calls.map(([url]) => url)).toEqual(['/api/badges'])
+  })
+
+  it('leads to the event badges, saying none yet before any (R-BADGE-8)', async () => {
+    serve(overview)
+    const screen = await mountScreen()
+
+    const events = screen.findAllComponents(RouterLinkStub).at(-1)!
+    expect(events.props('to')).toBe('/badges/events')
+    expect(events.text()).toContain('None yet')
+  })
+
+  it('counts event badges as earned, and marks new ones seen (R-BADGE-10)', async () => {
+    const fetchMock = serve({
+      rows: [row('speak')],
+      events: [eventBadge('summit', true), eventBadge('forum', false)],
+    })
+    const screen = await mountScreen()
+
+    expect(screen.text()).toContain('2 earned')
+    const events = screen.findAllComponents(RouterLinkStub).at(-1)!
+    expect(events.classes()).toContain('card-new')
+    expect(events.findAllComponents(EventTicket)).toHaveLength(2)
+    const posts = fetchMock.mock.calls.filter(
+      ([url]) => url === '/api/badges/seen',
+    )
+    expect(
+      posts.map(([, init]) => JSON.parse(String((init as RequestInit).body))),
+    ).toEqual([{ rows: ['event'] }])
   })
 
   it('says so when the badges cannot be loaded', async () => {

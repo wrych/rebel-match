@@ -1,7 +1,8 @@
-import type { BadgeRow } from '../../src/badges/rows'
+import type { SeenRow } from '../../src/badges/rows'
 import type { BadgeOverview, RowView } from '../../src/services/badges'
+import type { EarnedEventBadge } from '../../src/services/event-badge-store'
 
-export type { BadgeOverview, RowView }
+export type { BadgeOverview, EarnedEventBadge, RowView }
 
 /** How a badge is drawn: locked, a level (the game's promotions have six),
  * or the crown. */
@@ -19,9 +20,9 @@ export async function fetchBadges(): Promise<BadgeOverview> {
  * (R-BADGE-10). */
 export const BADGES_SEEN = 'badges-seen'
 
-/** Records that the member saw these rows' badges, so none is new any more
- * (R-BADGE-10). */
-export async function markBadgesSeen(rows: readonly BadgeRow[]): Promise<void> {
+/** Records that the member saw these rows' badges, or with `event` their
+ * event badges, so none is new any more (R-BADGE-10). */
+export async function markBadgesSeen(rows: readonly SeenRow[]): Promise<void> {
   if (rows.length === 0) return
   const response = await fetch('/api/badges/seen', {
     method: 'POST',
@@ -31,6 +32,17 @@ export async function markBadgesSeen(rows: readonly BadgeRow[]): Promise<void> {
   if (!response.ok)
     throw new Error(`badges not marked (${String(response.status)})`)
   window.dispatchEvent(new Event(BADGES_SEEN))
+}
+
+/** Asks for the event badge of an invite a signed-in member opened. The
+ * server says nothing of the invite, so neither does this (R-BADGE-6,
+ * R-INV-5). */
+export function claimEventBadge(invite: string): void {
+  fetch('/api/badges/claim', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ invite }),
+  }).catch(() => undefined)
 }
 
 /** How many badges are new, for the menu; a failed read counts as none. */
@@ -63,13 +75,17 @@ export function bestOf(row: RowView): { tier: Tier; name: string } {
   }
 }
 
-/** Levels and crowns earned across the rows (R-BADGE-7). */
+/** Levels, crowns and event badges earned (R-BADGE-7). */
 export function earnedCount(overview: BadgeOverview): number {
   return overview.rows.reduce(
     (sum, row) => sum + levelsEarned(row) + (row.crown.held ? 1 : 0),
-    0,
+    overview.events.length,
   )
 }
+
+/** Whether any event badge is new. */
+export const hasNewEvent = (events: readonly EarnedEventBadge[]): boolean =>
+  events.some((badge) => badge.new)
 
 /** Whether any badge in the row is new. */
 export const hasNew = (row: RowView): boolean =>

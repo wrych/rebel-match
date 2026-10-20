@@ -84,6 +84,12 @@ export const routeTable: readonly RouteDef[] = [
   },
   { path: '/badges', name: 'badges', title: 'Badges', access: 'onboarded' },
   {
+    path: '/badges/events',
+    name: 'badge-events',
+    title: 'Event badges',
+    access: 'onboarded',
+  },
+  {
     path: '/badges/:row',
     name: 'badge-row',
     title: 'Badges',
