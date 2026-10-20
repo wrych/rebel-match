@@ -24,8 +24,18 @@ export interface Connection {
   close(): Promise<void>
 }
 
-function onServer(url: string): Connection {
+/** Reports a pooled connection the server closed while it sat idle. The pool
+ * has already discarded it and opens a fresh one on the next query. */
+export type OnIdleConnectionLost = (error: Error) => void
+
+function onServer(
+  url: string,
+  onIdleConnectionLost: OnIdleConnectionLost,
+): Connection {
   const pool = new pg.Pool({ connectionString: url, max: 10 })
+  // Without a listener, Node throws the pool's 'error' event and the process
+  // dies whenever Cloud SQL closes an idle connection.
+  pool.on('error', onIdleConnectionLost)
   const db = onNodePostgres(pool, { schema })
   return {
     db,
@@ -71,8 +81,11 @@ async function inProcess(dataDir?: string): Promise<Connection> {
 }
 
 /** Opens the database the target names. */
-export function connect(target: DatabaseTarget): Promise<Connection> {
+export function connect(
+  target: DatabaseTarget,
+  onIdleConnectionLost: OnIdleConnectionLost = () => undefined,
+): Promise<Connection> {
   return target.kind === 'postgres'
-    ? Promise.resolve(onServer(target.url))
+    ? Promise.resolve(onServer(target.url, onIdleConnectionLost))
     : inProcess(target.dataDir)
 }
