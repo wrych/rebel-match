@@ -5,6 +5,7 @@ import { createAuth, createMemoryAuthStore } from '../auth/index.js'
 import { loadConfig } from '../config.js'
 import { configPolicy } from '../permissions.js'
 import type {
+  BadgeChoice,
   InviteService,
   InviteView,
   NewInvite,
@@ -43,9 +44,11 @@ function setup(): {
   app: Express
   created: [NewInvite, string][]
   raised: [string, number][]
+  badged: [string, BadgeChoice][]
 } {
   const created: [NewInvite, string][] = []
   const raised: [string, number][] = []
+  const badged: [string, BadgeChoice][] = []
   const invites: InviteService = {
     list: () => Promise.resolve([listed]),
     create: (input, by) => {
@@ -63,6 +66,15 @@ function setup(): {
       Promise.resolve(
         id === 'b-1' ? '<svg xmlns="x"><path d="M0 0"/></svg>' : null,
       ),
+    setBadge: (id, choice) => {
+      badged.push([id, choice])
+      if (id !== 'i-1') return Promise.resolve({ result: 'not_found' })
+      return Promise.resolve(
+        choice.eventBadgeId === 'b-gone'
+          ? { result: 'unknown_badge' }
+          : { result: 'set', invite: listed },
+      )
+    },
     raiseCap: (id, maxUses) => {
       raised.push([id, maxUses])
       if (id === 'i-gone') return Promise.resolve({ result: 'revoked' })
@@ -77,7 +89,7 @@ function setup(): {
   const app = express()
   app.use(express.json())
   app.use(adminInviteRoutes({ auth, invites, config }))
-  return { app, created, raised }
+  return { app, created, raised, badged }
 }
 
 async function cookieFor(memberId: string): Promise<string> {
@@ -266,6 +278,36 @@ describe('admin invite routes', () => {
     expect(created).toEqual([])
   })
 
+  it("sets an existing invite's badge, or none, and says why not (R-INV-13)", async () => {
+    const { app, badged } = setup()
+    const cookie = await cookieFor('m-admin')
+    const put = (id: string, body: object): request.Test =>
+      request(app)
+        .put(`/api/admin/invites/${id}/event-badge`)
+        .set('Cookie', cookie)
+        .send(body)
+
+    const set = await put('i-1', { eventBadgeId: 'b-1' })
+    await put('i-1', {}).expect(200)
+    const unknown = await put('i-1', { eventBadgeId: 'b-gone' })
+    await put('i-none', {}).expect(404)
+    await put('i-1', {
+      eventBadgeId: 'b-1',
+      eventBadge: { name: 'S', ticketLine: 'S', bigLine: '1' },
+    }).expect(400)
+
+    expect(set.status).toBe(200)
+    expect(set.body).toEqual({ invite: listed })
+    expect(unknown.status).toBe(400)
+    expect(unknown.body).toEqual({ error: 'unknown_badge' })
+    expect(badged.map(([id, choice]) => [id, choice])).toEqual([
+      ['i-1', { eventBadgeId: 'b-1' }],
+      ['i-1', {}],
+      ['i-1', { eventBadgeId: 'b-gone' }],
+      ['i-none', {}],
+    ])
+  })
+
   it('answers 404 to a member without invite:manage (R-ROLE-5)', async () => {
     const { app, raised } = setup()
 
@@ -289,6 +331,7 @@ describe('eventBadgeLogoRoutes (R-BADGE-5)', () => {
           create: () => Promise.resolve({ result: 'bad_window' }),
           revoke: () => Promise.resolve('not_found'),
           raiseCap: () => Promise.resolve({ result: 'not_found' }),
+          setBadge: () => Promise.resolve({ result: 'not_found' }),
           logo: (id) =>
             Promise.resolve(
               id === 'b-1' ? '<svg xmlns="x"><path d="M0 0"/></svg>' : null,

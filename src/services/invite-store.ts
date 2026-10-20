@@ -1,6 +1,7 @@
 import { and, desc, eq, getTableColumns, isNull, lt, sql } from 'drizzle-orm'
 import type { Database } from '../db/connect.js'
 import { eventBadges, invites, members, inviteOpens } from '../db/schema.js'
+import { earnEventBadge } from './event-badge-store.js'
 import type {
   EventBadgeView,
   InviteStore,
@@ -56,6 +57,43 @@ async function insertWithBadge(
   })
 }
 
+// Those the invite admitted earn its badge now, as if they had joined since
+// (R-INV-13); a badge changed or removed is taken from nobody.
+async function setBadge(
+  db: Database,
+  inviteId: string,
+  badgeId: string | null,
+  newBadge: StoredEventBadge | null,
+): Promise<string[] | null> {
+  return db.transaction(async (tx) => {
+    const [invite] = await tx
+      .select({ id: invites.id })
+      .from(invites)
+      .where(eq(invites.id, inviteId))
+      .for('update')
+    if (invite === undefined) return null
+    if (newBadge !== null) await tx.insert(eventBadges).values(newBadge)
+    await tx
+      .update(invites)
+      .set({ eventBadgeId: badgeId })
+      .where(eq(invites.id, inviteId))
+    if (badgeId === null) return []
+    const admitted = await tx
+      .select({ id: members.id })
+      .from(members)
+      .where(
+        and(
+          eq(members.joinedViaInviteId, inviteId),
+          eq(members.status, 'active'),
+        ),
+      )
+    const earned: string[] = []
+    for (const { id } of admitted)
+      if (await earnEventBadge(tx, id, badgeId)) earned.push(id)
+    return earned
+  })
+}
+
 async function badgeExists(db: Database, id: string): Promise<boolean> {
   const found = await db
     .select({ id: eventBadges.id })
@@ -95,6 +133,8 @@ export function createInviteStore(db: Database): InviteStore {
       return row === undefined ? null : listedOf(row)
     },
     insert: (invite, newBadge) => insertWithBadge(db, invite, newBadge),
+    setBadge: (inviteId, badgeId, newBadge) =>
+      setBadge(db, inviteId, badgeId, newBadge),
     badgeExists: (id) => badgeExists(db, id),
     logo: (badgeId) => logoOf(db, badgeId),
     revoke: async (id, at) => {

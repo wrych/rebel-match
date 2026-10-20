@@ -81,6 +81,7 @@ function deps(
       create: () => Promise.resolve({ result: 'bad_window' }),
       revoke: () => Promise.resolve('not_found'),
       raiseCap: () => Promise.resolve({ result: 'not_found' }),
+      setBadge: () => Promise.resolve({ result: 'not_found' }),
       logo: () => Promise.resolve(null),
     },
     challenges: {

@@ -439,6 +439,7 @@ function composeInvites(
   config: Config,
   db: Database,
   settings: LiveSettings,
+  track: Track,
 ): AppDeps['invites'] {
   return createInvites({
     store: createInviteStore(db),
@@ -446,6 +447,7 @@ function composeInvites(
     defaults: () => settings.limits(),
     newId: randomUUID,
     cleanLogo: (text) => cleanLogo(text, settings.limits().badgeLogoMaxBytes),
+    track,
   })
 }
 
@@ -561,7 +563,7 @@ export function composeApp(
     outbox: createOutboxLog(db),
     ...composeAdmission(config, settings, db, auth),
     ...composeOnboarding(config, db, track),
-    invites: composeInvites(config, db, settings),
+    invites: composeInvites(config, db, settings, track),
     activity: createActivity({
       store: createActivityStore(db),
       newId: randomUUID,

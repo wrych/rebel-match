@@ -1,4 +1,6 @@
 import { randomBytes } from 'node:crypto'
+import { eventRow } from '../badges/rows.js'
+import type { Track } from './analytics.js'
 import type { LogoOutcome } from './logo.js'
 
 /** An event's badge as the host tools show it: its words, and whether it has
@@ -88,6 +90,10 @@ export interface NewInvite {
   eventBadge?: NewEventBadge | undefined
 }
 
+/** The badge an invite is to give: another invite's, a new one, or with
+ * neither, none (R-BADGE-4). */
+export type BadgeChoice = Pick<NewInvite, 'eventBadgeId' | 'eventBadge'>
+
 export interface InviteStore {
   /** Every invite, newest first. */
   list(): Promise<ListedInvite[]>
@@ -101,6 +107,15 @@ export interface InviteStore {
   badgeExists(id: string): Promise<boolean>
   /** A badge's cleaned logo, or null for none or no such badge. */
   logo(badgeId: string): Promise<string | null>
+  /** Sets the badge an invite gives, storing a new one first, and records it
+   * as earned by the active members it admitted, with their notifications,
+   * in one transaction. The members who newly earned it, or null for no such
+   * invite. */
+  setBadge(
+    inviteId: string,
+    badgeId: string | null,
+    newBadge: StoredEventBadge | null,
+  ): Promise<string[] | null>
   /** Sets `revoked_at` once; false when no invite has that id. */
   revoke(id: string, at: Date): Promise<boolean>
   /** Sets a higher cap on an invite that is not revoked, in one statement;
@@ -121,6 +136,10 @@ export type CreateOutcome =
   | { result: 'created'; invite: InviteView }
   | { result: 'bad_window' | 'bad_logo' | 'unknown_badge' }
 
+export type BadgeOutcome =
+  | { result: 'set'; invite: InviteView }
+  | { result: 'not_found' | 'bad_logo' | 'unknown_badge' }
+
 export type RaiseOutcome =
   | { result: 'raised'; invite: InviteView }
   | { result: 'not_found' | 'revoked' | 'not_higher' }
@@ -129,6 +148,9 @@ export interface InviteService {
   list(): Promise<InviteView[]>
   create(input: NewInvite, createdBy: string): Promise<CreateOutcome>
   revoke(id: string): Promise<'revoked' | 'not_found'>
+  /** Gives an invite made earlier a badge, changes it or removes it; those
+   * it admitted earn it now, and nobody loses one (R-INV-13). */
+  setBadge(id: string, choice: BadgeChoice): Promise<BadgeOutcome>
   /** Raises the cap, so a printed code keeps admitting (R-INV-4). */
   raiseCap(id: string, maxUses: number): Promise<RaiseOutcome>
   /** An event badge's cleaned logo, for its own address (R-BADGE-5). */
@@ -180,7 +202,7 @@ type CleanLogo = (text: string) => LogoOutcome
 // The badge an invite brings: none, an existing one, or a new one whose logo
 // is cleaned to drawing only before anything is stored (R-BADGE-4,5).
 async function badgeFor(
-  input: NewInvite,
+  input: BadgeChoice,
   deps: { store: InviteStore; cleanLogo: CleanLogo; newId: () => string },
 ): Promise<
   | { id: string | null; stored: StoredEventBadge | null }
@@ -246,6 +268,24 @@ async function createInvite(
   return { result: 'created', invite: view(stored, deps.publicUrl, at) }
 }
 
+// Each member newly holding the badge is reported as earning it, as when
+// they join or claim it (R-BADGE-13).
+async function setBadge(
+  deps: InviteDeps,
+  at: Date,
+  id: string,
+  choice: BadgeChoice,
+): Promise<BadgeOutcome> {
+  const badge = await badgeFor(choice, deps)
+  if (typeof badge === 'string') return { result: badge }
+  const earned = await deps.store.setBadge(id, badge.id, badge.stored)
+  const invite = await deps.store.find(id)
+  if (earned === null || invite === null) return { result: 'not_found' }
+  for (const memberId of earned)
+    void deps.track(memberId, { name: 'badge_earned', row: eventRow })
+  return { result: 'set', invite: view(invite, deps.publicUrl, at) }
+}
+
 /** F16: list, create and revoke invites (R-INV-2,3,4,8,9,10). A window or cap
  * left out takes the configured default. */
 export function createInvites(deps: {
@@ -255,6 +295,7 @@ export function createInvites(deps: {
   now?: () => Date
   newId: () => string
   cleanLogo: CleanLogo
+  track: Track
 }): InviteService {
   const now = deps.now ?? ((): Date => new Date())
   return {
@@ -263,6 +304,7 @@ export function createInvites(deps: {
       return (await deps.store.list()).map((i) => view(i, deps.publicUrl, at))
     },
     create: (input, createdBy) => createInvite(deps, now(), input, createdBy),
+    setBadge: (id, choice) => setBadge(deps, now(), id, choice),
     revoke: async (id) =>
       (await deps.store.revoke(id, now())) ? 'revoked' : 'not_found',
     raiseCap: async (id, maxUses) => {

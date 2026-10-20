@@ -37,6 +37,10 @@ let db: TestDatabase
 let app: ReturnType<typeof createApp>
 let milan: string
 let cookie: string
+let adminCookie: string
+const plain = { id: randomUUID(), token: `eb-plain-${randomUUID()}` }
+const late = `${randomUUID()}@example.invalid`
+const laterBadge = randomUUID()
 
 async function insertInvites(adminId: string): Promise<void> {
   const now = Date.now()
@@ -81,17 +85,40 @@ beforeAll(async () => {
   milan = String(member?.['id'])
   const session = await deps.auth.createSession(milan)
   cookie = `${session.name}=${session.value}`
+  const adminSession = await deps.auth.createSession(
+    String(admin?.['member_id']),
+  )
+  adminCookie = `${adminSession.name}=${adminSession.value}`
   await db.query(
     'INSERT INTO event_badges (id, name, ticket_line, big_line) VALUES (?, ?, ?, ?)',
     [badgeId, 'Stormed the Summit', 'SUMMIT', '2026'],
   )
   await insertInvites(String(admin?.['member_id']))
+  await db.query(
+    'INSERT INTO invites (id, token, label, valid_from, valid_until, max_uses, created_by) ' +
+      'VALUES (?, ?, ?, ?, ?, ?, ?)',
+    [
+      plain.id,
+      plain.token,
+      'Lobby',
+      new Date(Date.now() - hour),
+      new Date(Date.now() + hour),
+      10,
+      String(admin?.['member_id']),
+    ],
+  )
 })
 
 afterAll(async () => {
-  await db.query('DELETE FROM members WHERE email = ?', [scanner])
-  await db.query('DELETE FROM invites WHERE event_badge_id = ?', [badgeId])
-  await db.query('DELETE FROM event_badges WHERE id = ?', [badgeId])
+  await db.query('DELETE FROM members WHERE email IN (?, ?)', [scanner, late])
+  await db.query(
+    'DELETE FROM invites WHERE event_badge_id IN (?, ?) OR id = ?',
+    [badgeId, laterBadge, plain.id],
+  )
+  await db.query('DELETE FROM event_badges WHERE id IN (?, ?)', [
+    badgeId,
+    laterBadge,
+  ])
   await db.close()
 })
 
@@ -234,5 +261,65 @@ describe('earning event badges over Postgres (R-BADGE-6)', () => {
       .post('/api/badges/claim')
       .send({ invite: invites.open.token })
       .expect(401)
+  })
+})
+
+describe('giving an existing invite a badge over Postgres (R-INV-13)', () => {
+  function put(body: object): request.Test {
+    return request(app)
+      .put(`/api/admin/invites/${plain.id}/event-badge`)
+      .set('Cookie', adminCookie)
+      .send(body)
+  }
+
+  it('gives it to those already admitted through it, once, notified', async () => {
+    await request(app)
+      .post('/auth/request-link')
+      .send({ email: late, invite: plain.token })
+      .expect(200)
+    const [joined] = await db.query('SELECT id FROM members WHERE email = ?', [
+      late,
+    ])
+    const id = String(joined?.['id'])
+    expect(await earnedBy(id)).toEqual([])
+
+    const response = await put({ eventBadgeId: badgeId }).expect(200)
+    await put({ eventBadgeId: badgeId }).expect(200)
+
+    expect(
+      (response.body as { invite: { eventBadge: { id: string } } }).invite
+        .eventBadge.id,
+    ).toBe(badgeId)
+    expect(await earnedBy(id)).toEqual([badgeId])
+    expect(await badgeNotesOf(id)).toEqual([['event', badgeId]])
+  })
+
+  it('takes nothing back when the badge changes or goes', async () => {
+    await db.query(
+      'INSERT INTO event_badges (id, name, ticket_line, big_line) VALUES (?, ?, ?, ?)',
+      [laterBadge, 'Lobby Legend', 'LOBBY', '26'],
+    )
+    const [joined] = await db.query('SELECT id FROM members WHERE email = ?', [
+      late,
+    ])
+    const id = String(joined?.['id'])
+
+    await put({ eventBadgeId: laterBadge }).expect(200)
+    await put({}).expect(200)
+
+    expect(new Set(await earnedBy(id))).toEqual(new Set([badgeId, laterBadge]))
+    const [row] = await db.query(
+      'SELECT event_badge_id FROM invites WHERE id = ?',
+      [plain.id],
+    )
+    expect(row?.['event_badge_id']).toBeNull()
+  })
+
+  it('answers not found to a member without invite:manage', async () => {
+    await request(app)
+      .put(`/api/admin/invites/${plain.id}/event-badge`)
+      .set('Cookie', cookie)
+      .send({})
+      .expect(404)
   })
 })
