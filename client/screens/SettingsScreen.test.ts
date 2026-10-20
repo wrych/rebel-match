@@ -378,6 +378,31 @@ describe('SettingsScreen folds and search (R-CFG-5)', () => {
     expect(screen.text()).toContain('Longest name')
   })
 
+  it('changes nothing until the search holds three characters', async () => {
+    server()
+    const screen = await mountScreen()
+
+    await searchFor(screen, 'pr')
+
+    expect(screen.findAll('h2')).toHaveLength(2)
+    expect(folds(screen)).toEqual([false, false])
+  })
+
+  it('filters as a phone keyboard types, before the word is committed', async () => {
+    server()
+    const screen = await mountScreen()
+    const field = screen.find('#settings-search')
+
+    await field.trigger('compositionstart')
+    ;(field.element as HTMLInputElement).value = 'proxies'
+    await field.trigger('input')
+    await flushPromises()
+
+    expect(screen.findAll('h2').map((h) => h.text())).toEqual([
+      'Spam protection',
+    ])
+  })
+
   it('says so when nothing matches', async () => {
     server()
     const screen = await mountScreen()

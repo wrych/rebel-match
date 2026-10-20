@@ -49,6 +49,13 @@ describe('searchSettings (R-CFG-5)', () => {
     expect(searchSettings(groups, '  ')).toEqual(groups)
   })
 
+  it('keeps every group until the search holds three characters', () => {
+    expect(searchSettings(groups, ' wi ')).toEqual(groups)
+    expect(searchSettings(groups, 'win').map((group) => group.title)).toEqual([
+      'Spam protection',
+    ])
+  })
+
   it('keeps only the values whose name holds the search, ignoring case', () => {
     expect(searchSettings(groups, 'WINDOW')).toEqual([
       { ...groups[0], settings: [groups[0]?.settings[1]] },
