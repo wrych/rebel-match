@@ -1,12 +1,12 @@
 import { Router } from 'express'
 import { z } from 'zod'
 import type { AuthProvider } from '../auth/index.js'
-import { countedRows } from '../badges/rows.js'
+import { badgeRows } from '../badges/rows.js'
 import type { BadgeService } from '../services/badges.js'
 import { requireSession, type GuardedLocals } from './require-permission.js'
 
 const seenBody = z.object({
-  rows: z.array(z.enum(countedRows)).max(countedRows.length),
+  rows: z.array(z.enum(badgeRows)).max(badgeRows.length),
 })
 
 const memberOf = (locals: unknown): string =>

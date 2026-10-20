@@ -1,10 +1,11 @@
-import type { CountedRow } from '../../src/badges/rows'
+import type { BadgeRow } from '../../src/badges/rows'
 import type { BadgeOverview, RowView } from '../../src/services/badges'
 
 export type { BadgeOverview, RowView }
 
-/** How a badge is drawn: locked, a level, or the crown. */
-export type Tier = 'locked' | 1 | 2 | 3 | 'crown'
+/** How a badge is drawn: locked, a level (the game's promotions have six),
+ * or the crown. */
+export type Tier = 'locked' | number | 'crown'
 
 /** The member's own badges (R-BADGE-7). */
 export async function fetchBadges(): Promise<BadgeOverview> {
@@ -20,9 +21,7 @@ export const BADGES_SEEN = 'badges-seen'
 
 /** Records that the member saw these rows' badges, so none is new any more
  * (R-BADGE-10). */
-export async function markBadgesSeen(
-  rows: readonly CountedRow[],
-): Promise<void> {
+export async function markBadgesSeen(rows: readonly BadgeRow[]): Promise<void> {
   if (rows.length === 0) return
   const response = await fetch('/api/badges/seen', {
     method: 'POST',
@@ -59,7 +58,7 @@ export function bestOf(row: RowView): { tier: Tier; name: string } {
   const earned = levelsEarned(row)
   const level = row.levels[Math.max(earned, 1) - 1]
   return {
-    tier: earned === 0 ? 'locked' : (earned as 1 | 2 | 3),
+    tier: earned === 0 ? 'locked' : earned,
     name: level?.name ?? '',
   }
 }
