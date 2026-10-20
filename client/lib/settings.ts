@@ -52,3 +52,30 @@ export async function resetSetting(
   )
   return answer(response, 'setting not reset')
 }
+
+/** How many of a group's values differ from their default (R-CFG-5). */
+export function changedCount(group: SettingsGroup): number {
+  return group.settings.filter((setting) => setting.changed).length
+}
+
+const holds = (text: string, needle: string): boolean =>
+  text.toLowerCase().includes(needle)
+
+/** The groups as a search shows them: every value of a group whose title
+ * holds it, else only the values whose name or explanation does, ignoring
+ * case; groups left empty are dropped. A blank search keeps all (R-CFG-5). */
+export function searchSettings(
+  groups: readonly SettingsGroup[],
+  search: string,
+): SettingsGroup[] {
+  const needle = search.trim().toLowerCase()
+  if (needle === '') return [...groups]
+  return groups.flatMap((group) => {
+    if (holds(group.title, needle)) return [group]
+    const settings = group.settings.filter(
+      (setting) =>
+        holds(setting.name, needle) || holds(setting.explanation, needle),
+    )
+    return settings.length === 0 ? [] : [{ ...group, settings }]
+  })
+}
