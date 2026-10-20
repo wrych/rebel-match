@@ -1,45 +1,7 @@
+import type { ClientConfig } from '../../src/config'
 import { getJson } from './request'
 
-export interface ClientConfig {
-  limits: {
-    challengeMinChars: number
-    challengeMaxChars: number
-    connectionMessageMaxChars: number
-    beenThereNoteMinChars: number
-    magicLinkTtlMinutes: number
-    approvalLinkTtlHours: number
-    inviteDefaultMaxUses: number
-    inviteDefaultHours: number
-    nameMaxChars: number
-    jobTitleMaxChars: number
-    orgMaxChars: number
-    inviteLabelMaxChars: number
-    savedTickMs: number
-    matchesPollSeconds: number
-    cockpitPollSeconds: number
-    challengeMatchesPollSeconds: number
-    notificationsPollSeconds: number
-    outboxPollSeconds: number
-    membersPollSeconds: number
-    applicantsPollSeconds: number
-    invitesPollSeconds: number
-    leaderboardPollSeconds: number
-    notificationsPageSize: number
-    erasureGraceDays: number
-    holdToSelectMs: number
-    swipeMinPx: number
-    pullRefreshPx: number
-    matchesNamedFirst: number
-    matchesShownFirst: number
-    scrollHintShare: number
-    inviteMaxUsesCeiling: number
-  }
-  consentVersion: string
-  analyticsVersion: string
-  feedbackTo: string
-  /** The running version, `dev` without a link on a local build (R-NFR-11). */
-  build: { commit: string; url: string | null }
-}
+export type { ClientConfig }
 
 /** Reads the limits the server enforces, so a disabled button and a server check
  * can never disagree (R-CFG-2). */
