@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
+import { changeableAbuse } from './abuse.js'
 import { defaultConfig, loadConfig, type Config } from './config.js'
 import { experimentKeys } from './experiments.js'
 import { gameBounds } from './game/tuning.js'
+import { changeableLimits } from './limits.js'
 import { settingsView, type SettingsState } from './settings-view.js'
 
 function unchanged(config: Config): SettingsState {
@@ -189,5 +191,23 @@ describe('settingsView (R-CFG-5)', () => {
     expect(keys).toHaveLength(
       23 + Object.keys(gameBounds).length + experimentKeys.length,
     )
+  })
+})
+
+describe('settingsView catalogue (R-CFG-6)', () => {
+  it('offers every changeable setting exactly once, so none is editable unseen', () => {
+    const offered = view(defaultConfig())
+      .flatMap((group) => group.settings)
+      .flatMap((setting) =>
+        setting.edit === undefined ? [] : [setting.edit.key],
+      )
+    const changeable = [
+      ...Object.keys(changeableLimits).map((key) => `limits.${key}`),
+      ...Object.keys(changeableAbuse).map((key) => `abuse.${key}`),
+      ...Object.keys(gameBounds).map((key) => `game.${key}`),
+      ...experimentKeys.map((key) => `flags.${key}`),
+    ]
+
+    expect([...offered].sort()).toEqual([...changeable].sort())
   })
 })
