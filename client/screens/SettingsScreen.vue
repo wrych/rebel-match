@@ -8,6 +8,7 @@ import {
   changedCount,
   fetchSettings,
   searchSettings,
+  searchTerm,
   type SettingsGroup,
 } from '../lib/settings'
 
@@ -19,7 +20,7 @@ const search = ref('')
 const opened = ref(new Set<string>())
 const openNow = ref(new Set<string>())
 
-const searching = computed(() => search.value.trim() !== '')
+const searching = computed(() => searchTerm(search.value) !== null)
 const shown = computed(() => searchSettings(groups.value, search.value))
 
 // A search opens what it finds; only the host's own opening and closing is
@@ -76,11 +77,14 @@ onMounted(async () => {
 
     <div class="field">
       <label for="settings-search">Search the settings</label>
+      <!-- Not v-model: it waits while a phone keyboard composes a word, so the
+      search would only react on Enter. -->
       <input
         id="settings-search"
-        v-model="search"
+        :value="search"
         class="input"
         type="search"
+        @input="search = ($event.target as HTMLInputElement).value"
       />
     </div>
 

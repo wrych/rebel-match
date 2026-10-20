@@ -61,15 +61,26 @@ export function changedCount(group: SettingsGroup): number {
 const holds = (text: string, needle: string): boolean =>
   text.toLowerCase().includes(needle)
 
+const SEARCH_MIN_CHARS = 3
+
+/** What a search looks for, in lower case; null until it holds three
+ * characters, so one typed letter does not match nearly everything
+ * (R-CFG-5). */
+export function searchTerm(search: string): string | null {
+  const needle = search.trim().toLowerCase()
+  return needle.length < SEARCH_MIN_CHARS ? null : needle
+}
+
 /** The groups as a search shows them: every value of a group whose title
  * holds it, else only the values whose name or explanation does, ignoring
- * case; groups left empty are dropped. A blank search keeps all (R-CFG-5). */
+ * case; groups left empty are dropped. A search too short to be one keeps
+ * all (R-CFG-5). */
 export function searchSettings(
   groups: readonly SettingsGroup[],
   search: string,
 ): SettingsGroup[] {
-  const needle = search.trim().toLowerCase()
-  if (needle === '') return [...groups]
+  const needle = searchTerm(search)
+  if (needle === null) return [...groups]
   return groups.flatMap((group) => {
     if (holds(group.title, needle)) return [group]
     const settings = group.settings.filter(
