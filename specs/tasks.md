@@ -424,7 +424,9 @@ in this order.
       dropped with a deleted account. _(R-BADGE-3)_
 - [ ] Screens S35 and S36, the menu's **Badges** entry, new badges and
       `POST /api/badges/seen`. _(R-BADGE-7, R-BADGE-8, R-BADGE-10, R-PROF-3)_
-- [ ] The `badge` notification type: in the app, its cadence, its mail.
+- [ ] The `badge` notification type: in the app, its cadence, its mail,
+      written for each level and crown gained. Until it lands, the items
+      above record gains as new and notify nobody.
       _(R-BADGE-10, R-NOTE-1, R-NOTE-2, R-NOTE-5)_
 - [ ] The Promotions row from 9toRevolution progress, shown while the game
       is on. _(R-BADGE-1, R-BADGE-9)_
