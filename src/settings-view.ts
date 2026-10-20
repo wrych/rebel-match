@@ -944,6 +944,13 @@ const catalogue: Group[] = [
           'The counts for the first, second and third level of each row: challenges posted, help offered, same boats, people connected with.',
         read: (c) => c.badgeLevelCounts.join(', '),
       },
+      {
+        name: 'Crowns are checked every',
+        explanation:
+          'Each crown also moves on its own, when a count falls because a challenge or an account was deleted.',
+        read: (c) => c.badgeCrownCheckMinutes,
+        unit: MINUTES,
+      },
     ],
   },
   {

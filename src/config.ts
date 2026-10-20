@@ -11,6 +11,7 @@ import { gameDefaults, type GameSettings } from './game/tuning.js'
 // longer purge interval would run the purge continuously.
 const MAX_TIMER_HOURS = Math.floor(0x7fffffff / 3_600_000)
 const MAX_TIMER_SECONDS = Math.floor(0x7fffffff / 1000)
+const MAX_TIMER_MINUTES = Math.floor(MAX_TIMER_SECONDS / 60)
 
 /** Each counted row of badges has three levels (R-BADGE-1). */
 const BADGE_LEVELS = 3
@@ -318,6 +319,14 @@ const envSchema = z
           .length(BADGE_LEVELS)
           .refine(rising, 'each badge level needs a higher count'),
       ),
+    // How often every crown is checked against counts that fell with nobody
+    // acting (R-BADGE-3).
+    BADGE_CROWN_CHECK_MINUTES: z.coerce
+      .number()
+      .int()
+      .positive()
+      .max(MAX_TIMER_MINUTES)
+      .default(15),
     // Game days one member may record per minute, and how long a day's
     // record may run: this many day lengths plus these seconds (R-GAME-20).
     GAME_RECORDS_PER_MINUTE: z.coerce.number().int().positive().default(10),
@@ -547,6 +556,8 @@ export interface Config {
   flags: FlagSettings
   /** The counts each badge level is earned at, rising (R-BADGE-1). */
   badgeLevelCounts: readonly number[]
+  /** How often every crown is checked (R-BADGE-3). */
+  badgeCrownCheckMinutes: number
   /** Game days one member may record per minute (R-GAME-20). */
   gameRecordsPerMinute: number
   /** How many bests the leaderboard shows above the caller's (R-GAME-13). */
@@ -710,6 +721,7 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): Config {
     game: gameDefaults,
     flags: { matches_layout: EVEN_SPLIT_PERCENT },
     badgeLevelCounts: env.BADGE_LEVEL_COUNTS,
+    badgeCrownCheckMinutes: env.BADGE_CROWN_CHECK_MINUTES,
     gameRecordsPerMinute: env.GAME_RECORDS_PER_MINUTE,
     gameLeaderboardSize: env.GAME_LEADERBOARD_SIZE,
     gameDayAllowance: {

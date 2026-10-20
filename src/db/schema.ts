@@ -626,6 +626,19 @@ export const memberBadges = pgTable(
   (t) => [primaryKey({ columns: [t.memberId, t.rowKey, t.level] })],
 )
 
+// Who holds each row's crown now (R-BADGE-3). A row is here once its crown
+// was first given, with nobody while no member qualifies, so the first giving
+// is told apart and kept quiet (R-BADGE-11). A deleted account gives its
+// crowns up at once, before the erasure's cascade (ADR 0032).
+export const badgeCrowns = pgTable('badge_crowns', {
+  rowKey: varchar('row_key', { length: 10 }).primaryKey(),
+  memberId: id('member_id').references(() => members.id, {
+    onDelete: 'set null',
+  }),
+  since: at('since').notNull().defaultNow(),
+  seenAt: at('seen_at'),
+})
+
 // One row once the badges already earned before launch were recorded, so
 // that is done once, quietly (R-BADGE-11).
 export const badgeLaunch = pgTable('badge_launch', {

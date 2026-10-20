@@ -2,6 +2,7 @@ import { eq, sql } from 'drizzle-orm'
 import type { SQL } from 'drizzle-orm'
 import type { Database } from '../db/connect.js'
 import {
+  badgeCrowns,
   badgeLaunch,
   challenges,
   connectionRequests,
@@ -10,7 +11,8 @@ import {
   swipes,
 } from '../db/schema.js'
 import { countedRows, type CountedRow } from '../badges/rows.js'
-import type { BadgeStore, EarnedLevel } from './badges.js'
+import type { Standing } from '../badges/crowns.js'
+import type { BadgeStore, Crown, EarnedLevel } from './badges.js'
 
 // What each row counts, one row per counted act: whose it is, what it counts
 // once (a challenge, a card, a request, a person) and when it happened
@@ -61,21 +63,50 @@ async function countFor(
   return Number(counted?.count ?? 0)
 }
 
-async function everyCount(
-  db: Database,
-  row: CountedRow,
-): Promise<{ memberId: string; count: number }[]> {
-  const counted = await rowsOf<{ member: string; count: number | string }>(
+async function standings(db: Database, row: CountedRow): Promise<Standing[]> {
+  const ranked = await rowsOf<{
+    member: string
+    count: number | string
+    reached: Date | string
+  }>(
     db,
-    sql`select acts.member, count(distinct acts.item) as count
+    sql`select acts.member, count(distinct acts.item) as count,
+        max(acts.at) as reached
       from (${acts(row)}) as acts
       join ${members} on ${members.id} = acts.member and ${members.status} = 'active'
       group by acts.member`,
   )
-  return counted.map((each) => ({
+  return ranked.map((each) => ({
     memberId: each.member,
     count: Number(each.count),
+    reachedAt: new Date(each.reached),
   }))
+}
+
+async function crowns(db: Database): Promise<Crown[]> {
+  const rows = await db.select().from(badgeCrowns)
+  return rows.flatMap((row) =>
+    isCounted(row.rowKey)
+      ? [{ row: row.rowKey, memberId: row.memberId, seenAt: row.seenAt }]
+      : [],
+  )
+}
+
+async function setCrown(
+  db: Database,
+  row: CountedRow,
+  memberId: string | null,
+  seen: boolean,
+): Promise<void> {
+  const crown = {
+    memberId,
+    since: new Date(),
+    seenAt: seen ? new Date() : null,
+  }
+  await db
+    .insert(badgeCrowns)
+    .values({ rowKey: row, ...crown })
+    .onConflictDoUpdate({ target: badgeCrowns.rowKey, set: crown })
 }
 
 const isCounted = (key: string): key is CountedRow =>
@@ -128,7 +159,9 @@ async function earned(db: Database, memberId: string): Promise<EarnedLevel[]> {
 export function createBadgeStore(db: Database): BadgeStore {
   return {
     count: (memberId, row) => countFor(db, memberId, row),
-    everyCount: (row) => everyCount(db, row),
+    standings: (row) => standings(db, row),
+    crowns: () => crowns(db),
+    setCrown: (row, memberId, seen) => setCrown(db, row, memberId, seen),
     award: (memberId, row, levels, seen) =>
       award(db, memberId, row, levels, seen),
     earned: (memberId) => earned(db, memberId),

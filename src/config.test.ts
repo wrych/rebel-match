@@ -80,6 +80,17 @@ describe('loadConfig', () => {
     ).toEqual([2, 4, 8])
   })
 
+  it('checks the crowns every 15 minutes unless told otherwise (R-BADGE-3)', () => {
+    expect(loadConfig(valid).badgeCrownCheckMinutes).toBe(15)
+    expect(
+      loadConfig({ ...valid, BADGE_CROWN_CHECK_MINUTES: '5' })
+        .badgeCrownCheckMinutes,
+    ).toBe(5)
+    expect(() =>
+      loadConfig({ ...valid, BADGE_CROWN_CHECK_MINUTES: '0' }),
+    ).toThrow()
+  })
+
   it('refuses badge level counts that do not rise (R-BADGE-1)', () => {
     for (const counts of ['1,5,5', '1,5', '0,5,10', 'one,5,10'])
       expect(() =>

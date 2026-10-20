@@ -43,6 +43,7 @@ describe('migrations', () => {
 
   it('creates every table the login and ask journeys need', async () => {
     expect(await tableNames()).toEqual([
+      'badge_crowns',
       'badge_launch',
       'cases',
       'challenges',

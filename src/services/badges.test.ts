@@ -7,6 +7,7 @@ import {
   createBadges,
   type BadgeService,
   type BadgeStore,
+  type Crown,
   type EarnedLevel,
 } from './badges.js'
 import type { ChallengeService } from './challenges.js'
@@ -21,25 +22,45 @@ const levelCounts = [1, 5, 10]
 
 type Held = EarnedLevel & { memberId: string }
 
+const minute = (n: number): Date => new Date(Date.UTC(2026, 10, 8, 10, n))
+
 function memoryStore(): BadgeStore & {
   counts: Map<string, number>
+  reached: Map<string, number>
   held: Held[]
+  crownList: Crown[]
   launches: number
 } {
   const counts = new Map<string, number>()
+  const reached = new Map<string, number>()
   const held: Held[] = []
+  const crownList: Crown[] = []
   const store = {
     counts,
+    reached,
     held,
+    crownList,
     launches: 0,
     count: (memberId: string, row: CountedRow) =>
       Promise.resolve(counts.get(`${memberId}:${row}`) ?? 0),
-    everyCount: (row: CountedRow) =>
+    standings: (row: CountedRow) =>
       Promise.resolve(
         [...counts]
           .filter(([key, count]) => key.endsWith(`:${row}`) && count > 0)
-          .map(([key, count]) => ({ memberId: key.split(':')[0]!, count })),
+          .map(([key, count]) => ({
+            memberId: key.split(':')[0]!,
+            count,
+            reachedAt: minute(reached.get(key) ?? 0),
+          })),
       ),
+    crowns: () => Promise.resolve(crownList.map((crown) => ({ ...crown }))),
+    setCrown: (row: CountedRow, memberId: string | null, seen: boolean) => {
+      const crown = { row, memberId, seenAt: seen ? minute(59) : null }
+      const at = crownList.findIndex((each) => each.row === row)
+      if (at === -1) crownList.push(crown)
+      else crownList[at] = crown
+      return Promise.resolve()
+    },
     award: (
       memberId: string,
       row: CountedRow,
@@ -166,6 +187,82 @@ describe('badges at launch (R-BADGE-11)', () => {
       ['connect', 3],
     ])
     expect(store.held.every((each) => each.seenAt !== null)).toBe(true)
+  })
+})
+
+describe('crowns (R-BADGE-3)', () => {
+  const crownOf = async (
+    badges: BadgeService,
+    memberId: string,
+  ): Promise<{ held: boolean; new: boolean }> => {
+    const { crown } = (await badges.mine(memberId)).rows.find(
+      (row) => row.row === 'speak',
+    )!
+    expect(crown.name).toBe('Ringleader')
+    return { held: crown.held, new: crown.new }
+  }
+
+  it("gives a row's first crown quietly, as from before launch (R-BADGE-11)", async () => {
+    const { badges, store } = setup()
+    store.counts.set('ana:speak', 2)
+
+    await badges.checkCrowns()
+
+    expect(await crownOf(badges, 'ana')).toEqual({ held: true, new: false })
+    expect(store.crownList.map((crown) => crown.row)).toEqual([
+      'speak',
+      'help',
+      'boat',
+      'connect',
+    ])
+  })
+
+  it('moves the crown to a member who passes the holder, as new', async () => {
+    const { badges, store } = setup()
+    store.counts.set('ana:speak', 2)
+    await badges.checkCrowns()
+    store.counts.set('ben:speak', 3)
+
+    await badges.recount('ben', ['speak'])
+
+    expect(await crownOf(badges, 'ben')).toEqual({ held: true, new: true })
+    expect(await crownOf(badges, 'ana')).toEqual({ held: false, new: false })
+  })
+
+  it('leaves it with the holder on a tie', async () => {
+    const { badges, store } = setup()
+    store.counts.set('ana:speak', 3)
+    store.reached.set('ana:speak', 30)
+    await badges.checkCrowns()
+    store.counts.set('ben:speak', 3)
+    store.reached.set('ben:speak', 1)
+
+    await badges.recount('ben', ['speak'])
+
+    expect(await crownOf(badges, 'ana')).toEqual({ held: true, new: false })
+  })
+
+  it("passes it on when the holder's count falls, with nobody acting", async () => {
+    const { badges, store } = setup()
+    store.counts.set('ana:speak', 4)
+    store.counts.set('ben:speak', 2)
+    await badges.checkCrowns()
+    store.counts.set('ana:speak', 1)
+
+    await badges.checkCrowns()
+
+    expect((await crownOf(badges, 'ben')).held).toBe(true)
+  })
+
+  it('stays with nobody until someone qualifies, then is news', async () => {
+    const { badges, store } = setup()
+    await badges.checkCrowns()
+    expect(store.crownList.find((c) => c.row === 'speak')?.memberId).toBeNull()
+    store.counts.set('ana:speak', 1)
+
+    await badges.recount('ana', ['speak'])
+
+    expect(await crownOf(badges, 'ana')).toEqual({ held: true, new: true })
   })
 })
 

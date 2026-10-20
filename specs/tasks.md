@@ -420,7 +420,7 @@ in this order.
       Speak up, Offer help, Shared pain and Connect where each act is
       recorded, `GET /api/badges`, the silent award at launch, erasure.
       _(R-BADGE-1, R-BADGE-2, R-BADGE-11, R-BADGE-12, R-BADGE-14)_
-- [ ] Crowns: moved on a count passing the holder's, checked on the tick,
+- [x] Crowns: moved on a count passing the holder's, checked on the tick,
       dropped with a deleted account. _(R-BADGE-3)_
 - [ ] Screens S35 and S36, the menu's **Badges** entry, new badges and
       `POST /api/badges/seen`. _(R-BADGE-7, R-BADGE-8, R-BADGE-10, R-PROF-3)_

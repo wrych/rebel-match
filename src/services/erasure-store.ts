@@ -1,6 +1,7 @@
 import { and, eq, inArray, isNotNull, lte, or, sql } from 'drizzle-orm'
 import type { Database } from '../db/connect.js'
 import {
+  badgeCrowns,
   invites,
   members,
   outbox,
@@ -114,6 +115,10 @@ async function deactivateChecked(
     })
     .where(eq(members.id, memberId))
   await endSessions(db, memberId)
+  await db
+    .update(badgeCrowns)
+    .set({ memberId: null, since: new Date(), seenAt: null })
+    .where(eq(badgeCrowns.memberId, memberId))
   return { result: 'scheduled', eraseAfter: plan.eraseAfter }
 }
 
