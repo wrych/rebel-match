@@ -164,7 +164,7 @@ describe('SettingsScreen (R-CFG-5, R-CFG-6)', () => {
     expect((field.element as HTMLInputElement).value).toBe('20')
     expect(field.attributes('min')).toBe('1')
     expect(field.attributes('max')).toBe('1000')
-    expect(screen.findAll('input')).toHaveLength(1)
+    expect(screen.findAll('.settings input')).toHaveLength(1)
     expect(screen.text()).toContain('Fixed in code')
   })
 
@@ -263,7 +263,7 @@ describe('SettingsScreen (R-CFG-5, R-CFG-6)', () => {
     server()
     const screen = await mountScreen()
 
-    expect(screen.findAll('input')).toHaveLength(0)
+    expect(screen.findAll('.settings input')).toHaveLength(0)
     expect(screen.text()).toContain('20 emails')
   })
 
@@ -324,5 +324,81 @@ describe('SettingsScreen (R-CFG-5, R-CFG-6)', () => {
 
     expect((toggle.element as HTMLInputElement).checked).toBe(false)
     expect(screen.find('[role="alert"]').text()).toContain('did not save')
+  })
+})
+
+describe('SettingsScreen folds and search (R-CFG-5)', () => {
+  const folds = (screen: ReturnType<typeof mount>): boolean[] =>
+    screen
+      .findAll('details')
+      .map((fold) => (fold.element as HTMLDetailsElement).open)
+
+  async function searchFor(
+    screen: ReturnType<typeof mount>,
+    text: string,
+  ): Promise<void> {
+    await screen.find('#settings-search').setValue(text)
+    await flushPromises()
+  }
+
+  it('starts every group folded, with how many values it holds and how many changed', async () => {
+    server()
+    const screen = await mountScreen()
+
+    expect(folds(screen)).toEqual([false, false])
+    expect(screen.findAll('summary').map((summary) => summary.text())).toEqual([
+      'Spam protection2 values, 2 changed',
+      'Members and profiles1 value',
+    ])
+  })
+
+  it('shows only what the search finds, in open groups', async () => {
+    server()
+    const screen = await mountScreen()
+
+    await searchFor(screen, 'PROXIES')
+
+    expect(screen.findAll('h2').map((h) => h.text())).toEqual([
+      'Spam protection',
+    ])
+    expect(folds(screen)).toEqual([true])
+    expect(screen.text()).toContain('Trusted proxies in front of the server')
+    expect(screen.text()).not.toContain('Sign-in emails per address, at most')
+  })
+
+  it('shows every value of a group whose title the search names', async () => {
+    server()
+    const screen = await mountScreen()
+
+    await searchFor(screen, 'members')
+
+    expect(screen.findAll('h2').map((h) => h.text())).toEqual([
+      'Members and profiles',
+    ])
+    expect(screen.text()).toContain('Longest name')
+  })
+
+  it('says so when nothing matches', async () => {
+    server()
+    const screen = await mountScreen()
+
+    await searchFor(screen, 'no such setting')
+
+    expect(screen.findAll('details')).toHaveLength(0)
+    expect(screen.text()).toContain('No setting matches.')
+  })
+
+  it('folds the groups back as the host left them once the search is cleared', async () => {
+    server()
+    const screen = await mountScreen()
+    const members = screen.findAll('details')[1]
+    if (members === undefined) throw new Error('no second group')
+    ;(members.element as HTMLDetailsElement).open = true
+    await members.trigger('toggle')
+
+    await searchFor(screen, 'proxies')
+    await searchFor(screen, '')
+
+    expect(folds(screen)).toEqual([false, true])
   })
 })
