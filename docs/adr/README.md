@@ -80,7 +80,7 @@ still holds except where the later ADR says otherwise.
 | [0042](0042-mit-license.md)                                       | Publish the code under the MIT license                                          | Accepted                              |
 | [0043](0043-one-door-confirm-the-address-then-onboard.md)         | One door: confirm the address, then onboard, then wait if need be               | Accepted                              |
 | [0044](0044-roll-back-code-not-schema.md)                         | Roll back the code, never the schema; fix a migration forward                   | Accepted                              |
-| [0045](0045-9torevolution-an-office-game-hidden-in-happy-mode.md) | Hide 9toRevolution, an office game, behind the impressum in happy mode          | Accepted, amended by 0046, 0047       |
+| [0045](0045-9torevolution-an-office-game-hidden-in-happy-mode.md) | Hide 9toRevolution, an office game, behind the impressum in happy mode          | Accepted, amended by 0046, 0047, 0053 |
 | [0046](0046-enter-9torevolution-by-turning-the-phone.md)          | Enter 9toRevolution by turning the phone; play in landscape, choose in portrait | Accepted                              |
 | [0047](0047-an-office-door-that-shuts.md)                         | Give the boss's office a door that shuts now and then                           | Accepted                              |
 | [0048](0048-show-the-best-match-first-behind-one-ranker.md)       | Show the most relevant match first, ranked behind one seam                      | Accepted, amended by 0052             |
@@ -88,3 +88,4 @@ still holds except where the later ADR says otherwise.
 | [0050](0050-live-lists-poll-and-outline-what-arrives.md)          | Live lists poll, outline what arrives, and refresh on a pull                    | Accepted                              |
 | [0051](0051-experiments-assigned-on-the-server.md)                | Run experiments in code, assigned on the server from the member's id            | Accepted                              |
 | [0052](0052-summarise-each-matches-section-in-a-sentence.md)      | Summarise each matches section in a sentence, its cards on a tap                | Accepted                              |
+| [0053](0053-private-badges-counted-from-what-members-do.md)       | Give members private badges, counted from what they already do                  | Accepted                              |

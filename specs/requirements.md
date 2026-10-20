@@ -23,7 +23,9 @@ Acceptance criteria use EARS phrasing: **WHEN** <trigger> **THE SYSTEM SHALL**
   platform because that would be probably significant work.")_
 - Gamification: standings, badges, ranks, milestone pop-ups. _(Meeting: "I would
   also focus on sharing experience and sharing problems and not the
-  gamification.")_
+  gamification.")_ With the core journeys built, the game (§8i, ADR 0045) and
+  private badges (§8k, ADR 0053) were let back in; standings outside the game
+  and milestone pop-ups stay out.
 - "Nominate as frontier" escalation flow.
 - Connecting by phone number or LinkedIn. Email only for beta.
 - AI/LLM-based matching of challenges to case studies. Beta uses the curated,
@@ -331,6 +333,11 @@ capability, not a secret** — and every requirement below exists because of tha
 
   worked before they type anything. It SHALL NOT reveal the token itself.
 
+- **R-INV-13 (Event badge)** — An invite MAY give an event badge, chosen when
+  it is created (R-BADGE-4). Joining through it, or opening it as a member
+  already signed in, earns the badge (R-BADGE-6); the invite links screen
+  SHALL show each invite's badge with its ticket.
+
 ### 3.5 Profile, privacy and the menu
 
 - **R-PROF-1** — An onboarded member SHALL be able to edit their **display name**
@@ -366,7 +373,8 @@ capability, not a secret** — and every requirement below exists because of tha
   which invite they joined, the consent version they accepted and when, the
   analytics opt-in, and how many challenges and connection requests they have.
   It SHALL leave out the member's 9toRevolution results, which no host sees
-  (R-GAME-15). From there a host SHALL be able to change their roles (R-ROLE-9)
+  (R-GAME-15), and their badges (R-BADGE-12). From there a host SHALL be
+  able to change their roles (R-ROLE-9)
   and delete them (R-NFR-7), each within the host's own permissions; later
   member actions belong on this page. For a deleted account it SHALL show when
   it will be erased, and offer to restore it or erase it at once (ADR 0032).
@@ -381,7 +389,8 @@ capability, not a secret** — and every requirement below exists because of tha
   SHALL NOT stop the rest.
 - **R-PROF-3** — The header SHALL carry a **menu** in place of the "CR" mark,
   offering: the colour mode switch (R-LOOK-2), the member's notifications
-  (R-NOTE-5, R-NOTE-6), the profile screen, feedback (R-FB-1), the host tools
+  (R-NOTE-5, R-NOTE-6), the member's badges (R-BADGE-7), the profile screen,
+  feedback (R-FB-1), the host tools
   the member's permissions allow (R-ROLE-4), the impressum (R-PROF-4), and
   sign out, with the running version at its foot (R-NFR-11). The menu holds links and one switch only, so it is
   navigation, not a screen (R-NAV-1); every item it leads to has its own URL.
@@ -673,8 +682,9 @@ fallback).
   a contact opened, a member writing to or copying the address of a contact,
   the notifications list opened, a notification opened from the app or an
   email, a notification cadence changed, the swipe deck running out, a trend
-  opened or (un)followed, feedback opened, and the variant of an experiment a
-  member was shown (R-EXP-2). _(Andy, 2026-10-14.)_
+  opened or (un)followed, feedback opened, the variant of an experiment a
+  member was shown (R-EXP-2), and a badge earned (R-BADGE-13). _(Andy,
+  2026-10-14.)_
 - **R-ANA-2** — Analytics SHALL be attributable to a stable, **pseudonymous**
   member id (not raw email) so funnels and retention work without spreading PII
   into the analytics tool.
@@ -756,6 +766,9 @@ at a screen instead of at the front door.
   | `/matches/requests/:id`              | one request (pending, or accept/decline)       |
   | `/matches/requests/:id/contact`      | contact detail, accepted requests only         |
   | `/notifications`                     | the member's notifications (R-NOTE-5)          |
+  | `/badges`                            | the member's badges (R-BADGE-7)                |
+  | `/badges/:row`                       | one row of badges (R-BADGE-8)                  |
+  | `/badges/events`                     | the member's event badges (R-BADGE-8)          |
   | `/profile`                           | profile & privacy (R-PROF-1,2)                 |
   | `/admin/applicants`                  | admin approvals                                |
   | `/admin/invites`                     | invite links (R-INV-9)                         |
@@ -1127,13 +1140,15 @@ notifications: they go out at once, whatever is chosen here (R-NFR-3).
     except its author, when a challenge is posted in it, linking to the deck
     opened at its card (R-ASK-9, R-OFF-7);
   - **New applicant** — every member who can review applicants, when one is
-    recorded (R-AUTH-2, R-AUTH-11).
+    recorded (R-AUTH-2, R-AUTH-11);
+  - **New badge** — the member, when they earn a level, an event badge or a
+    crown (R-BADGE-10), never when they lose one.
 - **R-NOTE-2 (Cadences)** — For each type a member can receive, they SHALL
   choose one of: **Immediately**, **Hourly**, **Daily**, **In the app only**,
   **Off**. New applicant notices SHALL also offer **Every 15 minutes**. Until
   a member chooses, connection requests and new connections SHALL be
-  **Hourly**, new challenges in a followed trend **Daily**, and new applicants
-  **Every 15 minutes**.
+  **Hourly**, new challenges in a followed trend **Daily**, new applicants
+  **Every 15 minutes**, and new badges **Daily**.
 - **R-NOTE-3 (Choosing)** — The profile screen SHALL offer the choice for each
   type the member can receive, and only those, saved on change like every
   setting there (R-PROF-1). A change SHALL apply to every notification still
@@ -1154,8 +1169,10 @@ notifications: they go out at once, whatever is chosen here (R-NFR-3).
     notification comes from: a connection request its request
     (`/matches/requests/:id`), a new connection its contact screen
     (`/matches/requests/:id/contact`), a new challenge in a followed trend the
-    deck opened at its card (`/offer?challenge=:id`, R-OFF-7), and a new
-    applicant the applicants list (`/admin/applicants`). The email for the same
+    deck opened at its card (`/offer?challenge=:id`, R-OFF-7), a new
+    applicant the applicants list (`/admin/applicants`), and a new badge its
+    row's screen (`/badges/:row`) or the event badges (`/badges/events`).
+    The email for the same
     notification SHALL link to the same screen (R-NOTE-8). Back SHALL return to
     the notifications screen (R-NAV-1).
   - An entry SHALL be **new** until the member has opened this screen while it
@@ -1192,7 +1209,8 @@ notifications: they go out at once, whatever is chosen here (R-NFR-3).
 - **R-NOTE-9 (Nothing stale)** — Before mailing THE SYSTEM SHALL leave out
   every notification the member has seen in the app (R-NOTE-5), a request no
   longer pending, an applicant already decided, a challenge no longer shown,
-  and anything about a member whose account is deleted. IF nothing is left
+  a crown the member no longer holds (R-BADGE-3), and anything about a member
+  whose account is deleted. IF nothing is left
   THEN no mail SHALL go out.
 - **R-NOTE-10 (Delivered once, despite failures)** — A notification SHALL be
   stored with the event that causes it, so the event stands even when the mail
@@ -1423,6 +1441,120 @@ the office's people; the **player** is the character the member steers.
 
 ---
 
+## 8k. Badges
+
+Members asked for something that says "you did this" outside the game: a
+badge for posting challenges, for helping, for being in the same boat, for
+connecting, for climbing the office game, and one for each event they came
+through. Badges are a member's own: nobody else sees them, hosts included
+(ADR 0053). _(Andy, 2026-10-20: "batches are private for now".)_
+
+**Words.** A **row** is one thing counted, with its **levels** and its
+**crown**. A **level** is earned at a count and kept for good. A **crown**
+belongs to whoever leads its row right now. An **event badge** comes from an
+invite link (R-INV-1).
+
+- **R-BADGE-1 (The rows)** — THE SYSTEM SHALL keep these rows, each counting
+  only what the member did:
+
+  | Row         | Counts                                                                          | Levels                                       | Crown                    |
+  | ----------- | ------------------------------------------------------------------------------- | -------------------------------------------- | ------------------------ |
+  | Speak up    | challenges the member posted (R-ASK-1)                                          | Spark, Agitator, Firebrand                   | Ringleader               |
+  | Offer help  | "been there" offers the member sent from the deck, each with its note (R-OFF-4) | Ally, Partner in Crime, Freedom Fighter      | Liberator                |
+  | Shared pain | "same boat" requests the member sent, from the deck or a match (R-CONN-1)       | Shipmate, Mutineer, Captain of the Mutiny    | Admiral of the Fleet     |
+  | Connect     | other members the member shares an accepted connection with (R-CONN-3)          | Co-conspirator, Cell Builder, Movement Maker | Heart of the Movement    |
+  | Promotions  | the 9toRevolution jobs reached (R-GAME-16)                                      | Team Lead, Manager, Director, VP, CEO, Rebel | Leader of the Revolution |
+
+  The first four rows' levels SHALL be earned at counts from configuration
+  (R-CFG-1), 1, 5 and 10 by default, the same for each row. A request a member
+  makes from the matches screen to someone who has been there asks for help
+  and SHALL NOT count as help offered. A posted challenge counts while it
+  exists, archived or not; a connection counts each member once, however many
+  challenges it is over (R-CONN-10). A job counts as reached when the member's
+  highest level reached is its first day (R-GAME-16): Team Lead with the first
+  game.
+
+- **R-BADGE-2 (Levels are kept)** — WHEN a member's count reaches a level THE
+  SYSTEM SHALL record the level as earned, with the time. A level once earned
+  SHALL stay earned when the count falls, as when a challenge is deleted or
+  the other member's account is erased.
+- **R-BADGE-3 (Crowns move)** — A row's crown SHALL belong to the one member
+  with the highest count, at least the first level's count. On a tie the
+  member who holds it SHALL keep it; with no holder, the member who reached
+  the count first SHALL get it. WHEN another member's count passes the
+  holder's THE SYSTEM SHALL move the crown to them. Losing a crown SHALL be
+  silent: no notification, no mark. WHEN a member's account is deleted THE
+  SYSTEM SHALL take their crowns at once, before the erasure (R-NFR-7), and
+  pass each on at the next check.
+- **R-BADGE-4 (Event badges)** — A host creating an invite link SHALL be able
+  to give it an event badge: none, a new one, or the badge of another invite,
+  so every poster of one event gives the same badge (R-INV-9). A new badge
+  SHALL carry a name, a short line and a big line for its ticket ("SUMMIT",
+  "2026"), and MAY carry a logo (R-BADGE-5). An event badge SHALL NOT change
+  once created.
+- **R-BADGE-5 (A logo, and only a picture)** — A logo SHALL be an SVG file of
+  at most a configured size. THE SYSTEM SHALL keep only drawing in it —
+  shapes, paths, text, fills, strokes and gradients — and SHALL drop
+  everything else: scripts, event handlers, styles that load anything, links,
+  embedded or outside images, fonts and foreign content. IF nothing drawable
+  is left, or the file is not SVG, THEN the invite SHALL NOT be created and
+  the host SHALL be told why. The logo SHALL be served from the app's own
+  origin and shown only as an image (ADR 0053). Without a logo the ticket
+  shows a flag.
+- **R-BADGE-6 (Earning an event badge)** — WHEN a member is admitted through
+  an invite that gives a badge (R-INV-1) THE SYSTEM SHALL record the badge as
+  earned. WHEN a signed-in member who completed onboarding opens an invite
+  link (`/?invite=…`, R-NAV-10) THE SYSTEM SHALL record the invite's badge as
+  earned too, if the invite is within its window and not revoked
+  (R-INV-2, R-INV-3). Doing so SHALL NOT count as a use, and SHALL work at
+  the cap (R-INV-4). An invalid invite SHALL change nothing and say nothing
+  to a member already signed in (R-INV-5). A member SHALL earn each event
+  badge once.
+- **R-BADGE-7 (The badges screen)** — The menu SHALL offer **Badges**
+  (R-PROF-3), leading to `/badges`. It SHALL show, lean: the number earned,
+  one tile per row with the highest level earned (or the crown, when held),
+  its name and a mark per level and for the crown, then the member's event
+  badges. A row with nothing earned SHALL show its first level as locked. No
+  explanation or progress SHALL show here.
+- **R-BADGE-8 (A row's screen)** — Tapping a tile SHALL open the row's own
+  screen (`/badges/:row`), showing each level and the crown with its name, its
+  count and whether it is earned and when, the progress to the next level, and
+  how the row counts. Whether the crown is held SHALL be all it says about
+  others: never who holds it, nor their count. Tapping the event badges SHALL
+  open `/badges/events`, listing each with its name and when it was earned.
+- **R-BADGE-9 (Promotions are a teaser)** — The Promotions row SHALL show
+  always, in either colour mode, while the game is switched on (R-GAME-17),
+  and SHALL NOT show while it is off. Its screen SHALL name every job and the
+  crown and show which are reached, and SHALL NOT say what they are for, how
+  to reach them, or that a game exists. Which promotions a member holds SHALL
+  be shown to that member only, and SHALL NOT be shown or returned to anyone
+  else, hosts included (R-GAME-15).
+- **R-BADGE-10 (New badges)** — WHEN a member earns a level, an event badge or
+  a crown THE SYSTEM SHALL notify them (R-NOTE-1), and the badge SHALL be
+  **new** until they open `/badges` or the row's screen. WHILE any badge is
+  new the menu item SHALL read **Badges (n new)**, refreshing as the
+  notifications do (R-NOTE-6). Losing a crown and earning it back SHALL each
+  be treated as they come: the first silently, the second as new.
+- **R-BADGE-11 (Already earned at launch)** — WHEN badges first go live THE
+  SYSTEM SHALL record every level, event badge and crown already earned from
+  existing records, with no notification and none of them new. Members who
+  joined through an invite before then SHALL get no event badge, as no invite
+  had one.
+- **R-BADGE-12 (Private)** — A member's badges SHALL be shown and returned to
+  that member only. No screen, endpoint or export SHALL show another member's
+  badges, hosts included: the member's page in the host tools SHALL leave them
+  out (R-MEM-2). The invite links screen MAY show each invite's badge, never
+  who holds it.
+- **R-BADGE-13 (Usage data)** — For a member opted in (R-ANA-4) THE SYSTEM
+  SHALL send `badge_earned` with the row and level, or `event` for an event
+  badge, and nothing naming the member or the event (R-ANA-3). Crowns gained or
+  lost SHALL NOT be sent.
+- **R-BADGE-14 (Erased with the account)** — A member's earned badges SHALL be
+  kept with the account and erased with it (R-NFR-7); they are not activity
+  history (R-STAT-4).
+
+---
+
 ## 9. Non-functional requirements
 
 - **R-NFR-1 (Privacy)** — Challenge text and member contact details SHALL be
@@ -1475,7 +1607,8 @@ the office's people; the **player** is the character the member steers.
   personal data attached to them — challenges, connection requests, swipes,
   deck views (R-STAT-3), follows, role grants, notifications (R-NOTE-11), the
   profile draft (R-ONB-15), their 9toRevolution progress, results and pseudonym
-  (R-GAME-16), and their **outbound message log entries** (R-MSG-6) — on
+  (R-GAME-16), their earned badges and crowns (R-BADGE-14), and their
+  **outbound message log entries** (R-MSG-6) — on
   request (GDPR erasure), at minimum via an admin action. Deleting SHALL first
   **deactivate** the account at once: no sign-in, and nothing of theirs shown
   to anyone. The erasure SHALL follow after a **grace period** of 30 days
@@ -1583,6 +1716,13 @@ fixtures. `design.md` §6 lists the exact records and the profile mechanism.
 7. **Full privacy notice** — _(Resolved; see below.)_
 
 ### Resolved
+
+- **Badges** (2026-10-20) — gamification, a non-goal, is let in as private
+  badges: four counted rows with three levels each and the game's six
+  promotions, each row with a crown that moves, plus event badges from invite
+  links with a host's SVG logo, drawing only. Existing members earn an event
+  badge by opening its link; badges already earned at launch arrive silently;
+  losing a crown is silent (R-BADGE-1..14, ADR 0053).
 
 - **Controller and contact** (2026-10-07) — the controller named on the privacy
   step and in the notice is **Transformation Architects GmbH**, c/o Impact Hub

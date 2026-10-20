@@ -6,7 +6,8 @@ deadline: feature-complete and pilot-tested by **2026-11-01**, summit launch
 
 Guiding rule from the meeting: **focus on sharing challenges and sharing
 experience; cut the gamification.** _(With the core journeys built, the
-maintainer let gamification back in for one easter egg, S8: ADR 0045.)_ Build
+maintainer let gamification back in for one easter egg, S8: ADR 0045, and
+for private badges, S9: ADR 0053.)_ Build
 the pipeline in the order challenges → matching → connecting, because each step
 is independently useful. _(Andy: "we can start with just adding the challenges
 as the first priority, then adding that step in between is relatively easy…
@@ -46,6 +47,7 @@ step by step so we certainly have something that works.")_
 | S6  | Use the ~15 real collected challenges as seed                                         | Makes the summit demo authentic.                                                             |
 | S7  | Notifications kept in the app, mailed at a cadence per type                           | One member can get many requests in a summit hour; grouping keeps inboxes usable (ADR 0037). |
 | S8  | 9toRevolution, the office game behind the impressum in happy mode, with a leaderboard | An easter egg for the summit, behind a switch hosts flip (R-GAME-1..20, ADR 0045). Was W1.   |
+| S9  | Private badges: levels and crowns per row, event badges from invite links             | Recognition for sharing and helping, seen by the member only (R-BADGE-1..14, ADR 0053).      |
 
 ## Could have (nice, only if time remains)
 
