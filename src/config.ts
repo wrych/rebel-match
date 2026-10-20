@@ -6,6 +6,9 @@ import { consentWordsOf, latestConsentVersion } from './consent.js'
 import type { DatabaseTarget } from './db/connect.js'
 import type { FlagSettings } from './experiments.js'
 import { gameDefaults, type GameSettings } from './game/tuning.js'
+import { limitsEnv, limitsFrom, type Limits } from './limits.js'
+
+export type { Limits }
 
 // Node clamps a timer delay above 2^31-1 ms (about 24.8 days) to 1 ms, so a
 // longer purge interval would run the purge continuously.
@@ -21,39 +24,9 @@ const rising = (counts: readonly number[]): boolean =>
     (count, index) => index === 0 || count > (counts[index - 1] ?? 0),
   )
 
-// The widths of members.name and requested_name, job_title, org and
-// requested_org (src/db/schema.ts): a fact of the schema rather
-// than a tunable, so no environment variable.
-const NAME_MAX_CHARS = 120
-const JOB_TITLE_MAX_CHARS = 120
-const ORG_MAX_CHARS = 160
-// members.email and outbox.to_email (src/db/schema.ts): RFC 5321's 320.
-const EMAIL_MAX_CHARS = 320
-// invites.label, and a cap on invites.max_uses (src/db/schema.ts).
-const INVITE_LABEL_MAX_CHARS = 120
-/** How long a "Saved" tick stays beside a setting (R-PROF-1). */
-const SAVED_TICK_MS = 2500
-/** How long a member card is held to start selecting (R-MEM-3). */
-const HOLD_TO_SELECT_MS = 500
-/** How far a finger travels across a deck card to browse (R-OFF-1). */
-const SWIPE_MIN_PX = 50
-/** How far a finger pulls a live list down to refresh it (R-NAV-12). */
-const PULL_REFRESH_PX = 70
-/** How many entries each matches section shows before the rest are asked
- * for (R-ASK-15). */
-const MATCHES_SHOWN_FIRST = 1
-/** How many entries the sentence over each matches section names before it
- * counts the rest, in the summary layout (R-ASK-15). */
-const MATCHES_NAMED_FIRST = 2
 /** The share of members shown each experiment's treatment until a host moves
  * it: an even split (R-EXP-1). */
 const EVEN_SPLIT_PERCENT = 50
-/** The share of the visible height one tap on the privacy step's scroll hint
- * moves the summary, so it never jumps to the end (R-ONB-10). */
-const SCROLL_HINT_SHARE = 0.4
-const INVITE_MAX_USES_CEILING = 0xffffffff
-// connection_requests.message (src/db/schema.ts).
-const CONNECTION_MESSAGE_MAX_CHARS = 600
 
 function portOf(url: URL): number {
   if (url.port !== '') return Number(url.port)
@@ -233,34 +206,8 @@ const envSchema = z
     MIXPANEL_TOKEN: z.string().optional(),
     MIXPANEL_API_HOST: z.string().min(1).default('api-eu.mixpanel.com'),
 
-    CHALLENGE_MIN_CHARS: z.coerce.number().int().positive().default(31),
-    // What a peer still reads on one phone screen (R-ASK-3).
-    CHALLENGE_MAX_CHARS: z.coerce.number().int().positive().default(500),
-    BEEN_THERE_NOTE_MIN_CHARS: z.coerce.number().int().positive().default(31),
-    OUTBOX_PAGE_SIZE: z.coerce.number().int().positive().default(100),
-    DECK_PAGE_SIZE: z.coerce.number().int().positive().default(20),
-    NEWEST_CHALLENGES_SHOWN: z.coerce.number().int().positive().default(3),
-    MATCHES_POLL_SECONDS: z.coerce.number().int().positive().default(8),
-    // How often each live list re-reads while it is open (R-NAV-12).
-    COCKPIT_POLL_SECONDS: z.coerce.number().int().positive().default(8),
-    CHALLENGE_MATCHES_POLL_SECONDS: z.coerce
-      .number()
-      .int()
-      .positive()
-      .default(8),
-    NOTIFICATIONS_POLL_SECONDS: z.coerce.number().int().positive().default(8),
-    OUTBOX_POLL_SECONDS: z.coerce.number().int().positive().default(8),
-    MEMBERS_POLL_SECONDS: z.coerce.number().int().positive().default(60),
-    APPLICANTS_POLL_SECONDS: z.coerce.number().int().positive().default(60),
-    INVITES_POLL_SECONDS: z.coerce.number().int().positive().default(60),
-    LEADERBOARD_POLL_SECONDS: z.coerce.number().int().positive().default(30),
-    NOTIFICATIONS_PAGE_SIZE: z.coerce.number().int().positive().default(50),
-    WHITELIST_BATCH_MAX: z.coerce.number().int().positive().default(1000),
-    OUTBOX_RETENTION_DAYS: z.coerce.number().int().positive().default(30),
-    // Notifications are kept a while for the list, then go (R-NOTE-11).
-    NOTIFICATION_RETENTION_DAYS: z.coerce.number().int().positive().default(90),
-    // How long a deleted account waits before it is erased (ADR 0032).
-    ERASURE_GRACE_DAYS: z.coerce.number().int().positive().default(30),
+    ...limitsEnv,
+
     OUTBOX_PURGE_INTERVAL_HOURS: z.coerce
       .number()
       .int()
@@ -286,10 +233,6 @@ const envSchema = z
     SCHEDULED_WORK: z.enum(['timers', 'tick']).default('timers'),
     TICK_INVOKER: z.email().optional(),
     TICK_AUDIENCE: z.url().optional(),
-    MAGIC_LINK_TTL_MINUTES: z.coerce.number().int().positive().default(15),
-    APPROVAL_LINK_TTL_HOURS: z.coerce.number().int().positive().default(24),
-    INVITE_DEFAULT_MAX_USES: z.coerce.number().int().positive().default(400),
-    INVITE_DEFAULT_HOURS: z.coerce.number().int().positive().default(12),
 
     // Abuse limits on sign-in (R-NFR-8, ADR 0029).
     LINK_EMAILS_BEFORE_CHECK: z.coerce.number().int().nonnegative().default(3),
@@ -417,47 +360,6 @@ const envSchema = z
 
 export type Env = z.infer<typeof envSchema>
 
-export interface Limits {
-  challengeMinChars: number
-  challengeMaxChars: number
-  beenThereNoteMinChars: number
-  magicLinkTtlMinutes: number
-  approvalLinkTtlHours: number
-  inviteDefaultMaxUses: number
-  inviteDefaultHours: number
-  outboxRetentionDays: number
-  notificationRetentionDays: number
-  erasureGraceDays: number
-  outboxPageSize: number
-  deckPageSize: number
-  newestChallengesShown: number
-  matchesPollSeconds: number
-  cockpitPollSeconds: number
-  challengeMatchesPollSeconds: number
-  notificationsPollSeconds: number
-  outboxPollSeconds: number
-  membersPollSeconds: number
-  applicantsPollSeconds: number
-  invitesPollSeconds: number
-  leaderboardPollSeconds: number
-  notificationsPageSize: number
-  whitelistBatchMax: number
-  emailMaxChars: number
-  nameMaxChars: number
-  jobTitleMaxChars: number
-  orgMaxChars: number
-  inviteLabelMaxChars: number
-  savedTickMs: number
-  holdToSelectMs: number
-  swipeMinPx: number
-  pullRefreshPx: number
-  matchesShownFirst: number
-  matchesNamedFirst: number
-  scrollHintShare: number
-  inviteMaxUsesCeiling: number
-  connectionMessageMaxChars: number
-}
-
 /** The sign-in abuse limits (R-NFR-8, ADR 0029). Kept out of `Limits`, so
  * `GET /api/config` never tells a script how far it can go. */
 export interface AbuseLimits {
@@ -568,49 +470,6 @@ export interface Config {
   rolePermissions: typeof rolePermissions
   /** The commit the build was made from, if it was made from one (R-NFR-11). */
   build: { commit?: string; commitUrlBase: string }
-}
-
-function limitsFrom(env: Env): Limits {
-  return {
-    challengeMinChars: env.CHALLENGE_MIN_CHARS,
-    challengeMaxChars: env.CHALLENGE_MAX_CHARS,
-    beenThereNoteMinChars: env.BEEN_THERE_NOTE_MIN_CHARS,
-    magicLinkTtlMinutes: env.MAGIC_LINK_TTL_MINUTES,
-    approvalLinkTtlHours: env.APPROVAL_LINK_TTL_HOURS,
-    inviteDefaultMaxUses: env.INVITE_DEFAULT_MAX_USES,
-    inviteDefaultHours: env.INVITE_DEFAULT_HOURS,
-    outboxRetentionDays: env.OUTBOX_RETENTION_DAYS,
-    notificationRetentionDays: env.NOTIFICATION_RETENTION_DAYS,
-    erasureGraceDays: env.ERASURE_GRACE_DAYS,
-    outboxPageSize: env.OUTBOX_PAGE_SIZE,
-    deckPageSize: env.DECK_PAGE_SIZE,
-    newestChallengesShown: env.NEWEST_CHALLENGES_SHOWN,
-    matchesPollSeconds: env.MATCHES_POLL_SECONDS,
-    cockpitPollSeconds: env.COCKPIT_POLL_SECONDS,
-    challengeMatchesPollSeconds: env.CHALLENGE_MATCHES_POLL_SECONDS,
-    notificationsPollSeconds: env.NOTIFICATIONS_POLL_SECONDS,
-    outboxPollSeconds: env.OUTBOX_POLL_SECONDS,
-    membersPollSeconds: env.MEMBERS_POLL_SECONDS,
-    applicantsPollSeconds: env.APPLICANTS_POLL_SECONDS,
-    invitesPollSeconds: env.INVITES_POLL_SECONDS,
-    leaderboardPollSeconds: env.LEADERBOARD_POLL_SECONDS,
-    notificationsPageSize: env.NOTIFICATIONS_PAGE_SIZE,
-    whitelistBatchMax: env.WHITELIST_BATCH_MAX,
-    emailMaxChars: EMAIL_MAX_CHARS,
-    nameMaxChars: NAME_MAX_CHARS,
-    jobTitleMaxChars: JOB_TITLE_MAX_CHARS,
-    orgMaxChars: ORG_MAX_CHARS,
-    inviteLabelMaxChars: INVITE_LABEL_MAX_CHARS,
-    savedTickMs: SAVED_TICK_MS,
-    holdToSelectMs: HOLD_TO_SELECT_MS,
-    swipeMinPx: SWIPE_MIN_PX,
-    pullRefreshPx: PULL_REFRESH_PX,
-    matchesShownFirst: MATCHES_SHOWN_FIRST,
-    matchesNamedFirst: MATCHES_NAMED_FIRST,
-    scrollHintShare: SCROLL_HINT_SHARE,
-    inviteMaxUsesCeiling: INVITE_MAX_USES_CEILING,
-    connectionMessageMaxChars: CONNECTION_MESSAGE_MAX_CHARS,
-  }
 }
 
 function abuseLimitsFrom(env: Env): AbuseLimits {

@@ -1,4 +1,4 @@
-import type { AbuseLimits, Limits } from './config.js'
+import type { AbuseLimits } from './config.js'
 import {
   experimentKeys,
   isExperimentKey,
@@ -12,28 +12,16 @@ import {
   type GameKey,
   type GameSettings,
 } from './game/tuning.js'
-
-type LimitKey =
-  | 'challengeMinChars'
-  | 'beenThereNoteMinChars'
-  | 'inviteDefaultMaxUses'
-  | 'inviteDefaultHours'
-  | PollKey
-
-type PollKey =
-  | 'matchesPollSeconds'
-  | 'cockpitPollSeconds'
-  | 'challengeMatchesPollSeconds'
-  | 'notificationsPollSeconds'
-  | 'outboxPollSeconds'
-  | 'membersPollSeconds'
-  | 'applicantsPollSeconds'
-  | 'invitesPollSeconds'
-  | 'leaderboardPollSeconds'
+import {
+  changeableLimits,
+  type Bounds,
+  type ChangeableLimitKey,
+  type Limits,
+} from './limits.js'
 
 /** A setting hosts may change in the app (R-CFG-6, ADR 0031). */
 export type SettingKey =
-  | `limits.${LimitKey}`
+  | `limits.${ChangeableLimitKey}`
   | `abuse.${keyof AbuseLimits}`
   | `game.${GameKey}`
   | `flags.${ExperimentKey}`
@@ -49,29 +37,9 @@ export interface SettingValues {
   flags: FlagSettings
 }
 
-interface Bounds {
-  min: number
-  max: number
-}
-
 const MINUTES_PER_DAY = 1440
 // An experiment's share of members, from nobody to everyone (R-EXP-3).
 const PERCENT_BOUNDS: Bounds = { min: 0, max: 100 }
-// Often enough to feel live, never so often that open screens flood the
-// server (ADR 0050).
-const POLL_BOUNDS: Bounds = { min: 2, max: 3600 }
-
-const pollKeys: readonly PollKey[] = [
-  'matchesPollSeconds',
-  'cockpitPollSeconds',
-  'challengeMatchesPollSeconds',
-  'notificationsPollSeconds',
-  'outboxPollSeconds',
-  'membersPollSeconds',
-  'applicantsPollSeconds',
-  'invitesPollSeconds',
-  'leaderboardPollSeconds',
-]
 
 // What a host can set: wide enough for a crowded room, narrow enough that no
 // value locks everyone out, hangs a phone on the human check, or overflows the
@@ -87,13 +55,12 @@ const bounds: Readonly<Record<SettingKey, Bounds>> = {
   'abuse.applicantWindowMinutes': { min: 1, max: MINUTES_PER_DAY },
   'abuse.humanCheckCost': { min: 100, max: 20_000 },
   'abuse.humanCheckMinutes': { min: 1, max: 60 },
-  'limits.inviteDefaultMaxUses': { min: 1, max: 100_000 },
-  'limits.inviteDefaultHours': { min: 1, max: 720 },
-  'limits.challengeMinChars': { min: 1, max: 300 },
-  'limits.beenThereNoteMinChars': { min: 1, max: 300 },
   ...(Object.fromEntries(
-    pollKeys.map((key) => [`limits.${key}`, POLL_BOUNDS]),
-  ) as Record<`limits.${PollKey}`, Bounds>),
+    Object.entries(changeableLimits).map(([key, value]) => [
+      `limits.${key}`,
+      value,
+    ]),
+  ) as Record<`limits.${ChangeableLimitKey}`, Bounds>),
   ...(Object.fromEntries(
     Object.entries(gameBounds).map(([key, value]) => [`game.${key}`, value]),
   ) as Record<`game.${GameKey}`, Bounds>),
