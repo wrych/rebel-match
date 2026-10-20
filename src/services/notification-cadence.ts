@@ -4,7 +4,11 @@ export type Cadence =
 
 /** The types a member can choose for, as stored. */
 export type ChoosableType =
-  'connection_request' | 'new_connection' | 'trend_challenge' | 'applicant'
+  | 'connection_request'
+  | 'new_connection'
+  | 'trend_challenge'
+  | 'applicant'
+  | 'badge'
 
 /** Until a member chooses (R-NOTE-2). */
 export const DEFAULT_CADENCE: Readonly<Record<ChoosableType, Cadence>> = {
@@ -12,6 +16,7 @@ export const DEFAULT_CADENCE: Readonly<Record<ChoosableType, Cadence>> = {
   new_connection: 'hourly',
   trend_challenge: 'daily',
   applicant: 'every_15_minutes',
+  badge: 'daily',
 }
 
 const EVERYONE: readonly Cadence[] = [

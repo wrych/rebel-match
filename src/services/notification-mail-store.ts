@@ -2,6 +2,7 @@ import { and, eq, inArray, isNull, lt, lte, max, or, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 import type { Database } from '../db/connect.js'
 import {
+  badgeCrowns,
   challenges,
   connectionRequests,
   members,
@@ -71,6 +72,9 @@ interface ReadRow {
   challengeId: string | null
   challengeStatus: string | null
   trend: string | null
+  badgeRow: string | null
+  badgeLevel: number | null
+  crownHolder: string | null
 }
 
 function dueOf(row: ReadRow): DueNotification {
@@ -93,6 +97,11 @@ function dueOf(row: ReadRow): DueNotification {
     challengeId: row.challengeId,
     challengeActive: row.challengeStatus === 'active',
     trend: row.trend,
+    badge:
+      row.badgeRow === null || row.badgeLevel === null
+        ? null
+        : { row: row.badgeRow, level: row.badgeLevel },
+    crownHeld: row.crownHolder === row.recipientId,
   }
 }
 
@@ -116,6 +125,9 @@ function readRows(db: Database, ids: string[]): Promise<ReadRow[]> {
       challengeId: n.challengeId,
       challengeStatus: challenges.status,
       trend: trends.short,
+      badgeRow: n.badgeRow,
+      badgeLevel: n.badgeLevel,
+      crownHolder: badgeCrowns.memberId,
     })
     .from(n)
     .innerJoin(recipient, eq(recipient.id, n.recipientId))
@@ -133,6 +145,7 @@ function readRows(db: Database, ids: string[]): Promise<ReadRow[]> {
       chosen,
       and(eq(chosen.memberId, n.recipientId), eq(chosen.type, n.type)),
     )
+    .leftJoin(badgeCrowns, eq(badgeCrowns.rowKey, n.badgeRow))
     .where(inArray(n.id, ids))
     .orderBy(n.createdAt, n.id)
 }

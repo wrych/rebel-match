@@ -1,3 +1,4 @@
+import type { StoredType } from './notifications.js'
 import type { NotificationWorkerSettings } from '../config.js'
 import type { DeliveryStatus } from './mailer.js'
 import { dueAt, type Cadence } from './notification-cadence.js'
@@ -5,8 +6,7 @@ import { dueAt, type Cadence } from './notification-cadence.js'
 /** A notification waiting to be mailed, with what deciding about it needs. */
 export interface DueNotification {
   id: string
-  type:
-    'connection_request' | 'new_connection' | 'trend_challenge' | 'applicant'
+  type: StoredType
   recipientId: string
   aboutMemberId: string
   connectionId: string | null
@@ -28,6 +28,10 @@ export interface DueNotification {
   challengeId: string | null
   challengeActive: boolean
   trend: string | null
+  /** For a badge gained: its row and level, 0 for the crown, and whether the
+   * recipient still holds that crown (R-NOTE-9). */
+  badge: { row: string; level: number } | null
+  crownHeld: boolean
 }
 
 export type SkipReason = 'seen' | 'stale' | 'in_app' | 'off'
@@ -65,6 +69,7 @@ function stillApplies(note: DueNotification): boolean {
   if (note.type === 'connection_request')
     return note.requestStatus === 'pending'
   if (note.type === 'trend_challenge') return note.challengeActive
+  if (note.type === 'badge') return note.badge?.level !== 0 || note.crownHeld
   return note.type !== 'applicant' || note.applicantStatus === 'applicant'
 }
 

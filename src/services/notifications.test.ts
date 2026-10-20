@@ -3,6 +3,7 @@ import type { ConnectionService } from './connections.js'
 import type { DeckService } from './deck.js'
 import {
   createNotifications,
+  markingBadgesOpened,
   markingDeckOpened,
   markingOpened,
   type NotificationRow,
@@ -36,6 +37,10 @@ function recordingStore(rows: NotificationRow[] = []): {
       calls.push(['seen-applicants', memberId])
       return Promise.resolve()
     },
+    markSeenForBadges: (memberId, rows) => {
+      calls.push(['seen-badges', memberId, rows])
+      return Promise.resolve()
+    },
   }
   return { store, calls }
 }
@@ -51,6 +56,7 @@ const row = (over: Partial<NotificationRow>): NotificationRow => ({
   recipientRequested: false,
   challengeId: null,
   trend: null,
+  badge: null,
   ...over,
 })
 
@@ -92,6 +98,42 @@ describe('createNotifications', () => {
       name: 'Bea There',
       at: '2026-10-06T08:00:00.000Z',
     })
+  })
+
+  it('names a badge gained, never its recipient, and links its row (R-BADGE-10)', async () => {
+    const { store } = recordingStore([
+      row({
+        id: 'f',
+        type: 'badge',
+        aboutName: 'Bob Self',
+        connectionId: null,
+        badge: { row: 'speak', level: 2 },
+      }),
+      row({
+        id: 'g',
+        type: 'badge',
+        connectionId: null,
+        badge: { row: 'connect', level: 0 },
+      }),
+    ])
+    const notes = createNotifications({ store, pageSize: () => 20 })
+
+    const list = await notes.list('bob', null)
+
+    expect(list.map((n) => [n.kind, n.name, n.path])).toEqual([
+      ['badge', 'Agitator', '/badges/speak'],
+      ['badge', 'Heart of the Movement', '/badges/connect'],
+    ])
+  })
+
+  it('marks badge notifications seen for the rows opened, and asks nothing for none', async () => {
+    const { store, calls } = recordingStore()
+    const notes = createNotifications({ store, pageSize: () => 20 })
+
+    await notes.openedBadges('bob', [])
+    await notes.openedBadges('bob', ['speak'])
+
+    expect(calls).toEqual([['seen-badges', 'bob', ['speak']]])
   })
 
   it('marks seen only what it is given (R-NOTE-5)', async () => {
@@ -195,5 +237,37 @@ describe('markingDeckOpened (R-OFF-7, R-NOTE-5)', () => {
       ['bob', undefined],
     ])
     expect(opened).toEqual([['bob', 'c1']])
+  })
+})
+
+describe('markingBadgesOpened (R-BADGE-10, R-NOTE-5)', () => {
+  it('marks the rows’ badge notifications seen with the badges', async () => {
+    const calls: unknown[] = []
+    const badges = markingBadgesOpened(
+      {
+        recount: () => Promise.resolve(),
+        mine: () => Promise.resolve({ rows: [] }),
+        awardAtLaunch: () => Promise.resolve(),
+        checkCrowns: () => Promise.resolve(),
+        newCount: () => Promise.resolve(0),
+        seen: (memberId, rows) => {
+          calls.push(['badges', memberId, rows])
+          return Promise.resolve()
+        },
+      },
+      {
+        openedBadges: (memberId, rows) => {
+          calls.push(['notes', memberId, rows])
+          return Promise.resolve()
+        },
+      },
+    )
+
+    await badges.seen('bob', ['help'])
+
+    expect(calls).toEqual([
+      ['badges', 'bob', ['help']],
+      ['notes', 'bob', ['help']],
+    ])
   })
 })

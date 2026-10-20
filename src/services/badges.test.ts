@@ -22,6 +22,13 @@ const levelCounts = [1, 5, 10]
 
 type Held = EarnedLevel & { memberId: string }
 
+/** A gain the store notified with it: a level, or 0 for a crown. */
+interface Gain {
+  memberId: string
+  row: CountedRow
+  level: number
+}
+
 const minute = (n: number): Date => new Date(Date.UTC(2026, 10, 8, 10, n))
 
 function memoryStore(): BadgeStore & {
@@ -29,13 +36,16 @@ function memoryStore(): BadgeStore & {
   reached: Map<string, number>
   held: Held[]
   crownList: Crown[]
+  notified: Gain[]
   launches: number
 } {
   const counts = new Map<string, number>()
   const reached = new Map<string, number>()
   const held: Held[] = []
   const crownList: Crown[] = []
+  const notified: Gain[] = []
   const store = {
+    notified,
     counts,
     reached,
     held,
@@ -59,6 +69,7 @@ function memoryStore(): BadgeStore & {
       const at = crownList.findIndex((each) => each.row === row)
       if (at === -1) crownList.push(crown)
       else crownList[at] = crown
+      if (!seen && memberId !== null) notified.push({ memberId, row, level: 0 })
       return Promise.resolve()
     },
     award: (
@@ -84,6 +95,8 @@ function memoryStore(): BadgeStore & {
           earnedAt: new Date('2026-11-08T10:00:00.000Z'),
           seenAt: seen ? new Date('2026-11-08T10:00:00.000Z') : null,
         })
+      if (!seen)
+        for (const level of added) notified.push({ memberId, row, level })
       return Promise.resolve(added)
     },
     earned: (memberId: string) =>
@@ -124,6 +137,56 @@ function setup(): {
     store,
   }
 }
+
+describe('notifying gains (R-BADGE-10)', () => {
+  function notifying(): {
+    badges: BadgeService
+    store: ReturnType<typeof memoryStore>
+    gains: Gain[]
+  } {
+    const { badges, store } = setup()
+    return { badges, store, gains: store.notified }
+  }
+
+  it('notifies each level gained, once', async () => {
+    const { badges, store, gains } = notifying()
+    await badges.checkCrowns()
+    store.counts.set('ana:help', 5)
+
+    await badges.recount('ana', ['help'])
+    await badges.recount('ana', ['help'])
+
+    expect(gains).toEqual([
+      { memberId: 'ana', row: 'help', level: 1 },
+      { memberId: 'ana', row: 'help', level: 2 },
+      { memberId: 'ana', row: 'help', level: 0 },
+    ])
+  })
+
+  it("notifies nothing at launch, nor for a row's first crown", async () => {
+    const { badges, store, gains } = notifying()
+    store.counts.set('ana:speak', 3)
+
+    await badges.awardAtLaunch()
+    await badges.checkCrowns()
+
+    expect(gains).toEqual([])
+  })
+
+  it('notifies who gains a crown, never who loses it (R-BADGE-3)', async () => {
+    const { badges, store, gains } = notifying()
+    store.counts.set('ana:speak', 2)
+    await badges.awardAtLaunch()
+    await badges.checkCrowns()
+    store.counts.set('ben:speak', 3)
+
+    await badges.recount('ben', ['speak'])
+
+    expect(gains.filter((gain) => gain.level === 0)).toEqual([
+      { memberId: 'ben', row: 'speak', level: 0 },
+    ])
+  })
+})
 
 describe('badge levels (R-BADGE-1, R-BADGE-2)', () => {
   it('records every level a count has reached, as new', async () => {

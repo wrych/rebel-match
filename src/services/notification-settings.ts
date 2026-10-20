@@ -42,12 +42,14 @@ export interface NotificationSettingsService {
 }
 
 /** What a member can receive, so may choose for: everyone can follow a
- * trend; applicant notices go to who may review them (R-NOTE-1). */
+ * trend and earn badges; applicant notices go to who may review them
+ * (R-NOTE-1). */
 export function receivable(canReview: boolean): ChoosableType[] {
   return [
     'connection_request',
     'new_connection',
     'trend_challenge',
+    'badge',
     ...(canReview ? (['applicant'] as const) : []),
   ]
 }

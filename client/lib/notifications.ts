@@ -56,6 +56,8 @@ export function headline(note: NotificationView): string {
       return `${note.name} posted a challenge in ${note.trend ?? 'a trend you follow'}`
     case 'applicant':
       return `${note.name} asked to join`
+    case 'badge':
+      return `New badge: ${note.name}`
   }
 }
 
@@ -95,6 +97,7 @@ const TYPE_LABELS: Record<NotificationSetting['type'], string> = {
   new_connection: 'New connections',
   trend_challenge: 'New challenges in trends you follow',
   applicant: 'People asking to join',
+  badge: 'Badges you earn',
 }
 
 const CADENCE_LABELS: Record<NotificationSetting['cadence'], string> = {

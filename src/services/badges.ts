@@ -25,14 +25,16 @@ export interface BadgeStore {
   standings(row: CountedRow): Promise<Standing[]>
   /** The crowns given so far, one per row ever checked. */
   crowns(): Promise<Crown[]>
-  /** Gives a row's crown, or takes it from everyone with null. */
+  /** Gives a row's crown, or takes it from everyone with null; a crown not
+   * seen is news, notified to its holder in the same transaction
+   * (R-BADGE-10, R-NOTE-10). */
   setCrown(
     row: CountedRow,
     memberId: string | null,
     seen: boolean,
   ): Promise<void>
-  /** Records the levels not yet held; seen ones are not new. Returns the
-   * levels it added. */
+  /** Records the levels not yet held; seen ones are not new, the rest are
+   * notified in the same transaction (R-NOTE-10). Returns those it added. */
   award(
     memberId: string,
     row: CountedRow,

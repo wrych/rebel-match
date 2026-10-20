@@ -24,6 +24,7 @@ import { createSettings } from './services/settings.js'
 import { createWindowCounter } from './services/rate-limit.js'
 import {
   createNotifications,
+  markingBadgesOpened,
   markingDeckOpened,
   markingOpened,
   type NotificationService,
@@ -535,7 +536,7 @@ export function composeApp(
       service: badges,
       onError: hooks.onBadgeError ?? ignoreError,
     }),
-    badges,
+    badges: markingBadgesOpened(badges, composeNotifications(db, settings)),
     game: composeGame(config, db, settings, track),
     notificationMail: composeNotificationMail(config, db, mailer, hooks),
   }
