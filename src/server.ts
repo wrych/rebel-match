@@ -12,7 +12,9 @@ import { startSettingsRefresh } from './services/settings-refresh.js'
 import { startNotificationWorker } from './services/notification-worker.js'
 
 const config = await loadRuntimeConfig()
-const connection = await openDatabase(config)
+const connection = await openDatabase(config, () => {
+  console.warn('database: an idle connection dropped, the pool opens another')
+})
 const deps = composeApp(config, connection.db, {
   onAnalyticsError: () => {
     console.warn('analytics: an event could not be sent')
