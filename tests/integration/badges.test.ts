@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import request from 'supertest'
@@ -379,6 +380,38 @@ describe('badges over Postgres (R-BADGE-1, R-BADGE-2)', () => {
       ['Team Lead', false],
       ['Manager', false],
       ['Director', false],
+    ])
+  })
+
+  it('gives a tie at the top to whoever won their way there first (R-BADGE-3)', async () => {
+    const [ana, marieke] = [ids['ana.ferreira']!, ids['marieke.de.wit']!]
+    await db.query(
+      "INSERT INTO game_players (member_id, pseudonym, highest_level) VALUES (?, 'Tied Rebel', 13)",
+      [ana],
+    )
+    await db.query(
+      'UPDATE game_players SET highest_level = 13 WHERE member_id = ?',
+      [marieke],
+    )
+    await db.query(
+      "INSERT INTO game_days (id, member_id, level, outcome, play_seconds, finished_at) VALUES (?, ?, 12, 'won', 60, '2026-11-08T10:00:00Z'), (?, ?, 12, 'won', 60, '2026-11-08T11:00:00Z')",
+      [randomUUID(), ana, randomUUID(), marieke],
+    )
+    await db.query(
+      "UPDATE game_players SET updated_at = '2026-11-08T09:00:00Z' WHERE member_id = ?",
+      [marieke],
+    )
+    await db.query("DELETE FROM badge_crowns WHERE row_key = 'game'")
+
+    await deps.badges.checkCrowns()
+
+    const [crown] = await db.query(
+      "SELECT member_id FROM badge_crowns WHERE row_key = 'game'",
+    )
+    expect(crown?.['member_id']).toBe(ana)
+    await db.query('DELETE FROM game_days WHERE member_id IN (?, ?)', [
+      ana,
+      marieke,
     ])
   })
 

@@ -6,6 +6,7 @@ import {
   badgeLaunch,
   challenges,
   connectionRequests,
+  gameDays,
   gamePlayers,
   memberBadges,
   members,
@@ -52,12 +53,22 @@ async function rowsOf<T extends Record<string, unknown>>(
   return result.rows
 }
 
+// When a player reached their highest level: the first day won one level
+// below it, which is what raises it (R-GAME-16); their first game for level
+// 1, or once their day log was deleted (R-STAT-4).
+const promotedAt = sql`coalesce(
+  (select min(${gameDays.finishedAt}) from ${gameDays}
+    where ${gameDays.memberId} = ${gamePlayers.memberId}
+      and ${gameDays.outcome} = 'won'
+      and ${gameDays.level} = ${gamePlayers.highestLevel} - 1),
+  ${gamePlayers.createdAt})`
+
 // Each member's count for a row and when it last moved: the acts it counts,
 // or for the game, the highest level reached (R-BADGE-1, R-GAME-16).
 function tally(row: BadgeRow): SQL {
   if (row === 'game')
     return sql`select ${gamePlayers.memberId} as member,
-        ${gamePlayers.highestLevel} as count, ${gamePlayers.updatedAt} as reached
+        ${gamePlayers.highestLevel} as count, ${promotedAt} as reached
       from ${gamePlayers}`
   return sql`select acts.member, count(distinct acts.item) as count,
       max(acts.at) as reached
