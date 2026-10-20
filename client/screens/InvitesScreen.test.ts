@@ -379,6 +379,33 @@ describe('event badges on a new invite (R-BADGE-4, R-BADGE-5)', () => {
     })
   })
 
+  it('keeps what the host typed while the logo was being read', async () => {
+    const fetchMock = server()
+    const screen = await mountScreen()
+    await screen.find('#label').setValue('Main stage')
+    await screen.findAll('input[type="radio"]')[1]!.setValue(true)
+    let finish: (text: string) => void = () => undefined
+    const file = new File([logo], 'summit.svg', { type: 'image/svg+xml' })
+    Object.defineProperty(file, 'text', {
+      value: () => new Promise<string>((resolve) => (finish = resolve)),
+    })
+    const input = screen.find('#badge-logo')
+    Object.defineProperty(input.element, 'files', { value: [file] })
+
+    await input.trigger('change')
+    await screen.find('#badge-name').setValue('Stormed the Summit')
+    await screen.find('#badge-ticket').setValue('SUMMIT')
+    await screen.find('#badge-big').setValue('2026')
+    finish(logo)
+    await flushPromises()
+    await screen.find('form').trigger('submit')
+    await flushPromises()
+
+    expect(postBody(fetchMock)).toMatchObject({
+      eventBadge: { name: 'Stormed the Summit', logoSvg: logo },
+    })
+  })
+
   it('says a logo is too big before sending it', async () => {
     const fetchMock = server()
     const screen = await mountScreen()

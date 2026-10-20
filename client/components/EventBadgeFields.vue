@@ -48,9 +48,13 @@ async function upload(event: Event): Promise<void> {
     logoProblem.value = `The logo is too big: at most ${String(Math.floor(max / BYTES_PER_KB))} kB.`
     return
   }
+  const logoSvg = await file.text()
+  // Read from the model as it is now: the host may have typed, or chosen
+  // otherwise, while the file was read.
+  if (props.modelValue.kind !== 'new') return
   logoProblem.value = null
   logoName.value = file.name
-  emit('update:modelValue', { ...props.modelValue, logoSvg: await file.text() })
+  emit('update:modelValue', { ...props.modelValue, logoSvg })
 }
 
 const preview = computed(() => {
