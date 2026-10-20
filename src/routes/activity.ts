@@ -2,17 +2,15 @@ import { Router } from 'express'
 import { z } from 'zod'
 import type { AuthProvider } from '../auth/index.js'
 import type { ActivityService } from '../services/activity.js'
+import { inviteToken } from './invite-token.js'
 import {
   requirePermission,
   requireSession,
   type GuardedLocals,
 } from './require-permission.js'
 
-// The width of invites.token (src/db/schema.ts).
-const INVITE_TOKEN_MAX = 64
-
 const seenBody = z.object({ challengeId: z.string().min(1) })
-const openedBody = z.object({ invite: z.string().min(1).max(INVITE_TOKEN_MAX) })
+const openedBody = z.object({ invite: inviteToken })
 
 /** `POST /api/deck/seen`, `POST /auth/invite-opened` and
  * `DELETE /api/me/history` (design §3). None answers with a record: activity
