@@ -1,7 +1,20 @@
+import { firstDaysUpTo, FIRST_REBEL_LEVEL } from '../game/levels.js'
+
 export const countedRows = ['speak', 'help', 'boat', 'connect'] as const
 
-/** A row of badges: one thing counted (R-BADGE-1). */
+/** A row counted from what members do, its levels at configured counts
+ * (R-BADGE-1). */
 export type CountedRow = (typeof countedRows)[number]
+
+/** Every row of badges: the counted ones and the game's promotions. */
+export const badgeRows = [...countedRows, 'game'] as const
+
+export type BadgeRow = (typeof badgeRows)[number]
+
+/** The game's promotions are reached on the first day of each job, so its
+ * levels sit at those levels, fixed by the game (R-BADGE-1, R-GAME-16). */
+export const promotionLevels: readonly number[] =
+  firstDaysUpTo(FIRST_REBEL_LEVEL)
 
 /** What a row is called and what its levels and crown are named. */
 export interface RowNames {
@@ -15,7 +28,7 @@ export interface RowNames {
 
 /** The names members see, free of server dependencies so the client can
  * show them too (R-BADGE-1). */
-export const rowNames: Readonly<Record<CountedRow, RowNames>> = {
+export const rowNames: Readonly<Record<BadgeRow, RowNames>> = {
   speak: {
     title: 'Speak up',
     counts: ['challenge posted', 'challenges posted'],
@@ -47,6 +60,15 @@ export const rowNames: Readonly<Record<CountedRow, RowNames>> = {
       'Each person you are connected with counts once, however many challenges you share.',
     levels: ['Co-conspirator', 'Cell Builder', 'Movement Maker'],
     crown: 'Heart of the Movement',
+  },
+  // A teaser: its screen names the jobs and nothing of where they come
+  // from, so it has no words for counting (R-BADGE-9).
+  game: {
+    title: 'Promotions',
+    counts: ['', ''],
+    explains: '',
+    levels: ['Team Lead', 'Manager', 'Director', 'VP', 'CEO', 'Rebel'],
+    crown: 'Leader of the Revolution',
   },
 }
 

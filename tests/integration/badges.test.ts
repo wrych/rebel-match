@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import request from 'supertest'
 import { createApp } from '../../src/app.js'
@@ -46,6 +47,11 @@ async function cleanup(): Promise<void> {
   await db.query("DELETE FROM notifications WHERE type = 'badge'")
   await db.query("DELETE FROM outbox WHERE kind = 'badge'")
   await db.query('DELETE FROM notification_settings WHERE member_id = ?', [ana])
+  await db.query('DELETE FROM game_players WHERE member_id IN (?, ?)', [
+    ana,
+    marieke,
+  ])
+  await db.query("DELETE FROM setting_overrides WHERE key = 'game.enabled'")
 }
 
 beforeAll(async () => {
@@ -323,6 +329,57 @@ describe('badges over Postgres (R-BADGE-1, R-BADGE-2)', () => {
       .set('Cookie', cookies['ana.ferreira']!)
       .send({ rows: ['gossip'] })
       .expect(400)
+  })
+
+  it('counts promotions from the game while it is on, saying nothing of how (R-BADGE-9)', async () => {
+    expect(
+      (await badgesOf('marieke.de.wit')).rows.map((row) => row.row),
+    ).not.toContain('game')
+    await deps.settings.change('game.enabled', 1, ids['marieke.de.wit']!)
+
+    await request(app)
+      .get('/api/game')
+      .set('Cookie', cookies['marieke.de.wit']!)
+      .expect(200)
+    expect(earned(await rowOf('marieke.de.wit', 'game'))).toEqual([
+      ['Team Lead', true],
+    ])
+
+    await db.query(
+      'UPDATE game_players SET highest_level = 7 WHERE member_id = ?',
+      [ids['marieke.de.wit']],
+    )
+    await request(app)
+      .get('/api/game')
+      .set('Cookie', cookies['marieke.de.wit']!)
+      .expect(200)
+
+    const game = await rowOf('marieke.de.wit', 'game')
+    expect(earned(game).map(([name]) => name)).toEqual([
+      'Team Lead',
+      'Manager',
+      'Director',
+    ])
+    expect(game.explains).toBe('')
+  })
+
+  it('records promotions reached before they counted, quietly (R-BADGE-11)', async () => {
+    await db.query(
+      "DELETE FROM member_badges WHERE row_key = 'game' AND member_id = ?",
+      [ids['marieke.de.wit']],
+    )
+    const migration = readFileSync(
+      new URL('../../db/migrations/0021_badge_promotions.sql', import.meta.url),
+      'utf8',
+    )
+
+    await db.query(migration, [])
+
+    expect(earned(await rowOf('marieke.de.wit', 'game'))).toEqual([
+      ['Team Lead', false],
+      ['Manager', false],
+      ['Director', false],
+    ])
   })
 
   it('answers no one signed out', async () => {

@@ -54,6 +54,7 @@ import { createBadgeStore } from './services/badge-store.js'
 import {
   countingChallenges,
   countingConnections,
+  countingGame,
   countingSwipes,
   createBadges,
   type BadgeService,
@@ -392,26 +393,39 @@ function composeOnboarding(
   }
 }
 
-function composeBadges(config: Config, db: Database): BadgeService {
+// The game's promotions are a row only while hosts have the game on
+// (R-BADGE-9, R-GAME-17).
+function composeBadges(
+  config: Config,
+  db: Database,
+  settings: LiveSettings,
+): BadgeService {
   return createBadges({
     store: createBadgeStore(db),
     levelCounts: () => config.badgeLevelCounts,
+    gameOn: () => settings.game().enabled === 1,
   })
 }
 
+// Each day recorded counts toward the player's promotions (R-BADGE-1).
 function composeGame(
   config: Config,
   db: Database,
   settings: LiveSettings,
   track: Track,
+  badges: Counting,
 ): AppDeps['game'] {
-  return createGame({
-    store: createGameStore(db),
-    settings: () => settings.game(),
-    allowance: config.gameDayAllowance,
-    newId: randomUUID,
-    track,
-  })
+  return countingGame(
+    createGame({
+      store: createGameStore(db),
+      settings: () => settings.game(),
+      allowance: config.gameDayAllowance,
+      newId: randomUUID,
+      track,
+    }),
+    badges.service,
+    badges.onError,
+  )
 }
 
 const MS_PER_HOUR = 3_600_000
@@ -505,7 +519,11 @@ export function composeApp(
     config,
     store: createSettingOverrideStore(db),
   })
-  const badges = composeBadges(config, db)
+  const badges = composeBadges(config, db, settings)
+  const counting = {
+    service: badges,
+    onError: hooks.onBadgeError ?? ignoreError,
+  }
 
   const deps: Omit<AppDeps, 'scheduled'> = {
     config,
@@ -532,12 +550,9 @@ export function composeApp(
       store: createActivityStore(db),
       newId: randomUUID,
     }),
-    ...composeJourneys(config, db, track, settings, {
-      service: badges,
-      onError: hooks.onBadgeError ?? ignoreError,
-    }),
+    ...composeJourneys(config, db, track, settings, counting),
     badges: markingBadgesOpened(badges, composeNotifications(db, settings)),
-    game: composeGame(config, db, settings, track),
+    game: composeGame(config, db, settings, track, counting),
     notificationMail: composeNotificationMail(config, db, mailer, hooks),
   }
   return withScheduled(config, deps, hooks.onScheduledError ?? ignoreError)

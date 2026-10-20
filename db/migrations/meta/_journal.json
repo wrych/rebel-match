@@ -148,6 +148,13 @@
       "when": 1792492285936,
       "tag": "0020_badge_notifications",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1792494087581,
+      "tag": "0021_badge_promotions",
+      "breakpoints": true
     }
   ]
 }

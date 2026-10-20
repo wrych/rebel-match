@@ -6,11 +6,12 @@ import {
   badgeLaunch,
   challenges,
   connectionRequests,
+  gamePlayers,
   memberBadges,
   members,
   swipes,
 } from '../db/schema.js'
-import { countedRows, type CountedRow } from '../badges/rows.js'
+import { badgeRows, type BadgeRow, type CountedRow } from '../badges/rows.js'
 import type { Standing } from '../badges/crowns.js'
 import { insertBadgeNotification } from './notification-store.js'
 import type { BadgeStore, Crown, EarnedLevel } from './badges.js'
@@ -51,31 +52,41 @@ async function rowsOf<T extends Record<string, unknown>>(
   return result.rows
 }
 
+// Each member's count for a row and when it last moved: the acts it counts,
+// or for the game, the highest level reached (R-BADGE-1, R-GAME-16).
+function tally(row: BadgeRow): SQL {
+  if (row === 'game')
+    return sql`select ${gamePlayers.memberId} as member,
+        ${gamePlayers.highestLevel} as count, ${gamePlayers.updatedAt} as reached
+      from ${gamePlayers}`
+  return sql`select acts.member, count(distinct acts.item) as count,
+      max(acts.at) as reached
+    from (${acts(row)}) as acts group by acts.member`
+}
+
 async function countFor(
   db: Database,
   memberId: string,
-  row: CountedRow,
+  row: BadgeRow,
 ): Promise<number> {
   const [counted] = await rowsOf<{ count: number | string }>(
     db,
-    sql`select count(distinct item) as count from (${acts(row)}) as acts
-      where member = ${memberId}`,
+    sql`select count from (${tally(row)}) as tally where member = ${memberId}`,
   )
   return Number(counted?.count ?? 0)
 }
 
-async function standings(db: Database, row: CountedRow): Promise<Standing[]> {
+async function standings(db: Database, row: BadgeRow): Promise<Standing[]> {
   const ranked = await rowsOf<{
     member: string
     count: number | string
     reached: Date | string
   }>(
     db,
-    sql`select acts.member, count(distinct acts.item) as count,
-        max(acts.at) as reached
-      from (${acts(row)}) as acts
-      join ${members} on ${members.id} = acts.member and ${members.status} = 'active'
-      group by acts.member`,
+    sql`select tally.member, tally.count, tally.reached
+      from (${tally(row)}) as tally
+      join ${members} on ${members.id} = tally.member and ${members.status} = 'active'
+      where tally.count > 0`,
   )
   return ranked.map((each) => ({
     memberId: each.member,
@@ -87,7 +98,7 @@ async function standings(db: Database, row: CountedRow): Promise<Standing[]> {
 async function crowns(db: Database): Promise<Crown[]> {
   const rows = await db.select().from(badgeCrowns)
   return rows.flatMap((row) =>
-    isCounted(row.rowKey)
+    isBadgeRow(row.rowKey)
       ? [{ row: row.rowKey, memberId: row.memberId, seenAt: row.seenAt }]
       : [],
   )
@@ -97,7 +108,7 @@ async function crowns(db: Database): Promise<Crown[]> {
 // (R-BADGE-10, R-NOTE-10).
 async function setCrown(
   db: Database,
-  row: CountedRow,
+  row: BadgeRow,
   memberId: string | null,
   seen: boolean,
 ): Promise<void> {
@@ -120,13 +131,13 @@ async function setCrown(
   })
 }
 
-const isCounted = (key: string): key is CountedRow =>
-  (countedRows as readonly string[]).includes(key)
+const isBadgeRow = (key: string): key is BadgeRow =>
+  (badgeRows as readonly string[]).includes(key)
 
 async function award(
   db: Database,
   memberId: string,
-  row: CountedRow,
+  row: BadgeRow,
   levels: readonly number[],
   seen: boolean,
 ): Promise<number[]> {
@@ -157,7 +168,7 @@ async function earned(db: Database, memberId: string): Promise<EarnedLevel[]> {
     .from(memberBadges)
     .where(eq(memberBadges.memberId, memberId))
   return rows.flatMap((row) =>
-    isCounted(row.rowKey)
+    isBadgeRow(row.rowKey)
       ? [
           {
             row: row.rowKey,
@@ -187,7 +198,7 @@ async function newCount(db: Database, memberId: string): Promise<number> {
 async function markSeen(
   db: Database,
   memberId: string,
-  rows: readonly CountedRow[],
+  rows: readonly BadgeRow[],
 ): Promise<void> {
   if (rows.length === 0) return
   const now = new Date()

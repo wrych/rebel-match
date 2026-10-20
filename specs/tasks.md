@@ -427,7 +427,7 @@ in this order.
 - [x] The `badge` notification type: in the app, its cadence, its mail,
       written for each level and crown gained.
       _(R-BADGE-10, R-NOTE-1, R-NOTE-2, R-NOTE-5)_
-- [ ] The Promotions row from 9toRevolution progress, shown while the game
+- [x] The Promotions row from 9toRevolution progress, shown while the game
       is on. _(R-BADGE-1, R-BADGE-9)_
 - [ ] Event badges on invite creation: the badge fields, the cleaned SVG logo,
       the logo endpoint and its headers, S22's badge section.
