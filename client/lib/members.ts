@@ -2,6 +2,7 @@ import type {
   MemberDetail,
   RosterMember,
 } from '../../src/services/member-roster'
+import { failure, findJson, getJson, outcomeOf, send } from './request'
 
 export type { MemberDetail, RosterMember }
 
@@ -9,19 +10,20 @@ export type { MemberDetail, RosterMember }
 export type EraseOutcome = 'erased' | 'gone' | 'created-invites' | 'last-admin'
 
 export async function fetchMembers(): Promise<RosterMember[]> {
-  const response = await fetch('/api/admin/members')
-  if (!response.ok)
-    throw new Error(`members unavailable (${String(response.status)})`)
-  return ((await response.json()) as { members: RosterMember[] }).members
+  const { members } = await getJson<{ members: RosterMember[] }>(
+    '/api/admin/members',
+    'members unavailable',
+  )
+  return members
 }
 
 /** One member's page (R-MEM-2); null when there is no such member. */
 export async function fetchMember(id: string): Promise<MemberDetail | null> {
-  const response = await fetch(`/api/admin/members/${encodeURIComponent(id)}`)
-  if (response.status === 404) return null
-  if (!response.ok)
-    throw new Error(`member unavailable (${String(response.status)})`)
-  return ((await response.json()) as { member: MemberDetail }).member
+  const found = await findJson<{ member: MemberDetail }>(
+    `/api/admin/members/${encodeURIComponent(id)}`,
+    'member unavailable',
+  )
+  return found?.member ?? null
 }
 
 /** What became of giving or taking away a role (R-ROLE-9). */
@@ -32,17 +34,15 @@ export async function grantRole(
   id: string,
   role: string,
 ): Promise<RoleOutcome> {
-  const response = await fetch(
+  const response = await send(
     `/api/admin/members/${encodeURIComponent(id)}/roles`,
-    {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ role }),
-    },
+    'POST',
+    { role },
   )
-  if (response.status === 204) return 'done'
-  if (response.status === 404) return 'gone'
-  throw new Error(`granting failed (${String(response.status)})`)
+  return outcomeOf<RoleOutcome>(response, 'granting failed', {
+    204: 'done',
+    404: 'gone',
+  })
 }
 
 /** Takes a role away; 'last-holder' when nobody else could grant roles. */
@@ -50,14 +50,15 @@ export async function revokeRole(
   id: string,
   role: string,
 ): Promise<RoleOutcome> {
-  const response = await fetch(
+  const response = await send(
     `/api/admin/members/${encodeURIComponent(id)}/roles/${encodeURIComponent(role)}`,
-    { method: 'DELETE' },
+    'DELETE',
   )
-  if (response.status === 204) return 'done'
-  if (response.status === 404) return 'gone'
-  if (response.status === 409) return 'last-holder'
-  throw new Error(`revoking failed (${String(response.status)})`)
+  return outcomeOf<RoleOutcome>(response, 'revoking failed', {
+    204: 'done',
+    404: 'gone',
+    409: 'last-holder',
+  })
 }
 
 type Refusal = 'gone' | 'created-invites' | 'last-admin'
@@ -81,41 +82,43 @@ export type DeleteOutcome =
  * unless restored (R-NFR-7, ADR 0032). Throws on anything the host cannot act
  * on, so a failure is never shown as done. */
 export async function deleteMember(id: string): Promise<DeleteOutcome> {
-  const response = await fetch(`/api/admin/members/${encodeURIComponent(id)}`, {
-    method: 'DELETE',
-  })
+  const response = await send(
+    `/api/admin/members/${encodeURIComponent(id)}`,
+    'DELETE',
+  )
   if (response.ok) {
     const { eraseAfter } = (await response.json()) as { eraseAfter: string }
     return { result: 'deleted', eraseAfter }
   }
   const refusal = await refusalOf(response)
   if (refusal !== null) return { result: refusal }
-  throw new Error(`deleting failed (${String(response.status)})`)
+  throw failure('deleting failed', response)
 }
 
 /** Erases one member and their personal data at once, for someone who
  * insists (R-NFR-7). */
 export async function eraseNow(id: string): Promise<EraseOutcome> {
-  const response = await fetch(
+  const response = await send(
     `/api/admin/members/${encodeURIComponent(id)}?now=true`,
-    { method: 'DELETE' },
+    'DELETE',
   )
   if (response.status === 204) return 'erased'
   const refusal = await refusalOf(response)
   if (refusal !== null) return refusal
-  throw new Error(`erasure failed (${String(response.status)})`)
+  throw failure('erasure failed', response)
 }
 
 /** Undoes a deletion before it is erased; 'gone' when there was none to
  * undo (ADR 0032). */
 export async function restoreMember(id: string): Promise<'restored' | 'gone'> {
-  const response = await fetch(
+  const response = await send(
     `/api/admin/members/${encodeURIComponent(id)}/restore`,
-    { method: 'POST' },
+    'POST',
   )
-  if (response.status === 204) return 'restored'
-  if (response.status === 404) return 'gone'
-  throw new Error(`restoring failed (${String(response.status)})`)
+  return outcomeOf(response, 'restoring failed', {
+    204: 'restored' as const,
+    404: 'gone' as const,
+  })
 }
 
 /** True when the member's email or name contains the search, ignoring case. */

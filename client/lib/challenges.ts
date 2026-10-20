@@ -6,6 +6,7 @@ import type {
   Trend,
   TrendDetail,
 } from '../../src/services/challenges'
+import { ensureOk, findJson, getJson, jsonOf, send } from './request'
 
 export type {
   Challenge,
@@ -17,10 +18,11 @@ export type {
 }
 
 export async function fetchTrends(): Promise<Trend[]> {
-  const response = await fetch('/api/trends')
-  if (!response.ok)
-    throw new Error(`trends unavailable (${String(response.status)})`)
-  return ((await response.json()) as { trends: Trend[] }).trends
+  const { trends } = await getJson<{ trends: Trend[] }>(
+    '/api/trends',
+    'trends unavailable',
+  )
+  return trends
 }
 
 /** Other members' newest challenges, in one trend when given, without who
@@ -30,59 +32,49 @@ export async function fetchNewestChallenges(
 ): Promise<NewestChallenge[]> {
   const query =
     trendId === undefined ? '' : `?trend=${encodeURIComponent(trendId)}`
-  const response = await fetch(`/api/challenges/newest${query}`)
-  if (!response.ok)
-    throw new Error(
-      `newest challenges unavailable (${String(response.status)})`,
-    )
-  return ((await response.json()) as { challenges: NewestChallenge[] })
-    .challenges
+  const { challenges } = await getJson<{ challenges: NewestChallenge[] }>(
+    `/api/challenges/newest${query}`,
+    'newest challenges unavailable',
+  )
+  return challenges
 }
 
 /** Saves the challenge and returns it with the trend the matcher picked
  * (R-ASK-4,5). */
 export async function submitChallenge(body: string): Promise<Challenge> {
-  const response = await fetch('/api/challenges', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ body }),
-  })
-  if (!response.ok)
-    throw new Error(`challenge not saved (${String(response.status)})`)
-  return ((await response.json()) as { challenge: Challenge }).challenge
+  const response = await send('/api/challenges', 'POST', { body })
+  return (
+    await jsonOf<{ challenge: Challenge }>(response, 'challenge not saved')
+  ).challenge
 }
 
 /** The member's own challenge, or null when there is none for them under
  * that id (R-NAV-8). */
 export async function fetchChallenge(id: string): Promise<Challenge | null> {
-  const response = await fetch(`/api/challenges/${encodeURIComponent(id)}`)
-  if (response.status === 404) return null
-  if (!response.ok)
-    throw new Error(`challenge unavailable (${String(response.status)})`)
-  return ((await response.json()) as { challenge: Challenge }).challenge
+  const found = await findJson<{ challenge: Challenge }>(
+    `/api/challenges/${encodeURIComponent(id)}`,
+    'challenge unavailable',
+  )
+  return found?.challenge ?? null
 }
 
 /** Same boat, been there and case studies for the member's own challenge,
  * or null when there is none for them under that id (R-ASK-8, R-NAV-8). */
 export async function fetchMatches(id: string): Promise<Matches | null> {
-  const response = await fetch(
+  return findJson<Matches>(
     `/api/challenges/${encodeURIComponent(id)}/matches`,
+    'matches unavailable',
   )
-  if (response.status === 404) return null
-  if (!response.ok)
-    throw new Error(`matches unavailable (${String(response.status)})`)
-  return (await response.json()) as Matches
 }
 
 /** One trend with its case studies, or null for an id that is no trend. */
 export async function fetchTrendDetail(
   trendId: string,
 ): Promise<TrendDetail | null> {
-  const response = await fetch(`/api/trends/${encodeURIComponent(trendId)}`)
-  if (response.status === 404) return null
-  if (!response.ok)
-    throw new Error(`trend unavailable (${String(response.status)})`)
-  return (await response.json()) as TrendDetail
+  return findJson<TrendDetail>(
+    `/api/trends/${encodeURIComponent(trendId)}`,
+    'trend unavailable',
+  )
 }
 
 /** Who a member is, as one line: job title, organization, sector and company
@@ -136,13 +128,12 @@ export function matchesSentence(
 
 /** Stores the trend the member confirmed, picked or suggested (R-ASK-7). */
 export async function confirmTrend(id: string, trendId: string): Promise<void> {
-  const response = await fetch(`/api/challenges/${encodeURIComponent(id)}`, {
-    method: 'PATCH',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ trendId }),
-  })
-  if (!response.ok)
-    throw new Error(`trend not saved (${String(response.status)})`)
+  const response = await send(
+    `/api/challenges/${encodeURIComponent(id)}`,
+    'PATCH',
+    { trendId },
+  )
+  ensureOk(response, 'trend not saved')
 }
 
 /** The trend the domain screen shows: one picked on the trend screen, if it

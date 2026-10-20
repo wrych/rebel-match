@@ -1,5 +1,6 @@
 import type { NotificationSetting } from '../../src/services/notification-settings'
 import type { NotificationView } from '../../src/services/notifications'
+import { ensureOk, getJson, send } from './request'
 
 export type { NotificationView }
 
@@ -10,11 +11,10 @@ export async function fetchNotifications(
 ): Promise<NotificationView[]> {
   const query =
     before === undefined ? '' : `?before=${encodeURIComponent(before)}`
-  const response = await fetch(`/api/notifications${query}`)
-  if (!response.ok)
-    throw new Error(`notifications unavailable (${String(response.status)})`)
-  return ((await response.json()) as { notifications: NotificationView[] })
-    .notifications
+  const { notifications } = await getJson<{
+    notifications: NotificationView[]
+  }>(`/api/notifications${query}`, 'notifications unavailable')
+  return notifications
 }
 
 /** Heard by the menu, so its badge clears as soon as the screen marked what
@@ -27,20 +27,15 @@ export async function markNotificationsSeen(
   ids: readonly string[],
 ): Promise<void> {
   if (ids.length === 0) return
-  const response = await fetch('/api/notifications/seen', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ids }),
-  })
-  if (!response.ok)
-    throw new Error(`notifications not marked (${String(response.status)})`)
+  const response = await send('/api/notifications/seen', 'POST', { ids })
+  ensureOk(response, 'notifications not marked')
   window.dispatchEvent(new Event(NOTIFICATIONS_SEEN))
 }
 
 /** How many are new, for the menu; anything but a positive whole number, or
  * a failed read, counts as none (R-NOTE-6). */
 export async function fetchNewNotifications(): Promise<number> {
-  const response = await fetch('/api/notifications/new')
+  const response = await send('/api/notifications/new')
   if (!response.ok) return 0
   const { count } = (await response.json()) as { count?: unknown }
   return typeof count === 'number' && Number.isInteger(count) && count > 0
@@ -75,11 +70,11 @@ export type { NotificationSetting }
 export async function fetchNotificationSettings(): Promise<
   NotificationSetting[]
 > {
-  const response = await fetch('/api/me/notification-settings')
-  if (!response.ok)
-    throw new Error(`settings unavailable (${String(response.status)})`)
-  return ((await response.json()) as { settings: NotificationSetting[] })
-    .settings
+  const { settings } = await getJson<{ settings: NotificationSetting[] }>(
+    '/api/me/notification-settings',
+    'settings unavailable',
+  )
+  return settings
 }
 
 /** Records the member's choice for one type (R-NOTE-2). */
@@ -87,16 +82,12 @@ export async function chooseNotificationCadence(
   type: string,
   cadence: string,
 ): Promise<void> {
-  const response = await fetch(
+  const response = await send(
     `/api/me/notification-settings/${encodeURIComponent(type)}`,
-    {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ cadence }),
-    },
+    'PUT',
+    { cadence },
   )
-  if (!response.ok)
-    throw new Error(`setting not saved (${String(response.status)})`)
+  ensureOk(response, 'setting not saved')
 }
 
 const TYPE_LABELS: Record<NotificationSetting['type'], string> = {

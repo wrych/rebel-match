@@ -1,3 +1,5 @@
+import { getJson } from './request'
+
 export interface ClientConfig {
   limits: {
     challengeMinChars: number
@@ -42,9 +44,5 @@ export interface ClientConfig {
 /** Reads the limits the server enforces, so a disabled button and a server check
  * can never disagree (R-CFG-2). */
 export async function fetchConfig(): Promise<ClientConfig> {
-  const response = await fetch('/api/config')
-  if (!response.ok)
-    throw new Error(`config unavailable (${String(response.status)})`)
-
-  return (await response.json()) as ClientConfig
+  return getJson<ClientConfig>('/api/config', 'config unavailable')
 }

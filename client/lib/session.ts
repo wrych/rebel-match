@@ -1,3 +1,5 @@
+import { ensureOk, jsonOf, send } from './request'
+
 /** The signed-in member as `/auth/me` describes them (R-ROLE-4). */
 export interface Me {
   id: string
@@ -11,11 +13,9 @@ export interface Me {
 let current: Promise<Me | null> | null = null
 
 async function fetchMe(): Promise<Me | null> {
-  const response = await fetch('/auth/me')
+  const response = await send('/auth/me')
   if (response.status === 401) return null
-  if (!response.ok)
-    throw new Error(`session unavailable (${String(response.status)})`)
-  return (await response.json()) as Me
+  return jsonOf<Me>(response, 'session unavailable')
 }
 
 /** Who is signed in, asked of the server once per page load. A failed
@@ -31,10 +31,7 @@ export function loadMe(): Promise<Me | null> {
 /** Ends the session on the server and forgets it here. Throws when the
  * server did not end it, so nobody is told they signed out when they did not. */
 export async function signOut(): Promise<void> {
-  const response = await fetch('/auth/logout', { method: 'POST' })
-  if (!response.ok) {
-    throw new Error(`sign-out failed (${String(response.status)})`)
-  }
+  ensureOk(await send('/auth/logout', 'POST'), 'sign-out failed')
   current = null
 }
 

@@ -1,3 +1,5 @@
+import { getJson } from './request'
+
 export type OutboxStatus = 'recorded' | 'sent' | 'suppressed' | 'failed'
 
 /** One entry of the outbound message log, as `GET /api/admin/outbox` sends it. */
@@ -27,10 +29,11 @@ export async function fetchOutbox(query: OutboxQuery): Promise<OutboxEntry[]> {
     params.set('status', query.status)
 
   const suffix = params.size > 0 ? `?${params.toString()}` : ''
-  const response = await fetch(`/api/admin/outbox${suffix}`)
-  if (!response.ok)
-    throw new Error(`outbox unavailable (${String(response.status)})`)
-  return ((await response.json()) as { entries: OutboxEntry[] }).entries
+  const { entries } = await getJson<{ entries: OutboxEntry[] }>(
+    `/api/admin/outbox${suffix}`,
+    'outbox unavailable',
+  )
+  return entries
 }
 
 export type BodyPart = { text: string } | { href: string }

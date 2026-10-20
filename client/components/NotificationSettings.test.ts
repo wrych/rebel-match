@@ -91,7 +91,7 @@ describe('NotificationSettings (R-NOTE-2, R-NOTE-3)', () => {
       '/api/me/notification-settings/connection_request',
       {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ cadence: 'daily' }),
       },
     )
