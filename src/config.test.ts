@@ -73,6 +73,20 @@ describe('loadConfig', () => {
     ).toThrow(/CHALLENGE_MAX_CHARS/)
   })
 
+  it('earns badge levels at 1, 5 and 10 unless told otherwise (R-BADGE-1)', () => {
+    expect(loadConfig(valid).badgeLevelCounts).toEqual([1, 5, 10])
+    expect(
+      loadConfig({ ...valid, BADGE_LEVEL_COUNTS: '2, 4, 8' }).badgeLevelCounts,
+    ).toEqual([2, 4, 8])
+  })
+
+  it('refuses badge level counts that do not rise (R-BADGE-1)', () => {
+    for (const counts of ['1,5,5', '1,5', '0,5,10', 'one,5,10'])
+      expect(() =>
+        loadConfig({ ...valid, BADGE_LEVEL_COUNTS: counts }),
+      ).toThrow()
+  })
+
   it('rejects a session secret too short to sign with', () => {
     expect(() => loadConfig({ ...valid, SESSION_SECRET: 'short' })).toThrow()
   })

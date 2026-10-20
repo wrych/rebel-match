@@ -49,6 +49,14 @@ import { createConnections } from './services/connections.js'
 import { createMemberDirectory } from './services/member-directory-store.js'
 import { createSwipeStore } from './services/swipe-store.js'
 import { createSwipes } from './services/swipes.js'
+import { createBadgeStore } from './services/badge-store.js'
+import {
+  countingChallenges,
+  countingConnections,
+  countingSwipes,
+  createBadges,
+  type BadgeService,
+} from './services/badges.js'
 import {
   createCockpitStore,
   createFollowStore,
@@ -130,12 +138,49 @@ function composeDeck(config: Config, db: Database, track: Track): DeckService {
   })
 }
 
+interface Counting {
+  service: BadgeService
+  onError: (error: unknown) => void
+}
+
+// Asking and connecting, each counting toward the badges where a counted act
+// is recorded (R-BADGE-1).
+function composeCounted(
+  config: Config,
+  db: Database,
+  track: Track,
+  badges: Counting,
+): Pick<AppDeps, 'challenges' | 'connections'> {
+  return {
+    challenges: countingChallenges(
+      createChallenges({
+        store: createChallengeStore(db),
+        rank: newestFirst,
+        newestShown: config.limits.newestChallengesShown,
+        track,
+      }),
+      badges.service,
+      badges.onError,
+    ),
+    connections: countingConnections(
+      createConnections({
+        store: createConnectionStore(db),
+        newId: randomUUID,
+        track,
+      }),
+      badges.service,
+      badges.onError,
+    ),
+  }
+}
+
 // The member journeys: asking, offering and connecting (F5, F6, F7).
 function composeJourneys(
   config: Config,
   db: Database,
   track: Track,
   settings: LiveSettings,
+  badges: Counting,
 ): Pick<
   AppDeps,
   | 'challenges'
@@ -148,27 +193,21 @@ function composeJourneys(
   | 'notificationSettings'
 > {
   const notes = composeNotifications(db, settings)
-  const challenges = createChallenges({
-    store: createChallengeStore(db),
-    rank: newestFirst,
-    newestShown: config.limits.newestChallengesShown,
-    track,
-  })
+  const { challenges, connections } = composeCounted(config, db, track, badges)
   const follows = createFollows({
     store: createFollowStore(db),
     trends: () => challenges.trends(),
-    track,
-  })
-  const connections = createConnections({
-    store: createConnectionStore(db),
-    newId: randomUUID,
     track,
   })
   return {
     challenges,
     deck: markingDeckOpened(composeDeck(config, db, track), notes),
     connections: markingOpened(connections, notes),
-    swipes: createSwipes({ store: createSwipeStore(db), connections, track }),
+    swipes: countingSwipes(
+      createSwipes({ store: createSwipeStore(db), connections, track }),
+      badges.service,
+      badges.onError,
+    ),
     follows,
     cockpit: createCockpit({
       store: createCockpitStore(db),
@@ -352,6 +391,13 @@ function composeOnboarding(
   }
 }
 
+function composeBadges(config: Config, db: Database): BadgeService {
+  return createBadges({
+    store: createBadgeStore(db),
+    levelCounts: () => config.badgeLevelCounts,
+  })
+}
+
 function composeGame(
   config: Config,
   db: Database,
@@ -430,6 +476,7 @@ function withScheduled(
  * failed. */
 interface ComposeHooks {
   onAnalyticsError?: (error: unknown) => void
+  onBadgeError?: (error: unknown) => void
   onNotificationError?: (error: unknown) => void
   onScheduledError?: (error: unknown) => void
 }
@@ -449,6 +496,7 @@ export function composeApp(
     config,
     store: createSettingOverrideStore(db),
   })
+  const badges = composeBadges(config, db)
 
   const deps: Omit<AppDeps, 'scheduled'> = {
     config,
@@ -475,7 +523,11 @@ export function composeApp(
       store: createActivityStore(db),
       newId: randomUUID,
     }),
-    ...composeJourneys(config, db, track, settings),
+    ...composeJourneys(config, db, track, settings, {
+      service: badges,
+      onError: hooks.onBadgeError ?? ignoreError,
+    }),
+    badges,
     game: composeGame(config, db, settings, track),
     notificationMail: composeNotificationMail(config, db, mailer, hooks),
   }

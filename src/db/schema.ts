@@ -16,6 +16,7 @@ import {
   pgEnum,
   pgTable,
   primaryKey,
+  smallint,
   text,
   timestamp,
   uniqueIndex,
@@ -607,3 +608,26 @@ export const gameDays = pgTable(
   },
   (t) => [index('ix_game_days_member').on(t.memberId)],
 )
+
+// The badge levels a member has earned: kept when the count falls, so a level
+// once earned stays (R-BADGE-2), and new until the member has seen it
+// (R-BADGE-10). Nobody else reads them (R-BADGE-12).
+export const memberBadges = pgTable(
+  'member_badges',
+  {
+    memberId: id('member_id')
+      .notNull()
+      .references(() => members.id, { onDelete: 'cascade' }),
+    rowKey: varchar('row_key', { length: 10 }).notNull(),
+    level: smallint('level').notNull(),
+    earnedAt: at('earned_at').notNull().defaultNow(),
+    seenAt: at('seen_at'),
+  },
+  (t) => [primaryKey({ columns: [t.memberId, t.rowKey, t.level] })],
+)
+
+// One row once the badges already earned before launch were recorded, so
+// that is done once, quietly (R-BADGE-11).
+export const badgeLaunch = pgTable('badge_launch', {
+  doneAt: at('done_at').primaryKey(),
+})

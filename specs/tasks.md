@@ -416,7 +416,7 @@ up the summit. One pull request per item, in this order.
 Private badges, built after the spec and ADR merge. One pull request per item,
 in this order.
 
-- [ ] Tables, the rows in code with their pure rules, levels counted for
+- [x] Tables, the rows in code with their pure rules, levels counted for
       Speak up, Offer help, Shared pain and Connect where each act is
       recorded, `GET /api/badges`, the silent award at launch, erasure.
       _(R-BADGE-1, R-BADGE-2, R-BADGE-11, R-BADGE-12, R-BADGE-14)_

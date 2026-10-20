@@ -104,6 +104,11 @@ function deps(
       seeHint: () => Promise.resolve(),
       leaderboard: () => Promise.resolve({ rows: [], own: null, of: 0 }),
     },
+    badges: {
+      recount: () => Promise.resolve(),
+      mine: () => Promise.resolve({ rows: [] }),
+      awardAtLaunch: () => Promise.resolve(),
+    },
     connections: {
       request: () => Promise.resolve({ result: 'not_found' }),
       incoming: () => Promise.resolve([]),

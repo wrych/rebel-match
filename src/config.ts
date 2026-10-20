@@ -12,6 +12,14 @@ import { gameDefaults, type GameSettings } from './game/tuning.js'
 const MAX_TIMER_HOURS = Math.floor(0x7fffffff / 3_600_000)
 const MAX_TIMER_SECONDS = Math.floor(0x7fffffff / 1000)
 
+/** Each counted row of badges has three levels (R-BADGE-1). */
+const BADGE_LEVELS = 3
+
+const rising = (counts: readonly number[]): boolean =>
+  counts.every(
+    (count, index) => index === 0 || count > (counts[index - 1] ?? 0),
+  )
+
 // The widths of members.name and requested_name, job_title, org and
 // requested_org (src/db/schema.ts): a fact of the schema rather
 // than a tunable, so no environment variable.
@@ -299,6 +307,17 @@ const envSchema = z
     // How often a server re-reads the values hosts changed in the app
     // (ADR 0031); the server that saved a change applies it at once.
     SETTINGS_REFRESH_SECONDS: z.coerce.number().int().positive().default(60),
+    // The counts the badges' three levels are earned at, rising (R-BADGE-1).
+    BADGE_LEVEL_COUNTS: z
+      .string()
+      .default('1,5,10')
+      .transform((list) => list.split(',').map((count) => Number(count)))
+      .pipe(
+        z
+          .array(z.number().int().positive())
+          .length(BADGE_LEVELS)
+          .refine(rising, 'each badge level needs a higher count'),
+      ),
     // Game days one member may record per minute, and how long a day's
     // record may run: this many day lengths plus these seconds (R-GAME-20).
     GAME_RECORDS_PER_MINUTE: z.coerce.number().int().positive().default(10),
@@ -526,6 +545,8 @@ export interface Config {
   /** The share of members each experiment shows its treatment to, set in the
    * app, never the environment (R-EXP-3). */
   flags: FlagSettings
+  /** The counts each badge level is earned at, rising (R-BADGE-1). */
+  badgeLevelCounts: readonly number[]
   /** Game days one member may record per minute (R-GAME-20). */
   gameRecordsPerMinute: number
   /** How many bests the leaderboard shows above the caller's (R-GAME-13). */
@@ -688,6 +709,7 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): Config {
     abuse: abuseLimitsFrom(env),
     game: gameDefaults,
     flags: { matches_layout: EVEN_SPLIT_PERCENT },
+    badgeLevelCounts: env.BADGE_LEVEL_COUNTS,
     gameRecordsPerMinute: env.GAME_RECORDS_PER_MINUTE,
     gameLeaderboardSize: env.GAME_LEADERBOARD_SIZE,
     gameDayAllowance: {
