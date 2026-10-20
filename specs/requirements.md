@@ -960,10 +960,11 @@ What differs by environment is only whether mail **leaves the machine**.
   whether one is set beyond on/off. Changing a value is a deployment change,
   except as R-CFG-6 allows. The groups SHALL start folded, each showing its
   title, how many values it holds and how many differ from the default;
-  opening one shows its values. A search above the groups SHALL show only the
-  values whose name or explanation contains it, ignoring case, and every value
-  of a group whose title contains it, with those groups open; when nothing
-  matches the screen SHALL say so.
+  opening one shows its values. A search above the groups SHALL, as the host
+  types and once it holds at least three characters, show only the values
+  whose name or explanation contains it, ignoring case, and every value of a
+  group whose title contains it, with those groups open; when nothing matches
+  the screen SHALL say so. Shorter, it changes nothing.
 
 - **R-CFG-6 (Changing settings in the host tools)** — A host with
   `settings:manage` SHALL be able to change, on the settings screen, the
