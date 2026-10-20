@@ -334,9 +334,14 @@ capability, not a secret** — and every requirement below exists because of tha
   worked before they type anything. It SHALL NOT reveal the token itself.
 
 - **R-INV-13 (Event badge)** — An invite MAY give an event badge, chosen when
-  it is created (R-BADGE-4). Joining through it, or opening it as a member
-  already signed in, earns the badge (R-BADGE-6); the invite links screen
-  SHALL show each invite's badge with its ticket.
+  it is created or at any time after, ended or revoked as it may be
+  (R-BADGE-4). Joining through it, or opening it as a member already signed
+  in, earns the badge (R-BADGE-6); the invite links screen SHALL show each
+  invite's badge with its ticket. WHEN a host gives an existing invite a
+  badge THE SYSTEM SHALL record it as earned, with its notification, for every
+  active member admitted through that invite who does not hold it. Changing or
+  removing an invite's badge SHALL NOT take a badge from anyone. _(Andy,
+  2026-10-20.)_
 
 ### 3.5 Profile, privacy and the menu
 
@@ -1492,12 +1497,12 @@ invite link (R-INV-1).
   silent: no notification, no mark. WHEN a member's account is deleted THE
   SYSTEM SHALL take their crowns at once, before the erasure (R-NFR-7), and
   pass each on at the next check.
-- **R-BADGE-4 (Event badges)** — A host creating an invite link SHALL be able
-  to give it an event badge: none, a new one, or the badge of another invite,
+- **R-BADGE-4 (Event badges)** — A host creating an invite link, or editing
+  one already made (R-INV-13), SHALL be able to give it an event badge: none, a new one, or the badge of another invite,
   so every poster of one event gives the same badge (R-INV-9). A new badge
   SHALL carry a name, a short line and a big line for its ticket ("SUMMIT",
   "2026"), and MAY carry a logo (R-BADGE-5). An event badge SHALL NOT change
-  once created.
+  once created; which badge an invite gives MAY change, or be removed.
 - **R-BADGE-5 (A logo, and only a picture)** — A logo SHALL be an SVG file of
   at most a configured size. THE SYSTEM SHALL keep only drawing in it —
   shapes, paths, text, fills, strokes and gradients — and SHALL drop
