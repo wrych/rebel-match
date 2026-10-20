@@ -1,4 +1,5 @@
 import type { Challenge } from './human-check'
+import { jsonOf, outcomeOf, send } from './request'
 
 export type LinkRequestState =
   'check-email' | 'access-requested' | 'not-approved' | 'human-check'
@@ -24,11 +25,7 @@ const HANDLE_KEY = 'rm_applicant_handle'
  * code with nothing about who opened it (R-STAT-6, ADR 0038, ADR 0039).
  * Nothing waits on it, and a failure changes nothing for the visitor. */
 export function noteInviteOpened(invite: string): void {
-  fetch('/auth/invite-opened', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ invite }),
-  }).catch(() => undefined)
+  send('/auth/invite-opened', 'POST', { invite }).catch(() => undefined)
 }
 
 /** Asks for a sign-in link, carrying the deep link, the QR's invite token and
@@ -38,21 +35,14 @@ export async function requestLink(
   email: string,
   carried: { next: string | null; invite: string | null; altcha?: string },
 ): Promise<LinkRequest> {
-  const response = await fetch('/auth/request-link', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({
-      email,
-      ...(carried.next === null ? {} : { next: carried.next }),
-      ...(carried.invite === null ? {} : { invite: carried.invite }),
-      ...(carried.altcha === undefined ? {} : { altcha: carried.altcha }),
-    }),
+  const response = await send('/auth/request-link', 'POST', {
+    email,
+    ...(carried.next === null ? {} : { next: carried.next }),
+    ...(carried.invite === null ? {} : { invite: carried.invite }),
+    ...(carried.altcha === undefined ? {} : { altcha: carried.altcha }),
   })
   if (response.status === 429) throw new TooManyRequests()
-  if (!response.ok) {
-    throw new Error(`link request failed (${String(response.status)})`)
-  }
-  return (await response.json()) as LinkRequest
+  return jsonOf<LinkRequest>(response, 'link request failed')
 }
 
 /** Keeps the applicant's handle for the access-requested screen, for this tab
@@ -82,14 +72,12 @@ export async function describeApplicant(
   handle: string,
   details: { name: string; org: string },
 ): Promise<'saved' | 'gone'> {
-  const response = await fetch('/auth/applicant', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ handle, ...details }),
+  const response = await send('/auth/applicant', 'POST', {
+    handle,
+    ...details,
   })
-  if (response.status === 404) return 'gone'
-  if (!response.ok) {
-    throw new Error(`saving details failed (${String(response.status)})`)
-  }
-  return 'saved'
+  return outcomeOf(response, 'saving details failed', {
+    404: 'gone' as const,
+    ok: 'saved' as const,
+  })
 }

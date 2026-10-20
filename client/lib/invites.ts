@@ -1,3 +1,5 @@
+import { ensureOk, getJson, jsonOf, send } from './request'
+
 export type InviteState =
   'active' | 'scheduled' | 'expired' | 'revoked' | 'exhausted'
 
@@ -25,10 +27,11 @@ export interface InviteDraft {
 }
 
 export async function fetchInvites(): Promise<Invite[]> {
-  const response = await fetch('/api/admin/invites')
-  if (!response.ok)
-    throw new Error(`invites unavailable (${String(response.status)})`)
-  return ((await response.json()) as { invites: Invite[] }).invites
+  const { invites } = await getJson<{ invites: Invite[] }>(
+    '/api/admin/invites',
+    'invites unavailable',
+  )
+  return invites
 }
 
 // A host types a day as YYYY-MM-DD (e.g. 2026-11-08), optionally with a time
@@ -67,23 +70,18 @@ export async function createInvite(
   const validFrom = instant(draft.validFrom, false)
   const validUntil = instant(draft.validUntil, true)
   if (validFrom === null || validUntil === null) return 'bad-date'
-  const response = await fetch('/api/admin/invites', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({
-      label: draft.label,
-      validFrom,
-      validUntil,
-      maxUses: draft.maxUses === '' ? undefined : Number(draft.maxUses),
-    }),
+  const response = await send('/api/admin/invites', 'POST', {
+    label: draft.label,
+    validFrom,
+    validUntil,
+    maxUses: draft.maxUses === '' ? undefined : Number(draft.maxUses),
   })
   if (response.status === 400) {
     const body = (await response.json()) as { error?: string }
     if (body.error === 'bad_window') return 'bad-window'
   }
-  if (!response.ok)
-    throw new Error(`invite not created (${String(response.status)})`)
-  return ((await response.json()) as { invite: Invite }).invite
+  return (await jsonOf<{ invite: Invite }>(response, 'invite not created'))
+    .invite
 }
 
 /** Raises an invite's cap so its printed code keeps admitting (R-INV-4):
@@ -93,23 +91,20 @@ export async function raiseCap(
   id: string,
   maxUses: number,
 ): Promise<Invite | 'bad-cap' | 'revoked'> {
-  const response = await fetch(`/api/admin/invites/${encodeURIComponent(id)}`, {
-    method: 'PATCH',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ maxUses }),
-  })
+  const response = await send(
+    `/api/admin/invites/${encodeURIComponent(id)}`,
+    'PATCH',
+    { maxUses },
+  )
   if (response.status === 400) return 'bad-cap'
   if (response.status === 409) return 'revoked'
-  if (!response.ok)
-    throw new Error(`cap not raised (${String(response.status)})`)
-  return ((await response.json()) as { invite: Invite }).invite
+  return (await jsonOf<{ invite: Invite }>(response, 'cap not raised')).invite
 }
 
 export async function revokeInvite(id: string): Promise<void> {
-  const response = await fetch(
+  const response = await send(
     `/api/admin/invites/${encodeURIComponent(id)}/revoke`,
-    { method: 'POST' },
+    'POST',
   )
-  if (!response.ok)
-    throw new Error(`invite not revoked (${String(response.status)})`)
+  ensureOk(response, 'invite not revoked')
 }

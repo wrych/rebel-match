@@ -3,6 +3,7 @@ import type {
   ConnectionView,
   NewConnection,
 } from '../../src/services/connections'
+import { failure, findJson, outcomeOf, send } from './request'
 
 export type { Contact, ConnectionView }
 
@@ -18,11 +19,7 @@ export type RequestOutcome =
 export async function requestConnection(
   input: NewConnection,
 ): Promise<RequestOutcome> {
-  const response = await fetch('/api/connections', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(input),
-  })
+  const response = await send('/api/connections', 'POST', input)
   if (response.status === 201) return { result: 'created' }
   if (response.status === 409) return { result: 'exists' }
   if (response.status === 404) return { result: 'not_found' }
@@ -30,7 +27,7 @@ export async function requestConnection(
     const { id } = (await response.json()) as { id: string }
     return { result: 'joined', id }
   }
-  throw new Error(`request not sent (${String(response.status)})`)
+  throw failure('request not sent', response)
 }
 
 /** Where a connection's contact, and what the two are connected over, is
@@ -48,11 +45,11 @@ const requestPath = (id: string): string =>
 
 /** A request the member is a party to, or null for any other (R-NAV-8). */
 export async function fetchRequest(id: string): Promise<ConnectionView | null> {
-  const response = await fetch(requestPath(id))
-  if (response.status === 404) return null
-  if (!response.ok)
-    throw new Error(`request unavailable (${String(response.status)})`)
-  return ((await response.json()) as { request: ConnectionView }).request
+  const found = await findJson<{ request: ConnectionView }>(
+    requestPath(id),
+    'request unavailable',
+  )
+  return found?.request ?? null
 }
 
 /** Accepts or declines a pending request addressed to the member; 'gone'
@@ -61,23 +58,21 @@ export async function answerRequest(
   id: string,
   verdict: 'accept' | 'decline',
 ): Promise<'done' | 'gone'> {
-  const response = await fetch(`${requestPath(id)}/${verdict}`, {
-    method: 'POST',
+  const response = await send(`${requestPath(id)}/${verdict}`, 'POST')
+  return outcomeOf(response, 'answer not saved', {
+    404: 'gone' as const,
+    ok: 'done' as const,
   })
-  if (response.status === 404) return 'gone'
-  if (!response.ok)
-    throw new Error(`answer not saved (${String(response.status)})`)
-  return 'done'
 }
 
 /** The other party's contact, which the server gives only for an accepted
  * request to one of its parties; null otherwise (R-CONN-3,6). */
 export async function fetchContact(id: string): Promise<Contact | null> {
-  const response = await fetch(`${requestPath(id)}/contact`)
-  if (response.status === 404) return null
-  if (!response.ok)
-    throw new Error(`contact unavailable (${String(response.status)})`)
-  return ((await response.json()) as { contact: Contact }).contact
+  const found = await findJson<{ contact: Contact }>(
+    `${requestPath(id)}/contact`,
+    'contact unavailable',
+  )
+  return found?.contact ?? null
 }
 
 /** One connected member as the cockpit lists them: the request their card

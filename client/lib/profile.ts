@@ -1,4 +1,5 @@
 import type { OwnProfile, ProfileEdit } from '../../src/services/profile'
+import { ensureOk, failure, getJson, send } from './request'
 
 export type { OwnProfile }
 
@@ -7,22 +8,13 @@ export type { OwnProfile }
 export type ProfileAnswers = Record<keyof ProfileEdit, string>
 
 export async function fetchProfile(): Promise<OwnProfile> {
-  const response = await fetch('/api/profile')
-  if (!response.ok)
-    throw new Error(`profile unavailable (${String(response.status)})`)
-  return (await response.json()) as OwnProfile
+  return getJson<OwnProfile>('/api/profile', 'profile unavailable')
 }
 
 /** Saves the profile as it now stands (R-PROF-1). Throws on anything but a
  * save, so a failure is never shown as saved. */
 export async function saveProfile(edit: ProfileAnswers): Promise<void> {
-  const response = await fetch('/api/profile', {
-    method: 'PUT',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(edit),
-  })
-  if (!response.ok)
-    throw new Error(`profile not saved (${String(response.status)})`)
+  ensureOk(await send('/api/profile', 'PUT', edit), 'profile not saved')
 }
 
 /** What became of deleting one's own account (R-PROF-2): deleted, and when
@@ -35,7 +27,7 @@ export type DeleteOutcome =
  * refusal comes back as its reason, anything else unexpected throws, so a
  * failure is never shown as done. */
 export async function deleteAccount(): Promise<DeleteOutcome> {
-  const response = await fetch('/api/profile', { method: 'DELETE' })
+  const response = await send('/api/profile', 'DELETE')
   if (response.ok) {
     const { eraseAfter } = (await response.json()) as { eraseAfter: string }
     return { result: 'deleted', eraseAfter }
@@ -45,14 +37,12 @@ export async function deleteAccount(): Promise<DeleteOutcome> {
     if (result === 'last_admin') return { result: 'last-admin' }
     if (result === 'created_invites') return { result: 'created-invites' }
   }
-  throw new Error(`deleting the account failed (${String(response.status)})`)
+  throw failure('deleting the account failed', response)
 }
 
 /** Deletes the member's activity history, nothing else (R-STAT-4). Throws
  * when it did not happen, so a failure is never shown as done. */
 export async function deleteHistory(): Promise<void> {
-  const response = await fetch('/api/me/history', { method: 'DELETE' })
-  if (!response.ok) {
-    throw new Error(`deleting the history failed (${String(response.status)})`)
-  }
+  const response = await send('/api/me/history', 'DELETE')
+  ensureOk(response, 'deleting the history failed')
 }
