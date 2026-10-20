@@ -61,18 +61,27 @@ const CHARACTERS: Unit = ['character', 'characters']
 const PERCENT: Unit = ['percent', 'percent']
 const MS_PER_SECOND = 1000
 
-interface Entry {
+interface Described {
   name: string
   explanation: string
-  /** Changeable in the app (R-CFG-6). */
-  key?: SettingKey
-  /** Fixed in code: no deployment can change it. */
-  fixed?: true
-  read: (config: Config) => string | number
   unit?: Unit
   /** An on/off switch storing 1 or 0, shown as On or Off. */
   switch?: true
 }
+
+/** A changeable setting (R-CFG-6), read by its key. */
+interface Changeable extends Described {
+  key: SettingKey
+}
+
+/** A value hosts only read: set by the deployment, or fixed in code. */
+interface ReadOnly extends Described {
+  /** Fixed in code: no deployment can change it. */
+  fixed?: true
+  read: (config: Config) => string | number
+}
+
+type Entry = Changeable | ReadOnly
 
 interface Group {
   title: string
@@ -108,7 +117,6 @@ function gameEntry(
     name,
     explanation,
     key: `game.${key}`,
-    read: (c) => c.game[key],
     unit,
   }
 }
@@ -177,7 +185,6 @@ const gameGroups: Group[] = [
           'On shows the game to members in happy mode; off hides it, and ' +
           'every game address answers as not found.',
         key: 'game.enabled',
-        read: (c) => c.game.enabled,
         switch: true,
       },
       gameEntry(
@@ -379,7 +386,6 @@ const catalogue: Group[] = [
           'Sign-in emails one address can get in the time window below ' +
           'without any check.',
         key: 'abuse.linkEmailsBeforeCheck',
-        read: (c) => c.abuse.linkEmailsBeforeCheck,
         unit: ['email', 'emails'],
       },
       {
@@ -388,14 +394,12 @@ const catalogue: Group[] = [
           'Past the free ones, each email up to this many needs the ' +
           'automatic human check; beyond it nothing is sent.',
         key: 'abuse.linkEmailsCeiling',
-        read: (c) => c.abuse.linkEmailsCeiling,
         unit: ['email', 'emails'],
       },
       {
         name: 'Time window for sign-in emails per address',
         explanation: 'The period both email limits above count over.',
         key: 'abuse.linkEmailWindowMinutes',
-        read: (c) => c.abuse.linkEmailWindowMinutes,
         unit: MINUTES,
       },
       {
@@ -404,14 +408,12 @@ const catalogue: Group[] = [
           'Requests from one network (IP address) before it is asked to ' +
           'wait. High on purpose: a whole venue shares one Wi-Fi.',
         key: 'abuse.authRequestsPerIp',
-        read: (c) => c.abuse.authRequestsPerIp,
         unit: ['request', 'requests'],
       },
       {
         name: 'Time window for sign-in requests per network',
         explanation: 'The period the request limit above counts over.',
         key: 'abuse.ipWindowMinutes',
-        read: (c) => c.abuse.ipWindowMinutes,
         unit: MINUTES,
       },
       {
@@ -421,7 +423,6 @@ const catalogue: Group[] = [
           'needs the automatic human check. Members and invite links never ' +
           'count.',
         key: 'abuse.applicantsBeforeCheck',
-        read: (c) => c.abuse.applicantsBeforeCheck,
         unit: ['applicant', 'applicants'],
       },
       {
@@ -430,14 +431,12 @@ const catalogue: Group[] = [
           'Past this many from one network, nobody more is recorded until ' +
           'the time window ends.',
         key: 'abuse.applicantsCeiling',
-        read: (c) => c.abuse.applicantsCeiling,
         unit: ['applicant', 'applicants'],
       },
       {
         name: 'Time window for new applicants per network',
         explanation: 'The period both applicant limits above count over.',
         key: 'abuse.applicantWindowMinutes',
-        read: (c) => c.abuse.applicantWindowMinutes,
         unit: MINUTES,
       },
       {
@@ -446,14 +445,12 @@ const catalogue: Group[] = [
           'Work per try of the puzzle the browser solves (PBKDF2 ' +
           'iterations). Higher is slower for people and scripts alike.',
         key: 'abuse.humanCheckCost',
-        read: (c) => c.abuse.humanCheckCost,
         unit: ['iteration', 'iterations'],
       },
       {
         name: 'Time to solve a human check',
         explanation: 'How long a puzzle can be solved and sent back.',
         key: 'abuse.humanCheckMinutes',
-        read: (c) => c.abuse.humanCheckMinutes,
         unit: MINUTES,
       },
       {
@@ -503,7 +500,6 @@ const catalogue: Group[] = [
         explanation:
           'Suggested when creating an invite link; can be changed per link.',
         key: 'limits.inviteDefaultMaxUses',
-        read: (c) => c.limits.inviteDefaultMaxUses,
         unit: ['use', 'uses'],
       },
       {
@@ -511,7 +507,6 @@ const catalogue: Group[] = [
         explanation:
           'Suggested when creating an invite link; can be changed per link.',
         key: 'limits.inviteDefaultHours',
-        read: (c) => c.limits.inviteDefaultHours,
         unit: HOURS,
       },
       {
@@ -531,7 +526,6 @@ const catalogue: Group[] = [
         name: 'Shortest challenge',
         explanation: 'A challenge needs at least this many characters.',
         key: 'limits.challengeMinChars',
-        read: (c) => c.limits.challengeMinChars,
         unit: CHARACTERS,
       },
       {
@@ -546,7 +540,6 @@ const catalogue: Group[] = [
         explanation:
           'A member offering help writes at least this many characters.',
         key: 'limits.beenThereNoteMinChars',
-        read: (c) => c.limits.beenThereNoteMinChars,
         unit: CHARACTERS,
       },
       {
@@ -587,14 +580,12 @@ const catalogue: Group[] = [
         explanation:
           'While the app is open, the matches and notifications badges refresh this often.',
         key: 'limits.matchesPollSeconds',
-        read: (c) => c.limits.matchesPollSeconds,
         unit: SECONDS,
       },
       {
         name: 'Matches screen',
         explanation: 'The requests waiting for a member and their connections.',
         key: 'limits.cockpitPollSeconds',
-        read: (c) => c.limits.cockpitPollSeconds,
         unit: SECONDS,
       },
       {
@@ -602,49 +593,42 @@ const catalogue: Group[] = [
         explanation:
           'The same boat and been there rebels of a member’s challenge.',
         key: 'limits.challengeMatchesPollSeconds',
-        read: (c) => c.limits.challengeMatchesPollSeconds,
         unit: SECONDS,
       },
       {
         name: 'Notifications',
         explanation: 'A member’s notifications screen.',
         key: 'limits.notificationsPollSeconds',
-        read: (c) => c.limits.notificationsPollSeconds,
         unit: SECONDS,
       },
       {
         name: 'Outbound message log',
         explanation: 'The host tools’ log of every email.',
         key: 'limits.outboxPollSeconds',
-        read: (c) => c.limits.outboxPollSeconds,
         unit: SECONDS,
       },
       {
         name: 'Members',
         explanation: 'The host tools’ members list.',
         key: 'limits.membersPollSeconds',
-        read: (c) => c.limits.membersPollSeconds,
         unit: SECONDS,
       },
       {
         name: 'Applicants',
         explanation: 'The host tools’ list of applicants.',
         key: 'limits.applicantsPollSeconds',
-        read: (c) => c.limits.applicantsPollSeconds,
         unit: SECONDS,
       },
       {
         name: 'Invites',
         explanation: 'The host tools’ invite links.',
         key: 'limits.invitesPollSeconds',
-        read: (c) => c.limits.invitesPollSeconds,
         unit: SECONDS,
       },
       {
         name: 'Leaderboard',
         explanation: 'The 9toRevolution leaderboard.',
         key: 'limits.leaderboardPollSeconds',
-        read: (c) => c.limits.leaderboardPollSeconds,
         unit: SECONDS,
       },
     ],
@@ -965,7 +949,6 @@ const catalogue: Group[] = [
         explanation:
           'The share of members who see a challenge’s matches as one sentence per section, with the cards a tap away, rather than each section’s first card.',
         key: 'flags.matches_layout',
-        read: (c) => c.flags.matches_layout,
         unit: PERCENT,
       },
     ],
@@ -1007,21 +990,25 @@ function overrideOf(
   }
 }
 
+function readOf(entry: Entry, config: Config): string | number {
+  return 'key' in entry ? valueOf(config, entry.key) : entry.read(config)
+}
+
 function viewOf(
   entry: Entry,
   config: Config,
   defaults: Config,
   state: SettingsState,
 ): SettingView {
-  const value = shown(entry, entry.read(config))
+  const fixed = 'fixed' in entry
+  const value = shown(entry, readOf(entry, config))
   const view: SettingView = {
     ...described(entry),
     value,
-    changed:
-      entry.fixed !== true && value !== shown(entry, entry.read(defaults)),
-    fixed: entry.fixed === true,
+    changed: !fixed && value !== shown(entry, readOf(entry, defaults)),
+    fixed,
   }
-  if (entry.key === undefined) return view
+  if (!('key' in entry)) return view
   const override = overrideOf(entry, entry.key, state)
   return {
     ...view,
