@@ -1,6 +1,6 @@
 # 0045. Hide 9toRevolution, an office game, behind the impressum in happy mode
 
-- **Status:** Accepted, amended by 0046
+- **Status:** Accepted, amended by 0046, 0053
 - **Date:** 2026-10-07
 - **Deciders:** Andy Moesch
 
