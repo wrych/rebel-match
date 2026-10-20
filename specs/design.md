@@ -252,8 +252,8 @@ run:
    (R-NOTE-3). _In the app only_ and _Off_ mark the row `skipped`.
 3. **Leaves out what is stale** (R-NOTE-9): seen in the app, a request no
    longer pending, an applicant already decided, a challenge no longer shown,
-   a member whose account is deleted. Those rows are `skipped` with the
-   reason.
+   a crown the member no longer holds, a member whose account is deleted.
+   Those rows are `skipped` with the reason.
 4. **Groups by recipient and cadence**, and mails a group when it is due
    (R-NOTE-7): _Immediately_ at once, one mail per row; _Every 15 minutes_ and
    _Hourly_ when no mail of that cadence went to the member within the window,
@@ -483,8 +483,9 @@ challenge or an account deleted), so each tick (ADR 0049) runs
 `badges.checkCrowns()`: per row, the active member with the highest count,
 the holder keeping a tie, and among others the one whose counted act that
 reached the count came first. A crown moving writes a notification for the
-gainer only (R-BADGE-3). Deleting an account deletes its crowns at once, and
-the next check passes them on.
+gainer only (R-BADGE-3). Deleting an account (ADR 0032) deletes its
+`badge_crowns` rows in the same transaction that deactivates it, long before
+the erasure's cascade, and the next check passes them on.
 
 **Event badges.** An invite may point at an `event_badges` row. Admission
 through it (`invite-redemption`) inserts the member's event badge in the same
@@ -1037,8 +1038,8 @@ the default again deletes the row. `every_15_minutes` is accepted for
 
 The cascades erase a row with its recipient, the member it is about, and the
 request or challenge it refers to (R-NOTE-11, R-NFR-7). A `badge` row names the
-badge it is about and no other member; it is stale, and not mailed, once the
-crown it announces has moved on (R-NOTE-9).
+badge it is about and no other member; one announcing a crown the member no
+longer holds is stale and not mailed (R-NOTE-9).
 
 A digest quotes several members, which `outbox.about_member_id` cannot hold,
 so `outbox_quotes (outbox_id, member_id)` lists them, each cascading from both

@@ -1209,7 +1209,8 @@ notifications: they go out at once, whatever is chosen here (R-NFR-3).
 - **R-NOTE-9 (Nothing stale)** — Before mailing THE SYSTEM SHALL leave out
   every notification the member has seen in the app (R-NOTE-5), a request no
   longer pending, an applicant already decided, a challenge no longer shown,
-  and anything about a member whose account is deleted. IF nothing is left
+  a crown the member no longer holds (R-BADGE-3), and anything about a member
+  whose account is deleted. IF nothing is left
   THEN no mail SHALL go out.
 - **R-NOTE-10 (Delivered once, despite failures)** — A notification SHALL be
   stored with the event that causes it, so the event stands even when the mail
@@ -1482,8 +1483,9 @@ invite link (R-INV-1).
   member who holds it SHALL keep it; with no holder, the member who reached
   the count first SHALL get it. WHEN another member's count passes the
   holder's THE SYSTEM SHALL move the crown to them. Losing a crown SHALL be
-  silent: no notification, no mark. A member whose account is deleted SHALL
-  hold no crown, and it SHALL pass on at once (R-NFR-7).
+  silent: no notification, no mark. WHEN a member's account is deleted THE
+  SYSTEM SHALL take their crowns at once, before the erasure (R-NFR-7), and
+  pass each on at the next check.
 - **R-BADGE-4 (Event badges)** — A host creating an invite link SHALL be able
   to give it an event badge: none, a new one, or the badge of another invite,
   so every poster of one event gives the same badge (R-INV-9). A new badge
