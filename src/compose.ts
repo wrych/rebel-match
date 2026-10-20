@@ -51,6 +51,7 @@ import { createMemberDirectory } from './services/member-directory-store.js'
 import { createSwipeStore } from './services/swipe-store.js'
 import { createSwipes } from './services/swipes.js'
 import { createBadgeStore } from './services/badge-store.js'
+import { createEventBadgeStore } from './services/event-badge-store.js'
 import {
   countingChallenges,
   countingConnections,
@@ -403,6 +404,7 @@ function composeBadges(
 ): BadgeService {
   return createBadges({
     store: createBadgeStore(db),
+    events: createEventBadgeStore(db),
     levelCounts: () => config.badgeLevelCounts,
     gameOn: () => settings.game().enabled === 1,
   })

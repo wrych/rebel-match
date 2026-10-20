@@ -71,21 +71,27 @@ describe('skipReason (R-NOTE-3, R-NOTE-9)', () => {
     ],
     [
       'a badge level, which stays earned',
-      { type: 'badge' as const, badge: { row: 'speak', level: 2 } },
+      {
+        type: 'badge' as const,
+        badge: { row: 'speak', level: 2, eventName: null },
+      },
       null,
     ],
     [
       'a crown still held',
       {
         type: 'badge' as const,
-        badge: { row: 'speak', level: 0 },
+        badge: { row: 'speak', level: 0, eventName: null },
         crownHeld: true,
       },
       null,
     ],
     [
       'a crown since lost (R-BADGE-3)',
-      { type: 'badge' as const, badge: { row: 'speak', level: 0 } },
+      {
+        type: 'badge' as const,
+        badge: { row: 'speak', level: 0, eventName: null },
+      },
       'stale',
     ],
     [

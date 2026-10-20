@@ -107,7 +107,8 @@ function deps(
     },
     badges: {
       recount: () => Promise.resolve(),
-      mine: () => Promise.resolve({ rows: [] }),
+      mine: () => Promise.resolve({ rows: [], events: [] }),
+      claim: () => Promise.resolve(),
       awardAtLaunch: () => Promise.resolve(),
       checkCrowns: () => Promise.resolve(),
       newCount: () => Promise.resolve(0),

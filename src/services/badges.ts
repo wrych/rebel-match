@@ -1,12 +1,15 @@
 import {
   badgeRows,
+  eventRow,
   levelsReached,
   promotionLevels,
   rowNames,
   type BadgeRow,
+  type SeenRow,
 } from '../badges/rows.js'
 import { crownAfter, type Standing } from '../badges/crowns.js'
 import type { ChallengeService } from './challenges.js'
+import type { EarnedEventBadge, EventBadgeStore } from './event-badge-store.js'
 import type { GameService } from './game.js'
 import type { ConnectionService } from './connections.js'
 import type { SwipeService } from './swipes.js'
@@ -80,6 +83,8 @@ export interface RowView {
 
 export interface BadgeOverview {
   rows: RowView[]
+  /** Newest first (R-BADGE-7). */
+  events: EarnedEventBadge[]
 }
 
 export interface BadgeService {
@@ -97,7 +102,9 @@ export interface BadgeService {
   newCount(memberId: string): Promise<number>
   /** The member opened these rows' badges, so none of them is new any more
    * (R-BADGE-10). */
-  seen(memberId: string, rows: readonly BadgeRow[]): Promise<void>
+  seen(memberId: string, rows: readonly SeenRow[]): Promise<void>
+  /** Earns an invite's event badge for a member already in (R-BADGE-6). */
+  claim(memberId: string, token: string): Promise<void>
 }
 
 function rowView(
@@ -176,10 +183,23 @@ async function awardAtLaunch(store: BadgeStore, rules: Rules): Promise<void> {
   await store.markLaunched()
 }
 
+async function seen(
+  deps: { store: BadgeStore; events: EventBadgeStore },
+  memberId: string,
+  rows: readonly SeenRow[],
+): Promise<void> {
+  await deps.store.markSeen(
+    memberId,
+    rows.filter((row): row is BadgeRow => row !== eventRow),
+  )
+  if (rows.includes(eventRow)) await deps.events.markSeen(memberId)
+}
+
 /** Badge levels counted from what members already do and kept once earned
  * (R-BADGE-1, R-BADGE-2, ADR 0053). */
 export function createBadges(deps: {
   store: BadgeStore
+  events: EventBadgeStore
   levelCounts: () => readonly number[]
   gameOn: () => boolean
 }): BadgeService {
@@ -211,11 +231,13 @@ export function createBadges(deps: {
           ),
         ),
       )
-      return { rows }
+      return { rows, events: await deps.events.mine(memberId) }
     },
     awardAtLaunch: () => awardAtLaunch(store, rules),
-    newCount: (memberId) => store.newCount(memberId),
-    seen: (memberId, rows) => store.markSeen(memberId, rows),
+    newCount: async (memberId) =>
+      (await store.newCount(memberId)) + (await deps.events.newCount(memberId)),
+    seen: (memberId, rows) => seen(deps, memberId, rows),
+    claim: (memberId, token) => deps.events.claim(memberId, token, new Date()),
     checkCrowns: async () => {
       for (const row of rules.shown()) await checkCrown(store, rules, row)
     },

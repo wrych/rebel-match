@@ -511,6 +511,11 @@ export const notifications = pgTable(
     // (R-BADGE-10).
     badgeRow: varchar('badge_row', { length: 10 }),
     badgeLevel: smallint('badge_level'),
+    // An event badge gained, under the row 'event' (R-BADGE-6).
+    eventBadgeId: id('event_badge_id').references(
+      (): AnyPgColumn => eventBadges.id,
+      { onDelete: 'cascade' },
+    ),
     createdAt: at('created_at').notNull().defaultNow(),
     seenAt: at('seen_at'),
     hidden: boolean('hidden').notNull().default(false),
@@ -660,6 +665,23 @@ export const eventBadges = pgTable('event_badges', {
   logoSvg: text('logo_svg'),
   createdAt: at('created_at').notNull().defaultNow(),
 })
+
+// The event badges a member has earned, each once, new until seen
+// (R-BADGE-6, R-BADGE-10). Nobody else reads them (R-BADGE-12).
+export const memberEventBadges = pgTable(
+  'member_event_badges',
+  {
+    memberId: id('member_id')
+      .notNull()
+      .references(() => members.id, { onDelete: 'cascade' }),
+    eventBadgeId: id('event_badge_id')
+      .notNull()
+      .references(() => eventBadges.id, { onDelete: 'cascade' }),
+    earnedAt: at('earned_at').notNull().defaultNow(),
+    seenAt: at('seen_at'),
+  },
+  (t) => [primaryKey({ columns: [t.memberId, t.eventBadgeId] })],
+)
 
 // One row once the badges already earned before launch were recorded, so
 // that is done once, quietly (R-BADGE-11).

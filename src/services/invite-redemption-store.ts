@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { eq, sql } from 'drizzle-orm'
 import type { Database } from '../db/connect.js'
 import { invites, memberRoles, members } from '../db/schema.js'
+import { earnEventBadge } from './event-badge-store.js'
 import {
   refusalFor,
   type Redemption,
@@ -43,6 +44,9 @@ async function admitLocked(
     .update(invites)
     .set({ uses: sql`${invites.uses} + 1` })
     .where(eq(invites.id, invite.id))
+  // Its event badge comes with the membership (R-BADGE-6).
+  if (invite.eventBadgeId !== null)
+    await earnEventBadge(db, memberId, invite.eventBadgeId)
   return { result: 'admitted' }
 }
 

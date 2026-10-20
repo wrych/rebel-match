@@ -65,6 +65,7 @@ describe('a row of badges (R-BADGE-7)', () => {
           row(),
           row({ crown: { name: 'Liberator', held: true, new: false } }),
         ],
+        events: [],
       }),
     ).toBe(5)
   })

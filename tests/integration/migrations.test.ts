@@ -58,6 +58,7 @@ describe('migrations', () => {
       'invites',
       'magic_tokens',
       'member_badges',
+      'member_event_badges',
       'member_expertise',
       'member_roles',
       'members',

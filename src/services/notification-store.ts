@@ -14,6 +14,7 @@ import type { Database } from '../db/connect.js'
 import {
   challenges,
   connectionRequests,
+  eventBadges,
   follows,
   memberRoles,
   members,
@@ -70,7 +71,12 @@ export async function insertNotification(
  * themselves; level 0 is the row's crown (R-BADGE-10, R-NOTE-1). */
 export async function insertBadgeNotification(
   db: Database,
-  note: { recipientId: string; row: string; level: number },
+  note: {
+    recipientId: string
+    row: string
+    level: number
+    eventBadgeId?: string
+  },
 ): Promise<void> {
   await db.insert(n).values({
     id: randomUUID(),
@@ -79,6 +85,7 @@ export async function insertBadgeNotification(
     aboutMemberId: note.recipientId,
     badgeRow: note.row,
     badgeLevel: note.level,
+    eventBadgeId: note.eventBadgeId ?? null,
     hidden: offFor(note.recipientId, 'badge'),
   })
 }
@@ -143,6 +150,7 @@ interface ListedRow {
   trend: string | null
   badgeRow: string | null
   badgeLevel: number | null
+  eventName: string | null
 }
 
 // An applicant is named by what they gave, else their address; anyone else
@@ -164,7 +172,11 @@ function rowOf(row: ListedRow, memberId: string): NotificationRow {
     badge:
       row.badgeRow === null || row.badgeLevel === null
         ? null
-        : { row: row.badgeRow, level: row.badgeLevel },
+        : {
+            row: row.badgeRow,
+            level: row.badgeLevel,
+            eventName: row.eventName,
+          },
   }
 }
 
@@ -190,11 +202,13 @@ async function list(
       trend: trends.short,
       badgeRow: n.badgeRow,
       badgeLevel: n.badgeLevel,
+      eventName: eventBadges.name,
     })
     .from(n)
     .innerJoin(about, eq(about.id, n.aboutMemberId))
     .leftJoin(request, eq(request.id, n.connectionId))
     .leftJoin(challenges, eq(challenges.id, n.challengeId))
+    .leftJoin(eventBadges, eq(eventBadges.id, n.eventBadgeId))
     .leftJoin(
       trends,
       eq(
