@@ -97,7 +97,7 @@ describe('markNotificationsSeen', () => {
     window.removeEventListener(NOTIFICATIONS_SEEN, heard)
     expect(fetchMock).toHaveBeenCalledWith('/api/notifications/seen', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ ids: ['n1', 'n2'] }),
     })
     expect(heard).toHaveBeenCalledOnce()

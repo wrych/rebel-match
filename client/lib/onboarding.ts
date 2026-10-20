@@ -1,4 +1,5 @@
 import { safeNextPath } from '../../src/routes'
+import { getJson, outcomeOf, send } from './request'
 
 /** The profile as the member types it on the first step (R-ONB-2). */
 export interface TypedProfile {
@@ -82,10 +83,7 @@ export function forgetTyped(): void {
 }
 
 export async function fetchDraft(): Promise<OnboardingDraft> {
-  const response = await fetch('/api/onboarding')
-  if (!response.ok)
-    throw new Error(`onboarding unavailable (${String(response.status)})`)
-  return (await response.json()) as OnboardingDraft
+  return getJson<OnboardingDraft>('/api/onboarding', 'onboarding unavailable')
 }
 
 /** The privacy step's confirmation: the profile and the consent version read,
@@ -93,15 +91,11 @@ export async function fetchDraft(): Promise<OnboardingDraft> {
 export async function completeOnboarding(
   answers: OnboardingAnswers,
 ): Promise<'done' | 'stale'> {
-  const response = await fetch('/api/onboarding', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(answers),
+  const response = await send('/api/onboarding', 'POST', answers)
+  return outcomeOf(response, 'onboarding failed', {
+    409: 'stale' as const,
+    ok: 'done' as const,
   })
-  if (response.status === 409) return 'stale'
-  if (!response.ok)
-    throw new Error(`onboarding failed (${String(response.status)})`)
-  return 'done'
 }
 
 /** A step's path carrying `next` on, so the member still lands where they

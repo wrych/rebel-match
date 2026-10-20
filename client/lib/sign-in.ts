@@ -1,3 +1,5 @@
+import { failure, send } from './request'
+
 export type SignInResult =
   | { ok: true; next: string }
   | { ok: false; reason: 'expired' | 'used' | 'unknown' }
@@ -14,11 +16,7 @@ export function tokenFromHash(hash: string): string | null {
  * when the server could not answer, so a network hiccup is not reported as
  * a dead link. */
 export async function signIn(token: string): Promise<SignInResult> {
-  const response = await fetch('/auth/verify', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ token }),
-  })
+  const response = await send('/auth/verify', 'POST', { token })
   if (response.ok) {
     const { next } = (await response.json()) as { next: string }
     return { ok: true, next }
@@ -32,5 +30,5 @@ export async function signIn(token: string): Promise<SignInResult> {
         : 'unknown',
     }
   }
-  throw new Error(`sign-in failed (${String(response.status)})`)
+  throw failure('sign-in failed', response)
 }
