@@ -42,6 +42,10 @@ export interface BadgeStore {
   earned(memberId: string): Promise<EarnedLevel[]>
   launched(): Promise<boolean>
   markLaunched(): Promise<void>
+  /** How many of the member's levels and crowns are new. */
+  newCount(memberId: string): Promise<number>
+  /** Marks the member's levels and crown in these rows as seen. */
+  markSeen(memberId: string, rows: readonly CountedRow[]): Promise<void>
 }
 
 /** A row's crown as stored: its holder, if anyone. */
@@ -66,6 +70,7 @@ export interface RowView {
   title: string
   /** What the row counts, singular and plural. */
   counts: readonly [string, string]
+  explains: string
   count: number
   levels: LevelView[]
   /** Whether the member holds it, and nothing about who else might
@@ -88,6 +93,11 @@ export interface BadgeService {
   /** Moves each crown to whoever leads now, for counts that fell with nobody
    * acting (R-BADGE-3). */
   checkCrowns(): Promise<void>
+  /** How many of the member's badges are new, for the menu (R-BADGE-10). */
+  newCount(memberId: string): Promise<number>
+  /** The member opened these rows' badges, so none of them is new any more
+   * (R-BADGE-10). */
+  seen(memberId: string, rows: readonly CountedRow[]): Promise<void>
 }
 
 function rowView(
@@ -104,6 +114,7 @@ function rowView(
     row,
     title: names.title,
     counts: names.counts,
+    explains: names.explains,
     count,
     levels: levelCounts.map((needs, index) => {
       const earned = held.find((each) => each.level === index + 1)
@@ -187,6 +198,8 @@ export function createBadges(deps: {
       return { rows }
     },
     awardAtLaunch: () => awardAtLaunch(store, deps.levelCounts),
+    newCount: (memberId) => store.newCount(memberId),
+    seen: (memberId, rows) => store.markSeen(memberId, rows),
     checkCrowns: async () => {
       for (const row of countedRows)
         await checkCrown(store, deps.levelCounts, row)

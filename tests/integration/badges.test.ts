@@ -242,9 +242,44 @@ describe('badges over Postgres (R-BADGE-1, R-BADGE-2)', () => {
     expect(await speakCrownHolder()).toBeNull()
 
     await deps.erasure.restore(ids['ana.ferreira']!)
+    const session = await deps.auth.createSession(ids['ana.ferreira']!)
+    cookies['ana.ferreira'] = `${session.name}=${session.value}`
     await deps.badges.checkCrowns()
 
     expect(await speakCrownHolder()).toBe(ids['ana.ferreira'])
+  })
+
+  it('counts new badges until their row is seen (R-BADGE-10)', async () => {
+    const fresh = async (person: string): Promise<number> =>
+      (
+        (
+          await request(app)
+            .get('/api/badges/new')
+            .set('Cookie', cookies[person]!)
+            .expect(200)
+        ).body as { count: number }
+      ).count
+    const before = await fresh('ana.ferreira')
+    expect(before).toBeGreaterThan(0)
+
+    await request(app)
+      .post('/api/badges/seen')
+      .set('Cookie', cookies['ana.ferreira']!)
+      .send({ rows: ['speak', 'boat', 'connect'] })
+      .expect(204)
+
+    expect(await fresh('ana.ferreira')).toBe(0)
+    expect(
+      (await rowOf('ana.ferreira', 'speak')).levels.some((level) => level.new),
+    ).toBe(false)
+  })
+
+  it('refuses a row that does not exist', async () => {
+    await request(app)
+      .post('/api/badges/seen')
+      .set('Cookie', cookies['ana.ferreira']!)
+      .send({ rows: ['gossip'] })
+      .expect(400)
   })
 
   it('answers no one signed out', async () => {

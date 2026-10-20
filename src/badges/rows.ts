@@ -1,17 +1,14 @@
-/** A row of badges: one thing counted (R-BADGE-1). */
-export type CountedRow = 'speak' | 'help' | 'boat' | 'connect'
+export const countedRows = ['speak', 'help', 'boat', 'connect'] as const
 
-export const countedRows: readonly CountedRow[] = [
-  'speak',
-  'help',
-  'boat',
-  'connect',
-]
+/** A row of badges: one thing counted (R-BADGE-1). */
+export type CountedRow = (typeof countedRows)[number]
 
 /** What a row is called and what its levels and crown are named. */
 export interface RowNames {
   title: string
   counts: readonly [one: string, many: string]
+  /** How the row counts, as its screen says it (R-BADGE-8). */
+  explains: string
   levels: readonly string[]
   crown: string
 }
@@ -21,25 +18,33 @@ export interface RowNames {
 export const rowNames: Readonly<Record<CountedRow, RowNames>> = {
   speak: {
     title: 'Speak up',
-    counts: ['challenge', 'challenges'],
+    counts: ['challenge posted', 'challenges posted'],
+    explains:
+      'Each challenge you post counts once its topic is set. Taking one down later does not take a badge back.',
     levels: ['Spark', 'Agitator', 'Firebrand'],
     crown: 'Ringleader',
   },
   help: {
     title: 'Offer help',
-    counts: ['offer', 'offers'],
+    counts: ['offer of help', 'offers of help'],
+    explains:
+      'Each “Been there” you send from the deck, with your note, counts once.',
     levels: ['Ally', 'Partner in Crime', 'Freedom Fighter'],
     crown: 'Liberator',
   },
   boat: {
     title: 'Shared pain',
-    counts: ['same boat', 'same boats'],
+    counts: ['time in the same boat', 'times in the same boat'],
+    explains:
+      'Each time you tell someone you are in the same boat counts once, from the deck or from your matches.',
     levels: ['Shipmate', 'Mutineer', 'Captain of the Mutiny'],
     crown: 'Admiral of the Fleet',
   },
   connect: {
     title: 'Connect',
-    counts: ['person', 'people'],
+    counts: ['person connected', 'people connected'],
+    explains:
+      'Each person you are connected with counts once, however many challenges you share.',
     levels: ['Co-conspirator', 'Cell Builder', 'Movement Maker'],
     crown: 'Heart of the Movement',
   },

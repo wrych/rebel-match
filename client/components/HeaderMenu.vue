@@ -3,6 +3,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { adminLinksFor } from '../lib/admin-screens'
 import { fetchConfig, type ClientConfig } from '../lib/api'
+import { BADGES_SEEN, badgesLabel, fetchNewBadges } from '../lib/badges'
 import { reportEvent } from '../lib/events'
 import { feedbackMailto } from '../lib/feedback'
 import type { Mood } from '../lib/mood'
@@ -24,6 +25,7 @@ const me = ref<Me | null>(null)
 const version = ref<ClientConfig['build'] | null>(null)
 const feedbackTo = ref<string | null>(null)
 const fresh = ref(0)
+const freshBadges = ref(0)
 let stopPolling: (() => void) | undefined
 let gone = false
 
@@ -35,16 +37,25 @@ async function readFresh(): Promise<void> {
   showUnread(fresh.value)
 }
 
+// Read as the notifications are, and at once when a badges screen marked
+// what it showed (R-BADGE-10).
+async function readFreshBadges(): Promise<void> {
+  freshBadges.value = await fetchNewBadges().catch(() => 0)
+}
+
 // Refreshed as the matches badge is, and at once when the notifications
 // screen has marked what it listed (R-NOTE-6, R-MINE-4).
 onMounted(async () => {
   window.addEventListener(NOTIFICATIONS_SEEN, readFresh)
+  window.addEventListener(BADGES_SEEN, readFreshBadges)
   void readFresh()
+  void readFreshBadges()
   const config = await fetchConfig().catch(() => null)
   if (config === null || gone) return
   remember(config)
   stopPolling = poll(() => {
     void readFresh()
+    void readFreshBadges()
   }, config.limits.matchesPollSeconds * MS_PER_SECOND)
 })
 const problem = ref<string | null>(null)
@@ -94,6 +105,7 @@ async function show(): Promise<void> {
       .then(remember)
       .catch(() => undefined)
   void readFresh()
+  void readFreshBadges()
   me.value = await loadMe().catch(() => null)
 }
 
@@ -123,6 +135,7 @@ onBeforeUnmount(() => {
   gone = true
   stopPolling?.()
   window.removeEventListener(NOTIFICATIONS_SEEN, readFresh)
+  window.removeEventListener(BADGES_SEEN, readFreshBadges)
   close(false)
 })
 </script>
@@ -166,6 +179,14 @@ onBeforeUnmount(() => {
         class="item"
         @click="close(false)"
         >{{ menuLabel(fresh) }}</RouterLink
+      >
+
+      <RouterLink
+        v-if="me?.onboarded"
+        to="/badges"
+        class="item"
+        @click="close(false)"
+        >{{ badgesLabel(freshBadges) }}</RouterLink
       >
 
       <RouterLink

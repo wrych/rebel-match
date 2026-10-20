@@ -109,6 +109,8 @@ function deps(
       mine: () => Promise.resolve({ rows: [] }),
       awardAtLaunch: () => Promise.resolve(),
       checkCrowns: () => Promise.resolve(),
+      newCount: () => Promise.resolve(0),
+      seen: () => Promise.resolve(),
     },
     connections: {
       request: () => Promise.resolve({ result: 'not_found' }),

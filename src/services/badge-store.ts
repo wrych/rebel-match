@@ -1,4 +1,4 @@
-import { eq, sql } from 'drizzle-orm'
+import { and, count, eq, inArray, isNull, sql } from 'drizzle-orm'
 import type { SQL } from 'drizzle-orm'
 import type { Database } from '../db/connect.js'
 import {
@@ -154,6 +154,49 @@ async function earned(db: Database, memberId: string): Promise<EarnedLevel[]> {
   )
 }
 
+async function newCount(db: Database, memberId: string): Promise<number> {
+  const [levels] = await db
+    .select({ count: count() })
+    .from(memberBadges)
+    .where(
+      and(eq(memberBadges.memberId, memberId), isNull(memberBadges.seenAt)),
+    )
+  const [crowned] = await db
+    .select({ count: count() })
+    .from(badgeCrowns)
+    .where(and(eq(badgeCrowns.memberId, memberId), isNull(badgeCrowns.seenAt)))
+  return (levels?.count ?? 0) + (crowned?.count ?? 0)
+}
+
+async function markSeen(
+  db: Database,
+  memberId: string,
+  rows: readonly CountedRow[],
+): Promise<void> {
+  if (rows.length === 0) return
+  const now = new Date()
+  await db
+    .update(memberBadges)
+    .set({ seenAt: now })
+    .where(
+      and(
+        eq(memberBadges.memberId, memberId),
+        inArray(memberBadges.rowKey, [...rows]),
+        isNull(memberBadges.seenAt),
+      ),
+    )
+  await db
+    .update(badgeCrowns)
+    .set({ seenAt: now })
+    .where(
+      and(
+        eq(badgeCrowns.memberId, memberId),
+        inArray(badgeCrowns.rowKey, [...rows]),
+        isNull(badgeCrowns.seenAt),
+      ),
+    )
+}
+
 /** Badges over Postgres (design §2). Counts are read live from the records
  * they count; only the levels earned are kept. */
 export function createBadgeStore(db: Database): BadgeStore {
@@ -162,6 +205,8 @@ export function createBadgeStore(db: Database): BadgeStore {
     standings: (row) => standings(db, row),
     crowns: () => crowns(db),
     setCrown: (row, memberId, seen) => setCrown(db, row, memberId, seen),
+    newCount: (memberId) => newCount(db, memberId),
+    markSeen: (memberId, rows) => markSeen(db, memberId, rows),
     award: (memberId, row, levels, seen) =>
       award(db, memberId, row, levels, seen),
     earned: (memberId) => earned(db, memberId),
