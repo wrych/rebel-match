@@ -42,6 +42,8 @@ const due = (over: Partial<DueNotification> = {}): DueNotification => ({
   challengeId: null,
   challengeActive: false,
   trend: null,
+  badge: null,
+  crownHeld: false,
   ...over,
 })
 
@@ -180,6 +182,54 @@ describe('a new challenge in a followed trend (R-ASK-9, R-OFF-7)', () => {
     expect(sent[0]?.text).toContain(
       'Ada posted a challenge in Radical Transparency.\nhttp://localhost:5173/offer?challenge=c1',
     )
+  })
+})
+
+const badgeNote = due({
+  id: 'n5',
+  type: 'badge',
+  aboutMemberId: 'm-bob',
+  connectionId: null,
+  requestStatus: null,
+  badge: { row: 'speak', level: 2 },
+})
+
+describe('a badge gained (R-BADGE-10)', () => {
+  it('mails the member its name and row, linking the row, about nobody else', async () => {
+    const { send, sent } = sender()
+
+    expect(await send([badgeNote])).toBe('sent')
+
+    expect(sent).toEqual([
+      {
+        memberId: 'm-bob',
+        to: 'm-bob@example.invalid',
+        kind: 'badge',
+        subject: 'New badge on Rebel Match: Agitator',
+        text:
+          'You earned a new badge in Speak up: Agitator.\n\n' +
+          'See your badges here:\n' +
+          'http://localhost:5173/badges/speak?notice=badge\n',
+      },
+    ])
+  })
+
+  it('says a crown is a crown, and takes a line of its own in a digest', async () => {
+    const { send, sent } = sender()
+
+    await send([due(), due({ ...badgeNote, badge: { row: 'help', level: 0 } })])
+
+    expect(sent[0]?.text).toContain(
+      'You hold the crown of Offer help: Liberator.\nhttp://localhost:5173/badges/help?notice=badge',
+    )
+  })
+
+  it('sends nothing for a row that no longer exists', async () => {
+    expect(
+      await sender().send([
+        due({ ...badgeNote, badge: { row: 'gone', level: 1 } }),
+      ]),
+    ).toBeNull()
   })
 })
 

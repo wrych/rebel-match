@@ -141,6 +141,13 @@
       "when": 1792490014037,
       "tag": "0019_badge_crowns",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1792492285936,
+      "tag": "0020_badge_notifications",
+      "breakpoints": true
     }
   ]
 }

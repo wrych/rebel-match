@@ -9,6 +9,7 @@ import {
   type BadgeStore,
   type Crown,
   type EarnedLevel,
+  type Gain,
 } from './badges.js'
 import type { ChallengeService } from './challenges.js'
 import type {
@@ -124,6 +125,65 @@ function setup(): {
     store,
   }
 }
+
+describe('notifying gains (R-BADGE-10)', () => {
+  function notifying(): {
+    badges: BadgeService
+    store: ReturnType<typeof memoryStore>
+    gains: Gain[]
+  } {
+    const store = memoryStore()
+    const gains: Gain[] = []
+    const badges = createBadges({
+      store,
+      levelCounts: () => levelCounts,
+      notify: (gain) => {
+        gains.push(gain)
+        return Promise.resolve()
+      },
+    })
+    return { badges, store, gains }
+  }
+
+  it('notifies each level gained, once', async () => {
+    const { badges, store, gains } = notifying()
+    await badges.checkCrowns()
+    store.counts.set('ana:help', 5)
+
+    await badges.recount('ana', ['help'])
+    await badges.recount('ana', ['help'])
+
+    expect(gains).toEqual([
+      { memberId: 'ana', row: 'help', level: 1 },
+      { memberId: 'ana', row: 'help', level: 2 },
+      { memberId: 'ana', row: 'help', level: 0 },
+    ])
+  })
+
+  it("notifies nothing at launch, nor for a row's first crown", async () => {
+    const { badges, store, gains } = notifying()
+    store.counts.set('ana:speak', 3)
+
+    await badges.awardAtLaunch()
+    await badges.checkCrowns()
+
+    expect(gains).toEqual([])
+  })
+
+  it('notifies who gains a crown, never who loses it (R-BADGE-3)', async () => {
+    const { badges, store, gains } = notifying()
+    store.counts.set('ana:speak', 2)
+    await badges.awardAtLaunch()
+    await badges.checkCrowns()
+    store.counts.set('ben:speak', 3)
+
+    await badges.recount('ben', ['speak'])
+
+    expect(gains.filter((gain) => gain.level === 0)).toEqual([
+      { memberId: 'ben', row: 'speak', level: 0 },
+    ])
+  })
+})
 
 describe('badge levels (R-BADGE-1, R-BADGE-2)', () => {
   it('records every level a count has reached, as new', async () => {

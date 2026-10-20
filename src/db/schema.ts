@@ -215,6 +215,7 @@ export const outboxKind = pgEnum('outbox_kind', [
   'connection_added',
   'notification_digest',
   'trend_challenge',
+  'badge',
 ])
 
 export const outboxStatus = pgEnum('outbox_status', [
@@ -470,6 +471,7 @@ export const notificationType = pgEnum('notification_type', [
   'new_connection',
   'trend_challenge',
   'applicant',
+  'badge',
 ])
 
 export const notificationMailStatus = pgEnum('notification_mail_status', [
@@ -501,6 +503,11 @@ export const notifications = pgTable(
     challengeId: id('challenge_id').references(() => challenges.id, {
       onDelete: 'cascade',
     }),
+    // A badge gained: its row and level, 0 for the row's crown. Its
+    // recipient is the member it is about, so it names nobody else
+    // (R-BADGE-10).
+    badgeRow: varchar('badge_row', { length: 10 }),
+    badgeLevel: smallint('badge_level'),
     createdAt: at('created_at').notNull().defaultNow(),
     seenAt: at('seen_at'),
     hidden: boolean('hidden').notNull().default(false),

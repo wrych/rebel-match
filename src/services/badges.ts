@@ -132,10 +132,23 @@ function rowView(
 
 // A row's first crown is given quietly, as everything from before launch is
 // (R-BADGE-11); a crown moving after that is news to the gainer only.
+/** A badge gained: a level, or 0 for the row's crown. */
+export interface Gain {
+  memberId: string
+  row: CountedRow
+  level: number
+}
+
+/** Tells a member of a badge they gained (R-BADGE-10). */
+export type Notify = (gain: Gain) => Promise<void>
+
+const notifyNobody: Notify = () => Promise.resolve()
+
 async function checkCrown(
   store: BadgeStore,
   levelCounts: () => readonly number[],
   row: CountedRow,
+  notify: Notify,
 ): Promise<void> {
   const current = (await store.crowns()).find((crown) => crown.row === row)
   const holder = current?.memberId ?? null
@@ -145,7 +158,10 @@ async function checkCrown(
     levelCounts()[0] ?? 1,
   )
   if (current === undefined) await store.setCrown(row, next, true)
-  else if (next !== holder) await store.setCrown(row, next, false)
+  else if (next !== holder) {
+    await store.setCrown(row, next, false)
+    if (next !== null) await notify({ memberId: next, row, level: 0 })
+  }
 }
 
 async function awardAtLaunch(
@@ -167,15 +183,21 @@ async function awardAtLaunch(
 export function createBadges(deps: {
   store: BadgeStore
   levelCounts: () => readonly number[]
+  notify?: Notify
 }): BadgeService {
   const { store } = deps
+  const notify = deps.notify ?? notifyNobody
   return {
     recount: async (memberId, rows) => {
       for (const row of rows) {
         const count = await store.count(memberId, row)
         const reached = levelsReached(count, deps.levelCounts())
-        if (reached.length > 0) await store.award(memberId, row, reached, false)
-        await checkCrown(store, deps.levelCounts, row)
+        const added =
+          reached.length > 0
+            ? await store.award(memberId, row, reached, false)
+            : []
+        for (const level of added) await notify({ memberId, row, level })
+        await checkCrown(store, deps.levelCounts, row, notify)
       }
     },
     mine: async (memberId) => {
@@ -202,7 +224,7 @@ export function createBadges(deps: {
     seen: (memberId, rows) => store.markSeen(memberId, rows),
     checkCrowns: async () => {
       for (const row of countedRows)
-        await checkCrown(store, deps.levelCounts, row)
+        await checkCrown(store, deps.levelCounts, row, notify)
     },
   }
 }

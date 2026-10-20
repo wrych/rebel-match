@@ -42,6 +42,10 @@ async function forget(): Promise<void> {
     Object.values(ids),
   ])
   await db.query('DELETE FROM members WHERE email = ?', [stranger])
+  await db.query(
+    "DELETE FROM notification_settings WHERE type = 'badge' AND member_id IN (?)",
+    [Object.values(ids)],
+  )
 }
 
 beforeAll(async () => {
@@ -61,6 +65,13 @@ beforeAll(async () => {
     cookies[who] = `${session.name}=${session.value}`
   }
   await forget()
+  // These are about requests: the badges a connection earns are off, so
+  // they are kept hidden rather than listed beside them (R-NOTE-4).
+  for (const id of Object.values(ids))
+    await db.query(
+      "INSERT INTO notification_settings (member_id, type, cadence) VALUES (?, 'badge', 'off')",
+      [id],
+    )
 })
 
 afterAll(async () => {

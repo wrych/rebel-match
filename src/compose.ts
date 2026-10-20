@@ -24,13 +24,17 @@ import { createSettings } from './services/settings.js'
 import { createWindowCounter } from './services/rate-limit.js'
 import {
   createNotifications,
+  markingBadgesOpened,
   markingDeckOpened,
   markingOpened,
   type NotificationService,
 } from './services/notifications.js'
 import { createNotificationSettings } from './services/notification-settings.js'
 import { createNotificationSettingsStore } from './services/notification-settings-store.js'
-import { createNotificationStore } from './services/notification-store.js'
+import {
+  createNotificationStore,
+  insertBadgeNotification,
+} from './services/notification-store.js'
 import { createNotificationMailStore } from './services/notification-mail-store.js'
 import { createNotificationSender } from './services/notification-mail.js'
 import { createNotificationWorker } from './services/notification-worker.js'
@@ -391,10 +395,18 @@ function composeOnboarding(
   }
 }
 
+// Each badge gained is a notification, kept in the app and mailed at the
+// member's cadence (R-BADGE-10, R-NOTE-1).
 function composeBadges(config: Config, db: Database): BadgeService {
   return createBadges({
     store: createBadgeStore(db),
     levelCounts: () => config.badgeLevelCounts,
+    notify: (gain) =>
+      insertBadgeNotification(db, {
+        recipientId: gain.memberId,
+        row: gain.row,
+        level: gain.level,
+      }),
   })
 }
 
@@ -535,7 +547,7 @@ export function composeApp(
       service: badges,
       onError: hooks.onBadgeError ?? ignoreError,
     }),
-    badges,
+    badges: markingBadgesOpened(badges, composeNotifications(db, settings)),
     game: composeGame(config, db, settings, track),
     notificationMail: composeNotificationMail(config, db, mailer, hooks),
   }

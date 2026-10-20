@@ -39,6 +39,8 @@ const due = (over: Partial<DueNotification> = {}): DueNotification => ({
   challengeId: null,
   challengeActive: false,
   trend: null,
+  badge: null,
+  crownHeld: false,
   ...over,
 })
 
@@ -65,6 +67,25 @@ describe('skipReason (R-NOTE-3, R-NOTE-9)', () => {
     [
       'a new challenge no longer shown',
       { type: 'trend_challenge' as const, challengeActive: false },
+      'stale',
+    ],
+    [
+      'a badge level, which stays earned',
+      { type: 'badge' as const, badge: { row: 'speak', level: 2 } },
+      null,
+    ],
+    [
+      'a crown still held',
+      {
+        type: 'badge' as const,
+        badge: { row: 'speak', level: 0 },
+        crownHeld: true,
+      },
+      null,
+    ],
+    [
+      'a crown since lost (R-BADGE-3)',
+      { type: 'badge' as const, badge: { row: 'speak', level: 0 } },
       'stale',
     ],
     [

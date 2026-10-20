@@ -53,14 +53,16 @@ describe('createNotificationSettings (R-NOTE-2, R-NOTE-3)', () => {
       ['connection_request', 'hourly'],
       ['new_connection', 'hourly'],
       ['trend_challenge', 'daily'],
+      ['badge', 'daily'],
     ])
     expect(host.map((s) => [s.type, s.cadence])).toEqual([
       ['connection_request', 'hourly'],
       ['new_connection', 'hourly'],
       ['trend_challenge', 'daily'],
+      ['badge', 'daily'],
       ['applicant', 'every_15_minutes'],
     ])
-    expect(host[3]?.offered).toContain('every_15_minutes')
+    expect(host[4]?.offered).toContain('every_15_minutes')
     expect(member[0]?.offered).not.toContain('every_15_minutes')
   })
 

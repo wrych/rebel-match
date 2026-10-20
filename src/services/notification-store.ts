@@ -66,6 +66,23 @@ export async function insertNotification(
   })
 }
 
+/** Stores a member's notification of a badge they gained, about nobody but
+ * themselves; level 0 is the row's crown (R-BADGE-10, R-NOTE-1). */
+export async function insertBadgeNotification(
+  db: Database,
+  note: { recipientId: string; row: string; level: number },
+): Promise<void> {
+  await db.insert(n).values({
+    id: randomUUID(),
+    recipientId: note.recipientId,
+    type: 'badge',
+    aboutMemberId: note.recipientId,
+    badgeRow: note.row,
+    badgeLevel: note.level,
+    hidden: offFor(note.recipientId, 'badge'),
+  })
+}
+
 // Stored but hidden when the recipient set the type to Off (R-NOTE-4).
 function offFor(recipient: unknown, type: string): SQL<boolean> {
   return sql<boolean>`exists (select 1 from ${notificationSettings} where ${notificationSettings.memberId} = ${recipient} and ${notificationSettings.type} = ${type} and ${notificationSettings.cadence} = 'off')`
@@ -124,6 +141,8 @@ interface ListedRow {
   requesterId: string | null
   challengeId: string | null
   trend: string | null
+  badgeRow: string | null
+  badgeLevel: number | null
 }
 
 // An applicant is named by what they gave, else their address; anyone else
@@ -142,6 +161,10 @@ function rowOf(row: ListedRow, memberId: string): NotificationRow {
     recipientRequested: row.requesterId === memberId,
     challengeId: row.challengeId,
     trend: row.trend,
+    badge:
+      row.badgeRow === null || row.badgeLevel === null
+        ? null
+        : { row: row.badgeRow, level: row.badgeLevel },
   }
 }
 
@@ -165,6 +188,8 @@ async function list(
       requesterId: request.requesterId,
       challengeId: n.challengeId,
       trend: trends.short,
+      badgeRow: n.badgeRow,
+      badgeLevel: n.badgeLevel,
     })
     .from(n)
     .innerJoin(about, eq(about.id, n.aboutMemberId))
@@ -254,5 +279,11 @@ export function createNotificationStore(
       ),
     markSeenForApplicants: (memberId) =>
       markSeenWhere(db, memberId, eq(n.type, 'applicant')),
+    markSeenForBadges: (memberId, rows) =>
+      markSeenWhere(
+        db,
+        memberId,
+        and(eq(n.type, 'badge'), inArray(n.badgeRow, [...rows])),
+      ),
   }
 }

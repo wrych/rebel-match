@@ -43,6 +43,9 @@ async function cleanup(): Promise<void> {
   await db.query('DELETE FROM member_badges')
   await db.query('DELETE FROM badge_crowns')
   await db.query('DELETE FROM badge_launch')
+  await db.query("DELETE FROM notifications WHERE type = 'badge'")
+  await db.query("DELETE FROM outbox WHERE kind = 'badge'")
+  await db.query('DELETE FROM notification_settings WHERE member_id = ?', [ana])
 }
 
 beforeAll(async () => {
@@ -147,6 +150,40 @@ describe('badges over Postgres (R-BADGE-1, R-BADGE-2)', () => {
     const speak = await rowOf('ana.ferreira', 'speak')
     expect(speak.count).toBe(1)
     expect(earned(speak)).toEqual([['Spark', true]])
+  })
+
+  it('notifies a level gained in the app, linking its row (R-BADGE-10)', async () => {
+    const listed = await request(app)
+      .get('/api/notifications')
+      .set('Cookie', cookies['ana.ferreira']!)
+      .expect(200)
+
+    const badges = (
+      listed.body as {
+        notifications: { kind: string; name: string; path: string }[]
+      }
+    ).notifications.filter((note) => note.kind === 'badge')
+    expect(badges.map((note) => [note.name, note.path])).toEqual([
+      ['Spark', '/badges/speak'],
+    ])
+  })
+
+  it('mails it at the cadence the member chose', async () => {
+    await request(app)
+      .put('/api/me/notification-settings/badge')
+      .set('Cookie', cookies['ana.ferreira']!)
+      .send({ cadence: 'immediately' })
+      .expect(204)
+
+    await deps.notificationMail.deliverDue()
+
+    const mailed = await db.query(
+      "SELECT subject FROM outbox WHERE kind = 'badge' AND member_id = ?",
+      [ids['ana.ferreira']],
+    )
+    expect(mailed.map((row) => row['subject'])).toEqual([
+      'New badge on Rebel Match: Spark',
+    ])
   })
 
   it('counts a "been there" from the deck as help offered', async () => {
@@ -269,6 +306,12 @@ describe('badges over Postgres (R-BADGE-1, R-BADGE-2)', () => {
       .expect(204)
 
     expect(await fresh('ana.ferreira')).toBe(0)
+    expect(
+      await db.query(
+        "SELECT id FROM notifications WHERE type = 'badge' AND recipient_id = ? AND badge_row = 'speak' AND seen_at IS NULL",
+        [ids['ana.ferreira']],
+      ),
+    ).toEqual([])
     expect(
       (await rowOf('ana.ferreira', 'speak')).levels.some((level) => level.new),
     ).toBe(false)

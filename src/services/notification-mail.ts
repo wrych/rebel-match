@@ -1,6 +1,8 @@
+import { rowNames, type RowNames } from '../badges/rows.js'
 import { createApplicantNotice } from './applicant-notice.js'
+import { badgeLine, createBadgeNotice, type BadgeNote } from './badge-notice.js'
 import { noticeLink } from './notice-link.js'
-import type { NotificationKind } from './notifications.js'
+import { badgeName, type NotificationKind } from './notifications.js'
 import { createTrendNotice, deckAt } from './trend-notice.js'
 import {
   createAcceptNotice,
@@ -55,6 +57,35 @@ async function aboutApplicant(
   })
 }
 
+// What a badge notification needs to be worded; null when its row is gone.
+function badgeOf(
+  note: DueNotification,
+): Omit<BadgeNote, 'recipientId' | 'to'> | null {
+  const names =
+    note.badge === null
+      ? undefined
+      : (rowNames as Readonly<Record<string, RowNames | undefined>>)[
+          note.badge.row
+        ]
+  if (note.badge === null || names === undefined) return null
+  return {
+    name: badgeName(note.badge),
+    rowTitle: names.title,
+    path: `/badges/${encodeURIComponent(note.badge.row)}`,
+    crown: note.badge.level === 0,
+  }
+}
+
+async function aboutBadge(
+  deps: SenderDeps & { mailer: Mailer },
+  note: DueNotification,
+): Promise<void> {
+  const to = await deps.members.emailOf(note.recipientId)
+  const badge = badgeOf(note)
+  if (to === null || badge === null) return
+  await createBadgeNotice(deps)({ recipientId: note.recipientId, to, ...badge })
+}
+
 // One member's name on a line of its own, as the single emails say it.
 async function nameOf(deps: SenderDeps, memberId: string): Promise<string> {
   const name = ((await deps.members.nameOf(memberId)) ?? '')
@@ -86,6 +117,12 @@ async function itemOf(
     return note.applicantEmail === null
       ? null
       : `${note.applicantEmail} asked to join.\n${linkFor(deps, '/admin/applicants', 'applicant')}`
+  if (note.type === 'badge') {
+    const badge = badgeOf(note)
+    return badge === null
+      ? null
+      : `${badgeLine(badge)}\n${linkFor(deps, badge.path, 'badge')}`
+  }
   if (note.type === 'trend_challenge')
     return note.challengeId === null || note.trend === null
       ? null
@@ -175,6 +212,7 @@ async function single(
   if (note.type === 'applicant') await aboutApplicant({ ...deps, mailer }, note)
   else if (note.type === 'trend_challenge')
     await aboutChallenge({ ...deps, mailer }, note)
+  else if (note.type === 'badge') await aboutBadge({ ...deps, mailer }, note)
   else await aboutRequest({ ...deps, mailer }, note)
   return status
 }

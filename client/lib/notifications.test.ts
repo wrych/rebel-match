@@ -43,6 +43,7 @@ describe('headline', () => {
     ['connection_added', 'Bea connected with you over another challenge'],
     ['applicant', 'Bea asked to join'],
     ['trend_challenge', 'Bea posted a challenge in Radical Transparency'],
+    ['badge', 'New badge: Bea'],
   ] as const)('words %s (R-NOTE-5)', (kind, words) => {
     expect(headline(note(kind))).toBe(words)
   })
@@ -117,6 +118,7 @@ describe('the notification settings words', () => {
     const { typeLabel, cadenceLabel } = await import('./notifications')
 
     expect(typeLabel('new_connection')).toBe('New connections')
+    expect(typeLabel('badge')).toBe('Badges you earn')
     expect(cadenceLabel('in_app', 'hourly')).toBe('In the app only')
     expect(cadenceLabel('hourly', 'hourly')).toBe('Hourly (default)')
   })

@@ -143,6 +143,7 @@ function deps(
       openedConnection: () => Promise.resolve(),
       openedApplicants: () => Promise.resolve(),
       openedChallenge: () => Promise.resolve(),
+      openedBadges: () => Promise.resolve(),
     },
     notificationSettings: {
       list: () => Promise.resolve([]),
