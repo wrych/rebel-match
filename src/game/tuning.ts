@@ -19,50 +19,30 @@ type PerJob =
   | 'temptationEverySeconds'
   | 'temptedGraceSeconds'
 
-/** A number hosts tune for the game (R-GAME-17, ADR 0045). */
-export type GameKey =
-  | 'enabled'
-  | 'dayLengthSeconds'
-  | 'fileWorkSeconds'
-  | 'coolerVisitEverySeconds'
-  | 'coolerChatSeconds'
-  | 'speechSeconds'
-  | 'meetingSeconds'
-  | 'arrivalGapMs'
-  | 'quietStartSeconds'
-  | 'rampStartPercent'
-  | 'rampEndPercent'
-  | 'coolerLoneWaitSeconds'
-  | 'doorOpenSeconds'
-  | 'rebel.masterclassSeats'
-  | 'rebel.morningGrey'
-  | 'rebel.fileEverySeconds'
-  | 'rebel.fileStepPercent'
-  | 'rebel.fileFloorSeconds'
-  | 'rebel.heatStageSeconds'
-  | 'rebel.helpSeconds'
-  | 'rebel.breakSeconds'
-  | 'rebel.breakCooldownSeconds'
-  | 'rebel.talkSeconds'
-  | 'rebel.masterclassSeconds'
-  | `${BossJob}.${PerJob}`
-  | `${MeetingJob}.meetingSeats`
-
-/** The game's tuning, keyed as the settings screen names it. */
-export type GameSettings = Readonly<Record<GameKey, number>>
-
 interface Bounds {
   min: number
   max: number
 }
 
-const perJob = <T>(
-  values: Readonly<Record<BossJob, T>>,
-  name: PerJob,
-): Record<`${BossJob}.${PerJob}`, T> =>
+interface Tuning {
+  value: number
+  bounds: Bounds
+}
+
+const tuned = (value: number, bounds: Bounds): Tuning => ({ value, bounds })
+
+const range = (max: number, min = 0): Bounds => ({ min, max })
+
+const SECONDS: Bounds = { min: 1, max: 600 }
+const SHORT_SECONDS: Bounds = { min: 1, max: 60 }
+
+const perJob = <N extends PerJob>(
+  name: N,
+  of: (job: BossJob) => Tuning,
+): Record<`${BossJob}.${N}`, Tuning> =>
   Object.fromEntries(
-    bossJobs.map((job) => [`${job}.${name}`, values[job]]),
-  ) as Record<`${BossJob}.${PerJob}`, T>
+    bossJobs.map((job) => [`${job}.${name}`, of(job)]),
+  ) as Record<`${BossJob}.${N}`, Tuning>
 
 // The floor plans hold this many cubicles and cooler spots; a host can staff
 // a floor more thinly, never beyond what it holds.
@@ -80,106 +60,97 @@ const coolerSpots: Readonly<Record<BossJob, number>> = {
   vp: 2,
   ceo: 2,
 }
+const morningRebels: Readonly<Record<BossJob, number>> = {
+  teamLead: 1,
+  manager: 1,
+  director: 2,
+  vp: 3,
+  ceo: 5,
+}
+const temptationEverySeconds: Readonly<Record<BossJob, number>> = {
+  teamLead: 12,
+  manager: 9,
+  director: 7,
+  vp: 5,
+  ceo: 4,
+}
+const temptedGraceSeconds: Readonly<Record<BossJob, number>> = {
+  teamLead: 20,
+  manager: 16,
+  director: 14,
+  vp: 12,
+  ceo: 10,
+}
+
+// Each number's starting value, a first guess tuned in the pilot
+// (`specs/design.md`, The 9toRevolution game), and what a host may set it to:
+// within what a floor holds, and short of a day no phone can finish.
+const tuning = {
+  enabled: tuned(0, range(1)),
+  dayLengthSeconds: tuned(90, { min: 30, max: 600 }),
+  fileWorkSeconds: tuned(15, SECONDS),
+  coolerVisitEverySeconds: tuned(20, SECONDS),
+  coolerChatSeconds: tuned(6, SHORT_SECONDS),
+  speechSeconds: tuned(2, SHORT_SECONDS),
+  meetingSeconds: tuned(8, SHORT_SECONDS),
+  arrivalGapMs: tuned(600, { min: 0, max: 5000 }),
+  quietStartSeconds: tuned(8, { min: 0, max: 120 }),
+  rampStartPercent: tuned(50, { min: 0, max: 100 }),
+  rampEndPercent: tuned(150, { min: 100, max: 400 }),
+  coolerLoneWaitSeconds: tuned(12, SECONDS),
+  doorOpenSeconds: tuned(25, SECONDS),
+  'rebel.masterclassSeats': tuned(2, range(4, 1)),
+  'rebel.morningGrey': tuned(3, range(Math.floor(cubicles.ceo / 2))),
+  'rebel.fileEverySeconds': tuned(10, SECONDS),
+  'rebel.fileStepPercent': tuned(8, range(50)),
+  'rebel.fileFloorSeconds': tuned(3, SECONDS),
+  'rebel.heatStageSeconds': tuned(6, SHORT_SECONDS),
+  'rebel.helpSeconds': tuned(2, SHORT_SECONDS),
+  'rebel.breakSeconds': tuned(15, SHORT_SECONDS),
+  'rebel.breakCooldownSeconds': tuned(20, SECONDS),
+  'rebel.talkSeconds': tuned(4, SHORT_SECONDS),
+  'rebel.masterclassSeconds': tuned(8, SHORT_SECONDS),
+  ...perJob('employees', (job) =>
+    tuned(cubicles[job], range(cubicles[job], 2)),
+  ),
+  ...perJob('coolers', (job) =>
+    tuned(coolerSpots[job], range(coolerSpots[job])),
+  ),
+  ...perJob('morningRebels', (job) =>
+    tuned(morningRebels[job], range(Math.floor(cubicles[job] / 2))),
+  ),
+  ...perJob('temptationEverySeconds', (job) =>
+    tuned(temptationEverySeconds[job], SECONDS),
+  ),
+  ...perJob('temptedGraceSeconds', (job) =>
+    tuned(temptedGraceSeconds[job], SECONDS),
+  ),
+  'manager.meetingSeats': tuned(2, range(cubicles.manager, 1)),
+  'director.meetingSeats': tuned(3, range(cubicles.director, 1)),
+  'vp.meetingSeats': tuned(4, range(cubicles.vp, 1)),
+  'ceo.meetingSeats': tuned(5, range(cubicles.ceo, 1)),
+}
+
+/** A number hosts tune for the game (R-GAME-17, ADR 0045). */
+export type GameKey = keyof typeof tuning
+
+/** The game's tuning, keyed as the settings screen names it. */
+export type GameSettings = Readonly<Record<GameKey, number>>
+
+const tuningOf = <T>(of: (entry: Tuning) => T): Readonly<Record<GameKey, T>> =>
+  Object.fromEntries(
+    Object.entries(tuning).map(([key, entry]) => [key, of(entry)]),
+  ) as Record<GameKey, T>
 
 /** The values the game starts from: a first guess, tuned in the pilot
  * (`specs/design.md`, The 9toRevolution game). */
-export const gameDefaults: GameSettings = {
-  enabled: 0,
-  dayLengthSeconds: 90,
-  fileWorkSeconds: 15,
-  coolerVisitEverySeconds: 20,
-  coolerChatSeconds: 6,
-  speechSeconds: 2,
-  meetingSeconds: 8,
-  arrivalGapMs: 600,
-  quietStartSeconds: 8,
-  rampStartPercent: 50,
-  rampEndPercent: 150,
-  coolerLoneWaitSeconds: 12,
-  doorOpenSeconds: 25,
-  'rebel.masterclassSeats': 2,
-  'rebel.morningGrey': 3,
-  'rebel.fileEverySeconds': 10,
-  'rebel.fileStepPercent': 8,
-  'rebel.fileFloorSeconds': 3,
-  'rebel.heatStageSeconds': 6,
-  'rebel.helpSeconds': 2,
-  'rebel.breakSeconds': 15,
-  'rebel.breakCooldownSeconds': 20,
-  'rebel.talkSeconds': 4,
-  'rebel.masterclassSeconds': 8,
-  ...perJob(cubicles, 'employees'),
-  ...perJob(coolerSpots, 'coolers'),
-  ...perJob(
-    { teamLead: 1, manager: 1, director: 2, vp: 3, ceo: 5 },
-    'morningRebels',
-  ),
-  ...perJob(
-    { teamLead: 12, manager: 9, director: 7, vp: 5, ceo: 4 },
-    'temptationEverySeconds',
-  ),
-  ...perJob(
-    { teamLead: 20, manager: 16, director: 14, vp: 12, ceo: 10 },
-    'temptedGraceSeconds',
-  ),
-  'manager.meetingSeats': 2,
-  'director.meetingSeats': 3,
-  'vp.meetingSeats': 4,
-  'ceo.meetingSeats': 5,
-}
-
-const SECONDS: Bounds = { min: 1, max: 600 }
-const SHORT_SECONDS: Bounds = { min: 1, max: 60 }
-
-const range = (max: number, min = 0): Bounds => ({ min, max })
-
-const perJobBounds = (
-  name: PerJob,
-  of: (job: BossJob) => Bounds,
-): Record<`${BossJob}.${PerJob}`, Bounds> =>
-  Object.fromEntries(
-    bossJobs.map((job) => [`${job}.${name}`, of(job)]),
-  ) as Record<`${BossJob}.${PerJob}`, Bounds>
+export const gameDefaults: GameSettings = tuningOf((entry) => entry.value)
 
 /** What a host may set each number to: within what a floor holds, and short
  * of a day no phone can finish (R-GAME-17). */
-export const gameBounds: Readonly<Record<GameKey, Bounds>> = {
-  enabled: range(1),
-  dayLengthSeconds: { min: 30, max: 600 },
-  fileWorkSeconds: SECONDS,
-  coolerVisitEverySeconds: SECONDS,
-  coolerChatSeconds: SHORT_SECONDS,
-  speechSeconds: SHORT_SECONDS,
-  meetingSeconds: SHORT_SECONDS,
-  arrivalGapMs: { min: 0, max: 5000 },
-  quietStartSeconds: { min: 0, max: 120 },
-  rampStartPercent: { min: 0, max: 100 },
-  rampEndPercent: { min: 100, max: 400 },
-  coolerLoneWaitSeconds: SECONDS,
-  doorOpenSeconds: SECONDS,
-  'rebel.masterclassSeats': range(4, 1),
-  'rebel.morningGrey': range(Math.floor(cubicles.ceo / 2)),
-  'rebel.fileEverySeconds': SECONDS,
-  'rebel.fileStepPercent': range(50),
-  'rebel.fileFloorSeconds': SECONDS,
-  'rebel.heatStageSeconds': SHORT_SECONDS,
-  'rebel.helpSeconds': SHORT_SECONDS,
-  'rebel.breakSeconds': SHORT_SECONDS,
-  'rebel.breakCooldownSeconds': SECONDS,
-  'rebel.talkSeconds': SHORT_SECONDS,
-  'rebel.masterclassSeconds': SHORT_SECONDS,
-  ...perJobBounds('employees', (job) => range(cubicles[job], 2)),
-  ...perJobBounds('coolers', (job) => range(coolerSpots[job])),
-  ...perJobBounds('morningRebels', (job) =>
-    range(Math.floor(cubicles[job] / 2)),
-  ),
-  ...perJobBounds('temptationEverySeconds', () => SECONDS),
-  ...perJobBounds('temptedGraceSeconds', () => SECONDS),
-  'manager.meetingSeats': range(cubicles.manager, 1),
-  'director.meetingSeats': range(cubicles.director, 1),
-  'vp.meetingSeats': range(cubicles.vp, 1),
-  'ceo.meetingSeats': range(cubicles.ceo, 1),
-}
+export const gameBounds: Readonly<Record<GameKey, Bounds>> = tuningOf(
+  (entry) => entry.bounds,
+)
 
 /** Pairs where the first must stay at or below the second. */
 export const gameOrder: readonly (readonly [GameKey, GameKey])[] = [
