@@ -1,23 +1,12 @@
-import { z } from 'zod'
-
-/** The lowest and highest value a host may set for a changeable setting. */
-export interface Bounds {
-  min: number
-  max: number
-}
-
-interface Tunable {
-  /** The environment variable a deployment sets it with. */
-  env: string
-  default: number
-  /** Changeable in the app, within these bounds (R-CFG-6, ADR 0031). */
-  changeable?: Bounds
-}
-
-interface Fixed {
-  /** Fixed in code: no deployment can change it. */
-  fixed: number
-}
+import {
+  changeableOf,
+  envOf,
+  valuesFrom,
+  type Bounds,
+  type ChangeableKey,
+  type Specs,
+  type ValuesOf,
+} from './setting-specs.js'
 
 // Often enough to feel live, never so often that open screens flood the
 // server (ADR 0050).
@@ -137,56 +126,27 @@ const limitSpecs = {
   inviteMaxUsesCeiling: { fixed: 0xffffffff },
   // connection_requests.message (src/db/schema.ts).
   connectionMessageMaxChars: { fixed: 600 },
-} as const satisfies Record<string, Tunable | Fixed>
+} as const satisfies Specs
 
-type Specs = typeof limitSpecs
+type LimitSpecs = typeof limitSpecs
 
 /** The name of each limit the server enforces and the client reads. */
-export type LimitKey = keyof Specs
+export type LimitKey = keyof LimitSpecs
 
 /** The limits the server enforces and the client is told (R-CFG-2). */
-export type Limits = Record<LimitKey, number>
-
-type TunableKey = {
-  [K in LimitKey]: Specs[K] extends { env: string } ? K : never
-}[LimitKey]
+export type Limits = ValuesOf<LimitSpecs>
 
 /** A limit hosts may change in the app (R-CFG-6). */
-export type ChangeableLimitKey = {
-  [K in LimitKey]: Specs[K] extends { changeable: Bounds } ? K : never
-}[LimitKey]
+export type ChangeableLimitKey = ChangeableKey<LimitSpecs>
 
-type EnvNumber = z.ZodDefault<z.ZodCoercedNumber>
-
-const envNumber = (fallback: number): EnvNumber =>
-  z.coerce.number().int().positive().default(fallback)
-
-type LimitsEnv = { [K in TunableKey as Specs[K]['env']]: EnvNumber }
-
-const entries = Object.entries(limitSpecs) as [LimitKey, Tunable | Fixed][]
-
-/** The environment variables that set the tunable limits, each a positive
- * whole number with its default (R-CFG-1). */
-export const limitsEnv = Object.fromEntries(
-  entries.flatMap(([, spec]) =>
-    'env' in spec ? [[spec.env, envNumber(spec.default)]] : [],
-  ),
-) as LimitsEnv
+/** The environment variables that set the tunable limits (R-CFG-1). */
+export const limitsEnv = envOf(limitSpecs)
 
 /** The limits as a deployment's parsed environment sets them. */
-export function limitsFrom(env: z.output<z.ZodObject<LimitsEnv>>): Limits {
-  const values = env as Readonly<Record<string, number>>
-  return Object.fromEntries(
-    entries.map(([key, spec]) => [
-      key,
-      'fixed' in spec ? spec.fixed : (values[spec.env] ?? spec.default),
-    ]),
-  ) as Limits
-}
+export const limitsFrom = (
+  env: Parameters<typeof valuesFrom<LimitSpecs>>[1],
+): Limits => valuesFrom(limitSpecs, env)
 
 /** The bounds of each limit hosts may change (ADR 0031). */
-export const changeableLimits = Object.fromEntries(
-  entries.flatMap(([key, spec]) =>
-    'changeable' in spec ? [[key, spec.changeable]] : [],
-  ),
-) as Readonly<Record<ChangeableLimitKey, Bounds>>
+export const changeableLimits: Readonly<Record<ChangeableLimitKey, Bounds>> =
+  changeableOf(limitSpecs)

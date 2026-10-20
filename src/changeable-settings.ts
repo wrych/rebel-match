@@ -1,4 +1,4 @@
-import type { AbuseLimits } from './config.js'
+import { changeableAbuse, type AbuseLimits } from './abuse.js'
 import {
   experimentKeys,
   isExperimentKey,
@@ -14,10 +14,10 @@ import {
 } from './game/tuning.js'
 import {
   changeableLimits,
-  type Bounds,
   type ChangeableLimitKey,
   type Limits,
 } from './limits.js'
+import type { Bounds } from './setting-specs.js'
 
 /** A setting hosts may change in the app (R-CFG-6, ADR 0031). */
 export type SettingKey =
@@ -37,33 +37,24 @@ export interface SettingValues {
   flags: FlagSettings
 }
 
-const MINUTES_PER_DAY = 1440
 // An experiment's share of members, from nobody to everyone (R-EXP-3).
 const PERCENT_BOUNDS: Bounds = { min: 0, max: 100 }
+
+const prefixed = <G extends string, K extends string>(
+  group: G,
+  of: Readonly<Record<K, Bounds>>,
+): Record<`${G}.${K}`, Bounds> =>
+  Object.fromEntries(
+    Object.entries(of).map(([key, value]) => [`${group}.${key}`, value]),
+  ) as Record<`${G}.${K}`, Bounds>
 
 // What a host can set: wide enough for a crowded room, narrow enough that no
 // value locks everyone out, hangs a phone on the human check, or overflows the
 // column that stores it (ADR 0031).
 const bounds: Readonly<Record<SettingKey, Bounds>> = {
-  'abuse.linkEmailsBeforeCheck': { min: 0, max: 100 },
-  'abuse.linkEmailsCeiling': { min: 1, max: 1000 },
-  'abuse.linkEmailWindowMinutes': { min: 1, max: MINUTES_PER_DAY },
-  'abuse.authRequestsPerIp': { min: 1, max: 100_000 },
-  'abuse.ipWindowMinutes': { min: 1, max: MINUTES_PER_DAY },
-  'abuse.applicantsBeforeCheck': { min: 0, max: 10_000 },
-  'abuse.applicantsCeiling': { min: 1, max: 100_000 },
-  'abuse.applicantWindowMinutes': { min: 1, max: MINUTES_PER_DAY },
-  'abuse.humanCheckCost': { min: 100, max: 20_000 },
-  'abuse.humanCheckMinutes': { min: 1, max: 60 },
-  ...(Object.fromEntries(
-    Object.entries(changeableLimits).map(([key, value]) => [
-      `limits.${key}`,
-      value,
-    ]),
-  ) as Record<`limits.${ChangeableLimitKey}`, Bounds>),
-  ...(Object.fromEntries(
-    Object.entries(gameBounds).map(([key, value]) => [`game.${key}`, value]),
-  ) as Record<`game.${GameKey}`, Bounds>),
+  ...prefixed('abuse', changeableAbuse),
+  ...prefixed('limits', changeableLimits),
+  ...prefixed('game', gameBounds),
   ...(Object.fromEntries(
     experimentKeys.map((key) => [`flags.${key}`, PERCENT_BOUNDS]),
   ) as Record<`flags.${ExperimentKey}`, Bounds>),
