@@ -130,8 +130,6 @@ function rowView(
   }
 }
 
-// A row's first crown is given quietly, as everything from before launch is
-// (R-BADGE-11); a crown moving after that is news to the gainer only.
 /** A badge gained: a level, or 0 for the row's crown. */
 export interface Gain {
   memberId: string
@@ -144,6 +142,8 @@ export type Notify = (gain: Gain) => Promise<void>
 
 const notifyNobody: Notify = () => Promise.resolve()
 
+// A row's first crown is given quietly, as everything from before launch is
+// (R-BADGE-11); a crown moving after that is news to the gainer only.
 async function checkCrown(
   store: BadgeStore,
   levelCounts: () => readonly number[],
