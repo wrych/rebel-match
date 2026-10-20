@@ -39,6 +39,7 @@ Conventions:
             F8 Matches cockpit  ──►  F7 (accept / decline)
                    ├──►  F9 Follow a trend
                    ├──►  F17 Notifications
+                   ├──►  F19 Badges
                    └──►  F12 Feedback
 
    Happy mode, onboarded: F18 9toRevolution (impressum → game → leaderboard)
@@ -628,9 +629,9 @@ and expired ones are purged (ADR 0034).
 **Screens:** S27 Notifications, S24 Profile & privacy (ADR 0037).
 
 1. Something happens for the member: a request to them, a new connection, a
-   challenge in a trend they follow, or, for hosts, a new applicant
-   (R-NOTE-1). It is stored with the event, hidden if the type is _Off_
-   (R-NOTE-4, R-NOTE-10).
+   challenge in a trend they follow, a badge earned (**F19**), or, for hosts,
+   a new applicant (R-NOTE-1). It is stored with the event, hidden if the type
+   is _Off_ (R-NOTE-4, R-NOTE-10).
 2. The header's menu button shows a badge with the number of new
    notifications, and the menu reads **Notifications (n new)**; with none new,
    just **Notifications** (R-NOTE-6).
@@ -653,6 +654,53 @@ and expired ones are purged (ADR 0034).
   R-NOTE-9).
 - _The mail fails_ → it is tried again, longer apart each time; the request it
   announces stands regardless (R-NOTE-10).
+
+---
+
+## F19 — Badges
+
+**Screens:** S35 Badges, S36 A row of badges, S37 Event badges, S27
+Notifications, S22 Admin invites (ADR 0053).
+
+1. The member posts a challenge, sends a "been there" from the deck, sends a
+   "same boat" request, gets a connection accepted, or reaches a new job in
+   9toRevolution. The count for that row goes up; at 1, 5 and 10 (each job,
+   for Promotions) a level is earned and kept (R-BADGE-1, R-BADGE-2).
+2. If their count now passes the crown holder's, the crown moves to them; the
+   one who loses it is not told (R-BADGE-3).
+3. A notification arrives for each badge gained (**F17**), and the menu reads
+   **Badges (n new)** (R-BADGE-10).
+4. The member opens the menu → **S35** `/badges`: the number earned, one tile
+   per row with its best badge and a mark per level, and their event badges.
+   Promotions shows even to a member who has never played, saying nothing of
+   where it comes from (R-BADGE-7, R-BADGE-9).
+5. Tapping a tile → **S36** `/badges/:row`: every level and the crown, what is
+   earned and when, the progress to the next, and how the row counts; the
+   crown says only whether it is theirs (R-BADGE-8).
+
+**Event badges**
+
+1. A host creates an invite on **S22** and gives it an event badge: a new one
+   with a name, two ticket lines and an SVG logo, or the badge of another
+   invite. The logo is cleaned to drawing only; a file with nothing drawable
+   left is refused, saying why (R-BADGE-4, R-BADGE-5).
+2. A newcomer joins through it (**F15**) and earns the badge with their
+   membership (R-BADGE-6).
+3. A member already signed in scans the same QR code: the entry screen takes
+   them on as usual and the badge is theirs, if the invite is in its window
+   and not revoked; it uses no place on the invite (R-BADGE-6).
+4. Tapping the event badges on S35 → **S37** `/badges/events`.
+
+**Branches**
+
+- _A challenge is taken down, or a connection's other member deleted_ → the
+  count falls; levels stay, and the crown may move on the next check
+  (R-BADGE-2, R-BADGE-3).
+- _The game is switched off_ → the Promotions row is not shown (R-BADGE-9).
+- _A signed-in member opens an invalid invite_ → nothing happens and nothing is
+  said (R-BADGE-6).
+- _Badges go live_ → everything already earned is recorded quietly, nothing
+  new and no notification (R-BADGE-11).
 
 ---
 

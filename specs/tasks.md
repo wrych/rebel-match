@@ -411,6 +411,32 @@ up the summit. One pull request per item, in this order.
 
 ---
 
+## M8 — Badges _(S9, F19, ADR 0053)_
+
+Private badges, built after the spec and ADR merge. One pull request per item,
+in this order.
+
+- [ ] Tables, the rows in code with their pure rules, levels counted for
+      Speak up, Offer help, Shared pain and Connect where each act is
+      recorded, `GET /api/badges`, the silent award at launch, erasure.
+      _(R-BADGE-1, R-BADGE-2, R-BADGE-11, R-BADGE-12, R-BADGE-14)_
+- [ ] Crowns: moved on a count passing the holder's, checked on the tick,
+      dropped with a deleted account. _(R-BADGE-3)_
+- [ ] Screens S35 and S36, the menu's **Badges** entry, new badges and
+      `POST /api/badges/seen`. _(R-BADGE-7, R-BADGE-8, R-BADGE-10, R-PROF-3)_
+- [ ] The `badge` notification type: in the app, its cadence, its mail.
+      _(R-BADGE-10, R-NOTE-1, R-NOTE-2, R-NOTE-5)_
+- [ ] The Promotions row from 9toRevolution progress, shown while the game
+      is on. _(R-BADGE-1, R-BADGE-9)_
+- [ ] Event badges on invite creation: the badge fields, the cleaned SVG logo,
+      the logo endpoint and its headers, S22's badge section.
+      _(R-BADGE-4, R-BADGE-5, R-INV-13)_
+- [ ] Earning event badges: on admission, by a signed-in member opening the
+      invite, and S37. _(R-BADGE-6, R-BADGE-8)_
+- [ ] `badge_earned` usage event. _(R-BADGE-13)_
+
+---
+
 ## Post-beta backlog _(Could / Won't-for-now)_
 
 - [ ] Offer "refresh to update" when the server's version differs from the

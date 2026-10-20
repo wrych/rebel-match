@@ -111,6 +111,8 @@ thresholds have sane defaults in the file and may be overridden by env.
 | `limits.pullRefreshPx`                | `70`                          | R-NAV-12                  |
 | `limits.matchesShownFirst`            | `1`                           | R-ASK-15                  |
 | `limits.matchesNamedFirst`            | `2`                           | R-ASK-15                  |
+| `badges.levelCounts`                  | `[1, 5, 10]`                  | R-BADGE-1                 |
+| `limits.badgeLogoMaxBytes`            | `51200`                       | R-BADGE-5                 |
 | `flags.matches_layout` (percent)      | `50`                          | R-EXP-1, R-EXP-3          |
 | `abuse.linkEmailsBeforeCheck`         | `3`                           | R-NFR-8                   |
 | `abuse.linkEmailsCeiling`             | `10`                          | R-NFR-8                   |
@@ -440,6 +442,63 @@ next day (R-GAME-17).
 The employee and cooler counts are bounded by the floor plan: a value beyond
 the cubicles or cooler spots a floor has is refused. The defaults are a
 first guess, to be tuned during the pilot.
+
+### Badges
+
+Private badges counted from what members already do (R-BADGE-1..14,
+ADR 0053, F19). Nothing is counted that the app does not already store.
+
+**Rows are data.** `src/badges/rows.ts` holds the five rows — `speak`,
+`help`, `boat`, `connect`, `game` — each with its levels' names, its crown's
+name and how to count it. The first four take their counts from
+`badges.levelCounts`; `game` has six levels, one per job, reached at the first
+day of each (`firstDaysUpTo`, R-GAME-16). The decisions are pure and
+unit-tested without a database (constitution §2): `levelsReached(count,
+counts)` and `crownAfter(holder, candidates)`, where a candidate is a member,
+their count and when they reached it.
+
+**Awarded where the count moves.** The service that records a counted act
+calls `badges.recount(memberId, row)` in the same transaction: posting a
+challenge (`speak`), a "been there" from the deck (`help`), a same-boat
+request (`boat`), an accepted connection (`connect`, both members), a game
+day that raises the highest level (`game`). `recount` counts the row for that
+member, inserts the levels reached and not yet held, and checks the row's
+crown against the holder's count. Each level or crown gained writes a
+`badge` notification with it (R-BADGE-10, R-NOTE-4).
+
+| Row       | Count                                                                      |
+| --------- | -------------------------------------------------------------------------- |
+| `speak`   | `challenges` by the member, `status <> 'draft'`                            |
+| `help`    | `swipes` by the member with `action = 'been_there'`                        |
+| `boat`    | `connection_requests` by the member as requester with `kind = 'same_boat'` |
+| `connect` | distinct other members on the member's `accepted` requests, either side    |
+| `game`    | the jobs whose first day is at most `game_players.highest_level`           |
+
+A deck "been there" writes both a swipe and a request; a matches-screen ask
+to a "been there" peer writes only the request, so counting swipes keeps
+asking for help out of `help` (R-BADGE-1).
+
+**Crowns are checked on the tick too.** Counts fall without anyone acting (a
+challenge taken down, an account deleted), so each tick (ADR 0049) runs
+`badges.checkCrowns()`: per row, the active member with the highest count,
+the holder keeping a tie, and among others the one whose counted act that
+reached the count came first. A crown moving writes a notification for the
+gainer only (R-BADGE-3). Deleting an account deletes its crowns at once, and
+the next check passes them on.
+
+**Event badges.** An invite may point at an `event_badges` row. Admission
+through it (`invite-redemption`) inserts the member's event badge in the same
+transaction. A signed-in, onboarded member opening `/?invite=…` has the client
+post the token to `POST /api/badges/claim`, which inserts it when the invite
+is in its window and not revoked, never touching `uses`, and answers `204`
+either way (R-BADGE-6, R-INV-5).
+
+**At launch.** The migration that adds the tables also adds
+`badge_launch (done_at)`. The first tick that finds it empty awards every
+active member's levels and the crowns from existing records with `seen_at`
+set and no notification, then sets `done_at` (R-BADGE-11).
+
+**The logo.** See §8, "Event badge logos".
 
 ### Key libraries
 
@@ -928,10 +987,13 @@ CREATE TABLE notifications (
   id               CHAR(36)    NOT NULL PRIMARY KEY,
   recipient_id     CHAR(36)    NOT NULL,
   type             ENUM('connection_request','new_connection',
-                        'trend_challenge','applicant') NOT NULL,
+                        'trend_challenge','applicant','badge') NOT NULL,
   about_member_id  CHAR(36)    NULL,               -- requester, target, author or applicant
   connection_id    CHAR(36)    NULL,
   challenge_id     CHAR(36)    NULL,
+  badge_row        VARCHAR(10) NULL,               -- 'badge': the row, or 'event'
+  badge_level      SMALLINT    NULL,               -- 'badge': the level; 0: crown
+  event_badge_id   CHAR(36)    NULL,               -- 'badge': an event badge
   created_at       DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
   seen_at          DATETIME    NULL,               -- listed or its screen opened (R-NOTE-5)
   mail_status      ENUM('waiting','mailed','skipped','failed')
@@ -974,7 +1036,9 @@ the default again deletes the row. `every_15_minutes` is accepted for
 `applicant` only.
 
 The cascades erase a row with its recipient, the member it is about, and the
-request or challenge it refers to (R-NOTE-11, R-NFR-7).
+request or challenge it refers to (R-NOTE-11, R-NFR-7). A `badge` row names the
+badge it is about and no other member; it is stale, and not mailed, once the
+crown it announces has moved on (R-NOTE-9).
 
 A digest quotes several members, which `outbox.about_member_id` cannot hold,
 so `outbox_quotes (outbox_id, member_id)` lists them, each cascading from both
@@ -1009,7 +1073,9 @@ list in code with "Rebel", picked at random among those free; once the list
 runs out, a number follows ("Furious Rebel 2"). A deactivated member's row is
 left off the board (R-NFR-7). No query outside the game's own endpoints reads
 this table, and those return the member's own row and the board only
-(R-GAME-15).
+(R-GAME-15), except the badges' `game` row, which reads the member's own
+`highest_level` to count their promotions and every player's to find the
+crown's holder, and returns only the member's own badges (R-BADGE-9).
 
 ### game_days (9toRevolution day log — R-GAME-14, recorded, not shown)
 
@@ -1030,6 +1096,58 @@ CREATE INDEX idx_game_days_member ON game_days (member_id);
 The log is the record for tuning: where players get stuck. `game_players`
 holds everything the game and the board read, so deleting the activity history
 (R-STAT-4) empties the log without touching the board.
+
+### member_badges, badge_crowns, event_badges (R-BADGE-1..14, ADR 0053)
+
+```sql
+CREATE TABLE member_badges (
+  member_id  CHAR(36)    NOT NULL,
+  row_key    VARCHAR(10) NOT NULL,             -- speak | help | boat | connect | game
+  level      SMALLINT    NOT NULL,             -- 1..3; game 1..6
+  earned_at  DATETIME    NOT NULL,
+  seen_at    DATETIME    NULL,                 -- new until seen (R-BADGE-10)
+  PRIMARY KEY (member_id, row_key, level),
+  FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE
+);
+
+CREATE TABLE badge_crowns (
+  row_key    VARCHAR(10) NOT NULL PRIMARY KEY, -- one holder per row
+  member_id  CHAR(36)    NOT NULL,
+  since      DATETIME    NOT NULL,
+  seen_at    DATETIME    NULL,
+  FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE
+);
+
+CREATE TABLE event_badges (
+  id           CHAR(36)    NOT NULL PRIMARY KEY,
+  name         VARCHAR(60) NOT NULL,           -- "Stormed the Summit"
+  ticket_line  VARCHAR(10) NOT NULL,           -- "SUMMIT"
+  big_line     VARCHAR(6)  NOT NULL,           -- "2026"
+  logo_svg     TEXT        NULL,               -- cleaned on upload (§8)
+  created_at   DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE invites ADD COLUMN event_badge_id CHAR(36) NULL
+  REFERENCES event_badges(id);
+
+CREATE TABLE member_event_badges (
+  member_id       CHAR(36) NOT NULL,
+  event_badge_id  CHAR(36) NOT NULL,
+  earned_at       DATETIME NOT NULL,
+  seen_at         DATETIME NULL,
+  PRIMARY KEY (member_id, event_badge_id),
+  FOREIGN KEY (member_id)      REFERENCES members(id) ON DELETE CASCADE,
+  FOREIGN KEY (event_badge_id) REFERENCES event_badges(id) ON DELETE CASCADE
+);
+
+CREATE TABLE badge_launch (done_at DATETIME NOT NULL);  -- one row once awarded
+```
+
+A level row is never deleted while the member exists, so a level stays earned
+when its count falls (R-BADGE-2); a crown row is replaced as the crown moves.
+Every badge row cascades from its member (R-BADGE-14, R-NFR-7). An event
+badge holds no personal data, and is not changed once made (R-BADGE-4). No
+query returns another member's badge rows (R-BADGE-12).
 
 ### setting_overrides (values hosts set in the app — R-CFG-6, ADR 0031)
 
@@ -1161,6 +1279,18 @@ Opening the screen an entry links to marks it seen as well: reading a request,
 its contact screen, or the applicants list marks the reader's notifications
 about it (R-NOTE-5).
 
+### Badges (R-BADGE-1..14)
+
+Every endpoint returns the caller's own badges only (R-BADGE-12).
+
+| Method | Path                             | Body       | Behavior                                                                                                                                                                                    |
+| ------ | -------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/badges`                    | —          | My rows: each level's name, count and `earnedAt`, `new`, my count, the crown's name and whether I hold it; `game` only while the game is on (R-BADGE-9); and my event badges (R-BADGE-7,8). |
+| GET    | `/api/badges/new`                | —          | `{count}` of new badges, for the menu (R-BADGE-10), read with `/api/notifications/new`.                                                                                                     |
+| POST   | `/api/badges/seen`               | `{rows[]}` | Mark my badges in those rows (`event` for event badges) as seen. Answers `204`.                                                                                                             |
+| POST   | `/api/badges/claim`              | `{invite}` | Earn the invite's event badge when it is in its window and not revoked, never counting a use; `204` whatever the invite (R-BADGE-6). Onboarded members only.                                |
+| GET    | `/api/event-badges/:id/logo.svg` | —          | The cleaned logo as `image/svg+xml`, public as the poster is, with the headers in §8; `404` without one (R-BADGE-5).                                                                        |
+
 ### Cockpit
 
 | Method | Path                | Behavior                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
@@ -1207,8 +1337,8 @@ records are limited per member (`GAME_RECORDS_PER_MINUTE`).
 | GET    | `/api/admin/settings`                | The configuration in groups, each value with its name, explanation, unit, and whether it differs from the default or is fixed in code; no secret (R-CFG-5). Each changeable setting also carries its bounds and, when set in the app, who set it, when, and the deployment value (R-CFG-6). _Requires `settings:read`._                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | PUT    | `/api/admin/settings/:key`           | Set a changeable setting: `{value}`, an integer. Out of bounds or out of order with its pair → 400; a key not changeable → 404. Takes effect at once here and on other servers within `settingsRefreshSeconds` (ADR 0031). _Requires `settings:manage`._                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | DELETE | `/api/admin/settings/:key`           | Go back to the deployment value: deletes the override. _Requires `settings:manage`._                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| GET    | `/api/admin/invites`                 | List invites with label, window, uses/cap, opens (R-STAT-6), state, creator, and each one's join URL, so the QR can be re-rendered (R-INV-9). _Requires `invite:manage`._                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| POST   | `/api/admin/invites`                 | Create an invite: `{label, validFrom?, validUntil?, maxUses?}`; a missing window or cap takes `limits.inviteDefaultHours` / `inviteDefaultMaxUses` from now. Returns it with its join URL, for the QR (R-INV-9,10). A window that ends before it starts → `400 bad_window`. _Requires `invite:manage`._                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| GET    | `/api/admin/invites`                 | List invites with label, window, uses/cap, opens (R-STAT-6), state, creator, its event badge if any (R-INV-13), and each one's join URL, so the QR can be re-rendered (R-INV-9). _Requires `invite:manage`._                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| POST   | `/api/admin/invites`                 | Create an invite: `{label, validFrom?, validUntil?, maxUses?, eventBadgeId? \| eventBadge?: {name, ticketLine, bigLine, logoSvg?}}`; the logo is cleaned first, and one over `limits.badgeLogoMaxBytes` or with nothing drawable left → `400 bad_logo` (R-BADGE-4,5). A missing window or cap takes `limits.inviteDefaultHours` / `inviteDefaultMaxUses` from now. Returns it with its join URL, for the QR (R-INV-9,10). A window that ends before it starts → `400 bad_window`. _Requires `invite:manage`._                                                                                                                                                                                                                                        |
 | POST   | `/api/admin/invites/:id/revoke`      | Set `revoked_at`; effective on next use (R-INV-3). _Requires `invite:manage`._                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | PATCH  | `/api/admin/invites/:id`             | Raise the cap: `{maxUses}`, higher than the current cap and at most `limits.inviteMaxUsesCeiling`. Answers the invite as listed. Not higher or over the ceiling → `400 bad_cap`; a revoked invite → `409 revoked`; unknown → `404` (R-INV-4). _Requires `invite:manage`._                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 
@@ -1256,7 +1386,7 @@ sets it again after every navigation, as _Rebel Match | Screen_.
 | S19 | **Admin approvals** — applicant list with approve/reject                                                                                                                                                                                                                                                                                                                                                                                                                              | `/admin/applicants`                                   |
 | S20 | **Outbound message log** — every message sent, with type, status, times and errors; magic links clickable in development only                                                                                                                                                                                                                                                                                                                                                         | `/admin/outbox`                                       |
 | S21 | **Access requested** — the waiting screen of a signed-in applicant who has onboarded: access is approved by a person, and the approval email carries their login link (R-AUTH-9)                                                                                                                                                                                                                                                                                                      | `/access-requested`                                   |
-| S22 | **Admin invites** — invite links with label, window, uses/cap, state; create, revoke, and the join URL / QR to display (R-INV-9)                                                                                                                                                                                                                                                                                                                                                      | `/admin/invites`                                      |
+| S22 | **Admin invites** — invite links with label, window, uses/cap, state; create with an optional event badge and its logo, revoke, and the join URL / QR to display (R-INV-9, R-INV-13)                                                                                                                                                                                                                                                                                                  | `/admin/invites`                                      |
 | S23 | **Admin members** — member cards (name; job title · organization · sector; email, roles, status), searchable; tap a card's selector or hold the card to choose several; selected cards are outlined; a bar above the list, staying at the top while scrolling, gives or takes a role, or deletes them (R-MEM-1,3)                                                                                                                                                                     | `/admin/members`                                      |
 | S26 | **A member's page** — everything held about one member; change their roles, delete them, and for a deleted account the erasure date with restore and erase-now (R-MEM-2, ADR 0032)                                                                                                                                                                                                                                                                                                    | `/admin/members/:id`                                  |
 | S24 | **Profile & privacy** — edit name, job title, organization, sector and company size, each saved on change with a tick; the accepted consent, read-only with version and date; the analytics opt-in; how each notification arrives (R-NOTE-3); how to leave (R-PROF-1,2)                                                                                                                                                                                                               | `/profile`                                            |
@@ -1269,14 +1399,17 @@ sets it again after every navigation, as _Rebel Match | Screen_.
 | S32 | **Impressum** — the people who made the app, one card each with portrait, name and responsibilities, browsed as the swipe deck; public (R-PROF-4)                                                                                                                                                                                                                                                                                                                                     | `/impressum`                                          |
 | S33 | **9toRevolution** — in landscape, the office game on a canvas: joystick and action button, pause, the results card after each day and the CEO's choice over the floor; in portrait, the lobby: play from a job, share or stop sharing, leaderboard, leave the day; only in happy mode, while the game is on (R-GAME-1..16, ADR 0046)                                                                                                                                                  | `/9torevolution`                                      |
 | S34 | **9toRevolution leaderboard** — every player's best by job, level and time, names only where shared, pseudonyms otherwise, the member's own row marked; only where S33 is shown (R-GAME-13, R-GAME-15)                                                                                                                                                                                                                                                                                | `/9torevolution/leaderboard`                          |
+| S35 | **Badges** — the number earned; one tile per row with its highest level or crown, its name and a mark per level; the member's event badges (R-BADGE-7)                                                                                                                                                                                                                                                                                                                                | `/badges`                                             |
+| S36 | **A row of badges** — each level and the crown with name, count, earned or not and when, progress to the next, how the row counts; Promotions names its jobs only (R-BADGE-8, R-BADGE-9)                                                                                                                                                                                                                                                                                              | `/badges/:row`                                        |
+| S37 | **Event badges** — each event badge with its ticket, name and when it was earned (R-BADGE-8)                                                                                                                                                                                                                                                                                                                                                                                          | `/badges/events`                                      |
 
 Remaining overlays, deliberately: the "really decline this request?" confirm, the
 "link sent" / "copied" toasts, and the feedback action (a `mailto:`, not a
 screen). Everything else above is linkable — which is exactly what makes the
 notification emails in R-NAV-9 useful.
 
-**Removed vs prototype:** standings/badges screen, milestone pop-ups, CR theme
-toggle, "nominate as frontier".
+**Removed vs prototype:** standings (badges came back as S35, ADR 0053),
+milestone pop-ups, CR theme toggle, "nominate as frontier".
 
 ### Routing rules
 
@@ -1561,6 +1694,7 @@ Alternatives considered (kept only as fallbacks):
   | `game_opened`                  | —                                                |
   | `game_day_finished`            | `mode`, `level`, `outcome`, `seconds`            |
   | `game_result_shared`           | —                                                |
+  | `badge_earned`                 | `row`, `level` (`event`, no level, for an event) |
   | `experiment_exposed`           | `experiment`, `variant` (R-EXP-2)                |
   | `matches_section_opened`       | `section: same_boat\|been_there\|cases`          |
   | `match_connect_tapped`         | `kind` (R-ASK-16)                                |
@@ -1629,6 +1763,18 @@ Alternatives considered (kept only as fallbacks):
 
 ## 8. Security & privacy notes
 
+- **Event badge logos (R-BADGE-5, ADR 0053).** A logo is SVG a host uploads,
+  so it is treated as hostile. On upload the server parses it with DOMPurify
+  over jsdom, keeping only the SVG drawing profile, and further forbids
+  `style`, `script`, `foreignObject`, `image`, `use`, `a`, every `on*`
+  attribute and every `href` that is not a `#fragment`; a file that is not
+  SVG, larger than `limits.badgeLogoMaxBytes`, or empty once cleaned is
+  refused. Only the cleaned text is stored. It is served from
+  `/api/event-badges/:id/logo.svg` with `Content-Type: image/svg+xml`,
+  `X-Content-Type-Options: nosniff` and
+  `Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; sandbox`,
+  and the client shows it only through `<img>`, where an SVG runs nothing and
+  loads nothing. Three layers, each enough alone against a script.
 - Magic-link tokens: generate 32 bytes random, email the raw token, store only
   its SHA-256. Single-use, expiry from `limits.magicLinkTtlMinutes` (default
   15).
