@@ -1,12 +1,17 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import CopyButton from '../components/CopyButton.vue'
+import EventBadgeFields from '../components/EventBadgeFields.vue'
+import EventTicket from '../components/EventTicket.vue'
 import PullToRefresh from '../components/PullToRefresh.vue'
 import RefreshButton from '../components/RefreshButton.vue'
 import { fetchConfig, type ClientConfig } from '../lib/api'
 import {
+  badgesOf,
   createInvite,
   fetchInvites,
+  logoUrl,
+  type InviteDraft,
   raiseCap,
   revokeInvite,
   type Invite,
@@ -16,12 +21,15 @@ import { when } from '../lib/when'
 
 const invites = ref<Invite[]>([])
 const limits = ref<ClientConfig['limits'] | null>(null)
-const draft = reactive({
+const blank = (): InviteDraft => ({
   label: '',
   validFrom: '',
   validUntil: '',
   maxUses: '',
+  badge: { kind: 'none' },
 })
+const draft = reactive<InviteDraft>(blank())
+const badges = computed(() => badgesOf(invites.value))
 const raising = ref<string | null>(null)
 const newCap = ref('')
 const problem = ref<string | null>(null)
@@ -35,6 +43,13 @@ const chipFor: Record<Invite['state'], string> = {
   exhausted: '',
   revoked: 'chip-ink',
 }
+
+const refusedBecause = {
+  'bad-window': 'The window must end after it starts.',
+  'bad-logo':
+    'The logo was not taken: it must be an SVG with something drawn in it, and not too big.',
+  'bad-badge': 'That badge is gone. Choose another, or make a new one.',
+} as const
 
 const arrived = arrivals<Invite>((invite) => invite.id)
 let loaded = false
@@ -62,17 +77,12 @@ async function create(): Promise<void> {
       notice.value = 'Write each day as YYYY-MM-DD, for example 2026-11-08.'
       return
     }
-    if (outcome === 'bad-window') {
-      notice.value = 'The window must end after it starts.'
+    if (typeof outcome === 'string') {
+      notice.value = refusedBecause[outcome]
       return
     }
     notice.value = `Created “${outcome.label}”. Its join URL is below.`
-    Object.assign(draft, {
-      label: '',
-      validFrom: '',
-      validUntil: '',
-      maxUses: '',
-    })
+    Object.assign(draft, blank())
     await live.refresh()
   } catch {
     notice.value = 'The invite was not created. Try again.'
@@ -203,6 +213,11 @@ onMounted(async () => {
           :max="limits?.inviteMaxUsesCeiling"
         />
       </div>
+      <EventBadgeFields
+        v-model="draft.badge"
+        :badges="badges"
+        :limits="limits"
+      />
       <button
         type="submit"
         class="btn btn-primary"
@@ -226,6 +241,17 @@ onMounted(async () => {
       <div class="card-head">
         <span class="card-title">{{ invite.label }}</span>
         <span :class="['chip', chipFor[invite.state]]">{{ invite.state }}</span>
+      </div>
+      <div v-if="invite.eventBadge" class="event-badge">
+        <EventTicket
+          :ticket-line="invite.eventBadge.ticketLine"
+          :big-line="invite.eventBadge.bigLine"
+          :logo="invite.eventBadge.hasLogo ? logoUrl(invite.eventBadge) : null"
+          :size="56"
+        />
+        <span class="small"
+          >Gives the badge “{{ invite.eventBadge.name }}”</span
+        >
       </div>
       <div class="meter" aria-hidden="true">
         <span
@@ -309,6 +335,12 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+.event-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
 .raise {
   display: flex;
   flex-wrap: wrap;
