@@ -112,6 +112,7 @@ thresholds have sane defaults in the file and may be overridden by env.
 | `limits.matchesShownFirst`            | `1`                           | R-ASK-15                  |
 | `limits.matchesNamedFirst`            | `2`                           | R-ASK-15                  |
 | `badges.levelCounts`                  | `[1, 5, 10]`                  | R-BADGE-1                 |
+| `badges.crownCheckMinutes`            | `15`                          | R-BADGE-3                 |
 | `limits.badgeLogoMaxBytes`            | `51200`                       | R-BADGE-5                 |
 | `flags.matches_layout` (percent)      | `50`                          | R-EXP-1, R-EXP-3          |
 | `abuse.linkEmailsBeforeCheck`         | `3`                           | R-NFR-8                   |
@@ -482,12 +483,15 @@ A deck "been there" writes both a swipe and a request; a matches-screen ask
 to a "been there" peer writes only the request, so counting swipes keeps
 asking for help out of `help` (R-BADGE-1).
 
-**Crowns are checked on the tick too.** Counts fall without anyone acting (a
-challenge or an account deleted), so each tick (ADR 0049) runs
-`badges.checkCrowns()`: per row, the active member with the highest count,
+**Crowns are checked on a timer too.** Counts fall without anyone acting (a
+challenge or an account deleted), so every `badges.crownCheckMinutes` (15),
+on the tick (ADR 0049) or the server's timer, `badges.checkCrowns()` runs: per row, the active member with the highest count,
 the holder keeping a tie, and among others the one whose counted act that
-reached the count came first. A crown moving writes a notification for the
-gainer only (R-BADGE-3). Deleting an account (ADR 0032) deletes its
+reached the count came first, its latest counted act being when. A row gets
+its `badge_crowns` row at its first check, holding nobody while nobody
+qualifies; that first giving is quiet, as everything from before launch is
+(R-BADGE-11), and every move after it writes a notification for the gainer
+only (R-BADGE-3). Deleting an account (ADR 0032) deletes its
 `badge_crowns` rows in the same transaction that deactivates it, long before
 the erasure's cascade, and the next check passes them on.
 
@@ -1119,10 +1123,10 @@ CREATE TABLE member_badges (
 
 CREATE TABLE badge_crowns (
   row_key    VARCHAR(10) NOT NULL PRIMARY KEY, -- one holder per row
-  member_id  CHAR(36)    NOT NULL,
+  member_id  CHAR(36)    NULL,                 -- nobody qualifies yet
   since      DATETIME    NOT NULL,
   seen_at    DATETIME    NULL,
-  FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE
+  FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE SET NULL
 );
 
 CREATE TABLE event_badges (
@@ -1151,7 +1155,7 @@ CREATE TABLE badge_launch (done_at DATETIME NOT NULL);  -- one row once awarded
 ```
 
 A level row is never deleted while the member exists, so a level stays earned
-when its count falls (R-BADGE-2); a crown row is replaced as the crown moves.
+when its count falls (R-BADGE-2); a crown row is updated as the crown moves.
 Every badge row cascades from its member (R-BADGE-14, R-NFR-7). An event
 badge holds no personal data, and is not changed once made (R-BADGE-4). No
 query returns another member's badge rows (R-BADGE-12).
