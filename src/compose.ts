@@ -352,6 +352,21 @@ function composeOnboarding(
   }
 }
 
+function composeGame(
+  config: Config,
+  db: Database,
+  settings: LiveSettings,
+  track: Track,
+): AppDeps['game'] {
+  return createGame({
+    store: createGameStore(db),
+    settings: () => settings.game(),
+    allowance: config.gameDayAllowance,
+    newId: randomUUID,
+    track,
+  })
+}
+
 const MS_PER_HOUR = 3_600_000
 
 // The work the server's timers do, as jobs a tick runs (ADR 0049).
@@ -461,13 +476,7 @@ export function composeApp(
       newId: randomUUID,
     }),
     ...composeJourneys(config, db, track, settings),
-    game: createGame({
-      store: createGameStore(db),
-      settings: () => settings.game(),
-      allowance: config.gameDayAllowance,
-      newId: randomUUID,
-      track,
-    }),
+    game: composeGame(config, db, settings, track),
     notificationMail: composeNotificationMail(config, db, mailer, hooks),
   }
   return withScheduled(config, deps, hooks.onScheduledError ?? ignoreError)

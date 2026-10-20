@@ -647,6 +647,13 @@ function scheduledWorkFrom(env: Env): ScheduledWork {
   }
 }
 
+function analyticsFrom(env: Env): Config['analytics'] {
+  return {
+    ...(env.MIXPANEL_TOKEN === undefined ? {} : { token: env.MIXPANEL_TOKEN }),
+    apiHost: env.MIXPANEL_API_HOST,
+  }
+}
+
 /** Reads and validates configuration, failing before the server accepts a
  * request rather than on the first use of a bad value (R-CFG-1, R-CFG-4). */
 export function loadConfig(source: NodeJS.ProcessEnv = process.env): Config {
@@ -676,12 +683,7 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): Config {
     seedAdmins: env.SEED_ADMINS,
     consentVersion: env.CONSENT_VERSION,
     analyticsVersion: latestAnalyticsVersion,
-    analytics: {
-      ...(env.MIXPANEL_TOKEN === undefined
-        ? {}
-        : { token: env.MIXPANEL_TOKEN }),
-      apiHost: env.MIXPANEL_API_HOST,
-    },
+    analytics: analyticsFrom(env),
     limits: limitsFrom(env),
     abuse: abuseLimitsFrom(env),
     game: gameDefaults,
