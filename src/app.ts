@@ -9,6 +9,7 @@ import { clientShellRoutes } from './routes/client-shell.js'
 import { connectionRoutes } from './routes/connections.js'
 import { deckRoutes } from './routes/deck.js'
 import { activityRoutes } from './routes/activity.js'
+import { badgeRoutes } from './routes/badges.js'
 import { gameRoutes } from './routes/game.js'
 import { swipeRoutes } from './routes/swipes.js'
 import { cockpitRoutes } from './routes/cockpit.js'
@@ -36,6 +37,7 @@ import type { ChallengeService } from './services/challenges.js'
 import type { ConnectionService } from './services/connections.js'
 import type { DeckService } from './services/deck.js'
 import type { ActivityService } from './services/activity.js'
+import type { BadgeService } from './services/badges.js'
 import type { GameService } from './services/game.js'
 import type { SwipeService } from './services/swipes.js'
 import type { CockpitService } from './services/cockpit.js'
@@ -81,6 +83,7 @@ export interface AppDeps {
   deck: DeckService
   activity: ActivityService
   game: GameService
+  badges: BadgeService
   connections: ConnectionService
   swipes: SwipeService
   follows: FollowService
@@ -175,7 +178,7 @@ export function createApp(deps: AppDeps): Express {
   app.use(deckRoutes(deps), activityRoutes(deps))
   app.use(connectionRoutes(deps))
   app.use(swipeRoutes(deps))
-  app.use(cockpitRoutes(deps), notificationRoutes(deps))
+  app.use(cockpitRoutes(deps), notificationRoutes(deps), badgeRoutes(deps))
   app.use(adminRoleRoutes(deps), adminMemberRoutes(deps))
   app.use(adminWhitelistRoutes(deps))
   app.use(adminApplicantRoutes(deps))

@@ -457,18 +457,22 @@ unit-tested without a database (constitution §2): `levelsReached(count,
 counts)` and `crownAfter(holder, candidates)`, where a candidate is a member,
 their count and when they reached it.
 
-**Awarded where the count moves.** The service that records a counted act
-calls `badges.recount(memberId, row)` in the same transaction: posting a
-challenge (`speak`), a "been there" from the deck (`help`), a same-boat
-request (`boat`), an accepted connection (`connect`, both members), a game
-day that raises the highest level (`game`). `recount` counts the row for that
-member, inserts the levels reached and not yet held, and checks the row's
-crown against the holder's count. Each level or crown gained writes a
-`badge` notification with it (R-BADGE-10, R-NOTE-4).
+**Awarded where the count moves.** Each service that records a counted act
+is wrapped (`countingChallenges`, `countingConnections`, `countingSwipes`) so
+that once the act is recorded it calls `badges.recount(memberId, rows)`:
+confirming a challenge's trend, which posts it (`speak`), a "been there" from
+the deck (`help`), a same-boat request (`boat`), an accepted connection
+(`connect`, both members), a game day that raises the highest level (`game`).
+`recount` counts the row for that member, inserts the levels reached and not
+yet held, and checks the row's crown against the holder's count. Each level
+or crown gained writes a `badge` notification with it (R-BADGE-10,
+R-NOTE-4). A failed recount is reported and leaves the act standing; since
+`recount` records every level reached, the member's next counted act catches
+up.
 
 | Row       | Count                                                                      |
 | --------- | -------------------------------------------------------------------------- |
-| `speak`   | `challenges` by the member, `status <> 'draft'`                            |
+| `speak`   | `challenges` by the member with a confirmed trend, `status <> 'draft'`     |
 | `help`    | `swipes` by the member with `action = 'been_there'`                        |
 | `boat`    | `connection_requests` by the member as requester with `kind = 'same_boat'` |
 | `connect` | distinct other members on the member's `accepted` requests, either side    |
@@ -495,9 +499,11 @@ is in its window and not revoked, never touching `uses`, and answers `204`
 either way (R-BADGE-6, R-INV-5).
 
 **At launch.** The migration that adds the tables also adds
-`badge_launch (done_at)`. The first tick that finds it empty awards every
-active member's levels and the crowns from existing records with `seen_at`
-set and no notification, then sets `done_at` (R-BADGE-11).
+`badge_launch (done_at)`. Each server start, before its first request, looks
+at it; the first to find it empty awards every active member's levels from
+existing records with `seen_at` set and no notification, then sets `done_at`
+(R-BADGE-11). Running twice at once adds nothing, as a level is keyed by
+member, row and level.
 
 **The logo.** See §8, "Event badge logos".
 

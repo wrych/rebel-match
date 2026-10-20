@@ -19,6 +19,9 @@ const deps = composeApp(config, connection.db, {
   onNotificationError: () => {
     console.warn('notifications: one could not be mailed, will retry')
   },
+  onBadgeError: () => {
+    console.warn('badges: a count failed, the next counted act catches up')
+  },
   onScheduledError: () => {
     console.warn('scheduled work: a job failed, will retry at its next turn')
   },
@@ -27,6 +30,12 @@ const deps = composeApp(config, connection.db, {
 // The hosts' changes apply before the first request, then follow other servers
 // (ADR 0031).
 await deps.settings.refresh()
+
+// What members earned before badges existed, recorded once and quietly
+// before the first request (R-BADGE-11).
+await deps.badges.awardAtLaunch().catch(() => {
+  console.warn('badges: the award at launch failed, will retry next start')
+})
 
 // The server's own timers, unless a scheduler's tick runs the same work
 // (ADR 0049). Notifications are mailed by a timer, not by the request that

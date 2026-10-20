@@ -62,6 +62,9 @@ async function traces(member: Person): Promise<Record<string, number>> {
       member.id,
     ]),
     follows: await count('follows WHERE member_id = ?', [member.id]),
+    member_badges: await count('member_badges WHERE member_id = ?', [
+      member.id,
+    ]),
     swipes: await count('swipes WHERE member_id = ?', [member.id]),
     connection_requests: await count(
       'connection_requests WHERE requester_id = ? OR target_id = ?',
@@ -100,6 +103,10 @@ async function fillIn(member: Person, peer: Person): Promise<string> {
   )
   await db.query(
     "INSERT INTO member_expertise (member_id, trend_id) VALUES (?, '02')",
+    [member.id],
+  )
+  await db.query(
+    "INSERT INTO member_badges (member_id, row_key, level) VALUES (?, 'speak', 1)",
     [member.id],
   )
   await db.query("INSERT INTO follows (member_id, trend_id) VALUES (?, '03')", [

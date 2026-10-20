@@ -935,6 +935,18 @@ const catalogue: Group[] = [
     ],
   },
   {
+    title: 'Badges',
+    explanation: 'What members earn for what they do; only they see it.',
+    entries: [
+      {
+        name: 'Badge levels are earned at',
+        explanation:
+          'The counts for the first, second and third level of each row: challenges posted, help offered, same boats, people connected with.',
+        read: (c) => c.badgeLevelCounts.join(', '),
+      },
+    ],
+  },
+  {
     title: 'Experiments',
     explanation:
       'Each splits members in two by their id and shows one part a change, so ' +

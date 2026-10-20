@@ -127,6 +127,13 @@
       "when": 1791576381741,
       "tag": "0017_expertise_created",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1792488660312,
+      "tag": "0018_badges",
+      "breakpoints": true
     }
   ]
 }
