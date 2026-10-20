@@ -9,8 +9,22 @@ const props = defineProps<{
   /** Badges other invites give, to give the same (R-BADGE-4). */
   badges: readonly EventBadge[]
   limits: ClientConfig['limits'] | null
+  /** Keeps ids and the radio group apart when a screen shows two. */
+  idPrefix?: string
 }>()
 const emit = defineEmits<{ 'update:modelValue': [BadgeChoice] }>()
+
+const ids = computed(() => {
+  const prefix = props.idPrefix ?? 'badge'
+  return {
+    kind: `${prefix}-kind`,
+    name: `${prefix}-name`,
+    ticket: `${prefix}-ticket`,
+    big: `${prefix}-big`,
+    logo: `${prefix}-logo`,
+    same: `${prefix}-same`,
+  }
+})
 
 const logoProblem = ref<string | null>(null)
 const logoName = ref<string | null>(null)
@@ -93,7 +107,7 @@ const preview = computed(() => {
       <label class="choice">
         <input
           type="radio"
-          name="badge-kind"
+          :name="ids.kind"
           :checked="modelValue.kind === 'none'"
           @change="choose('none')"
         />
@@ -102,7 +116,7 @@ const preview = computed(() => {
       <label class="choice">
         <input
           type="radio"
-          name="badge-kind"
+          :name="ids.kind"
           :checked="modelValue.kind === 'new'"
           @change="choose('new')"
         />
@@ -111,7 +125,7 @@ const preview = computed(() => {
       <label v-if="badges.length > 0" class="choice">
         <input
           type="radio"
-          name="badge-kind"
+          :name="ids.kind"
           :checked="modelValue.kind === 'same'"
           @change="choose('same')"
         />
@@ -121,9 +135,9 @@ const preview = computed(() => {
 
     <template v-if="modelValue.kind === 'new'">
       <div class="field">
-        <label for="badge-name">Badge name</label>
+        <label :for="ids.name">Badge name</label>
         <input
-          id="badge-name"
+          :id="ids.name"
           class="input"
           required
           placeholder="Stormed the Summit"
@@ -134,9 +148,9 @@ const preview = computed(() => {
       </div>
       <div class="pair">
         <div class="field">
-          <label for="badge-ticket">Ticket line</label>
+          <label :for="ids.ticket">Ticket line</label>
           <input
-            id="badge-ticket"
+            :id="ids.ticket"
             class="input"
             required
             placeholder="SUMMIT"
@@ -148,9 +162,9 @@ const preview = computed(() => {
           />
         </div>
         <div class="field">
-          <label for="badge-big">Big line</label>
+          <label :for="ids.big">Big line</label>
           <input
-            id="badge-big"
+            :id="ids.big"
             class="input"
             required
             placeholder="2026"
@@ -161,9 +175,9 @@ const preview = computed(() => {
         </div>
       </div>
       <div class="field">
-        <label for="badge-logo">Logo (SVG, optional)</label>
+        <label :for="ids.logo">Logo (SVG, optional)</label>
         <input
-          id="badge-logo"
+          :id="ids.logo"
           class="input"
           type="file"
           accept=".svg,image/svg+xml"
@@ -182,9 +196,9 @@ const preview = computed(() => {
     </template>
 
     <div v-else-if="modelValue.kind === 'same'" class="field">
-      <label for="badge-same">Badge</label>
+      <label :for="ids.same">Badge</label>
       <select
-        id="badge-same"
+        :id="ids.same"
         class="input"
         :value="modelValue.id"
         @change="

@@ -438,7 +438,7 @@ in this order.
 - [x] Earning event badges: on admission, by a signed-in member opening the
       invite, and S37. _(R-BADGE-6, R-BADGE-8)_
 - [x] `badge_earned` usage event. _(R-BADGE-13)_
-- [ ] An existing invite's event badge: given, changed or removed from its
+- [x] An existing invite's event badge: given, changed or removed from its
       card on S22, earned by those who already joined through it.
       _(R-INV-13, R-BADGE-4)_
 
