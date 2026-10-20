@@ -18,20 +18,20 @@ export interface EarnedEventBadge {
 export interface EventBadgeStore {
   /** Earns the badge of the invite with this token when it is in its window
    * and not revoked, whatever its uses; anything else changes nothing
-   * (R-BADGE-6, R-INV-5). */
-  claim(memberId: string, token: string, now: Date): Promise<void>
+   * (R-BADGE-6, R-INV-5). True when the badge is newly the member's. */
+  claim(memberId: string, token: string, now: Date): Promise<boolean>
   mine(memberId: string): Promise<EarnedEventBadge[]>
   newCount(memberId: string): Promise<number>
   markSeen(memberId: string): Promise<void>
 }
 
 /** Records an event badge as the member's, once, with its notification in
- * the caller's transaction (R-BADGE-6, R-NOTE-10). */
+ * the caller's transaction (R-BADGE-6, R-NOTE-10). True when it is new. */
 export async function earnEventBadge(
   db: Database,
   memberId: string,
   eventBadgeId: string,
-): Promise<void> {
+): Promise<boolean> {
   const added = await db
     .insert(memberEventBadges)
     .values({ memberId, eventBadgeId })
@@ -44,6 +44,7 @@ export async function earnEventBadge(
       level: 1,
       eventBadgeId,
     })
+  return added.length === 1
 }
 
 // A claim is no use of the invite, so a full one still gives its badge
@@ -53,8 +54,8 @@ async function claim(
   memberId: string,
   token: string,
   now: Date,
-): Promise<void> {
-  await db.transaction(async (tx) => {
+): Promise<boolean> {
+  return db.transaction(async (tx) => {
     const [invite] = await tx
       .select({ badgeId: invites.eventBadgeId })
       .from(invites)
@@ -66,8 +67,9 @@ async function claim(
           sql`${invites.validUntil} > ${now}`,
         ),
       )
-    if (invite !== undefined && invite.badgeId !== null)
-      await earnEventBadge(tx, memberId, invite.badgeId)
+    return invite === undefined || invite.badgeId === null
+      ? false
+      : earnEventBadge(tx, memberId, invite.badgeId)
   })
 }
 

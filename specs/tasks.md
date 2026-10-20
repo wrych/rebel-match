@@ -437,7 +437,7 @@ in this order.
       _(R-BADGE-4, R-BADGE-5, R-INV-13)_
 - [x] Earning event badges: on admission, by a signed-in member opening the
       invite, and S37. _(R-BADGE-6, R-BADGE-8)_
-- [ ] `badge_earned` usage event. _(R-BADGE-13)_
+- [x] `badge_earned` usage event. _(R-BADGE-13)_
 
 ---
 
