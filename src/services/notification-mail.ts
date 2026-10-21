@@ -27,6 +27,7 @@ interface SenderDeps {
   mailer: Mailer
   members: MemberDirectory
   publicUrl: string
+  timeZone: string
   requests: { find(id: string): Promise<ConnectionRecord | null> }
 }
 

@@ -3,7 +3,7 @@ import { createApplicantNotice } from './applicant-notice.js'
 import type { Mailer, OutboundMessage } from './mailer.js'
 
 describe('createApplicantNotice', () => {
-  it('emails one reviewer who asked, when, and where to answer (R-AUTH-2, R-AUTH-11)', async () => {
+  it('emails one reviewer who asked, when on the hosts’ clock, and where to answer (R-AUTH-2, R-AUTH-11)', async () => {
     const sent: OutboundMessage[] = []
     const mailer: Mailer = {
       send: (message) => {
@@ -14,6 +14,7 @@ describe('createApplicantNotice', () => {
     const notify = createApplicantNotice({
       mailer,
       publicUrl: 'http://localhost:5173',
+      timeZone: 'Europe/Amsterdam',
     })
 
     await notify({
@@ -32,7 +33,7 @@ describe('createApplicantNotice', () => {
         kind: 'admin_notice',
         subject: 'Someone asked to join Rebel Match',
         text:
-          'new@example.invalid asked for access at 2026-11-08T10:00:00.000Z.\n\n' +
+          'new@example.invalid asked for access on 8 November at 11:00 CET.\n\n' +
           'Approve or reject them here:\nhttp://localhost:5173/admin/applicants?notice=applicant\n\n' +
           'You get this email because you are a Rebel Match member.\n\n' +
           'Choose how each kind of notification reaches you on your profile:\n' +
