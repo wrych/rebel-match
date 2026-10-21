@@ -90,6 +90,10 @@ describe('POST /api/events', () => {
         via: 'email',
       },
     ],
+    [
+      { event: 'screen_viewed', props: { screen: 'trend' } },
+      { name: 'screen_viewed', screen: 'trend' },
+    ],
   ])('relays %j for the signed-in member (ADR 0026)', async (body, event) => {
     const { app, tracked } = setup()
 
@@ -114,6 +118,10 @@ describe('POST /api/events', () => {
     [
       'a screen that is a path, not a route name',
       { event: 'feedback_opened', props: { screen: '/challenges/c-1' } },
+    ],
+    [
+      'a screen viewed by its path, which names a challenge',
+      { event: 'screen_viewed', props: { screen: '/challenges/c-1' } },
     ],
     [
       'a game opened with a pseudonym',

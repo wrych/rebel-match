@@ -710,8 +710,9 @@ fallback).
   the notifications list opened, a notification opened from the app or an
   email, a notification cadence changed, the swipe deck running out, a trend
   opened or (un)followed, feedback opened, the variant of an experiment a
-  member was shown (R-EXP-2), and a badge earned (R-BADGE-13). _(Andy,
-  2026-10-14.)_
+  member was shown (R-EXP-2), a badge earned (R-BADGE-13), and each screen a
+  signed-in member opens, by its name, so daily activity shows. _(Andy,
+  2026-10-14; screens 2026-10-21.)_
 - **R-ANA-2** — Analytics SHALL be attributable to a stable, **pseudonymous**
   member id (not raw email) so funnels and retention work without spreading PII
   into the analytics tool.
@@ -730,7 +731,8 @@ fallback).
   a member opted in at that moment, and never for a visitor who has not
   onboarded. The opt-in lives on the profile screen (R-PROF-2).
 - **R-ANA-5** — The chosen tool SHALL have a usable free tier at summit scale
-  (hundreds of users, thousands of events) and SHALL store event data in the EU.
+  (hundreds of users, hundreds of thousands of events a month) and SHALL store
+  event data in the EU.
   _(Resolved: Mixpanel offers EU data residency on the free plan at no extra
   cost — see `design.md` §7.)_
 - **R-ANA-6** — WHEN a member chooses to share on the usage-data step of

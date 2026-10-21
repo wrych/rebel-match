@@ -25,6 +25,7 @@ export type UiEvent =
       event: 'notification_opened'
       props: { type: NotificationKind; via: 'app' | 'email' }
     }
+  | { event: 'screen_viewed'; props: { screen: string } }
 
 /** Fire and forget: `keepalive` lets the request finish while the page moves
  * on, and a failure is never the member's problem. */

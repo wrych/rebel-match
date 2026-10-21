@@ -149,7 +149,14 @@ router.afterEach((to, _from, failure) => {
   settledAfterReload()
   afterNavigation()
   showScreen(to.meta['title'] as string)
+  reportScreen(to)
 })
+
+// No one is opted in before signing in, so a public screen is never counted.
+function reportScreen(to: RouteLocationNormalized): void {
+  if ((to.meta['access'] ?? 'public') === 'public') return
+  reportEvent({ event: 'screen_viewed', props: { screen: String(to.name) } })
+}
 
 // A member already in who scans an event's code is taken home as ever, and
 // the event's badge is theirs (R-BADGE-6).

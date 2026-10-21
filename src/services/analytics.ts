@@ -67,6 +67,7 @@ export type AnalyticsEvent =
       kind: 'challenge' | 'note'
       reason: ModerationReason
     }
+  | { name: 'screen_viewed'; screen: string }
 
 /** Reports what a member did. It never rejects and is not awaited by the
  * request it describes, so analytics can neither fail nor slow it. */
