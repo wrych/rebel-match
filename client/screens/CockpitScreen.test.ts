@@ -30,6 +30,7 @@ const request: ConnectionView = {
   status: 'pending',
   message: 'We ran into exactly this.',
   noteReported: false,
+  noteHiddenAs: null,
   createdAt: '2026-10-03T09:00:00.000Z',
   other: {
     memberId: 'm2',

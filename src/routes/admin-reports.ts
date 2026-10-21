@@ -1,6 +1,10 @@
 import { Router, type RequestHandler } from 'express'
 import { z } from 'zod'
 import type { AuthProvider } from '../auth/index.js'
+import {
+  moderationReasons,
+  type ModerationReason,
+} from '../services/challenge-moderation.js'
 import type { ModerationService } from '../services/moderation.js'
 import { requirePermission, type GuardedLocals } from './require-permission.js'
 
@@ -8,6 +12,15 @@ const stateQuery = z.object({
   state: z.enum(['open', 'handled']).default('open'),
 })
 const memberParams = z.object({ memberId: z.string().min(1) })
+const requestParams = z.object({ id: z.string().min(1) })
+const hideBody = z.object({
+  reason: z.enum(
+    moderationReasons as [ModerationReason, ...ModerationReason[]],
+  ),
+})
+const hideStatus = { hidden: 204, not_found: 404 } as const
+const unhideStatus = { shown: 204, not_found: 404 } as const
+
 const dismissBody = z.union([
   z.object({ challengeId: z.string().min(1) }).strict(),
   z.object({ requestId: z.string().min(1) }).strict(),
@@ -28,9 +41,33 @@ function dismiss(moderation: ModerationService): RequestHandler {
   }
 }
 
+function hideNote(moderation: ModerationService): RequestHandler {
+  return async (request, response) => {
+    const { id } = requestParams.parse(request.params)
+    const input = hideBody.safeParse(request.body)
+    if (!input.success) {
+      response.status(400).json({ error: 'bad_request' })
+      return
+    }
+    const host = (response.locals as GuardedLocals).member.id
+    const outcome = await moderation.hideNote(id, host, input.data.reason)
+    response.status(hideStatus[outcome]).json({ result: outcome })
+  }
+}
+
+function unhideNote(moderation: ModerationService): RequestHandler {
+  return async (request, response) => {
+    const { id } = requestParams.parse(request.params)
+    const host = (response.locals as GuardedLocals).member.id
+    const outcome = await moderation.unhideNote(id, host)
+    response.status(unhideStatus[outcome]).json({ result: outcome })
+  }
+}
+
 /** F21's API (design §3): reported members, one member's reports and the
  * history of what hosts did, and dismissing an item's reports, behind
- * `report:review` (R-MOD-6, R-MOD-7, R-MOD-12). */
+ * `report:review`; hiding a note, behind `challenge:moderate` like hiding a
+ * challenge (R-MOD-6..8, R-MOD-12). */
 export function adminReportRoutes(deps: {
   auth: AuthProvider
   moderation: ModerationService
@@ -62,6 +99,17 @@ export function adminReportRoutes(deps: {
     },
   )
   router.post('/api/admin/reports/dismiss', guard, dismiss(deps.moderation))
+  const hides = requirePermission(deps.auth, 'challenge:moderate')
+  router.post(
+    '/api/admin/requests/:id/hide-note',
+    hides,
+    hideNote(deps.moderation),
+  )
+  router.post(
+    '/api/admin/requests/:id/unhide-note',
+    hides,
+    unhideNote(deps.moderation),
+  )
 
   return router
 }

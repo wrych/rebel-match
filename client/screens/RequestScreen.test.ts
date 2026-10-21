@@ -17,6 +17,7 @@ const incoming: ConnectionView = {
   status: 'pending',
   message: 'Shall we compare notes?',
   noteReported: false,
+  noteHiddenAs: null,
   createdAt: '2026-10-03T09:00:00.000Z',
   other: {
     memberId: 'm2',
@@ -153,6 +154,22 @@ describe('RequestScreen', () => {
 
     expect(screen.text()).toContain('A challenge a host removed')
     expect(screen.text()).not.toContain('Nobody knows who can decide what.')
+  })
+
+  it('shows the recipient a note a host hid as removed, without it (R-MOD-8)', async () => {
+    server([{ ...incoming, message: null, noteHiddenAs: 'spam' }])
+    const screen = await mountScreen()
+
+    expect(screen.text()).toContain('Their note was removed by a host.')
+    expect(screen.text()).not.toContain('Report this note')
+  })
+
+  it('shows the sender their hidden note, and why (R-MOD-8)', async () => {
+    server([{ ...incoming, direction: 'outgoing', noteHiddenAs: 'spam' }])
+    const screen = await mountScreen()
+
+    expect(screen.text()).toContain('Shall we compare notes?')
+    expect(screen.text()).toContain('A host hid your note as spam')
   })
 
   it('accepts, then shows the contact (R-CONN-3)', async () => {

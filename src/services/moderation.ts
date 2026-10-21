@@ -76,22 +76,46 @@ export interface ModerationStore {
   /** Marks the item's open reports handled and records the host's dismissal,
    * in one transaction; false when it has none open. */
   dismiss(item: ReportItem, actorId: string): Promise<boolean>
+  /** Hides a request's note not yet hidden, declines the request if it is
+   * pending, handles the note's reports and records the hiding, in one
+   * transaction; false when there is no such note. */
+  hideNote(
+    requestId: string,
+    actorId: string,
+    reason: ModerationReason,
+  ): Promise<boolean>
+  /** Shows a hidden note again, recording who did; false when none such is
+   * hidden. */
+  unhideNote(requestId: string, actorId: string): Promise<boolean>
 }
 
 export interface ModerationService {
   overview(state: 'open' | 'handled'): Promise<ReportedMember[]>
   page(memberId: string): Promise<ModerationPage | null>
   dismiss(item: ReportItem, actorId: string): Promise<'dismissed' | 'not_found'>
+  hideNote(
+    requestId: string,
+    actorId: string,
+    reason: ModerationReason,
+  ): Promise<'hidden' | 'not_found'>
+  unhideNote(requestId: string, actorId: string): Promise<'shown' | 'not_found'>
 }
 
-/** F21: what hosts see of reports, grouped by the member reported, and their
- * dismissal (R-MOD-6, R-MOD-7, ADR 0055). */
+/** F21: what hosts see of reports, grouped by the member reported, their
+ * dismissal, and hiding a note (R-MOD-6..8, ADR 0055). Hiding never
+ * deletes, so it can be undone; showing it again reopens no request. */
 export function createModeration(store: ModerationStore): ModerationService {
   return {
     overview: (state) => store.overview(state),
     page: (memberId) => store.page(memberId),
     dismiss: async (item, actorId) =>
       (await store.dismiss(item, actorId)) ? 'dismissed' : 'not_found',
+    hideNote: async (requestId, actorId, reason) =>
+      (await store.hideNote(requestId, actorId, reason))
+        ? 'hidden'
+        : 'not_found',
+    unhideNote: async (requestId, actorId) =>
+      (await store.unhideNote(requestId, actorId)) ? 'shown' : 'not_found',
   }
 }
 

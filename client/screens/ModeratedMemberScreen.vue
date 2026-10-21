@@ -7,8 +7,10 @@ import {
   fetchModerationPage,
   hiddenAs,
   hideChallenge,
+  hideNote,
   reasonLabel,
   unhideChallenge,
+  unhideNote,
   type ModerationAction,
   type ModerationItem,
   type ModerationPage,
@@ -79,8 +81,18 @@ async function change(act: () => Promise<'done' | 'gone'>): Promise<void> {
   await load()
 }
 
-function hide(id: string, reason: ModerationReason): Promise<void> {
-  return change(() => hideChallenge(id, reason))
+function hide(item: ModerationItem, reason: ModerationReason): Promise<void> {
+  return change(() =>
+    item.kind === 'challenge'
+      ? hideChallenge(item.id, reason)
+      : hideNote(item.id, reason),
+  )
+}
+
+function unhide(item: ModerationItem): Promise<void> {
+  return change(() =>
+    item.kind === 'challenge' ? unhideChallenge(item.id) : unhideNote(item.id),
+  )
 }
 
 onMounted(load)
@@ -166,13 +178,13 @@ onMounted(load)
         <HideForm
           v-if="hiding === item.id"
           :busy="busy"
-          what="The challenge"
-          @hide="(reason) => hide(item.id, reason)"
+          :what="item.kind === 'challenge' ? 'The challenge' : 'The note'"
+          @hide="(reason) => hide(item, reason)"
           @cancel="hiding = null"
         />
         <div v-else class="actions">
           <button
-            v-if="item.kind === 'challenge' && item.state === 'shown'"
+            v-if="item.state === 'shown' && item.body !== null"
             type="button"
             class="btn btn-dark btn-small"
             :disabled="busy"
@@ -181,11 +193,11 @@ onMounted(load)
             Hide…
           </button>
           <button
-            v-if="item.kind === 'challenge' && item.state === 'hidden'"
+            v-if="item.state === 'hidden'"
             type="button"
             class="btn btn-ghost btn-small"
             :disabled="busy"
-            @click="change(() => unhideChallenge(item.id))"
+            @click="unhide(item)"
           >
             Unhide
           </button>

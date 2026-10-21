@@ -1,5 +1,14 @@
 import { randomUUID } from 'node:crypto'
-import { and, count, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
+import {
+  and,
+  count,
+  desc,
+  eq,
+  inArray,
+  isNotNull,
+  isNull,
+  sql,
+} from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 import type { Database } from '../db/connect.js'
 import {
@@ -135,6 +144,8 @@ async function itemsOf(
       hiddenReason: challenges.hiddenReason,
       trendShort: trends.short,
       note: connectionRequests.message,
+      noteHiddenAt: connectionRequests.noteHiddenAt,
+      noteHiddenReason: connectionRequests.noteHiddenReason,
       sentTo: recipient.name,
     })
     .from(reports)
@@ -170,6 +181,8 @@ function itemOf(row: {
   hiddenReason: ModerationReason | null
   trendShort: string | null
   note: string | null
+  noteHiddenAt: Date | null
+  noteHiddenReason: ModerationReason | null
   sentTo: string | null
 }): ModerationItem {
   if (row.challengeId !== null) {
@@ -191,8 +204,8 @@ function itemOf(row: {
     body: row.note,
     trendShort: null,
     sentTo: row.sentTo,
-    state: 'shown',
-    hiddenReason: null,
+    state: row.noteHiddenAt === null ? 'shown' : 'hidden',
+    hiddenReason: row.noteHiddenAt === null ? null : row.noteHiddenReason,
     reports: [],
   }
 }
@@ -323,6 +336,68 @@ export async function recordAction(
   })
 }
 
+// A pending request whose note is hidden closes as a decline does, telling
+// nobody (R-MOD-8, R-CONN-4).
+function hideNote(
+  db: Database,
+  requestId: string,
+  actorId: string,
+  reason: ModerationReason,
+): Promise<boolean> {
+  return db.transaction(async (tx) => {
+    const r = connectionRequests
+    const [hidden] = await tx
+      .update(r)
+      .set({
+        noteHiddenAt: sql`now()`,
+        noteHiddenBy: actorId,
+        noteHiddenReason: reason,
+      })
+      .where(
+        and(eq(r.id, requestId), isNotNull(r.message), isNull(r.noteHiddenAt)),
+      )
+      .returning({ senderId: r.requesterId })
+    if (hidden === undefined) return false
+    await tx
+      .update(r)
+      .set({ status: 'declined', respondedAt: sql`now()` })
+      .where(and(eq(r.id, requestId), eq(r.status, 'pending')))
+    const item = { requestId }
+    await handleReports(tx, item)
+    await recordAction(tx, {
+      memberId: hidden.senderId,
+      actorId,
+      kind: 'hide',
+      item,
+      reason,
+    })
+    return true
+  })
+}
+
+function unhideNote(
+  db: Database,
+  requestId: string,
+  actorId: string,
+): Promise<boolean> {
+  return db.transaction(async (tx) => {
+    const r = connectionRequests
+    const [shown] = await tx
+      .update(r)
+      .set({ noteHiddenAt: null, noteHiddenBy: null, noteHiddenReason: null })
+      .where(and(eq(r.id, requestId), isNotNull(r.noteHiddenAt)))
+      .returning({ senderId: r.requesterId })
+    if (shown === undefined) return false
+    await recordAction(tx, {
+      memberId: shown.senderId,
+      actorId,
+      kind: 'unhide',
+      item: { requestId },
+    })
+    return true
+  })
+}
+
 /** Reports and moderation over Postgres (design §2). */
 export function createModerationStore(db: Database): ModerationStore {
   return {
@@ -335,5 +410,8 @@ export function createModerationStore(db: Database): ModerationStore {
         await recordAction(tx, { memberId, actorId, kind: 'dismiss', item })
         return true
       }),
+    hideNote: (requestId, actorId, reason) =>
+      hideNote(db, requestId, actorId, reason),
+    unhideNote: (requestId, actorId) => unhideNote(db, requestId, actorId),
   }
 }

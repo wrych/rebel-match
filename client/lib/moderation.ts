@@ -119,3 +119,32 @@ const reasonLabels: Record<ModerationReason, string> = {
 /** A reason as hosts read it in lists (R-MOD-6). */
 export const reasonLabel = (reason: ModerationReason): string =>
   reasonLabels[reason]
+
+/** Hides a request's note from everyone but its sender (R-MOD-8); `gone`
+ * when it is already hidden or has no note. */
+export async function hideNote(
+  requestId: string,
+  reason: ModerationReason,
+): Promise<'done' | 'gone'> {
+  const response = await send(
+    `/api/admin/requests/${encodeURIComponent(requestId)}/hide-note`,
+    'POST',
+    { reason },
+  )
+  return outcomeOf<'done' | 'gone'>(response, 'note not hidden', {
+    204: 'done',
+    404: 'gone',
+  })
+}
+
+/** Shows a hidden note again (R-MOD-8); `gone` when it is not hidden. */
+export async function unhideNote(requestId: string): Promise<'done' | 'gone'> {
+  const response = await send(
+    `/api/admin/requests/${encodeURIComponent(requestId)}/unhide-note`,
+    'POST',
+  )
+  return outcomeOf<'done' | 'gone'>(response, 'note not shown', {
+    204: 'done',
+    404: 'gone',
+  })
+}

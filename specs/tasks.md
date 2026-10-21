@@ -466,7 +466,7 @@ Built after the spec and ADR merge. One pull request per item, in this order.
       handled, the action history, the menu's **Moderation** entry.
       _(R-MOD-6..8, R-MOD-11)_ Moved before the notification, which links
       to S40.
-- [ ] Hiding a note: its hidden columns, hide and unhide on S40, _Removed by
+- [x] Hiding a note: its hidden columns, hide and unhide on S40, _Removed by
       a host_ under _Connected over_. _(R-MOD-8)_
 - [ ] The `report` notification type, and the open count on the menu's
       **Moderation** entry. _(R-MOD-5, R-NOTE-1, R-NOTE-2)_

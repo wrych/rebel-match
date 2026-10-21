@@ -166,6 +166,8 @@ function deps(
       overview: () => Promise.resolve([]),
       page: () => Promise.resolve(null),
       dismiss: () => Promise.resolve('not_found'),
+      hideNote: () => Promise.resolve('not_found'),
+      unhideNote: () => Promise.resolve('not_found'),
     },
     notificationMail: {
       deliverDue: () => Promise.resolve(),

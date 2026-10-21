@@ -59,6 +59,14 @@ function setup(): { app: Express; calls: unknown[][] } {
       return Promise.resolve([rik])
     },
     page: (memberId) => Promise.resolve(memberId === 'm-rik' ? page : null),
+    hideNote: (id, actorId, reason) => {
+      calls.push(['hideNote', id, actorId, reason])
+      return Promise.resolve(id === 'r-1' ? 'hidden' : 'not_found')
+    },
+    unhideNote: (id, actorId) => {
+      calls.push(['unhideNote', id, actorId])
+      return Promise.resolve(id === 'r-1' ? 'shown' : 'not_found')
+    },
     dismiss: (item, actorId) => {
       calls.push(['dismiss', item, actorId])
       return Promise.resolve(
@@ -132,6 +140,51 @@ describe('admin report routes (F21)', () => {
 
     expect(response.status).toBe(status)
     if (status !== 400) expect(calls).toEqual([['dismiss', body, 'm-admin']])
+  })
+
+  it.each([
+    ['hide-note', { reason: 'spam' }, 'r-1', 204],
+    ['hide-note', { reason: 'spam' }, 'r-9', 404],
+    ['hide-note', { reason: 'boring' }, 'r-1', 400],
+    ['unhide-note', {}, 'r-1', 204],
+    ['unhide-note', {}, 'r-9', 404],
+  ])(
+    'answers %s of %o on %s with %i (R-MOD-8)',
+    async (action, body, id, status) => {
+      const response = await request(setup().app)
+        .post(`/api/admin/requests/${id}/${action}`)
+        .set('Cookie', await cookieFor('m-admin'))
+        .send(body)
+
+      expect(response.status).toBe(status)
+    },
+  )
+
+  it('records the host who hides a note, with the reason', async () => {
+    const { app, calls } = setup()
+
+    await request(app)
+      .post('/api/admin/requests/r-1/hide-note')
+      .set('Cookie', await cookieFor('m-admin'))
+      .send({ reason: 'inappropriate' })
+
+    expect(calls).toEqual([['hideNote', 'r-1', 'm-admin', 'inappropriate']])
+  })
+
+  it('lets nobody without challenge:moderate hide or unhide a note (R-ROLE-3)', async () => {
+    const { app, calls } = setup()
+    const cookie = await cookieFor('m-member')
+
+    const hide = await request(app)
+      .post('/api/admin/requests/r-1/hide-note')
+      .set('Cookie', cookie)
+      .send({ reason: 'spam' })
+    const unhide = await request(app)
+      .post('/api/admin/requests/r-1/unhide-note')
+      .set('Cookie', cookie)
+
+    expect([hide.status, unhide.status]).toEqual([404, 404])
+    expect(calls).toEqual([])
   })
 
   it('shows a member without report:review nothing (R-MOD-12, R-NAV-8)', async () => {

@@ -17,6 +17,7 @@ const input = {
   kind: 'same_boat' as const,
   message: 'Shall we compare notes?',
   noteReported: false,
+  noteHiddenAs: null,
 }
 
 function answer(status: number): ReturnType<typeof vi.fn> {
@@ -164,6 +165,7 @@ function accepted(
     status: 'accepted',
     message: null,
     noteReported: false,
+    noteHiddenAs: null,
     createdAt: '2026-11-08T10:00:00.000Z',
     other: {
       memberId,
