@@ -307,6 +307,8 @@ describe('several: one digest (R-NOTE-8, R-MSG-6)', () => {
     expect(mail?.text).toContain(
       'new@example.invalid asked to join.\nhttp://localhost:5173/admin/applicants',
     )
+    expect(mail?.html).toContain('<strong>Ada</strong> wants to connect')
+    expect(mail?.html).toContain('<strong>Eve</strong> accepted your request')
     expect(mail?.text).toContain('http://localhost:5173/profile')
     expect(mail?.text).not.toContain('@example.invalid accepted')
   })

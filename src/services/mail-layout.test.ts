@@ -180,6 +180,36 @@ describe('renderMail: the HTML (R-MSG-8)', () => {
   })
 })
 
+describe('renderMail: whom a digest entry is about', () => {
+  const about = (name: string): MailContent => ({
+    ...request,
+    items: [
+      {
+        name,
+        text: 'wants to connect with you.',
+        action: { label: 'See the request', url: 'https://x.invalid/r1' },
+      },
+    ],
+  })
+
+  it('sets the name in bold in the HTML, and plainly in the text', () => {
+    const mail = renderMail(about('Ada Lovelace'))
+
+    expect(mail.html).toContain(
+      '<strong>Ada Lovelace</strong> wants to connect with you.</p>',
+    )
+    expect(mail.text).toContain(
+      'Ada Lovelace wants to connect with you.\nhttps://x.invalid/r1',
+    )
+  })
+
+  it('turns markup in a name into text', () => {
+    expect(renderMail(about('<i>Ada</i>')).html).toContain(
+      '<strong>&lt;i&gt;Ada&lt;/i&gt;</strong>',
+    )
+  })
+})
+
 describe('escapeHtml', () => {
   it('escapes the five characters that can end text or an attribute', () => {
     expect(escapeHtml(`<a href="x" title='y'>&</a>`)).toBe(

@@ -17,6 +17,8 @@ export type MailBlock =
 
 /** One entry of a digest: what happened, the note it carries, its link. */
 export interface MailItem {
+  /** Whom it is about, set in bold before the rest of the line. */
+  name?: string
   text: string
   quote?: string
   action: MailAction
@@ -71,9 +73,12 @@ function blockText(block: MailBlock): string {
   return prompt === undefined ? url : `${prompt}\n${url}`
 }
 
+const itemLine = (item: MailItem): string =>
+  item.name === undefined ? item.text : `${item.name} ${item.text}`
+
 function itemText(item: MailItem): string {
   const quote = item.quote === undefined ? [] : [`${ITEM_QUOTE}${item.quote}`]
-  return [item.text, ...quote, item.action.url].join('\n')
+  return [itemLine(item), ...quote, item.action.url].join('\n')
 }
 
 function footerText(footer: MailContent['footer']): string[] {
@@ -146,10 +151,16 @@ function blockHtml(block: MailBlock): string {
   }
 }
 
+function itemLineHtml(item: MailItem): string {
+  return item.name === undefined
+    ? lines(item.text)
+    : `<strong>${escapeHtml(item.name)}</strong> ${lines(item.text)}`
+}
+
 function itemHtml(item: MailItem): string {
   return (
     `<tr><td class="rm-line" style="padding:18px 0 2px;border-top:1px solid ${colour.line};">` +
-    `<p class="rm-ink" style="margin:0 0 10px;font-size:16px;line-height:1.45;color:${colour.ink};">${lines(item.text)}</p>` +
+    `<p class="rm-ink" style="margin:0 0 10px;font-size:16px;line-height:1.45;color:${colour.ink};">${itemLineHtml(item)}</p>` +
     (item.quote === undefined ? '' : quote(item.quote, 14)) +
     `<p style="margin:0 0 16px;"><a href="${escapeHtml(item.action.url)}" style="font-size:14px;font-weight:bold;color:${colour.accent};text-decoration:none;">${escapeHtml(item.action.label)} &rarr;</a></p>` +
     `</td></tr>`
