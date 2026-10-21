@@ -46,8 +46,9 @@ describe('byAttention (R-MOD-7)', () => {
 })
 
 describe('createModeration (R-MOD-7)', () => {
-  it('dismisses through the store, not found when nothing was open', async () => {
+  it('dismisses and purges through the store, not found when nothing was open (R-MOD-11)', async () => {
     const dismissed: string[] = []
+    const purged: Date[] = []
     const moderation = createModeration({
       overview: () => Promise.resolve([]),
       openMembers: () => Promise.resolve(0),
@@ -58,6 +59,10 @@ describe('createModeration (R-MOD-7)', () => {
       },
       hideNote: () => Promise.resolve(false),
       unhideNote: () => Promise.resolve(false),
+      purgeHandledBefore: (cutoff) => {
+        purged.push(cutoff)
+        return Promise.resolve(2)
+      },
     })
 
     expect(await moderation.dismiss({ requestId: 'r-1' }, 'm-host')).toBe(
@@ -67,5 +72,8 @@ describe('createModeration (R-MOD-7)', () => {
       'not_found',
     )
     expect(dismissed).toEqual(['m-host', 'm-host'])
+    const cutoff = new Date('2026-05-01T00:00:00Z')
+    expect(await moderation.purgeHandledBefore(cutoff)).toBe(2)
+    expect(purged).toEqual([cutoff])
   })
 })

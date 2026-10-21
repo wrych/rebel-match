@@ -149,6 +149,8 @@ const limitSpecs = {
     default: 3,
     changeable: { min: 1, max: 100 },
   },
+  // Reports name who made them, so handled ones go after this (R-MOD-11).
+  reportRetentionDays: { env: 'REPORT_RETENTION_DAYS', default: 180 },
   // The largest SVG logo an event badge takes, kept well inside the 64 kB a
   // request body may be once it is JSON (R-BADGE-5).
   badgeLogoMaxBytes: { env: 'BADGE_LOGO_MAX_BYTES', default: 32_768 },

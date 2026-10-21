@@ -7,6 +7,7 @@ import {
   inArray,
   isNotNull,
   isNull,
+  lt,
   sql,
 } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
@@ -425,5 +426,12 @@ export function createModerationStore(db: Database): ModerationStore {
     hideNote: (requestId, actorId, reason) =>
       hideNote(db, requestId, actorId, reason),
     unhideNote: (requestId, actorId) => unhideNote(db, requestId, actorId),
+    purgeHandledBefore: async (cutoff) => {
+      const purged = await db
+        .delete(reports)
+        .where(lt(reports.handledAt, cutoff))
+        .returning({ id: reports.id })
+      return purged.length
+    },
   }
 }
