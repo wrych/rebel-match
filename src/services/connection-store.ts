@@ -86,7 +86,11 @@ async function views(
         sector: sectorLabel,
         companySize: companySizeLabel,
       },
-      challenge: { id: challenges.id, body: challenges.body },
+      challenge: {
+        id: challenges.id,
+        body: challenges.body,
+        status: challenges.status,
+      },
       trendShort: trends.short,
     })
     .from(r)
@@ -105,13 +109,24 @@ async function views(
       message: record.message,
       createdAt: record.createdAt,
       other: { ...row.other, name: row.other.name ?? '' },
-      challenge:
-        row.challenge === null
-          ? null
-          : { ...row.challenge, trendShort: row.trendShort },
+      challenge: challengeView(row.challenge, row.trendShort),
       unseen: unseenBy(row.request, viewerId),
     }
   })
+}
+
+function challengeView(
+  challenge: { id: string; body: string; status: string } | null,
+  trendShort: string | null,
+): ConnectionView['challenge'] {
+  if (challenge === null) return null
+  const withdrawn = challenge.status !== 'active'
+  return {
+    id: challenge.id,
+    body: withdrawn ? null : challenge.body,
+    trendShort,
+    withdrawn,
+  }
 }
 
 // The only read of an email in the whole double opt-in: it checks accepted

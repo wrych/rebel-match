@@ -72,6 +72,12 @@ function setup(settings: LiveSettings = fixedSettings(config)): {
           : null,
       )
     },
+    withdraw: (memberId, id) => {
+      calls.push(['withdraw', memberId, id])
+      return Promise.resolve(
+        memberId === 'm-ada' && id === 'c-1' ? 'withdrawn' : 'not_found',
+      )
+    },
     newest: (memberId, trendId) => {
       calls.push(['newest', memberId, trendId])
       return Promise.resolve([
@@ -279,6 +285,36 @@ describe('challenge routes', () => {
       .send({ trendId })
 
     expect(response.status).toBe(status)
+  })
+
+  it('withdraws the author’s challenge, and is not found for any other (R-ASK-17, R-NAV-8)', async () => {
+    const { app, calls } = setup()
+    const cookie = await cookieFor('m-ada')
+
+    const mine = await request(app)
+      .post('/api/challenges/c-1/withdraw')
+      .set('Cookie', cookie)
+    const other = await request(app)
+      .post('/api/challenges/c-9/withdraw')
+      .set('Cookie', cookie)
+
+    expect(mine.status).toBe(204)
+    expect(other.status).toBe(404)
+    expect(calls).toEqual([
+      ['withdraw', 'm-ada', 'c-1'],
+      ['withdraw', 'm-ada', 'c-9'],
+    ])
+  })
+
+  it('lets nobody without challenge:create withdraw (R-ROLE-3)', async () => {
+    const { app, calls } = setup()
+
+    const response = await request(app)
+      .post('/api/challenges/c-1/withdraw')
+      .set('Cookie', await cookieFor('m-new'))
+
+    expect(response.status).toBe(404)
+    expect(calls).toEqual([])
   })
 
   it('returns matches to the author (R-ASK-8)', async () => {

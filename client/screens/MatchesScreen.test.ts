@@ -6,9 +6,10 @@ import MatchesScreen from './MatchesScreen.vue'
 
 const route = { params: { id: 'c1' }, query: {} as Record<string, string> }
 const replace = vi.fn()
+const push = vi.fn()
 vi.mock('vue-router', () => ({
   useRoute: () => route,
-  useRouter: () => ({ replace }),
+  useRouter: () => ({ replace, push }),
 }))
 
 const trend: Trend = {
@@ -145,6 +146,7 @@ afterEach(() => {
   vi.unstubAllGlobals()
   route.query = {}
   replace.mockClear()
+  push.mockClear()
 })
 
 describe('MatchesScreen', () => {
@@ -466,6 +468,25 @@ describe('MatchesScreen', () => {
 
     expect(followButton(screen).attributes('aria-pressed')).toBe('false')
     expect(screen.find('[role="alert"]').text()).toContain('did not save')
+  })
+
+  it('withdraws the challenge after one confirmation, back to the cockpit (R-ASK-17)', async () => {
+    const fetchMock = server()
+    const screen = await mountScreen()
+
+    const withdraw = screen
+      .findAll('button')
+      .find((each) => each.text() === 'Withdraw…')
+    await withdraw?.trigger('click')
+    expect(push).not.toHaveBeenCalled()
+    await screen.find('button.btn-dark').trigger('click')
+    await flushPromises()
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/challenges/c1/withdraw',
+      expect.objectContaining({ method: 'POST' }),
+    )
+    expect(push).toHaveBeenCalledWith('/matches')
   })
 
   it('shows nothing of a challenge that is not theirs (R-NAV-8)', async () => {

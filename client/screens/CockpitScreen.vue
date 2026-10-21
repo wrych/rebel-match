@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import ChallengeCard from '../components/ChallengeCard.vue'
 import PullToRefresh from '../components/PullToRefresh.vue'
+import WithdrawChallenge from '../components/WithdrawChallenge.vue'
 import { peerLine } from '../lib/challenges'
 import {
   fetchCockpit,
@@ -27,6 +28,7 @@ const problem = ref<string | null>(null)
 const answering = ref<string | null>(null)
 const notice = ref<string | null>(null)
 const failed = ref<string | null>(null)
+const withdrawnNotice = ref<string | null>(null)
 
 const requestPath = (id: string): string =>
   `/matches/requests/${encodeURIComponent(id)}`
@@ -101,6 +103,11 @@ async function answer(
   } finally {
     answering.value = null
   }
+}
+
+async function afterWithdraw(): Promise<void> {
+  withdrawnNotice.value = 'Withdrawn. Nobody else sees it any more.'
+  await live.refresh()
 }
 
 onMounted(() => live.refresh())
@@ -205,14 +212,27 @@ onMounted(() => live.refresh())
           <p class="empty">You have not asked for help yet.</p>
           <RouterLink to="/ask" class="row-link">Ask for help</RouterLink>
         </template>
-        <ChallengeCard
+        <p v-if="withdrawnNotice" class="notice notice-solid" role="status">
+          {{ withdrawnNotice }}
+        </p>
+        <div
           v-for="challenge in cockpit.challenges"
           :key="challenge.id"
-          :kicker="challenge.trend?.short ?? 'No trend yet'"
-          :body="challenge.body"
-          :counts="challenge.counts"
-          :to="matchesPath(challenge.id)"
-        />
+          class="stack-tight"
+        >
+          <ChallengeCard
+            :kicker="challenge.trend?.short ?? 'No trend yet'"
+            :body="challenge.body"
+            :counts="challenge.counts"
+            :withdrawn="challenge.withdrawn"
+            :to="challenge.withdrawn ? undefined : matchesPath(challenge.id)"
+          />
+          <WithdrawChallenge
+            v-if="!challenge.withdrawn"
+            :challenge-id="challenge.id"
+            @withdrawn="afterWithdraw"
+          />
+        </div>
       </section>
 
       <section class="stack rule" aria-labelledby="following">

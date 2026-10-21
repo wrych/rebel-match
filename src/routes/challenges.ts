@@ -15,6 +15,8 @@ const confirmBody = z.object({ trendId: z.string().min(1) })
 const trendParams = z.object({ trendId: z.string().min(1) })
 const newestQuery = z.object({ trend: z.string().min(1).optional() })
 
+const withdrawStatus = { withdrawn: 204, not_found: 404 } as const
+
 const confirmStatus = {
   saved: 204,
   not_found: 404,
@@ -76,6 +78,17 @@ function confirm(deps: Deps): RequestHandler {
   }
 }
 
+function withdraw(deps: Deps): RequestHandler {
+  return async (request, response) => {
+    const params = challengeParams.parse(request.params)
+    const outcome = await deps.challenges.withdraw(
+      memberOf(response.locals),
+      params.id,
+    )
+    response.status(withdrawStatus[outcome]).json({ result: outcome })
+  }
+}
+
 function newest(deps: Deps): RequestHandler {
   return async (request, response) => {
     const query = newestQuery.safeParse(request.query)
@@ -108,8 +121,8 @@ function ownOnly(
 }
 
 /** The Ask journey's API (design §3): trends to pick from, others' newest
- * challenges, a challenge written and matched, its trend confirmed, and its
- * matches. Writing needs `challenge:create`; reading one's own challenge is
+ * challenges, a challenge written and matched, its trend confirmed, its
+ * matches, and its withdrawal. Writing needs `challenge:create`; reading one's own challenge is
  * its author's alone (R-NAV-8). */
 export function challengeRoutes(deps: Deps): Router {
   const router = Router()
@@ -149,6 +162,7 @@ export function challengeRoutes(deps: Deps): Router {
     ),
   )
   router.patch('/api/challenges/:id', write, confirm(deps))
+  router.post('/api/challenges/:id/withdraw', write, withdraw(deps))
   router.get(
     '/api/challenges/:id/matches',
     write,

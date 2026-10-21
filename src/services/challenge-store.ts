@@ -4,6 +4,7 @@ import type { Database } from '../db/connect.js'
 import {
   cases,
   challenges,
+  connectionRequests,
   memberExpertise,
   members,
   trends,
@@ -120,6 +121,39 @@ async function newestOf(
   }))
 }
 
+// Requests still waiting about it close as a decline does, telling nobody
+// (R-ASK-17, R-CONN-4).
+async function withdrawOf(
+  db: Database,
+  memberId: string,
+  id: string,
+): Promise<boolean> {
+  return db.transaction(async (tx) => {
+    const withdrawn = await tx
+      .update(challenges)
+      .set({ status: 'archived' })
+      .where(
+        and(
+          eq(challenges.id, id),
+          eq(challenges.memberId, memberId),
+          eq(challenges.status, 'active'),
+        ),
+      )
+      .returning({ id: challenges.id })
+    if (withdrawn.length === 0) return false
+    await tx
+      .update(connectionRequests)
+      .set({ status: 'declined', respondedAt: sql`now()` })
+      .where(
+        and(
+          eq(connectionRequests.challengeId, id),
+          eq(connectionRequests.status, 'pending'),
+        ),
+      )
+    return true
+  })
+}
+
 function challengeOf(row: typeof challenges.$inferSelect): Challenge {
   return {
     id: row.id,
@@ -172,6 +206,7 @@ export function createChallengeStore(db: Database): ChallengeStore {
     peers: (trendId, viewerId) => peersOf(db, trendId, viewerId),
     newest: (viewerId, trendId, limit) =>
       newestOf(db, viewerId, trendId, limit),
+    withdraw: (memberId, id) => withdrawOf(db, memberId, id),
     cases: (trendId) =>
       db
         .select({ org: cases.org, url: cases.url, takeaway: cases.takeaway })

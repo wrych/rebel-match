@@ -127,7 +127,7 @@ describe('connecting over Postgres: the double opt-in (F7, ADR 0004)', () => {
     expect(created.status).toBe(201)
     expect(mine.map((r) => r.id)).toContain(accepted)
     expect(
-      mine.find((r) => r.id === accepted)?.challenge?.body.length,
+      mine.find((r) => r.id === accepted)?.challenge?.body?.length,
     ).toBeGreaterThan(0)
     expect(JSON.stringify(incoming.body)).not.toContain('@')
     for (const who of ['ada', 'bob']) {
@@ -378,7 +378,7 @@ describe('connecting again once connected, over Postgres (R-CONN-8..10, ADR 0035
       [added, 'incoming', true],
       [first, 'outgoing', false],
     ])
-    expect(over[1]?.challenge?.body.length).toBeGreaterThan(0)
+    expect(over[1]?.challenge?.body?.length).toBeGreaterThan(0)
     expect(await newConnections('ada')).toBe(0)
   })
 

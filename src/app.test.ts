@@ -88,6 +88,7 @@ function deps(
       trends: () => Promise.resolve([]),
       create: () => Promise.reject(new Error('unused')),
       get: () => Promise.resolve(null),
+      withdraw: () => Promise.resolve('not_found'),
       confirmTrend: () => Promise.resolve('not_found'),
       matches: () => Promise.resolve(null),
       trend: () => Promise.resolve(null),

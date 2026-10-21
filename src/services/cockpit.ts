@@ -1,11 +1,13 @@
 import type { Trend } from './challenges.js'
 
-/** One of the member's own challenges with what it found (R-MINE-1). */
+/** One of the member's own challenges with what it found (R-MINE-1); a
+ * withdrawn one finds nothing, so it has no counts (R-ASK-17). */
 export interface CockpitChallenge {
   id: string
   body: string
   trend: { id: string; short: string } | null
-  counts: { sameBoat: number; beenThere: number; cases: number }
+  withdrawn: boolean
+  counts: { sameBoat: number; beenThere: number; cases: number } | null
 }
 
 export interface Cockpit {

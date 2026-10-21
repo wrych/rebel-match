@@ -11,6 +11,7 @@ const cockpit: Cockpit = {
       id: 'c1',
       body: 'Nobody knows who can decide what.',
       trend: { id: '02', short: 'Network of Teams' },
+      withdrawn: false,
       counts: { sameBoat: 2, beenThere: 3, cases: 1 },
     },
   ],
@@ -340,6 +341,48 @@ describe('CockpitScreen', () => {
       '2 same boat · 3 been there · 1 case studies',
     )
     expect(paths(screen)).toContain('/challenges/c1/matches')
+  })
+
+  it('shows a withdrawn challenge as such, uncounted and unlinked (R-ASK-17)', async () => {
+    const withdrawn = {
+      id: 'c2',
+      body: 'How do we stop approving travel twice?',
+      trend: null,
+      withdrawn: true,
+      counts: null,
+    }
+    serve({ ...cockpit, challenges: [withdrawn] }, () => [])
+    const screen = await mountScreen()
+
+    expect(screen.text()).toContain('Withdrawn')
+    expect(screen.text()).toContain('Only you see this.')
+    expect(screen.find('.counts').exists()).toBe(false)
+    expect(paths(screen)).not.toContain('/challenges/c2/matches')
+    expect(screen.text()).not.toContain('Withdraw…')
+  })
+
+  it('withdraws a challenge from its card, then reads the cockpit again (R-ASK-17)', async () => {
+    serve(cockpit, () => [])
+    const screen = await mountScreen()
+    const reads = (): number =>
+      vi.mocked(fetch).mock.calls.filter(([url]) => url === '/api/cockpit')
+        .length
+    const before = reads()
+
+    const withdraw = screen
+      .findAll('button')
+      .find((each) => each.text() === 'Withdraw…')
+    await withdraw?.trigger('click')
+    answerWith(204)
+    await screen.find('button.btn-dark').trigger('click')
+    await flushPromises()
+
+    expect(vi.mocked(fetch)).toHaveBeenCalledWith(
+      '/api/challenges/c1/withdraw',
+      expect.objectContaining({ method: 'POST' }),
+    )
+    expect(screen.text()).toContain('Withdrawn. Nobody else sees it any more.')
+    expect(reads()).toBeGreaterThan(before)
   })
 
   it('shows the trends the member follows, each opening its screen (R-MINE-3)', async () => {

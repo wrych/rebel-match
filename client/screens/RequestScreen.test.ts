@@ -29,6 +29,7 @@ const incoming: ConnectionView = {
     id: 'c1',
     body: 'Nobody knows who can decide what.',
     trendShort: 'Network of Teams',
+    withdrawn: false,
   },
   unseen: false,
 }
@@ -86,6 +87,25 @@ describe('RequestScreen', () => {
     expect(screen.text()).toContain('About Network of Teams')
     expect(screen.text()).toContain('Nobody knows who can decide what.')
     expect(screen.html()).not.toContain('@')
+  })
+
+  it('shows a withdrawn challenge without its text (R-ASK-17)', async () => {
+    server([
+      {
+        ...incoming,
+        challenge: {
+          id: 'c1',
+          body: null,
+          trendShort: 'Network of Teams',
+          withdrawn: true,
+        },
+      },
+    ])
+    const screen = await mountScreen()
+
+    expect(screen.text()).toContain('About Network of Teams')
+    expect(screen.text()).toContain('A withdrawn challenge')
+    expect(screen.text()).not.toContain('Nobody knows who can decide what.')
   })
 
   it('accepts, then shows the contact (R-CONN-3)', async () => {
