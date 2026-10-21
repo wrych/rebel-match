@@ -1,9 +1,19 @@
 import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vitest/config'
 
+// CI runs three suites in one job, and each writes a job summary; without a
+// title of its own, all three read "Vitest Test Report".
+const onGithubActions = process.env['GITHUB_ACTIONS'] === 'true'
+
 export default defineConfig({
   plugins: [vue()],
   test: {
+    ...(onGithubActions && {
+      reporters: [
+        'default',
+        ['github-actions', { jobSummary: { title: 'Unit tests' } }],
+      ],
+    }),
     include: [
       'src/**/*.test.ts',
       'client/**/*.test.ts',
