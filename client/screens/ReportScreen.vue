@@ -151,9 +151,7 @@ async function send(): Promise<void> {
         </fieldset>
 
         <div class="field">
-          <label for="comment"
-            >Anything hosts should know? <span class="small">(optional)</span>
-          </label>
+          <label for="comment">Anything hosts should know? (optional)</label>
           <textarea
             id="comment"
             v-model="comment"
