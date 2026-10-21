@@ -94,8 +94,8 @@ async function withdraw(): Promise<void> {
 }
 
 /* Room for the eye, so a long trend name never runs under it. */
-.offered :slotted(.card-head),
-.offered :slotted(.kicker:first-child) {
+.offered :deep(.card-head),
+.offered :deep(.stack-tight > .kicker:first-child) {
   padding-right: 2.5rem;
 }
 
