@@ -578,6 +578,13 @@ const catalogue: Group[] = [
         unit: CHARACTERS,
       },
       {
+        name: 'Longest reason for a ban',
+        explanation: 'Fixed by the database.',
+        fixed: true,
+        read: (c) => c.limits.banNoteMaxChars,
+        unit: CHARACTERS,
+      },
+      {
         name: 'Notifications shown per page',
         explanation: 'How many notifications the list loads at a time.',
         read: (c) => c.limits.notificationsPageSize,

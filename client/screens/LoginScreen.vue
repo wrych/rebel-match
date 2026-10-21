@@ -13,11 +13,12 @@ import { prefersReducedMotion, takeIntro } from '../lib/intro'
 import { countInviteOpen } from '../lib/invite-open'
 import { solveHumanCheck } from '../lib/human-check'
 import { accountNotice, linkNotice } from '../lib/link-notice'
+import { CONTROLLER_CONTACT } from '../../src/consent'
 
 const router = useRouter()
 const email = ref('')
 const sending = ref(false)
-const answer = ref<'check-email' | 'not-approved' | null>(null)
+const answer = ref<'check-email' | 'not-approved' | 'suspended' | null>(null)
 const failed = ref<'error' | 'check' | 'busy' | null>(null)
 const checking = ref(false)
 const checkHost = ref<HTMLElement | null>(null)
@@ -121,6 +122,17 @@ async function send(): Promise<void> {
       Your request to join Rebel Match was not approved, so we cannot send a
       sign-in link to {{ email }}. If you think this is a mistake, talk to the
       host.
+    </p>
+  </section>
+
+  <section v-else-if="answer === 'suspended'" class="screen">
+    <p class="kicker">Account suspended</p>
+    <h1 class="display display-lg">Suspended</h1>
+    <p class="notice notice-solid" role="status">
+      The account for {{ email }} is suspended, so we cannot send a sign-in
+      link. For questions, write to
+      <a :href="`mailto:${CONTROLLER_CONTACT}`">{{ CONTROLLER_CONTACT }}</a
+      >.
     </p>
   </section>
 

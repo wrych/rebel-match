@@ -2,6 +2,7 @@
 import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ModerationItem, ModerationPage } from '../lib/moderation'
+import { forgetMe } from '../lib/session'
 import ModeratedMemberScreen from './ModeratedMemberScreen.vue'
 
 vi.mock('vue-router', () => ({
@@ -75,13 +76,26 @@ const page: ModerationPage = {
 }
 
 /** Serves `pages` in turn for each read, and answers each change with
- * `status`. */
+ * `status`; the host signed in holds `permissions`. */
 function server(
   pages: (ModerationPage | null)[],
   status = 204,
+  permissions: string[] = ['report:review', 'challenge:moderate'],
 ): ReturnType<typeof vi.fn> {
   const reads = [...pages]
-  const fetchMock = vi.fn((_url: string, init?: RequestInit) => {
+  const fetchMock = vi.fn((url: string, init?: RequestInit) => {
+    if (url === '/auth/me')
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({ id: 'm-host', onboarded: true, permissions }),
+      })
+    if (url === '/api/config')
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({ limits: { banNoteMaxChars: 500 } }),
+      })
     if (init?.method === 'POST')
       return Promise.resolve({ ok: status < 300, status })
     const next = reads.length > 1 ? reads.shift() : reads[0]
@@ -103,6 +117,16 @@ async function mountScreen(): Promise<ReturnType<typeof mount>> {
   return screen
 }
 
+async function press(
+  screen: ReturnType<typeof mount>,
+  label: string,
+): Promise<void> {
+  const button = screen.findAll('button').find((each) => each.text() === label)
+  if (button === undefined) throw new Error(`no ${label} button`)
+  await button.trigger('click')
+  await flushPromises()
+}
+
 async function click(
   screen: ReturnType<typeof mount>,
   label: string,
@@ -119,6 +143,7 @@ async function click(
 
 afterEach(() => {
   vi.unstubAllGlobals()
+  forgetMe()
 })
 
 describe('ModeratedMemberScreen (S40, R-MOD-7)', () => {
@@ -220,6 +245,79 @@ describe('ModeratedMemberScreen (S40, R-MOD-7)', () => {
 
     expect(screen.find('[role="alert"]').text()).toContain(
       'Someone changed that meanwhile.',
+    )
+  })
+
+  it('offers no ban to a host without member:ban (R-ROLE-4)', async () => {
+    server([page])
+    const screen = await mountScreen()
+
+    expect(screen.text()).not.toContain('Ban member…')
+  })
+
+  it('bans a member with the reason given, after saying what it does (R-MOD-9)', async () => {
+    const banned: ModerationPage = {
+      ...page,
+      member: { ...page.member, status: 'banned' },
+      history: [
+        {
+          kind: 'ban',
+          actor: 'Sam Host',
+          at: '2026-11-08T11:00:00.000Z',
+          item: null,
+          reason: null,
+          note: 'Selling to everyone.',
+        },
+      ],
+    }
+    const fetchMock = server([page, banned], 204, ['member:ban'])
+    const screen = await mountScreen()
+
+    await press(screen, 'Ban member…')
+    expect(screen.text()).toContain('Their sessions end at once')
+    const ban = screen.findAll('button').find((b) => b.text() === 'Ban')
+    expect(ban?.attributes('disabled')).toBeDefined()
+    expect(screen.find('textarea').attributes('maxlength')).toBe('500')
+    await screen.find('textarea').setValue('  Selling to everyone. ')
+    await press(screen, 'Ban')
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/admin/members/m-rik/ban', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ note: 'Selling to everyone.' }),
+    })
+    expect(screen.text()).toContain(
+      'Sam Host banned them: “Selling to everyone.”',
+    )
+    expect(screen.text()).toContain('Lift ban')
+  })
+
+  it('lifts a ban (R-MOD-9)', async () => {
+    const banned: ModerationPage = {
+      ...page,
+      member: { ...page.member, status: 'banned' },
+    }
+    const fetchMock = server([banned, page], 204, ['member:ban'])
+    const screen = await mountScreen()
+
+    await press(screen, 'Lift ban')
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/admin/members/m-rik/unban', {
+      method: 'POST',
+    })
+    expect(screen.text()).toContain('Ban member…')
+  })
+
+  it('says why a ban was refused', async () => {
+    server([page], 409, ['member:ban'])
+    const screen = await mountScreen()
+
+    await press(screen, 'Ban member…')
+    await screen.find('textarea').setValue('Test.')
+    await press(screen, 'Ban')
+
+    expect(screen.find('[role="alert"]').text()).toContain(
+      'You cannot ban yourself',
     )
   })
 

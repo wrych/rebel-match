@@ -72,6 +72,36 @@ export async function unhideChallenge(id: string): Promise<'done' | 'gone'> {
   })
 }
 
+/** Bans a member, with the reason hosts keep (R-MOD-9); `gone` when they are
+ * not active, `refused` for oneself or the last who can grant roles. */
+export async function banMember(
+  memberId: string,
+  note: string,
+): Promise<'done' | 'gone' | 'refused'> {
+  const response = await send(
+    `/api/admin/members/${encodeURIComponent(memberId)}/ban`,
+    'POST',
+    { note },
+  )
+  return outcomeOf<'done' | 'gone' | 'refused'>(response, 'member not banned', {
+    204: 'done',
+    404: 'gone',
+    409: 'refused',
+  })
+}
+
+/** Lifts a ban (R-MOD-9); `gone` when the member is not banned. */
+export async function unbanMember(memberId: string): Promise<'done' | 'gone'> {
+  const response = await send(
+    `/api/admin/members/${encodeURIComponent(memberId)}/unban`,
+    'POST',
+  )
+  return outcomeOf<'done' | 'gone'>(response, 'ban not lifted', {
+    204: 'done',
+    404: 'gone',
+  })
+}
+
 /** The members others reported, open or handled (R-MOD-6). */
 export async function fetchReportedMembers(
   state: 'open' | 'handled',

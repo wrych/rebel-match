@@ -1234,7 +1234,9 @@ Beside these:
 
 - `members.status` and `status_before_deletion` gain `banned`. A banned row
   keeps its profile and is never erased by the ban itself; deleting a banned
-  member and undoing it brings them back banned (R-MOD-9, R-MOD-10).
+  member and undoing it brings them back banned (R-MOD-9, R-MOD-10). A ban
+  hides the member wherever the app shows only active members, as deletion
+  does, and gives any crown they hold to nobody, as deletion does.
 - `challenges` gains `hidden_at`, `hidden_by` and `hidden_reason`. A host's
   hiding sits beside `status`, so it never collides with the author's
   withdrawal. The withdrawal uses the existing, so far unused, `archived`

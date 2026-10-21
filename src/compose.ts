@@ -48,6 +48,8 @@ import { createChallengeStore } from './services/challenge-store.js'
 import { createReportStore } from './services/report-store.js'
 import { createReports } from './services/reports.js'
 import { createModeration } from './services/moderation.js'
+import { createBans } from './services/bans.js'
+import { createBanStore } from './services/ban-store.js'
 import { createModerationStore } from './services/moderation-store.js'
 import { createChallenges } from './services/challenges.js'
 import { newestFirst } from './services/match-ranker.js'
@@ -237,9 +239,10 @@ function composeReports(
   db: Database,
   track: Track,
   settings: LiveSettings,
-): Pick<AppDeps, 'reports' | 'moderation'> {
+): Pick<AppDeps, 'reports' | 'moderation' | 'bans'> {
   return {
     moderation: createModeration(createModerationStore(db)),
+    bans: createBans({ store: createBanStore(db), policy: configPolicy }),
     reports: createReports({
       store: createReportStore(db, configPolicy.rolesGranting('report:review')),
       perDay: () => settings.limits().reportsPerDay,

@@ -1,4 +1,4 @@
-import { and, count, eq, gt, ne, sql } from 'drizzle-orm'
+import { and, count, eq, gt, ne, notInArray, sql } from 'drizzle-orm'
 import type { Database } from '../db/connect.js'
 import {
   challenges,
@@ -45,7 +45,7 @@ async function challengeOf(
         eq(challenges.id, challengeId),
         ne(challenges.status, 'draft'),
         ne(challenges.memberId, reporterId),
-        ne(members.status, 'deleted'),
+        notInArray(members.status, ['deleted', 'banned']),
       ),
     )
   if (row === undefined) return null
@@ -75,7 +75,7 @@ async function noteOf(
       and(
         eq(r.id, requestId),
         eq(r.targetId, reporterId),
-        ne(members.status, 'deleted'),
+        notInArray(members.status, ['deleted', 'banned']),
       ),
     )
   if (row === undefined || row.body === null) return null

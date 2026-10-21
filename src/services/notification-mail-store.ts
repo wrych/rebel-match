@@ -95,7 +95,8 @@ function dueOf(row: ReadRow): DueNotification {
     seen: row.seenAt !== null,
     hidden: row.hidden,
     recipientActive: row.recipientStatus === 'active',
-    aboutDeleted: row.aboutStatus === 'deleted',
+    // A banned member is hidden as a deleted one is (R-MOD-9).
+    aboutDeleted: row.aboutStatus === 'deleted' || row.aboutStatus === 'banned',
     requestStatus: row.requestStatus,
     applicantStatus: row.type === 'applicant' ? row.aboutStatus : null,
     applicantEmail: row.type === 'applicant' ? row.aboutEmail : null,

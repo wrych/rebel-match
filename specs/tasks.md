@@ -470,7 +470,7 @@ Built after the spec and ADR merge. One pull request per item, in this order.
       a host_ under _Connected over_. _(R-MOD-8)_
 - [x] The `report` notification type, and the open count on the menu's
       **Moderation** entry. _(R-MOD-5, R-NOTE-1, R-NOTE-2)_
-- [ ] Banning: the `banned` status, ban and lift ban, the door's suspended
+- [x] Banning: the `banned` status, ban and lift ban, the door's suspended
       answer, invites and the whitelist keeping it out. _(R-MOD-9, R-MOD-10)_
 - [ ] Erasure and retention of reports: handled reports deleted after
       `limits.reportRetentionDays`. _(R-MOD-11, R-NFR-7)_ The

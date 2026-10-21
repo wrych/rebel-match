@@ -58,6 +58,7 @@ export const memberStatus = pgEnum('member_status', [
   'active',
   'rejected',
   'deleted',
+  'banned',
 ])
 
 // Members, applicants and the whitelist are one table. Onboarding is complete
@@ -759,6 +760,8 @@ export const moderationActionKind = pgEnum('moderation_action_kind', [
   'hide',
   'unhide',
   'dismiss',
+  'ban',
+  'unban',
 ])
 
 // What hosts did about a reported member, and why, kept for the history on
