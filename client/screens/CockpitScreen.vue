@@ -220,19 +220,20 @@ onMounted(() => live.refresh())
           :key="challenge.id"
           class="stack-tight"
         >
-          <ChallengeCard
-            :kicker="challenge.trend?.short ?? 'No trend yet'"
-            :body="challenge.body"
-            :counts="challenge.counts"
-            :withdrawn="challenge.withdrawn"
-            :hidden-reason="challenge.hiddenReason"
-            :to="challenge.counts ? matchesPath(challenge.id) : undefined"
-          />
           <WithdrawChallenge
-            v-if="!challenge.withdrawn"
             :challenge-id="challenge.id"
+            :offered="!challenge.withdrawn"
             @withdrawn="afterWithdraw"
-          />
+          >
+            <ChallengeCard
+              :kicker="challenge.trend?.short ?? 'No trend yet'"
+              :body="challenge.body"
+              :counts="challenge.counts"
+              :withdrawn="challenge.withdrawn"
+              :hidden-reason="challenge.hiddenReason"
+              :to="challenge.counts ? matchesPath(challenge.id) : undefined"
+            />
+          </WithdrawChallenge>
         </div>
       </section>
 
