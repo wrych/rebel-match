@@ -157,18 +157,20 @@ describe('banning a member over Postgres (R-MOD-9, R-MOD-10)', () => {
   })
 
   it('tells the banned address at the door it is suspended, sending nothing', async () => {
+    const mailed = (): Promise<unknown> =>
+      valueOf(
+        'SELECT count(*)::int AS n FROM outbox WHERE to_email = ?',
+        bannedEmail,
+      )
+    const before = await mailed()
+
     const response = await request(app)
       .post('/auth/request-link')
       .send({ email: bannedEmail })
       .expect(200)
 
     expect(response.body).toEqual({ state: 'suspended' })
-    expect(
-      await valueOf(
-        "SELECT count(*)::int AS n FROM outbox WHERE to_email = ? AND created_at > now() - interval '1 minute'",
-        bannedEmail,
-      ),
-    ).toBe(0)
+    expect(await mailed()).toBe(before)
   })
 
   it('keeps the banned address out of the whitelist (R-AUTH-3)', async () => {
