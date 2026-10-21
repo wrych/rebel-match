@@ -574,7 +574,8 @@ const catalogue: Group[] = [
       {
         name: 'Keep handled reports for',
         explanation:
-          'Reports name who made them, so handled ones are deleted after this.',
+          'Reports name who made them, so handled ones are deleted after ' +
+          'this, or this long after the hide or ban behind them is lifted.',
         read: (c) => c.limits.reportRetentionDays,
         unit: DAYS,
       },
