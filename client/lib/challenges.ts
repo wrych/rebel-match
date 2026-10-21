@@ -6,7 +6,7 @@ import type {
   Trend,
   TrendDetail,
 } from '../../src/services/challenges'
-import { ensureOk, findJson, getJson, jsonOf, send } from './request'
+import { ensureOk, findJson, getJson, jsonOf, outcomeOf, send } from './request'
 
 export type {
   Challenge,
@@ -134,6 +134,21 @@ export async function confirmTrend(id: string, trendId: string): Promise<void> {
     { trendId },
   )
   ensureOk(response, 'trend not saved')
+}
+
+/** Withdraws the member's own challenge for good (R-ASK-17); `gone` when it
+ * is no longer theirs to withdraw. Throws on anything else. */
+export async function withdrawChallenge(
+  id: string,
+): Promise<'withdrawn' | 'gone'> {
+  const response = await send(
+    `/api/challenges/${encodeURIComponent(id)}/withdraw`,
+    'POST',
+  )
+  return outcomeOf<'withdrawn' | 'gone'>(response, 'challenge not withdrawn', {
+    204: 'withdrawn',
+    404: 'gone',
+  })
 }
 
 /** The trend the domain screen shows: one picked on the trend screen, if it

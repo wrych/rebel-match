@@ -451,10 +451,11 @@ in this order.
 
 Built after the spec and ADR merge. One pull request per item, in this order.
 
-- [ ] Withdrawing a challenge: `POST /api/challenges/:id/withdraw`, one
-      **shown** predicate for every list of challenges, pending requests
-      closed, the cockpit's **Withdrawn** card. _(R-ASK-17)_
-- [ ] Hiding a challenge: the hidden columns, hide and unhide, the author's
+- [x] Withdrawing a challenge: `POST /api/challenges/:id/withdraw`, pending
+      requests closed, the cockpit's **Withdrawn** card, its text left out of
+      _Connected over_. _(R-ASK-17)_
+- [ ] Hiding a challenge: one **shown** predicate for every list of
+      challenges, the hidden columns, hide and unhide, the author's
       **Hidden by a host**, the member's page listing their challenges.
       _(R-MOD-8, R-MEM-2)_
 - [ ] Reports: the table, `content:report`, the report endpoints, S38, and

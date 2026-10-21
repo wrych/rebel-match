@@ -79,6 +79,9 @@ export interface ChallengeStore {
     viewerId: string,
   ): Promise<{ sameBoat: RankablePeer[]; beenThere: RankablePeer[] }>
   cases(trendId: string): Promise<CaseStudy[]>
+  /** Withdraws the author's active challenge and declines the requests still
+   * pending about it, in one transaction; false when there is none such. */
+  withdraw(memberId: string, id: string): Promise<boolean>
   /** The newest active challenges of other active, onboarded members, in
    * `trendId` when it is given; never `viewerId`'s own (R-ASK-14). */
   newest(
@@ -108,6 +111,9 @@ export interface ChallengeService {
    * the viewer (R-ANA-1). */
   trend(viewerId: string, trendId: string): Promise<TrendDetail | null>
   newest(viewerId: string, trendId: string | null): Promise<NewestChallenge[]>
+  /** The author takes their challenge back for good (R-ASK-17); anyone
+   * else, or a challenge already withdrawn, is not found (R-NAV-8). */
+  withdraw(memberId: string, id: string): Promise<'withdrawn' | 'not_found'>
 }
 
 function shown(trend: StoredTrend): Trend {
@@ -229,5 +235,7 @@ export function createChallenges(deps: ChallengeDeps): ChallengeService {
       openTrend(deps.store, track, viewerId, trendId),
     newest: (viewerId, trendId) =>
       deps.store.newest(viewerId, trendId, deps.newestShown),
+    withdraw: async (memberId, id) =>
+      (await deps.store.withdraw(memberId, id)) ? 'withdrawn' : 'not_found',
   }
 }

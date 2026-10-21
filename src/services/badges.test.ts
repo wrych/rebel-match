@@ -554,6 +554,7 @@ describe('counting where acts are recorded (R-BADGE-1)', () => {
       get: unused,
       confirmTrend: () => Promise.resolve(outcome),
       matches: unused,
+      withdraw: unused,
       trend: unused,
       newest: unused,
     }

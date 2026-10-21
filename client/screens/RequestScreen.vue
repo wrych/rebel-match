@@ -117,7 +117,10 @@ async function answer(verdict: 'accept' | 'decline'): Promise<void> {
           About
           {{ request.challenge.trendShort ?? 'a challenge' }}
         </p>
-        <p class="mine">{{ request.challenge.body }}</p>
+        <p v-if="request.challenge.withdrawn" class="small">
+          A withdrawn challenge
+        </p>
+        <p v-else class="mine">{{ request.challenge.body }}</p>
       </div>
 
       <template v-if="waitingForMe">

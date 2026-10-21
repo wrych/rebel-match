@@ -1,4 +1,14 @@
-import { and, count, desc, eq, isNull, or, sql, type SQL } from 'drizzle-orm'
+import {
+  and,
+  count,
+  desc,
+  eq,
+  inArray,
+  isNull,
+  or,
+  sql,
+  type SQL,
+} from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 import type { Database } from '../db/connect.js'
 import {
@@ -12,7 +22,7 @@ import {
 } from '../db/schema.js'
 import { challengeTrend } from './challenge-store.js'
 import { activeOtherParty } from './connection-store.js'
-import type { CockpitStore } from './cockpit.js'
+import type { CockpitChallenge, CockpitStore } from './cockpit.js'
 import type { FollowStore } from './follows.js'
 
 // Interpolated into SQL an alias prints only its name, so each FROM below
@@ -93,43 +103,61 @@ async function newConnections(db: Database, memberId: string): Promise<number> {
   return row?.n ?? 0
 }
 
+// The member's challenges, withdrawn ones last and uncounted (R-MINE-1,
+// R-ASK-17).
+async function challengesOf(
+  db: Database,
+  memberId: string,
+): Promise<CockpitChallenge[]> {
+  const rows = await db
+    .select({
+      id: challenges.id,
+      body: challenges.body,
+      status: challenges.status,
+      trendId: trends.id,
+      short: trends.short,
+      sameBoat,
+      beenThere,
+      cases: caseCount,
+    })
+    .from(challenges)
+    .leftJoin(trends, eq(trends.id, challengeTrend))
+    .where(
+      and(
+        eq(challenges.memberId, memberId),
+        inArray(challenges.status, ['active', 'archived']),
+      ),
+    )
+    .orderBy(
+      sql`${challenges.status} = 'archived'`,
+      desc(challenges.createdAt),
+      challenges.id,
+    )
+  return rows.map((row) => {
+    const withdrawn = row.status === 'archived'
+    return {
+      id: row.id,
+      body: row.body,
+      trend:
+        row.trendId === null
+          ? null
+          : { id: row.trendId, short: row.short ?? '' },
+      withdrawn,
+      counts: withdrawn
+        ? null
+        : {
+            sameBoat: row.sameBoat,
+            beenThere: row.beenThere,
+            cases: row.cases,
+          },
+    }
+  })
+}
+
 /** The cockpit over Postgres (design §2). */
 export function createCockpitStore(db: Database): CockpitStore {
   return {
-    challenges: async (memberId) => {
-      const rows = await db
-        .select({
-          id: challenges.id,
-          body: challenges.body,
-          trendId: trends.id,
-          short: trends.short,
-          sameBoat,
-          beenThere,
-          cases: caseCount,
-        })
-        .from(challenges)
-        .leftJoin(trends, eq(trends.id, challengeTrend))
-        .where(
-          and(
-            eq(challenges.memberId, memberId),
-            eq(challenges.status, 'active'),
-          ),
-        )
-        .orderBy(desc(challenges.createdAt), challenges.id)
-      return rows.map((row) => ({
-        id: row.id,
-        body: row.body,
-        trend:
-          row.trendId === null
-            ? null
-            : { id: row.trendId, short: row.short ?? '' },
-        counts: {
-          sameBoat: row.sameBoat,
-          beenThere: row.beenThere,
-          cases: row.cases,
-        },
-      }))
-    },
+    challenges: (memberId) => challengesOf(db, memberId),
     pendingIncoming: (memberId) => pendingIncoming(db, memberId),
     newConnections: (memberId) => newConnections(db, memberId),
     markSeen: async (memberId) => {

@@ -53,6 +53,8 @@ function setup(sameBoat: RankablePeer[] = [{ ...peer, since }]): {
       return Promise.resolve()
     },
     find: (id) => Promise.resolve(rows.get(id) ?? null),
+    withdraw: (memberId, id) =>
+      Promise.resolve(rows.get(id)?.memberId === memberId && rows.delete(id)),
     setTrend: (id, trendId, overridden) => {
       const row = rows.get(id)
       if (row !== undefined) rows.set(id, { ...row, trendId, overridden })
@@ -260,6 +262,16 @@ describe('createChallenges', () => {
     await service.create('m-ada', decide, () => 'c-1')
 
     expect((await service.matches('m-ada', 'c-1'))?.trend.id).toBe('06')
+  })
+
+  it('withdraws a challenge for its author, once (R-ASK-17)', async () => {
+    const { service } = setup()
+    await service.create('m-ada', decide, () => 'c-1')
+
+    expect(await service.withdraw('m-bob', 'c-1')).toBe('not_found')
+    expect(await service.withdraw('m-ada', 'c-1')).toBe('withdrawn')
+    expect(await service.withdraw('m-ada', 'c-1')).toBe('not_found')
+    expect(await service.get('m-ada', 'c-1')).toBeNull()
   })
 
   it('shows nobody else the matches', async () => {

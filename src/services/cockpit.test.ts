@@ -5,6 +5,7 @@ const challenge: CockpitChallenge = {
   id: 'c-1',
   body: 'Nobody knows who can decide what.',
   trend: { id: '06', short: 'Distributed Decision Making' },
+  withdrawn: false,
   counts: { sameBoat: 3, beenThere: 2, cases: 4 },
 }
 const trend = {

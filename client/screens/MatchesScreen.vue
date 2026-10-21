@@ -10,6 +10,7 @@ import FollowButton from '../components/FollowButton.vue'
 import MatchesFold from '../components/MatchesFold.vue'
 import PeerCards from '../components/PeerCards.vue'
 import PullToRefresh from '../components/PullToRefresh.vue'
+import WithdrawChallenge from '../components/WithdrawChallenge.vue'
 import type { Variant } from '../../src/experiments'
 import { fetchConfig } from '../lib/api'
 import {
@@ -220,6 +221,13 @@ onMounted(async () => {
 
       <div class="stack rule">
         <FollowButton :trend="matches.trend" />
+      </div>
+
+      <div class="stack rule">
+        <WithdrawChallenge
+          :challenge-id="id"
+          @withdrawn="router.push('/matches')"
+        />
       </div>
     </template>
 

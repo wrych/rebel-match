@@ -64,13 +64,13 @@ describe('the cockpit over Postgres (F8)', () => {
     const [mine] = (await cockpit()).challenges
 
     expect(mine?.trend?.id).toBe('06')
-    expect(mine?.counts.sameBoat).toBeGreaterThan(0)
-    expect(mine?.counts.beenThere).toBeGreaterThan(0)
-    expect(mine?.counts.cases).toBe(4)
+    expect(mine?.counts?.sameBoat).toBeGreaterThan(0)
+    expect(mine?.counts?.beenThere).toBeGreaterThan(0)
+    expect(mine?.counts?.cases).toBe(4)
   })
 
   it('counts a peer with two challenges in the trend once (R-MINE-1, R-ASK-8)', async () => {
-    const before = (await cockpit()).challenges[0]?.counts.sameBoat
+    const before = (await cockpit()).challenges[0]?.counts?.sameBoat
     const rows = await db.query(
       `SELECT c.member_id FROM challenges c
         WHERE c.status = 'active' AND c.member_id <> ?
@@ -85,7 +85,7 @@ describe('the cockpit over Postgres (F8)', () => {
     )
 
     try {
-      expect((await cockpit()).challenges[0]?.counts.sameBoat).toBe(before)
+      expect((await cockpit()).challenges[0]?.counts?.sameBoat).toBe(before)
     } finally {
       await db.query("DELETE FROM challenges WHERE id = 'c-second-of-a-peer'")
     }

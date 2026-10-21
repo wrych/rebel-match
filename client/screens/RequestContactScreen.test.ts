@@ -113,7 +113,7 @@ describe('RequestContactScreen', () => {
     expect(screen.find('[role="status"]').text()).toContain('not copied')
   })
 
-  it('lists what the two are connected over, the unopened first and outlined (R-CONN-10)', async () => {
+  it('lists what the two are connected over, the unopened first and outlined, a withdrawn challenge without its text (R-CONN-10, R-ASK-17)', async () => {
     const entry = {
       direction: 'outgoing',
       kind: 'same_boat',
@@ -130,7 +130,12 @@ describe('RequestContactScreen', () => {
           ...entry,
           id: 'r1',
           message: null,
-          challenge: { id: 'c1', body: 'Old news.', trendShort: 'Purpose' },
+          challenge: {
+            id: 'c1',
+            body: null,
+            trendShort: 'Purpose',
+            withdrawn: true,
+          },
           unseen: false,
         },
         {
@@ -143,6 +148,7 @@ describe('RequestContactScreen', () => {
             id: 'c2',
             body: 'Two shifts, two cultures.',
             trendShort: 'Network of Teams',
+            withdrawn: false,
           },
           unseen: true,
         },
@@ -161,6 +167,7 @@ describe('RequestContactScreen', () => {
     expect(cards[0]?.text()).toContain('“We wrote a shift charter.”')
     expect(cards[1]?.text()).toContain('You reached out')
     expect(cards[1]?.text()).toContain('Same boat')
+    expect(cards[1]?.text()).toContain('A withdrawn challenge')
   })
 
   it('shows no contact when the server gives none (R-CONN-6)', async () => {
