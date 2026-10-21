@@ -71,6 +71,7 @@ function sender(status: DeliveryStatus = 'sent'): {
       nameOf: (id) => Promise.resolve(names[id] ?? null),
     },
     publicUrl: 'http://localhost:5173',
+    timeZone: 'Europe/Amsterdam',
     requests: {
       find: (id) =>
         Promise.resolve(id === 'r1' ? record : id === 'r2' ? accepted : null),

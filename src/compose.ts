@@ -362,6 +362,7 @@ function composeNotificationMail(
       mailer,
       members: createMemberDirectory(db),
       publicUrl: config.publicUrl,
+      timeZone: config.notificationWorker.timeZone,
       requests: createConnectionStore(db),
     }),
     settings: () => config.notificationWorker,

@@ -18,8 +18,18 @@ export interface ApplicantNote {
 export function createApplicantNotice(deps: {
   mailer: Mailer
   publicUrl: string
+  /** Where the hosts are, so the time reads as their clock shows it. */
+  timeZone: string
 }): (note: ApplicantNote) => Promise<void> {
   const review = noticeLink(deps.publicUrl, '/admin/applicants', 'applicant')
+  const time = new Intl.DateTimeFormat('en-GB', {
+    day: 'numeric',
+    month: 'long',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: deps.timeZone,
+    timeZoneName: 'short',
+  })
   return async (note) => {
     await deps.mailer.send({
       memberId: note.reviewerId,
@@ -33,7 +43,7 @@ export function createApplicantNotice(deps: {
         blocks: [
           {
             kind: 'paragraph',
-            text: `${note.applicantEmail} asked for access at ${note.at.toISOString()}.`,
+            text: `${note.applicantEmail} asked for access on ${time.format(note.at)}.`,
           },
           {
             kind: 'action',
