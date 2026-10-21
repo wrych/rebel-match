@@ -152,6 +152,7 @@ describe('admin report routes (F21)', () => {
   it.each([
     [{ requestId: 'r-1' }, 204],
     [{ challengeId: 'c-9' }, 404],
+    [{ reportId: 'rep-9' }, 404],
     [{ challengeId: 'c-1', requestId: 'r-1' }, 400],
     [{}, 400],
   ])('dismisses %o with %i, recording the host', async (body, status) => {

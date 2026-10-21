@@ -1194,19 +1194,23 @@ CREATE TABLE reports (
   id            CHAR(36)     NOT NULL PRIMARY KEY,
   reporter_id   CHAR(36)     NULL,             -- set null when the reporter is erased
   reported_id   CHAR(36)     NOT NULL,         -- the member the item belongs to
-  challenge_id  CHAR(36)     NULL,             -- exactly one of these two is set
-  request_id    CHAR(36)     NULL,             -- the note on this request
+  challenge_id  CHAR(36)     NULL,             -- a challenge, or else a note
+  request_id    CHAR(36)     NULL,             -- the note's request; null once erased
+  note_text     VARCHAR(600) NULL,             -- a note's copy, kept past its request
   reason        ENUM('spam','inappropriate','other') NOT NULL,
   comment       VARCHAR(500) NULL,             -- limits.reportCommentMaxChars
   created_at    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   handled_at    DATETIME     NULL,             -- open while null
   handled_by_action CHAR(36) NULL,             -- the action that handled it
-  CHECK ((challenge_id IS NULL) <> (request_id IS NULL)),
+  -- A note report keeps its copy when the request is erased with its
+  -- recipient, the reporter, so hosts can still act on it (R-MOD-11).
+  CHECK ((challenge_id IS NOT NULL AND request_id IS NULL AND note_text IS NULL)
+      OR (challenge_id IS NULL AND note_text IS NOT NULL)),
   KEY ix_report_open (reported_id, handled_at),
   FOREIGN KEY (reporter_id)  REFERENCES members(id) ON DELETE SET NULL,
   FOREIGN KEY (reported_id)  REFERENCES members(id) ON DELETE CASCADE,
   FOREIGN KEY (challenge_id) REFERENCES challenges(id) ON DELETE CASCADE,
-  FOREIGN KEY (request_id)   REFERENCES connection_requests(id) ON DELETE CASCADE
+  FOREIGN KEY (request_id)   REFERENCES connection_requests(id) ON DELETE SET NULL
 );
 -- One report per member and item (R-MOD-4). Two partial indexes, since a
 -- unique key over the nullable pair would let every duplicate through.
@@ -1445,7 +1449,7 @@ records are limited per member (`GAME_RECORDS_PER_MINUTE`).
 | GET    | `/api/admin/reports?state=open\|handled` | One entry per reported member: name, org, status, open count, distinct reporters, items by kind, reasons with counts, latest report (R-MOD-6). _Requires `report:review`._                                                                                                              |
 | GET    | `/api/admin/reports/count`               | `{members}`: how many members have open reports, for the menu's **Moderation** entry (R-MOD-5). _Requires `report:review`._                                                                                                                                                             |
 | GET    | `/api/admin/reports/:memberId`           | The member, each reported item with its text, state and reports (reporter, reason, comment, time), and the action history (R-MOD-7). Marks the host's _New report_ notifications about the member seen (R-NOTE-5). _Requires `report:review`._                                          |
-| POST   | `/api/admin/reports/dismiss`             | `{challengeId}` or `{requestId}`: marks that item's open reports handled, recording a `dismiss` (R-MOD-7). _Requires `report:review`._                                                                                                                                                  |
+| POST   | `/api/admin/reports/dismiss`             | `{challengeId}`, `{requestId}`, or `{reportId}` for a note erased with its recipient: marks that item's open reports handled, recording a `dismiss` (R-MOD-7). _Requires `report:review`._                                                                                              |
 | GET    | `/api/admin/members/:id/challenges`      | The member's challenges for their page, newest first, each with its trend, state (shown, withdrawn, hidden) and the hiding's reason; a withdrawn one without its text (R-ASK-17, R-MEM-2). No such member → `404`. _Requires `challenge:moderate`._                                     |
 | POST   | `/api/admin/challenges/:id/hide`         | `{reason}`: hides it, closes its pending requests, and handles its reports (R-MOD-8). _Requires `challenge:moderate`._                                                                                                                                                                  |
 | POST   | `/api/admin/challenges/:id/unhide`       | Shows it again; closed requests stay closed (R-MOD-8). _Requires `challenge:moderate`._                                                                                                                                                                                                 |

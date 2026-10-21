@@ -18,10 +18,13 @@ const reported = randomUUID()
 const reporter = randomUUID()
 const request = randomUUID()
 const challenge = randomUUID()
+const harassing = randomUUID()
+const words = 'You are useless, quit already.'
 const report = {
   oldHandled: randomUUID(),
   newHandled: randomUUID(),
   oldOpen: randomUUID(),
+  note: randomUUID(),
 }
 
 let db: TestDatabase
@@ -57,8 +60,9 @@ beforeAll(async () => {
   )
   await db.query(
     `INSERT INTO connection_requests (id, requester_id, target_id, kind, message, status)
-     VALUES (?, ?, ?, 'same_boat', 'Buy my course.', 'accepted')`,
-    [request, reported, reporter],
+     VALUES (?, ?, ?, 'same_boat', 'Buy my course.', 'accepted'),
+            (?, ?, ?, 'been_there', ?, 'declined')`,
+    [request, reported, reporter, harassing, reported, reporter, words],
   )
   await db.query(
     `INSERT INTO challenges (id, member_id, body, status)
@@ -66,10 +70,11 @@ beforeAll(async () => {
     [challenge, reported],
   )
   await db.query(
-    `INSERT INTO reports (id, reporter_id, reported_id, request_id, challenge_id, reason, created_at, handled_at)
-     VALUES (?, ?, ?, ?, NULL, 'spam', now() - interval '300 days', now() - interval '200 days'),
-            (?, NULL, ?, ?, NULL, 'spam', now() - interval '300 days', now() - interval '10 days'),
-            (?, ?, ?, NULL, ?, 'other', now() - interval '300 days', NULL)`,
+    `INSERT INTO reports (id, reporter_id, reported_id, request_id, challenge_id, note_text, reason, created_at, handled_at)
+     VALUES (?, ?, ?, ?, NULL, 'Buy my course.', 'spam', now() - interval '300 days', now() - interval '200 days'),
+            (?, NULL, ?, ?, NULL, 'Buy my course.', 'spam', now() - interval '300 days', now() - interval '10 days'),
+            (?, ?, ?, NULL, ?, NULL, 'other', now() - interval '300 days', NULL),
+            (?, ?, ?, ?, NULL, ?, 'inappropriate', now(), NULL)`,
     [
       report.oldHandled,
       reporter,
@@ -82,6 +87,11 @@ beforeAll(async () => {
       reporter,
       reported,
       challenge,
+      report.note,
+      reporter,
+      reported,
+      harassing,
+      words,
     ],
   )
   await db.query(
@@ -102,7 +112,7 @@ describe('how long reports are kept, over Postgres (R-MOD-11)', () => {
 
     expect(await deps.moderation.purgeHandledBefore(cutoff)).toBe(1)
     expect(await reportIds()).toEqual(
-      [report.newHandled, report.oldOpen].sort(),
+      [report.newHandled, report.oldOpen, report.note].sort(),
     )
   })
 
@@ -114,6 +124,28 @@ describe('how long reports are kept, over Postgres (R-MOD-11)', () => {
       [report.oldOpen],
     )
     expect(rows).toEqual([{ reporter_id: null }])
+  })
+
+  it('keeps a note reported by a member since erased, with its words, for hosts to act on', async () => {
+    const page = await deps.moderation.page(reported)
+    const kept = page?.items.find((item) => item.id === report.note)
+
+    expect(kept).toMatchObject({
+      kind: 'note',
+      body: words,
+      sentTo: null,
+      state: 'erased',
+      reports: [{ reason: 'inappropriate', reporter: null, open: true }],
+    })
+    expect(page?.open.reports).toBe(2)
+    expect(
+      await deps.moderation.dismiss({ reportId: report.note }, reported),
+    ).toBe('dismissed')
+    expect(
+      (await deps.moderation.page(reported))?.items.find(
+        (item) => item.id === report.note,
+      )?.reports[0]?.open,
+    ).toBe(false)
   })
 
   it('erases the reports and the history with the reported member (R-NFR-7)', async () => {

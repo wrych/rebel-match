@@ -156,6 +156,9 @@ function record(
         challengeId:
           'challengeId' in report.item ? report.item.challengeId : null,
         requestId: 'requestId' in report.item ? report.item.requestId : null,
+        // Kept with the report, should the note be erased with its
+        // recipient (R-MOD-11).
+        noteText: 'requestId' in report.item ? found.target.body : null,
         reason: report.reason,
         comment: report.comment,
       })

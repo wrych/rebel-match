@@ -24,13 +24,13 @@ import { challengeTrend } from './challenge-store.js'
 import type { ModerationReason } from './challenge-moderation.js'
 import {
   byAttention,
+  type ModeratedItem,
   type ModerationAction,
   type ModerationItem,
   type ModerationPage,
   type ModerationStore,
   type ReportedMember,
 } from './moderation.js'
-import type { ReportItem } from './reports.js'
 
 const reporter = alias(members, 'reporter')
 const actor = alias(members, 'actor')
@@ -88,7 +88,8 @@ async function overview(
       reports: count(),
       reporters,
       challenges: sql<number>`count(distinct ${reports.challengeId})::int`,
-      notes: sql<number>`count(distinct ${reports.requestId})::int`,
+      // A note erased with its recipient counts by its report (R-MOD-11).
+      notes: sql<number>`count(distinct case when ${reports.challengeId} is null then coalesce(${reports.requestId}, ${reports.id}) end)::int`,
       latestAt: latest,
     })
     .from(reports)
@@ -132,8 +133,10 @@ async function itemsOf(
 ): Promise<ModerationItem[]> {
   const rows = await db
     .select({
+      id: reports.id,
       challengeId: reports.challengeId,
       requestId: reports.requestId,
+      noteText: reports.noteText,
       reason: reports.reason,
       comment: reports.comment,
       at: reports.createdAt,
@@ -159,7 +162,7 @@ async function itemsOf(
     .orderBy(desc(reports.createdAt), reports.id)
   const items = new Map<string, ModerationItem>()
   for (const row of rows) {
-    const key = row.challengeId ?? row.requestId ?? ''
+    const key = row.challengeId ?? row.requestId ?? row.id
     const item = items.get(key) ?? itemOf(row)
     item.reports.push({
       reason: row.reason,
@@ -174,8 +177,10 @@ async function itemsOf(
 }
 
 function itemOf(row: {
+  id: string
   challengeId: string | null
   requestId: string | null
+  noteText: string | null
   body: string | null
   status: string | null
   hiddenAt: Date | null
@@ -199,9 +204,20 @@ function itemOf(row: {
       reports: [],
     }
   }
+  if (row.requestId === null)
+    return {
+      kind: 'note',
+      id: row.id,
+      body: row.noteText,
+      trendShort: null,
+      sentTo: null,
+      state: 'erased',
+      hiddenReason: null,
+      reports: [],
+    }
   return {
     kind: 'note',
-    id: row.requestId ?? '',
+    id: row.requestId,
     body: row.note,
     trendShort: null,
     sentTo: row.sentTo,
@@ -301,17 +317,18 @@ async function page(
   }
 }
 
-const itemColumn = (item: ReportItem): ReturnType<typeof eq> =>
-  'challengeId' in item
-    ? eq(reports.challengeId, item.challengeId)
-    : eq(reports.requestId, item.requestId)
+const itemColumn = (item: ModeratedItem): ReturnType<typeof eq> => {
+  if ('challengeId' in item) return eq(reports.challengeId, item.challengeId)
+  if ('requestId' in item) return eq(reports.requestId, item.requestId)
+  return eq(reports.id, item.reportId)
+}
 
 /** Marks the open reports about an item handled, in the caller's
  * transaction; the member they are about, or null when none were open
  * (R-MOD-7, R-MOD-8). */
 export async function handleReports(
   tx: Database,
-  item: ReportItem,
+  item: ModeratedItem,
 ): Promise<string | null> {
   const handled = await tx
     .update(reports)
@@ -328,7 +345,7 @@ export async function recordAction(
     memberId: string
     actorId: string
     kind: ModerationAction['kind']
-    item?: ReportItem
+    item?: ModeratedItem
     reason?: ModerationReason
     note?: string
   },

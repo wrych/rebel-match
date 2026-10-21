@@ -28,8 +28,14 @@ export interface ItemReport {
   open: boolean
 }
 
+/** What a host acts on: a challenge, a note, or, for a note erased with its
+ * recipient, the report that kept it (R-MOD-11). */
+export type ModeratedItem = ReportItem | { reportId: string }
+
 /** One reported challenge or note with every report about it (R-MOD-7). A
- * withdrawn challenge shows no text, as its author took it back (R-ASK-17). */
+ * withdrawn challenge shows no text, as its author took it back (R-ASK-17).
+ * A note erased with its recipient shows the copy its report kept, and is
+ * named by that report (R-MOD-11). */
 export interface ModerationItem {
   kind: 'challenge' | 'note'
   id: string
@@ -37,7 +43,7 @@ export interface ModerationItem {
   trendShort: string | null
   /** For a note: the member it was sent to. */
   sentTo: string | null
-  state: 'shown' | 'withdrawn' | 'hidden'
+  state: 'shown' | 'withdrawn' | 'hidden' | 'erased'
   hiddenReason: ModerationReason | null
   reports: ItemReport[]
 }
@@ -77,7 +83,7 @@ export interface ModerationStore {
   page(memberId: string): Promise<ModerationPage | null>
   /** Marks the item's open reports handled and records the host's dismissal,
    * in one transaction; false when it has none open. */
-  dismiss(item: ReportItem, actorId: string): Promise<boolean>
+  dismiss(item: ModeratedItem, actorId: string): Promise<boolean>
   /** Hides a request's note not yet hidden, declines the request if it is
    * pending, handles the note's reports and records the hiding, in one
    * transaction; false when there is no such note. */
@@ -97,7 +103,10 @@ export interface ModerationService {
   overview(state: 'open' | 'handled'): Promise<ReportedMember[]>
   openMembers(): Promise<number>
   page(memberId: string): Promise<ModerationPage | null>
-  dismiss(item: ReportItem, actorId: string): Promise<'dismissed' | 'not_found'>
+  dismiss(
+    item: ModeratedItem,
+    actorId: string,
+  ): Promise<'dismissed' | 'not_found'>
   hideNote(
     requestId: string,
     actorId: string,

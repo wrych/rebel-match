@@ -25,6 +25,7 @@ const unhideStatus = { shown: 204, not_found: 404 } as const
 const dismissBody = z.union([
   z.object({ challengeId: z.string().min(1) }).strict(),
   z.object({ requestId: z.string().min(1) }).strict(),
+  z.object({ reportId: z.string().min(1) }).strict(),
 ])
 
 function dismiss(moderation: ModerationService): RequestHandler {
