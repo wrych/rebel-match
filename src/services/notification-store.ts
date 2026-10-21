@@ -34,9 +34,6 @@ function reviews(roles: readonly string[], memberId: unknown): SQL {
   return sql`exists (select 1 from ${memberRoles} where ${memberRoles.memberId} = ${memberId} and ${inArray(memberRoles.roleKey, [...roles])})`
 }
 
-// What R-NOTE-5 shows: not hidden, about nobody deleted, an applicant notice
-// only to someone who may still review applicants, and a new challenge only
-// while it is still shown.
 /** The roles that may review applicants and reports, read from the policy
  * (R-ROLE-3): notices of either reach only their holders. */
 export interface Reviewers {
@@ -44,6 +41,9 @@ export interface Reviewers {
   reports: readonly string[]
 }
 
+// What R-NOTE-5 shows: not hidden, about nobody deleted, an applicant or
+// report notice only to someone who may still review them, and a new
+// challenge only while it is still shown.
 function shown(reviewers: Reviewers, memberId: string): SQL | undefined {
   return and(
     eq(n.recipientId, memberId),

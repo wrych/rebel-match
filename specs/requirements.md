@@ -1653,8 +1653,9 @@ contact detail (R-CONN-6) or tells a reported member who reported them.
   be told of the report.
 
 - **R-MOD-5 (Hosts hear of it)** — WHEN a report is made THE SYSTEM SHALL
-  notify every active member holding `report:review` (R-NOTE-1, _New report_).
-  The entry SHALL name the reported member and the number of open reports
+  notify every active member holding `report:review` (R-NOTE-1, _New report_),
+  except the reporter, who knows of it, and the reported member, who SHALL
+  NOT be told of it (R-MOD-4). The entry SHALL name the reported member and the number of open reports
   about them. It SHALL NOT name the reporter or quote the item or the comment
   (R-NAV-9). The menu SHALL offer **Moderation** to those members, with the
   number of reported members who have open reports.
