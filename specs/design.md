@@ -220,6 +220,10 @@ whether it then leaves the machine (R-DEV-4).
   (R-MSG-4).
 - `mail.delivery=none` → **nothing leaves the machine**. The record is written
   with status `suppressed`.
+- **Every email is multipart** (R-MSG-8, ADR 0054): each sender describes its
+  email once — heading, paragraphs, a member's note, the action, the footer —
+  and `mail-layout.ts` renders both the plain text and the HTML from it. The
+  HTML embeds the RR mark as an inline attachment; only the text is recorded.
 - **The stored body keeps the link only in a development deployment:**
   `NODE_ENV=development` **and** `mail.delivery=none`, so mail cannot leave the
   machine (R-DEV-1; the term is defined in requirements §8c). The pull-request

@@ -899,6 +899,15 @@ What differs by environment is only whether mail **leaves the machine**.
 - **R-MSG-7 (Delivery failures are visible without reading bodies)** — A `failed`
   entry SHALL retain enough of the transport's error to diagnose a deliverability
   problem (R-NFR-3), and that error SHALL NOT contain the credential.
+- **R-MSG-8 (Mail looks like Rebel Match)** — Every email THE SYSTEM sends SHALL
+  carry a plain-text part and an HTML part that say the same thing, both drawn
+  from one source. The HTML part SHALL wear the app's look (R-LOOK-1): the still
+  RR mark beside the name, cream paper, near-black ink, and one ember button for
+  the email's main action, with a sign-in link also written out in full. It
+  SHALL load nothing from outside the message: the mark travels inside it, and
+  there are no remote images, fonts or tracking pixels (R-ANA-3). Only the plain
+  text is stored in the log (R-MSG-4). _(Andy, 2026-10-21: "looks minimal, just
+  the way it should"; ADR 0054.)_
 
 ### Development deployment
 
