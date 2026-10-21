@@ -7,6 +7,7 @@ describe('configPolicy.permissionsOf', () => {
       'challenge:create',
       'challenge:swipe',
       'connection:request',
+      'content:report',
       'game:play',
     ])
   })

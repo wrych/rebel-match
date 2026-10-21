@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { reportPath } from '../lib/reports'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { peerLine } from '../lib/challenges'
@@ -107,9 +108,18 @@ async function answer(verdict: 'accept' | 'decline'): Promise<void> {
             peerLine(request.other)
           }}</span>
         </div>
+        <p v-if="request.noteReported" class="small">
+          You reported their note.
+        </p>
         <p v-if="request.message" class="small peer-note">
           “{{ request.message }}”
         </p>
+        <RouterLink
+          v-if="request.message && request.direction === 'incoming'"
+          :to="reportPath({ requestId: request.id })"
+          class="small report-link"
+          >Report this note</RouterLink
+        >
       </div>
 
       <div v-if="request.challenge" class="stack-tight rule">

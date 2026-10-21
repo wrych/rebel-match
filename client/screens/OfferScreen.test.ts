@@ -149,6 +149,19 @@ describe('OfferScreen', () => {
     expect(screen.text()).toContain('1 of 2')
   })
 
+  it('offers to report the card, apart from its four answers (R-MOD-1)', async () => {
+    server([cards])
+    const screen = await mountScreen()
+
+    const report = screen
+      .findAllComponents(RouterLinkStub)
+      .find((link) => link.text() === 'Report this challenge')
+    expect(report?.props('to')).toBe(
+      `/report/challenge/${cards[0]!.challengeId}`,
+    )
+    expect(report?.element.closest('.stack-tight')).toBeNull()
+  })
+
   it('opens at the card a notification links to, once (R-OFF-7)', async () => {
     route.query = { challenge: 'c/2' }
     const fetchMock = server([cards, []])

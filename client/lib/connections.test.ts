@@ -16,6 +16,7 @@ const input = {
   challengeId: 'c1',
   kind: 'same_boat' as const,
   message: 'Shall we compare notes?',
+  noteReported: false,
 }
 
 function answer(status: number): ReturnType<typeof vi.fn> {
@@ -162,6 +163,7 @@ function accepted(
     kind: 'same_boat',
     status: 'accepted',
     message: null,
+    noteReported: false,
     createdAt: '2026-11-08T10:00:00.000Z',
     other: {
       memberId,

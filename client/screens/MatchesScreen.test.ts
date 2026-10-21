@@ -40,6 +40,7 @@ const matches: Matches = {
       sector: null,
       companySize: null,
       note: 'Roles and circles, and nobody decides.',
+      challengeId: 'c2',
     },
   ],
   beenThere: [
@@ -51,6 +52,7 @@ const matches: Matches = {
       sector: 'Care',
       companySize: null,
       note: 'Teams of 12, no managers.',
+      challengeId: null,
     },
   ],
   cases: [
@@ -371,6 +373,19 @@ describe('MatchesScreen', () => {
     expect(screen.find('[role="status"]').exists()).toBe(false)
     expect(screen.text()).not.toContain('Your challenge is live')
     expect(replace).not.toHaveBeenCalled()
+  })
+
+  it('offers to report a same-boat peer’s challenge, and nothing on an offer (R-MOD-1)', async () => {
+    server()
+    const screen = await mountScreen()
+    await readAll(screen)
+
+    const reports = screen
+      .findAllComponents(RouterLinkStub)
+      .filter((link) => link.text() === 'Report')
+    expect(reports.map((link) => link.props('to') as unknown)).toEqual([
+      '/report/challenge/c2',
+    ])
   })
 
   it('connects through the double opt-in screen, never by email (R-ASK-10)', async () => {

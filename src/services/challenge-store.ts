@@ -16,6 +16,7 @@ import {
   connectionRequests,
   memberExpertise,
   members,
+  reports,
   trends,
 } from '../db/schema.js'
 import type {
@@ -38,6 +39,12 @@ export function isShown(
   table: { status: AnyColumn; hiddenAt: AnyColumn } = challenges,
 ): SQL<boolean> {
   return sql<boolean>`(${table.status} = 'active' and ${table.hiddenAt} is null)`
+}
+
+/** True unless `viewerId` reported the challenge: what a member reports
+ * leaves their own view at once (R-MOD-4). */
+export function notReportedBy(viewerId: string): SQL {
+  return sql`not exists (select 1 from ${reports} where ${reports.challengeId} = ${challenges.id} and ${reports.reporterId} = ${viewerId})`
 }
 
 // Peers are active, onboarded members: a name is what makes a card a person.
@@ -87,15 +94,24 @@ async function peersOf(
     .select({
       ...peerColumns,
       note: challenges.body,
+      challengeId: challenges.id,
       since: challenges.createdAt,
     })
     .from(challenges)
     .innerJoin(members, eq(members.id, challenges.memberId))
-    .where(and(isShown(), eq(challengeTrend, trendId), peerFilter(viewerId)))
+    .where(
+      and(
+        isShown(),
+        eq(challengeTrend, trendId),
+        peerFilter(viewerId),
+        notReportedBy(viewerId),
+      ),
+    )
   const been = await db
     .select({
       ...peerColumns,
       note: memberExpertise.note,
+      challengeId: sql<string | null>`null`,
       since: memberExpertise.createdAt,
     })
     .from(memberExpertise)
@@ -113,7 +129,12 @@ async function newestOf(
   limit: number,
 ): Promise<NewestChallenge[]> {
   const rows = await db
-    .select({ body: challenges.body, id: trends.id, short: trends.short })
+    .select({
+      challengeId: challenges.id,
+      body: challenges.body,
+      id: trends.id,
+      short: trends.short,
+    })
     .from(challenges)
     .innerJoin(members, eq(members.id, challenges.memberId))
     .innerJoin(trends, eq(trends.id, challengeTrend))
@@ -121,12 +142,14 @@ async function newestOf(
       and(
         isShown(),
         peerFilter(viewerId),
+        notReportedBy(viewerId),
         trendId === null ? undefined : eq(trends.id, trendId),
       ),
     )
     .orderBy(desc(challenges.createdAt), challenges.id)
     .limit(limit)
   return rows.map((row) => ({
+    id: row.challengeId,
     body: row.body,
     trend: { id: row.id, short: row.short },
   }))

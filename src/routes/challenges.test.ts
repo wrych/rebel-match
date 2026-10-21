@@ -82,6 +82,7 @@ function setup(settings: LiveSettings = fixedSettings(config)): {
       calls.push(['newest', memberId, trendId])
       return Promise.resolve([
         {
+          id: 'c-7',
           body: 'Nobody knows who decides.',
           trend: { id: '06', short: 'DDM' },
         },
@@ -137,6 +138,7 @@ describe('challenge routes', () => {
     expect(all.body).toEqual({
       challenges: [
         {
+          id: 'c-7',
           body: 'Nobody knows who decides.',
           trend: { id: '06', short: 'DDM' },
         },

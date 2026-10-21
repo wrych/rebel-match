@@ -172,6 +172,62 @@ describe('RequestContactScreen', () => {
     expect(cards[1]?.text()).toContain('A withdrawn challenge')
   })
 
+  it('offers to report a note the member was sent, not one they sent (R-MOD-2)', async () => {
+    const entry = {
+      kind: 'been_there',
+      status: 'accepted',
+      message: 'Book my coaching.',
+      noteReported: false,
+      createdAt: '2026-11-08T10:00:00.000Z',
+      other: { memberId: 'm2', name: 'Sam Boat' },
+      challenge: null,
+      unseen: false,
+    }
+    const contact = {
+      name: 'Sam Boat',
+      email: 'sam@example.invalid',
+      mailto: 'mailto:sam@example.invalid',
+      over: [
+        { ...entry, id: 'r4', direction: 'incoming' },
+        { ...entry, id: 'r5', direction: 'outgoing' },
+      ],
+    }
+    serve({ ok: true, status: 200, json: async () => ({ contact }) })
+    const screen = await mountScreen()
+
+    const cards = screen.findAll('article')
+    expect(cards[0]?.text()).toContain('Report this note')
+    expect(cards[1]?.text()).not.toContain('Report this note')
+  })
+
+  it('shows a note the member reported as reported, without it (R-MOD-4)', async () => {
+    const contact = {
+      name: 'Sam Boat',
+      email: 'sam@example.invalid',
+      mailto: 'mailto:sam@example.invalid',
+      over: [
+        {
+          id: 'r3',
+          direction: 'incoming',
+          kind: 'been_there',
+          status: 'accepted',
+          message: null,
+          noteReported: true,
+          createdAt: '2026-11-08T10:00:00.000Z',
+          other: { memberId: 'm2', name: 'Sam Boat' },
+          challenge: null,
+          unseen: false,
+        },
+      ],
+    }
+    serve({ ok: true, status: 200, json: async () => ({ contact }) })
+    const screen = await mountScreen()
+
+    const card = screen.find('article')
+    expect(card.text()).toContain('Reported')
+    expect(card.text()).not.toContain('Report this note')
+  })
+
   it('shows no contact when the server gives none (R-CONN-6)', async () => {
     serve({ ok: false, status: 404 })
     const screen = await mountScreen()

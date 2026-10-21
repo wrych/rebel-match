@@ -126,6 +126,15 @@ const limitSpecs = {
   inviteMaxUsesCeiling: { fixed: 0xffffffff },
   // connection_requests.message (src/db/schema.ts).
   connectionMessageMaxChars: { fixed: 600 },
+  // reports.comment (src/db/schema.ts).
+  reportCommentMaxChars: { fixed: 500 },
+  // How many reports one member may make a day, so reporting cannot be
+  // turned on someone (R-MOD-4).
+  reportsPerDay: {
+    env: 'REPORTS_PER_DAY',
+    default: 20,
+    changeable: { min: 1, max: 1000 },
+  },
   // The largest SVG logo an event badge takes, kept well inside the 64 kB a
   // request body may be once it is JSON (R-BADGE-5).
   badgeLogoMaxBytes: { env: 'BADGE_LOGO_MAX_BYTES', default: 32_768 },

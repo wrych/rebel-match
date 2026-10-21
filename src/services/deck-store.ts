@@ -1,7 +1,7 @@
 import { and, desc, eq, isNotNull, ne, notExists, sql } from 'drizzle-orm'
 import type { Database } from '../db/connect.js'
 import { challenges, members, swipes, trends } from '../db/schema.js'
-import { challengeTrend, isShown } from './challenge-store.js'
+import { challengeTrend, isShown, notReportedBy } from './challenge-store.js'
 import type { DeckStore } from './deck.js'
 import { companySizeLabel, sectorLabel } from './profile-labels.js'
 
@@ -39,6 +39,7 @@ export function createDeckStore(db: Database): DeckStore {
         .where(
           and(
             isShown(),
+            notReportedBy(viewerId),
             eq(members.status, 'active'),
             isNotNull(members.name),
             ne(challenges.memberId, viewerId),

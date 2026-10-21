@@ -163,6 +163,7 @@ describe('the ask journey over Postgres (F5)', () => {
     }
 
     expect(challenges[0]).toEqual({
+      id: challengeId,
       body,
       trend: { id: '04', short: expect.any(String) as string },
     })

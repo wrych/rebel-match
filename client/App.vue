@@ -3,6 +3,7 @@ import HeaderMenu from './components/HeaderMenu.vue'
 import RebelMark from './components/RebelMark.vue'
 import TabBar from './components/TabBar.vue'
 import { applyMood, currentMood as mood, savedMood } from './lib/mood'
+import { thanks } from './lib/thanks'
 
 applyMood(savedMood())
 
@@ -20,6 +21,9 @@ function toggleMood(): void {
       <HeaderMenu :mood="mood" @toggle-mood="toggleMood" />
     </header>
     <main class="page">
+      <p v-if="thanks" class="notice notice-solid thanks" role="status">
+        {{ thanks }}
+      </p>
       <RouterView />
     </main>
     <TabBar />
@@ -112,7 +116,12 @@ function toggleMood(): void {
 }
 
 /* Exempt from the stretch above, which is for screens, not chrome. */
-.page > .steps {
+.page > .steps,
+.page > .thanks {
   flex: 0 0 auto;
+}
+
+.thanks {
+  margin: 1rem 1.5rem 0;
 }
 </style>

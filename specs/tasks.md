@@ -458,7 +458,7 @@ Built after the spec and ADR merge. One pull request per item, in this order.
       challenges, the hidden columns, hide and unhide, the author's
       **Hidden by a host**, the member's page listing their challenges.
       _(R-MOD-8, R-MEM-2)_
-- [ ] Reports: the table, `content:report`, the report endpoints, S38, and
+- [x] Reports: the table, `content:report`, the report endpoints, S38, and
       **Report** on the deck, peer cards, newest challenges, S15 and S16.
       _(R-MOD-1..4, R-MOD-12)_
 - [ ] The `report` notification type and the menu's **Moderation** entry.

@@ -1,4 +1,5 @@
 import type { BadgeRow, eventRow } from '../badges/rows.js'
+import type { ModerationReason } from './challenge-moderation.js'
 import type { Cadence, ChoosableType } from './notification-cadence.js'
 import type { NotificationKind } from './notifications.js'
 
@@ -61,6 +62,11 @@ export type AnalyticsEvent =
       section: 'same_boat' | 'been_there' | 'cases'
     }
   | { name: 'match_connect_tapped'; kind: 'same_boat' | 'been_there' }
+  | {
+      name: 'content_reported'
+      kind: 'challenge' | 'note'
+      reason: ModerationReason
+    }
 
 /** Reports what a member did. It never rejects and is not awaited by the
  * request it describes, so analytics can neither fail nor slow it. */

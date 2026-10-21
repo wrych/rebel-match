@@ -10,6 +10,7 @@ import {
   bigint,
   boolean,
   char,
+  check,
   index,
   integer,
   jsonb,
@@ -702,3 +703,46 @@ export const memberEventBadges = pgTable(
 export const badgeLaunch = pgTable('badge_launch', {
   doneAt: at('done_at').primaryKey(),
 })
+
+// A member's report of another member's challenge, or of the note on a
+// request sent to them (R-MOD-1..4, ADR 0055). Exactly one of the two is
+// named. A reporter erased later leaves the report counted but nameless
+// (R-MOD-11); the reported member's erasure takes it along (R-NFR-7). One
+// report per member and item: two partial indexes, since one over the
+// nullable pair would let every duplicate through.
+export const reports = pgTable(
+  'reports',
+  {
+    id: id('id').primaryKey(),
+    reporterId: id('reporter_id').references(() => members.id, {
+      onDelete: 'set null',
+    }),
+    reportedId: id('reported_id')
+      .notNull()
+      .references(() => members.id, { onDelete: 'cascade' }),
+    challengeId: id('challenge_id').references(() => challenges.id, {
+      onDelete: 'cascade',
+    }),
+    requestId: id('request_id').references(() => connectionRequests.id, {
+      onDelete: 'cascade',
+    }),
+    reason: moderationReason('reason').notNull(),
+    comment: varchar('comment', { length: 500 }),
+    createdAt: at('created_at').notNull().defaultNow(),
+    handledAt: at('handled_at'),
+  },
+  (t) => [
+    check(
+      'ck_report_one_item',
+      sql`(${t.challengeId} is null) <> (${t.requestId} is null)`,
+    ),
+    uniqueIndex('uq_report_challenge')
+      .on(t.reporterId, t.challengeId)
+      .where(sql`${t.challengeId} is not null`),
+    uniqueIndex('uq_report_request')
+      .on(t.reporterId, t.requestId)
+      .where(sql`${t.requestId} is not null`),
+    index('ix_report_open').on(t.reportedId, t.handledAt),
+    index('ix_report_reporter').on(t.reporterId, t.createdAt),
+  ],
+)

@@ -66,6 +66,7 @@ describe('migrations', () => {
       'notifications',
       'outbox',
       'outbox_quotes',
+      'reports',
       'roles',
       'schema_migrations',
       'sectors',

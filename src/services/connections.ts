@@ -32,7 +32,9 @@ export interface ConnectionView {
   direction: 'incoming' | 'outgoing'
   kind: ConnectionKind
   status: ConnectionStatus
+  /** Left out once the viewer reported it (R-MOD-4). */
   message: string | null
+  noteReported: boolean
   createdAt: string
   other: MemberCard
   /** A challenge withdrawn (R-ASK-17) or hidden by a host (R-MOD-8) keeps its

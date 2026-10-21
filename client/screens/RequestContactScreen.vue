@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { reportPath } from '../lib/reports'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import CopyButton from '../components/CopyButton.vue'
@@ -119,9 +120,16 @@ onMounted(async () => {
             </p>
             <p v-else class="mine">{{ each.challenge.body }}</p>
           </div>
+          <p v-if="each.noteReported" class="small">Reported</p>
           <p v-if="each.message" class="small peer-note">
             “{{ each.message }}”
           </p>
+          <RouterLink
+            v-if="each.message && each.direction === 'incoming'"
+            :to="reportPath({ requestId: each.id })"
+            class="small report-link"
+            >Report this note</RouterLink
+          >
         </article>
       </section>
     </template>

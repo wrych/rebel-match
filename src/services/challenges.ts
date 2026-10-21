@@ -33,6 +33,9 @@ export interface PeerCard {
   sector: string | null
   companySize: string | null
   note: string
+  /** The peer's own challenge, for a same-boat card, so it can be reported
+   * (R-MOD-1); null for an offer of experience. */
+  challengeId: string | null
 }
 
 export interface CaseStudy {
@@ -51,6 +54,7 @@ export interface TrendDetail {
 /** Someone else's challenge as inspiration: its words and trend, never who
  * wrote it (R-ASK-2, R-ASK-14). */
 export interface NewestChallenge {
+  id: string
   body: string
   trend: Pick<Trend, 'id' | 'short'>
 }

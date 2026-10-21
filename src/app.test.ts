@@ -158,6 +158,10 @@ function deps(
       list: () => Promise.resolve([]),
       choose: () => Promise.resolve('done'),
     },
+    reports: {
+      target: () => Promise.resolve(null),
+      report: () => Promise.resolve('not_found'),
+    },
     notificationMail: {
       deliverDue: () => Promise.resolve(),
       purgeBefore: () => Promise.resolve(0),
