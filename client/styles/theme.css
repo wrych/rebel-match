@@ -258,10 +258,10 @@ a {
 }
 
 /* A quiet way to report what should not be there, kept apart from the
-   actions beside it (R-MOD-1, R-MOD-2). */
+   actions beside it, at the end of the line (R-MOD-1, R-MOD-2). */
 .report-link {
-  justify-self: start;
-  align-self: flex-start;
+  justify-self: end;
+  align-self: flex-end;
   min-height: 44px;
   display: inline-flex;
   align-items: center;

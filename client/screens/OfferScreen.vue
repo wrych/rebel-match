@@ -191,3 +191,11 @@ onMounted(() => {
     <p v-if="problem" class="alert" role="alert">{{ problem }}</p>
   </section>
 </template>
+
+<style scoped>
+/* The 44px tap target already pads the line, so the screen's gap is taken
+   back here rather than shrinking the target below what a thumb needs. */
+.report-link {
+  margin-block: -0.75rem;
+}
+</style>
