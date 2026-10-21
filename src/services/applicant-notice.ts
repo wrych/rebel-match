@@ -1,5 +1,6 @@
+import { renderMail } from './mail-layout.js'
 import type { Mailer } from './mailer.js'
-import { noticeLink } from './notice-link.js'
+import { noticeFooter, noticeLink } from './notice-link.js'
 
 /** One reviewer's notification of one applicant. */
 export interface ApplicantNote {
@@ -26,9 +27,25 @@ export function createApplicantNotice(deps: {
       to: note.to,
       kind: 'admin_notice',
       subject: 'Someone asked to join Rebel Match',
-      text:
-        `${note.applicantEmail} asked for access at ${note.at.toISOString()}.\n\n` +
-        `Approve or reject them here:\n${review}\n`,
+      ...renderMail({
+        heading: 'Someone asked to join',
+        preview: `${note.applicantEmail} asked for access.`,
+        blocks: [
+          {
+            kind: 'paragraph',
+            text: `${note.applicantEmail} asked for access at ${note.at.toISOString()}.`,
+          },
+          {
+            kind: 'action',
+            action: {
+              label: 'Review applicants',
+              prompt: 'Approve or reject them here:',
+              url: review,
+            },
+          },
+        ],
+        footer: noticeFooter(deps.publicUrl),
+      }),
     })
   }
 }

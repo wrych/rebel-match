@@ -6,7 +6,8 @@ import {
 } from '../badges/rows.js'
 import { createApplicantNotice } from './applicant-notice.js'
 import { badgeLine, createBadgeNotice, type BadgeNote } from './badge-notice.js'
-import { noticeLink } from './notice-link.js'
+import { renderMail, type MailItem } from './mail-layout.js'
+import { noticeFooter, noticeLink } from './notice-link.js'
 import { badgeName, badgePath, type NotificationKind } from './notifications.js'
 import { createTrendNotice, deckAt } from './trend-notice.js'
 import {
@@ -100,9 +101,6 @@ async function nameOf(deps: SenderDeps, memberId: string): Promise<string> {
   return name === '' ? 'A Rebel Match member' : name
 }
 
-const link = (deps: SenderDeps, path: string): string =>
-  new URL(path, deps.publicUrl).toString()
-
 const linkFor = (
   deps: SenderDeps,
   path: string,
@@ -118,40 +116,94 @@ const requestPath = (id: string, tail = ''): string =>
 async function itemOf(
   deps: SenderDeps,
   note: DueNotification,
-): Promise<string | null> {
+): Promise<MailItem | null> {
   if (note.type === 'applicant')
     return note.applicantEmail === null
       ? null
-      : `${note.applicantEmail} asked to join.\n${linkFor(deps, '/admin/applicants', 'applicant')}`
-  if (note.type === 'badge') {
-    const badge = badgeOf(note)
-    return badge === null
-      ? null
-      : `${badgeLine(badge)}\n${linkFor(deps, badge.path, 'badge')}`
-  }
-  if (note.type === 'trend_challenge')
-    return note.challengeId === null || note.trend === null
-      ? null
-      : `${await nameOf(deps, note.aboutMemberId)} posted a challenge in ${note.trend}.\n${linkFor(deps, deckAt(note.challengeId), 'trend_challenge')}`
+      : {
+          text: `${note.applicantEmail} asked to join.`,
+          action: {
+            label: 'Review applicants',
+            url: linkFor(deps, '/admin/applicants', 'applicant'),
+          },
+        }
+  if (note.type === 'badge') return badgeItem(deps, note)
+  if (note.type === 'trend_challenge') return trendItem(deps, note)
   return requestItem(deps, note)
+}
+
+function badgeItem(deps: SenderDeps, note: DueNotification): MailItem | null {
+  const badge = badgeOf(note)
+  return badge === null
+    ? null
+    : {
+        text: badgeLine(badge),
+        action: {
+          label: 'See your badges',
+          url: linkFor(deps, badge.path, 'badge'),
+        },
+      }
+}
+
+async function trendItem(
+  deps: SenderDeps,
+  note: DueNotification,
+): Promise<MailItem | null> {
+  return note.challengeId === null || note.trend === null
+    ? null
+    : {
+        text: `${await nameOf(deps, note.aboutMemberId)} posted a challenge in ${note.trend}.`,
+        action: {
+          label: 'See the challenge',
+          url: linkFor(deps, deckAt(note.challengeId), 'trend_challenge'),
+        },
+      }
 }
 
 async function requestItem(
   deps: SenderDeps,
   note: DueNotification,
-): Promise<string | null> {
+): Promise<MailItem | null> {
   const record =
     note.connectionId === null
       ? null
       : await deps.requests.find(note.connectionId)
   if (record === null) return null
   const name = await nameOf(deps, note.aboutMemberId)
-  const wrote = record.message === null ? '' : `\nThey wrote: ${record.message}`
+  const wrote = record.message === null ? {} : { quote: record.message }
   if (note.type === 'connection_request')
-    return `${name} wants to connect with you.${wrote}\n${linkFor(deps, requestPath(record.id), 'connection_request')}`
+    return {
+      text: `${name} wants to connect with you.`,
+      ...wrote,
+      action: {
+        label: 'See the request',
+        url: linkFor(deps, requestPath(record.id), 'connection_request'),
+      },
+    }
   return note.recipientId === record.requesterId
-    ? `${name} accepted your request.\n${linkFor(deps, requestPath(record.id, '/contact'), 'connection_accepted')}`
-    : `${name} connected with you over another challenge.${wrote}\n${linkFor(deps, requestPath(record.id, '/contact'), 'connection_added')}`
+    ? {
+        text: `${name} accepted your request.`,
+        action: {
+          label: 'Get in touch',
+          url: linkFor(
+            deps,
+            requestPath(record.id, '/contact'),
+            'connection_accepted',
+          ),
+        },
+      }
+    : {
+        text: `${name} connected with you over another challenge.`,
+        ...wrote,
+        action: {
+          label: 'See your connection',
+          url: linkFor(
+            deps,
+            requestPath(record.id, '/contact'),
+            'connection_added',
+          ),
+        },
+      }
 }
 
 // Several notifications in one mail, each with its own link; every member it
@@ -166,7 +218,7 @@ async function digest(
   const { recipientId } = first
   const to = await deps.members.emailOf(recipientId)
   if (to === null) return null
-  const items: string[] = []
+  const items: MailItem[] = []
   const quotes: string[] = []
   for (const note of notes) {
     const item = await itemOf(deps, note)
@@ -175,16 +227,22 @@ async function digest(
     quotes.push(note.aboutMemberId)
   }
   if (items.length === 0) return null
+  const updates = `${String(items.length)} ${items.length === 1 ? 'update' : 'updates'}`
   return deps.mailer.send({
     memberId: recipientId,
     quotes,
     to,
     kind: 'notification_digest',
-    subject: `${String(items.length)} ${items.length === 1 ? 'update' : 'updates'} on Rebel Match`,
-    text:
-      `Here is what happened on Rebel Match:\n\n${items.join('\n\n')}\n\n` +
-      `Choose how each kind of notification reaches you on your profile:\n` +
-      `${link(deps, '/profile')}\n`,
+    subject: `${updates} on Rebel Match`,
+    ...renderMail({
+      heading: updates,
+      preview: 'Here is what happened on Rebel Match.',
+      blocks: [
+        { kind: 'paragraph', text: 'Here is what happened on Rebel Match:' },
+      ],
+      items,
+      footer: noticeFooter(deps.publicUrl),
+    }),
   })
 }
 

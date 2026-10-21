@@ -12,6 +12,7 @@ const emails: Record<string, string> = {
   'm-bob': 'bob@example.invalid',
 }
 const names: Record<string, string> = { 'm-ada': 'Ada  Lovelace\n' }
+const ADDRESS = /[\w.+-]+@[\w-]+\.\w+/
 
 function deps(
   sent: OutboundMessage[],
@@ -75,6 +76,18 @@ describe('createConnectionNotice', () => {
     await notify(request)
 
     expect(`${sent[0]?.subject ?? ''}${sent[0]?.text ?? ''}`).not.toContain('@')
+    expect(sent[0]?.html).not.toMatch(ADDRESS)
+  })
+
+  it('shows the note as the requester wrote it, never as markup (R-MSG-8)', async () => {
+    const { notify, sent } = setup()
+
+    await notify({ ...request, message: '<a href="https://x.invalid">hi</a>' })
+
+    expect(sent[0]?.html).toContain(
+      '&lt;a href=&quot;https://x.invalid&quot;&gt;hi&lt;/a&gt;',
+    )
+    expect(sent[0]?.html).not.toContain('<a href="https://x.invalid">')
   })
 
   it('leaves the note out when there is none', async () => {
@@ -131,6 +144,7 @@ describe('createAcceptNotice', () => {
     await createAcceptNotice(deps(sent))(accepted)
 
     expect(`${sent[0]?.subject ?? ''}${sent[0]?.text ?? ''}`).not.toContain('@')
+    expect(sent[0]?.html).not.toMatch(ADDRESS)
   })
 
   it('still sends when the target has no name', async () => {
@@ -178,6 +192,7 @@ describe('createAddedNotice', () => {
     await createAddedNotice(deps(sent))({ ...request, message: null })
 
     expect(`${sent[0]?.subject ?? ''}${sent[0]?.text ?? ''}`).not.toContain('@')
+    expect(sent[0]?.html).not.toMatch(ADDRESS)
     expect(sent[0]?.text).not.toContain('They wrote')
   })
 

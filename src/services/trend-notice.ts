@@ -1,5 +1,6 @@
+import { renderMail } from './mail-layout.js'
 import type { Mailer } from './mailer.js'
-import { noticeLink } from './notice-link.js'
+import { noticeFooter, noticeLink } from './notice-link.js'
 
 /** One follower's notification of a challenge posted in a trend. */
 export interface TrendNote {
@@ -35,9 +36,26 @@ export function createTrendNotice(deps: {
       to: note.to,
       kind: 'trend_challenge',
       subject: `${note.authorName} posted a challenge in ${note.trend}`,
-      text:
-        `${note.authorName} posted a challenge in ${note.trend}, a trend you follow on Rebel Match.\n\n` +
-        `See it, and say if you are in the same boat or have been there, here:\n${link}\n`,
+      ...renderMail({
+        heading: `A new challenge in ${note.trend}`,
+        preview: `${note.authorName} posted a challenge in a trend you follow.`,
+        blocks: [
+          {
+            kind: 'paragraph',
+            text: `${note.authorName} posted a challenge in ${note.trend}, a trend you follow on Rebel Match.`,
+          },
+          {
+            kind: 'action',
+            action: {
+              label: 'See the challenge',
+              prompt:
+                'See it, and say if you are in the same boat or have been there, here:',
+              url: link,
+            },
+          },
+        ],
+        footer: noticeFooter(deps.publicUrl),
+      }),
     })
   }
 }
