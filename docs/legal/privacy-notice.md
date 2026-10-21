@@ -1,8 +1,7 @@
 # Rebel Match — Privacy notice
 
-- **Status:** Draft for the maintainer's approval, adding reports and
-  moderation to the version approved on 2026-10-07; best effort, not reviewed
-  by a lawyer
+- **Status:** Approved by the maintainer on 2026-10-21; best effort, not
+  reviewed by a lawyer
 - **Version:** 2026-10-21
 - **Shown at:** `/privacy` (R-ONB-9)
 
