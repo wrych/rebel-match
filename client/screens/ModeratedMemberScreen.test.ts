@@ -321,6 +321,41 @@ describe('ModeratedMemberScreen (S40, R-MOD-7)', () => {
     )
   })
 
+  it('shows a note erased with its recipient by the copy its report kept, to dismiss (R-MOD-11)', async () => {
+    const erased: ModerationItem = {
+      kind: 'note',
+      id: 'rep-1',
+      body: 'You are useless, quit already.',
+      trendShort: null,
+      sentTo: null,
+      state: 'erased',
+      hiddenReason: null,
+      reports: [
+        {
+          reason: 'inappropriate',
+          comment: null,
+          at: '2026-11-08T10:00:00.000Z',
+          reporter: null,
+          open: true,
+        },
+      ],
+    }
+    const fetchMock = server([{ ...page, items: [erased] }])
+    const screen = await mountScreen()
+
+    const card = screen.find('article')
+    expect(card.text()).toContain('Note · to a former member')
+    expect(card.text()).toContain('Erased')
+    expect(card.text()).toContain('You are useless, quit already.')
+    expect(card.findAll('button').map((b) => b.text())).toEqual(['Dismiss'])
+    await click(screen, 'Dismiss')
+    expect(fetchMock).toHaveBeenCalledWith('/api/admin/reports/dismiss', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ reportId: 'rep-1' }),
+    })
+  })
+
   it('says there is no such member', async () => {
     server([null])
     const screen = await mountScreen()

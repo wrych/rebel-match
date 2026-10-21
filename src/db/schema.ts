@@ -714,11 +714,13 @@ export const badgeLaunch = pgTable('badge_launch', {
 })
 
 // A member's report of another member's challenge, or of the note on a
-// request sent to them (R-MOD-1..4, ADR 0055). Exactly one of the two is
-// named. A reporter erased later leaves the report counted but nameless
-// (R-MOD-11); the reported member's erasure takes it along (R-NFR-7). One
-// report per member and item: two partial indexes, since one over the
-// nullable pair would let every duplicate through.
+// request sent to them (R-MOD-1..4, ADR 0055). A challenge report names the
+// challenge; a note report keeps a copy of the note, and names the request
+// until it is erased with its recipient, the reporter, whose report then
+// stays, counted but nameless, with the note it was about (R-MOD-11). The
+// reported member's erasure takes it all along (R-NFR-7). One report per
+// member and item: two partial indexes, since one over the nullable pair
+// would let every duplicate through.
 export const reports = pgTable(
   'reports',
   {
@@ -733,8 +735,9 @@ export const reports = pgTable(
       onDelete: 'cascade',
     }),
     requestId: id('request_id').references(() => connectionRequests.id, {
-      onDelete: 'cascade',
+      onDelete: 'set null',
     }),
+    noteText: varchar('note_text', { length: 600 }),
     reason: moderationReason('reason').notNull(),
     comment: varchar('comment', { length: 500 }),
     createdAt: at('created_at').notNull().defaultNow(),
@@ -743,7 +746,7 @@ export const reports = pgTable(
   (t) => [
     check(
       'ck_report_one_item',
-      sql`(${t.challengeId} is null) <> (${t.requestId} is null)`,
+      sql`(${t.challengeId} is not null and ${t.requestId} is null and ${t.noteText} is null) or (${t.challengeId} is null and ${t.noteText} is not null)`,
     ),
     uniqueIndex('uq_report_challenge')
       .on(t.reporterId, t.challengeId)

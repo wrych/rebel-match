@@ -3,16 +3,17 @@ import type {
   ModerationReason,
 } from '../../src/services/challenge-moderation'
 import type {
+  ModeratedItem,
   ModerationAction,
   ModerationItem,
   ModerationPage,
   ReportedMember,
 } from '../../src/services/moderation'
-import type { ReportItem } from '../../src/services/reports'
 import { findJson, getJson, outcomeOf, send } from './request'
 
 export type {
   ModeratedChallenge,
+  ModeratedItem,
   ModerationAction,
   ModerationItem,
   ModerationPage,
@@ -127,7 +128,7 @@ export function fetchModerationPage(
 /** Marks an item's open reports handled without acting on it (R-MOD-7);
  * `gone` when none were open. */
 export async function dismissReports(
-  item: ReportItem,
+  item: ModeratedItem,
 ): Promise<'done' | 'gone'> {
   const response = await send('/api/admin/reports/dismiss', 'POST', item)
   return outcomeOf<'done' | 'gone'>(response, 'reports not dismissed', {

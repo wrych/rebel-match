@@ -14,6 +14,7 @@ import {
   unbanMember,
   unhideChallenge,
   unhideNote,
+  type ModeratedItem,
   type ModerationAction,
   type ModerationItem,
   type ModerationPage,
@@ -36,14 +37,12 @@ const banMaxChars = ref<number | null>(null)
 
 const openOf = (item: ModerationItem): number =>
   item.reports.filter((report) => report.open).length
-const itemOf = (
-  item: ModerationItem,
-):
-  | { challengeId: string }
-  | {
-      requestId: string
-    } =>
-  item.kind === 'challenge' ? { challengeId: item.id } : { requestId: item.id }
+function itemOf(item: ModerationItem): ModeratedItem {
+  if (item.kind === 'challenge') return { challengeId: item.id }
+  return item.state === 'erased'
+    ? { reportId: item.id }
+    : { requestId: item.id }
+}
 
 const actionWords: Record<ModerationAction['kind'], string> = {
   hide: 'hid',
@@ -55,9 +54,12 @@ const actionWords: Record<ModerationAction['kind'], string> = {
 
 function historyLine(action: ModerationAction): string {
   const who = action.actor ?? 'A former host'
+  // An item erased since leaves the history naming none (R-MOD-11).
   const what =
     action.item === null
-      ? ''
+      ? action.kind === 'dismiss'
+        ? ' an item since erased'
+        : ''
       : action.item === 'challenge'
         ? ' a challenge'
         : ' a note'
@@ -201,7 +203,10 @@ onMounted(async () => {
               >Note · to {{ item.sentTo ?? 'a former member' }}</template
             >
           </span>
-          <span v-if="item.state === 'withdrawn'" class="chip">Withdrawn</span>
+          <span v-if="item.state === 'erased'" class="chip">Erased</span>
+          <span v-else-if="item.state === 'withdrawn'" class="chip"
+            >Withdrawn</span
+          >
           <span v-else-if="item.state === 'hidden'" class="chip chip-accent"
             >Hidden</span
           >
@@ -210,6 +215,10 @@ onMounted(async () => {
           Withdrawn by its author; its text is theirs alone.
         </p>
         <p v-else class="mine">{{ item.body }}</p>
+        <p v-if="item.state === 'erased'" class="small">
+          Erased with the member it was sent to; this is the copy kept with the
+          report.
+        </p>
         <p v-if="item.state === 'hidden' && item.hiddenReason" class="small">
           Hidden {{ hiddenAs(item.hiddenReason) }}. Only its author sees it.
         </p>
