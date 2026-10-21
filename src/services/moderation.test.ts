@@ -50,6 +50,7 @@ describe('createModeration (R-MOD-7)', () => {
     const dismissed: string[] = []
     const moderation = createModeration({
       overview: () => Promise.resolve([]),
+      openMembers: () => Promise.resolve(0),
       page: () => Promise.resolve(null),
       dismiss: (item, actorId) => {
         dismissed.push(actorId)

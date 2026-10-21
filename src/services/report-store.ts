@@ -8,6 +8,7 @@ import {
   trends,
 } from '../db/schema.js'
 import { challengeTrend, isShown } from './challenge-store.js'
+import { insertReportNotifications } from './notification-store.js'
 import type {
   ReportItem,
   ReportOutcome,
@@ -135,9 +136,10 @@ async function reportsToday(db: Database, reporterId: string): Promise<number> {
 }
 
 // A reported pending request is declined, telling nobody (R-MOD-4,
-// R-CONN-4).
+// R-CONN-4); the hosts are told with the report (R-MOD-5, R-NOTE-10).
 function record(
   db: Database,
+  reviewerRoles: readonly string[],
   report: Parameters<ReportStore['record']>[0],
 ): Promise<ReportOutcome> {
   return db.transaction(async (tx) => {
@@ -160,6 +162,10 @@ function record(
       .onConflictDoNothing()
       .returning({ id: reports.id })
     if (inserted.length === 0) return 'already_reported'
+    await insertReportNotifications(tx, reviewerRoles, {
+      reportedId: found.reportedId,
+      reporterId: report.reporterId,
+    })
     if (found.pendingRequest && 'requestId' in report.item)
       await tx
         .update(connectionRequests)
@@ -174,13 +180,17 @@ function record(
   })
 }
 
-/** Reports over Postgres (design §2). */
-export function createReportStore(db: Database): ReportStore {
+/** Reports over Postgres (design §2). `reviewerRoles` are the roles
+ * granting `report:review`, told of each report (R-MOD-5). */
+export function createReportStore(
+  db: Database,
+  reviewerRoles: readonly string[],
+): ReportStore {
   return {
     challengeTarget: (reporterId, challengeId) =>
       targetFor(db, reporterId, { challengeId }),
     noteTarget: (reporterId, requestId) =>
       targetFor(db, reporterId, { requestId }),
-    record: (report) => record(db, report),
+    record: (report) => record(db, reviewerRoles, report),
   }
 }

@@ -58,7 +58,17 @@ export function headline(note: NotificationView): string {
       return `${note.name} asked to join`
     case 'badge':
       return `New badge: ${note.name}`
+    case 'report':
+      return reportHeadline(note)
   }
+}
+
+// The count as it stands now, which may have fallen since the report.
+function reportHeadline(note: NotificationView): string {
+  const open = note.openReports ?? 0
+  return open === 0
+    ? `${note.name} was reported; nothing is open now`
+    : `${note.name} was reported: ${String(open)} open ${open === 1 ? 'report' : 'reports'}`
 }
 
 /** The menu item's words: the count only while something is new (R-NOTE-6). */
@@ -98,6 +108,7 @@ const TYPE_LABELS: Record<NotificationSetting['type'], string> = {
   trend_challenge: 'New challenges in trends you follow',
   applicant: 'People asking to join',
   badge: 'Badges you earn',
+  report: 'Members reported',
 }
 
 const CADENCE_LABELS: Record<NotificationSetting['cadence'], string> = {

@@ -259,6 +259,17 @@ async function openOf(
   return { reports: row?.reports ?? 0, reporters: row?.reporters ?? 0 }
 }
 
+// As many as the open tab lists (R-MOD-5, R-MOD-6).
+async function openMembers(db: Database): Promise<number> {
+  const [row] = await db
+    .select({
+      members: sql<number>`count(distinct ${reports.reportedId})::int`,
+    })
+    .from(reports)
+    .where(isNull(reports.handledAt))
+  return row?.members ?? 0
+}
+
 async function page(
   db: Database,
   memberId: string,
@@ -402,6 +413,7 @@ function unhideNote(
 export function createModerationStore(db: Database): ModerationStore {
   return {
     overview: (state) => overview(db, state),
+    openMembers: () => openMembers(db),
     page: (memberId) => page(db, memberId),
     dismiss: (item, actorId) =>
       db.transaction(async (tx) => {

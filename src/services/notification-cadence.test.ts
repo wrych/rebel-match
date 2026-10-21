@@ -28,13 +28,14 @@ describe('the options (R-NOTE-2)', () => {
     ])
   })
 
-  it('defaults requests and connections hourly, trends and badges daily, applicants every 15 minutes', () => {
+  it('defaults requests, connections and reports hourly, trends and badges daily, applicants every 15 minutes (R-NOTE-2)', () => {
     expect(DEFAULT_CADENCE).toEqual({
       connection_request: 'hourly',
       new_connection: 'hourly',
       trend_challenge: 'daily',
       applicant: 'every_15_minutes',
       badge: 'daily',
+      report: 'hourly',
     })
   })
 })

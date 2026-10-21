@@ -67,14 +67,12 @@ const choice = z.object({ cadence: z.string().min(1).max(CHOICE_MAX_CHARS) })
 const typeParams = z.object({ type: z.string().min(1).max(CHOICE_MAX_CHARS) })
 const chooseStatus = { done: 204, not_found: 404, not_offered: 400 } as const
 
-function canReview(locals: unknown): boolean {
-  return (locals as GuardedLocals).member.permissions.includes(
-    'applicant:review',
-  )
-}
+const permissionsOf = (locals: unknown): readonly string[] =>
+  (locals as GuardedLocals).member.permissions
 
 // How each type reaches the member, chosen on the profile screen (R-NOTE-2,
-// R-NOTE-3). Applicant notices are offered only to who may review them.
+// R-NOTE-3). Applicant and report notices are offered only to who may review
+// them.
 function settingsRoutes(
   router: Router,
   deps: {
@@ -90,7 +88,7 @@ function settingsRoutes(
       response.json({
         settings: await deps.notificationSettings.list(
           memberOf(response.locals),
-          canReview(response.locals),
+          permissionsOf(response.locals),
         ),
       })
     },
@@ -103,7 +101,7 @@ function settingsRoutes(
       const { cadence } = choice.parse(request.body)
       const outcome = await deps.notificationSettings.choose(
         memberOf(response.locals),
-        canReview(response.locals),
+        permissionsOf(response.locals),
         type,
         cadence,
       )

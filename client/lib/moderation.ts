@@ -106,6 +106,23 @@ export async function dismissReports(
   })
 }
 
+/** How many members have open reports (R-MOD-5); 0 when it cannot be
+ * read, as the menu shows no count then. */
+export async function fetchOpenReported(): Promise<number> {
+  const response = await send('/api/admin/reports/count')
+  if (!response.ok) return 0
+  const { members } = (await response.json()) as { members?: unknown }
+  return typeof members === 'number' && Number.isInteger(members) && members > 0
+    ? members
+    : 0
+}
+
+/** The menu's Moderation entry: the count only while any is open
+ * (R-MOD-5). */
+export function moderationLabel(count: number): string {
+  return count > 0 ? `Moderation (${String(count)})` : 'Moderation'
+}
+
 /** Where a reported member's moderation page is (design S40). */
 export const moderationPath = (memberId: string): string =>
   `/admin/moderation/${encodeURIComponent(memberId)}`

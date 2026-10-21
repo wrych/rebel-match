@@ -72,6 +72,8 @@ export interface ModerationPage {
 
 export interface ModerationStore {
   overview(state: 'open' | 'handled'): Promise<ReportedMember[]>
+  /** How many members have open reports. */
+  openMembers(): Promise<number>
   page(memberId: string): Promise<ModerationPage | null>
   /** Marks the item's open reports handled and records the host's dismissal,
    * in one transaction; false when it has none open. */
@@ -91,6 +93,7 @@ export interface ModerationStore {
 
 export interface ModerationService {
   overview(state: 'open' | 'handled'): Promise<ReportedMember[]>
+  openMembers(): Promise<number>
   page(memberId: string): Promise<ModerationPage | null>
   dismiss(item: ReportItem, actorId: string): Promise<'dismissed' | 'not_found'>
   hideNote(
@@ -107,6 +110,7 @@ export interface ModerationService {
 export function createModeration(store: ModerationStore): ModerationService {
   return {
     overview: (state) => store.overview(state),
+    openMembers: () => store.openMembers(),
     page: (memberId) => store.page(memberId),
     dismiss: async (item, actorId) =>
       (await store.dismiss(item, actorId)) ? 'dismissed' : 'not_found',

@@ -41,6 +41,10 @@ function recordingStore(rows: NotificationRow[] = []): {
       calls.push(['seen-badges', memberId, rows])
       return Promise.resolve()
     },
+    markSeenForReports: (memberId, reportedId) => {
+      calls.push(['seen-reports', memberId, reportedId])
+      return Promise.resolve()
+    },
   }
   return { store, calls }
 }
@@ -52,6 +56,8 @@ const row = (over: Partial<NotificationRow>): NotificationRow => ({
   createdAt: at,
   seenAt: null,
   aboutName: 'Bea There',
+  aboutMemberId: 'm-bea',
+  openReports: null,
   connectionId: 'r/1',
   recipientRequested: false,
   challengeId: null,

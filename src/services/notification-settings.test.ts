@@ -6,6 +6,8 @@ import {
   type NotificationSettingsStore,
 } from './notification-settings.js'
 
+const HOST = ['applicant:review', 'report:review'] as const
+
 function fakeStore(): {
   store: NotificationSettingsStore
   rows: Map<string, Cadence>
@@ -42,12 +44,12 @@ function fakeStore(): {
 }
 
 describe('createNotificationSettings (R-NOTE-2, R-NOTE-3)', () => {
-  it('lists each type a member can receive, at its default until chosen', async () => {
+  it('lists each type a member can receive, a host’s notices by permission, at its default until chosen (R-MOD-5)', async () => {
     const { store } = fakeStore()
     const settings = createNotificationSettings(store)
 
-    const member = await settings.list('m-ada', false)
-    const host = await settings.list('m-host', true)
+    const member = await settings.list('m-ada', [])
+    const host = await settings.list('m-host', HOST)
 
     expect(member.map((s) => [s.type, s.cadence])).toEqual([
       ['connection_request', 'hourly'],
@@ -61,9 +63,11 @@ describe('createNotificationSettings (R-NOTE-2, R-NOTE-3)', () => {
       ['trend_challenge', 'daily'],
       ['badge', 'daily'],
       ['applicant', 'every_15_minutes'],
+      ['report', 'hourly'],
     ])
     expect(host[4]?.offered).toContain('every_15_minutes')
     expect(member[0]?.offered).not.toContain('every_15_minutes')
+    expect(host[5]?.offered).not.toContain('every_15_minutes')
   })
 
   it('records a choice, and forgets it when the default is chosen again', async () => {
@@ -71,12 +75,12 @@ describe('createNotificationSettings (R-NOTE-2, R-NOTE-3)', () => {
     const settings = createNotificationSettings(store)
 
     expect(
-      await settings.choose('m-ada', false, 'connection_request', 'daily'),
+      await settings.choose('m-ada', [], 'connection_request', 'daily'),
     ).toBe('done')
     expect(rows.get('m-ada:connection_request')).toBe('daily')
-    expect((await settings.list('m-ada', false))[0]?.cadence).toBe('daily')
+    expect((await settings.list('m-ada', []))[0]?.cadence).toBe('daily')
 
-    await settings.choose('m-ada', false, 'connection_request', 'hourly')
+    await settings.choose('m-ada', [], 'connection_request', 'hourly')
     expect(rows.has('m-ada:connection_request')).toBe(false)
   })
 
@@ -84,7 +88,7 @@ describe('createNotificationSettings (R-NOTE-2, R-NOTE-3)', () => {
     const { store, released } = fakeStore()
     const settings = createNotificationSettings(store)
 
-    await settings.choose('m-ada', false, 'connection_request', 'immediately')
+    await settings.choose('m-ada', [], 'connection_request', 'immediately')
 
     expect(released).toEqual(['m-ada:connection_request'])
   })
@@ -97,10 +101,10 @@ describe('createNotificationSettings (R-NOTE-2, R-NOTE-3)', () => {
       return Promise.resolve()
     })
 
-    await settings.choose('m-ada', false, 'connection_request', 'hourly')
-    await settings.choose('m-ada', false, 'connection_request', 'off')
-    await settings.choose('m-ada', false, 'connection_request', 'off')
-    await settings.choose('m-ada', false, 'applicant', 'daily')
+    await settings.choose('m-ada', [], 'connection_request', 'hourly')
+    await settings.choose('m-ada', [], 'connection_request', 'off')
+    await settings.choose('m-ada', [], 'connection_request', 'off')
+    await settings.choose('m-ada', [], 'applicant', 'daily')
 
     expect(tracked).toEqual([
       [
@@ -119,7 +123,7 @@ describe('createNotificationSettings (R-NOTE-2, R-NOTE-3)', () => {
     const { store, hidden } = fakeStore()
     const settings = createNotificationSettings(store)
 
-    await settings.choose('m-ada', false, 'new_connection', 'off')
+    await settings.choose('m-ada', [], 'new_connection', 'off')
 
     expect(hidden).toEqual(['m-ada:new_connection'])
   })
@@ -128,21 +132,21 @@ describe('createNotificationSettings (R-NOTE-2, R-NOTE-3)', () => {
     const { store, rows } = fakeStore()
     const settings = createNotificationSettings(store)
 
-    expect(await settings.choose('m-ada', false, 'applicant', 'daily')).toBe(
+    expect(await settings.choose('m-ada', [], 'applicant', 'daily')).toBe(
       'not_found',
     )
-    expect(await settings.choose('m-ada', false, 'weekly_news', 'daily')).toBe(
+    expect(await settings.choose('m-ada', [], 'weekly_news', 'daily')).toBe(
       'not_found',
     )
     expect(
       await settings.choose(
         'm-ada',
-        false,
+        [],
         'connection_request',
         'every_15_minutes',
       ),
     ).toBe('not_offered')
-    expect(await settings.choose('m-host', true, 'applicant', 'weekly')).toBe(
+    expect(await settings.choose('m-host', HOST, 'applicant', 'weekly')).toBe(
       'not_offered',
     )
     expect(rows.size).toBe(0)

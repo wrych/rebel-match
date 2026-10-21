@@ -9,6 +9,7 @@ import {
   members,
   notificationSettings,
   notifications,
+  reports,
   trends,
 } from '../db/schema.js'
 import { isShown } from './challenge-store.js'
@@ -78,6 +79,7 @@ interface ReadRow {
   badgeLevel: number | null
   eventName: string | null
   crownHolder: string | null
+  openReports: number
 }
 
 function dueOf(row: ReadRow): DueNotification {
@@ -109,6 +111,7 @@ function dueOf(row: ReadRow): DueNotification {
             eventName: row.eventName,
           },
     crownHeld: row.crownHolder === row.recipientId,
+    openReports: row.openReports,
   }
 }
 
@@ -136,6 +139,7 @@ function readRows(db: Database, ids: string[]): Promise<ReadRow[]> {
       badgeLevel: n.badgeLevel,
       eventName: eventBadges.name,
       crownHolder: badgeCrowns.memberId,
+      openReports: sql<number>`(select count(*)::int from ${reports} where ${reports.reportedId} = ${n.aboutMemberId} and ${reports.handledAt} is null)`,
     })
     .from(n)
     .innerJoin(recipient, eq(recipient.id, n.recipientId))

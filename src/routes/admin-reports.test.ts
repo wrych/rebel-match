@@ -58,6 +58,7 @@ function setup(): { app: Express; calls: unknown[][] } {
       calls.push(['overview', state])
       return Promise.resolve([rik])
     },
+    openMembers: () => Promise.resolve(3),
     page: (memberId) => Promise.resolve(memberId === 'm-rik' ? page : null),
     hideNote: (id, actorId, reason) => {
       calls.push(['hideNote', id, actorId, reason])
@@ -78,7 +79,18 @@ function setup(): { app: Express; calls: unknown[][] } {
   }
   const app = express()
   app.use(express.json())
-  app.use(adminReportRoutes({ auth, moderation }))
+  app.use(
+    adminReportRoutes({
+      auth,
+      moderation,
+      notifications: {
+        openedReports: (memberId, reportedId) => {
+          calls.push(['opened', memberId, reportedId])
+          return Promise.resolve()
+        },
+      },
+    }),
+  )
   return { app, calls }
 }
 
@@ -123,6 +135,17 @@ describe('admin report routes (F21)', () => {
 
     expect(found.body).toEqual(page)
     expect(missing.status).toBe(404)
+  })
+
+  it('counts the members with open reports, for the menu (R-MOD-5)', async () => {
+    const { app, calls } = setup()
+
+    const response = await request(app)
+      .get('/api/admin/reports/count')
+      .set('Cookie', await cookieFor('m-admin'))
+
+    expect(response.body).toEqual({ members: 3 })
+    expect(calls).toEqual([])
   })
 
   it.each([
@@ -194,13 +217,14 @@ describe('admin report routes (F21)', () => {
     const statuses = await Promise.all([
       request(app).get('/api/admin/reports').set('Cookie', cookie),
       request(app).get('/api/admin/reports/m-rik').set('Cookie', cookie),
+      request(app).get('/api/admin/reports/count').set('Cookie', cookie),
       request(app)
         .post('/api/admin/reports/dismiss')
         .set('Cookie', cookie)
         .send({ requestId: 'r-1' }),
     ])
 
-    expect(statuses.map((each) => each.status)).toEqual([404, 404, 404])
+    expect(statuses.map((each) => each.status)).toEqual([404, 404, 404, 404])
     expect(calls).toEqual([])
   })
 })

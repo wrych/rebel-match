@@ -44,6 +44,7 @@ const due = (over: Partial<DueNotification> = {}): DueNotification => ({
   trend: null,
   badge: null,
   crownHeld: false,
+  openReports: 0,
   ...over,
 })
 
@@ -51,6 +52,7 @@ const names: Record<string, string> = {
   'm-ada': 'Ada',
   'm-bob': 'Bob',
   'm-eve': 'Eve',
+  'm-rik': 'Rik',
 }
 
 function sender(status: DeliveryStatus = 'sent'): {
@@ -88,6 +90,16 @@ const applicant = due({
   requestStatus: null,
   applicantStatus: 'applicant',
   applicantEmail: 'new@example.invalid',
+})
+
+const report = due({
+  id: 'n4',
+  type: 'report',
+  recipientId: 'm-host',
+  aboutMemberId: 'm-eve',
+  connectionId: null,
+  requestStatus: null,
+  openReports: 2,
 })
 
 describe('one notification: its type’s own email (R-NOTE-8)', () => {
@@ -136,6 +148,28 @@ describe('one notification: its type’s own email (R-NOTE-8)', () => {
       }),
     ])
     expect(sent[0]?.text).toContain('new@example.invalid asked for access')
+  })
+
+  it('mails a reviewer who was reported and how many reports are open, never by whom (R-MOD-5)', async () => {
+    const { send, sent } = sender()
+
+    await send([report])
+
+    expect(sent).toEqual([
+      expect.objectContaining({
+        to: 'm-host@example.invalid',
+        kind: 'admin_notice',
+        memberId: 'm-host',
+        aboutMemberId: 'm-eve',
+        subject: 'A member was reported on Rebel Match',
+      }),
+    ])
+    expect(sent[0]?.text).toContain(
+      'Eve was reported. 2 reports are open about them.',
+    )
+    expect(sent[0]?.text).toContain(
+      'http://localhost:5173/admin/moderation/m-eve?notice=report',
+    )
   })
 
   it('says what became of the mail, and null when nobody got one', async () => {
@@ -287,6 +321,12 @@ describe('several: one digest (R-NOTE-8, R-MSG-6)', () => {
           requestStatus: 'accepted',
         }),
         applicant,
+        {
+          ...report,
+          recipientId: 'm-bob',
+          aboutMemberId: 'm-rik',
+          openReports: 1,
+        },
       ]),
     ).toBe('sent')
 
@@ -296,8 +336,8 @@ describe('several: one digest (R-NOTE-8, R-MSG-6)', () => {
       memberId: 'm-bob',
       to: 'm-bob@example.invalid',
       kind: 'notification_digest',
-      subject: '3 updates on Rebel Match',
-      quotes: ['m-ada', 'm-eve', 'm-new'],
+      subject: '4 updates on Rebel Match',
+      quotes: ['m-ada', 'm-eve', 'm-new', 'm-rik'],
     })
     expect(mail?.text).toContain(
       'Ada wants to connect with you.\nThey wrote: Same here.\nhttp://localhost:5173/matches/requests/r1',
@@ -307,6 +347,9 @@ describe('several: one digest (R-NOTE-8, R-MSG-6)', () => {
     )
     expect(mail?.text).toContain(
       'new@example.invalid asked to join.\nhttp://localhost:5173/admin/applicants',
+    )
+    expect(mail?.text).toContain(
+      'Rik was reported. 1 report is open.\nhttp://localhost:5173/admin/moderation/m-rik',
     )
     expect(mail?.html).toContain('<strong>Ada</strong> wants to connect')
     expect(mail?.html).toContain('<strong>Eve</strong> accepted your request')

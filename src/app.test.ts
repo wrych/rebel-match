@@ -150,6 +150,7 @@ function deps(
       newCount: () => Promise.resolve(0),
       seen: () => Promise.resolve(),
       openedConnection: () => Promise.resolve(),
+      openedReports: () => Promise.resolve(),
       openedApplicants: () => Promise.resolve(),
       openedChallenge: () => Promise.resolve(),
       openedBadges: () => Promise.resolve(),
@@ -164,6 +165,7 @@ function deps(
     },
     moderation: {
       overview: () => Promise.resolve([]),
+      openMembers: () => Promise.resolve(0),
       page: () => Promise.resolve(null),
       dismiss: () => Promise.resolve('not_found'),
       hideNote: () => Promise.resolve('not_found'),

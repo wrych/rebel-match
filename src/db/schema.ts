@@ -497,6 +497,7 @@ export const notificationType = pgEnum('notification_type', [
   'trend_challenge',
   'applicant',
   'badge',
+  'report',
 ])
 
 export const notificationMailStatus = pgEnum('notification_mail_status', [

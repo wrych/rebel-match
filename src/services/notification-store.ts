@@ -20,6 +20,7 @@ import {
   members,
   notificationSettings,
   notifications,
+  reports,
   trends,
 } from '../db/schema.js'
 import { isShown } from './challenge-store.js'
@@ -33,15 +34,23 @@ function reviews(roles: readonly string[], memberId: unknown): SQL {
   return sql`exists (select 1 from ${memberRoles} where ${memberRoles.memberId} = ${memberId} and ${inArray(memberRoles.roleKey, [...roles])})`
 }
 
-// What R-NOTE-5 shows: not hidden, about nobody deleted, an applicant notice
-// only to someone who may still review applicants, and a new challenge only
-// while it is still shown.
-function shown(roles: readonly string[], memberId: string): SQL | undefined {
+/** The roles that may review applicants and reports, read from the policy
+ * (R-ROLE-3): notices of either reach only their holders. */
+export interface Reviewers {
+  applicants: readonly string[]
+  reports: readonly string[]
+}
+
+// What R-NOTE-5 shows: not hidden, about nobody deleted, an applicant or
+// report notice only to someone who may still review them, and a new
+// challenge only while it is still shown.
+function shown(reviewers: Reviewers, memberId: string): SQL | undefined {
   return and(
     eq(n.recipientId, memberId),
     eq(n.hidden, false),
     ne(about.status, 'deleted'),
-    or(ne(n.type, 'applicant'), reviews(roles, memberId)),
+    or(ne(n.type, 'applicant'), reviews(reviewers.applicants, memberId)),
+    or(ne(n.type, 'report'), reviews(reviewers.reports, memberId)),
     or(
       ne(n.type, 'trend_challenge'),
       sql`exists (select 1 from ${challenges} where ${challenges.id} = ${n.challengeId} and ${isShown()})`,
@@ -131,6 +140,25 @@ export async function insertApplicantNotifications(
       and ${reviews(roles, sql`reviewer.id`)}`)
 }
 
+/** Stores, inside the transaction that records a report, a notification
+ * for every active member who may review reports, but never the reporter
+ * nor the member reported (R-MOD-5, R-NOTE-10). */
+export async function insertReportNotifications(
+  db: Database,
+  roles: readonly string[],
+  report: { reportedId: string; reporterId: string },
+): Promise<void> {
+  if (roles.length === 0) return
+  await db.execute(sql`
+    insert into ${n} (id, recipient_id, type, about_member_id, hidden)
+    select gen_random_uuid()::text, reviewer.id, 'report', ${report.reportedId},
+      ${offFor(sql`reviewer.id`, 'report')}
+    from ${members} reviewer
+    where reviewer.status = 'active'
+      and reviewer.id not in (${report.reportedId}, ${report.reporterId})
+      and ${reviews(roles, sql`reviewer.id`)}`)
+}
+
 // After the member's own entry `id` in the list's order, compared in the
 // database at full precision, so no row falls between two pages.
 function olderThan(memberId: string, id: string): SQL {
@@ -142,6 +170,8 @@ interface ListedRow {
   type: NotificationRow['type']
   createdAt: Date
   seenAt: Date | null
+  aboutMemberId: string | null
+  openReports: number
   name: string | null
   requestedName: string | null
   email: string
@@ -154,18 +184,25 @@ interface ListedRow {
   eventName: string | null
 }
 
-// An applicant is named by what they gave, else their address; anyone else
-// by their name (R-NOTE-5).
+// An applicant is named by what they gave, else their address; a reported
+// member by their name, else their address, as hosts know them; anyone else
+// by their name (R-NOTE-5, R-MOD-5).
+function nameOf(row: ListedRow): string {
+  if (row.type === 'applicant')
+    return row.requestedName ?? row.name ?? row.email
+  if (row.type === 'report') return row.name ?? row.email
+  return row.name ?? ''
+}
+
 function rowOf(row: ListedRow, memberId: string): NotificationRow {
   return {
     id: row.id,
     type: row.type,
     createdAt: row.createdAt,
     seenAt: row.seenAt,
-    aboutName:
-      row.type === 'applicant'
-        ? (row.requestedName ?? row.name ?? row.email)
-        : (row.name ?? ''),
+    aboutName: nameOf(row),
+    aboutMemberId: row.aboutMemberId ?? '',
+    openReports: row.type === 'report' ? row.openReports : null,
     connectionId: row.connectionId,
     recipientRequested: row.requesterId === memberId,
     challengeId: row.challengeId,
@@ -183,7 +220,7 @@ function rowOf(row: ListedRow, memberId: string): NotificationRow {
 
 async function list(
   db: Database,
-  roles: readonly string[],
+  reviewers: Reviewers,
   memberId: string,
   before: string | null,
   limit: number,
@@ -194,6 +231,8 @@ async function list(
       type: n.type,
       createdAt: n.createdAt,
       seenAt: n.seenAt,
+      aboutMemberId: n.aboutMemberId,
+      openReports: sql<number>`(select count(*)::int from ${reports} where ${reports.reportedId} = ${n.aboutMemberId} and ${reports.handledAt} is null)`,
       name: about.name,
       requestedName: about.requestedName,
       email: about.email,
@@ -219,7 +258,7 @@ async function list(
     )
     .where(
       and(
-        shown(roles, memberId),
+        shown(reviewers, memberId),
         before === null ? undefined : olderThan(memberId, before),
       ),
     )
@@ -230,14 +269,14 @@ async function list(
 
 async function newCount(
   db: Database,
-  roles: readonly string[],
+  reviewers: Reviewers,
   memberId: string,
 ): Promise<number> {
   const [row] = await db
     .select({ count: sql<number>`count(*)::int` })
     .from(n)
     .innerJoin(about, eq(about.id, n.aboutMemberId))
-    .where(and(shown(roles, memberId), isNull(n.seenAt)))
+    .where(and(shown(reviewers, memberId), isNull(n.seenAt)))
   return row?.count ?? 0
 }
 
@@ -261,16 +300,15 @@ async function markSeenWhere(
     .where(and(eq(n.recipientId, memberId), which, isNull(n.seenAt)))
 }
 
-/** Notifications over Postgres (design §2). `reviewerRoles` are the roles
- * granting `applicant:review`, read from the policy (R-ROLE-3). */
+/** Notifications over Postgres (design §2). */
 export function createNotificationStore(
   db: Database,
-  reviewerRoles: readonly string[],
+  reviewers: Reviewers,
 ): NotificationStore {
   return {
     list: (memberId, before, limit) =>
-      list(db, reviewerRoles, memberId, before, limit),
-    newCount: (memberId) => newCount(db, reviewerRoles, memberId),
+      list(db, reviewers, memberId, before, limit),
+    newCount: (memberId) => newCount(db, reviewers, memberId),
     markSeen: (memberId, ids) =>
       markSeenWhere(db, memberId, inArray(n.id, [...ids])),
     // Each screen ends only the notifications that lead to it: the request
@@ -294,6 +332,12 @@ export function createNotificationStore(
       ),
     markSeenForApplicants: (memberId) =>
       markSeenWhere(db, memberId, eq(n.type, 'applicant')),
+    markSeenForReports: (memberId, reportedId) =>
+      markSeenWhere(
+        db,
+        memberId,
+        and(eq(n.type, 'report'), eq(n.aboutMemberId, reportedId)),
+      ),
     markSeenForBadges: (memberId, rows) =>
       markSeenWhere(
         db,

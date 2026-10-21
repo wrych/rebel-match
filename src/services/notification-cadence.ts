@@ -9,6 +9,7 @@ export type ChoosableType =
   | 'trend_challenge'
   | 'applicant'
   | 'badge'
+  | 'report'
 
 /** Until a member chooses (R-NOTE-2). */
 export const DEFAULT_CADENCE: Readonly<Record<ChoosableType, Cadence>> = {
@@ -17,6 +18,7 @@ export const DEFAULT_CADENCE: Readonly<Record<ChoosableType, Cadence>> = {
   trend_challenge: 'daily',
   applicant: 'every_15_minutes',
   badge: 'daily',
+  report: 'hourly',
 }
 
 const EVERYONE: readonly Cadence[] = [

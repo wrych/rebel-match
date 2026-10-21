@@ -30,6 +30,7 @@ const note = (kind: NotificationView['kind']): NotificationView => ({
   name: 'Bea',
   path: '/x',
   trend: kind === 'trend_challenge' ? 'Radical Transparency' : null,
+  openReports: kind === 'report' ? 2 : null,
 })
 
 afterEach(() => {
@@ -44,8 +45,16 @@ describe('headline', () => {
     ['applicant', 'Bea asked to join'],
     ['trend_challenge', 'Bea posted a challenge in Radical Transparency'],
     ['badge', 'New badge: Bea'],
+    ['report', 'Bea was reported: 2 open reports'],
   ] as const)('words %s (R-NOTE-5)', (kind, words) => {
     expect(headline(note(kind))).toBe(words)
+  })
+
+  it.each([
+    [1, 'Bea was reported: 1 open report'],
+    [0, 'Bea was reported; nothing is open now'],
+  ])('counts %i open report(s) as they stand now (R-MOD-5)', (open, words) => {
+    expect(headline({ ...note('report'), openReports: open })).toBe(words)
   })
 })
 
