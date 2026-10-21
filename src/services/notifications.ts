@@ -11,6 +11,7 @@ export const notificationKinds = [
   'trend_challenge',
   'applicant',
   'badge',
+  'report',
 ] as const
 
 export type NotificationKind = (typeof notificationKinds)[number]
@@ -26,6 +27,9 @@ export interface NotificationView {
   path: string
   /** The trend a new challenge was posted in; null for every other kind. */
   trend: string | null
+  /** For a report: how many reports about the member are still open
+   * (R-MOD-5); null for every other kind. */
+  openReports: number | null
 }
 
 /** A stored notification, with what the list needs to word it. */
@@ -36,6 +40,8 @@ export interface NotificationRow {
   seenAt: Date | null
   /** The display name, or for an applicant what they gave or their address. */
   aboutName: string
+  aboutMemberId: string
+  openReports: number | null
   connectionId: string | null
   /** For a new connection: whether the recipient sent the request, so it was
    * accepted (R-CONN-7), or received it from a member already connected
@@ -62,6 +68,7 @@ export type StoredType =
   | 'trend_challenge'
   | 'applicant'
   | 'badge'
+  | 'report'
 
 export interface NotificationStore {
   /** The member's notifications R-NOTE-5 shows, newest first; with
@@ -82,6 +89,8 @@ export interface NotificationStore {
     between: boolean,
   ): Promise<void>
   markSeenForApplicants(memberId: string): Promise<void>
+  /** Marks the member's notifications of reports about `reportedId` seen. */
+  markSeenForReports(memberId: string, reportedId: string): Promise<void>
   markSeenForChallenge(memberId: string, challengeId: string): Promise<void>
   /** Marks the member's notifications of badges in these rows as seen. */
   markSeenForBadges(memberId: string, rows: readonly string[]): Promise<void>
@@ -99,6 +108,8 @@ export interface NotificationService {
     contact: boolean,
   ): Promise<void>
   openedApplicants(memberId: string): Promise<void>
+  /** The member opened a reported member's moderation page (R-MOD-7). */
+  openedReports(memberId: string, reportedId: string): Promise<void>
   /** The member's deck opened at this challenge's card (R-OFF-7). */
   openedChallenge(memberId: string, challengeId: string): Promise<void>
   /** The member opened these rows of their badges (R-BADGE-10). */
@@ -134,6 +145,8 @@ function pathOf(row: NotificationRow): string {
   if (row.type === 'badge') return badgePath(row.badge?.row ?? '')
   if (row.type === 'trend_challenge')
     return `/offer?challenge=${encodeURIComponent(row.challengeId ?? '')}`
+  if (row.type === 'report')
+    return `/admin/moderation/${encodeURIComponent(row.aboutMemberId)}`
   if (row.type === 'applicant' || row.connectionId === null)
     return '/admin/applicants'
   return row.type === 'connection_request'
@@ -150,6 +163,7 @@ function viewOf(row: NotificationRow): NotificationView {
     name: row.type === 'badge' ? badgeName(row.badge) : row.aboutName,
     path: pathOf(row),
     trend: row.type === 'trend_challenge' ? row.trend : null,
+    openReports: row.openReports,
   }
 }
 
@@ -170,6 +184,8 @@ export function createNotifications(deps: {
     openedConnection: (memberId, connectionId, contact) =>
       store.markSeenForConnection(memberId, connectionId, contact),
     openedApplicants: (memberId) => store.markSeenForApplicants(memberId),
+    openedReports: (memberId, reportedId) =>
+      store.markSeenForReports(memberId, reportedId),
     openedChallenge: (memberId, challengeId) =>
       store.markSeenForChallenge(memberId, challengeId),
     openedBadges: (memberId, rows) =>

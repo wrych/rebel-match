@@ -122,6 +122,35 @@ describe('HeaderMenu', () => {
     ])
   })
 
+  it('names how many members have open reports on Moderation (R-MOD-5)', async () => {
+    const me = signedIn(['report:review']) as unknown as (
+      url: string,
+    ) => Promise<unknown>
+    const fetchMock = vi.fn((url: string) =>
+      url === '/api/admin/reports/count'
+        ? Promise.resolve({
+            ok: true,
+            status: 200,
+            json: () => Promise.resolve({ members: 3 }),
+          })
+        : me(url),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    const menu = await opened()
+
+    const moderation = menu
+      .findAllComponents(RouterLinkStub)
+      .find((link) => link.props('to') === '/admin/moderation')
+    expect(moderation?.text()).toBe('Moderation (3)')
+  })
+
+  it('asks no count of a member who may not review reports', async () => {
+    const fetchMock = signedIn(['applicant:review'])
+    await opened()
+
+    expect(fetchMock).not.toHaveBeenCalledWith('/api/admin/reports/count')
+  })
+
   it('offers no host tools to a member without their permissions', async () => {
     signedIn([])
     const menu = await opened()

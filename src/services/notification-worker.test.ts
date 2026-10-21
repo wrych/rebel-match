@@ -41,6 +41,7 @@ const due = (over: Partial<DueNotification> = {}): DueNotification => ({
   trend: null,
   badge: null,
   crownHeld: false,
+  openReports: 0,
   ...over,
 })
 
@@ -102,6 +103,16 @@ describe('skipReason (R-NOTE-3, R-NOTE-9)', () => {
     [
       'an applicant decided',
       { type: 'applicant' as const, applicantStatus: 'active' },
+      'stale',
+    ],
+    [
+      'a reported member with reports open (R-MOD-5)',
+      { type: 'report' as const, requestStatus: null, openReports: 2 },
+      null,
+    ],
+    [
+      'a reported member whose reports are all handled',
+      { type: 'report' as const, requestStatus: null, openReports: 0 },
       'stale',
     ],
   ])('mails %s or says why not', (_case, over, reason) => {

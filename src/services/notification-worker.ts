@@ -32,6 +32,8 @@ export interface DueNotification {
    * recipient still holds that crown (R-NOTE-9). */
   badge: GainedBadge | null
   crownHeld: boolean
+  /** For a report: how many reports about the member are still open. */
+  openReports: number
 }
 
 export type SkipReason = 'seen' | 'stale' | 'in_app' | 'off'
@@ -63,13 +65,15 @@ export type SendNotifications = (
 const MS_PER_SECOND = 1000
 
 // Whether what it is about still applies: a request still waiting, an
-// applicant not yet decided, nobody it concerns gone (R-NOTE-9).
+// applicant not yet decided, a reported member with reports still open,
+// nobody it concerns gone (R-NOTE-9).
 function stillApplies(note: DueNotification): boolean {
   if (!note.recipientActive || note.aboutDeleted) return false
   if (note.type === 'connection_request')
     return note.requestStatus === 'pending'
   if (note.type === 'trend_challenge') return note.challengeActive
   if (note.type === 'badge') return note.badge?.level !== 0 || note.crownHeld
+  if (note.type === 'report') return note.openReports > 0
   return note.type !== 'applicant' || note.applicantStatus === 'applicant'
 }
 

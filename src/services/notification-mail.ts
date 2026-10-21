@@ -6,6 +6,7 @@ import {
 } from '../badges/rows.js'
 import { createApplicantNotice } from './applicant-notice.js'
 import { badgeLine, createBadgeNotice, type BadgeNote } from './badge-notice.js'
+import { createReportNotice, openReportsWords } from './report-notice.js'
 import { renderMail, type MailItem } from './mail-layout.js'
 import { noticeFooter, noticeLink } from './notice-link.js'
 import { badgeName, badgePath, type NotificationKind } from './notifications.js'
@@ -130,6 +131,19 @@ async function itemOf(
         }
   if (note.type === 'badge') return badgeItem(deps, note)
   if (note.type === 'trend_challenge') return trendItem(deps, note)
+  if (note.type === 'report')
+    return {
+      name: await nameOf(deps, note.aboutMemberId),
+      text: `was reported. ${openReportsWords(note.openReports)}.`,
+      action: {
+        label: 'Review the reports',
+        url: linkFor(
+          deps,
+          `/admin/moderation/${encodeURIComponent(note.aboutMemberId)}`,
+          'report',
+        ),
+      },
+    }
   return requestItem(deps, note)
 }
 
@@ -267,6 +281,21 @@ async function aboutChallenge(
   })
 }
 
+async function aboutReport(
+  deps: SenderDeps & { mailer: Mailer },
+  note: DueNotification,
+): Promise<void> {
+  const to = await deps.members.emailOf(note.recipientId)
+  if (to === null) return
+  await createReportNotice(deps)({
+    reviewerId: note.recipientId,
+    to,
+    reportedId: note.aboutMemberId,
+    reportedName: await nameOf(deps, note.aboutMemberId),
+    openReports: note.openReports,
+  })
+}
+
 async function single(
   deps: SenderDeps,
   note: DueNotification,
@@ -282,6 +311,7 @@ async function single(
   else if (note.type === 'trend_challenge')
     await aboutChallenge({ ...deps, mailer }, note)
   else if (note.type === 'badge') await aboutBadge({ ...deps, mailer }, note)
+  else if (note.type === 'report') await aboutReport({ ...deps, mailer }, note)
   else await aboutRequest({ ...deps, mailer }, note)
   return status
 }

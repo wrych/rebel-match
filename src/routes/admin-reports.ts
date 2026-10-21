@@ -6,6 +6,7 @@ import {
   type ModerationReason,
 } from '../services/challenge-moderation.js'
 import type { ModerationService } from '../services/moderation.js'
+import type { NotificationService } from '../services/notifications.js'
 import { requirePermission, type GuardedLocals } from './require-permission.js'
 
 const stateQuery = z.object({
@@ -64,6 +65,27 @@ function unhideNote(moderation: ModerationService): RequestHandler {
   }
 }
 
+function memberPage(
+  moderation: ModerationService,
+  notifications: Pick<NotificationService, 'openedReports'>,
+): RequestHandler {
+  return async (request, response) => {
+    const { memberId } = memberParams.parse(request.params)
+    const page = await moderation.page(memberId)
+    if (page === null) {
+      response.status(404).json({ error: 'not_found' })
+      return
+    }
+    // Opening the page is what its notices lead to, so they are seen
+    // (R-NOTE-5).
+    await notifications.openedReports(
+      (response.locals as GuardedLocals).member.id,
+      memberId,
+    )
+    response.json(page)
+  }
+}
+
 /** F21's API (design §3): reported members, one member's reports and the
  * history of what hosts did, and dismissing an item's reports, behind
  * `report:review`; hiding a note, behind `challenge:moderate` like hiding a
@@ -71,6 +93,7 @@ function unhideNote(moderation: ModerationService): RequestHandler {
 export function adminReportRoutes(deps: {
   auth: AuthProvider
   moderation: ModerationService
+  notifications: Pick<NotificationService, 'openedReports'>
 }): Router {
   const router = Router()
   const guard = requirePermission(deps.auth, 'report:review')
@@ -85,18 +108,15 @@ export function adminReportRoutes(deps: {
       members: await deps.moderation.overview(query.data.state),
     })
   })
+  // The menu's Moderation count (R-MOD-5); before the member's page, whose
+  // path would take it.
+  router.get('/api/admin/reports/count', guard, async (_request, response) => {
+    response.json({ members: await deps.moderation.openMembers() })
+  })
   router.get(
     '/api/admin/reports/:memberId',
     guard,
-    async (request, response) => {
-      const { memberId } = memberParams.parse(request.params)
-      const page = await deps.moderation.page(memberId)
-      if (page === null) {
-        response.status(404).json({ error: 'not_found' })
-        return
-      }
-      response.json(page)
-    },
+    memberPage(deps.moderation, deps.notifications),
   )
   router.post('/api/admin/reports/dismiss', guard, dismiss(deps.moderation))
   const hides = requirePermission(deps.auth, 'challenge:moderate')

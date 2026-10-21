@@ -33,6 +33,7 @@ const entry: NotificationView = {
   name: 'Bea There',
   path: '/matches/requests/r1',
   trend: null,
+  openReports: null,
 }
 
 function setup(): { app: Express; calls: unknown[] } {
@@ -58,8 +59,12 @@ function setup(): { app: Express; calls: unknown[] } {
       auth,
       notifications,
       notificationSettings: {
-        list: (memberId, canReview) => {
-          calls.push(['settings', memberId, canReview])
+        list: (memberId, permissions) => {
+          calls.push([
+            'settings',
+            memberId,
+            permissions.includes('applicant:review'),
+          ])
           return Promise.resolve([])
         },
         choose: (memberId, canReview, type, cadence) => {

@@ -6,6 +6,7 @@ import { fetchConfig, type ClientConfig } from '../lib/api'
 import { BADGES_SEEN, badgesLabel, fetchNewBadges } from '../lib/badges'
 import { reportEvent } from '../lib/events'
 import { feedbackMailto } from '../lib/feedback'
+import { fetchOpenReported, moderationLabel } from '../lib/moderation'
 import type { Mood } from '../lib/mood'
 import {
   fetchNewNotifications,
@@ -26,6 +27,7 @@ const version = ref<ClientConfig['build'] | null>(null)
 const feedbackTo = ref<string | null>(null)
 const fresh = ref(0)
 const freshBadges = ref(0)
+const reported = ref(0)
 let stopPolling: (() => void) | undefined
 let gone = false
 
@@ -107,6 +109,9 @@ async function show(): Promise<void> {
   void readFresh()
   void readFreshBadges()
   me.value = await loadMe().catch(() => null)
+  // Asked only of those the Moderation entry is offered to (R-MOD-5).
+  if (me.value?.permissions.includes('report:review') === true)
+    reported.value = await fetchOpenReported().catch(() => 0)
 }
 
 function close(refocus: boolean): void {
@@ -217,7 +222,11 @@ onBeforeUnmount(() => {
           :to="link.path"
           class="item"
           @click="close(false)"
-          >{{ link.label }}</RouterLink
+          >{{
+            link.name === 'admin-moderation'
+              ? moderationLabel(reported)
+              : link.label
+          }}</RouterLink
         >
       </nav>
 

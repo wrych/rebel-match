@@ -468,7 +468,7 @@ Built after the spec and ADR merge. One pull request per item, in this order.
       to S40.
 - [x] Hiding a note: its hidden columns, hide and unhide on S40, _Removed by
       a host_ under _Connected over_. _(R-MOD-8)_
-- [ ] The `report` notification type, and the open count on the menu's
+- [x] The `report` notification type, and the open count on the menu's
       **Moderation** entry. _(R-MOD-5, R-NOTE-1, R-NOTE-2)_
 - [ ] Banning: the `banned` status, ban and lift ban, the door's suspended
       answer, invites and the whitelist keeping it out. _(R-MOD-9, R-MOD-10)_

@@ -32,25 +32,31 @@ export interface NotificationSettingsStore {
 }
 
 export interface NotificationSettingsService {
-  list(memberId: string, canReview: boolean): Promise<NotificationSetting[]>
+  list(
+    memberId: string,
+    permissions: readonly string[],
+  ): Promise<NotificationSetting[]>
   choose(
     memberId: string,
-    canReview: boolean,
+    permissions: readonly string[],
     type: string,
     cadence: string,
   ): Promise<'done' | 'not_found' | 'not_offered'>
 }
 
 /** What a member can receive, so may choose for: everyone can follow a
- * trend and earn badges; applicant notices go to who may review them
- * (R-NOTE-1). */
-export function receivable(canReview: boolean): ChoosableType[] {
+ * trend and earn badges; applicant and report notices go to who may review
+ * them (R-NOTE-1, R-MOD-5). */
+export function receivable(permissions: readonly string[]): ChoosableType[] {
   return [
     'connection_request',
     'new_connection',
     'trend_challenge',
     'badge',
-    ...(canReview ? (['applicant'] as const) : []),
+    ...(permissions.includes('applicant:review')
+      ? (['applicant'] as const)
+      : []),
+    ...(permissions.includes('report:review') ? (['report'] as const) : []),
   ]
 }
 
@@ -63,17 +69,17 @@ export function createNotificationSettings(
   track: Track = trackNothing,
 ): NotificationSettingsService {
   return {
-    list: async (memberId, canReview) => {
+    list: async (memberId, permissions) => {
       const chosen = await store.chosen(memberId)
-      return receivable(canReview).map((type) => ({
+      return receivable(permissions).map((type) => ({
         type,
         cadence: chosen[type] ?? DEFAULT_CADENCE[type],
         defaultCadence: DEFAULT_CADENCE[type],
         offered: offeredCadences(type),
       }))
     },
-    choose: async (memberId, canReview, type, cadence) => {
-      const known = receivable(canReview).find((each) => each === type)
+    choose: async (memberId, permissions, type, cadence) => {
+      const known = receivable(permissions).find((each) => each === type)
       if (known === undefined) return 'not_found'
       const offered = offeredCadences(known).find((each) => each === cadence)
       if (offered === undefined) return 'not_offered'

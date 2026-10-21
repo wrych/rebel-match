@@ -241,7 +241,7 @@ function composeReports(
   return {
     moderation: createModeration(createModerationStore(db)),
     reports: createReports({
-      store: createReportStore(db),
+      store: createReportStore(db, configPolicy.rolesGranting('report:review')),
       perDay: () => settings.limits().reportsPerDay,
       track,
     }),
@@ -359,17 +359,17 @@ function composeTrack(
   })
 }
 
-// Kept in the app for every member; applicant notices for whoever may review
-// applicants, found by permission (R-NOTE-1, R-ROLE-3).
+// Kept in the app for every member; applicant and report notices for
+// whoever may review them, found by permission (R-NOTE-1, R-ROLE-3).
 function composeNotifications(
   db: Database,
   settings: LiveSettings,
 ): NotificationService {
   return createNotifications({
-    store: createNotificationStore(
-      db,
-      configPolicy.rolesGranting('applicant:review'),
-    ),
+    store: createNotificationStore(db, {
+      applicants: configPolicy.rolesGranting('applicant:review'),
+      reports: configPolicy.rolesGranting('report:review'),
+    }),
     pageSize: () => settings.limits().notificationsPageSize,
   })
 }
