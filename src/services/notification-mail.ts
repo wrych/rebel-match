@@ -153,7 +153,8 @@ async function trendItem(
   return note.challengeId === null || note.trend === null
     ? null
     : {
-        text: `${await nameOf(deps, note.aboutMemberId)} posted a challenge in ${note.trend}.`,
+        name: await nameOf(deps, note.aboutMemberId),
+        text: `posted a challenge in ${note.trend}.`,
         action: {
           label: 'See the challenge',
           url: linkFor(deps, deckAt(note.challengeId), 'trend_challenge'),
@@ -174,7 +175,8 @@ async function requestItem(
   const wrote = record.message === null ? {} : { quote: record.message }
   if (note.type === 'connection_request')
     return {
-      text: `${name} wants to connect with you.`,
+      name,
+      text: 'wants to connect with you.',
       ...wrote,
       action: {
         label: 'See the request',
@@ -183,7 +185,8 @@ async function requestItem(
     }
   return note.recipientId === record.requesterId
     ? {
-        text: `${name} accepted your request.`,
+        name,
+        text: 'accepted your request.',
         action: {
           label: 'Get in touch',
           url: linkFor(
@@ -194,7 +197,8 @@ async function requestItem(
         },
       }
     : {
-        text: `${name} connected with you over another challenge.`,
+        name,
+        text: 'connected with you over another challenge.',
         ...wrote,
         action: {
           label: 'See your connection',
