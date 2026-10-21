@@ -44,8 +44,10 @@ Conventions:
 
    Happy mode, onboarded: F18 9toRevolution (impressum → game → leaderboard)
 
+   Any member: F20 Report a challenge or a note
+
    Admin only: F10 Approvals · F16 Invite links · F11 GDPR deletion
-               F14 Outbound message log
+               F14 Outbound message log · F21 Moderation
 ```
 
 ---
@@ -381,6 +383,15 @@ before both sides agree.**
    member last opened Matches; opening it clears the badge, whether or not
    they answer. Waiting requests stay listed and unopened connections stay
    outlined until dealt with (R-MINE-4, R-MINE-6, R-CONN-7,9).
+
+**Branches**
+
+- _Withdraw a challenge_ → **Withdraw** on its cockpit card or its
+  matches view → one confirmation → `POST /api/challenges/:id/withdraw`. It
+  leaves the deck and every list at once, its pending requests close without
+  a word, and the card stays here marked **Withdrawn** (R-ASK-17).
+- _A host hid it_ → the card is marked **Hidden by a host**, with
+  the reason (R-MOD-8).
 
 ---
 
@@ -758,3 +769,81 @@ Notifications, S22 Admin invites (ADR 0053).
   is not found; a game already running is refused its next record and says
   the office has closed (R-GAME-17).
 - _A record out of bounds_ → refused, and the day is not counted (R-GAME-20).
+
+---
+
+## F20 — Report a challenge or a note
+
+_(ADR 0054.)_
+
+**Actor:** any member. **Screens:** S10 Swipe deck, S8 Matches, S9 Trend
+detail, S15 Incoming request, S16 Contact exchanged, S38 Report.
+
+1. A member sees something that should not be there: a spam challenge on the
+   deck, or a note on a request sent to them. They tap **Report** on it
+   (R-MOD-1, R-MOD-2).
+2. → **S38** `/report/challenge/:id` or `/report/request/:id`. The screen
+   shows what is being reported. The member picks **Spam**, **Inappropriate
+   or offensive** or **Something else**, may add a comment, and taps **Send
+   report** → `POST /api/reports` (R-MOD-3).
+3. The report is recorded. The item leaves the member's own view, and the
+   member is back where they were, with a thank-you. A reported pending
+   request is declined without a word (R-MOD-4).
+4. Every host who reviews reports gets a _New report_ notification at their
+   cadence (**F17**, R-MOD-5).
+
+**Branches**
+
+- _Already reported by this member_ → "You already reported this"; nothing
+  new is recorded (R-MOD-4).
+- _Over `limits.reportsPerDay`_ → refused; the screen asks them to find a host
+  in person (R-MOD-4).
+- _Their own item, or a note not sent to them_ → not found (R-NAV-8).
+- _The challenge was withdrawn or hidden meanwhile_ → the report screen leaves
+  its text out, and the report is still recorded; hosts see its state
+  (R-MOD-4, R-MOD-7).
+
+---
+
+## F21 — Admin: moderation
+
+_(ADR 0054.)_
+
+**Actor:** a host holding `report:review`. **Screens:** S39 Moderation, S40 A
+reported member, S26 A member's page.
+
+1. The host opens **Moderation (n)** from the menu, or a _New report_
+   notification → **S39** `/admin/moderation` → `GET /api/admin/reports`. One
+   card per reported member, ordered by how many different members reported
+   them. Each card shows the open reports, the reasons with their counts, and
+   when the last one came in (R-MOD-6).
+2. Tapping a card → **S40** `/admin/moderation/:memberId` →
+   `GET /api/admin/reports/:memberId`. It lists each reported item with its
+   text, its state and every report about it (R-MOD-7).
+3. Per item the host acts:
+   - **Hide** → choose a reason →
+     `POST /api/admin/challenges/:id/hide` or
+     `POST /api/admin/requests/:id/hide-note`. The item is gone for everyone
+     but its author, who sees why. Its reports are marked handled (R-MOD-8).
+   - **Dismiss** → `POST /api/admin/reports/dismiss` with the item. Its
+     reports are marked handled, and nothing else changes.
+4. In a harder case, **Ban member…** → a reason → confirm →
+   `POST /api/admin/members/:id/ban`. Their sessions end, everything of theirs
+   disappears, their pending requests close, and the door tells them the
+   account is suspended (R-MOD-9, R-MOD-10).
+5. The card moves to **Handled** once no open report is left. The page's
+   history keeps every action, with who took it and why (R-MOD-11).
+
+**Branches**
+
+- _Hidden by mistake_ → **Unhide** → `POST /api/admin/challenges/:id/unhide`
+  (or `…/unhide-note`). It is shown again; closed requests stay closed
+  (R-MOD-8).
+- _Banned by mistake_ → **Lift ban** → `POST /api/admin/members/:id/unban`.
+  Everything the ban hid returns; what a host hid on its own stays hidden
+  (R-MOD-9).
+- _The host tries to ban themselves, or the last admin_ → refused with 409, as
+  for deletion (R-MOD-9, F11).
+- _The banned person asks to be erased_ → a host deletes them (**F11**). The
+  address is free again once erased (R-MOD-10).
+- _A new report about a handled member_ → their card returns to **Open**.

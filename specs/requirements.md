@@ -43,7 +43,8 @@ Acceptance criteria use EARS phrasing: **WHEN** <trigger> **THE SYSTEM SHALL**
 - **`member`** — a whitelisted person who can log in, post challenges, offer help,
   and connect. Every active member holds this role.
 - **`admin`** — holds `member` **plus** the administrative permissions: review
-  applicants, manage the whitelist, delete a member (GDPR).
+  applicants, manage the whitelist, delete a member (GDPR), and review reports,
+  hide content and ban a member (§8l).
 - _(later)_ **`moderator`**, or anything else — added as a role with its own
   permission set, not as another flag.
 
@@ -103,8 +104,8 @@ Requirements:
 
 ### 3.2 Magic-link login
 
-- **R-AUTH-4** — WHEN a user submits an email on the login screen that has not
-  been rejected (R-AUTH-13) THE SYSTEM SHALL email them a single-use magic link
+- **R-AUTH-4** — WHEN a user submits an email on the login screen that has
+  neither been rejected (R-AUTH-13) nor banned (R-MOD-10) THE SYSTEM SHALL email them a single-use magic link
   and show the **check-your-email screen**: it says the link is on its way and,
   for the wait, offers the profile form (R-ONB-7). The link works whether or
   not the form is filled. _(Meeting: "something like a magic link that is then
@@ -516,6 +517,27 @@ capability, not a secret** — and every requirement below exists because of tha
   or the challenge (R-ANA-3). _(Andy, 2026-10-13: an A/B test, ADR 0051, ADR
   0052.)_
 
+### 4.4 Withdrawing a challenge
+
+- **R-ASK-17 (Withdraw my challenge)** — _(ADR 0054.)_ The matches
+  view of a member's own challenge (R-ASK-8), and its card in the cockpit
+  (R-MINE-1), SHALL offer **Withdraw**. It acts after one confirmation, which
+  says that nobody will see the challenge again and that a withdrawal cannot be
+  undone. WHEN the member withdraws a challenge THE SYSTEM SHALL:
+  - stop showing it to anyone else, at once: in the deck (R-OFF-1), among
+    peers (R-ASK-8), and in the newest challenges (R-ASK-2, R-ASK-14);
+  - close every pending connection request about it without telling the
+    requester, as a decline does (R-CONN-4);
+  - keep the accepted requests about it. _Connected over_ (R-CONN-10) SHALL
+    show such a request as _a withdrawn challenge_, without its text;
+  - keep it in the author's cockpit, marked **Withdrawn**, with no matches
+    and no counts;
+  - keep every badge it helped earn (R-BADGE-2).
+
+  Notifications about it are no longer listed (R-NOTE-5) or mailed
+  (R-NOTE-9). It is erased with its author's account (R-NFR-7). To bring it
+  back, the member posts it again.
+
 ---
 
 ## 5. Offer help (swipe journey)
@@ -781,6 +803,10 @@ at a screen instead of at the front door.
   | `/admin/members/:id`                 | a member's page (R-MEM-2)                      |
   | `/admin/settings`                    | the configuration (R-CFG-5,6)                  |
   | `/admin/outbox`                      | dev outbox (dev deployments only)              |
+  | `/report/challenge/:id`              | report a challenge (R-MOD-1)                   |
+  | `/report/request/:id`                | report a request's note (R-MOD-2)              |
+  | `/admin/moderation`                  | reports by member (R-MOD-6)                    |
+  | `/admin/moderation/:memberId`        | one member's reports (R-MOD-7)                 |
 
 - **R-NAV-5** — WHEN an unauthenticated visitor opens any deep link THE SYSTEM
   SHALL show the login screen and, after a successful magic-link verify, send
@@ -827,6 +853,7 @@ at a screen instead of at the front door.
   | Members (R-MEM-1)                    | `limits.membersPollSeconds`, 60         | each member              | yes    |
   | Applicants (R-AUTH-11)               | `limits.applicantsPollSeconds`, 60      | each applicant           | yes    |
   | Invites (R-INV-2)                    | `limits.invitesPollSeconds`, 60         | each invite              | yes    |
+  | Moderation (R-MOD-6)                 | `limits.moderationPollSeconds`, 30      | each reported member     | yes    |
   | Leaderboard (R-GAME-13)              | `limits.leaderboardPollSeconds`, 30     | each new best            | no     |
   - **What is new** — an entry a refresh brings that was not listed before
     SHALL be outlined as new until it is tapped, anywhere on it. What was
@@ -1153,13 +1180,16 @@ notifications: they go out at once, whatever is chosen here (R-NFR-3).
   - **New applicant** — every member who can review applicants, when one is
     recorded (R-AUTH-2, R-AUTH-11);
   - **New badge** — the member, when they earn a level, an event badge or a
-    crown (R-BADGE-10), never when they lose one.
+    crown (R-BADGE-10), never when they lose one;
+  - **New report** — every member who can review reports, when a
+    report is made (R-MOD-5), linking to the reported member's moderation page
+    (R-MOD-7).
 - **R-NOTE-2 (Cadences)** — For each type a member can receive, they SHALL
   choose one of: **Immediately**, **Hourly**, **Daily**, **In the app only**,
   **Off**. New applicant notices SHALL also offer **Every 15 minutes**. Until
   a member chooses, connection requests and new connections SHALL be
   **Hourly**, new challenges in a followed trend **Daily**, new applicants
-  **Every 15 minutes**, and new badges **Daily**.
+  **Every 15 minutes**, new badges **Daily**, and new reports **Hourly**.
 - **R-NOTE-3 (Choosing)** — The profile screen SHALL offer the choice for each
   type the member can receive, and only those, saved on change like every
   setting there (R-PROF-1). A change SHALL apply to every notification still
@@ -1566,6 +1596,147 @@ invite link (R-INV-1).
 
 ---
 
+## 8l. Reports and moderation
+
+_(ADR 0054; for the launch, S10 in `priorities.md`. Maintainer,
+2026-10-21.)_
+Members see spam or an unwelcome note before any host does. So they report it,
+hosts see the reports grouped by the member reported, and hosts act: they hide
+what was reported, or, in harder cases, ban the member. Nothing here reveals a
+contact detail (R-CONN-6) or tells a reported member who reported them.
+
+- **R-MOD-1 (Report a challenge)** — Wherever another member's challenge is
+  shown, a member holding `content:report` SHALL be offered **Report**. That
+  means the deck card (R-OFF-2), a peer card in the matches view (R-ASK-8),
+  and the newest challenges (R-ASK-2, R-ASK-14). It SHALL open
+  `/report/challenge/:id`. On the deck card it SHALL sit apart from the four
+  actions of R-OFF-3, so that it is never tapped in their place.
+- **R-MOD-2 (Report a note)** — The incoming request screen (S15), and each
+  note under _Connected over_ (R-CONN-10), SHALL offer **Report** for the note
+  the other member sent. It SHALL open `/report/request/:id`. Only the member
+  the note was sent to can report it.
+- **R-MOD-3 (The report screen)** — The report screen SHALL show what is being
+  reported, then ask why: **Spam**, **Inappropriate or offensive**, or
+  **Something else**. It SHALL take an optional comment of at most
+  `limits.reportCommentMaxChars`, and offer **Send report**. It SHALL say that
+  hosts will look at the report and that the member reported will not learn
+  who sent it. Back SHALL return to where the member came from (R-NAV-1).
+- **R-MOD-4 (After a report)** — WHEN a member reports an item THE SYSTEM
+  SHALL:
+  - record the report with its reporter, the item, the reason and the
+    comment;
+  - take the item out of the reporter's own view at once: a challenge leaves
+    their deck, their peer lists and the newest challenges;
+  - for a note on a pending request, decline the request without telling the
+    requester (R-CONN-4);
+  - for a note on an accepted request, keep the connection, and show the
+    reporter _Reported_ in place of the note;
+  - thank them on the screen they came back to.
+
+  A member SHALL NOT report their own item, or a note not sent to them; either
+  is not found (R-NAV-8). An item withdrawn or hidden after the member saw it
+  SHALL still be reportable, but the report screen SHALL leave its text out.
+  A second report of the same item
+  by the same member SHALL be refused with _You already reported this_. A
+  member SHALL make at most `limits.reportsPerDay` reports a day; beyond that,
+  the screen asks them to tell a host in person. The reported member SHALL NOT
+  be told of the report.
+
+- **R-MOD-5 (Hosts hear of it)** — WHEN a report is made THE SYSTEM SHALL
+  notify every active member holding `report:review` (R-NOTE-1, _New report_).
+  The entry SHALL name the reported member and the number of open reports
+  about them. It SHALL NOT name the reporter or quote the item or the comment
+  (R-NAV-9). The menu SHALL offer **Moderation** to those members, with the
+  number of reported members who have open reports.
+- **R-MOD-6 (Moderation: one card per reported member)** — `/admin/moderation`
+  SHALL list every member with reports, one card each, in two tabs: **Open**
+  (any report not yet handled) and **Handled**. Each card SHALL show:
+  - the member's name and organization, and their status (active, banned);
+  - the number of open reports, and how many **different** members made them;
+  - how many challenges and notes are reported, and which reasons were given,
+    with a count each (_Spam ×4 · Inappropriate ×1_);
+  - when the latest report came in.
+
+  Open cards SHALL be ordered by the number of different reporters, then by
+  the latest report. A member reported by several people therefore comes
+  before one reported several times by one person. A card whose open reports
+  come from at least `limits.reportersToFlag` different members SHALL be
+  outlined. The screen is a live list (R-NAV-12). Tapping a card SHALL open
+  the member's moderation page.
+
+- **R-MOD-7 (A reported member's moderation page)** —
+  `/admin/moderation/:memberId` SHALL show the member's name, status and
+  join date, and a link to their member page (R-MEM-2). Below that it SHALL
+  show each reported item, the most reported first, with:
+  - its full text: the challenge with its trend, or the note with the member
+    it was sent to;
+  - its state: shown, withdrawn by its author, or hidden by a host;
+  - each report about it, with the reason, the comment, when it was made and
+    who made it.
+
+  Each item SHALL offer **Hide** (or **Unhide**) and **Dismiss**. Dismiss
+  marks its reports handled with no action taken. The page SHALL offer **Ban
+  member…** (R-MOD-9), or **Lift ban** for a banned member, and SHALL end
+  with the history of every action taken about the member.
+
+- **R-MOD-8 (Hiding)** — A host holding `challenge:moderate` SHALL be able to
+  hide a challenge or a note, after choosing a reason (spam, inappropriate,
+  other). The host can do so from the moderation page (R-MOD-7), or for a
+  challenge from the member's page, which SHALL then list the member's
+  challenges (R-MEM-2). WHEN content is hidden THE SYSTEM SHALL:
+  - stop showing it to anyone but its author, as for a withdrawn challenge
+    (R-ASK-17), closing pending requests about a hidden challenge, and
+    declining a pending request whose note is hidden, without telling the
+    requester (R-CONN-4);
+  - show its author the content marked **Hidden by a host**, with the reason;
+  - show a hidden note under _Connected over_ as _Removed by a host_;
+  - mark the item's open reports handled, with the action recorded.
+
+  **Unhide** SHALL show the content again, but SHALL NOT reopen a closed
+  request. Hidden content SHALL be kept until its author's account is erased,
+  so that a decision can be explained and undone.
+
+- **R-MOD-9 (Banning)** — A host holding `member:ban` SHALL be able to ban a
+  member after one confirmation. The confirmation asks for a reason, kept for
+  the hosts only, and says what the ban does. WHEN a member is banned THE
+  SYSTEM SHALL:
+  - set their status to **banned** and end their sessions at once;
+  - stop showing anything of theirs to anyone: challenges, notes,
+    connections, peer cards, as for a deleted account (R-NFR-7);
+  - close every pending request they sent or received, without telling the
+    other side (R-CONN-4);
+  - mark all their open reports handled, with the ban recorded.
+
+  Nothing SHALL be erased by a ban. A host SHALL NOT be able to ban
+  themselves, or the last active member holding `role:grant` (R-ROLE-9).
+  **Lift ban** SHALL make the member active again, and with them everything
+  the ban hid, but not what a host hid on its own (R-MOD-8). It SHALL NOT
+  reopen a closed request.
+
+- **R-MOD-10 (A banned address at the door)** — IF a banned address asks for a
+  link THEN THE SYSTEM SHALL tell them plainly that the account is suspended,
+  with the controller's contact address for questions (R-ONB-5). It SHALL send
+  no link and notify nobody, as for a rejected address (R-AUTH-13). An invite
+  SHALL NOT admit a banned address (R-INV-1), and the whitelist SHALL keep it
+  out and report it, as it does a rejected one (R-AUTH-3). A banned person who
+  asks to be erased is deleted by a host (F11). Erasure frees the address.
+- **R-MOD-11 (Records, and how long they are kept)** — Every report and every
+  moderation action (hide, unhide, dismiss, ban, lift ban) SHALL be kept with
+  who took it, when, and the reason given. The records SHALL be erased with
+  the reported member (R-NFR-7). WHEN a reporter's account is erased their
+  reports SHALL stay, counted, but name no reporter. Handled reports SHALL be
+  deleted after `limits.reportRetentionDays`.
+- **R-MOD-12 (Privacy and permissions)** — Reports SHALL be readable only with
+  `report:review`. Hiding SHALL need `challenge:moderate`, and banning
+  `member:ban`; each is checked on the server (R-ROLE-5). Every member holds
+  `content:report`. `admin` holds the other three. A future `moderator` role
+  is a row and a matrix column (R-ROLE-6). For a member opted in (R-ANA-4) THE
+  SYSTEM SHALL send `content_reported` with the kind of item and the reason,
+  and nothing naming anyone or quoting anything (R-ANA-3). No log or error
+  SHALL carry a comment or reported text (R-NFR-1).
+
+---
+
 ## 9. Non-functional requirements
 
 - **R-NFR-1 (Privacy)** — Challenge text and member contact details SHALL be
@@ -1618,8 +1789,9 @@ invite link (R-INV-1).
   personal data attached to them — challenges, connection requests, swipes,
   deck views (R-STAT-3), follows, role grants, notifications (R-NOTE-11), the
   profile draft (R-ONB-15), their 9toRevolution progress, results and pseudonym
-  (R-GAME-16), their earned badges and crowns (R-BADGE-14), and their
-  **outbound message log entries** (R-MSG-6) — on
+  (R-GAME-16), their earned badges and crowns (R-BADGE-14), the reports about
+  them and the moderation records of those reports (R-MOD-11), and
+  their **outbound message log entries** (R-MSG-6) — on
   request (GDPR erasure), at minimum via an admin action. Deleting SHALL first
   **deactivate** the account at once: no sign-in, and nothing of theirs shown
   to anyone. The erasure SHALL follow after a **grace period** of 30 days
@@ -1725,8 +1897,15 @@ fixtures. `design.md` §6 lists the exact records and the profile mechanism.
    (R-NFR-1, R-ONB-3); attributed needs the authors' explicit OK first.
 6. **Controller and contact** — _(Resolved; see below.)_
 7. **Full privacy notice** — _(Resolved; see below.)_
+8. **Moderation** — _(Resolved; see below.)_
 
 ### Resolved
+
+- **Moderation** (2026-10-21) — members withdraw their own challenges, report
+  challenges and notes, and hosts hide content or ban a member, for the
+  launch (R-ASK-17, R-MOD-1..12, ADR 0054). Hosts see who reported. Nothing
+  is hidden automatically for now; it may come later. A banned address is not
+  kept once its account is erased.
 
 - **Badges** (2026-10-20) — gamification, a non-goal, is let in as private
   badges: four counted rows with three levels each and the game's six

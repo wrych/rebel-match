@@ -48,13 +48,14 @@ step by step so we certainly have something that works.")_
 | S7  | Notifications kept in the app, mailed at a cadence per type                           | One member can get many requests in a summit hour; grouping keeps inboxes usable (ADR 0037). |
 | S8  | 9toRevolution, the office game behind the impressum in happy mode, with a leaderboard | An easter egg for the summit, behind a switch hosts flip (R-GAME-1..20, ADR 0045). Was W1.   |
 | S9  | Private badges: levels and crowns per row, event badges from invite links             | Recognition for sharing and helping, seen by the member only (R-BADGE-1..14, ADR 0053).      |
+| S10 | Reporting and moderation: withdraw, report, hide, ban (R-ASK-17, R-MOD-1..12)         | Spam or an unwelcome note at the summit needs a way out the same hour (ADR 0054). Was in C2. |
 
 ## Could have (nice, only if time remains)
 
 | #   | Feature                                                            | Notes                                                                       |
 | --- | ------------------------------------------------------------------ | --------------------------------------------------------------------------- |
 | C1  | Live character-count coaching / phrasing help on the submit screen | Beyond the plain counter the gate needs.                                    |
-| C2  | Richer admin dashboard (metrics, moderation) + a `moderator` role  | Beyond a plain approvals list; the role model already allows it (R-ROLE-6). |
+| C2  | Richer admin dashboard (metrics) + a `moderator` role              | Beyond a plain approvals list; the role model already allows it (R-ROLE-6). |
 | C3  | "Peers working on this trend" counts shown live                    | Prototype shows static counts; live counts are a polish item.               |
 | C4  | GDPR self-service deletion (vs. admin-only)                        | Admin-triggered deletion covers the Must; pulled into the beta (R-PROF-2).  |
 | C5  | LLM-based trend classification (replacing keywords)                | "AI will be pretty good at matching" — a clean post-beta upgrade.           |
