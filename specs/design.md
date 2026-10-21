@@ -549,10 +549,10 @@ CREATE TABLE members (
   org            VARCHAR(160) NULL,
   sector         VARCHAR(40)  NULL REFERENCES sectors(key) ON DELETE SET NULL,
   company_size   VARCHAR(20)  NULL REFERENCES company_sizes(key) ON DELETE SET NULL,
-  status         ENUM('applicant','active','rejected','deleted')
+  status         ENUM('applicant','active','rejected','deleted','banned')
                               NOT NULL DEFAULT 'applicant',
   erase_after    DATETIME     NULL,              -- set with status 'deleted' (ADR 0032)
-  status_before_deletion ENUM('applicant','active','rejected') NULL, -- restored on undo
+  status_before_deletion ENUM('applicant','active','rejected','banned') NULL, -- restored on undo
   deleted_by_self BOOLEAN    NULL,               -- only then may the person undo it
   email_confirmed_at DATETIME NULL,              -- first sign-in with a link (R-AUTH-11)
   consent_version VARCHAR(20) NULL,
@@ -698,6 +698,9 @@ is one new implementation, with no guard touched:
 | `role:grant` (grant / revoke roles)            |    —     |   ✅    |          —           |
 | `settings:read` (the configuration, read-only) |    —     |   ✅    |          —           |
 | `settings:manage` (change what R-CFG-6 allows) |    —     |   ✅    |          —           |
+| `content:report` (R-MOD-1,2)                   |    ✅    |   ✅    |          ✅          |
+| `report:review` (R-MOD-6,7)                    |    —     |   ✅    |          ✅          |
+| `member:ban` (R-MOD-9)                         |    —     |   ✅    |          ✅          |
 
 - Route guards SHALL check a **permission**, never a role name —
   `requirePermission('applicant:review')`, not `if (member.isAdmin)`. Adding
@@ -1184,6 +1187,74 @@ A row overrides the environment for its key; no row means the deployment's
 value. Only the keys R-CFG-6 names are accepted, so the table can never hold a
 secret.
 
+### reports and moderation_actions (R-MOD-1..12, ADR 0055)
+
+```sql
+CREATE TABLE reports (
+  id            CHAR(36)     NOT NULL PRIMARY KEY,
+  reporter_id   CHAR(36)     NULL,             -- set null when the reporter is erased
+  reported_id   CHAR(36)     NOT NULL,         -- the member the item belongs to
+  challenge_id  CHAR(36)     NULL,             -- exactly one of these two is set
+  request_id    CHAR(36)     NULL,             -- the note on this request
+  reason        ENUM('spam','inappropriate','other') NOT NULL,
+  comment       VARCHAR(500) NULL,             -- limits.reportCommentMaxChars
+  created_at    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  handled_at    DATETIME     NULL,             -- open while null
+  handled_by_action CHAR(36) NULL,             -- the action that handled it
+  CHECK ((challenge_id IS NULL) <> (request_id IS NULL)),
+  KEY ix_report_open (reported_id, handled_at),
+  FOREIGN KEY (reporter_id)  REFERENCES members(id) ON DELETE SET NULL,
+  FOREIGN KEY (reported_id)  REFERENCES members(id) ON DELETE CASCADE,
+  FOREIGN KEY (challenge_id) REFERENCES challenges(id) ON DELETE CASCADE,
+  FOREIGN KEY (request_id)   REFERENCES connection_requests(id) ON DELETE CASCADE
+);
+-- One report per member and item (R-MOD-4). Two partial indexes, since a
+-- unique key over the nullable pair would let every duplicate through.
+CREATE UNIQUE INDEX uq_report_challenge ON reports (reporter_id, challenge_id)
+  WHERE challenge_id IS NOT NULL;
+CREATE UNIQUE INDEX uq_report_request ON reports (reporter_id, request_id)
+  WHERE request_id IS NOT NULL;
+
+CREATE TABLE moderation_actions (
+  id           CHAR(36)    NOT NULL PRIMARY KEY,
+  member_id    CHAR(36)    NOT NULL,           -- whom it is about
+  actor_id     CHAR(36)    NULL,               -- the host; set null when erased
+  kind         ENUM('hide','unhide','dismiss','ban','unban') NOT NULL,
+  challenge_id CHAR(36)    NULL,
+  request_id   CHAR(36)    NULL,
+  reason       ENUM('spam','inappropriate','other') NULL,  -- hide
+  note         VARCHAR(500) NULL,              -- ban: the reason, hosts only
+  created_at   DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE,
+  FOREIGN KEY (actor_id)  REFERENCES members(id) ON DELETE SET NULL
+);
+```
+
+Beside these:
+
+- `members.status` and `status_before_deletion` gain `banned`. A banned row
+  keeps its profile and is never erased by the ban itself; deleting a banned
+  member and undoing it brings them back banned (R-MOD-9, R-MOD-10).
+- `challenges` gains `hidden_at`, `hidden_by` and `hidden_reason`. A host's
+  hiding sits beside `status`, so it never collides with the author's
+  withdrawal. The withdrawal uses the existing, so far unused, `archived`
+  value (R-ASK-17, R-MOD-8).
+- `connection_requests` gains `note_hidden_at`, `note_hidden_by` and
+  `note_hidden_reason` (R-MOD-8).
+
+**Shown** becomes one predicate that every list of challenges or notes uses:
+the challenge `active`, not hidden, and its author `active` and onboarded. The
+reporter's own reports are excluded from their view on top of that
+(R-MOD-4). Reports are kept per reporter and item, so the aggregate (R-MOD-6)
+is a `GROUP BY reported_id` over open reports, counting rows and
+`DISTINCT reporter_id`. The sweep deletes handled reports after
+`limits.reportRetentionDays` (R-MOD-11).
+
+The new configuration, with its defaults (R-CFG-1):
+`limits.reportCommentMaxChars` 500, `limits.reportsPerDay` 20,
+`limits.reportersToFlag` 3, `limits.reportRetentionDays` 180 and
+`limits.moderationPollSeconds` 30.
+
 ## 3. API
 
 All `/api/*` routes, the admin API under `/api/admin/*` included, require an
@@ -1250,6 +1321,7 @@ member prefers reduced motion (R-ONB-10).
 | POST   | `/api/challenges`               | `{body}`    | Create challenge (`limits.challengeMinChars` to `limits.challengeMaxChars` characters, trimmed), run matcher, return challenge with `autoTrend` (R-ASK-3,4,5). _Requires `challenge:create`._                                                     |
 | GET    | `/api/challenges/:id`           | —           | The author's own challenge; `404` for anyone else (R-NAV-8).                                                                                                                                                                                      |
 | PATCH  | `/api/challenges/:id`           | `{trendId}` | Confirm/override trend; set `overridden` if it differs from `autoTrend`. Author only.                                                                                                                                                             |
+| POST   | `/api/challenges/:id/withdraw`  | —           | The author withdraws their challenge: status `archived`, its pending requests declined without a notice (R-ASK-17). Not the author's, or already withdrawn → `404`. _Requires `challenge:create`._                                                |
 | GET    | `/api/challenges/:id/matches`   | —           | `{trend, sameBoat[], beenThere[], cases[]}` for the confirmed trend, else the matched one; peers are other active, onboarded members, never the author, with no email (R-ASK-8, R-CONN-6). Author only.                                           |
 
 ### Offer journey
@@ -1361,6 +1433,25 @@ records are limited per member (`GAME_RECORDS_PER_MINUTE`).
 | POST   | `/api/admin/invites/:id/revoke`      | Set `revoked_at`; effective on next use (R-INV-3). _Requires `invite:manage`._                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | PATCH  | `/api/admin/invites/:id`             | Raise the cap: `{maxUses}`, higher than the current cap and at most `limits.inviteMaxUsesCeiling`. Answers the invite as listed. Not higher or over the ceiling → `400 bad_cap`; a revoked invite → `409 revoked`; unknown → `404` (R-INV-4). _Requires `invite:manage`._                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 
+### Reports and moderation (R-MOD-1..12, ADR 0055)
+
+| Method | Path                                     | Behavior                                                                                                                                                                                                                                                                                |
+| ------ | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/reports/challenge/:id`             | What the report screen shows: the challenge's text and trend, and whether the caller already reported it. Their own → `404` (R-NAV-8). Withdrawn or hidden → still reportable, without its text (R-MOD-4). _Requires `content:report`._                                                 |
+| GET    | `/api/reports/request/:id`               | The same for a request's note; only its target may report it → `404` otherwise. _Requires `content:report`._                                                                                                                                                                            |
+| POST   | `/api/reports`                           | `{challengeId}` or `{requestId}`, `{reason, comment?}`. Records the report, declines a pending request, and notifies the reviewers, in one transaction (R-MOD-4, R-MOD-5). Already reported → `409 already_reported`; over `limits.reportsPerDay` → `429`. _Requires `content:report`._ |
+| GET    | `/api/admin/reports?state=open\|handled` | One entry per reported member: name, org, status, open count, distinct reporters, items by kind, reasons with counts, latest report (R-MOD-6). _Requires `report:review`._                                                                                                              |
+| GET    | `/api/admin/reports/:memberId`           | The member, each reported item with its text, state and reports (reporter, reason, comment, time), and the action history (R-MOD-7). _Requires `report:review`._                                                                                                                        |
+| POST   | `/api/admin/reports/dismiss`             | `{challengeId}` or `{requestId}`: marks that item's open reports handled, recording a `dismiss` (R-MOD-7). _Requires `report:review`._                                                                                                                                                  |
+| POST   | `/api/admin/challenges/:id/hide`         | `{reason}`: hides it, closes its pending requests, and handles its reports (R-MOD-8). _Requires `challenge:moderate`._                                                                                                                                                                  |
+| POST   | `/api/admin/challenges/:id/unhide`       | Shows it again; closed requests stay closed (R-MOD-8). _Requires `challenge:moderate`._                                                                                                                                                                                                 |
+| POST   | `/api/admin/requests/:id/hide-note`      | `{reason}`: hides the note, declining the request if pending (R-MOD-8). `…/unhide-note` undoes it. _Requires `challenge:moderate`._                                                                                                                                                     |
+| POST   | `/api/admin/members/:id/ban`             | `{note}`: status `banned`, sessions ended, pending requests either way closed, open reports handled (R-MOD-9). Self, or the last `role:grant` holder → `409`. _Requires `member:ban`._                                                                                                  |
+| POST   | `/api/admin/members/:id/unban`           | Status `active` again (R-MOD-9). Not banned → `404`. _Requires `member:ban`._                                                                                                                                                                                                           |
+
+`POST /auth/request-link` answers a banned address with `{state: 'suspended'}`,
+and sends nothing (R-MOD-10).
+
 ---
 
 ## 4. Screens and their URLs
@@ -1421,6 +1512,9 @@ sets it again after every navigation, as _Rebel Match | Screen_.
 | S35 | **Badges** — the number earned; one tile per row with its highest level or crown, its name and a mark per level; the member's event badges (R-BADGE-7)                                                                                                                                                                                                                                                                                                                                | `/badges`                                             |
 | S36 | **A row of badges** — each level and the crown with name, count, earned or not and when, progress to the next, how the row counts; Promotions names its jobs only (R-BADGE-8, R-BADGE-9)                                                                                                                                                                                                                                                                                              | `/badges/:row`                                        |
 | S37 | **Event badges** — each event badge with its ticket, name and when it was earned (R-BADGE-8)                                                                                                                                                                                                                                                                                                                                                                                          | `/badges/events`                                      |
+| S38 | **Report** — what is being reported, read-only; three reasons as choice cards; an optional comment with a counter; _Send report_; a line that hosts will look and the member reported will not learn who sent it (R-MOD-3)                                                                                                                                                                                                                                                            | `/report/challenge/:id`, `/report/request/:id`        |
+| S39 | **Moderation** — _Open_ / _Handled_ tabs; one card per reported member: name · organization, status, "5 reports from 4 members", "2 challenges · 1 note", reasons with counts, the latest report's time; outlined from `limits.reportersToFlag` different reporters (R-MOD-6)                                                                                                                                                                                                         | `/admin/moderation`                                   |
+| S40 | **A reported member** — the member with a link to S26; each reported item with its text, state and reports, and _Hide_ / _Unhide_ and _Dismiss_; _Ban member…_ or _Lift ban_; the history of actions (R-MOD-7..9)                                                                                                                                                                                                                                                                     | `/admin/moderation/:memberId`                         |
 
 Remaining overlays, deliberately: the "really decline this request?" confirm, the
 "link sent" / "copied" toasts, and the feedback action (a `mailto:`, not a

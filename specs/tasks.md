@@ -447,6 +447,30 @@ in this order.
 
 ---
 
+## M9 — Reports and moderation _(S10, F20, F21, ADR 0055)_
+
+Built after the spec and ADR merge. One pull request per item, in this order.
+
+- [ ] Withdrawing a challenge: `POST /api/challenges/:id/withdraw`, one
+      **shown** predicate for every list of challenges, pending requests
+      closed, the cockpit's **Withdrawn** card. _(R-ASK-17)_
+- [ ] Hiding a challenge: the hidden columns, hide and unhide, the author's
+      **Hidden by a host**, the member's page listing their challenges.
+      _(R-MOD-8, R-MEM-2)_
+- [ ] Reports: the table, `content:report`, the report endpoints, S38, and
+      **Report** on the deck, peer cards, newest challenges, S15 and S16.
+      _(R-MOD-1..4, R-MOD-12)_
+- [ ] The `report` notification type and the menu's **Moderation** entry.
+      _(R-MOD-5, R-NOTE-1, R-NOTE-2)_
+- [ ] Moderation screens S39 and S40: the aggregate, dismiss, hiding a note,
+      the action history. _(R-MOD-6..8, R-MOD-11)_
+- [ ] Banning: the `banned` status, ban and lift ban, the door's suspended
+      answer, invites and the whitelist keeping it out. _(R-MOD-9, R-MOD-10)_
+- [ ] Erasure and retention of reports, and the `content_reported` usage
+      event. _(R-MOD-11, R-MOD-12, R-NFR-7)_
+
+---
+
 ## Post-beta backlog _(Could / Won't-for-now)_
 
 - [ ] Offer "refresh to update" when the server's version differs from the
@@ -457,8 +481,8 @@ in this order.
       dashboard — including a minimum count below which a figure is not shown,
       since a small number can point to a person. _(R-STAT-2, ADR 0033)_
 - [ ] LLM trend classifier replacing keywords (same interface). _(C5)_
-- [ ] `moderator` role + moderation screens — a role row plus a permission-matrix
-      column, no schema change. _(C2, R-ROLE-6)_
+- [ ] `moderator` role — a role row plus a permission-matrix column, no
+      schema change; the moderation screens come with M9. _(C2, R-ROLE-6)_
 - [ ] Live peer counts per trend. _(C3)_
 - [ ] Dark mode as a further colour mode: a third token block, possibly
       following the phone's own setting. _(C7, R-LOOK-3, ADR 0023)_
