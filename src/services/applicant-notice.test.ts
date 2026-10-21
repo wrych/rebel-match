@@ -33,7 +33,11 @@ describe('createApplicantNotice', () => {
         subject: 'Someone asked to join Rebel Match',
         text:
           'new@example.invalid asked for access at 2026-11-08T10:00:00.000Z.\n\n' +
-          'Approve or reject them here:\nhttp://localhost:5173/admin/applicants?notice=applicant\n',
+          'Approve or reject them here:\nhttp://localhost:5173/admin/applicants?notice=applicant\n\n' +
+          'You get this email because you are a Rebel Match member.\n\n' +
+          'Choose how each kind of notification reaches you on your profile:\n' +
+          'http://localhost:5173/profile\n',
+        html: expect.stringContaining('Review applicants') as string,
       },
     ])
   })
