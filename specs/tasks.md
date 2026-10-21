@@ -370,7 +370,7 @@ printed dev link (R-DEV-6).
       pull down on a touch screen; the host-tool lists get a refresh button.
       The badges refresh every 8 seconds
       by default. _(R-NAV-12, R-MINE-4, R-MSG-5, R-NOTE-5, R-CFG-6, ADR 0050)_
-- [ ] Send every email with an HTML part in the app's look, rendered from the
+- [x] Send every email with an HTML part in the app's look, rendered from the
       same description as its plain text, the RR mark embedded. _(R-MSG-8,
       ADR 0054)_
 
