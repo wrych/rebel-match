@@ -47,6 +47,8 @@ import { createChallengeModerationStore } from './services/challenge-moderation-
 import { createChallengeStore } from './services/challenge-store.js'
 import { createReportStore } from './services/report-store.js'
 import { createReports } from './services/reports.js'
+import { createModeration } from './services/moderation.js'
+import { createModerationStore } from './services/moderation-store.js'
 import { createChallenges } from './services/challenges.js'
 import { newestFirst } from './services/match-ranker.js'
 import { createConnectionStore } from './services/connection-store.js'
@@ -229,13 +231,15 @@ function composeJourneys(
   }
 }
 
-// Members reporting what should not be there (F20, ADR 0055).
+// Members reporting what should not be there, and hosts reviewing it (F20,
+// F21, ADR 0055).
 function composeReports(
   db: Database,
   track: Track,
   settings: LiveSettings,
-): Pick<AppDeps, 'reports'> {
+): Pick<AppDeps, 'reports' | 'moderation'> {
   return {
+    moderation: createModeration(createModerationStore(db)),
     reports: createReports({
       store: createReportStore(db),
       perDay: () => settings.limits().reportsPerDay,

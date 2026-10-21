@@ -35,7 +35,8 @@ function hide(moderation: ChallengeModeration): RequestHandler {
 function unhide(moderation: ChallengeModeration): RequestHandler {
   return async (request, response) => {
     const params = idParams.parse(request.params)
-    const outcome = await moderation.unhide(params.id)
+    const host = (response.locals as GuardedLocals).member.id
+    const outcome = await moderation.unhide(params.id, host)
     response.status(unhideStatus[outcome]).json({ result: outcome })
   }
 }

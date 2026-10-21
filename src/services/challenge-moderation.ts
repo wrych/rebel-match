@@ -22,11 +22,13 @@ export interface ChallengeModerationStore {
   /** The member's challenges, newest first; null when there is no such
    * member. */
   ofMember(memberId: string): Promise<ModeratedChallenge[] | null>
-  /** Hides a challenge not yet hidden and declines the requests still pending
-   * about it, in one transaction; false when there is none such. */
+  /** Hides a challenge not yet hidden, declines the requests still pending
+   * about it, handles its reports and records the hiding, in one
+   * transaction; false when there is none such. */
   hide(id: string, hiddenBy: string, reason: ModerationReason): Promise<boolean>
-  /** Shows a hidden challenge again; false when none such is hidden. */
-  unhide(id: string): Promise<boolean>
+  /** Shows a hidden challenge again, recording who did; false when none
+   * such is hidden. */
+  unhide(id: string, actorId: string): Promise<boolean>
 }
 
 export interface ChallengeModeration {
@@ -36,7 +38,7 @@ export interface ChallengeModeration {
     hiddenBy: string,
     reason: ModerationReason,
   ): Promise<'hidden' | 'not_found'>
-  unhide(id: string): Promise<'shown' | 'not_found'>
+  unhide(id: string, actorId: string): Promise<'shown' | 'not_found'>
 }
 
 /** A host hides a challenge from everyone but its author, or shows it again
@@ -49,6 +51,7 @@ export function createChallengeModeration(
     ofMember: (memberId) => store.ofMember(memberId),
     hide: async (id, hiddenBy, reason) =>
       (await store.hide(id, hiddenBy, reason)) ? 'hidden' : 'not_found',
-    unhide: async (id) => ((await store.unhide(id)) ? 'shown' : 'not_found'),
+    unhide: async (id, actorId) =>
+      (await store.unhide(id, actorId)) ? 'shown' : 'not_found',
   }
 }

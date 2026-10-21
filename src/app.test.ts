@@ -162,6 +162,11 @@ function deps(
       target: () => Promise.resolve(null),
       report: () => Promise.resolve('not_found'),
     },
+    moderation: {
+      overview: () => Promise.resolve([]),
+      page: () => Promise.resolve(null),
+      dismiss: () => Promise.resolve('not_found'),
+    },
     notificationMail: {
       deliverDue: () => Promise.resolve(),
       purgeBefore: () => Promise.resolve(0),

@@ -564,6 +564,14 @@ const catalogue: Group[] = [
         unit: ['report', 'reports'],
       },
       {
+        name: 'Reporters who outline a member',
+        explanation:
+          'On the moderation screen, a member reported by at least this ' +
+          'many different members is outlined.',
+        key: 'limits.reportersToFlag',
+        unit: ['member', 'members'],
+      },
+      {
         name: 'Longest report comment',
         explanation: 'What a member may add to a report, at most.',
         read: (c) => c.limits.reportCommentMaxChars,
@@ -637,6 +645,12 @@ const catalogue: Group[] = [
         name: 'Invites',
         explanation: 'The host tools’ invite links.',
         key: 'limits.invitesPollSeconds',
+        unit: SECONDS,
+      },
+      {
+        name: 'Moderation',
+        explanation: 'The host tools’ reported members.',
+        key: 'limits.moderationPollSeconds',
         unit: SECONDS,
       },
       {

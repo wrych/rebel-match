@@ -89,6 +89,11 @@ const limitSpecs = {
     default: 60,
     changeable: POLL,
   },
+  moderationPollSeconds: {
+    env: 'MODERATION_POLL_SECONDS',
+    default: 30,
+    changeable: POLL,
+  },
   leaderboardPollSeconds: {
     env: 'LEADERBOARD_POLL_SECONDS',
     default: 30,
@@ -134,6 +139,13 @@ const limitSpecs = {
     env: 'REPORTS_PER_DAY',
     default: 20,
     changeable: { min: 1, max: 1000 },
+  },
+  // How many different members reporting someone outlines their card on the
+  // moderation screen (R-MOD-6).
+  reportersToFlag: {
+    env: 'REPORTERS_TO_FLAG',
+    default: 3,
+    changeable: { min: 1, max: 100 },
   },
   // The largest SVG logo an event badge takes, kept well inside the 64 kB a
   // request body may be once it is JSON (R-BADGE-5).

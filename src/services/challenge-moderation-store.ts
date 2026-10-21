@@ -7,6 +7,7 @@ import {
   trends,
 } from '../db/schema.js'
 import { challengeTrend } from './challenge-store.js'
+import { handleReports, recordAction } from './moderation-store.js'
 import type {
   ChallengeModerationStore,
   ModeratedChallenge,
@@ -59,8 +60,8 @@ async function ofMember(
   })
 }
 
-// Requests still waiting about it close as a decline does, telling nobody
-// (R-MOD-8, R-CONN-4).
+// Requests still waiting about it close as a decline does, telling nobody,
+// and its reports are handled by the hiding (R-MOD-8, R-CONN-4).
 async function hide(
   db: Database,
   id: string,
@@ -68,12 +69,21 @@ async function hide(
   reason: ModerationReason,
 ): Promise<boolean> {
   return db.transaction(async (tx) => {
-    const hidden = await tx
+    const [hidden] = await tx
       .update(challenges)
       .set({ hiddenAt: sql`now()`, hiddenBy, hiddenReason: reason })
       .where(and(eq(challenges.id, id), isNull(challenges.hiddenAt)))
-      .returning({ id: challenges.id })
-    if (hidden.length === 0) return false
+      .returning({ authorId: challenges.memberId })
+    if (hidden === undefined) return false
+    const item = { challengeId: id }
+    await handleReports(tx, item)
+    await recordAction(tx, {
+      memberId: hidden.authorId,
+      actorId: hiddenBy,
+      kind: 'hide',
+      item,
+      reason,
+    })
     await tx
       .update(connectionRequests)
       .set({ status: 'declined', respondedAt: sql`now()` })
@@ -94,13 +104,21 @@ export function createChallengeModerationStore(
   return {
     ofMember: (memberId) => ofMember(db, memberId),
     hide: (id, hiddenBy, reason) => hide(db, id, hiddenBy, reason),
-    unhide: async (id) => {
-      const shown = await db
-        .update(challenges)
-        .set({ hiddenAt: null, hiddenBy: null, hiddenReason: null })
-        .where(and(eq(challenges.id, id), isNotNull(challenges.hiddenAt)))
-        .returning({ id: challenges.id })
-      return shown.length === 1
-    },
+    unhide: (id, actorId) =>
+      db.transaction(async (tx) => {
+        const [shown] = await tx
+          .update(challenges)
+          .set({ hiddenAt: null, hiddenBy: null, hiddenReason: null })
+          .where(and(eq(challenges.id, id), isNotNull(challenges.hiddenAt)))
+          .returning({ authorId: challenges.memberId })
+        if (shown === undefined) return false
+        await recordAction(tx, {
+          memberId: shown.authorId,
+          actorId,
+          kind: 'unhide',
+          item: { challengeId: id },
+        })
+        return true
+      }),
   }
 }

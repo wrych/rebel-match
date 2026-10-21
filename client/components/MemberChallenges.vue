@@ -2,6 +2,7 @@
 /** A member's challenges on their page in the host tools, each with Hide (and
  * why) or Unhide (R-MOD-8, R-MEM-2). A withdrawn one shows no text. */
 import { onMounted, ref } from 'vue'
+import HideForm from './HideForm.vue'
 import {
   fetchMemberChallenges,
   hiddenAs,
@@ -16,14 +17,7 @@ const props = defineProps<{ memberId: string }>()
 const challenges = ref<ModeratedChallenge[] | null>(null)
 const problem = ref<string | null>(null)
 const hiding = ref<string | null>(null)
-const reason = ref<ModerationReason>('spam')
 const busy = ref(false)
-
-const reasons: { value: ModerationReason; label: string }[] = [
-  { value: 'spam', label: 'Spam' },
-  { value: 'inappropriate', label: 'Inappropriate' },
-  { value: 'other', label: 'Other' },
-]
 
 async function load(): Promise<void> {
   try {
@@ -35,8 +29,11 @@ async function load(): Promise<void> {
 
 function startHiding(id: string): void {
   hiding.value = id
-  reason.value = 'spam'
   problem.value = null
+}
+
+function hide(id: string, reason: ModerationReason): Promise<void> {
+  return change(() => hideChallenge(id, reason))
 }
 
 // Each change ends by reading the list again, so it shows what the server
@@ -102,39 +99,13 @@ onMounted(load)
           </button>
         </template>
 
-        <fieldset
+        <HideForm
           v-else-if="challenge.state === 'shown' && hiding === challenge.id"
-          class="stack-tight hide-form"
-          :disabled="busy"
-        >
-          <legend class="small">Hide it as</legend>
-          <div class="reasons">
-            <label v-for="each in reasons" :key="each.value" class="reason">
-              <input v-model="reason" type="radio" :value="each.value" />
-              {{ each.label }}
-            </label>
-          </div>
-          <p class="small">
-            It is gone for everyone but its author, who sees why, and requests
-            waiting about it close. You can unhide it.
-          </p>
-          <div class="actions">
-            <button
-              type="button"
-              class="btn btn-dark btn-small"
-              @click="change(() => hideChallenge(challenge.id, reason))"
-            >
-              Hide
-            </button>
-            <button
-              type="button"
-              class="btn btn-ghost btn-small"
-              @click="hiding = null"
-            >
-              Cancel
-            </button>
-          </div>
-        </fieldset>
+          :busy="busy"
+          what="It"
+          @hide="(reason) => hide(challenge.id, reason)"
+          @cancel="hiding = null"
+        />
 
         <button
           v-else-if="challenge.state === 'shown'"
@@ -162,24 +133,5 @@ onMounted(load)
 .item + .item {
   border-top: 1px solid var(--line);
   padding-top: 1rem;
-}
-
-.hide-form {
-  border: 0;
-  margin: 0;
-  padding: 0;
-}
-
-.reasons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.6rem 1.2rem;
-}
-
-.reason {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-weight: 700;
 }
 </style>
