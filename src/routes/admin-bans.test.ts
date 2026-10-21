@@ -2,7 +2,7 @@ import express, { type Express } from 'express'
 import request from 'supertest'
 import { describe, expect, it } from 'vitest'
 import { createAuth, createMemoryAuthStore } from '../auth/index.js'
-import { loadConfig } from '../config.js'
+import { fixedSettings, loadConfig } from '../config.js'
 import { configPolicy } from '../permissions.js'
 import type { BanService } from '../services/bans.js'
 import { adminBanRoutes } from './admin-bans.js'
@@ -36,7 +36,7 @@ function setup(): { app: Express; calls: unknown[][] } {
   }
   const app = express()
   app.use(express.json())
-  app.use(adminBanRoutes({ auth, bans }))
+  app.use(adminBanRoutes({ auth, bans, settings: fixedSettings(config) }))
   return { app, calls }
 }
 

@@ -19,6 +19,7 @@ import {
   type ModerationPage,
   type ModerationReason,
 } from '../lib/moderation'
+import { fetchConfig } from '../lib/api'
 import { loadMe } from '../lib/session'
 import { when } from '../lib/when'
 
@@ -31,6 +32,7 @@ const hiding = ref<string | null>(null)
 const busy = ref(false)
 const banning = ref(false)
 const mayBan = ref(false)
+const banMaxChars = ref<number | null>(null)
 
 const openOf = (item: ModerationItem): number =>
   item.reports.filter((report) => report.open).length
@@ -118,6 +120,9 @@ onMounted(async () => {
   await load()
   const me = await loadMe().catch(() => null)
   mayBan.value = me?.permissions.includes('member:ban') === true
+  if (mayBan.value)
+    banMaxChars.value =
+      (await fetchConfig().catch(() => null))?.limits.banNoteMaxChars ?? null
 })
 </script>
 
@@ -154,6 +159,7 @@ onMounted(async () => {
           v-if="banning"
           :busy="busy"
           :name="page.member.name ?? page.member.email"
+          :max-chars="banMaxChars"
           @ban="(note) => change(() => banMember(memberId, note))"
           @cancel="banning = false"
         />

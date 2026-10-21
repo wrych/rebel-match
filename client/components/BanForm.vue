@@ -3,10 +3,10 @@
  * better of it (R-MOD-9). Emits `ban` with the reason, or `cancel`. */
 import { computed, ref } from 'vue'
 
-defineProps<{ busy: boolean; name: string }>()
+/** `maxChars` is the server's limit, null until the config is read. */
+defineProps<{ busy: boolean; name: string; maxChars: number | null }>()
 const emit = defineEmits<{ ban: [note: string]; cancel: [] }>()
 
-const NOTE_MAX = 500
 const note = ref('')
 const ready = computed(() => note.value.trim() !== '')
 </script>
@@ -22,7 +22,7 @@ const ready = computed(() => note.value.trim() !== '')
     </p>
     <label class="stack-tight">
       <span class="small">Why? Only hosts see this.</span>
-      <textarea v-model="note" rows="3" :maxlength="NOTE_MAX" />
+      <textarea v-model="note" rows="3" :maxlength="maxChars ?? undefined" />
     </label>
     <div class="actions">
       <button

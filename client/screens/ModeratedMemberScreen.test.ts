@@ -90,6 +90,12 @@ function server(
         status: 200,
         json: async () => ({ id: 'm-host', onboarded: true, permissions }),
       })
+    if (url === '/api/config')
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({ limits: { banNoteMaxChars: 500 } }),
+      })
     if (init?.method === 'POST')
       return Promise.resolve({ ok: status < 300, status })
     const next = reads.length > 1 ? reads.shift() : reads[0]
@@ -271,6 +277,7 @@ describe('ModeratedMemberScreen (S40, R-MOD-7)', () => {
     expect(screen.text()).toContain('Their sessions end at once')
     const ban = screen.findAll('button').find((b) => b.text() === 'Ban')
     expect(ban?.attributes('disabled')).toBeDefined()
+    expect(screen.find('textarea').attributes('maxlength')).toBe('500')
     await screen.find('textarea').setValue('  Selling to everyone. ')
     await press(screen, 'Ban')
 

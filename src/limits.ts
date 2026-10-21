@@ -133,6 +133,8 @@ const limitSpecs = {
   connectionMessageMaxChars: { fixed: 600 },
   // reports.comment (src/db/schema.ts).
   reportCommentMaxChars: { fixed: 500 },
+  // moderation_actions.note, the reason a host gives for a ban (R-MOD-9).
+  banNoteMaxChars: { fixed: 500 },
   // How many reports one member may make a day, so reporting cannot be
   // turned on someone (R-MOD-4).
   reportsPerDay: {
