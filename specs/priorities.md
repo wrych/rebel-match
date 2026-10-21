@@ -48,7 +48,7 @@ step by step so we certainly have something that works.")_
 | S7  | Notifications kept in the app, mailed at a cadence per type                           | One member can get many requests in a summit hour; grouping keeps inboxes usable (ADR 0037). |
 | S8  | 9toRevolution, the office game behind the impressum in happy mode, with a leaderboard | An easter egg for the summit, behind a switch hosts flip (R-GAME-1..20, ADR 0045). Was W1.   |
 | S9  | Private badges: levels and crowns per row, event badges from invite links             | Recognition for sharing and helping, seen by the member only (R-BADGE-1..14, ADR 0053).      |
-| S10 | Reporting and moderation: withdraw, report, hide, ban (R-ASK-17, R-MOD-1..12)         | Spam or an unwelcome note at the summit needs a way out the same hour (ADR 0054). Was in C2. |
+| S10 | Reporting and moderation: withdraw, report, hide, ban (R-ASK-17, R-MOD-1..12)         | Spam or an unwelcome note at the summit needs a way out the same hour (ADR 0055). Was in C2. |
 
 ## Could have (nice, only if time remains)
 

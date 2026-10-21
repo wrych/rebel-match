@@ -169,7 +169,12 @@ describe('a new challenge in a followed trend (R-ASK-9, R-OFF-7)', () => {
         text:
           'Ada posted a challenge in Radical Transparency, a trend you follow on Rebel Match.\n\n' +
           'See it, and say if you are in the same boat or have been there, here:\n' +
-          'http://localhost:5173/offer?challenge=c1&notice=trend_challenge\n',
+          'http://localhost:5173/offer?challenge=c1&notice=trend_challenge\n' +
+          '\n' +
+          'You get this email because you are a Rebel Match member.\n\n' +
+          'Choose how each kind of notification reaches you on your profile:\n' +
+          'http://localhost:5173/profile\n',
+        html: expect.stringContaining('cid:rr-mark') as string,
       },
     ])
   })
@@ -209,7 +214,12 @@ describe('a badge gained (R-BADGE-10)', () => {
         text:
           'You earned a new badge in Speak up: Agitator.\n\n' +
           'See your badges here:\n' +
-          'http://localhost:5173/badges/speak?notice=badge\n',
+          'http://localhost:5173/badges/speak?notice=badge\n' +
+          '\n' +
+          'You get this email because you are a Rebel Match member.\n\n' +
+          'Choose how each kind of notification reaches you on your profile:\n' +
+          'http://localhost:5173/profile\n',
+        html: expect.stringContaining('cid:rr-mark') as string,
       },
     ])
   })
@@ -242,7 +252,10 @@ describe('a badge gained (R-BADGE-10)', () => {
       text:
         'You earned a new badge in Events: Stormed the Summit.\n\n' +
         'See your badges here:\n' +
-        'http://localhost:5173/badges/events?notice=badge\n',
+        'http://localhost:5173/badges/events?notice=badge\n\n' +
+        'You get this email because you are a Rebel Match member.\n\n' +
+        'Choose how each kind of notification reaches you on your profile:\n' +
+        'http://localhost:5173/profile\n',
     })
   })
 

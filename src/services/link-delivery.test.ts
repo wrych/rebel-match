@@ -38,6 +38,18 @@ describe('mailLinks', () => {
     expect(mailer.sent[0]?.text).toContain(link.url)
   })
 
+  it('sends the link as a button and written out, in an HTML part (R-MSG-8)', async () => {
+    const mailer = recordingMailer('sent')
+
+    await mailLinks(mailer)(link)
+
+    const html = mailer.sent[0]?.html ?? ''
+    expect(html).toContain(`href="${link.url}"`)
+    expect(html).toContain('>Sign in</a>')
+    expect(html).toContain(`>${link.url}</a>`)
+    expect(html).toContain('The link works once and expires.')
+  })
+
   it('sends an approval link as an approval, saying so (R-AUTH-10)', async () => {
     const mailer = recordingMailer('sent')
 

@@ -1,4 +1,4 @@
-# 0054. Members report, hosts moderate by hiding, and a ban is a status
+# 0055. Members report, hosts moderate by hiding, and a ban is a status
 
 - **Status:** Accepted
 - **Date:** 2026-10-21

@@ -25,6 +25,8 @@ export interface OutboundMessage {
   kind: OutboxKind
   subject: string
   text: string
+  /** The same email as HTML; sent, never stored (R-MSG-8). */
+  html?: string
   credential?: string
 }
 
@@ -59,6 +61,7 @@ export interface MailTransport {
     to: string
     subject: string
     text: string
+    html?: string
   }): Promise<void>
 }
 
@@ -107,6 +110,7 @@ async function deliver(
       to: message.to,
       subject: message.subject,
       text: message.text,
+      ...(message.html === undefined ? {} : { html: message.html }),
     })
   } catch (error) {
     await deps.store.markFailed(id, storableError(error, message.credential))

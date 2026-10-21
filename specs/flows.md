@@ -774,7 +774,7 @@ Notifications, S22 Admin invites (ADR 0053).
 
 ## F20 — Report a challenge or a note
 
-_(ADR 0054.)_
+_(ADR 0055.)_
 
 **Actor:** any member. **Screens:** S10 Swipe deck, S8 Matches, S9 Trend
 detail, S15 Incoming request, S16 Contact exchanged, S38 Report.
@@ -807,7 +807,7 @@ detail, S15 Incoming request, S16 Contact exchanged, S38 Report.
 
 ## F21 — Admin: moderation
 
-_(ADR 0054.)_
+_(ADR 0055.)_
 
 **Actor:** a host holding `report:review`. **Screens:** S39 Moderation, S40 A
 reported member, S26 A member's page.

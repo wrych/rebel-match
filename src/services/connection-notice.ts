@@ -1,5 +1,6 @@
+import { renderMail, type MailBlock, type MailContent } from './mail-layout.js'
 import type { Mailer } from './mailer.js'
-import { noticeLink } from './notice-link.js'
+import { noticeFooter, noticeLink } from './notice-link.js'
 import type { NotificationKind } from './notifications.js'
 
 export interface MemberDirectory {
@@ -26,14 +27,45 @@ export interface AcceptedRequest {
 
 const oneLine = (text: string): string => text.replace(/\s+/g, ' ').trim()
 
-function bodyOf(name: string, message: string | null, link: string): string {
-  const note = message === null ? '' : `They wrote:\n\n${message}\n\n`
-  return (
-    `${name} would like to connect with you on Rebel Match.\n\n` +
-    note +
-    `See their request, and accept or decline it, here:\n${link}\n\n` +
-    'Your email address stays private unless you accept.\n'
-  )
+function noteBlocks(message: string | null): MailBlock[] {
+  return message === null
+    ? []
+    : [
+        { kind: 'paragraph', text: 'They wrote:' },
+        { kind: 'quote', text: message },
+      ]
+}
+
+function requestMail(
+  name: string,
+  message: string | null,
+  link: string,
+  publicUrl: string,
+): MailContent {
+  return {
+    heading: `${name} wants to connect`,
+    preview: `${name} would like to connect with you on Rebel Match.`,
+    blocks: [
+      {
+        kind: 'paragraph',
+        text: `${name} would like to connect with you on Rebel Match.`,
+      },
+      ...noteBlocks(message),
+      {
+        kind: 'action',
+        action: {
+          label: 'See the request',
+          prompt: 'See their request, and accept or decline it, here:',
+          url: link,
+        },
+      },
+      {
+        kind: 'aside',
+        text: 'Your email address stays private unless you accept.',
+      },
+    ],
+    footer: noticeFooter(publicUrl),
+  }
 }
 
 interface NoticeDeps {
@@ -77,10 +109,13 @@ export function createConnectionNotice(
       to,
       kind: 'connection_request',
       subject: `${from} wants to connect with you on Rebel Match`,
-      text: bodyOf(
-        from,
-        request.message,
-        linkTo(deps, request.id, 'connection_request'),
+      ...renderMail(
+        requestMail(
+          from,
+          request.message,
+          linkTo(deps, request.id, 'connection_request'),
+          deps.publicUrl,
+        ),
       ),
     })
   }
@@ -104,21 +139,56 @@ export function createAcceptNotice(
       to,
       kind: 'connection_accepted',
       subject: `${by} accepted your request on Rebel Match`,
-      text:
-        `${by} accepted your request to connect on Rebel Match.\n\n` +
-        `You can now see each other's email address. Get in touch here:\n` +
-        `${link}\n`,
+      ...renderMail({
+        heading: `${by} accepted your request`,
+        preview: "You can now see each other's email address.",
+        blocks: [
+          {
+            kind: 'paragraph',
+            text: `${by} accepted your request to connect on Rebel Match.`,
+          },
+          {
+            kind: 'action',
+            action: {
+              label: 'Get in touch',
+              prompt:
+                "You can now see each other's email address. Get in touch here:",
+              url: link,
+            },
+          },
+        ],
+        footer: noticeFooter(deps.publicUrl),
+      }),
     })
   }
 }
 
-function addedBody(name: string, message: string | null, link: string): string {
-  const note = message === null ? '' : `They wrote:\n\n${message}\n\n`
-  return (
-    `${name} connected with you over another challenge on Rebel Match.\n\n` +
-    note +
-    `See what you are connected over here:\n${link}\n`
-  )
+function addedMail(
+  name: string,
+  message: string | null,
+  link: string,
+  publicUrl: string,
+): MailContent {
+  return {
+    heading: `${name} connected with you again`,
+    preview: `${name} connected with you over another challenge.`,
+    blocks: [
+      {
+        kind: 'paragraph',
+        text: `${name} connected with you over another challenge on Rebel Match.`,
+      },
+      ...noteBlocks(message),
+      {
+        kind: 'action',
+        action: {
+          label: 'See your connection',
+          prompt: 'See what you are connected over here:',
+          url: link,
+        },
+      },
+    ],
+    footer: noticeFooter(publicUrl),
+  }
 }
 
 /** Emails the target of a request accepted at once, between members already
@@ -138,10 +208,13 @@ export function createAddedNotice(
       to,
       kind: 'connection_added',
       subject: `${from} connected with you over another challenge`,
-      text: addedBody(
-        from,
-        request.message,
-        linkTo(deps, request.id, 'connection_added', '/contact'),
+      ...renderMail(
+        addedMail(
+          from,
+          request.message,
+          linkTo(deps, request.id, 'connection_added', '/contact'),
+          deps.publicUrl,
+        ),
       ),
     })
   }

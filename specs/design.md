@@ -220,6 +220,10 @@ whether it then leaves the machine (R-DEV-4).
   (R-MSG-4).
 - `mail.delivery=none` → **nothing leaves the machine**. The record is written
   with status `suppressed`.
+- **Every email is multipart** (R-MSG-8, ADR 0054): each sender describes its
+  email once — heading, paragraphs, a member's note, the action, the footer —
+  and `mail-layout.ts` renders both the plain text and the HTML from it. The
+  HTML embeds the RR mark as an inline attachment; only the text is recorded.
 - **The stored body keeps the link only in a development deployment:**
   `NODE_ENV=development` **and** `mail.delivery=none`, so mail cannot leave the
   machine (R-DEV-1; the term is defined in requirements §8c). The pull-request
@@ -1183,7 +1187,7 @@ A row overrides the environment for its key; no row means the deployment's
 value. Only the keys R-CFG-6 names are accepted, so the table can never hold a
 secret.
 
-### reports and moderation_actions (R-MOD-1..12, ADR 0054)
+### reports and moderation_actions (R-MOD-1..12, ADR 0055)
 
 ```sql
 CREATE TABLE reports (
@@ -1429,7 +1433,7 @@ records are limited per member (`GAME_RECORDS_PER_MINUTE`).
 | POST   | `/api/admin/invites/:id/revoke`      | Set `revoked_at`; effective on next use (R-INV-3). _Requires `invite:manage`._                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | PATCH  | `/api/admin/invites/:id`             | Raise the cap: `{maxUses}`, higher than the current cap and at most `limits.inviteMaxUsesCeiling`. Answers the invite as listed. Not higher or over the ceiling → `400 bad_cap`; a revoked invite → `409 revoked`; unknown → `404` (R-INV-4). _Requires `invite:manage`._                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
 
-### Reports and moderation (R-MOD-1..12, ADR 0054)
+### Reports and moderation (R-MOD-1..12, ADR 0055)
 
 | Method | Path                                     | Behavior                                                                                                                                                                                                                                                                                |
 | ------ | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

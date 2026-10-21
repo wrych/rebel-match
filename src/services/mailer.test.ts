@@ -91,6 +91,27 @@ describe('createMailer', () => {
     })
   })
 
+  it('sends the HTML part and stores only the text (R-MSG-8, R-MSG-4)', async () => {
+    const store = memoryOutbox()
+    const sent: Parameters<MailTransport['send']>[0][] = []
+    const html = `<a href="${link}">Sign in</a>`
+    await createMailer({
+      store,
+      transport: {
+        send: (mail) => {
+          sent.push(mail)
+          return Promise.resolve()
+        },
+      },
+      from: sender,
+      keepCredentials: false,
+    }).send({ ...message, html })
+
+    expect(sent[0]?.html).toBe(html)
+    expect(JSON.stringify(store.rows)).not.toContain('Sign in<')
+    expect(JSON.stringify(store.rows)).not.toContain(link)
+  })
+
   it('marks a delivered message sent, with the time (R-MSG-3)', async () => {
     const store = memoryOutbox()
     const transport: MailTransport = { send: () => Promise.resolve() }

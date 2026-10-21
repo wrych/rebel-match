@@ -519,7 +519,7 @@ capability, not a secret** — and every requirement below exists because of tha
 
 ### 4.4 Withdrawing a challenge
 
-- **R-ASK-17 (Withdraw my challenge)** — _(ADR 0054.)_ The matches
+- **R-ASK-17 (Withdraw my challenge)** — _(ADR 0055.)_ The matches
   view of a member's own challenge (R-ASK-8), and its card in the cockpit
   (R-MINE-1), SHALL offer **Withdraw**. It acts after one confirmation, which
   says that nobody will see the challenge again and that a withdrawal cannot be
@@ -926,6 +926,15 @@ What differs by environment is only whether mail **leaves the machine**.
 - **R-MSG-7 (Delivery failures are visible without reading bodies)** — A `failed`
   entry SHALL retain enough of the transport's error to diagnose a deliverability
   problem (R-NFR-3), and that error SHALL NOT contain the credential.
+- **R-MSG-8 (Mail looks like Rebel Match)** — Every email THE SYSTEM sends SHALL
+  carry a plain-text part and an HTML part that say the same thing, both drawn
+  from one source. The HTML part SHALL wear the app's look (R-LOOK-1): the still
+  RR mark beside the name, cream paper, near-black ink, and one ember button for
+  the email's main action, with a sign-in link also written out in full. It
+  SHALL load nothing from outside the message: the mark travels inside it, and
+  there are no remote images, fonts or tracking pixels (R-ANA-3). Only the plain
+  text is stored in the log (R-MSG-4). _(Andy, 2026-10-21: "looks minimal, just
+  the way it should"; ADR 0054.)_
 
 ### Development deployment
 
@@ -1598,7 +1607,7 @@ invite link (R-INV-1).
 
 ## 8l. Reports and moderation
 
-_(ADR 0054; for the launch, S10 in `priorities.md`. Maintainer,
+_(ADR 0055; for the launch, S10 in `priorities.md`. Maintainer,
 2026-10-21.)_
 Members see spam or an unwelcome note before any host does. So they report it,
 hosts see the reports grouped by the member reported, and hosts act: they hide
@@ -1903,7 +1912,7 @@ fixtures. `design.md` §6 lists the exact records and the profile mechanism.
 
 - **Moderation** (2026-10-21) — members withdraw their own challenges, report
   challenges and notes, and hosts hide content or ban a member, for the
-  launch (R-ASK-17, R-MOD-1..12, ADR 0054). Hosts see who reported. Nothing
+  launch (R-ASK-17, R-MOD-1..12, ADR 0055). Hosts see who reported. Nothing
   is hidden automatically for now; it may come later. A banned address is not
   kept once its account is erased.
 

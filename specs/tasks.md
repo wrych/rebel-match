@@ -370,6 +370,9 @@ printed dev link (R-DEV-6).
       pull down on a touch screen; the host-tool lists get a refresh button.
       The badges refresh every 8 seconds
       by default. _(R-NAV-12, R-MINE-4, R-MSG-5, R-NOTE-5, R-CFG-6, ADR 0050)_
+- [ ] Send every email with an HTML part in the app's look, rendered from the
+      same description as its plain text, the RR mark embedded. _(R-MSG-8,
+      ADR 0054)_
 
 ## M7 — 9toRevolution, the office game _(S8, F18, ADR 0045 — behind its switch)_
 
@@ -444,7 +447,7 @@ in this order.
 
 ---
 
-## M9 — Reports and moderation _(S10, F20, F21, ADR 0054)_
+## M9 — Reports and moderation _(S10, F20, F21, ADR 0055)_
 
 Built after the spec and ADR merge. One pull request per item, in this order.
 
