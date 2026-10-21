@@ -9,7 +9,7 @@ export interface RosterMember {
   /** Labels, as the app shows them, not the stored keys. */
   sector: string | null
   companySize: string | null
-  status: 'applicant' | 'active' | 'rejected' | 'deleted'
+  status: 'applicant' | 'active' | 'rejected' | 'deleted' | 'banned'
   roles: string[]
   joinedAt: string
   /** For a deleted account: when it will be erased, and whether its member

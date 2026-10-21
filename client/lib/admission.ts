@@ -2,7 +2,11 @@ import type { Challenge } from './human-check'
 import { jsonOf, outcomeOf, send } from './request'
 
 export type LinkRequestState =
-  'check-email' | 'access-requested' | 'not-approved' | 'human-check'
+  | 'check-email'
+  | 'access-requested'
+  | 'not-approved'
+  | 'suspended'
+  | 'human-check'
 
 export interface LinkRequest {
   state: LinkRequestState

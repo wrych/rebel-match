@@ -53,8 +53,12 @@ async function lockedOrRefused(
   return member
 }
 
-// Sessions hold the member id inside their data, with no foreign key.
-async function endSessions(db: Database, memberId: string): Promise<void> {
+/** Ends every session of the member. Sessions hold the member id inside
+ * their data, with no foreign key. */
+export async function endSessions(
+  db: Database,
+  memberId: string,
+): Promise<void> {
   await db
     .delete(sessions)
     .where(sql`(${sessions.data})::jsonb ->> 'memberId' = ${memberId}`)

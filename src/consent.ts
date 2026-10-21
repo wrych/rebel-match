@@ -2,6 +2,11 @@
  * versions written for ADR 0041 on (R-LOOK-4). */
 export type Paragraph = string | { heading: string; text: string }
 
+/** Where the controller named in the consent and the privacy notice is
+ * reached, for anyone the app turns away with questions (R-ONB-5,
+ * R-MOD-10). */
+export const CONTROLLER_CONTACT = 'ready@transformation-architects.ch'
+
 /** Each consent version's words (R-ONB-3, R-ONB-5). Accepted words never
  * change: new words get a new version, accepted again (R-ONB-4). Shared with
  * the client so the screen shows what `consent_version` records. */

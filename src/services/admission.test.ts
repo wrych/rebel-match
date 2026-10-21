@@ -18,9 +18,13 @@ describe('admissionFor', () => {
     ['applicant', 'already-asked'],
     ['rejected', 'not-approved'],
     ['deleted', 'set-to-be-deleted'],
-  ] as const)('treats %s as %s (R-AUTH-1,2,4)', (status, admission) => {
-    expect(admissionFor(status)).toBe(admission)
-  })
+    ['banned', 'suspended'],
+  ] as const)(
+    'treats %s as %s (R-AUTH-1,2,4, R-MOD-10)',
+    (status, admission) => {
+      expect(admissionFor(status)).toBe(admission)
+    },
+  )
 })
 
 const handles = createApplicantHandles('x'.repeat(32))
@@ -146,6 +150,16 @@ describe('createAdmission', () => {
     const harness = setup([['no@example.invalid', 'rejected']])
 
     expect(await harness.requestLink('no@example.invalid')).toBe('not-approved')
+    expect(harness.links).toEqual([])
+    expect(harness.notified).toEqual([])
+  })
+
+  it('tells a banned address it is suspended, with no link and no notice (R-MOD-10)', async () => {
+    const harness = setup([['banned@example.invalid', 'banned']])
+
+    expect(await harness.requestLink('banned@example.invalid')).toBe(
+      'suspended',
+    )
     expect(harness.links).toEqual([])
     expect(harness.notified).toEqual([])
   })
@@ -286,6 +300,7 @@ describe('requestLink with an invite (F15)', () => {
   it.each([
     ['applicant', 'access-requested'],
     ['rejected', 'not-approved'],
+    ['banned', 'suspended'],
   ] as const)(
     'leaves an existing %s as it is, using no seat',
     async (status, state) => {

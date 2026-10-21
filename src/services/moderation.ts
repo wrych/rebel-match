@@ -8,7 +8,7 @@ export interface ReportedMember {
   name: string | null
   email: string
   org: string | null
-  status: 'applicant' | 'active' | 'rejected' | 'deleted'
+  status: 'applicant' | 'active' | 'rejected' | 'deleted' | 'banned'
   reports: number
   /** Different members who reported them; erased reporters not counted. */
   reporters: number
@@ -43,7 +43,7 @@ export interface ModerationItem {
 }
 
 export interface ModerationAction {
-  kind: 'hide' | 'unhide' | 'dismiss'
+  kind: 'hide' | 'unhide' | 'dismiss' | 'ban' | 'unban'
   /** The host who acted; null once they were erased. */
   actor: string | null
   at: string

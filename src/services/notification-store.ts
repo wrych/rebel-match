@@ -9,6 +9,7 @@ import {
   or,
   sql,
   type SQL,
+  notInArray,
 } from 'drizzle-orm'
 import type { Database } from '../db/connect.js'
 import {
@@ -41,14 +42,14 @@ export interface Reviewers {
   reports: readonly string[]
 }
 
-// What R-NOTE-5 shows: not hidden, about nobody deleted, an applicant or
+// What R-NOTE-5 shows: not hidden, about nobody deleted or banned, an applicant or
 // report notice only to someone who may still review them, and a new
 // challenge only while it is still shown.
 function shown(reviewers: Reviewers, memberId: string): SQL | undefined {
   return and(
     eq(n.recipientId, memberId),
     eq(n.hidden, false),
-    ne(about.status, 'deleted'),
+    notInArray(about.status, ['deleted', 'banned']),
     or(ne(n.type, 'applicant'), reviews(reviewers.applicants, memberId)),
     or(ne(n.type, 'report'), reviews(reviewers.reports, memberId)),
     or(

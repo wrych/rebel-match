@@ -209,6 +209,22 @@ describe('LoginScreen', () => {
     expect(push).not.toHaveBeenCalled()
   })
 
+  it('tells a banned address the account is suspended, and whom to ask (R-MOD-10)', async () => {
+    server({ state: 'suspended' })
+    const screen = mount(LoginScreen)
+
+    await submit(screen, 'banned@example.invalid')
+
+    expect(screen.text()).toContain(
+      'The account for banned@example.invalid is suspended',
+    )
+    expect(screen.find('a[href^="mailto:"]').attributes('href')).toBe(
+      'mailto:ready@transformation-architects.ch',
+    )
+    expect(screen.text()).not.toContain('Check your email')
+    expect(push).not.toHaveBeenCalled()
+  })
+
   it('keeps the form and says so when the request fails', async () => {
     server(null, false)
     const screen = mount(LoginScreen)

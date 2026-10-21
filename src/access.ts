@@ -13,6 +13,7 @@ export const rolePermissions = {
     'applicant:review',
     'whitelist:manage',
     'member:delete',
+    'member:ban',
     'challenge:moderate',
     'report:review',
     'invite:manage',
