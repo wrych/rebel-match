@@ -22,6 +22,8 @@ must not keep (R-MSG-4).
 - **The look** (R-MSG-8): the still RR mark (`client/public/favicon.svg`) beside
   the name, a white card on cream paper, near-black ink, one ember button. A
   sign-in link is also written out in full, for clients that strip styling.
+  A digest entry starts with the member it is about, in bold; the plain text
+  names them plainly.
 - **Nothing remote.** The mark is a PNG embedded in the message and referred to
   by `cid:`; there are no remote images, webfonts or tracking pixels. Headings
   fall back to Impact and Helvetica where Anton and Archivo are absent.
