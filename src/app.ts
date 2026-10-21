@@ -16,6 +16,7 @@ import { cockpitRoutes } from './routes/cockpit.js'
 import { guardApi } from './routes/api-guard.js'
 import { adminApplicantRoutes } from './routes/admin-applicants.js'
 import { adminChallengeRoutes } from './routes/admin-challenges.js'
+import { adminReportRoutes } from './routes/admin-reports.js'
 import {
   adminInviteRoutes,
   eventBadgeLogoRoutes,
@@ -39,6 +40,7 @@ import type { AdmissionService } from './services/admission.js'
 import type { ApprovalService } from './services/approvals.js'
 import type { ChallengeModeration } from './services/challenge-moderation.js'
 import type { ReportService } from './services/reports.js'
+import type { ModerationService } from './services/moderation.js'
 import { reportRoutes } from './routes/reports.js'
 import type { ChallengeService } from './services/challenges.js'
 import type { ConnectionService } from './services/connections.js'
@@ -99,6 +101,7 @@ export interface AppDeps {
   notifications: NotificationService
   notificationSettings: NotificationSettingsService
   reports: ReportService
+  moderation: ModerationService
   /** Mails notifications and purges old ones; run by the server's timers,
    * not by requests (R-NOTE-7, R-NOTE-11). */
   notificationMail: {
@@ -190,7 +193,7 @@ export function createApp(deps: AppDeps): Express {
   app.use(cockpitRoutes(deps), notificationRoutes(deps), badgeRoutes(deps))
   app.use(adminRoleRoutes(deps), adminMemberRoutes(deps))
   app.use(adminWhitelistRoutes(deps), adminChallengeRoutes(deps))
-  app.use(adminApplicantRoutes(deps))
+  app.use(adminApplicantRoutes(deps), adminReportRoutes(deps))
   app.use(adminInviteRoutes(deps))
   app.use(adminOutboxRoutes(deps))
   app.use(adminSettingsRoutes(deps), gameRoutes(deps))

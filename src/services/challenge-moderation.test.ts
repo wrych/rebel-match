@@ -33,7 +33,7 @@ describe('createChallengeModeration (R-MOD-8)', () => {
     const { moderation } = setup()
     await moderation.hide('c-1', 'm-host', 'inappropriate')
 
-    expect(await moderation.unhide('c-1')).toBe('shown')
-    expect(await moderation.unhide('c-1')).toBe('not_found')
+    expect(await moderation.unhide('c-1', 'm-host')).toBe('shown')
+    expect(await moderation.unhide('c-1', 'm-host')).toBe('not_found')
   })
 })

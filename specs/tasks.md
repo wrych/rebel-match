@@ -461,14 +461,20 @@ Built after the spec and ADR merge. One pull request per item, in this order.
 - [x] Reports: the table, `content:report`, the report endpoints, S38, and
       **Report** on the deck, peer cards, newest challenges, S15 and S16.
       _(R-MOD-1..4, R-MOD-12)_
-- [ ] The `report` notification type and the menu's **Moderation** entry.
-      _(R-MOD-5, R-NOTE-1, R-NOTE-2)_
-- [ ] Moderation screens S39 and S40: the aggregate, dismiss, hiding a note,
-      the action history. _(R-MOD-6..8, R-MOD-11)_
+- [x] Moderation screens S39 and S40: the aggregate, a member's reports with
+      who made them, dismiss, hiding a challenge from there with its reports
+      handled, the action history, the menu's **Moderation** entry.
+      _(R-MOD-6..8, R-MOD-11)_ Moved before the notification, which links
+      to S40.
+- [ ] Hiding a note: its hidden columns, hide and unhide on S40, _Removed by
+      a host_ under _Connected over_. _(R-MOD-8)_
+- [ ] The `report` notification type, and the open count on the menu's
+      **Moderation** entry. _(R-MOD-5, R-NOTE-1, R-NOTE-2)_
 - [ ] Banning: the `banned` status, ban and lift ban, the door's suspended
       answer, invites and the whitelist keeping it out. _(R-MOD-9, R-MOD-10)_
-- [ ] Erasure and retention of reports, and the `content_reported` usage
-      event. _(R-MOD-11, R-MOD-12, R-NFR-7)_
+- [ ] Erasure and retention of reports: handled reports deleted after
+      `limits.reportRetentionDays`. _(R-MOD-11, R-NFR-7)_ The
+      `content_reported` usage event came with the reports.
 
 ---
 

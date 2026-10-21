@@ -1,0 +1,339 @@
+import { randomUUID } from 'node:crypto'
+import { and, count, desc, eq, inArray, isNull, sql } from 'drizzle-orm'
+import { alias } from 'drizzle-orm/pg-core'
+import type { Database } from '../db/connect.js'
+import {
+  challenges,
+  connectionRequests,
+  members,
+  moderationActions,
+  reports,
+  trends,
+} from '../db/schema.js'
+import { challengeTrend } from './challenge-store.js'
+import type { ModerationReason } from './challenge-moderation.js'
+import {
+  byAttention,
+  type ModerationAction,
+  type ModerationItem,
+  type ModerationPage,
+  type ModerationStore,
+  type ReportedMember,
+} from './moderation.js'
+import type { ReportItem } from './reports.js'
+
+const reporter = alias(members, 'reporter')
+const actor = alias(members, 'actor')
+const recipient = alias(members, 'recipient')
+
+// A member with any open report is open; one whose reports are all handled
+// is handled. The open tab counts open reports only (R-MOD-6).
+function inTab(state: 'open' | 'handled'): ReturnType<typeof sql> {
+  const anyOpen = sql`exists (select 1 from ${reports} open_report where open_report.reported_id = ${reports.reportedId} and open_report.handled_at is null)`
+  return state === 'open'
+    ? sql`${reports.handledAt} is null`
+    : sql`not ${anyOpen}`
+}
+
+async function reasonsOf(
+  db: Database,
+  state: 'open' | 'handled',
+  memberIds: string[],
+): Promise<Map<string, ReportedMember['reasons']>> {
+  if (memberIds.length === 0) return new Map()
+  const rows = await db
+    .select({
+      memberId: reports.reportedId,
+      reason: reports.reason,
+      n: count(),
+    })
+    .from(reports)
+    .where(and(inTab(state), inArray(reports.reportedId, memberIds)))
+    .groupBy(reports.reportedId, reports.reason)
+    .orderBy(desc(count()), reports.reason)
+  const byMember = new Map<string, ReportedMember['reasons']>()
+  for (const row of rows) {
+    const list = byMember.get(row.memberId) ?? []
+    list.push({ reason: row.reason, count: row.n })
+    byMember.set(row.memberId, list)
+  }
+  return byMember
+}
+
+// More different reporters first, so many people reporting one member
+// outrank one person reporting many times; then the latest (R-MOD-6).
+async function overview(
+  db: Database,
+  state: 'open' | 'handled',
+): Promise<ReportedMember[]> {
+  const reporters = sql<number>`count(distinct ${reports.reporterId})::int`
+  const latest = sql<Date>`max(${reports.createdAt})`
+  const rows = await db
+    .select({
+      memberId: reports.reportedId,
+      name: members.name,
+      email: members.email,
+      org: members.org,
+      status: members.status,
+      reports: count(),
+      reporters,
+      challenges: sql<number>`count(distinct ${reports.challengeId})::int`,
+      notes: sql<number>`count(distinct ${reports.requestId})::int`,
+      latestAt: latest,
+    })
+    .from(reports)
+    .innerJoin(members, eq(members.id, reports.reportedId))
+    .where(inTab(state))
+    .groupBy(
+      reports.reportedId,
+      members.name,
+      members.email,
+      members.org,
+      members.status,
+    )
+    .orderBy(
+      state === 'open' ? desc(reporters) : desc(latest),
+      desc(latest),
+      reports.reportedId,
+    )
+  const reasons = await reasonsOf(
+    db,
+    state,
+    rows.map((row) => row.memberId),
+  )
+  return rows.map((row) => ({
+    ...row,
+    latestAt: new Date(row.latestAt).toISOString(),
+    reasons: reasons.get(row.memberId) ?? [],
+  }))
+}
+
+function stateOf(row: {
+  status: string | null
+  hiddenAt: Date | null
+}): ModerationItem['state'] {
+  if (row.status === 'archived') return 'withdrawn'
+  return row.hiddenAt === null ? 'shown' : 'hidden'
+}
+
+async function itemsOf(
+  db: Database,
+  memberId: string,
+): Promise<ModerationItem[]> {
+  const rows = await db
+    .select({
+      challengeId: reports.challengeId,
+      requestId: reports.requestId,
+      reason: reports.reason,
+      comment: reports.comment,
+      at: reports.createdAt,
+      handledAt: reports.handledAt,
+      reporter: reporter.name,
+      body: challenges.body,
+      status: challenges.status,
+      hiddenAt: challenges.hiddenAt,
+      hiddenReason: challenges.hiddenReason,
+      trendShort: trends.short,
+      note: connectionRequests.message,
+      sentTo: recipient.name,
+    })
+    .from(reports)
+    .leftJoin(reporter, eq(reporter.id, reports.reporterId))
+    .leftJoin(challenges, eq(challenges.id, reports.challengeId))
+    .leftJoin(trends, eq(trends.id, challengeTrend))
+    .leftJoin(connectionRequests, eq(connectionRequests.id, reports.requestId))
+    .leftJoin(recipient, eq(recipient.id, connectionRequests.targetId))
+    .where(eq(reports.reportedId, memberId))
+    .orderBy(desc(reports.createdAt), reports.id)
+  const items = new Map<string, ModerationItem>()
+  for (const row of rows) {
+    const key = row.challengeId ?? row.requestId ?? ''
+    const item = items.get(key) ?? itemOf(row)
+    item.reports.push({
+      reason: row.reason,
+      comment: row.comment,
+      at: row.at.toISOString(),
+      reporter: row.reporter,
+      open: row.handledAt === null,
+    })
+    items.set(key, item)
+  }
+  return [...items.values()].sort(byAttention)
+}
+
+function itemOf(row: {
+  challengeId: string | null
+  requestId: string | null
+  body: string | null
+  status: string | null
+  hiddenAt: Date | null
+  hiddenReason: ModerationReason | null
+  trendShort: string | null
+  note: string | null
+  sentTo: string | null
+}): ModerationItem {
+  if (row.challengeId !== null) {
+    const state = stateOf(row)
+    return {
+      kind: 'challenge',
+      id: row.challengeId,
+      body: state === 'withdrawn' ? null : row.body,
+      trendShort: row.trendShort,
+      sentTo: null,
+      state,
+      hiddenReason: state === 'hidden' ? row.hiddenReason : null,
+      reports: [],
+    }
+  }
+  return {
+    kind: 'note',
+    id: row.requestId ?? '',
+    body: row.note,
+    trendShort: null,
+    sentTo: row.sentTo,
+    state: 'shown',
+    hiddenReason: null,
+    reports: [],
+  }
+}
+
+async function historyOf(
+  db: Database,
+  memberId: string,
+): Promise<ModerationAction[]> {
+  const rows = await db
+    .select({
+      kind: moderationActions.kind,
+      actor: actor.name,
+      at: moderationActions.createdAt,
+      challengeId: moderationActions.challengeId,
+      requestId: moderationActions.requestId,
+      reason: moderationActions.reason,
+      note: moderationActions.note,
+    })
+    .from(moderationActions)
+    .leftJoin(actor, eq(actor.id, moderationActions.actorId))
+    .where(eq(moderationActions.memberId, memberId))
+    .orderBy(desc(moderationActions.createdAt), moderationActions.id)
+  return rows.map((row) => ({
+    kind: row.kind,
+    actor: row.actor,
+    at: row.at.toISOString(),
+    item:
+      row.challengeId !== null
+        ? 'challenge'
+        : row.requestId !== null
+          ? 'note'
+          : null,
+    reason: row.reason,
+    note: row.note,
+  }))
+}
+
+// Different members by their ids, so two of the same name count twice and
+// erased reporters not at all (R-MOD-7).
+async function openOf(
+  db: Database,
+  memberId: string,
+): Promise<ModerationPage['open']> {
+  const [row] = await db
+    .select({
+      reports: count(),
+      reporters: sql<number>`count(distinct ${reports.reporterId})::int`,
+    })
+    .from(reports)
+    .where(and(eq(reports.reportedId, memberId), isNull(reports.handledAt)))
+  return { reports: row?.reports ?? 0, reporters: row?.reporters ?? 0 }
+}
+
+async function page(
+  db: Database,
+  memberId: string,
+): Promise<ModerationPage | null> {
+  const [member] = await db
+    .select({
+      id: members.id,
+      name: members.name,
+      email: members.email,
+      org: members.org,
+      status: members.status,
+      createdAt: members.createdAt,
+    })
+    .from(members)
+    .where(eq(members.id, memberId))
+  if (member === undefined) return null
+  const [items, history, open] = await Promise.all([
+    itemsOf(db, memberId),
+    historyOf(db, memberId),
+    openOf(db, memberId),
+  ])
+  const { createdAt, ...rest } = member
+  return {
+    member: { ...rest, joinedAt: createdAt.toISOString() },
+    open,
+    items,
+    history,
+  }
+}
+
+const itemColumn = (item: ReportItem): ReturnType<typeof eq> =>
+  'challengeId' in item
+    ? eq(reports.challengeId, item.challengeId)
+    : eq(reports.requestId, item.requestId)
+
+/** Marks the open reports about an item handled, in the caller's
+ * transaction; the member they are about, or null when none were open
+ * (R-MOD-7, R-MOD-8). */
+export async function handleReports(
+  tx: Database,
+  item: ReportItem,
+): Promise<string | null> {
+  const handled = await tx
+    .update(reports)
+    .set({ handledAt: sql`now()` })
+    .where(and(itemColumn(item), isNull(reports.handledAt)))
+    .returning({ memberId: reports.reportedId })
+  return handled[0]?.memberId ?? null
+}
+
+/** Records what a host did, for the member's history (R-MOD-11). */
+export async function recordAction(
+  tx: Database,
+  action: {
+    memberId: string
+    actorId: string
+    kind: ModerationAction['kind']
+    item?: ReportItem
+    reason?: ModerationReason
+    note?: string
+  },
+): Promise<void> {
+  const item = action.item
+  await tx.insert(moderationActions).values({
+    id: randomUUID(),
+    memberId: action.memberId,
+    actorId: action.actorId,
+    kind: action.kind,
+    challengeId:
+      item !== undefined && 'challengeId' in item ? item.challengeId : null,
+    requestId:
+      item !== undefined && 'requestId' in item ? item.requestId : null,
+    reason: action.reason ?? null,
+    note: action.note ?? null,
+  })
+}
+
+/** Reports and moderation over Postgres (design §2). */
+export function createModerationStore(db: Database): ModerationStore {
+  return {
+    overview: (state) => overview(db, state),
+    page: (memberId) => page(db, memberId),
+    dismiss: (item, actorId) =>
+      db.transaction(async (tx) => {
+        const memberId = await handleReports(tx, item)
+        if (memberId === null) return false
+        await recordAction(tx, { memberId, actorId, kind: 'dismiss', item })
+        return true
+      }),
+  }
+}

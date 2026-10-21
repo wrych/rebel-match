@@ -62,6 +62,7 @@ describe('migrations', () => {
       'member_expertise',
       'member_roles',
       'members',
+      'moderation_actions',
       'notification_settings',
       'notifications',
       'outbox',

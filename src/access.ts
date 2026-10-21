@@ -14,6 +14,7 @@ export const rolePermissions = {
     'whitelist:manage',
     'member:delete',
     'challenge:moderate',
+    'report:review',
     'invite:manage',
     'outbox:read',
     'role:grant',

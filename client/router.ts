@@ -29,6 +29,8 @@ import InvitesScreen from './screens/InvitesScreen.vue'
 import LoginScreen from './screens/LoginScreen.vue'
 import MatchesScreen from './screens/MatchesScreen.vue'
 import MembersScreen from './screens/MembersScreen.vue'
+import ModeratedMemberScreen from './screens/ModeratedMemberScreen.vue'
+import ModerationScreen from './screens/ModerationScreen.vue'
 import MemberScreen from './screens/MemberScreen.vue'
 import NotFoundScreen from './screens/NotFoundScreen.vue'
 import NotificationsScreen from './screens/NotificationsScreen.vue'
@@ -124,6 +126,8 @@ export const router = createRouter({
     screen('admin-invites', InvitesScreen),
     screen('admin-members', MembersScreen),
     screen('admin-member', MemberScreen),
+    screen('admin-moderation', ModerationScreen),
+    screen('admin-moderated-member', ModeratedMemberScreen),
     screen('admin-outbox', OutboxScreen),
     screen('admin-settings', SettingsScreen),
     {

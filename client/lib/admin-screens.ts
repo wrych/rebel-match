@@ -8,6 +8,7 @@ const adminScreens: readonly AdminLink[] = [
   { name: 'admin-applicants', label: 'Applicants' },
   { name: 'admin-invites', label: 'Invite links' },
   { name: 'admin-members', label: 'Members' },
+  { name: 'admin-moderation', label: 'Moderation' },
   { name: 'admin-outbox', label: 'Outbound message log' },
   { name: 'admin-settings', label: 'Settings' },
 ].flatMap(({ name, label }) => {

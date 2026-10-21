@@ -746,3 +746,36 @@ export const reports = pgTable(
     index('ix_report_reporter').on(t.reporterId, t.createdAt),
   ],
 )
+
+export const moderationActionKind = pgEnum('moderation_action_kind', [
+  'hide',
+  'unhide',
+  'dismiss',
+])
+
+// What hosts did about a reported member, and why, kept for the history on
+// the member's moderation page (R-MOD-7, R-MOD-11). It goes with the member
+// it is about; a host erased later leaves it nameless.
+export const moderationActions = pgTable(
+  'moderation_actions',
+  {
+    id: id('id').primaryKey(),
+    memberId: id('member_id')
+      .notNull()
+      .references(() => members.id, { onDelete: 'cascade' }),
+    actorId: id('actor_id').references(() => members.id, {
+      onDelete: 'set null',
+    }),
+    kind: moderationActionKind('kind').notNull(),
+    challengeId: id('challenge_id').references(() => challenges.id, {
+      onDelete: 'set null',
+    }),
+    requestId: id('request_id').references(() => connectionRequests.id, {
+      onDelete: 'set null',
+    }),
+    reason: moderationReason('reason'),
+    note: varchar('note', { length: 500 }),
+    createdAt: at('created_at').notNull().defaultNow(),
+  },
+  (t) => [index('ix_moderation_member').on(t.memberId, t.createdAt)],
+)
