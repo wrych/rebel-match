@@ -95,7 +95,9 @@ export interface ModerationStore {
   /** Shows a hidden note again, recording who did; false when none such is
    * hidden. */
   unhideNote(requestId: string, actorId: string): Promise<boolean>
-  /** Deletes the reports handled before `cutoff`; how many went. */
+  /** Deletes the reports handled before `cutoff`, sparing those whose member
+   * is banned or item hidden, or whose ban or hiding was lifted since;
+   * how many went. */
   purgeHandledBefore(cutoff: Date): Promise<number>
 }
 
@@ -113,7 +115,9 @@ export interface ModerationService {
     reason: ModerationReason,
   ): Promise<'hidden' | 'not_found'>
   unhideNote(requestId: string, actorId: string): Promise<'shown' | 'not_found'>
-  /** Deletes handled reports older than the retention (R-MOD-11). */
+  /** Deletes handled reports older than the retention, unless a ban or
+   * hiding stands behind them or was lifted within it (R-MOD-11,
+   * ADR 0056). */
   purgeHandledBefore(cutoff: Date): Promise<number>
 }
 
