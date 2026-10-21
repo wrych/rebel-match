@@ -1736,7 +1736,9 @@ contact detail (R-CONN-6) or tells a reported member who reported them.
   who took it, when, and the reason given. The records SHALL be erased with
   the reported member (R-NFR-7). WHEN a reporter's account is erased their
   reports SHALL stay, counted, but name no reporter. Handled reports SHALL be
-  deleted after `limits.reportRetentionDays`.
+  deleted after `limits.reportRetentionDays`, unless their member is banned or
+  their item hidden: those SHALL be kept while the measure stands, and deleted
+  `limits.reportRetentionDays` after it is lifted (ADR 0056).
 - **R-MOD-12 (Privacy and permissions)** — Reports SHALL be readable only with
   `report:review`. Hiding SHALL need `challenge:moderate`, and banning
   `member:ban`; each is checked on the server (R-ROLE-5). Every member holds

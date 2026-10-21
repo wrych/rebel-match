@@ -1,6 +1,6 @@
 # 0055. Members report, hosts moderate by hiding, and a ban is a status
 
-- **Status:** Accepted
+- **Status:** Accepted, amended by 0056
 - **Date:** 2026-10-21
 - **Deciders:** Andy Moesch
 

@@ -1254,7 +1254,9 @@ reporter's own reports are excluded from their view on top of that
 (R-MOD-4). Reports are kept per reporter and item, so the aggregate (R-MOD-6)
 is a `GROUP BY reported_id` over open reports, counting rows and
 `DISTINCT reporter_id`. The sweep deletes handled reports after
-`limits.reportRetentionDays` (R-MOD-11).
+`limits.reportRetentionDays`, except while their member is banned or their
+item hidden, and until that long after the latest _Lift ban_ or _Unhide_ in
+the history (R-MOD-11, ADR 0056).
 
 The new configuration, with its defaults (R-CFG-1):
 `limits.reportCommentMaxChars` 500, `limits.reportsPerDay` 20,

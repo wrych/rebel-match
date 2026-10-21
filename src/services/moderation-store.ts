@@ -9,6 +9,7 @@ import {
   isNull,
   lt,
   sql,
+  type SQL,
 } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 import type { Database } from '../db/connect.js'
@@ -427,6 +428,17 @@ function unhideNote(
   })
 }
 
+// A report behind a measure is evidence for it: kept while the member is
+// banned or the item hidden, and for the retention after either is lifted.
+// Only dismissed reports go on the handling date alone (R-MOD-11, ADR 0056).
+function noMeasureSince(cutoff: Date): SQL {
+  return sql`not exists (select 1 from ${members} m where m.id = ${reports.reportedId} and m.status = 'banned')
+    and not exists (select 1 from ${challenges} c where c.id = ${reports.challengeId} and c.hidden_at is not null)
+    and not exists (select 1 from ${connectionRequests} q where q.id = ${reports.requestId} and q.note_hidden_at is not null)
+    and not exists (select 1 from ${moderationActions} a where a.member_id = ${reports.reportedId} and a.created_at >= ${cutoff}
+      and (a.kind = 'unban' or (a.kind = 'unhide' and (a.challenge_id = ${reports.challengeId} or a.request_id = ${reports.requestId}))))`
+}
+
 /** Reports and moderation over Postgres (design §2). */
 export function createModerationStore(db: Database): ModerationStore {
   return {
@@ -446,7 +458,7 @@ export function createModerationStore(db: Database): ModerationStore {
     purgeHandledBefore: async (cutoff) => {
       const purged = await db
         .delete(reports)
-        .where(lt(reports.handledAt, cutoff))
+        .where(and(lt(reports.handledAt, cutoff), noMeasureSince(cutoff)))
         .returning({ id: reports.id })
       return purged.length
     },

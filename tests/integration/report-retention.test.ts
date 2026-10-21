@@ -16,8 +16,12 @@ const config = loadConfig({
 })
 const reported = randomUUID()
 const reporter = randomUUID()
+const banned = randomUUID()
 const request = randomUUID()
 const challenge = randomUUID()
+const hidden = randomUUID()
+const unhidden = randomUUID()
+const bannedChallenge = randomUUID()
 const harassing = randomUUID()
 const words = 'You are useless, quit already.'
 const report = {
@@ -25,7 +29,12 @@ const report = {
   newHandled: randomUUID(),
   oldOpen: randomUUID(),
   note: randomUUID(),
+  hidden: randomUUID(),
+  unhidden: randomUUID(),
+  banned: randomUUID(),
 }
+const DAY_MS = 86_400_000
+const daysAgo = (days: number): Date => new Date(Date.now() - days * DAY_MS)
 
 let db: TestDatabase
 let deps: AppDeps
@@ -48,13 +57,16 @@ beforeAll(async () => {
   deps = composeApp(config, db.drizzle)
   await db.query(
     `INSERT INTO members (id, email, status, analytics_id)
-     VALUES (?, ?, 'active', ?), (?, ?, 'active', ?)`,
+     VALUES (?, ?, 'active', ?), (?, ?, 'active', ?), (?, ?, 'banned', ?)`,
     [
       reported,
       `${reported}@example.invalid`,
       randomUUID(),
       reporter,
       `${reporter}@example.invalid`,
+      randomUUID(),
+      banned,
+      `${banned}@example.invalid`,
       randomUUID(),
     ],
   )
@@ -65,9 +77,48 @@ beforeAll(async () => {
     [request, reported, reporter, harassing, reported, reporter, words],
   )
   await db.query(
-    `INSERT INTO challenges (id, member_id, body, status)
-     VALUES (?, ?, 'Join my paid bootcamp to fix your team.', 'active')`,
-    [challenge, reported],
+    `INSERT INTO challenges (id, member_id, body, status, hidden_at, hidden_reason)
+     VALUES (?, ?, 'Join my paid bootcamp to fix your team.', 'active', NULL, NULL),
+            (?, ?, 'Hidden as spam.', 'active', now(), 'spam'),
+            (?, ?, 'Hidden, then shown again.', 'active', NULL, NULL),
+            (?, ?, 'By the member since banned.', 'active', NULL, NULL)`,
+    [
+      challenge,
+      reported,
+      hidden,
+      reported,
+      unhidden,
+      reported,
+      bannedChallenge,
+      banned,
+    ],
+  )
+  // Reports handled long ago, each behind a measure that stands or was
+  // lifted lately (R-MOD-11, ADR 0056).
+  await db.query(
+    `INSERT INTO reports (id, reporter_id, reported_id, challenge_id, reason, created_at, handled_at)
+     VALUES (?, ?, ?, ?, 'spam', now() - interval '300 days', now() - interval '200 days'),
+            (?, ?, ?, ?, 'spam', now() - interval '300 days', now() - interval '200 days'),
+            (?, ?, ?, ?, 'inappropriate', now() - interval '300 days', now() - interval '200 days')`,
+    [
+      report.hidden,
+      reporter,
+      reported,
+      hidden,
+      report.unhidden,
+      reporter,
+      reported,
+      unhidden,
+      report.banned,
+      reporter,
+      banned,
+      bannedChallenge,
+    ],
+  )
+  await db.query(
+    `INSERT INTO moderation_actions (id, member_id, actor_id, kind, challenge_id, created_at)
+     VALUES (?, ?, NULL, 'unhide', ?, now() - interval '10 days')`,
+    [randomUUID(), reported, unhidden],
   )
   await db.query(
     `INSERT INTO reports (id, reporter_id, reported_id, request_id, challenge_id, note_text, reason, created_at, handled_at)
@@ -102,18 +153,45 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
-  await db.query('DELETE FROM members WHERE id IN (?, ?)', [reported, reporter])
+  await db.query('DELETE FROM members WHERE id IN (?, ?, ?)', [
+    reported,
+    reporter,
+    banned,
+  ])
   await db.close()
 })
 
 describe('how long reports are kept, over Postgres (R-MOD-11)', () => {
-  it('deletes handled reports past the retention, keeping open and recent ones', async () => {
-    const cutoff = new Date(Date.now() - 180 * 86_400_000)
-
-    expect(await deps.moderation.purgeHandledBefore(cutoff)).toBe(1)
+  it('deletes handled reports past the retention, keeping open and recent ones, and those behind a measure', async () => {
+    expect(await deps.moderation.purgeHandledBefore(daysAgo(180))).toBe(1)
     expect(await reportIds()).toEqual(
-      [report.newHandled, report.oldOpen, report.note].sort(),
+      [
+        report.newHandled,
+        report.oldOpen,
+        report.note,
+        report.hidden,
+        report.unhidden,
+      ].sort(),
     )
+    expect(
+      await count(
+        'SELECT count(*)::int AS n FROM reports WHERE id = ?',
+        report.banned,
+      ),
+    ).toBe(1)
+  })
+
+  it('lets a report go the retention after its measure was lifted, never while it stands (ADR 0056)', async () => {
+    expect(await deps.moderation.purgeHandledBefore(daysAgo(5))).toBe(2)
+    expect(await reportIds()).toEqual(
+      [report.oldOpen, report.note, report.hidden].sort(),
+    )
+    expect(
+      await count(
+        'SELECT count(*)::int AS n FROM reports WHERE id = ?',
+        report.banned,
+      ),
+    ).toBe(1)
   })
 
   it('keeps a reporter’s reports, naming nobody, once they are erased', async () => {
