@@ -1,8 +1,9 @@
 # Rebel Match — Privacy notice
 
-- **Status:** Approved by the maintainer on 2026-10-07; best effort, not
-  reviewed by a lawyer
-- **Version:** 2026-10-07
+- **Status:** Draft for the maintainer's approval, adding reports and
+  moderation to the version approved on 2026-10-07; best effort, not reviewed
+  by a lawyer
+- **Version:** 2026-10-21
 - **Shown at:** `/privacy` (R-ONB-9)
 
 Written on a best-effort basis from the DSAT.ch model privacy notice, cut down
@@ -43,6 +44,10 @@ an event invite link. We collect only what the app needs.
   tell you what happened to your requests.
 - **Your choices.** The version of this notice you confirmed and when, whether
   you share usage data and since when, and how you want to be notified.
+- **Reports.** If you report a challenge or a note, we keep what you
+  reported, the reason you chose, any comment you added, and that it was you.
+  If someone reports something of yours, we keep the report and, for a note, a
+  copy of it, together with what the hosts decided about it and why.
 - **Messages we send you.** Sign-in links and notifications are logged with
   your email address, so that hosts can see whether a message went out.
 - **Technical data.** A session cookie that keeps you signed in. Your IP
@@ -62,6 +67,10 @@ challenge.
 - **To keep the app safe and working**: limiting abuse, the log of outgoing
   messages, error logs. This rests on our legitimate interest in a secure and
   reliable service (Art. 6(1)(f)).
+- **To keep members safe**: reports, and the hosts' decisions to hide
+  content, dismiss a report or ban an account, with the reasons they give.
+  This rests on our legitimate interest, and that of our members, in a
+  service free of spam and harassment (Art. 6(1)(f)).
 - **To improve the app with usage data**: only if you choose to share it. This
   rests on your consent (Art. 6(1)(a)), which you can withdraw at any time
   under Profile & privacy, in the menu.
@@ -94,7 +103,8 @@ challenges. If you do not agree, nothing is sent to Mixpanel about you.
   reveals nothing.
 - **Hosts.** The people who run Rebel Match for the network can see members,
   access requests and the log of outgoing messages, in order to admit people
-  and help them. Hosts are the founders of Rebel Match and a small number of
+  and help them. They also see reports, including who made them, so that they
+  can judge them. A member who is reported is never told who reported them. Hosts are the founders of Rebel Match and a small number of
   other people they have carefully selected.
 - **Service providers** who work on our instructions:
   - Google Cloud hosts the app and its database in Zurich, Switzerland.
@@ -118,6 +128,14 @@ We pass data to authorities only where the law obliges us to.
 - **When you delete your account**, or ask a host to: it is deactivated at once,
   so nobody sees anything of yours, and erased after 30 days. Until then you can
   undo the deletion with the link we email you.
+- **Reports**: a report the hosts dismiss is deleted 180 days after it was
+  dismissed. A report that led the hosts to hide something or ban an account
+  is kept while that measure stands, and deleted 180 days after it is lifted.
+  When the account of the member reported is erased, the reports about them
+  and the hosts' decisions go with it. When a reporter's account is erased,
+  their reports stay, without their name.
+- **A banned account** is kept, hidden from everyone, until it is erased. Once
+  it is erased, nothing about the address is kept.
 - **The log of outgoing messages**: 30 days.
 - **Notifications**: 90 days.
 - **Usage data at Mixpanel**: Mixpanel deletes event data after 24 months.
