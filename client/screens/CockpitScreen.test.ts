@@ -362,7 +362,9 @@ describe('CockpitScreen', () => {
     expect(screen.text()).toContain('Only you see this.')
     expect(screen.find('.counts').exists()).toBe(false)
     expect(paths(screen)).not.toContain('/challenges/c2/matches')
-    expect(screen.text()).not.toContain('Withdraw…')
+    expect(
+      screen.find('button[aria-label="Withdraw this challenge"]').exists(),
+    ).toBe(false)
   })
 
   it('shows a challenge a host hid as such, with why, uncounted and unlinked (R-MOD-8)', async () => {
@@ -391,10 +393,9 @@ describe('CockpitScreen', () => {
         .length
     const before = reads()
 
-    const withdraw = screen
-      .findAll('button')
-      .find((each) => each.text() === 'Withdraw…')
-    await withdraw?.trigger('click')
+    await screen
+      .find('button[aria-label="Withdraw this challenge"]')
+      .trigger('click')
     answerWith(204)
     await screen.find('button.btn-dark').trigger('click')
     await flushPromises()

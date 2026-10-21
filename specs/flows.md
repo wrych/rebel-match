@@ -386,8 +386,8 @@ before both sides agree.**
 
 **Branches**
 
-- _Withdraw a challenge_ → **Withdraw** on its cockpit card or its
-  matches view → one confirmation → `POST /api/challenges/:id/withdraw`. It
+- _Withdraw a challenge_ → the crossed eye (**Withdraw**) in the corner of
+  its cockpit card or of its matches view → one confirmation → `POST /api/challenges/:id/withdraw`. It
   leaves the deck and every list at once, its pending requests close without
   a word, and the card stays here marked **Withdrawn** (R-ASK-17).
 - _A host hid it_ → the card is marked **Hidden by a host**, with

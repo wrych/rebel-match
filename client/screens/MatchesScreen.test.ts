@@ -489,10 +489,9 @@ describe('MatchesScreen', () => {
     const fetchMock = server()
     const screen = await mountScreen()
 
-    const withdraw = screen
-      .findAll('button')
-      .find((each) => each.text() === 'Withdraw…')
-    await withdraw?.trigger('click')
+    await screen
+      .find('button[aria-label="Withdraw this challenge"]')
+      .trigger('click')
     expect(push).not.toHaveBeenCalled()
     await screen.find('button.btn-dark').trigger('click')
     await flushPromises()

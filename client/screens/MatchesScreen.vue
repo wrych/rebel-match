@@ -119,20 +119,25 @@ onMounted(async () => {
         see it.
       </DoneNotice>
 
-      <div v-if="layout === 'cards'" class="stack-tight">
-        <p class="kicker">Your challenge · {{ matches.trend.short }}</p>
-        <p class="mine">{{ challenge.body }}</p>
-      </div>
-      <ChallengeCard
-        v-else
-        :kicker="`Your challenge · ${matches.trend.short}`"
-        :body="challenge.body"
-        :counts="{
-          sameBoat: matches.sameBoat.length,
-          beenThere: matches.beenThere.length,
-          cases: matches.cases.length,
-        }"
-      />
+      <WithdrawChallenge
+        :challenge-id="id"
+        @withdrawn="router.push('/matches')"
+      >
+        <div v-if="layout === 'cards'" class="stack-tight">
+          <p class="kicker">Your challenge · {{ matches.trend.short }}</p>
+          <p class="mine">{{ challenge.body }}</p>
+        </div>
+        <ChallengeCard
+          v-else
+          :kicker="`Your challenge · ${matches.trend.short}`"
+          :body="challenge.body"
+          :counts="{
+            sameBoat: matches.sameBoat.length,
+            beenThere: matches.beenThere.length,
+            cases: matches.cases.length,
+          }"
+        />
+      </WithdrawChallenge>
 
       <h1 class="display display-lg rule">Your matches</h1>
 
@@ -221,13 +226,6 @@ onMounted(async () => {
 
       <div class="stack rule">
         <FollowButton :trend="matches.trend" />
-      </div>
-
-      <div class="stack rule">
-        <WithdrawChallenge
-          :challenge-id="id"
-          @withdrawn="router.push('/matches')"
-        />
       </div>
     </template>
 
