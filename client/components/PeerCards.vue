@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { peerLine, type PeerCard } from '../lib/challenges'
 import type { Arrivals } from '../lib/live-list'
+import { reportPath } from '../lib/reports'
 
 const props = defineProps<{
   peers: PeerCard[]
@@ -48,6 +49,12 @@ function connectPath(peer: PeerCard): string {
         ]"
         @click="emit('connect')"
         >{{ action }}</RouterLink
+      >
+      <RouterLink
+        v-if="peer.challengeId"
+        :to="reportPath({ challengeId: peer.challengeId })"
+        class="small report-link"
+        >Report</RouterLink
       >
     </li>
   </ul>

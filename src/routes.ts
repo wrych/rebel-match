@@ -153,6 +153,20 @@ export const routeTable: readonly RouteDef[] = [
     access: 'onboarded',
   },
   {
+    path: '/report/challenge/:id',
+    name: 'report-challenge',
+    title: 'Report',
+    access: 'onboarded',
+    permission: 'content:report',
+  },
+  {
+    path: '/report/request/:id',
+    name: 'report-request',
+    title: 'Report',
+    access: 'onboarded',
+    permission: 'content:report',
+  },
+  {
     path: '/admin/applicants',
     name: 'admin-applicants',
     title: 'Applicants',

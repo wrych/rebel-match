@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { reportPath } from '../lib/reports'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
@@ -141,6 +142,11 @@ onMounted(() => {
           }}</span>
         </div>
       </CardDeck>
+      <RouterLink
+        :to="reportPath({ challengeId: card.challengeId })"
+        class="small report-link"
+        >Report this challenge</RouterLink
+      >
 
       <div class="stack-tight">
         <button

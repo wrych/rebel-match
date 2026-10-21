@@ -29,6 +29,7 @@ const request: ConnectionView = {
   kind: 'been_there',
   status: 'pending',
   message: 'We ran into exactly this.',
+  noteReported: false,
   createdAt: '2026-10-03T09:00:00.000Z',
   other: {
     memberId: 'm2',

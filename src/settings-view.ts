@@ -556,6 +556,20 @@ const catalogue: Group[] = [
         unit: ['challenge', 'challenges'],
       },
       {
+        name: 'Reports per member per day',
+        explanation:
+          'How many challenges or notes one member may report a day, so ' +
+          'reporting cannot be turned on someone.',
+        key: 'limits.reportsPerDay',
+        unit: ['report', 'reports'],
+      },
+      {
+        name: 'Longest report comment',
+        explanation: 'What a member may add to a report, at most.',
+        read: (c) => c.limits.reportCommentMaxChars,
+        unit: CHARACTERS,
+      },
+      {
         name: 'Notifications shown per page',
         explanation: 'How many notifications the list loads at a time.',
         read: (c) => c.limits.notificationsPageSize,

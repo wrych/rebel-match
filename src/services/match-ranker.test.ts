@@ -21,6 +21,7 @@ function peer(memberId: string, name: string, since: string): RankablePeer {
     sector: null,
     companySize: null,
     note: 'Ran a decision-mapping sprint.',
+    challengeId: null,
     since: new Date(since),
   }
 }

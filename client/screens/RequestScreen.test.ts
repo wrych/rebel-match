@@ -16,6 +16,7 @@ const incoming: ConnectionView = {
   kind: 'same_boat',
   status: 'pending',
   message: 'Shall we compare notes?',
+  noteReported: false,
   createdAt: '2026-10-03T09:00:00.000Z',
   other: {
     memberId: 'm2',
@@ -88,6 +89,31 @@ describe('RequestScreen', () => {
     expect(screen.text()).toContain('About Network of Teams')
     expect(screen.text()).toContain('Nobody knows who can decide what.')
     expect(screen.html()).not.toContain('@')
+  })
+
+  it('offers to report the note sent to the member, and only that (R-MOD-2)', async () => {
+    server([incoming])
+    const incomingScreen = await mountScreen()
+    server([{ ...incoming, direction: 'outgoing' }])
+    const outgoingScreen = await mountScreen()
+    const reportLinks = (screen: ReturnType<typeof mount>): unknown[] =>
+      screen
+        .findAllComponents(RouterLinkStub)
+        .filter((link) => link.text() === 'Report this note')
+        .map((link) => link.props('to') as unknown)
+
+    expect(reportLinks(incomingScreen)).toEqual(['/report/request/r1'])
+    expect(reportLinks(outgoingScreen)).toEqual([])
+  })
+
+  it('says the member reported the note, in place of it (R-MOD-4)', async () => {
+    server([
+      { ...incoming, status: 'accepted', message: null, noteReported: true },
+    ])
+    const screen = await mountScreen()
+
+    expect(screen.text()).toContain('You reported their note.')
+    expect(screen.text()).not.toContain('Report this note')
   })
 
   it('shows a withdrawn challenge without its text (R-ASK-17)', async () => {
@@ -198,9 +224,11 @@ describe('RequestScreen', () => {
     const screen = await mountScreen()
 
     expect(screen.text()).toContain('You are connected.')
-    expect(screen.findComponent(RouterLinkStub).props('to')).toBe(
-      '/matches/requests/r1/contact',
-    )
+    expect(
+      screen
+        .findAllComponents(RouterLinkStub)
+        .map((link) => link.props('to') as unknown),
+    ).toContain('/matches/requests/r1/contact')
   })
 
   it('shows nothing of a request that is not theirs (R-NAV-8)', async () => {

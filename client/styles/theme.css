@@ -257,6 +257,17 @@ a {
   text-wrap: pretty;
 }
 
+/* A quiet way to report what should not be there, kept apart from the
+   actions beside it (R-MOD-1, R-MOD-2). */
+.report-link {
+  justify-self: start;
+  align-self: flex-start;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--muted);
+}
+
 .mono {
   font-family: var(--font-mono);
   font-size: 0.72rem;

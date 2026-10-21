@@ -14,6 +14,7 @@ import {
   challenges,
   connectionRequests as r,
   members,
+  reports,
   trends,
 } from '../db/schema.js'
 import { challengeTrend, isShown } from './challenge-store.js'
@@ -93,6 +94,7 @@ async function views(
         hiddenAt: challenges.hiddenAt,
       },
       trendShort: trends.short,
+      noteReported: sql<boolean>`exists (select 1 from ${reports} where ${reports.requestId} = ${r.id} and ${reports.reporterId} = ${viewerId})`,
     })
     .from(r)
     .innerJoin(members, activeOtherParty(viewerId))
@@ -107,7 +109,8 @@ async function views(
       direction: record.targetId === viewerId ? 'incoming' : 'outgoing',
       kind: record.kind,
       status: record.status,
-      message: record.message,
+      message: row.noteReported ? null : record.message,
+      noteReported: row.noteReported,
       createdAt: record.createdAt,
       other: { ...row.other, name: row.other.name ?? '' },
       challenge: challengeView(row.challenge, row.trendShort),

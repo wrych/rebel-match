@@ -22,6 +22,7 @@ const peer = {
   sector: null,
   companySize: null,
   note: 'Roles and circles, and nobody decides.',
+  challengeId: 'c2',
 }
 
 const matches: Matches = {

@@ -13,6 +13,7 @@ import { fromNotice } from './lib/notice'
 import { typedProfile } from './lib/onboarding'
 import { scrollFor } from './lib/scroll'
 import { showScreen } from './lib/tab-title'
+import { afterNavigation } from './lib/thanks'
 import { loadMe, type Me } from './lib/session'
 import AccessRequestedScreen from './screens/AccessRequestedScreen.vue'
 import ApplicantsScreen from './screens/ApplicantsScreen.vue'
@@ -42,6 +43,7 @@ import SettingsScreen from './screens/SettingsScreen.vue'
 import PrivacyScreen from './screens/PrivacyScreen.vue'
 import ProfileScreen from './screens/ProfileScreen.vue'
 import RequestContactScreen from './screens/RequestContactScreen.vue'
+import ReportScreen from './screens/ReportScreen.vue'
 import RequestScreen from './screens/RequestScreen.vue'
 import SignInScreen from './screens/SignInScreen.vue'
 import TermsScreen from './screens/TermsScreen.vue'
@@ -116,6 +118,8 @@ export const router = createRouter({
     screen('offer-done', OfferDoneScreen),
     screen('request', RequestScreen),
     screen('request-contact', RequestContactScreen),
+    screen('report-challenge', ReportScreen),
+    screen('report-request', ReportScreen),
     screen('admin-applicants', ApplicantsScreen),
     screen('admin-invites', InvitesScreen),
     screen('admin-members', MembersScreen),
@@ -139,6 +143,7 @@ router.onError((error, to) => {
 router.afterEach((to, _from, failure) => {
   if (failure !== undefined) return
   settledAfterReload()
+  afterNavigation()
   showScreen(to.meta['title'] as string)
 })
 

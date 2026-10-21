@@ -45,6 +45,8 @@ import { mailLinks } from './services/link-delivery.js'
 import { createChallengeModeration } from './services/challenge-moderation.js'
 import { createChallengeModerationStore } from './services/challenge-moderation-store.js'
 import { createChallengeStore } from './services/challenge-store.js'
+import { createReportStore } from './services/report-store.js'
+import { createReports } from './services/reports.js'
 import { createChallenges } from './services/challenges.js'
 import { newestFirst } from './services/match-ranker.js'
 import { createConnectionStore } from './services/connection-store.js'
@@ -224,6 +226,21 @@ function composeJourneys(
       createNotificationSettingsStore(db),
       track,
     ),
+  }
+}
+
+// Members reporting what should not be there (F20, ADR 0055).
+function composeReports(
+  db: Database,
+  track: Track,
+  settings: LiveSettings,
+): Pick<AppDeps, 'reports'> {
+  return {
+    reports: createReports({
+      store: createReportStore(db),
+      perDay: () => settings.limits().reportsPerDay,
+      track,
+    }),
   }
 }
 
@@ -578,6 +595,7 @@ export function composeApp(
       newId: randomUUID,
     }),
     ...composeJourneys(config, db, track, settings, counting),
+    ...composeReports(db, track, settings),
     badges: markingBadgesOpened(badges, composeNotifications(db, settings)),
     game: composeGame(config, db, settings, track, counting),
     notificationMail: composeNotificationMail(config, db, mailer, hooks),

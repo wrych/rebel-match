@@ -38,6 +38,8 @@ import { createWindowCounter } from './services/rate-limit.js'
 import type { AdmissionService } from './services/admission.js'
 import type { ApprovalService } from './services/approvals.js'
 import type { ChallengeModeration } from './services/challenge-moderation.js'
+import type { ReportService } from './services/reports.js'
+import { reportRoutes } from './routes/reports.js'
 import type { ChallengeService } from './services/challenges.js'
 import type { ConnectionService } from './services/connections.js'
 import type { DeckService } from './services/deck.js'
@@ -96,6 +98,7 @@ export interface AppDeps {
   cockpit: CockpitService
   notifications: NotificationService
   notificationSettings: NotificationSettingsService
+  reports: ReportService
   /** Mails notifications and purges old ones; run by the server's timers,
    * not by requests (R-NOTE-7, R-NOTE-11). */
   notificationMail: {
@@ -183,7 +186,7 @@ export function createApp(deps: AppDeps): Express {
   app.use(challengeRoutes(deps))
   app.use(deckRoutes(deps), activityRoutes(deps))
   app.use(connectionRoutes(deps))
-  app.use(swipeRoutes(deps))
+  app.use(swipeRoutes(deps), reportRoutes(deps))
   app.use(cockpitRoutes(deps), notificationRoutes(deps), badgeRoutes(deps))
   app.use(adminRoleRoutes(deps), adminMemberRoutes(deps))
   app.use(adminWhitelistRoutes(deps), adminChallengeRoutes(deps))

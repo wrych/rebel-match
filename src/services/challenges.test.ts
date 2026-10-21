@@ -24,6 +24,7 @@ const peer: PeerCard = {
   sector: 'Agency & consulting',
   companySize: '51-250',
   note: 'Ran a decision-mapping sprint.',
+  challengeId: 'c-marieke',
 }
 const since = new Date('2026-11-01T09:00:00.000Z')
 const other: PeerCard = { ...peer, memberId: 'm-joris', name: 'Joris Bakker' }
@@ -77,7 +78,7 @@ function setup(sameBoat: RankablePeer[] = [{ ...peer, since }]): {
     newest: (viewerId, trendId, limit) => {
       newestCalls.push([viewerId, trendId, limit])
       return Promise.resolve([
-        { body: decide, trend: { id: '06', short: 'Decisions' } },
+        { id: 'c-9', body: decide, trend: { id: '06', short: 'Decisions' } },
       ])
     },
   }
@@ -108,7 +109,7 @@ describe('createChallenges', () => {
     const newest = await service.newest('m-ada', '06')
 
     expect(newest).toEqual([
-      { body: decide, trend: { id: '06', short: 'Decisions' } },
+      { id: 'c-9', body: decide, trend: { id: '06', short: 'Decisions' } },
     ])
     expect(newestCalls).toEqual([['m-ada', '06', 3]])
   })

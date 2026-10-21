@@ -12,10 +12,12 @@ const longEnough = 'Nobody here knows who can decide what.'
 
 const newest = [
   {
+    id: 'c7',
     body: 'Peer feedback instead of annual reviews.',
     trend: { id: '07', short: 'Inner Motivation' },
   },
   {
+    id: 'c8',
     body: 'A shadow organisation beside the official one.',
     trend: { id: '02', short: 'Network of Teams' },
   },
@@ -53,7 +55,13 @@ function server(
 }
 
 async function mountScreen(): Promise<ReturnType<typeof mount>> {
-  const screen = mount(AskScreen)
+  const screen = mount(AskScreen, {
+    global: {
+      stubs: {
+        RouterLink: { props: ['to'], template: '<a :href="to"><slot /></a>' },
+      },
+    },
+  })
   await flushPromises()
   return screen
 }
@@ -112,7 +120,7 @@ describe('AskScreen', () => {
     expect(submitButton(screen).disabled).toBe(false)
   })
 
-  it('shows the newest challenges as last submitted, nothing inserting them (R-ASK-2)', async () => {
+  it('shows the newest challenges as last submitted, nothing inserting them, each reportable (R-ASK-2, R-MOD-1)', async () => {
     server()
     const screen = await mountScreen()
     const section = screen.find('[aria-labelledby="last-submitted-heading"]')
@@ -124,7 +132,9 @@ describe('AskScreen', () => {
     ])
     expect(section.text()).toContain('Inner Motivation')
     expect(section.findAll('button')).toHaveLength(0)
-    expect(section.findAll('a')).toHaveLength(0)
+    expect(section.findAll('a').map((link) => link.attributes('href'))).toEqual(
+      ['/report/challenge/c7', '/report/challenge/c8'],
+    )
   })
 
   it.each([

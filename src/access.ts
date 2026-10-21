@@ -6,6 +6,7 @@ export const rolePermissions = {
     'challenge:create',
     'challenge:swipe',
     'connection:request',
+    'content:report',
     'game:play',
   ],
   admin: [

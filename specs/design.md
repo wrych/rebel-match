@@ -1818,6 +1818,7 @@ Alternatives considered (kept only as fallbacks):
   | `deck_emptied`                 | —                                                |
   | `trend_opened`                 | `trend_id`                                       |
   | `trend_follow_changed`         | `trend_id`, `followed: bool`                     |
+  | `content_reported`             | `kind: challenge\|note`, `reason` (R-MOD-12)     |
 
 - `seconds_to_onboard` is `consent_at` minus the time the latest sign-in email
   (`outbox` kind `magic_link`) to the member was recorded, in whole seconds
