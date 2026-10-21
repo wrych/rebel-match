@@ -30,6 +30,7 @@ const incoming: ConnectionView = {
     body: 'Nobody knows who can decide what.',
     trendShort: 'Network of Teams',
     withdrawn: false,
+    hidden: false,
   },
   unseen: false,
 }
@@ -98,6 +99,7 @@ describe('RequestScreen', () => {
           body: null,
           trendShort: 'Network of Teams',
           withdrawn: true,
+          hidden: false,
         },
       },
     ])
@@ -105,6 +107,25 @@ describe('RequestScreen', () => {
 
     expect(screen.text()).toContain('About Network of Teams')
     expect(screen.text()).toContain('A withdrawn challenge')
+    expect(screen.text()).not.toContain('Nobody knows who can decide what.')
+  })
+
+  it('shows a challenge a host hid without its text (R-MOD-8)', async () => {
+    server([
+      {
+        ...incoming,
+        challenge: {
+          id: 'c1',
+          body: null,
+          trendShort: 'Network of Teams',
+          withdrawn: false,
+          hidden: true,
+        },
+      },
+    ])
+    const screen = await mountScreen()
+
+    expect(screen.text()).toContain('A challenge a host removed')
     expect(screen.text()).not.toContain('Nobody knows who can decide what.')
   })
 

@@ -11,6 +11,7 @@ import {
   notifications,
   trends,
 } from '../db/schema.js'
+import { isShown } from './challenge-store.js'
 import { DEFAULT_CADENCE, type Cadence } from './notification-cadence.js'
 import type {
   DueNotification,
@@ -71,7 +72,7 @@ interface ReadRow {
   requestStatus: DueNotification['requestStatus']
   cadence: Cadence | null
   challengeId: string | null
-  challengeStatus: string | null
+  challengeShown: boolean
   trend: string | null
   badgeRow: string | null
   badgeLevel: number | null
@@ -97,7 +98,7 @@ function dueOf(row: ReadRow): DueNotification {
     applicantStatus: row.type === 'applicant' ? row.aboutStatus : null,
     applicantEmail: row.type === 'applicant' ? row.aboutEmail : null,
     challengeId: row.challengeId,
-    challengeActive: row.challengeStatus === 'active',
+    challengeActive: row.challengeShown,
     trend: row.trend,
     badge:
       row.badgeRow === null || row.badgeLevel === null
@@ -129,7 +130,7 @@ function readRows(db: Database, ids: string[]): Promise<ReadRow[]> {
       requestStatus: request.status,
       cadence: chosen.cadence,
       challengeId: n.challengeId,
-      challengeStatus: challenges.status,
+      challengeShown: sql<boolean>`coalesce(${isShown()}, false)`,
       trend: trends.short,
       badgeRow: n.badgeRow,
       badgeLevel: n.badgeLevel,

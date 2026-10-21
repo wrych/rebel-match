@@ -169,6 +169,13 @@
       "when": 1792497387709,
       "tag": "0023_member_event_badges",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1792560544519,
+      "tag": "0024_hidden_challenges",
+      "breakpoints": true
     }
   ]
 }

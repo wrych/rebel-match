@@ -120,6 +120,9 @@ async function answer(verdict: 'accept' | 'decline'): Promise<void> {
         <p v-if="request.challenge.withdrawn" class="small">
           A withdrawn challenge
         </p>
+        <p v-else-if="request.challenge.hidden" class="small">
+          A challenge a host removed
+        </p>
         <p v-else class="mine">{{ request.challenge.body }}</p>
       </div>
 

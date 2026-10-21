@@ -16,7 +16,7 @@ import {
   members,
   trends,
 } from '../db/schema.js'
-import { challengeTrend } from './challenge-store.js'
+import { challengeTrend, isShown } from './challenge-store.js'
 import type {
   ConnectionRecord,
   ConnectionStatus,
@@ -90,6 +90,7 @@ async function views(
         id: challenges.id,
         body: challenges.body,
         status: challenges.status,
+        hiddenAt: challenges.hiddenAt,
       },
       trendShort: trends.short,
     })
@@ -116,16 +117,23 @@ async function views(
 }
 
 function challengeView(
-  challenge: { id: string; body: string; status: string } | null,
+  challenge: {
+    id: string
+    body: string
+    status: string
+    hiddenAt: Date | null
+  } | null,
   trendShort: string | null,
 ): ConnectionView['challenge'] {
   if (challenge === null) return null
   const withdrawn = challenge.status !== 'active'
+  const hidden = !withdrawn && challenge.hiddenAt !== null
   return {
     id: challenge.id,
-    body: withdrawn ? null : challenge.body,
+    body: withdrawn || hidden ? null : challenge.body,
     trendShort,
     withdrawn,
+    hidden,
   }
 }
 
@@ -200,9 +208,7 @@ function lookups(
       const [row] = await db
         .select({ memberId: challenges.memberId })
         .from(challenges)
-        .where(
-          and(eq(challenges.id, challengeId), eq(challenges.status, 'active')),
-        )
+        .where(and(eq(challenges.id, challengeId), isShown()))
       return row?.memberId ?? null
     },
     findPending: async (requesterId, targetId, challengeId) => {

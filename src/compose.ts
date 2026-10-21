@@ -42,6 +42,8 @@ import { retentionCutoff } from './services/outbox-log.js'
 import { createApprovalStore } from './services/approval-store.js'
 import { createApprovals } from './services/approvals.js'
 import { mailLinks } from './services/link-delivery.js'
+import { createChallengeModeration } from './services/challenge-moderation.js'
+import { createChallengeModerationStore } from './services/challenge-moderation-store.js'
 import { createChallengeStore } from './services/challenge-store.js'
 import { createChallenges } from './services/challenges.js'
 import { newestFirst } from './services/match-ranker.js'
@@ -229,7 +231,10 @@ function composeMembershipAdmin(
   config: Config,
   db: Database,
   auth: AuthProvider,
-): Pick<AppDeps, 'roles' | 'erasure' | 'roster' | 'whitelist'> {
+): Pick<
+  AppDeps,
+  'roles' | 'erasure' | 'roster' | 'whitelist' | 'challengeModeration'
+> {
   return {
     roles: createRoleService({
       store: createRoleGrantStore(db),
@@ -241,6 +246,9 @@ function composeMembershipAdmin(
       graceDays: () => config.limits.erasureGraceDays,
     }),
     roster: createMemberRoster(db, config.analyticsVersion),
+    challengeModeration: createChallengeModeration(
+      createChallengeModerationStore(db),
+    ),
     whitelist: createWhitelist({
       store: createWhitelistStore(db),
       auth,

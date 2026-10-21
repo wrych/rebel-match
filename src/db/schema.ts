@@ -303,6 +303,15 @@ export const challengeStatus = pgEnum('challenge_status', [
   'archived',
 ])
 
+// Why a host hid something, and later why a member reported it (ADR 0055).
+export const moderationReason = pgEnum('moderation_reason', [
+  'spam',
+  'inappropriate',
+  'other',
+])
+
+// A host's hiding sits beside `status`, so it never collides with the
+// author's own withdrawal (R-MOD-8).
 export const challenges = pgTable(
   'challenges',
   {
@@ -315,6 +324,11 @@ export const challenges = pgTable(
     autoTrend: trendRef('auto_trend').references(() => trends.id),
     overridden: boolean('overridden').notNull().default(false),
     status: challengeStatus('status').notNull().default('active'),
+    hiddenAt: at('hidden_at'),
+    hiddenBy: id('hidden_by').references((): AnyPgColumn => members.id, {
+      onDelete: 'set null',
+    }),
+    hiddenReason: moderationReason('hidden_reason'),
     createdAt: at('created_at').notNull().defaultNow(),
   },
   (t) => [

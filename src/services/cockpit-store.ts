@@ -20,7 +20,7 @@ import {
   members,
   trends,
 } from '../db/schema.js'
-import { challengeTrend } from './challenge-store.js'
+import { challengeTrend, isShown } from './challenge-store.js'
 import { activeOtherParty } from './connection-store.js'
 import type { CockpitChallenge, CockpitStore } from './cockpit.js'
 import type { FollowStore } from './follows.js'
@@ -37,7 +37,7 @@ const isPeer = sql`${peer.status} = 'active' AND ${peer.name} IS NOT NULL
 
 const sameBoat = sql<number>`(SELECT count(DISTINCT ${other.memberId})::int FROM ${challenges} ${other}
   JOIN ${members} ${peer} ON ${peer.id} = ${other.memberId}
-  WHERE ${other.status} = 'active'
+  WHERE ${isShown(other)}
     AND coalesce(${other.trendId}, ${other.autoTrend}) = ${trends.id}
     AND ${isPeer})`
 
@@ -103,8 +103,8 @@ async function newConnections(db: Database, memberId: string): Promise<number> {
   return row?.n ?? 0
 }
 
-// The member's challenges, withdrawn ones last and uncounted (R-MINE-1,
-// R-ASK-17).
+// The member's challenges, those others no longer see last and uncounted
+// (R-MINE-1, R-ASK-17, R-MOD-8).
 async function challengesOf(
   db: Database,
   memberId: string,
@@ -114,6 +114,8 @@ async function challengesOf(
       id: challenges.id,
       body: challenges.body,
       status: challenges.status,
+      hiddenReason: challenges.hiddenReason,
+      shown: isShown(),
       trendId: trends.id,
       short: trends.short,
       sameBoat,
@@ -128,13 +130,10 @@ async function challengesOf(
         inArray(challenges.status, ['active', 'archived']),
       ),
     )
-    .orderBy(
-      sql`${challenges.status} = 'archived'`,
-      desc(challenges.createdAt),
-      challenges.id,
-    )
+    .orderBy(sql`not ${isShown()}`, desc(challenges.createdAt), challenges.id)
   return rows.map((row) => {
     const withdrawn = row.status === 'archived'
+    const hidden = !withdrawn && !row.shown
     return {
       id: row.id,
       body: row.body,
@@ -143,7 +142,8 @@ async function challengesOf(
           ? null
           : { id: row.trendId, short: row.short ?? '' },
       withdrawn,
-      counts: withdrawn
+      hiddenReason: hidden ? row.hiddenReason : null,
+      counts: !row.shown
         ? null
         : {
             sameBoat: row.sameBoat,
