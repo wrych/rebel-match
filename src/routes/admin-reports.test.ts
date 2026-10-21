@@ -68,6 +68,7 @@ function setup(): { app: Express; calls: unknown[][] } {
       calls.push(['unhideNote', id, actorId])
       return Promise.resolve(id === 'r-1' ? 'shown' : 'not_found')
     },
+    purgeHandledBefore: () => Promise.resolve(0),
     dismiss: (item, actorId) => {
       calls.push(['dismiss', item, actorId])
       return Promise.resolve(

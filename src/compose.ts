@@ -492,7 +492,7 @@ function scheduledJobs(
   config: Config,
   deps: Pick<
     AppDeps,
-    'auth' | 'erasure' | 'outbox' | 'notificationMail' | 'badges'
+    'auth' | 'erasure' | 'outbox' | 'notificationMail' | 'badges' | 'moderation'
   >,
 ): ScheduledJob[] {
   const purgeHours = config.outboxPurgeIntervalHours * MS_PER_HOUR
@@ -521,6 +521,13 @@ function scheduledJobs(
       run: purgeOlderThan(
         deps.notificationMail,
         config.limits.notificationRetentionDays,
+      ),
+      everyMs: purgeHours,
+    },
+    {
+      run: purgeOlderThan(
+        { purgeBefore: (cutoff) => deps.moderation.purgeHandledBefore(cutoff) },
+        config.limits.reportRetentionDays,
       ),
       everyMs: purgeHours,
     },

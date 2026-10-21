@@ -170,6 +170,7 @@ function deps(
       dismiss: () => Promise.resolve('not_found'),
       hideNote: () => Promise.resolve('not_found'),
       unhideNote: () => Promise.resolve('not_found'),
+      purgeHandledBefore: () => Promise.resolve(0),
     },
     bans: {
       ban: () => Promise.resolve('not_found'),

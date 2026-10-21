@@ -89,6 +89,8 @@ export interface ModerationStore {
   /** Shows a hidden note again, recording who did; false when none such is
    * hidden. */
   unhideNote(requestId: string, actorId: string): Promise<boolean>
+  /** Deletes the reports handled before `cutoff`; how many went. */
+  purgeHandledBefore(cutoff: Date): Promise<number>
 }
 
 export interface ModerationService {
@@ -102,6 +104,8 @@ export interface ModerationService {
     reason: ModerationReason,
   ): Promise<'hidden' | 'not_found'>
   unhideNote(requestId: string, actorId: string): Promise<'shown' | 'not_found'>
+  /** Deletes handled reports older than the retention (R-MOD-11). */
+  purgeHandledBefore(cutoff: Date): Promise<number>
 }
 
 /** F21: what hosts see of reports, grouped by the member reported, their
@@ -120,6 +124,7 @@ export function createModeration(store: ModerationStore): ModerationService {
         : 'not_found',
     unhideNote: async (requestId, actorId) =>
       (await store.unhideNote(requestId, actorId)) ? 'shown' : 'not_found',
+    purgeHandledBefore: (cutoff) => store.purgeHandledBefore(cutoff),
   }
 }
 

@@ -572,6 +572,13 @@ const catalogue: Group[] = [
         unit: ['member', 'members'],
       },
       {
+        name: 'Keep handled reports for',
+        explanation:
+          'Reports name who made them, so handled ones are deleted after this.',
+        read: (c) => c.limits.reportRetentionDays,
+        unit: DAYS,
+      },
+      {
         name: 'Longest report comment',
         explanation: 'What a member may add to a report, at most.',
         read: (c) => c.limits.reportCommentMaxChars,
