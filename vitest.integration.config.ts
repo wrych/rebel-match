@@ -7,6 +7,9 @@ if (existsSync('.env')) process.loadEnvFile('.env')
 
 const onPostgres = (process.env['DATABASE_URL'] ?? '') !== ''
 
+// CI runs this suite twice, once per engine; the job summary's title says which.
+const onGithubActions = process.env['GITHUB_ACTIONS'] === 'true'
+
 /**
  * API-level tests (R-QA-2) with mail.delivery=none, so the auth and double
  * opt-in journeys are exercised without sending mail. Each file runs on a
@@ -16,6 +19,19 @@ const onPostgres = (process.env['DATABASE_URL'] ?? '') !== ''
 export default defineConfig({
   test: {
     include: ['tests/integration/**/*.test.ts'],
+    ...(onGithubActions && {
+      reporters: [
+        'default',
+        [
+          'github-actions',
+          {
+            jobSummary: {
+              title: `Integration tests on ${onPostgres ? 'Postgres' : 'PGlite'}`,
+            },
+          },
+        ],
+      ],
+    }),
     fileParallelism: !onPostgres,
     testTimeout: 20_000,
     hookTimeout: 20_000,
