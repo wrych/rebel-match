@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { rolePermissions } from '../../src/access'
+import MemberBan from '../components/MemberBan.vue'
 import MemberChallenges from '../components/MemberChallenges.vue'
 import { peerLine } from '../lib/challenges'
 import {
@@ -26,6 +27,7 @@ const problem = ref<string | null>(null)
 const notice = ref<string | null>(null)
 const canGrant = ref(false)
 const canModerate = ref(false)
+const canBan = ref(false)
 const confirming = ref(false)
 const confirmingNow = ref(false)
 const graceDays = ref<number | null>(null)
@@ -53,6 +55,7 @@ onMounted(async () => {
     graceDays.value = config.limits.erasureGraceDays
     canGrant.value = me?.permissions.includes('role:grant') ?? false
     canModerate.value = me?.permissions.includes('challenge:moderate') ?? false
+    canBan.value = me?.permissions.includes('member:ban') ?? false
   } catch {
     problem.value = 'This member could not be loaded.'
   }
@@ -238,6 +241,28 @@ async function erase(): Promise<void> {
         <p v-else class="small">
           {{ member.roles.length > 0 ? member.roles.join(', ') : 'None' }}
         </p>
+      </article>
+
+      <article
+        v-if="
+          canBan && (member.status === 'active' || member.status === 'banned')
+        "
+        class="card"
+      >
+        <h2 class="card-title">Ban</h2>
+        <p class="small">
+          {{
+            member.status === 'banned'
+              ? 'Banned: they cannot sign in, and nothing of theirs is shown to anyone. Lifting the ban brings it back.'
+              : 'For harder cases than hiding what they wrote: they are signed out and kept out, and nothing is erased.'
+          }}
+        </p>
+        <MemberBan
+          :member-id="member.id"
+          :name="member.name ?? member.email"
+          :status="member.status"
+          @changed="load"
+        />
       </article>
 
       <article v-if="member.status === 'deleted'" class="card deleted">

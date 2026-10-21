@@ -1,17 +1,15 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import BanForm from '../components/BanForm.vue'
 import HideForm from '../components/HideForm.vue'
+import MemberBan from '../components/MemberBan.vue'
 import {
-  banMember,
   dismissReports,
   fetchModerationPage,
   hiddenAs,
   hideChallenge,
   hideNote,
   reasonLabel,
-  unbanMember,
   unhideChallenge,
   unhideNote,
   type ModeratedItem,
@@ -20,8 +18,6 @@ import {
   type ModerationPage,
   type ModerationReason,
 } from '../lib/moderation'
-import { fetchConfig } from '../lib/api'
-import { loadMe } from '../lib/session'
 import { when } from '../lib/when'
 
 const route = useRoute()
@@ -31,9 +27,6 @@ const missing = ref(false)
 const problem = ref<string | null>(null)
 const hiding = ref<string | null>(null)
 const busy = ref(false)
-const banning = ref(false)
-const mayBan = ref(false)
-const banMaxChars = ref<number | null>(null)
 
 const openOf = (item: ModerationItem): number =>
   item.reports.filter((report) => report.open).length
@@ -78,23 +71,15 @@ async function load(): Promise<void> {
   }
 }
 
-const refusals = {
-  done: null,
-  gone: 'Someone changed that meanwhile. Here is how it is now.',
-  refused: 'You cannot ban yourself, or the last member who can grant roles.',
-} as const
-
 // Each change ends by reading the page again, so it shows what the server
 // now holds, a change another host made meanwhile included.
-async function change(
-  act: () => Promise<'done' | 'gone' | 'refused'>,
-): Promise<void> {
+async function change(act: () => Promise<'done' | 'gone'>): Promise<void> {
   busy.value = true
   problem.value = null
   try {
-    problem.value = refusals[await act()]
+    if ((await act()) === 'gone')
+      problem.value = 'Someone changed that meanwhile. Here is how it is now.'
     hiding.value = null
-    banning.value = false
   } catch {
     problem.value = 'That did not go through. Try again.'
   }
@@ -116,16 +101,7 @@ function unhide(item: ModerationItem): Promise<void> {
   )
 }
 
-// Banning needs its own permission, so the page offers it only to those
-// who hold it (R-ROLE-4).
-onMounted(async () => {
-  await load()
-  const me = await loadMe().catch(() => null)
-  mayBan.value = me?.permissions.includes('member:ban') === true
-  if (mayBan.value)
-    banMaxChars.value =
-      (await fetchConfig().catch(() => null))?.limits.banNoteMaxChars ?? null
-})
+onMounted(load)
 </script>
 
 <template>
@@ -156,36 +132,12 @@ onMounted(async () => {
         >
       </div>
 
-      <template v-if="mayBan">
-        <BanForm
-          v-if="banning"
-          :busy="busy"
-          :name="page.member.name ?? page.member.email"
-          :max-chars="banMaxChars"
-          @ban="(note) => change(() => banMember(memberId, note))"
-          @cancel="banning = false"
-        />
-        <div v-else class="actions">
-          <button
-            v-if="page.member.status === 'active'"
-            type="button"
-            class="btn btn-dark btn-small"
-            :disabled="busy"
-            @click="banning = true"
-          >
-            Ban member…
-          </button>
-          <button
-            v-if="page.member.status === 'banned'"
-            type="button"
-            class="btn btn-ghost btn-small"
-            :disabled="busy"
-            @click="change(() => unbanMember(memberId))"
-          >
-            Lift ban
-          </button>
-        </div>
-      </template>
+      <MemberBan
+        :member-id="memberId"
+        :name="page.member.name ?? page.member.email"
+        :status="page.member.status"
+        @changed="load"
+      />
 
       <p class="notice notice-solid">
         {{ page.open.reports }} open reports from

@@ -380,7 +380,7 @@ capability, not a secret** — and every requirement below exists because of tha
   analytics opt-in, and how many challenges and connection requests they have.
   It SHALL leave out the member's 9toRevolution results, which no host sees
   (R-GAME-15), and their badges (R-BADGE-12). From there a host SHALL be
-  able to change their roles (R-ROLE-9)
+  able to change their roles (R-ROLE-9), ban them or lift a ban (R-MOD-9),
   and delete them (R-NFR-7), each within the host's own permissions; later
   member actions belong on this page. For a deleted account it SHALL show when
   it will be erased, and offer to restore it or erase it at once (ADR 0032).

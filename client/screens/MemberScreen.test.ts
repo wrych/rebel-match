@@ -220,4 +220,44 @@ describe('MemberScreen (R-MEM-2)', () => {
 
     expect(screen.find('[role="status"]').text()).toContain('only admin left')
   })
+
+  it('offers no ban to a host without member:ban (R-ROLE-4)', async () => {
+    permissions.mockReturnValue(['member:delete'])
+    server()
+    const screen = await shown()
+
+    expect(screen.text()).not.toContain('Ban member…')
+  })
+
+  it('bans the member with a reason, then shows the lifting (R-MOD-9)', async () => {
+    permissions.mockReturnValue(['member:delete', 'member:ban'])
+    const { calls } = server()
+    const screen = await shown()
+
+    const button = (
+      label: string,
+    ): ReturnType<ReturnType<typeof mount>['find']> | undefined =>
+      screen.findAll('button').find((each) => each.text() === label)
+    await button('Ban member…')?.trigger('click')
+    await screen.find('textarea').setValue('Harassed two members.')
+    await button('Ban')?.trigger('click')
+    await flushPromises()
+
+    expect(calls).toEqual(['POST /api/admin/members/m-mia/ban'])
+  })
+
+  it('lifts the ban on a banned member', async () => {
+    permissions.mockReturnValue(['member:ban'])
+    const { calls } = server({}, { ...mia, status: 'banned' })
+    const screen = await shown()
+
+    expect(screen.text()).toContain('Banned: they cannot sign in')
+    await screen
+      .findAll('button')
+      .find((each) => each.text() === 'Lift ban')
+      ?.trigger('click')
+    await flushPromises()
+
+    expect(calls).toEqual(['POST /api/admin/members/m-mia/unban'])
+  })
 })
