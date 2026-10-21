@@ -462,6 +462,13 @@ export const connectionRequests = pgTable(
     // When the target first opened it: as they accepted it, or later for one
     // accepted at once between members already connected (R-CONN-9).
     targetSeenAt: at('target_seen_at'),
+    // A host hid the note: nobody but its sender reads it (R-MOD-8).
+    noteHiddenAt: at('note_hidden_at'),
+    noteHiddenBy: id('note_hidden_by').references(
+      (): AnyPgColumn => members.id,
+      { onDelete: 'set null' },
+    ),
+    noteHiddenReason: moderationReason('note_hidden_reason'),
   },
   (t) => [
     index('ix_req_target').on(t.targetId, t.status),

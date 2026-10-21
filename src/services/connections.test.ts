@@ -59,6 +59,7 @@ function fakeStore(): ConnectionStore & {
     status: r.status,
     message: r.message,
     noteReported: false,
+    noteHiddenAs: null,
     createdAt: r.createdAt,
     other: {
       memberId: r.targetId === viewer ? r.requesterId : r.targetId,

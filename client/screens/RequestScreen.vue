@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { hiddenAs } from '../lib/moderation'
 import { reportPath } from '../lib/reports'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -111,8 +112,21 @@ async function answer(verdict: 'accept' | 'decline'): Promise<void> {
         <p v-if="request.noteReported" class="small">
           You reported their note.
         </p>
+        <p
+          v-else-if="request.noteHiddenAs && request.direction === 'incoming'"
+          class="small"
+        >
+          Their note was removed by a host.
+        </p>
         <p v-if="request.message" class="small peer-note">
           “{{ request.message }}”
+        </p>
+        <p
+          v-if="request.noteHiddenAs && request.direction === 'outgoing'"
+          class="small"
+        >
+          A host hid your note {{ hiddenAs(request.noteHiddenAs) }}; nobody else
+          reads it.
         </p>
         <RouterLink
           v-if="request.message && request.direction === 'incoming'"

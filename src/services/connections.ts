@@ -1,3 +1,4 @@
+import type { ModerationReason } from './challenge-moderation.js'
 import { trackNothing, type Track } from './analytics.js'
 
 export type ConnectionKind = 'same_boat' | 'been_there'
@@ -32,9 +33,12 @@ export interface ConnectionView {
   direction: 'incoming' | 'outgoing'
   kind: ConnectionKind
   status: ConnectionStatus
-  /** Left out once the viewer reported it (R-MOD-4). */
+  /** Left out once the viewer reported it (R-MOD-4), or for anyone but its
+   * sender once a host hid it (R-MOD-8). */
   message: string | null
   noteReported: boolean
+  /** Why a host hid the note; null while it is not hidden. */
+  noteHiddenAs: ModerationReason | null
   createdAt: string
   other: MemberCard
   /** A challenge withdrawn (R-ASK-17) or hidden by a host (R-MOD-8) keeps its

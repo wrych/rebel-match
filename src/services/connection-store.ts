@@ -26,6 +26,8 @@ import type {
 } from './connections.js'
 import { companySizeLabel, sectorLabel } from './profile-labels.js'
 
+// A note a host hid is no note to anyone reading the record, the mail
+// worker included (R-MOD-8).
 function recordOf(row: typeof r.$inferSelect): ConnectionRecord {
   return {
     id: row.id,
@@ -33,7 +35,7 @@ function recordOf(row: typeof r.$inferSelect): ConnectionRecord {
     targetId: row.targetId,
     challengeId: row.challengeId,
     kind: row.kind,
-    message: row.message,
+    message: row.noteHiddenAt === null ? row.message : null,
     status: row.status,
     createdAt: row.createdAt.toISOString(),
   }
@@ -104,19 +106,33 @@ async function views(
     .orderBy(desc(r.createdAt), r.id)
   return rows.map((row) => {
     const record = recordOf(row.request)
+    const ownNote = row.request.requesterId === viewerId
     return {
       id: record.id,
       direction: record.targetId === viewerId ? 'incoming' : 'outgoing',
       kind: record.kind,
       status: record.status,
-      message: row.noteReported ? null : record.message,
+      message: messageFor(row, ownNote),
       noteReported: row.noteReported,
+      noteHiddenAs:
+        row.request.noteHiddenAt === null ? null : row.request.noteHiddenReason,
       createdAt: record.createdAt,
       other: { ...row.other, name: row.other.name ?? '' },
       challenge: challengeView(row.challenge, row.trendShort),
       unseen: unseenBy(row.request, viewerId),
     }
   })
+}
+
+// The sender still reads a note a host hid; a note the viewer reported is
+// gone from their view (R-MOD-4, R-MOD-8).
+function messageFor(
+  row: { request: typeof r.$inferSelect; noteReported: boolean },
+  ownNote: boolean,
+): string | null {
+  if (row.noteReported) return null
+  if (ownNote) return row.request.message
+  return recordOf(row.request).message
 }
 
 function challengeView(

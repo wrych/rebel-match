@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { hiddenAs } from '../lib/moderation'
 import { reportPath } from '../lib/reports'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
@@ -121,8 +122,20 @@ onMounted(async () => {
             <p v-else class="mine">{{ each.challenge.body }}</p>
           </div>
           <p v-if="each.noteReported" class="small">Reported</p>
+          <p
+            v-else-if="each.noteHiddenAs && each.direction === 'incoming'"
+            class="small"
+          >
+            Removed by a host
+          </p>
           <p v-if="each.message" class="small peer-note">
             “{{ each.message }}”
+          </p>
+          <p
+            v-if="each.noteHiddenAs && each.direction === 'outgoing'"
+            class="small"
+          >
+            A host hid your note {{ hiddenAs(each.noteHiddenAs) }}.
           </p>
           <RouterLink
             v-if="each.message && each.direction === 'incoming'"

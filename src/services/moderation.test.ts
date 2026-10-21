@@ -55,6 +55,8 @@ describe('createModeration (R-MOD-7)', () => {
         dismissed.push(actorId)
         return Promise.resolve('requestId' in item)
       },
+      hideNote: () => Promise.resolve(false),
+      unhideNote: () => Promise.resolve(false),
     })
 
     expect(await moderation.dismiss({ requestId: 'r-1' }, 'm-host')).toBe(

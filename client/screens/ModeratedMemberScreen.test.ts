@@ -140,7 +140,7 @@ describe('ModeratedMemberScreen (S40, R-MOD-7)', () => {
     )
   })
 
-  it('offers Hide and Dismiss on a reported challenge, nothing on a handled note', async () => {
+  it('offers Hide and Dismiss on a reported challenge, only Hide on a handled note', async () => {
     server([page])
     const screen = await mountScreen()
 
@@ -149,7 +149,7 @@ describe('ModeratedMemberScreen (S40, R-MOD-7)', () => {
       'Hide…',
       'Dismiss',
     ])
-    expect(second?.findAll('button')).toHaveLength(0)
+    expect(second?.findAll('button').map((b) => b.text())).toEqual(['Hide…'])
   })
 
   it('hides a challenge with the reason chosen, then reads the page again (R-MOD-8)', async () => {
@@ -175,6 +175,28 @@ describe('ModeratedMemberScreen (S40, R-MOD-7)', () => {
         ?.findAll('button')
         .map((b) => b.text()),
     ).toEqual(['Unhide', 'Dismiss'])
+  })
+
+  it('hides a note, then shows it again (R-MOD-8)', async () => {
+    const hidden: ModerationPage = {
+      ...page,
+      items: [challenge, { ...note, state: 'hidden', hiddenReason: 'spam' }],
+    }
+    const fetchMock = server([page, hidden, page])
+    const screen = await mountScreen()
+
+    await click(screen, 'Hide…', 1)
+    await click(screen, 'Hide', 1)
+    expect(fetchMock).toHaveBeenCalledWith('/api/admin/requests/r1/hide-note', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ reason: 'spam' }),
+    })
+    await click(screen, 'Unhide', 1)
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/admin/requests/r1/unhide-note',
+      { method: 'POST' },
+    )
   })
 
   it('dismisses an item’s reports', async () => {
