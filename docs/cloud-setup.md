@@ -686,6 +686,74 @@ longer may not start its preview again after its image is gone; pushing to it
 redeploys. Once production exists (part 2), keep every image it may roll back
 to: check what it runs before deleting.
 
+## Read-only access for Claude
+
+ADR 0056: one identity in non-prod that reads logs, metrics and the state of
+services, jobs, the database instance and the tick, and nothing more. Its key
+goes into your Claude Code cloud environment, so every cloud session you start
+there can look for itself, with `gcloud` and through the two MCP servers in
+`.mcp.json`. Production is not part of it.
+
+**1. The identity and its key.** In the shell from "Before you start":
+
+```sh
+DEBUG_SA=claude-debug@$NONPROD.iam.gserviceaccount.com
+gcloud iam service-accounts create claude-debug --project="$NONPROD" \
+  --display-name="Claude Code, read-only"
+for ROLE in roles/logging.viewer roles/monitoring.viewer roles/run.viewer \
+  roles/cloudsql.viewer roles/cloudscheduler.viewer; do
+  gcloud projects add-iam-policy-binding "$NONPROD" --condition=None \
+    --member="serviceAccount:$DEBUG_SA" --role="$ROLE"
+done
+
+gcloud iam service-accounts keys create claude-debug.json --iam-account="$DEBUG_SA"
+base64 < claude-debug.json | tr -d '\n'; echo
+rm claude-debug.json
+```
+
+Copy the line `base64` prints; that is the whole key. If `keys create` fails
+naming `constraints/iam.disableServiceAccountKeyCreation`, an organization
+policy forbids keys, the default for projects in a Google Workspace or Cloud
+Identity organization. Someone with the Organization Policy Administrator role
+lifts it for this project only:
+`gcloud resource-manager org-policies disable-enforce
+iam.disableServiceAccountKeyCreation --project="$NONPROD"`.
+
+**2. Into the cloud environment.** Environments are where a setting reaches
+every session; there is nothing account-wide above them.
+
+1. At [claude.ai/code](https://claude.ai/code), on the screen where you start
+   a session, open the environment selector under the message box and edit the
+   environment you run this repository's sessions in.
+2. Under **Environment variables**, add one line, with the key you copied:
+   `GCP_DEBUG_KEY_BASE64=<the line>`
+3. Save. Sessions started from then on in that environment are signed in;
+   running ones are not, and neither is a session in any other environment.
+
+Not under **Network secrets**: those never enter the session, and `gcloud`
+needs the key inside it to sign in (ADR 0056). Anyone who uses the environment
+can read the variable, so keep it on a personal environment, not one shared
+with the organization.
+
+**3. Check.** In a new session, ask Claude to run `gcloud auth list`:
+`claude-debug@…` should be the active account. The SessionStart hook
+(`.claude/hooks/session-start.sh`) signs it in, and does nothing when the
+variable is not set.
+
+**Rotating, and revoking.** The key never expires. To replace it, create a new
+one as in step 1, put it in the environment, then delete the old one; if it
+may have leaked, delete it first:
+
+```sh
+gcloud iam service-accounts keys list --iam-account="$DEBUG_SA" --managed-by=user
+gcloud iam service-accounts keys delete <KEY_ID> --iam-account="$DEBUG_SA"
+```
+
+**On a laptop** none of this is needed: the MCP servers use your own login,
+from `gcloud auth login` and `gcloud auth application-default login`. They then
+act with your rights, which include deleting things; Claude Code asks before
+each call unless you have allowed it.
+
 ## Taking it down
 
 ```sh
