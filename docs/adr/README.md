@@ -89,3 +89,4 @@ still holds except where the later ADR says otherwise.
 | [0051](0051-experiments-assigned-on-the-server.md)                | Run experiments in code, assigned on the server from the member's id            | Accepted                              |
 | [0052](0052-summarise-each-matches-section-in-a-sentence.md)      | Summarise each matches section in a sentence, its cards on a tap                | Accepted                              |
 | [0053](0053-private-badges-counted-from-what-members-do.md)       | Give members private badges, counted from what they already do                  | Accepted                              |
+| [0054](0054-members-report-hosts-moderate.md)                     | Members report, hosts moderate by hiding, and a ban is a status                 | Accepted                              |
