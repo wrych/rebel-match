@@ -454,7 +454,7 @@ Built after the spec and ADR merge. One pull request per item, in this order.
 - [x] Withdrawing a challenge: `POST /api/challenges/:id/withdraw`, pending
       requests closed, the cockpit's **Withdrawn** card, its text left out of
       _Connected over_. _(R-ASK-17)_
-- [ ] Hiding a challenge: one **shown** predicate for every list of
+- [x] Hiding a challenge: one **shown** predicate for every list of
       challenges, the hidden columns, hide and unhide, the author's
       **Hidden by a host**, the member's page listing their challenges.
       _(R-MOD-8, R-MEM-2)_

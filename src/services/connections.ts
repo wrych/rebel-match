@@ -35,12 +35,14 @@ export interface ConnectionView {
   message: string | null
   createdAt: string
   other: MemberCard
-  /** A withdrawn challenge keeps its place but loses its text (R-ASK-17). */
+  /** A challenge withdrawn (R-ASK-17) or hidden by a host (R-MOD-8) keeps its
+   * place but loses its text. */
   challenge: {
     id: string
     body: string | null
     trendShort: string | null
     withdrawn: boolean
+    hidden: boolean
   } | null
   /** True while the request is accepted and the viewer has not opened its
    * contact since, unless they accepted it themselves (R-CONN-7, R-CONN-9). */

@@ -12,6 +12,7 @@ const cockpit: Cockpit = {
       body: 'Nobody knows who can decide what.',
       trend: { id: '02', short: 'Network of Teams' },
       withdrawn: false,
+      hiddenReason: null,
       counts: { sameBoat: 2, beenThere: 3, cases: 1 },
     },
   ],
@@ -349,6 +350,7 @@ describe('CockpitScreen', () => {
       body: 'How do we stop approving travel twice?',
       trend: null,
       withdrawn: true,
+      hiddenReason: null,
       counts: null,
     }
     serve({ ...cockpit, challenges: [withdrawn] }, () => [])
@@ -359,6 +361,24 @@ describe('CockpitScreen', () => {
     expect(screen.find('.counts').exists()).toBe(false)
     expect(paths(screen)).not.toContain('/challenges/c2/matches')
     expect(screen.text()).not.toContain('Withdraw…')
+  })
+
+  it('shows a challenge a host hid as such, with why, uncounted and unlinked (R-MOD-8)', async () => {
+    const hidden = {
+      id: 'c3',
+      body: 'Looking for partners for my SaaS.',
+      trend: { id: '02', short: 'Network of Teams' },
+      withdrawn: false,
+      hiddenReason: 'spam' as const,
+      counts: null,
+    }
+    serve({ ...cockpit, challenges: [hidden] }, () => [])
+    const screen = await mountScreen()
+
+    expect(screen.text()).toContain('Hidden by a host')
+    expect(screen.text()).toContain('A host hid it as spam.')
+    expect(screen.find('.counts').exists()).toBe(false)
+    expect(paths(screen)).not.toContain('/challenges/c3/matches')
   })
 
   it('withdraws a challenge from its card, then reads the cockpit again (R-ASK-17)', async () => {

@@ -53,6 +53,11 @@ function deps(
       list: () => Promise.resolve([]),
       detail: () => Promise.resolve(null),
     },
+    challengeModeration: {
+      ofMember: () => Promise.resolve(null),
+      hide: () => Promise.resolve('not_found'),
+      unhide: () => Promise.resolve('not_found'),
+    },
     profile: {
       own: () => Promise.resolve(null),
       update: () => Promise.resolve(),

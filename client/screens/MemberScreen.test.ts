@@ -99,6 +99,27 @@ describe('MemberScreen (R-MEM-2)', () => {
     expect(text).toContain('Connection requests received')
   })
 
+  it.each([
+    [['member:delete', 'challenge:moderate'], true],
+    [['member:delete'], false],
+  ])(
+    'lists the member’s challenges only to a host who may hide them (R-MOD-8): %o',
+    async (held, listed) => {
+      permissions.mockReturnValue(held)
+      server()
+      const screen = mount(MemberScreen, {
+        global: {
+          stubs: { RouterLink: RouterLinkStub, MemberChallenges: true },
+        },
+      })
+      await flushPromises()
+
+      expect(screen.findComponent({ name: 'MemberChallenges' }).exists()).toBe(
+        listed,
+      )
+    },
+  )
+
   it('lists roles without boxes for a host who cannot grant them', async () => {
     permissions.mockReturnValue(['member:delete'])
     server()

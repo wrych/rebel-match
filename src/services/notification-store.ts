@@ -22,6 +22,7 @@ import {
   notifications,
   trends,
 } from '../db/schema.js'
+import { isShown } from './challenge-store.js'
 import type { NotificationRow, NotificationStore } from './notifications.js'
 
 const n = notifications
@@ -43,7 +44,7 @@ function shown(roles: readonly string[], memberId: string): SQL | undefined {
     or(ne(n.type, 'applicant'), reviews(roles, memberId)),
     or(
       ne(n.type, 'trend_challenge'),
-      sql`exists (select 1 from ${challenges} where ${challenges.id} = ${n.challengeId} and ${challenges.status} = 'active')`,
+      sql`exists (select 1 from ${challenges} where ${challenges.id} = ${n.challengeId} and ${isShown()})`,
     ),
   )
 }

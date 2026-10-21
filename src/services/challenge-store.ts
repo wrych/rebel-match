@@ -1,4 +1,13 @@
-import { and, desc, eq, isNotNull, ne, sql, type SQL } from 'drizzle-orm'
+import {
+  and,
+  desc,
+  eq,
+  isNotNull,
+  ne,
+  sql,
+  type AnyColumn,
+  type SQL,
+} from 'drizzle-orm'
 import { insertTrendNotifications } from './notification-store.js'
 import type { Database } from '../db/connect.js'
 import {
@@ -22,6 +31,14 @@ import { companySizeLabel, sectorLabel } from './profile-labels.js'
 export const challengeTrend = sql<
   string | null
 >`coalesce(${challenges.trendId}, ${challenges.autoTrend})`
+
+/** Whether others may see a challenge: active, and not hidden by a host
+ * (R-ASK-17, R-MOD-8). Takes the alias where a query names the table so. */
+export function isShown(
+  table: { status: AnyColumn; hiddenAt: AnyColumn } = challenges,
+): SQL<boolean> {
+  return sql<boolean>`(${table.status} = 'active' and ${table.hiddenAt} is null)`
+}
 
 // Peers are active, onboarded members: a name is what makes a card a person.
 // No email column is ever selected for a card (R-CONN-6).
@@ -74,13 +91,7 @@ async function peersOf(
     })
     .from(challenges)
     .innerJoin(members, eq(members.id, challenges.memberId))
-    .where(
-      and(
-        eq(challenges.status, 'active'),
-        eq(challengeTrend, trendId),
-        peerFilter(viewerId),
-      ),
-    )
+    .where(and(isShown(), eq(challengeTrend, trendId), peerFilter(viewerId)))
   const been = await db
     .select({
       ...peerColumns,
@@ -108,7 +119,7 @@ async function newestOf(
     .innerJoin(trends, eq(trends.id, challengeTrend))
     .where(
       and(
-        eq(challenges.status, 'active'),
+        isShown(),
         peerFilter(viewerId),
         trendId === null ? undefined : eq(trends.id, trendId),
       ),
@@ -177,7 +188,7 @@ export function createChallengeStore(db: Database): ChallengeStore {
       const [row] = await db
         .select()
         .from(challenges)
-        .where(and(eq(challenges.id, id), eq(challenges.status, 'active')))
+        .where(and(eq(challenges.id, id), isShown()))
       return row === undefined ? null : challengeOf(row)
     },
     // A challenge is posted once its trend is first confirmed; the trend's

@@ -1,12 +1,15 @@
+import type { ModerationReason } from './challenge-moderation.js'
 import type { Trend } from './challenges.js'
 
-/** One of the member's own challenges with what it found (R-MINE-1); a
- * withdrawn one finds nothing, so it has no counts (R-ASK-17). */
+/** One of the member's own challenges with what it found (R-MINE-1); one
+ * withdrawn (R-ASK-17), or hidden by a host and why (R-MOD-8), finds nothing,
+ * so it has no counts. */
 export interface CockpitChallenge {
   id: string
   body: string
   trend: { id: string; short: string } | null
   withdrawn: boolean
+  hiddenReason: ModerationReason | null
   counts: { sameBoat: number; beenThere: number; cases: number } | null
 }
 

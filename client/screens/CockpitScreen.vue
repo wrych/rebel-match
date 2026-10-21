@@ -225,7 +225,8 @@ onMounted(() => live.refresh())
             :body="challenge.body"
             :counts="challenge.counts"
             :withdrawn="challenge.withdrawn"
-            :to="challenge.withdrawn ? undefined : matchesPath(challenge.id)"
+            :hidden-reason="challenge.hiddenReason"
+            :to="challenge.counts ? matchesPath(challenge.id) : undefined"
           />
           <WithdrawChallenge
             v-if="!challenge.withdrawn"

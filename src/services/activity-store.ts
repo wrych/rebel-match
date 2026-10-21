@@ -10,6 +10,7 @@ import {
   swipes,
 } from '../db/schema.js'
 import type { ActivityStore } from './activity.js'
+import { isShown } from './challenge-store.js'
 
 // One statement: an open is written only when the token names an invite.
 async function recordOpen(
@@ -56,7 +57,7 @@ export function createActivityStore(db: Database): ActivityStore {
         .where(
           and(
             eq(challenges.id, challengeId),
-            eq(challenges.status, 'active'),
+            isShown(),
             eq(members.status, 'active'),
             isNotNull(members.name),
             ne(challenges.memberId, memberId),

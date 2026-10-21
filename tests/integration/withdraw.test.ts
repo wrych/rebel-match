@@ -169,6 +169,7 @@ describe('withdrawing a challenge over Postgres (R-ASK-17)', () => {
       body: null,
       trendShort: expect.any(String) as string,
       withdrawn: true,
+      hidden: false,
     })
   })
 })

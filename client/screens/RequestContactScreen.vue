@@ -114,6 +114,9 @@ onMounted(async () => {
             <p v-if="each.challenge.withdrawn" class="small">
               A withdrawn challenge
             </p>
+            <p v-else-if="each.challenge.hidden" class="small">
+              A challenge a host removed
+            </p>
             <p v-else class="mine">{{ each.challenge.body }}</p>
           </div>
           <p v-if="each.message" class="small peer-note">

@@ -1,7 +1,7 @@
 import { and, eq, ne } from 'drizzle-orm'
 import type { Database } from '../db/connect.js'
 import { challenges, follows, members, swipes } from '../db/schema.js'
-import { challengeTrend } from './challenge-store.js'
+import { challengeTrend, isShown } from './challenge-store.js'
 import type { SwipeStore } from './swipes.js'
 
 /** Swipes and follows over Postgres (design §2). Recording twice is harmless:
@@ -22,7 +22,7 @@ export function createSwipeStore(db: Database): SwipeStore {
         .where(
           and(
             eq(challenges.id, challengeId),
-            eq(challenges.status, 'active'),
+            isShown(),
             ne(challenges.memberId, viewerId),
           ),
         )

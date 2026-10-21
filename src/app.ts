@@ -15,6 +15,7 @@ import { swipeRoutes } from './routes/swipes.js'
 import { cockpitRoutes } from './routes/cockpit.js'
 import { guardApi } from './routes/api-guard.js'
 import { adminApplicantRoutes } from './routes/admin-applicants.js'
+import { adminChallengeRoutes } from './routes/admin-challenges.js'
 import {
   adminInviteRoutes,
   eventBadgeLogoRoutes,
@@ -36,6 +37,7 @@ import { limitPerIp, SIGN_IN_POSTS } from './routes/ip-limit.js'
 import { createWindowCounter } from './services/rate-limit.js'
 import type { AdmissionService } from './services/admission.js'
 import type { ApprovalService } from './services/approvals.js'
+import type { ChallengeModeration } from './services/challenge-moderation.js'
 import type { ChallengeService } from './services/challenges.js'
 import type { ConnectionService } from './services/connections.js'
 import type { DeckService } from './services/deck.js'
@@ -73,6 +75,7 @@ export interface AppDeps {
   roles: RoleService
   erasure: ErasureService
   roster: MemberRoster
+  challengeModeration: ChallengeModeration
   profile: ProfileStore
   whitelist: WhitelistService
   outbox: OutboxLog
@@ -183,7 +186,7 @@ export function createApp(deps: AppDeps): Express {
   app.use(swipeRoutes(deps))
   app.use(cockpitRoutes(deps), notificationRoutes(deps), badgeRoutes(deps))
   app.use(adminRoleRoutes(deps), adminMemberRoutes(deps))
-  app.use(adminWhitelistRoutes(deps))
+  app.use(adminWhitelistRoutes(deps), adminChallengeRoutes(deps))
   app.use(adminApplicantRoutes(deps))
   app.use(adminInviteRoutes(deps))
   app.use(adminOutboxRoutes(deps))

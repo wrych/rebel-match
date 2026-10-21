@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { rolePermissions } from '../../src/access'
+import MemberChallenges from '../components/MemberChallenges.vue'
 import { peerLine } from '../lib/challenges'
 import {
   deleteMember,
@@ -24,6 +25,7 @@ const missing = ref(false)
 const problem = ref<string | null>(null)
 const notice = ref<string | null>(null)
 const canGrant = ref(false)
+const canModerate = ref(false)
 const confirming = ref(false)
 const confirmingNow = ref(false)
 const graceDays = ref<number | null>(null)
@@ -50,6 +52,7 @@ onMounted(async () => {
     const [me, config] = await Promise.all([loadMe(), fetchConfig(), load()])
     graceDays.value = config.limits.erasureGraceDays
     canGrant.value = me?.permissions.includes('role:grant') ?? false
+    canModerate.value = me?.permissions.includes('challenge:moderate') ?? false
   } catch {
     problem.value = 'This member could not be loaded.'
   }
@@ -216,6 +219,8 @@ async function erase(): Promise<void> {
           <dd>{{ member.requestsReceived }}</dd>
         </dl>
       </article>
+
+      <MemberChallenges v-if="canModerate" :member-id="id" />
 
       <article class="card">
         <h2 class="card-title">Roles</h2>
