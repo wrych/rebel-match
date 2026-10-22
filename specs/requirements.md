@@ -1841,6 +1841,12 @@ contact detail (R-CONN-6) or tells a reported member who reported them.
   anyone who copies or redistributes it to keep the copyright notice. That
   notice SHALL name the founders, Pascal Dulex, Ivo Pejakovic and Andy Moesch,
   and the Rebel Match contributors.
+- **R-NFR-13 (Contributing and disclosure)** — The repository root SHALL
+  carry a `README.md` saying what the app is, how to run it and how to
+  contribute; a `SECURITY.md` naming a private contact,
+  hello@rebel-match.com, for reporting a vulnerability; and a
+  `CODE_OF_CONDUCT.md`, the Contributor Covenant, naming the same contact. A
+  pull request template SHALL ask for the requirement and ADR a change serves.
 
 ---
 
