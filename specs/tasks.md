@@ -363,6 +363,8 @@ printed dev link (R-DEV-6).
       and opening it clears it; cards keep their own marks. _(R-MINE-4)_
 - [x] Show the running version at the foot of the menu: CI passes the commit
       to the image, `/api/config` returns it. _(R-NFR-11)_
+- [ ] README, security policy, code of conduct and pull request template
+      at the repository root and in `.github/`. _(R-NFR-13)_
 - [ ] Live lists: Matches, a challenge's matches, notifications, the
       outbound log, members, applicants, invites and the leaderboard refresh
       on their own at
