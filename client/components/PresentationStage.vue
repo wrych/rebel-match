@@ -6,6 +6,7 @@ import {
   type Player,
   type Ticker,
 } from '../network/replay'
+import { touchScreen, watchLandscape } from '../lib/orientation'
 import { stageAt, type StageState } from '../presentation/director'
 import {
   createPresentationScene,
@@ -40,6 +41,11 @@ const seconds = ref(0)
 const playing = ref(false)
 const state = shallowRef<StageState>(stageAt(props.script, world, 0))
 const anchors = shallowRef<Anchors>(new Map())
+// A phone plays by taps and sideways; an iPhone allows full screen to
+// videos only, so it gets no button for it.
+const touch = touchScreen()
+const { landscape, stop: stopWatching } = watchLandscape()
+const canFullScreen = document.fullscreenEnabled === true
 let drawn: PresentationScene | null = null
 let player: Player | null = null
 
@@ -78,6 +84,11 @@ function pause(): void {
   playing.value = false
 }
 
+function toggle(): void {
+  if (playing.value) pause()
+  else play()
+}
+
 function seek(to: number): void {
   player?.seek(Math.min(Math.max(to, 0), length) / length)
 }
@@ -89,11 +100,11 @@ async function fullScreen(): Promise<void> {
 
 function onKey(event: KeyboardEvent): void {
   const keys: Record<string, () => void> = {
-    ' ': () => (playing.value ? pause() : play()),
+    ' ': toggle,
     ArrowLeft: () => seek(seconds.value - SEEK_SECONDS),
     ArrowRight: () => seek(seconds.value + SEEK_SECONDS),
     Home: () => seek(0),
-    f: () => void fullScreen().catch(() => undefined),
+    f: fullScreenNow,
   }
   const act = keys[event.key]
   if (act === undefined) return
@@ -120,9 +131,14 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKey)
+  stopWatching()
   player?.stop()
   drawn?.dispose()
 })
+
+function fullScreenNow(): void {
+  void fullScreen().catch(() => undefined)
+}
 
 defineExpose({ play, pause, seek, seconds, state })
 </script>
@@ -130,7 +146,7 @@ defineExpose({ play, pause, seek, seconds, state })
 <template>
   <Teleport to="body">
     <div ref="root" class="theatre">
-      <div class="stage">
+      <div class="stage" @click="toggle">
         <div ref="host" class="scene" aria-hidden="true" />
         <PresentationLabel
           v-for="label in labels"
@@ -169,7 +185,24 @@ defineExpose({ play, pause, seek, seconds, state })
           >
         </p>
         <div class="flash" :style="{ opacity: String(state.flash) }" />
-        <div v-if="!playing" class="controls">
+        <div v-if="!playing" class="controls" @click.stop>
+          <div class="buttons">
+            <button
+              type="button"
+              class="btn btn-primary btn-small"
+              @click="play"
+            >
+              Play
+            </button>
+            <button
+              v-if="canFullScreen"
+              type="button"
+              class="btn btn-ghost btn-small"
+              @click="fullScreenNow"
+            >
+              Full screen
+            </button>
+          </div>
           <input
             class="scrub"
             type="range"
@@ -181,11 +214,18 @@ defineExpose({ play, pause, seek, seconds, state })
             @input="seek(Number(($event.target as HTMLInputElement).value))"
           />
           <p class="mono help">
-            {{ clock(seconds) }} / {{ clock(length) }} · Space plays · ← → seek
-            · F full screen
+            {{ clock(seconds) }} / {{ clock(length) }} ·
+            {{
+              touch
+                ? 'Tap to play or pause'
+                : 'Space plays · ← → seek · F full screen · or click'
+            }}
           </p>
         </div>
       </div>
+      <p v-if="touch && !landscape" class="turn" role="status">
+        Turn your phone sideways to watch.
+      </p>
     </div>
   </Teleport>
 </template>
@@ -281,6 +321,32 @@ defineExpose({ play, pause, seek, seconds, state })
   bottom: 1rem;
   display: grid;
   gap: 0.3rem;
+}
+
+.buttons {
+  display: flex;
+  justify-content: center;
+  gap: 0.6rem;
+}
+
+.buttons .btn-ghost {
+  color: var(--ink);
+}
+
+.turn {
+  position: absolute;
+  inset: auto 1rem 2rem;
+  margin: 0;
+  padding: 0.8rem 1rem;
+  border-radius: var(--radius);
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: 700;
+  text-align: center;
+}
+
+.stage {
+  cursor: pointer;
 }
 
 .scrub {

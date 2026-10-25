@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { mount } from '@vue/test-utils'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Ticker } from '../network/replay'
 import type { StageState } from '../presentation/director'
 import type { PresentationScript } from '../presentation/script'
@@ -98,7 +98,16 @@ const press = (key: string): void => {
   window.dispatchEvent(new KeyboardEvent('keydown', { key }))
 }
 
+function phone(coarse: boolean, wide: boolean): void {
+  vi.stubGlobal('matchMedia', () => ({ matches: coarse }))
+  vi.stubGlobal('innerWidth', wide ? 900 : 400)
+  vi.stubGlobal('innerHeight', wide ? 400 : 900)
+}
+
+beforeEach(() => phone(false, true))
+
 afterEach(() => {
+  vi.unstubAllGlobals()
   document.body.innerHTML = ''
 })
 
@@ -158,6 +167,59 @@ describe('PresentationStage (R-PRES-1..3)', () => {
     )
 
     expect(kickers).toEqual(['Founder Uno', 'A founder'])
+  })
+
+  it('plays and pauses on a tap of the stage (R-PRES-1)', async () => {
+    const { stage, ticker } = setup()
+    const tap = (): void => {
+      ;(document.querySelector('.stage') as HTMLElement).click()
+    }
+
+    tap()
+    ticker.advance(1000)
+    await stage.vm.$nextTick()
+    expect(document.querySelector('.controls')).toBeNull()
+
+    tap()
+    await stage.vm.$nextTick()
+    expect(document.querySelector('.controls')).not.toBeNull()
+  })
+
+  it('plays from its button without the tap reaching the stage', async () => {
+    const { stage, ticker } = setup()
+
+    ;(document.querySelector('.buttons .btn-primary') as HTMLElement).click()
+    ticker.advance(1000)
+    await stage.vm.$nextTick()
+
+    expect(document.querySelector('.controls')).toBeNull()
+  })
+
+  it('offers full screen only where the browser allows it', () => {
+    setup()
+    const label = [...document.querySelectorAll('.buttons button')].map(
+      (each) => each.textContent?.trim(),
+    )
+
+    expect(label).toEqual(
+      document.fullscreenEnabled === true ? ['Play', 'Full screen'] : ['Play'],
+    )
+  })
+
+  it('asks a phone held upright to turn sideways, and says tap', () => {
+    phone(true, false)
+    setup()
+
+    expect(document.querySelector('.turn')?.textContent).toContain('sideways')
+    expect(document.querySelector('.help')?.textContent).toContain(
+      'Tap to play',
+    )
+  })
+
+  it('asks nothing of a phone held sideways, or of a laptop', () => {
+    phone(true, true)
+    setup()
+    expect(document.querySelector('.turn')).toBeNull()
   })
 
   it('lets go of the scene when it leaves', () => {
