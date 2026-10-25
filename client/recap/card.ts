@@ -1,7 +1,7 @@
 import { RECAP_TITLE } from '../../src/recap/title'
 import { MARK_APART, MARK_PLACE, MARK_R, MARK_SIZE } from '../lib/mark'
 import type { Recap } from '../lib/recap'
-import { paintHalo, type Halo, type HaloPen } from './halo'
+import { paintHalo, type Halo, type HaloFrame, type HaloPen } from './halo'
 import { countsOf } from './story'
 
 export { RECAP_TITLE }
@@ -90,17 +90,16 @@ const layout = {
   rule: 8,
 }
 
-/** Where the member's surroundings sit: their dot at the card's centre,
- * the view reaching almost its full height and fading out before the
- * edges, under the words (R-RECAP-5). */
-const HALO_SIZE = 1240
+/** How the member's surroundings are framed, as the replay's own ending
+ * frames them: their dot bottom right, the network's centre towards the
+ * card's centre and a little past it, so the dots spread out (R-RECAP-5). */
+export const HALO_FRAME: HaloFrame = {
+  self: { x: 850, y: 1110 },
+  toward: { x: CARD_SIZE.width / 2, y: CARD_SIZE.height / 2 },
+  stretch: 1.25,
+}
 // Behind the words, the others stay faint enough to read through.
 const HALO_STRENGTH = 0.4
-export const HALO_BOX = {
-  x: (CARD_SIZE.width - HALO_SIZE) / 2,
-  y: (CARD_SIZE.height - HALO_SIZE) / 2,
-  size: HALO_SIZE,
-}
 
 /** The calls the card is drawn with: a canvas's 2D context, or a test's
  * stand-in. */
@@ -247,7 +246,7 @@ export function paintGround(
   pen.fillStyle = palette.paper
   pen.fillRect(0, 0, CARD_SIZE.width, CARD_SIZE.height)
   if (halo !== null)
-    paintHalo(pen, halo, HALO_BOX, {
+    paintHalo(pen, halo, CARD_SIZE.width, {
       accent: palette.accent,
       ink: palette.ink,
       paper: palette.paper,

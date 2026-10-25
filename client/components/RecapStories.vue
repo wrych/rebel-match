@@ -10,7 +10,13 @@ import {
 } from '../network/replay'
 import type { Recap } from '../lib/recap'
 import { day } from '../lib/when'
-import { cardOf, RECAP_TITLE, shareText, type Card } from '../recap/card'
+import {
+  cardOf,
+  HALO_FRAME,
+  RECAP_TITLE,
+  shareText,
+  type Card,
+} from '../recap/card'
 import { renderCard, saveCard, shareCard, type SharedVia } from '../recap/share'
 import { storyOf, type Beat } from '../recap/story'
 import { layout } from '../network/layout'
@@ -47,7 +53,7 @@ const points = layout(
   props.recap.timeline.links,
 )
 const haloAt = (angle: number): Halo | null =>
-  haloOf(props.recap.timeline, points, angle)
+  haloOf(props.recap.timeline, points, angle, HALO_FRAME)
 const index = ref(0)
 const progress = ref(0)
 const graph = ref<InstanceType<typeof NetworkGraph> | null>(null)
