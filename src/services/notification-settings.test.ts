@@ -56,18 +56,20 @@ describe('createNotificationSettings (R-NOTE-2, R-NOTE-3)', () => {
       ['new_connection', 'hourly'],
       ['trend_challenge', 'daily'],
       ['badge', 'daily'],
+      ['recap', 'immediately'],
     ])
     expect(host.map((s) => [s.type, s.cadence])).toEqual([
       ['connection_request', 'hourly'],
       ['new_connection', 'hourly'],
       ['trend_challenge', 'daily'],
       ['badge', 'daily'],
+      ['recap', 'immediately'],
       ['applicant', 'every_15_minutes'],
       ['report', 'hourly'],
     ])
-    expect(host[4]?.offered).toContain('every_15_minutes')
+    expect(host[5]?.offered).toContain('every_15_minutes')
     expect(member[0]?.offered).not.toContain('every_15_minutes')
-    expect(host[5]?.offered).not.toContain('every_15_minutes')
+    expect(host[6]?.offered).not.toContain('every_15_minutes')
   })
 
   it('records a choice, and forgets it when the default is chosen again', async () => {

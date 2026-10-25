@@ -28,7 +28,7 @@ describe('the options (R-NOTE-2)', () => {
     ])
   })
 
-  it('defaults requests, connections and reports hourly, trends and badges daily, applicants every 15 minutes (R-NOTE-2)', () => {
+  it('defaults requests, connections and reports hourly, trends and badges daily, applicants every 15 minutes, the recap at once (R-NOTE-2)', () => {
     expect(DEFAULT_CADENCE).toEqual({
       connection_request: 'hourly',
       new_connection: 'hourly',
@@ -36,7 +36,12 @@ describe('the options (R-NOTE-2)', () => {
       applicant: 'every_15_minutes',
       badge: 'daily',
       report: 'hourly',
+      recap: 'immediately',
     })
+  })
+
+  it('offers the recap’s notice only yes or no: at once, or in the app (R-RECAP-9)', () => {
+    expect(offeredCadences('recap')).toEqual(['immediately', 'in_app'])
   })
 })
 

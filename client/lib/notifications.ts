@@ -1,3 +1,4 @@
+import { RECAP_TITLE } from '../../src/recap/title'
 import type { NotificationSetting } from '../../src/services/notification-settings'
 import type { NotificationView } from '../../src/services/notifications'
 import { ensureOk, getJson, send } from './request'
@@ -60,6 +61,8 @@ export function headline(note: NotificationView): string {
       return `New badge: ${note.name}`
     case 'report':
       return reportHeadline(note)
+    case 'recap':
+      return `${RECAP_TITLE} is ready`
   }
 }
 
@@ -109,6 +112,7 @@ const TYPE_LABELS: Record<NotificationSetting['type'], string> = {
   applicant: 'People asking to join',
   badge: 'Badges you earn',
   report: 'Members reported',
+  recap: `Email me when ${RECAP_TITLE.toLowerCase()} is ready`,
 }
 
 const CADENCE_LABELS: Record<NotificationSetting['cadence'], string> = {
@@ -125,11 +129,20 @@ export function typeLabel(type: NotificationSetting['type']): string {
   return TYPE_LABELS[type]
 }
 
+// The recap's one notice offers only whether it is mailed (R-RECAP-9).
+const YES_OR_NO: Partial<Record<NotificationSetting['cadence'], string>> = {
+  immediately: 'Yes',
+  in_app: 'No',
+}
+
 /** An option as the profile screen offers it, marking the default. */
 export function cadenceLabel(
   cadence: NotificationSetting['cadence'],
   defaultCadence: NotificationSetting['cadence'],
+  type?: NotificationSetting['type'],
 ): string {
-  const label = CADENCE_LABELS[cadence]
+  const label =
+    (type === 'recap' ? YES_OR_NO[cadence] : undefined) ??
+    CADENCE_LABELS[cadence]
   return cadence === defaultCadence ? `${label} (default)` : label
 }

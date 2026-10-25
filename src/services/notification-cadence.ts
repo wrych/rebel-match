@@ -10,6 +10,7 @@ export type ChoosableType =
   | 'applicant'
   | 'badge'
   | 'report'
+  | 'recap'
 
 /** Until a member chooses (R-NOTE-2). */
 export const DEFAULT_CADENCE: Readonly<Record<ChoosableType, Cadence>> = {
@@ -19,6 +20,7 @@ export const DEFAULT_CADENCE: Readonly<Record<ChoosableType, Cadence>> = {
   applicant: 'every_15_minutes',
   badge: 'daily',
   report: 'hourly',
+  recap: 'immediately',
 }
 
 const EVERYONE: readonly Cadence[] = [
@@ -29,9 +31,14 @@ const EVERYONE: readonly Cadence[] = [
   'off',
 ]
 
-/** The options a type offers: the five, and for applicant notices every 15
- * minutes as well (R-NOTE-2). */
+// The recap is announced once, so its only choice is whether it is mailed:
+// at once (Yes) or not (No) (R-RECAP-9).
+const YES_OR_NO: readonly Cadence[] = ['immediately', 'in_app']
+
+/** The options a type offers: the five, for applicant notices every 15
+ * minutes as well, and for the recap yes or no (R-NOTE-2, R-RECAP-9). */
 export function offeredCadences(type: ChoosableType): readonly Cadence[] {
+  if (type === 'recap') return YES_OR_NO
   return type === 'applicant'
     ? ['immediately', 'every_15_minutes', ...EVERYONE.slice(1)]
     : EVERYONE
