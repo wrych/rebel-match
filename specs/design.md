@@ -105,7 +105,6 @@ thresholds have sane defaults in the file and may be overridden by env.
 | `limits.whitelistBatchMax`            | `1000`                        | R-AUTH-1                  |
 | `limits.recapOpensAt`                 | `0` (none)                    | R-RECAP-8                 |
 | `limits.recapMinShare`                | `50`                          | R-RECAP-3                 |
-| `recapAnnounceCheckMinutes`           | `1`                           | R-RECAP-9                 |
 | `limits.savedTickMs`                  | `2500`                        | R-PROF-1                  |
 | `limits.scrollHintShare`              | `0.4`                         | R-ONB-10                  |
 | `limits.profileDraftRetentionDays`    | `30`                          | R-ONB-15                  |
@@ -549,14 +548,14 @@ ends on a card to share (R-RECAP-1..9, ADR 0059, ADR 0060).
   the numeric settings; the settings screen edits it as a date and time in
   the host's own time zone (R-RECAP-8). The route, the menu and the
   announcement all ask the same function.
-- **Announcement** (`src/services/recap-announce.ts`): a scheduled job,
-  every `recapAnnounceCheckMinutes` (1). The first time it finds the recap
-  open it writes, in one transaction, a `recap` notification for every
-  active, onboarded member and the row of `recap_announcement`, so it never
-  announces twice, whatever the switch does later (R-RECAP-9). Its
-  recipient is the member it is about. The member's choice is stored as a
-  cadence: Yes is `immediately`, No is `in_app`; no other is accepted. A
-  waiting row whose recap has closed again is stale.
+- **Announcement** (`src/services/recap-announce.ts`): checked at the start
+  of every run of the notification worker, so the same run mails it. The
+  first time it finds the recap open it writes, in one transaction, a
+  `recap` notification for every active, onboarded member and the row of
+  `recap_announcement`, so it never announces twice, whatever the switch
+  does later (R-RECAP-9). Its recipient is the member it is about. The
+  member's choice is stored as a cadence: Yes is `immediately`, No is
+  `in_app`; no other is accepted.
 - **Story** (`client/recap/story.ts`, pure): the figures become the beats,
   a zero beat dropped: joined, challenges, same boat, offers, connections,
   crowns, the network today, the card.
