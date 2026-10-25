@@ -18,6 +18,7 @@ const timeline: NetworkTimeline = {
   ],
   links: [{ source: 0, target: 1, at: 1, day: '2026-10-05' }],
   moons: [],
+  own: { count: 1, needed: 0, shown: true },
 }
 
 const GraphStub = defineComponent({
@@ -77,6 +78,24 @@ describe('NetworkScreen (R-NET-1, R-NET-2)', () => {
     expect(screen.find('.you').exists()).toBe(false)
   })
 
+  it('explains why the member’s own lines are missing (R-NET-13)', async () => {
+    serve({
+      ...timeline,
+      links: [],
+      own: { count: 2, needed: 5, shown: false },
+    })
+    const screen = await mountScreen()
+
+    expect(screen.find('.hint').text()).toContain('You have 2 connections')
+  })
+
+  it('says nothing of own lines that show', async () => {
+    serve(timeline)
+    const screen = await mountScreen()
+
+    expect(screen.find('.hint').exists()).toBe(false)
+  })
+
   it('is not found while hosts have it off (R-NET-6)', async () => {
     serve(null)
     await mountScreen()
@@ -97,7 +116,7 @@ describe('NetworkScreen (R-NET-1, R-NET-2)', () => {
   })
 
   it('says so before anyone has joined', async () => {
-    serve({ nodes: [], links: [], moons: [] })
+    serve({ nodes: [], links: [], moons: [], own: null })
     const screen = await mountScreen()
 
     expect(screen.find('.empty').exists()).toBe(true)

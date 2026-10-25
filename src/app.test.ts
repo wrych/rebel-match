@@ -113,7 +113,8 @@ function deps(
       leaderboard: () => Promise.resolve({ rows: [], own: null, of: 0 }),
     },
     network: {
-      timeline: () => Promise.resolve({ nodes: [], links: [], moons: [] }),
+      timeline: () =>
+        Promise.resolve({ nodes: [], links: [], moons: [], own: null }),
     },
     badges: {
       recount: () => Promise.resolve(),

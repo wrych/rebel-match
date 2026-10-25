@@ -21,8 +21,9 @@ const auth = createAuth({
   config,
 })
 
-function setup(networkReplay = 1): Express {
+function setup(networkReplay = 1, neededOwnLinks = 0): Express {
   const network = createNetwork({
+    neededOwnLinks: () => neededOwnLinks,
     store: {
       facts: () =>
         Promise.resolve({
@@ -75,6 +76,7 @@ describe('network routes', () => {
       ],
       links: [{ source: 0, target: 1, at: 1, day: '2026-10-04' }],
       moons: [{ node: 1, at: expect.any(Number) as number, day: '2026-10-03' }],
+      own: { count: 1, needed: 0, shown: true },
     })
   })
 
@@ -84,6 +86,16 @@ describe('network routes', () => {
       .set('Cookie', await cookieFor('m-none'))
 
     expect(response.status).toBe(404)
+  })
+
+  it('leaves out the caller’s lines while they have too few (R-NET-13)', async () => {
+    const response = await request(setup(1, 5))
+      .get('/api/network')
+      .set('Cookie', await cookieFor('m-ada'))
+    const body = response.body as { links: unknown[]; own: unknown }
+
+    expect(body.links).toEqual([])
+    expect(body.own).toEqual({ count: 1, needed: 5, shown: false })
   })
 
   it('is not found while hosts have it off (R-NET-6)', async () => {

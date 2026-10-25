@@ -13,6 +13,7 @@ const timeline: NetworkTimeline = {
   ],
   links: [{ source: 0, target: 1, at: 1, day: '2026-10-05' }],
   moons: [],
+  own: null,
 }
 
 function fakeTicker(): Ticker & { advance(ms: number): void } {

@@ -107,7 +107,42 @@ describe('buildTimeline (R-NET-1, R-NET-3)', () => {
       nodes: [],
       links: [],
       moons: [],
+      own: null,
     })
+  })
+})
+
+describe('own lines (R-NET-13)', () => {
+  it('shows the viewer’s lines once they have enough', () => {
+    const timeline = buildTimeline(facts, 'm-ada', 2)
+
+    expect(timeline.links).toHaveLength(2)
+    expect(timeline.own).toEqual({ count: 2, needed: 2, shown: true })
+  })
+
+  it('leaves out every line of a viewer with too few, and only theirs', () => {
+    const viewedByBen = buildTimeline(facts, 'm-ben', 2)
+    const viewedByAda = buildTimeline(facts, 'm-ada', 3)
+
+    expect(viewedByBen.links.map((l) => [l.source, l.target])).toEqual([[1, 2]])
+    expect(viewedByBen.own).toEqual({ count: 1, needed: 2, shown: false })
+    expect(viewedByAda.links).toEqual([])
+  })
+
+  it('paces the rest as if the left-out lines were never there', () => {
+    const hidden = buildTimeline(facts, 'm-ben', 2)
+    const without = buildTimeline(
+      { ...facts, connections: facts.connections.slice(0, 1) },
+      'm-ben',
+    )
+
+    expect(hidden.nodes).toEqual(without.nodes)
+    expect(hidden.links).toEqual(without.links)
+  })
+
+  it('tells nothing of own lines with no viewer', () => {
+    expect(buildTimeline(facts, null, 5).own).toBeNull()
+    expect(buildTimeline(facts, null, 5).links).toHaveLength(2)
   })
 })
 

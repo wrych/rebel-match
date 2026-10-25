@@ -2,7 +2,12 @@
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import NetworkGraph from '../components/NetworkGraph.vue'
-import { fetchNetwork, type NetworkTimeline } from '../lib/network'
+import {
+  fetchNetwork,
+  ownLinksHint,
+  youLine,
+  type NetworkTimeline,
+} from '../lib/network'
 import type { Frame } from '../network/replay'
 
 const route = useRoute()
@@ -48,7 +53,10 @@ onMounted(async () => {
     <template v-else-if="timeline">
       <NetworkGraph :timeline="timeline" @frame="onFrame" @end="ended = true" />
       <p v-if="ended" class="you" role="status">
-        That’s you, in the accent colour, with your own connections.
+        {{ youLine(timeline.own) }}
+      </p>
+      <p v-if="ownLinksHint(timeline.own)" class="hint">
+        {{ ownLinksHint(timeline.own) }}
       </p>
     </template>
   </section>
@@ -58,5 +66,11 @@ onMounted(async () => {
 .you {
   margin: 0;
   font-weight: 700;
+}
+
+.hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
 }
 </style>

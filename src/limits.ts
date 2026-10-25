@@ -153,7 +153,16 @@ const limitSpecs = {
   networkReplay: {
     env: 'NETWORK_REPLAY',
     default: 0,
+    zeroAllowed: true,
     changeable: { min: 0, max: 1 },
+  },
+  // Below this many connections a member's own lines stay out of the
+  // replay: with fewer, they could name the dots at the ends (R-NET-13).
+  networkMinOwnConnections: {
+    env: 'NETWORK_MIN_OWN_CONNECTIONS',
+    default: 5,
+    zeroAllowed: true,
+    changeable: { min: 0, max: 100 },
   },
   // Reports name who made them, so handled ones go after this (R-MOD-11).
   reportRetentionDays: { env: 'REPORT_RETENTION_DAYS', default: 180 },

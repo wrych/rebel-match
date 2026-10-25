@@ -1010,6 +1010,15 @@ const catalogue: Group[] = [
         key: 'limits.networkReplay',
         switch: true,
       },
+      {
+        name: 'Own connections shown from',
+        explanation:
+          'A member with fewer connections sees the replay without their ' +
+          'own lines, so they cannot tell who the dots at the ends are. 0 ' +
+          'shows everyone their lines.',
+        key: 'limits.networkMinOwnConnections',
+        unit: ['connection', 'connections'],
+      },
     ],
   },
   ...gameGroups,

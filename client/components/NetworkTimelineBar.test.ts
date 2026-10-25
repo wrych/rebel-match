@@ -11,6 +11,7 @@ const timeline: NetworkTimeline = {
   ],
   links: [{ source: 0, target: 1, at: 1, day: '2026-11-08' }],
   moons: [],
+  own: null,
 }
 
 const bar = (progress: number, day: string | null): ReturnType<typeof mount> =>

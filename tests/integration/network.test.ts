@@ -18,6 +18,7 @@ const config = loadConfig({
   NODE_ENV: 'test',
   SEED_PROFILE: 'dev',
   NETWORK_REPLAY: '1',
+  NETWORK_MIN_OWN_CONNECTIONS: '0',
 })
 const member = 'milan.horvat@example.invalid'
 

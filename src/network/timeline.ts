@@ -33,6 +33,17 @@ export interface NetworkTimeline {
   nodes: NetworkNode[]
   links: NetworkLink[]
   moons: NetworkMoon[]
+  /** The viewer's own connections: how many, how many the replay needs
+   * before it shows them, and whether it does; null with no viewer
+   * (R-NET-13). */
+  own: OwnLinks | null
+}
+
+/** Whether the viewer's own lines are in the replay, and why not. */
+export interface OwnLinks {
+  count: number
+  needed: number
+  shown: boolean
 }
 
 /** What the store reads: active, onboarded members, their accepted
@@ -159,14 +170,41 @@ function placesOf(
   return at
 }
 
+// With only a few lines of their own, a viewer can name the members at
+// their ends and so learn about those members' lines and moons: below
+// `needed`, the viewer's lines leave the data, not only the screen, since
+// the layout would still pull their connections close (R-NET-13).
+function withoutThinOwnLinks(
+  pairs: Pair[],
+  self: number,
+  needed: number,
+): { pairs: Pair[]; own: OwnLinks | null } {
+  if (self < 0) return { pairs, own: null }
+  const isOwn = (pair: Pair): boolean =>
+    pair.source === self || pair.target === self
+  const count = pairs.filter(isOwn).length
+  const shown = count >= needed
+  return {
+    pairs: shown ? pairs : pairs.filter((pair) => !isOwn(pair)),
+    own: { count, needed, shown },
+  }
+}
+
 /** Turns member ids into positions and times into replay places and days
- * (R-NET-1, R-NET-3, R-NET-7, R-NET-11). */
+ * (R-NET-1, R-NET-3, R-NET-7, R-NET-11), leaving out the viewer's own lines
+ * while they have fewer than `neededOwnLinks` (R-NET-13). */
 export function buildTimeline(
   facts: NetworkFacts,
   viewerId: string | null,
+  neededOwnLinks = 0,
 ): NetworkTimeline {
   const members = orderedMembers(facts)
-  const pairs = earliestPerPair(facts, members)
+  const self = members.findIndex((member) => member.id === viewerId)
+  const { pairs, own } = withoutThinOwnLinks(
+    earliestPerPair(facts, members),
+    self,
+    neededOwnLinks,
+  )
   const moons = moonsOf(facts, members)
   const at = placesOf({ node: members, link: pairs, moon: moons })
   return {
@@ -187,5 +225,6 @@ export function buildTimeline(
       at: at.moon[index] ?? 0,
       day: dayOf(moon.time),
     })),
+    own,
   }
 }

@@ -614,7 +614,10 @@ export function composeApp(
     ...composeReports(db, track, settings),
     badges: markingBadgesOpened(badges, composeNotifications(db, settings)),
     game: composeGame(config, db, settings, track, counting),
-    network: createNetwork({ store: createNetworkStore(db) }),
+    network: createNetwork({
+      store: createNetworkStore(db),
+      neededOwnLinks: () => settings.limits().networkMinOwnConnections,
+    }),
     notificationMail: composeNotificationMail(config, db, mailer, hooks),
   }
   return withScheduled(config, deps, hooks.onScheduledError ?? ignoreError)

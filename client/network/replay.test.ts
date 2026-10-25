@@ -13,6 +13,7 @@ const timeline: NetworkTimeline = {
     { source: 1, target: 2, at: 1, day: '2026-10-09' },
   ],
   moons: [{ node: 1, at: 0.6, day: '2026-10-05' }],
+  own: null,
 }
 
 describe('frameAt (R-NET-1)', () => {
@@ -45,7 +46,9 @@ describe('frameAt (R-NET-1)', () => {
   })
 
   it('shows nothing of an empty network', () => {
-    expect(frameAt({ nodes: [], links: [], moons: [] }, 0.5)).toMatchObject({
+    expect(
+      frameAt({ nodes: [], links: [], moons: [], own: null }, 0.5),
+    ).toMatchObject({
       nodes: 0,
       links: 0,
       day: null,
