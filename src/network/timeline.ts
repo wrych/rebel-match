@@ -92,6 +92,14 @@ interface Pair {
 
 type Joined = readonly { id: string; time: number }[]
 
+/** Each member's position in the timeline the same facts build, by id: what
+ * lets a presentation point at someone it may name (R-PRES-6). */
+export function positionsOf(facts: NetworkFacts): Map<string, number> {
+  return new Map(
+    orderedMembers(facts).map((member, index) => [member.id, index]),
+  )
+}
+
 // A link never shows before both its ends.
 function pairOf(
   connection: NetworkFacts['connections'][number],
