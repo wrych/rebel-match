@@ -1801,6 +1801,13 @@ connection graph is private, so the replay names nobody.
   and a day. The viewer's own moons SHALL show in the accent colour.
 - **R-NET-12 (The tally)** — The scene's corner SHALL show the day the replay
   has reached and how many members, connections and challenges show by then.
+- **R-NET-13 (Too few to hide among)** — WHILE the viewing member has fewer
+  accepted connections than `limits.networkMinOwnConnections` (5 by default,
+  hosts may change it, R-CFG-6), THE SYSTEM SHALL leave every connection of
+  theirs out of the replay, in what the server sends and not only on screen,
+  and SHALL say why and how many it takes. With so few lines a member could
+  tell who the members at their ends are, and learn from those members'
+  lines and moons what they never shared.
 
 ---
 

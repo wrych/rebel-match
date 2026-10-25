@@ -61,6 +61,14 @@ a flash.
   and the pace make it harder, not impossible; on a busy network it is noise.
   If that is not acceptable, the next step is to merge thin days, not to drop
   the replay.
+- A member with only a few connections of their own can name the members at
+  the ends of their lines, and read those members' other lines and moons.
+  Trying the preview, the maintainer found this the larger risk, so below
+  `limits.networkMinOwnConnections` (5) the viewer's own lines leave the data
+  altogether, as the layout would otherwise still place their connections
+  beside them (R-NET-13). In the dev seed three in four members are below 5,
+  so at an event most members see the network without their own lines; hosts
+  can lower the number.
 - Challenges circle their authors as moons, carrying only their member's
   position and a day. A moon count is one more thing a point can be known
   by, alongside its lines; the same remedy applies if it is ever too much.
@@ -76,5 +84,5 @@ a flash.
 
 ## References
 
-Requirements: `R-NET-1`..`R-NET-12`. Spec sections: `specs/design.md` §3
+Requirements: `R-NET-1`..`R-NET-13`. Spec sections: `specs/design.md` §3
 (Network replay), §4 (S41), `specs/flows.md` F22. ADRs 0004, 0045, 0053.
