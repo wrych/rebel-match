@@ -1022,7 +1022,7 @@ const catalogue: Group[] = [
     ],
   },
   {
-    title: 'Your rebel track',
+    title: 'Your rebel record',
     explanation:
       'Each member’s own summit recap as stories, ending on a card to share. ' +
       'Turn it on when the summit ends.',
