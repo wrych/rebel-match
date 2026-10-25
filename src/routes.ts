@@ -223,6 +223,13 @@ export const routeTable: readonly RouteDef[] = [
     permission: 'outbox:read',
   },
   {
+    path: '/admin/presentation',
+    name: 'admin-presentation',
+    title: 'Presentation',
+    access: 'onboarded',
+    permission: 'network:present',
+  },
+  {
     path: '/admin/settings',
     name: 'admin-settings',
     title: 'Settings',

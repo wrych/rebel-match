@@ -76,9 +76,11 @@ const tuning = {
   maxPixelRatio: 2,
 }
 
-type Palette = Record<'node' | 'self' | 'link' | 'moon', Color>
+/** The scene's colours, read from the theme's tokens on the host. */
+export type Palette = Record<'node' | 'self' | 'link' | 'moon', Color>
 
-function paletteOf(host: HTMLElement): Palette {
+/** The colours of the theme the host sits in. */
+export function paletteOf(host: HTMLElement): Palette {
   const style = getComputedStyle(host)
   const read = (name: string, fallback: string): Color =>
     new Color(style.getPropertyValue(name).trim() || fallback)
@@ -90,11 +92,10 @@ function paletteOf(host: HTMLElement): Palette {
   }
 }
 
-const coordinates = (point: Point | undefined): [number, number, number] => [
-  point?.x ?? 0,
-  point?.y ?? 0,
-  point?.z ?? 0,
-]
+/** A point as three numbers, the origin for none. */
+export const coordinates = (
+  point: Point | undefined,
+): [number, number, number] => [point?.x ?? 0, point?.y ?? 0, point?.z ?? 0]
 
 // The viewer's own lines take the accent colour, everyone else's are muted.
 function linkLines(
@@ -209,10 +210,9 @@ function viewIn(host: HTMLElement, radius: number): View {
   }
 }
 
-// Points pop in over a moment as they join, unless motion is reduced.
-// Each challenge circles its member, popping in as it is posted; the
-// viewer's own moons take the accent colour (R-NET-11).
-class Moons {
+/** Each challenge circling its member, popping in as it is posted; the
+ * viewer's own moons take the accent colour (R-NET-11). */
+export class Moons {
   readonly mesh: InstancedMesh
   private readonly orbits: Orbit[]
   private readonly bornAt: number[] = []
@@ -247,7 +247,8 @@ class Moons {
     this.mesh.count = count
   }
 
-  move(now: number): void {
+  /** Places each moon at `now`; `emphasis` grows one of them. */
+  move(now: number, emphasis?: { index: number; scale: number }): void {
     for (let index = 0; index < this.shown; index++) {
       const orbit = this.orbits[index] as Orbit
       const at = moonAt(
@@ -258,7 +259,9 @@ class Moons {
       )
       const age = (now - (this.bornAt[index] ?? now)) / tuning.popMs
       const grown = this.still ? 1 : Math.min(Math.max(age, 0), 1)
-      const scale = tuning.moonRadius * (1 - (1 - grown) ** 3)
+      const grownScale = tuning.moonRadius * (1 - (1 - grown) ** 3)
+      const scale =
+        emphasis?.index === index ? grownScale * emphasis.scale : grownScale
       this.matrix.makeScale(scale, scale, scale)
       this.matrix.setPosition(at.x, at.y, at.z)
       this.mesh.setMatrixAt(index, this.matrix)
@@ -269,6 +272,7 @@ class Moons {
 
 const ORIGIN: Point = { x: 0, y: 0, z: 0 }
 
+// Points pop in over a moment as they join, unless motion is reduced.
 class Growth {
   private readonly bornAt: number[] = []
   private readonly growing = new Set<number>()

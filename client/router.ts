@@ -131,6 +131,10 @@ export const router = createRouter({
     screen('admin-moderated-member', ModeratedMemberScreen),
     screen('admin-outbox', OutboxScreen),
     screen('admin-settings', SettingsScreen),
+    screen(
+      'admin-presentation',
+      () => import('./screens/PresentationScreen.vue'),
+    ),
     {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
