@@ -1021,6 +1021,36 @@ const catalogue: Group[] = [
       },
     ],
   },
+  {
+    title: 'Your rebel track',
+    explanation:
+      'Each member’s own summit recap as stories, ending on a card to share. ' +
+      'Turn it on when the summit ends.',
+    entries: [
+      {
+        name: 'The recap',
+        explanation:
+          'On offers it to every member from the menu; off hides it, and its ' +
+          'address answers as not found.',
+        key: 'limits.recap',
+        switch: true,
+      },
+      {
+        name: 'Each story stays for',
+        explanation: 'Before the next one comes; a tap moves on sooner.',
+        key: 'limits.recapStorySeconds',
+        unit: SECONDS,
+      },
+      {
+        name: 'Members before comparing',
+        explanation:
+          'Below this many active members the recap compares nobody with ' +
+          'anyone, since a share of a few people can point at someone.',
+        key: 'limits.recapMinMembers',
+        unit: ['member', 'members'],
+      },
+    ],
+  },
   ...gameGroups,
 ]
 

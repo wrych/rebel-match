@@ -164,6 +164,28 @@ const limitSpecs = {
     zeroAllowed: true,
     changeable: { min: 0, max: 100 },
   },
+  // Hosts open each member's summit recap when the summit ends (R-RECAP-1).
+  recap: {
+    env: 'RECAP',
+    default: 0,
+    zeroAllowed: true,
+    changeable: { min: 0, max: 1 },
+  },
+  // How long each story of the recap stays before moving on (R-RECAP-1).
+  recapStorySeconds: {
+    env: 'RECAP_STORY_SECONDS',
+    default: 6,
+    changeable: { min: 2, max: 30 },
+  },
+  // Comparisons round down to this many percent (R-RECAP-3).
+  recapPercentStep: { env: 'RECAP_PERCENT_STEP', default: 5 },
+  // Below this many active members no comparison is made: it could point at
+  // someone (R-RECAP-3).
+  recapMinMembers: {
+    env: 'RECAP_MIN_MEMBERS',
+    default: 20,
+    changeable: { min: 2, max: 100_000 },
+  },
   // Reports name who made them, so handled ones go after this (R-MOD-11).
   reportRetentionDays: { env: 'REPORT_RETENTION_DAYS', default: 180 },
   // The largest SVG logo an event badge takes, kept well inside the 64 kB a
