@@ -16,6 +16,7 @@ import {
   type NetworkScene,
   type SceneFactory,
 } from '../network/scene'
+import NetworkStats from './NetworkStats.vue'
 import NetworkTimelineBar from './NetworkTimelineBar.vue'
 
 /** How long the whole replay plays, before the camera turns to the viewer. */
@@ -30,6 +31,8 @@ const props = withDefaults(
     /** The timeline bar and the play buttons; a presentation may drive the
      * graph through what it exposes instead. */
     controls?: boolean
+    /** The date and counts in the scene's corner (R-NET-12). */
+    stats?: boolean
     durationMs?: number
     scene?: SceneFactory
     ticker?: Ticker
@@ -38,6 +41,7 @@ const props = withDefaults(
     highlightSelf: true,
     autoplay: true,
     controls: true,
+    stats: true,
     durationMs: REPLAY_MS,
     scene: createThreeScene,
     ticker: () => frameTicker,
@@ -55,7 +59,7 @@ let player: Player | null = null
 
 const description = computed(
   () =>
-    `The network: ${frame.value.nodes} members, ${frame.value.links} connections`,
+    `The network: ${frame.value.nodes} members, ${frame.value.links} connections, ${frame.value.moons} challenges`,
 )
 const hasSelf = computed(() => props.timeline.nodes.some((node) => node.self))
 
@@ -141,6 +145,7 @@ defineExpose({ play, pause, restart, seek, recentre, frame, ended, viewTaken })
   <div class="graph">
     <div class="frame">
       <div ref="host" class="stage" role="img" :aria-label="description" />
+      <NetworkStats v-if="props.stats" class="corner" :frame="frame" />
       <button
         v-if="viewTaken"
         type="button"
@@ -190,6 +195,12 @@ defineExpose({ play, pause, restart, seek, recentre, frame, ended, viewTaken })
 
 .frame {
   position: relative;
+}
+
+.corner {
+  position: absolute;
+  left: 0.75rem;
+  bottom: 0.75rem;
 }
 
 .recentre {

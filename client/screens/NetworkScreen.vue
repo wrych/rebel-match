@@ -9,14 +9,9 @@ const route = useRoute()
 const router = useRouter()
 const timeline = ref<NetworkTimeline | null>(null)
 const problem = ref<string | null>(null)
-const frame = ref<Frame | null>(null)
 const ended = ref(false)
 
-const plural = (n: number, one: string, many: string): string =>
-  `${String(n)} ${n === 1 ? one : many}`
-
 function onFrame(shown: Frame): void {
-  frame.value = shown
   if (shown.progress < 1) ended.value = false
 }
 
@@ -40,8 +35,8 @@ onMounted(async () => {
       <p class="kicker kicker-accent">The network</p>
       <h1 class="display display-lg">How we grew</h1>
       <p class="lede">
-        Every dot is a member, every line a connection both of them accepted.
-        Nobody is named. At the end, you are lit up.
+        Every dot is a member, every line a connection both of them accepted,
+        every moon a challenge. Nobody is named. At the end, you are lit up.
       </p>
     </div>
 
@@ -52,10 +47,6 @@ onMounted(async () => {
 
     <template v-else-if="timeline">
       <NetworkGraph :timeline="timeline" @frame="onFrame" @end="ended = true" />
-      <p v-if="frame" class="tally mono">
-        {{ plural(frame.nodes, 'member', 'members') }} ·
-        {{ plural(frame.links, 'connection', 'connections') }}
-      </p>
       <p v-if="ended" class="you" role="status">
         That’s you, in the accent colour, with your own connections.
       </p>
@@ -64,12 +55,6 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.tally {
-  margin: 0;
-  color: var(--muted);
-  font-size: 0.85rem;
-}
-
 .you {
   margin: 0;
   font-weight: 700;

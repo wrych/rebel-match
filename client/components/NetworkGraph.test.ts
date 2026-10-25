@@ -12,6 +12,7 @@ const timeline: NetworkTimeline = {
     { id: 1, at: 0.5, day: '2026-10-03', self: true },
   ],
   links: [{ source: 0, target: 1, at: 1, day: '2026-10-05' }],
+  moons: [],
 }
 
 function fakeTicker(): Ticker & { advance(ms: number): void } {
@@ -120,7 +121,7 @@ describe('NetworkGraph (R-NET-1, R-NET-2)', () => {
     ticker.advance(250)
 
     expect(graph.emitted('frame')?.at(-1)).toEqual([
-      { progress: 0.25, nodes: 1, links: 0, day: '2026-10-01' },
+      { progress: 0.25, nodes: 1, links: 0, moons: 0, day: '2026-10-01' },
     ])
   })
 
@@ -176,6 +177,16 @@ describe('NetworkGraph (R-NET-1, R-NET-2)', () => {
     ticker.advance(1000)
 
     expect(scene.highlights).toEqual([false])
+  })
+
+  it('shows the date and counts in the corner, unless asked not to (R-NET-12)', async () => {
+    const { graph, ticker } = setup()
+
+    ticker.advance(600)
+    await graph.vm.$nextTick()
+
+    expect(graph.find('.corner').text()).toContain('Members2')
+    expect(setup({ stats: false }).graph.find('.corner').exists()).toBe(false)
   })
 
   it('leaves the controls to whoever drives it, when asked', () => {

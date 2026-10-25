@@ -97,6 +97,28 @@ describe('the dev network (R-SEED-10)', () => {
     }
   })
 
+  it('posts each challenge after its author joined, over time', () => {
+    const posted = fixtures.challenges.map((c) => c.postedHoursAgo ?? -1)
+
+    for (const challenge of fixtures.challenges)
+      expect(challenge.postedHoursAgo).toBeLessThanOrEqual(
+        joined.get(challenge.authorEmail) ?? -1,
+      )
+    expect(Math.min(...posted)).toBeGreaterThanOrEqual(0)
+    expect(new Set(posted.map(Math.round)).size).toBeGreaterThan(40)
+  })
+
+  it('asks over a challenge only once it was posted', () => {
+    const postedAt = new Map(
+      fixtures.challenges.map((c) => [c.body, c.postedHoursAgo ?? -1]),
+    )
+
+    for (const request of fixtures.connections)
+      expect(request.requestedHoursAgo).toBeLessThanOrEqual(
+        postedAt.get(request.challenge?.body ?? '') ?? -1,
+      )
+  })
+
   it('asks over a challenge of the member asked, never of oneself', () => {
     const challenges = new Set(
       fixtures.challenges.map((c) => `${c.authorEmail}|${c.body}`),

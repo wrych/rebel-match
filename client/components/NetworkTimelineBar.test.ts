@@ -10,6 +10,7 @@ const timeline: NetworkTimeline = {
     { id: 1, at: 0.4, day: '2026-10-03', self: true },
   ],
   links: [{ source: 0, target: 1, at: 1, day: '2026-11-08' }],
+  moons: [],
 }
 
 const bar = (progress: number, day: string | null): ReturnType<typeof mount> =>
@@ -28,11 +29,10 @@ describe('NetworkTimelineBar', () => {
     ])
   })
 
-  it('shows where the replay is, and the day it has reached', () => {
+  it('shows where the replay is, and tells the day to a screen reader', () => {
     const shown = bar(0.25, '2026-10-02')
 
     expect(shown.find('.playhead').attributes('x1')).toBe('250')
-    expect(shown.find('.now').text()).toBe('2 October 2026')
     expect(shown.find('input').attributes('aria-valuetext')).toBe(
       '2 October 2026',
     )

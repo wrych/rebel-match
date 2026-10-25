@@ -138,6 +138,7 @@ async function upsertCase(db: Database, item: SeedCase): Promise<void> {
 async function insertChallenge(
   db: Database,
   challenge: SeedChallenge,
+  now: Date,
 ): Promise<void> {
   const memberId = await memberIdOf(db, challenge.authorEmail)
   if (memberId === null) return
@@ -158,6 +159,7 @@ async function insertChallenge(
     body: challenge.body,
     trendId: challenge.trendId,
     autoTrend: challenge.trendId,
+    createdAt: hoursBefore(now, challenge.postedHoursAgo ?? 0),
   })
 }
 
@@ -282,7 +284,8 @@ async function applyPlan(
     await upsertMember(db, member, consentVersion, now)
   }
   for (const email of plan.admins) await insertAdmin(db, email)
-  for (const challenge of plan.challenges) await insertChallenge(db, challenge)
+  for (const challenge of plan.challenges)
+    await insertChallenge(db, challenge, now)
   for (const offer of plan.expertise) await upsertExpertise(db, offer)
   for (const request of plan.connections)
     await insertConnection(db, request, now)

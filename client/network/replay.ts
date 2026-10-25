@@ -1,11 +1,12 @@
 import type { NetworkTimeline } from '../../src/network/timeline'
 
-/** One moment of the replay: how many nodes and links show, each a prefix
- * of the timeline's lists, and the day it has reached. */
+/** One moment of the replay: how many nodes, links and moons show, each a
+ * prefix of the timeline's lists, and the day it has reached. */
 export interface Frame {
   progress: number
   nodes: number
   links: number
+  moons: number
   day: string | null
 }
 
@@ -22,18 +23,19 @@ function shownBy(places: readonly { at: number }[], progress: number): number {
   return low
 }
 
-/** What shows at `progress`, 0 to 1 (R-NET-1, R-NET-7). */
+/** What shows at `progress`, 0 to 1 (R-NET-1, R-NET-7, R-NET-11). */
 export function frameAt(timeline: NetworkTimeline, progress: number): Frame {
   const clamped = unit(progress)
   const nodes = shownBy(timeline.nodes, clamped)
   const links = shownBy(timeline.links, clamped)
-  const lastNode = timeline.nodes[nodes - 1]?.day ?? null
-  const lastLink = timeline.links[links - 1]?.day ?? null
-  const day =
-    lastNode === null || (lastLink !== null && lastLink > lastNode)
-      ? lastLink
-      : lastNode
-  return { progress: clamped, nodes, links, day }
+  const moons = shownBy(timeline.moons, clamped)
+  const days = [
+    timeline.nodes[nodes - 1]?.day,
+    timeline.links[links - 1]?.day,
+    timeline.moons[moons - 1]?.day,
+  ].filter((shown): shown is string => shown !== undefined)
+  const day = days.sort().at(-1) ?? null
+  return { progress: clamped, nodes, links, moons, day }
 }
 
 /** The clock a player runs on: the browser's frames, or a test's. */

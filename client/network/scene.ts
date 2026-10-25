@@ -27,6 +27,7 @@ import {
   type Pose,
 } from './camera'
 import type { Point } from './layout'
+import { moonAt, orbitsOf, type Orbit } from './orbits'
 import type { Frame } from './replay'
 
 /** What draws the replay. The graph component drives it and never touches
@@ -55,6 +56,7 @@ export type SceneFactory = (
 
 const tuning = {
   nodeRadius: 2,
+  moonRadius: 1.1,
   selfRadius: 3.4,
   haloRadius: 5,
   popMs: 600,
@@ -65,12 +67,13 @@ const tuning = {
   smallestRadius: 10,
   haloPulseMs: 900,
   haloOpacity: { least: 0.15, swing: 0.45 },
-  sphereSegments: { around: 16, up: 12 },
+  sphereSegments: { around: 12, up: 8 },
+  moonSegments: { around: 8, up: 6 },
   haloSegments: { around: 14, up: 10 },
   maxPixelRatio: 2,
 }
 
-type Palette = Record<'node' | 'self' | 'link', Color>
+type Palette = Record<'node' | 'self' | 'link' | 'moon', Color>
 
 function paletteOf(host: HTMLElement): Palette {
   const style = getComputedStyle(host)
@@ -80,6 +83,7 @@ function paletteOf(host: HTMLElement): Palette {
     node: read('--ink', '#111010'),
     self: read('--accent', '#d4471f'),
     link: read('--muted', '#6b6659'),
+    moon: read('--faint', '#8a8579'),
   }
 }
 
@@ -203,6 +207,65 @@ function viewIn(host: HTMLElement, radius: number): View {
 }
 
 // Points pop in over a moment as they join, unless motion is reduced.
+// Each challenge circles its member, popping in as it is posted; the
+// viewer's own moons take the accent colour (R-NET-11).
+class Moons {
+  readonly mesh: InstancedMesh
+  private readonly orbits: Orbit[]
+  private readonly bornAt: number[] = []
+  private readonly matrix = new Matrix4()
+  private shown = 0
+
+  constructor(
+    timeline: NetworkTimeline,
+    private readonly points: readonly Point[],
+    palette: Palette,
+    private readonly still: boolean,
+  ) {
+    const { around, up } = tuning.moonSegments
+    this.orbits = orbitsOf(timeline)
+    this.mesh = new InstancedMesh(
+      new SphereGeometry(1, around, up),
+      new MeshBasicMaterial(),
+      Math.max(this.orbits.length, 1),
+    )
+    this.orbits.forEach((orbit, index) => {
+      const own = timeline.nodes[orbit.node]?.self === true
+      this.mesh.setColorAt(index, own ? palette.self : palette.moon)
+    })
+    this.mesh.count = 0
+    this.mesh.frustumCulled = false
+  }
+
+  show(count: number, now: number): void {
+    for (let index = this.shown; index < count; index++)
+      this.bornAt[index] = now
+    this.shown = count
+    this.mesh.count = count
+  }
+
+  move(now: number): void {
+    for (let index = 0; index < this.shown; index++) {
+      const orbit = this.orbits[index] as Orbit
+      const at = moonAt(
+        orbit,
+        this.points[orbit.node] ?? ORIGIN,
+        now,
+        this.still,
+      )
+      const age = (now - (this.bornAt[index] ?? now)) / tuning.popMs
+      const grown = this.still ? 1 : Math.min(Math.max(age, 0), 1)
+      const scale = tuning.moonRadius * (1 - (1 - grown) ** 3)
+      this.matrix.makeScale(scale, scale, scale)
+      this.matrix.setPosition(at.x, at.y, at.z)
+      this.mesh.setMatrixAt(index, this.matrix)
+    }
+    this.mesh.instanceMatrix.needsUpdate = true
+  }
+}
+
+const ORIGIN: Point = { x: 0, y: 0, z: 0 }
+
 class Growth {
   private readonly bornAt: number[] = []
   private readonly growing = new Set<number>()
@@ -356,8 +419,19 @@ function disposeAll(objects: (Mesh | LineSegments)[]): void {
   }
 }
 
+function everyFrame(draw: (now: number) => void): () => void {
+  let frame = 0
+  const step = (now: number): void => {
+    draw(now)
+    frame = requestAnimationFrame(step)
+  }
+  frame = requestAnimationFrame(step)
+  return () => cancelAnimationFrame(frame)
+}
+
 /** The replay in three.js: points that pop in where the settled network puts
- * them and lines between them, turning at the end to the viewer's point. */
+ * them, lines between them and challenges circling them as moons, turning
+ * at the end towards the viewer's point. */
 export const createThreeScene: SceneFactory = (
   host,
   timeline,
@@ -371,27 +445,28 @@ export const createThreeScene: SceneFactory = (
   const nodes = nodeMesh(timeline, palette)
   const links = linkLines(timeline, points, palette)
   const halo = haloMesh(points[selfIndex], palette)
-  const objects = [links, nodes, halo]
+  const moons = new Moons(timeline, points, palette, still)
+  const objects = [links, nodes, moons.mesh, halo]
   const scene = sceneOf(objects)
   const growth = new Growth(nodes, points, selfIndex, still)
   const director = new Director(view, points, tuning.smallestRadius, still)
   const release = handOver(view, director, onTakeOver)
 
-  let frame = 0
-  const render = (now: number): void => {
+  const stop = everyFrame((now) => {
     growth.grow(now)
+    moons.move(now)
     director.step(now)
     pulse(halo, now, still)
     view.renderer.render(scene, view.camera)
-    frame = requestAnimationFrame(render)
-  }
-  frame = requestAnimationFrame(render)
+  })
 
   return {
-    show({ nodes: count, links: linkCount }) {
-      growth.show(count, performance.now())
-      director.show(count)
-      links.geometry.setDrawRange(0, linkCount * 2)
+    show(shown) {
+      const now = performance.now()
+      growth.show(shown.nodes, now)
+      moons.show(shown.moons, now)
+      director.show(shown.nodes)
+      links.geometry.setDrawRange(0, shown.links * 2)
     },
     highlight(on) {
       const lit = on && self !== null
@@ -400,7 +475,7 @@ export const createThreeScene: SceneFactory = (
     },
     recentre: () => director.recentre(),
     dispose() {
-      cancelAnimationFrame(frame)
+      stop()
       release()
       disposeAll(objects)
       view.dispose()

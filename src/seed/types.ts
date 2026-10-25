@@ -44,6 +44,8 @@ export interface SeedChallenge {
   authorEmail: string
   trendId: string
   body: string
+  /** How long before the seed runs it was posted; absent, as it runs. */
+  postedHoursAgo?: number
 }
 
 /** A member's "been there" offer for a trend (design §2, §6.3). */

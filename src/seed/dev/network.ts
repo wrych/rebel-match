@@ -22,6 +22,7 @@ export const networkShape = {
   acceptedShare: 0.7,
   pendingShare: 0.18,
   maxAnswerHours: 48,
+  maxPostDelayHours: 72,
   earliestAnswerHoursAgo: 0.5,
   seed: 1108,
 }
@@ -95,6 +96,27 @@ export function withJoinTimes(
   }))
 }
 
+/** When each challenge was posted: some time after its author joined, the
+ * first within days, so challenges arrive with the crowd (R-SEED-10). */
+export function withPostTimes(
+  challenges: readonly SeedChallenge[],
+  members: readonly SeedMember[],
+  shape: Shape = networkShape,
+): SeedChallenge[] {
+  const random = seeded(shape.seed + 2)
+  const joined = new Map(
+    members.map((member) => [member.email, member.joinedHoursAgo ?? 0]),
+  )
+  return challenges.map((challenge) => {
+    const since = joined.get(challenge.authorEmail) ?? 0
+    const wait = Math.min(
+      random() * shape.maxPostDelayHours,
+      since - shape.earliestAnswerHoursAgo,
+    )
+    return { ...challenge, postedHoursAgo: Math.max(since - wait, 0) }
+  })
+}
+
 interface Ask {
   from: string
   kind: SeedConnection['kind']
@@ -156,6 +178,7 @@ function timed(
   const bothIn = Math.min(
     joined.get(ask.from) ?? 0,
     joined.get(ask.challenge.authorEmail) ?? 0,
+    ask.challenge.postedHoursAgo ?? 0,
   )
   const requestedHoursAgo = between(
     random,

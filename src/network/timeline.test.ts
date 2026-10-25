@@ -13,6 +13,7 @@ const facts: NetworkFacts = {
     { a: 'm-cleo', b: 'm-ada', formedAt: on('2026-10-05') },
     { a: 'm-ada', b: 'm-ben', formedAt: on('2026-10-02') },
   ],
+  challenges: [],
 }
 
 describe('buildTimeline (R-NET-1, R-NET-3)', () => {
@@ -100,10 +101,54 @@ describe('buildTimeline (R-NET-1, R-NET-3)', () => {
   })
 
   it('is empty for an empty network', () => {
-    expect(buildTimeline({ members: [], connections: [] }, null)).toEqual({
+    expect(
+      buildTimeline({ members: [], connections: [], challenges: [] }, null),
+    ).toEqual({
       nodes: [],
       links: [],
+      moons: [],
     })
+  })
+})
+
+describe('moons (R-NET-11)', () => {
+  const posting = {
+    ...facts,
+    challenges: [
+      { memberId: 'm-cleo', postedAt: on('2026-10-04') },
+      { memberId: 'm-ada', postedAt: on('2026-09-01') },
+      { memberId: 'm-erased', postedAt: on('2026-10-02') },
+    ],
+  }
+
+  it('circles each challenge around its member, in the order posted', () => {
+    const { moons } = buildTimeline(posting, null)
+
+    expect(moons.map(({ node, day }) => [node, day])).toEqual([
+      [1, '2026-10-01'],
+      [2, '2026-10-04'],
+    ])
+  })
+
+  it('never shows a moon before its member', () => {
+    const { nodes, moons } = buildTimeline(posting, null)
+
+    for (const moon of moons)
+      expect(moon.at).toBeGreaterThanOrEqual(nodes[moon.node]?.at ?? 1)
+  })
+
+  it('plays moons on the same clock as joins and connections', () => {
+    const { links, moons } = buildTimeline(posting, null)
+    const cleosMoon = moons[1]?.at ?? 0
+
+    expect(cleosMoon).toBeGreaterThan(links[0]?.at ?? 1)
+    expect(cleosMoon).toBeLessThan(links[1]?.at ?? 0)
+  })
+
+  it('carries no text, trend or member id', () => {
+    expect(JSON.stringify(buildTimeline(posting, 'm-ada').moons)).toMatch(
+      /^\[(\{"node":\d+,"at":[\d.]+,"day":"[\d-]+"\},?)*\]$/,
+    )
   })
 })
 

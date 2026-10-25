@@ -66,6 +66,19 @@ describe('the network replay over Postgres (R-NET-1..4)', () => {
     expect(nodes.filter((node) => node.self)).toHaveLength(1)
   })
 
+  it('circles each shown challenge around its author, text left out (R-NET-11)', async () => {
+    const rows = await db.query(
+      `SELECT count(*)::int AS n FROM challenges c JOIN members m ON m.id = c.member_id
+        WHERE c.status = 'active' AND c.hidden_at IS NULL AND m.status = 'active'
+          AND m.name IS NOT NULL AND m.consent_at IS NOT NULL`,
+    )
+    const body = await db.query('SELECT body FROM challenges LIMIT 1')
+    const timeline = await network()
+
+    expect(timeline.moons).toHaveLength(Number(rows[0]?.['n']))
+    expect(JSON.stringify(timeline)).not.toContain(String(body[0]?.['body']))
+  })
+
   it('names nobody and carries no id', async () => {
     const shown = JSON.stringify(await network())
 

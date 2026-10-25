@@ -112,7 +112,9 @@ function deps(
       seeHint: () => Promise.resolve(),
       leaderboard: () => Promise.resolve({ rows: [], own: null, of: 0 }),
     },
-    network: { timeline: () => Promise.resolve({ nodes: [], links: [] }) },
+    network: {
+      timeline: () => Promise.resolve({ nodes: [], links: [], moons: [] }),
+    },
     badges: {
       recount: () => Promise.resolve(),
       mine: () => Promise.resolve({ rows: [], events: [] }),

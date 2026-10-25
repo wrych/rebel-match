@@ -1,6 +1,7 @@
 import { and, eq, isNotNull, sql } from 'drizzle-orm'
 import type { Database } from '../db/connect.js'
-import { connectionRequests, members } from '../db/schema.js'
+import { challenges, connectionRequests, members } from '../db/schema.js'
+import { isShown } from './challenge-store.js'
 import type { NetworkStore } from './network.js'
 
 // Onboarded as the matches view counts it (R-ONB-1): a name and a consent.
@@ -12,8 +13,8 @@ const onboarded = and(
   isNotNull(members.consentAt),
 )
 
-/** Reads the network for the replay: ids and times only, no name, email or
- * profile field (R-NET-3). */
+/** Reads the network for the replay: ids and times only, no name, email,
+ * profile field or challenge text (R-NET-3, R-NET-11). */
 export function createNetworkStore(db: Database): NetworkStore {
   return {
     async facts() {
@@ -37,7 +38,16 @@ export function createNetworkStore(db: Database): NetworkStore {
             isNotNull(connectionRequests.respondedAt),
           ),
         )
+      // Only what members see: no withdrawn or hidden challenge (R-MOD-8).
+      const posted = await db
+        .select({
+          memberId: challenges.memberId,
+          postedAt: challenges.createdAt,
+        })
+        .from(challenges)
+        .where(isShown())
       return {
+        challenges: posted,
         members: people.map((p) => ({
           id: p.id,
           joinedAt: new Date(p.joinedAt),

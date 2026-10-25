@@ -17,18 +17,30 @@ export interface NetworkLink {
   day: string
 }
 
-/** The network as it grew: nodes and links each in the order they appear, so
- * any moment of the replay shows a prefix of each. `at` runs from 0 to 1. */
+/** A challenge a member posted, as a moon around their node: when it
+ * appears in the replay, and the day it was posted. Its text and trend stay
+ * on the server (R-NET-11). */
+export interface NetworkMoon {
+  node: number
+  at: number
+  day: string
+}
+
+/** The network as it grew: nodes, links and moons each in the order they
+ * appear, so any moment of the replay shows a prefix of each. `at` runs from
+ * 0 to 1. */
 export interface NetworkTimeline {
   nodes: NetworkNode[]
   links: NetworkLink[]
+  moons: NetworkMoon[]
 }
 
-/** What the store reads: active, onboarded members and their accepted
- * connections, by member id. */
+/** What the store reads: active, onboarded members, their accepted
+ * connections and the challenges they show, by member id. */
 export interface NetworkFacts {
   members: readonly { id: string; joinedAt: Date }[]
   connections: readonly { a: string; b: string; formedAt: Date }[]
+  challenges: readonly { memberId: string; postedAt: Date }[]
 }
 
 // How much of the replay follows the calendar; the rest gives every event the
@@ -102,28 +114,61 @@ function earliestPerPair(facts: NetworkFacts, members: Joined): Pair[] {
   )
 }
 
+interface Moon {
+  node: number
+  time: number
+}
+
+// A moon never shows before its member; one of a member not in the network
+// is left out.
+function moonsOf(facts: NetworkFacts, members: Joined): Moon[] {
+  const position = new Map(members.map((member, index) => [member.id, index]))
+  return facts.challenges
+    .flatMap(({ memberId, postedAt }) => {
+      const node = position.get(memberId)
+      if (node === undefined) return []
+      const joined = members[node]?.time ?? 0
+      return [{ node, time: Math.max(postedAt.getTime(), joined) }]
+    })
+    .sort((x, y) => x.time - y.time || x.node - y.node)
+}
+
+type Kind = 'node' | 'link' | 'moon'
+const KIND_ORDER: Readonly<Record<Kind, number>> = { node: 0, link: 1, moon: 2 }
+
+// One pace for every kind, so joins, connections and challenges stay in
+// step; at one moment a member comes before their lines and moons.
+function placesOf(
+  times: Readonly<Record<Kind, readonly { time: number }[]>>,
+): Record<Kind, number[]> {
+  const events = (Object.keys(times) as Kind[])
+    .flatMap((kind) =>
+      times[kind].map((event, index) => ({ kind, index, time: event.time })),
+    )
+    .sort(
+      (a, b) =>
+        a.time - b.time ||
+        KIND_ORDER[a.kind] - KIND_ORDER[b.kind] ||
+        a.index - b.index,
+    )
+  const pace = paceOf(events.map((event) => event.time))
+  const at: Record<Kind, number[]> = { node: [], link: [], moon: [] }
+  events.forEach((event, rank) => {
+    at[event.kind][event.index] = pace[rank] ?? 0
+  })
+  return at
+}
+
 /** Turns member ids into positions and times into replay places and days
- * (R-NET-1, R-NET-3, R-NET-7). Joins and connections share one pace, so the
- * two stay in step. */
+ * (R-NET-1, R-NET-3, R-NET-7, R-NET-11). */
 export function buildTimeline(
   facts: NetworkFacts,
   viewerId: string | null,
 ): NetworkTimeline {
   const members = orderedMembers(facts)
   const pairs = earliestPerPair(facts, members)
-  const events = [
-    ...members.map((member, index) => ({ kind: 'node', index, ...member })),
-    ...pairs.map((pair, index) => ({ kind: 'link', index, ...pair })),
-  ].sort(
-    (a, b) =>
-      a.time - b.time ||
-      (a.kind === b.kind ? a.index - b.index : a.kind === 'node' ? -1 : 1),
-  )
-  const pace = paceOf(events.map((event) => event.time))
-  const at = { node: [] as number[], link: [] as number[] }
-  events.forEach((event, rank) => {
-    at[event.kind as 'node' | 'link'][event.index] = pace[rank] ?? 0
-  })
+  const moons = moonsOf(facts, members)
+  const at = placesOf({ node: members, link: pairs, moon: moons })
   return {
     nodes: members.map((member, index) => ({
       id: index,
@@ -136,6 +181,11 @@ export function buildTimeline(
       target: pair.target,
       at: at.link[index] ?? 0,
       day: dayOf(pair.time),
+    })),
+    moons: moons.map((moon, index) => ({
+      node: moon.node,
+      at: at.moon[index] ?? 0,
+      day: dayOf(moon.time),
     })),
   }
 }

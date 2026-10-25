@@ -2,7 +2,7 @@ import type { SeedChallenge, SeedExpertise, SeedPlan } from '../types.js'
 import { challenges, expertise } from './challenges.js'
 import { crowd } from './crowd.js'
 import { crowdChallenges, crowdNotes } from './crowd-challenges.js'
-import { connectionsFor, withJoinTimes } from './network.js'
+import { connectionsFor, withJoinTimes, withPostTimes } from './network.js'
 import { DEV_ADMIN_EMAIL, people } from './people.js'
 
 /** How many fictional members join the prototype's roster (R-SEED-10). */
@@ -45,7 +45,10 @@ export function devFixtures(): Pick<
   const extra = crowd(CROWD_SIZE)
   const emails = extra.map((member) => member.email)
   const members = withJoinTimes([...people, ...extra])
-  const allChallenges = [...challenges, ...challengesOf(emails)]
+  const allChallenges = withPostTimes(
+    [...challenges, ...challengesOf(emails)],
+    members,
+  )
   const allExpertise = [
     ...expertise,
     ...ADMIN_TRENDS.map((trendId) => ({

@@ -39,7 +39,6 @@ function seek(event: Event): void {
 
 <template>
   <div class="timeline">
-    <p class="now mono" aria-live="off">{{ dayLabel(props.day) }}</p>
     <div class="track">
       <svg
         class="ticks"
@@ -91,12 +90,6 @@ function seek(event: Event): void {
 .timeline {
   display: grid;
   gap: 0.3rem;
-}
-
-.now {
-  margin: 0;
-  font-size: 0.9rem;
-  font-weight: 700;
 }
 
 .track {

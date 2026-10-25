@@ -37,6 +37,9 @@ function setup(networkReplay = 1): Express {
               formedAt: new Date('2026-10-04T09:00:00Z'),
             },
           ],
+          challenges: [
+            { memberId: 'm-ada', postedAt: new Date('2026-10-03T09:00:00Z') },
+          ],
         }),
     },
   })
@@ -71,6 +74,7 @@ describe('network routes', () => {
         },
       ],
       links: [{ source: 0, target: 1, at: 1, day: '2026-10-04' }],
+      moons: [{ node: 1, at: expect.any(Number) as number, day: '2026-10-03' }],
     })
   })
 

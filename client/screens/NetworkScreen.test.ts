@@ -17,6 +17,7 @@ const timeline: NetworkTimeline = {
     { id: 1, at: 0.5, day: '2026-10-03', self: true },
   ],
   links: [{ source: 0, target: 1, at: 1, day: '2026-10-05' }],
+  moons: [],
 }
 
 const GraphStub = defineComponent({
@@ -55,15 +56,11 @@ afterEach(() => {
 })
 
 describe('NetworkScreen (R-NET-1, R-NET-2)', () => {
-  it('replays the network it is given, counting what shows', async () => {
+  it('replays the network it is given', async () => {
     serve(timeline)
     const screen = await mountScreen()
-    const graph = screen.findComponent(GraphStub)
 
-    expect(graph.props('timeline')).toEqual(timeline)
-    graph.vm.$emit('frame', { progress: 0.5, nodes: 2, links: 0, day: null })
-    await flushPromises()
-    expect(screen.find('.tally').text()).toBe('2 members · 0 connections')
+    expect(screen.findComponent(GraphStub).props('timeline')).toEqual(timeline)
   })
 
   it('says it is you once the replay ends, and not after going back', async () => {
@@ -100,7 +97,7 @@ describe('NetworkScreen (R-NET-1, R-NET-2)', () => {
   })
 
   it('says so before anyone has joined', async () => {
-    serve({ nodes: [], links: [] })
+    serve({ nodes: [], links: [], moons: [] })
     const screen = await mountScreen()
 
     expect(screen.find('.empty').exists()).toBe(true)
