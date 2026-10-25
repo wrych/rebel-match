@@ -782,6 +782,7 @@ at a screen instead of at the front door.
   | `/9torevolution/leaderboard`         | the 9toRevolution leaderboard (R-GAME-13)      |
   | `/network`                           | the network replay (R-NET-1)                   |
   | `/admin/presentation`                | the network presentation (R-PRES-1)            |
+  | `/recap`                             | the member's summit recap (R-RECAP-1)          |
   | `/welcome`                           | two doors                                      |
   | `/ask`                               | submit a challenge                             |
   | `/challenges/:id`                    | detected trend for that challenge              |
@@ -1855,6 +1856,54 @@ hosts only.
   the replay (R-NET-3).
 - **R-PRES-7 (The figures)** — The members, challenges and connections the
   presentation counts SHALL be those since launch: the whole network.
+
+## 8o. The summit recap
+
+When the summit ends, each member gets their own time in the movement as a
+few phone-sized stories, in the manner of a streaming service's yearly
+review, ending on a card they can share, LinkedIn first (ADR 0059). Hosts
+turn it on at the end of the summit. Members see it as _Your rebel track_,
+a title kept in one place. It reuses the replay (§8m) and the badges (§8k).
+
+- **R-RECAP-1 (Stories)** — WHILE hosts have `limits.recap` on, THE SYSTEM
+  SHALL offer each onboarded member their summit recap at `/recap` (S43),
+  from the menu: full-screen portrait stories, one beat each, with a progress
+  bar per story along the top. A tap on the right SHALL go forward, on the
+  left back, and holding SHALL pause; each story SHALL move on by itself
+  after `limits.recapStorySeconds`. While the switch is off, `/recap`
+  and its endpoint SHALL answer as not found (R-NAV-8).
+- **R-RECAP-2 (The beats)** — The stories SHALL be the member's own: the day
+  they joined, shown as their dot appearing in the network; then, each only
+  when above zero, the challenges they posted, the times they were in the
+  same boat, the offers of help they sent and the people they connected
+  with, as the badges count them (R-BADGE-1), each with the highest level
+  earned; the crowns they hold; and the network today with them lit
+  (R-NET-2). A beat at zero SHALL be left out, not shown as nothing.
+- **R-RECAP-3 (Compared with everyone)** — Each counted beat SHALL say how
+  the member compares, as the share of active members whose count is lower,
+  rounded down to `limits.recapPercentStep` percent ("more than 80% of
+  rebels"). Comparisons SHALL be left out while fewer than
+  `limits.recapMinMembers` members are active, and for a count no member
+  is below. No other member SHALL be named or counted singly.
+- **R-RECAP-4 (Only theirs)** — The endpoint SHALL answer for the caller only,
+  with their own figures, the share of members below each, the crowns they
+  hold, and the replay's timeline with them marked under its rules
+  (R-NET-3, R-NET-13). It SHALL send no other member's name, id or count.
+- **R-RECAP-5 (The share card)** — The last story SHALL be a card the member
+  can share: their name, their figures, their highest levels and crowns, and
+  the Rebel Match mark, drawn in the browser as an image 1080 by 1350
+  pixels. It SHALL show no other member's name, no challenge text and no
+  network picture.
+- **R-RECAP-6 (Sharing, LinkedIn first)** — _Share on LinkedIn_ SHALL be the
+  first action. Where the phone can share an image, THE SYSTEM SHALL hand the
+  card and a ready-written post to its share sheet; elsewhere it SHALL save
+  the card and open LinkedIn's post composer with the text filled in, for
+  the member to attach it. _Save image_ SHALL be the second. Nothing about
+  the member SHALL be sent to LinkedIn or anywhere else by the app itself,
+  and no public page of their figures SHALL exist.
+- **R-RECAP-7 (Usage)** — For a member opted in (R-ANA-4) THE SYSTEM SHALL
+  send `recap_opened` and `recap_shared` with how it was shared, and
+  nothing naming anyone or carrying a figure (R-ANA-3).
 
 ---
 

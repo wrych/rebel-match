@@ -494,6 +494,10 @@ Built after the spec and ADR merge. One pull request per item, in this order.
       _(R-PRES-1..7)_ The real cast, photos and the founders' challenges
       replace the fictional ones before the summit; music comes later.
 
+- [ ] The summit recap: the figures and comparisons, the stories, the card and
+      sharing, LinkedIn first. _(R-RECAP-1..7)_ A notification that it is
+      ready comes later.
+
 ---
 
 ## Post-beta backlog _(Could / Won't-for-now)_
