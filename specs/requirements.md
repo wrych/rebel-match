@@ -1808,6 +1808,16 @@ connection graph is private, so the replay names nobody.
   and SHALL say why and how many it takes. With so few lines a member could
   tell who the members at their ends are, and learn from those members'
   lines and moons what they never shared.
+- **R-NET-14 (Your callout)** — WHILE the replay has ended and still steers
+  the view (R-NET-10), THE SYSTEM SHALL show a label pointing at the viewer's
+  point, as a map labels what it has centred: _That's you_, their name, their
+  connections and challenges, and the day they joined. WHILE their own lines
+  are left out (R-NET-13), the connections SHALL carry an asterisk, and the
+  explanation under the scene SHALL begin with one.
+- **R-NET-15 (Reading the network)** — Under the scene THE SYSTEM SHALL
+  explain, each with a drawing of it, that a dot is a member, a line a
+  connection both accepted, a moon a challenge circling its author, and the
+  accent colour the viewer.
 
 ---
 

@@ -866,12 +866,16 @@ reported member, S26 A member's page.
    from the start (R-NET-8). Dragging, pinching or scrolling the scene hands
    them the view and offers _Recentre view_, which hands it back (R-NET-10).
 4. At the end the camera keeps turning, drawn towards the member's own
-   point, lit in the accent colour with their own lines, and the screen says
-   _That's you_ (R-NET-2).
+   point, lit in the accent colour with their own lines (R-NET-2), and a
+   label points at it: _That's you_, their name, their connections and
+   challenges, and when they joined (R-NET-14). A drag hands them the view
+   and the label goes until they recentre.
    Nobody else is named, here or in what the server sent (R-NET-3).
 5. A member with fewer connections than hosts set (5 by default) sees the
-   replay without their own lines, and a line under it saying it takes 5,
-   they have 2, and why: with so few they could tell who is at the other end
-   (R-NET-13).
+   replay without their own lines, their count in the label starred, and a
+   footnote under the scene saying it takes 5, they have 2, and why: with so
+   few they could tell who is at the other end (R-NET-13). Under that, a key
+   draws a dot, a line, a moon and the accent colour and says what each is
+   (R-NET-15).
 6. A member who prefers reduced motion sees the end at once (R-NET-9). While
    the switch is off, `/network` is not found (R-NET-6).
