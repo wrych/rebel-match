@@ -74,6 +74,13 @@ export const routeTable: readonly RouteDef[] = [
     access: 'onboarded',
     permission: 'game:play',
   },
+  {
+    path: '/network',
+    name: 'network',
+    title: 'The network',
+    access: 'onboarded',
+    permission: 'network:view',
+  },
   { path: '/welcome', name: 'welcome', title: 'Welcome', access: 'onboarded' },
   { path: '/profile', name: 'profile', title: 'Profile', access: 'onboarded' },
   {

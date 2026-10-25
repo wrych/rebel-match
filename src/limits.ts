@@ -149,6 +149,12 @@ const limitSpecs = {
     default: 3,
     changeable: { min: 1, max: 100 },
   },
+  // Hosts open the network replay to members; off until they do (R-NET-6).
+  networkReplay: {
+    env: 'NETWORK_REPLAY',
+    default: 0,
+    changeable: { min: 0, max: 1 },
+  },
   // Reports name who made them, so handled ones go after this (R-MOD-11).
   reportRetentionDays: { env: 'REPORT_RETENTION_DAYS', default: 180 },
   // The largest SVG logo an event badge takes, kept well inside the 64 kB a

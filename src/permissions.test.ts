@@ -9,6 +9,7 @@ describe('configPolicy.permissionsOf', () => {
       'connection:request',
       'content:report',
       'game:play',
+      'network:view',
     ])
   })
 
