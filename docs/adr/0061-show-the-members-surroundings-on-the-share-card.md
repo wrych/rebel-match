@@ -13,17 +13,19 @@ view turning.
 
 ## Decision
 
-- **The card shows the member's surroundings** behind its words, their dot
-  at the card's centre: the replay's own layout, the other dots and lines
-  faint and fading in colour and opacity with distance until invisible, so
-  the words stay easy to read.
+- **The card shows the member's surroundings** behind its words, framed as
+  the replay's ending frames them: their dot at the bottom right, the
+  network's centre towards the middle of the card, the other dots and
+  lines faint and fading with distance until invisible, so the words stay
+  easy to read.
 - **Only what the replay already shows the member.** Dots are anonymous
   positions (R-NET-3), and the member's own lines are there only when the
   replay would draw them (R-NET-13), since the view is drawn from the same
   timeline.
 - **Drawn flat, in the browser, from the layout.** A small projection on the
   card's canvas rather than a 3D render: the same picture on every device,
-  and the story turns it by changing one angle.
+  and the story turns it about the line from the member to the centre by
+  changing one angle, so both stay where the frame puts them.
 
 ## Alternatives considered
 
