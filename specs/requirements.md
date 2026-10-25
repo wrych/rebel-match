@@ -1862,7 +1862,7 @@ hosts only.
 When the summit ends, each member gets their own time in the movement as a
 few phone-sized stories, in the manner of a streaming service's yearly
 review, ending on a card they can share, LinkedIn first (ADR 0059). Hosts
-turn it on at the end of the summit. Members see it as _Your rebel track_,
+turn it on at the end of the summit. Members see it as _Your rebel record_,
 a title kept in one place. It reuses the replay (§8m) and the badges (§8k).
 
 - **R-RECAP-1 (Stories)** — WHILE hosts have `limits.recap` on, THE SYSTEM
