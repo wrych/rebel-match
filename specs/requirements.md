@@ -1794,6 +1794,13 @@ connection graph is private, so the replay names nobody.
   or scrolls the scene THE SYSTEM SHALL stop steering and leave the view to
   them, offering _Recentre view_. WHEN they choose it, or replay, THE SYSTEM
   SHALL take the view back, easing from where they left it.
+- **R-NET-11 (Challenges as moons)** — Each challenge a member shows
+  (R-ASK-1), neither withdrawn nor hidden (R-ASK-17, R-MOD-8), SHALL circle
+  that member's point as a moon, appearing when it was posted. The replay
+  SHALL carry no challenge text, trend or id: a moon is its member's position
+  and a day. The viewer's own moons SHALL show in the accent colour.
+- **R-NET-12 (The tally)** — The scene's corner SHALL show the day the replay
+  has reached and how many members, connections and challenges show by then.
 
 ---
 
@@ -1941,8 +1948,9 @@ fixtures. `design.md` §6 lists the exact records and the profile mechanism.
   (R-SEED-2).
 - **R-SEED-10 (A dev network)** — The dev seed SHALL add fictional members to
   the prototype's roster, about 100 in all, with about 70 challenges across
-  every trend and "been there" offers, so the network replay (R-NET-1), the
-  cockpit and the badges have something real to show. Members SHALL have
+  every trend, posted over time after their authors joined, and "been
+  there" offers, so the network replay (R-NET-1), the cockpit and the badges
+  have something real to show. Members SHALL have
   joined at times spread over several weeks before the seed runs, with one
   event's crowd joining within a few hours. Members SHALL have sent each
   other connection requests over those challenges, same boat and been there,

@@ -61,13 +61,20 @@ a flash.
   and the pace make it harder, not impossible; on a busy network it is noise.
   If that is not acceptable, the next step is to merge thin days, not to drop
   the replay.
-- The layout is computed in the browser on every visit: about 200 ms for 400
-  members on a laptop. Past a thousand it wants a worker or a server cache.
+- Challenges circle their authors as moons, carrying only their member's
+  position and a day. A moon count is one more thing a point can be known
+  by, alongside its lines; the same remedy applies if it is ever too much.
+- The layout is computed in the browser on every visit, and grows with the
+  square of the members: about 50 ms for 250, a second for 1,000, four for
+  2,000. Drawing is not the limit: every kind is one instanced mesh or line
+  buffer, and moons cost under a millisecond a frame at 20,000. Past about
+  1,000 members the layout wants a worker, a Barnes–Hut approximation, or
+  computing once on the server.
 - A WebGL scene is not testable in jsdom. The scene stays behind its
   interface, and everything that decides (timeline, pace, layout, frames, the
   player) is pure and unit-tested.
 
 ## References
 
-Requirements: `R-NET-1`..`R-NET-10`. Spec sections: `specs/design.md` §3
+Requirements: `R-NET-1`..`R-NET-12`. Spec sections: `specs/design.md` §3
 (Network replay), §4 (S41), `specs/flows.md` F22. ADRs 0004, 0045, 0053.

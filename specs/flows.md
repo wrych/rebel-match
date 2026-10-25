@@ -857,9 +857,11 @@ reported member, S26 A member's page.
    the member holds `network:view`, it offers **The network** (R-NET-5,
    R-NET-6).
 2. **S41** loads the network and plays it: the first members appear, lines
-   form between them, the camera turns slowly. The timeline under it marks
-   every join and connection; the summit's crowd of joins takes up more of it
-   than its hours would, so it plays slower (R-NET-7, R-NET-8).
+   form between them, challenges start circling their authors as moons, the
+   camera turns slowly, and the corner counts members, connections and
+   challenges as of the day reached (R-NET-11, R-NET-12). The timeline under
+   it marks every join and connection; the summit's crowd of joins takes up
+   more of it than its hours would, so it plays slower (R-NET-7, R-NET-8).
 3. The member may drag the timeline to any moment, pause, play on, or replay
    from the start (R-NET-8). Dragging, pinching or scrolling the scene hands
    them the view and offers _Recentre view_, which hands it back (R-NET-10).
