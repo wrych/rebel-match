@@ -1767,6 +1767,18 @@ non-empty match lists, and a login that works without waiting for an email.
   magic-link login works against a dev mailbox.
 - **Example challenges** from the prototype fill the swipe deck, and so the
   R-ASK-2 inspiration too.
+- **A crowd and its network** (R-SEED-10): 83 more fictional members, crossed
+  from name lists, bring the roster to 100; 56 more challenges, seven per
+  trend, bring it to 70, and the later half of the crowd offers help on one
+  or two trends. Join times follow `networkShape` in `src/seed/dev/network.ts`:
+  the dev admin 45 days before the seed, 55% of the rest spread until four
+  days before, 35% within six hours three days before (the event), and the
+  rest since. Each challenge draws same-boat requests from up to two other
+  authors in its trend and been-there requests from up to two members
+  offering help on it, 70% accepted, 18% pending, 12% declined, each asked
+  after both members joined and answered within two days. A seeded
+  generator keeps it the same on every run; times are written only for a
+  member or request new to the database.
 - Fixture emails use a non-routable domain (e.g. `@example.invalid`) so a
   misconfigured dev deployment cannot email a real person.
 

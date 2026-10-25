@@ -1934,6 +1934,16 @@ fixtures. `design.md` §6 lists the exact records and the profile mechanism.
   the database is granted: a re-run SHALL NOT give back a role a host took
   away. The dev profile SHALL refuse `SEED_ADMINS`; it has its own admin
   (R-SEED-2).
+- **R-SEED-10 (A dev network)** — The dev seed SHALL add fictional members to
+  the prototype's roster, about 100 in all, with about 70 challenges across
+  every trend and "been there" offers, so the network replay (R-NET-1), the
+  cockpit and the badges have something real to show. Members SHALL have
+  joined at times spread over several weeks before the seed runs, with one
+  event's crowd joining within a few hours. Members SHALL have sent each
+  other connection requests over those challenges, same boat and been there,
+  most accepted, some pending and a few declined, each after both members
+  joined. The network SHALL be the same on every run, and a re-run SHALL NOT
+  move a join time or add a request already there (R-SEED-7).
 
 ---
 

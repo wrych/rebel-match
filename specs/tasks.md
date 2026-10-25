@@ -486,6 +486,9 @@ Built after the spec and ADR merge. One pull request per item, in this order.
       `network:view`, the paced anonymous timeline, the 3D scene with its
       layout and player, the timeline bar, S41 and the menu entry.
       _(R-NET-1..9)_
+- [x] A dev network to try it on: a crowd of fictional members, their
+      challenges and offers, join times over weeks with an event's crowd, and
+      connection requests in every state. _(R-SEED-10)_
 - [ ] A presentation mode for hosts on the same graph component: a timeline
       marking nobody, full screen, driven without the member's controls.
       Needs its own requirement first.
