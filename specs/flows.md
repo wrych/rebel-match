@@ -894,7 +894,8 @@ reported member, S26 A member's page.
    network grows past today until it is a point, flashes, and a lone dot,
    whoever is watching, is thanked (R-PRES-2, R-PRES-4, R-PRES-7).
 3. In rehearsal the host pauses, seeks with the arrows and plays again; the
-   same second always shows the same picture (R-PRES-3).
+   same second always shows the same picture (R-PRES-3). On a phone, held
+   sideways, a tap plays and pauses and the scrubber seeks.
 4. Without a cast file, a production deployment names nobody and the film
    stays on the whole network where it would have visited someone
    (R-PRES-5).

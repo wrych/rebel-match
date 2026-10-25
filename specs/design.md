@@ -515,7 +515,10 @@ everything: the picture is a pure function of the second reached.
 - **Stage** (`PresentationStage.vue`): a 16:9 frame on a dark background,
   the scene, the words as large display type, name labels with photos, the
   founders' cards (the app's challenge card), and the controls, hidden while
-  playing: space to play or pause, arrows to seek, F for full screen.
+  playing: space or a tap on the stage to play or pause, arrows to seek, F
+  for full screen, with Play and Full screen buttons for a phone. A phone
+  held upright is asked to turn sideways; where the browser allows full
+  screen to videos only, as on an iPhone, there is no full screen button.
 - **Cast**: the server reads `PRESENTATION_CAST_FILE` once at start, a JSON
   list of `{handle, name, photo?, email?, groups?}`, photos as data URLs. It
   matches emails to active members and sends each cast member's handle,
