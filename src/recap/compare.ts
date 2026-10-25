@@ -1,8 +1,6 @@
-/** How a member's count compares with everyone's: the share of active
- * members whose count is lower, in percent, rounded down to `step`; null
- * while too few are active to say it without pointing at anyone, or below
- * `minShare`, where it would read as a put-down (R-RECAP-3). `counts` are the active members' counts above
- * zero, the member's own among them; everyone else counts zero. */
+/** The percent of active members with a lower count, rounded down to
+ * `step`; null below `minMembers` or `minShare` (R-RECAP-3). `counts` are
+ * the counts above zero, the member's own among them. */
 export function shareBelow(
   mine: number,
   counts: readonly number[],
