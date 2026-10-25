@@ -127,15 +127,18 @@ export interface HaloColours {
   accent: string
   ink: string
   paper: string
+  /** How strongly the others show at their nearest, 0 to 1, so the view can
+   * sit behind words; the member's own dot stays vivid. */
+  strength: number
 }
 
 /** Sizes as shares of the view's side. */
 const look = {
-  dot: 0.014,
-  selfDot: 0.026,
-  glow: [0.075, 0.052, 0.038],
-  glowAlpha: 0.12,
-  line: 0.003,
+  dot: 0.0075,
+  selfDot: 0.014,
+  glow: [0.045, 0.032, 0.022],
+  glowAlpha: 0.1,
+  line: 0.0018,
 }
 
 const HEX = /^#([0-9a-f]{6})$/i
@@ -171,7 +174,7 @@ export function paintHalo(
   ]
   pen.lineWidth = Math.max(look.line * box.size, 1)
   for (const line of halo.lines) {
-    pen.globalAlpha = line.fade
+    pen.globalAlpha = line.fade * colours.strength
     pen.strokeStyle = mix(colours.ink, colours.paper, 1 - line.fade)
     pen.beginPath()
     pen.moveTo(...at(line.from))
@@ -189,7 +192,7 @@ export function paintHalo(
         pen.fill()
       }
     } else pen.fillStyle = mix(colours.ink, colours.paper, 1 - dot.fade)
-    pen.globalAlpha = dot.self ? 1 : dot.fade
+    pen.globalAlpha = dot.self ? 1 : dot.fade * colours.strength
     pen.beginPath()
     pen.arc(
       x,

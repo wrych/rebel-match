@@ -90,9 +90,17 @@ const layout = {
   rule: 8,
 }
 
-/** Where the member's surroundings sit: the bottom-right corner, fading out
- * before the edges (R-RECAP-5). */
-export const HALO_BOX = { x: 500, y: 760, size: 580 }
+/** Where the member's surroundings sit: their dot at the card's centre,
+ * the view reaching almost its full height and fading out before the
+ * edges, under the words (R-RECAP-5). */
+const HALO_SIZE = 1240
+// Behind the words, the others stay faint enough to read through.
+const HALO_STRENGTH = 0.4
+export const HALO_BOX = {
+  x: (CARD_SIZE.width - HALO_SIZE) / 2,
+  y: (CARD_SIZE.height - HALO_SIZE) / 2,
+  size: HALO_SIZE,
+}
 
 /** The calls the card is drawn with: a canvas's 2D context, or a test's
  * stand-in. */
@@ -243,6 +251,7 @@ export function paintGround(
       accent: palette.accent,
       ink: palette.ink,
       paper: palette.paper,
+      strength: HALO_STRENGTH,
     })
 }
 

@@ -114,6 +114,7 @@ describe('notification cadences over Postgres (R-NOTE-2, R-NOTE-3, R-NOTE-7)', (
       ['new_connection', 'hourly'],
       ['trend_challenge', 'daily'],
       ['badge', 'daily'],
+      ['recap', 'immediately'],
     ])
     expect((await read('admin')).map((s) => s.type)).toContain('applicant')
 

@@ -106,6 +106,7 @@ describe('paintHalo', () => {
         accent: '#d4471f',
         ink: '#111010',
         paper: '#faf8f4',
+        strength: 0.5,
       },
     )
 
