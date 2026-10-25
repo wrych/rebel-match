@@ -1789,6 +1789,11 @@ connection graph is private, so the replay names nobody.
   SHALL sit beside it.
 - **R-NET-9 (Reduced motion)** — WHEN the member prefers reduced motion THE
   SYSTEM SHALL show the end of the replay at once, without turning the scene.
+- **R-NET-10 (Taking the view)** — The replay SHALL steer the camera,
+  turning slowly throughout and after the end. WHEN the member drags, pinches
+  or scrolls the scene THE SYSTEM SHALL stop steering and leave the view to
+  them, offering _Recentre view_. WHEN they choose it, or replay, THE SYSTEM
+  SHALL take the view back, easing from where they left it.
 
 ---
 

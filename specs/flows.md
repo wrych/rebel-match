@@ -861,9 +861,11 @@ reported member, S26 A member's page.
    every join and connection; the summit's crowd of joins takes up more of it
    than its hours would, so it plays slower (R-NET-7, R-NET-8).
 3. The member may drag the timeline to any moment, pause, play on, or replay
-   from the start (R-NET-8).
-4. At the end the camera turns to the member's own point, lit in the accent
-   colour with their own lines, and the screen says _That's you_ (R-NET-2).
+   from the start (R-NET-8). Dragging, pinching or scrolling the scene hands
+   them the view and offers _Recentre view_, which hands it back (R-NET-10).
+4. At the end the camera keeps turning, drawn towards the member's own
+   point, lit in the accent colour with their own lines, and the screen says
+   _That's you_ (R-NET-2).
    Nobody else is named, here or in what the server sent (R-NET-3).
 5. A member who prefers reduced motion sees the end at once (R-NET-9). While
    the switch is off, `/network` is not found (R-NET-6).

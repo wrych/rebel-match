@@ -459,13 +459,19 @@ ADR 0057). Three layers, so a host presentation can reuse the lower two:
   (65%), so dense stretches slow down, and is rounded to a thousandth. Nodes
   and links are each in the order they appear, so a moment is a prefix of
   each.
+- **Camera** (`client/network/camera.ts`, pure): while the replay steers, it
+  eases towards a goal (the network as far as it has grown, framed to the
+  screen's narrower side; at the end, drawn halfway to the viewer) and turns
+  slowly. The member's first drag, pinch or scroll hands the view to them, as
+  a map does, until _Recentre view_ or _Replay_ hands it back (R-NET-10).
 - **Layout and player** (`client/network/`, pure): a seeded force layout
   places the settled network once; `frameAt` turns a place into counts and a
   day; a player runs the place from 0 to 1 over 24 seconds on an injected
   ticker.
 - **Graph** (`NetworkGraph.vue`): takes the timeline, whether to highlight the
   viewer, whether to show its controls, and a scene factory, and exposes
-  play, pause, seek and restart. The default scene draws with `three`; the
+  play, pause, seek, restart and recentre. The default scene draws with
+  `three`; the
   timeline bar (`NetworkTimelineBar.vue`) is a range input over a strip of
   ticks, one per join and one per connection.
 
@@ -1557,7 +1563,7 @@ sets it again after every navigation, as _Rebel Match | Screen_.
 | S38 | **Report** — what is being reported, read-only; three reasons as choice cards; an optional comment with a counter; _Send report_; a line that hosts will look and the member reported will not learn who sent it (R-MOD-3)                                                                                                                                                                                                                                                            | `/report/challenge/:id`, `/report/request/:id`        |
 | S39 | **Moderation** — _Open_ / _Handled_ tabs; one card per reported member: name · organization, status, "5 reports from 4 members", "2 challenges · 1 note", reasons with counts, the latest report's time; outlined from `limits.reportersToFlag` different reporters (R-MOD-6)                                                                                                                                                                                                         | `/admin/moderation`                                   |
 | S40 | **A reported member** — the member with a link to S26; each reported item with its text, state and reports, and _Hide_ / _Unhide_ and _Dismiss_; _Ban member…_ or _Lift ban_; the history of actions (R-MOD-7..9)                                                                                                                                                                                                                                                                     | `/admin/moderation/:memberId`                         |
-| S41 | **The network** — the network growing in 3D, every member a point and every accepted connection a line, nobody named; under it a timeline marking each join and connection with where the replay is and its day, Pause / Play and Replay; at the end the member's own point lit up with the words _That's you_ (R-NET-1..9)                                                                                                                                                           | `/network`                                            |
+| S41 | **The network** — the network growing in 3D, every member a point and every accepted connection a line, nobody named; under it a timeline marking each join and connection with where the replay is and its day, Pause / Play and Replay; drag, pinch or scroll to take the view, _Recentre view_ to hand it back; at the end the member's own point lit up with the words _That's you_ (R-NET-1..9)                                                                                  | `/network`                                            |
 
 Remaining overlays, deliberately: the "really decline this request?" confirm, the
 "link sent" / "copied" toasts, and the feedback action (a `mailto:`, not a

@@ -69,5 +69,5 @@ a flash.
 
 ## References
 
-Requirements: `R-NET-1`..`R-NET-9`. Spec sections: `specs/design.md` §3
+Requirements: `R-NET-1`..`R-NET-10`. Spec sections: `specs/design.md` §3
 (Network replay), §4 (S41), `specs/flows.md` F22. ADRs 0004, 0045, 0053.
