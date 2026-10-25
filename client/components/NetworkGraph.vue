@@ -49,6 +49,7 @@ const host = ref<HTMLElement | null>(null)
 const frame = ref<Frame>(frameAt(props.timeline, 0))
 const ended = ref(false)
 const playing = ref(false)
+const viewTaken = ref(false)
 const drawn = shallowRef<NetworkScene | null>(null)
 let player: Player | null = null
 
@@ -86,7 +87,13 @@ function pause(): void {
   playing.value = false
 }
 
+function recentre(): void {
+  drawn.value?.recentre()
+  viewTaken.value = false
+}
+
 function restart(): void {
+  recentre()
   player?.restart()
   playing.value = player?.playing ?? false
 }
@@ -104,7 +111,12 @@ onMounted(() => {
       host.value,
       props.timeline,
       layout(props.timeline.nodes.length, props.timeline.links),
-      { still },
+      {
+        still,
+        onTakeOver: () => {
+          viewTaken.value = true
+        },
+      },
     )
   player = createPlayer({
     durationMs: props.durationMs,
@@ -122,12 +134,22 @@ onBeforeUnmount(() => {
   drawn.value?.dispose()
 })
 
-defineExpose({ play, pause, restart, seek, frame, ended })
+defineExpose({ play, pause, restart, seek, recentre, frame, ended, viewTaken })
 </script>
 
 <template>
   <div class="graph">
-    <div ref="host" class="stage" role="img" :aria-label="description" />
+    <div class="frame">
+      <div ref="host" class="stage" role="img" :aria-label="description" />
+      <button
+        v-if="viewTaken"
+        type="button"
+        class="btn btn-ghost btn-small recentre"
+        @click="recentre"
+      >
+        Recentre view
+      </button>
+    </div>
     <div v-if="props.controls" class="controls">
       <NetworkTimelineBar
         :timeline="props.timeline"
@@ -164,6 +186,17 @@ defineExpose({ play, pause, restart, seek, frame, ended })
 .graph {
   display: grid;
   gap: 0.8rem;
+}
+
+.frame {
+  position: relative;
+}
+
+.recentre {
+  position: absolute;
+  right: 0.75rem;
+  bottom: 0.75rem;
+  background: var(--paper);
 }
 
 .stage {

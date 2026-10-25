@@ -38,6 +38,8 @@ function fakeScene(): {
   factory: SceneFactory
   shown: Frame[]
   highlights: boolean[]
+  recentred: () => number
+  takeOver: () => void
   disposed: () => boolean
   still: () => boolean | null
 } {
@@ -45,13 +47,19 @@ function fakeScene(): {
   const highlights: boolean[] = []
   let disposed = false
   let still: boolean | null = null
+  let recentred = 0
+  let takeOver = (): void => undefined
   return {
     factory: (_host, _timeline, points, options) => {
       expect(points).toHaveLength(2)
       still = options.still
+      takeOver = options.onTakeOver
       return {
         show: (frame) => shown.push(frame),
         highlight: (on) => highlights.push(on),
+        recentre: () => {
+          recentred += 1
+        },
         dispose: () => {
           disposed = true
         },
@@ -59,6 +67,8 @@ function fakeScene(): {
     },
     shown,
     highlights,
+    recentred: () => recentred,
+    takeOver: () => takeOver(),
     disposed: () => disposed,
     still: () => still,
   }
@@ -173,6 +183,35 @@ describe('NetworkGraph (R-NET-1, R-NET-2)', () => {
 
     expect(graph.find('input').exists()).toBe(false)
     expect(graph.find('button').exists()).toBe(false)
+  })
+
+  it('offers to recentre once the member takes the view, and hands it back', async () => {
+    const { graph, scene } = setup()
+    const recentre = (): ReturnType<typeof graph.find> =>
+      graph.find('button.recentre')
+
+    expect(recentre().exists()).toBe(false)
+    scene.takeOver()
+    await graph.vm.$nextTick()
+    await recentre().trigger('click')
+
+    expect(scene.recentred()).toBe(1)
+    expect(recentre().exists()).toBe(false)
+  })
+
+  it('hands the view back to the replay when it replays', async () => {
+    const { graph, scene, ticker } = setup()
+
+    scene.takeOver()
+    ticker.advance(1000)
+    await graph.vm.$nextTick()
+    await graph
+      .findAll('button')
+      .filter((button) => button.text() === 'Replay')[0]
+      ?.trigger('click')
+
+    expect(scene.recentred()).toBe(1)
+    expect(graph.find('button.recentre').exists()).toBe(false)
   })
 
   it('lets go of the scene when it leaves', () => {

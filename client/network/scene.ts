@@ -16,6 +16,16 @@ import {
 } from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import type { NetworkTimeline } from '../../src/network/timeline'
+import {
+  fitOf,
+  goalOf,
+  poseOf,
+  reach,
+  positionOf,
+  stepTo,
+  steering,
+  type Pose,
+} from './camera'
 import type { Point } from './layout'
 import type { Frame } from './replay'
 
@@ -25,6 +35,8 @@ export interface NetworkScene {
   show(frame: Frame): void
   /** Marks the viewer's own point and turns the camera to it (R-NET-2). */
   highlight(on: boolean): void
+  /** Hands the view back to the replay after the member took it. */
+  recentre(): void
   dispose(): void
 }
 
@@ -33,7 +45,12 @@ export type SceneFactory = (
   host: HTMLElement,
   timeline: NetworkTimeline,
   points: readonly Point[],
-  options: { still: boolean },
+  options: {
+    still: boolean
+    /** Told when the member drags, pinches or scrolls the view: from then
+     * on it is theirs until `recentre`. */
+    onTakeOver: () => void
+  },
 ) => NetworkScene
 
 const tuning = {
@@ -41,15 +58,11 @@ const tuning = {
   selfRadius: 3.4,
   haloRadius: 5,
   popMs: 600,
-  rotateSpeed: 0.6,
   linkOpacity: 0.45,
   cameraFov: 50,
   cameraNear: 0.1,
-  cameraMargin: 2.4,
   farPlaneRadii: 20,
   smallestRadius: 10,
-  focusRadii: 1.8,
-  focusEase: 0.04,
   haloPulseMs: 900,
   haloOpacity: { least: 0.15, swing: 0.45 },
   sphereSegments: { around: 16, up: 12 },
@@ -75,13 +88,6 @@ const coordinates = (point: Point | undefined): [number, number, number] => [
   point?.y ?? 0,
   point?.z ?? 0,
 ]
-
-function radiusOf(points: readonly Point[]): number {
-  return Math.max(
-    tuning.smallestRadius,
-    ...points.map((p) => Math.hypot(p.x, p.y, p.z)),
-  )
-}
 
 // The viewer's own lines take the accent colour, everyone else's are muted.
 function linkLines(
@@ -161,20 +167,18 @@ function cameraFor(radius: number): PerspectiveCamera {
     tuning.cameraNear,
     far,
   )
-  camera.position.set(0, 0, radius * tuning.cameraMargin)
+  camera.position.set(0, 0, radius * fitOf(tuning.cameraFov, 1))
   return camera
 }
 
-function viewIn(host: HTMLElement, radius: number, still: boolean): View {
+function viewIn(host: HTMLElement, radius: number): View {
   const renderer = new WebGLRenderer({ antialias: true, alpha: true })
   renderer.setPixelRatio(Math.min(devicePixelRatio, tuning.maxPixelRatio))
   host.appendChild(renderer.domElement)
   const camera = cameraFor(radius)
   const controls = new OrbitControls(camera, renderer.domElement)
   controls.enableDamping = true
-  controls.enablePan = false
-  controls.autoRotate = !still
-  controls.autoRotateSpeed = tuning.rotateSpeed
+  controls.screenSpacePanning = true
   const resize = (): void => {
     const width = host.clientWidth || 1
     const height = host.clientHeight || 1
@@ -244,37 +248,99 @@ class Growth {
   }
 }
 
-// The camera eases towards the viewer's point while their halo pulses.
-class Focus {
-  on = false
-  private readonly target = new Vector3()
+const pointOf = (v: Vector3): Point => ({ x: v.x, y: v.y, z: v.z })
+
+// The replay steers the camera until the member takes it, as a map does: one
+// drag, pinch or scroll and it is theirs, until they recentre.
+class Director {
+  private pose: Pose
+  private steering = true
+  private focus: Point | null = null
+  private shown = 0
+  private last: number | null = null
 
   constructor(
     private readonly view: View,
-    private readonly self: Point | undefined,
-    private readonly halo: Mesh,
-    private readonly distance: number,
+    private readonly points: readonly Point[],
+    private readonly floor: number,
     private readonly still: boolean,
-  ) {}
-
-  set(on: boolean): void {
-    this.on = on && this.self !== undefined
-    this.halo.visible = this.on
-    this.view.controls.autoRotate = !this.still && !this.on
+  ) {
+    this.pose = this.goalPose()
   }
 
-  turn(now: number): void {
-    if (!this.on) return
+  show(count: number): void {
+    this.shown = count
+  }
+
+  aim(focus: Point | null): void {
+    this.focus = focus
+  }
+
+  takeOver(): void {
+    this.steering = false
+  }
+
+  recentre(): void {
     const { camera, controls } = this.view
-    const ease = this.still ? 1 : tuning.focusEase
-    controls.target.lerp(this.target.set(...coordinates(this.self)), ease)
-    const away = camera.position.clone().sub(controls.target)
-    away.setLength(away.length() + (this.distance - away.length()) * ease)
-    camera.position.copy(controls.target).add(away)
-    const pulse = this.still ? 1 : (Math.sin(now / tuning.haloPulseMs) + 1) / 2
-    ;(this.halo.material as MeshBasicMaterial).opacity =
-      tuning.haloOpacity.least + pulse * tuning.haloOpacity.swing
+    this.pose = poseOf(pointOf(camera.position), pointOf(controls.target))
+    this.steering = true
   }
+
+  step(now: number): void {
+    const elapsed = this.last === null ? 0 : now - this.last
+    this.last = now
+    const { camera, controls } = this.view
+    if (!this.steering) {
+      controls.update()
+      return
+    }
+    const goal = goalOf(
+      this.points,
+      this.shown,
+      this.focus,
+      this.floor,
+      this.fit(),
+    )
+    this.pose = stepTo(this.pose, goal, elapsed, this.still)
+    const at = positionOf(this.pose)
+    camera.position.set(at.x, at.y, at.z)
+    controls.target.set(...coordinates(this.pose.target))
+    camera.lookAt(controls.target)
+  }
+
+  private fit(): number {
+    return fitOf(this.view.camera.fov, this.view.camera.aspect)
+  }
+
+  private goalPose(): Pose {
+    const goal = goalOf(this.points, this.shown, null, this.floor, this.fit())
+    return {
+      ...goal,
+      azimuth: 0,
+      elevation: steering.elevation,
+    }
+  }
+}
+
+// The controls start on the member's first drag, pinch or scroll.
+function handOver(
+  view: View,
+  director: Director,
+  onTakeOver: () => void,
+): () => void {
+  const takeOver = (): void => {
+    director.takeOver()
+    onTakeOver()
+  }
+  view.controls.addEventListener('start', takeOver)
+  return () => view.controls.removeEventListener('start', takeOver)
+}
+
+function pulse(halo: Mesh, now: number, still: boolean): void {
+  if (!halo.visible) return
+  const swing = still ? 1 : (Math.sin(now / tuning.haloPulseMs) + 1) / 2
+  ;(halo.material as MeshBasicMaterial).opacity =
+    tuning.haloOpacity.least + swing * tuning.haloOpacity.swing
 }
 
 function sceneOf(objects: (Mesh | LineSegments)[]): Scene {
@@ -296,31 +362,26 @@ export const createThreeScene: SceneFactory = (
   host,
   timeline,
   points,
-  { still },
+  { still, onTakeOver },
 ) => {
   const palette = paletteOf(host)
-  const radius = radiusOf(points)
-  const view = viewIn(host, radius, still)
+  const view = viewIn(host, Math.max(reach(points), tuning.smallestRadius))
   const selfIndex = timeline.nodes.findIndex((node) => node.self)
+  const self = points[selfIndex] ?? null
   const nodes = nodeMesh(timeline, palette)
   const links = linkLines(timeline, points, palette)
   const halo = haloMesh(points[selfIndex], palette)
   const objects = [links, nodes, halo]
   const scene = sceneOf(objects)
   const growth = new Growth(nodes, points, selfIndex, still)
-  const focus = new Focus(
-    view,
-    points[selfIndex],
-    halo,
-    radius * tuning.focusRadii,
-    still,
-  )
+  const director = new Director(view, points, tuning.smallestRadius, still)
+  const release = handOver(view, director, onTakeOver)
 
   let frame = 0
   const render = (now: number): void => {
     growth.grow(now)
-    focus.turn(now)
-    view.controls.update()
+    director.step(now)
+    pulse(halo, now, still)
     view.renderer.render(scene, view.camera)
     frame = requestAnimationFrame(render)
   }
@@ -329,11 +390,18 @@ export const createThreeScene: SceneFactory = (
   return {
     show({ nodes: count, links: linkCount }) {
       growth.show(count, performance.now())
+      director.show(count)
       links.geometry.setDrawRange(0, linkCount * 2)
     },
-    highlight: (on) => focus.set(on),
+    highlight(on) {
+      const lit = on && self !== null
+      halo.visible = lit
+      director.aim(lit ? self : null)
+    },
+    recentre: () => director.recentre(),
     dispose() {
       cancelAnimationFrame(frame)
+      release()
       disposeAll(objects)
       view.dispose()
     },
