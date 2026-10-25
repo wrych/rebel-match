@@ -13,9 +13,10 @@ view turning.
 
 ## Decision
 
-- **The card shows the member's surroundings** in its bottom-right corner:
-  the replay's own layout, centred on their dot, the other dots and lines
-  fading in colour and opacity with distance until invisible.
+- **The card shows the member's surroundings** behind its words, their dot
+  at the card's centre: the replay's own layout, the other dots and lines
+  faint and fading in colour and opacity with distance until invisible, so
+  the words stay easy to read.
 - **Only what the replay already shows the member.** Dots are anonymous
   positions (R-NET-3), and the member's own lines are there only when the
   replay would draw them (R-NET-13), since the view is drawn from the same

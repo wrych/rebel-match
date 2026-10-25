@@ -1898,8 +1898,9 @@ a title kept in one place. It reuses the replay (§8m) and the badges (§8k).
 - **R-RECAP-5 (The share card)** — The last story SHALL be a card the member
   can share: their name, their figures, their highest levels and crowns, and
   the Rebel Match mark, drawn in the browser as an image 1080 by 1350
-  pixels. It SHALL show no other member's name and no challenge text. In its
-  bottom-right corner it SHALL show the network around the member's own dot
+  pixels. It SHALL show no other member's name and no challenge text. Behind
+  the words, centred on the card, it SHALL show the network around the
+  member's own dot
   as the replay lays it out: their dot vivid in the accent colour, the other
   dots and lines fading in colour and opacity with distance until
   invisible, every dot anonymous as in the replay (R-NET-3) and the
