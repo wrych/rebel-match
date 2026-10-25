@@ -52,6 +52,11 @@ describe('POST /api/events', () => {
       { name: 'feedback_opened', screen: 'cockpit' },
     ],
     [{ event: 'game_opened', props: {} }, { name: 'game_opened' }],
+    [{ event: 'recap_opened', props: {} }, { name: 'recap_opened' }],
+    [
+      { event: 'recap_shared', props: { via: 'linkedin' } },
+      { name: 'recap_shared', via: 'linkedin' },
+    ],
     [
       {
         event: 'experiment_exposed',
@@ -122,6 +127,10 @@ describe('POST /api/events', () => {
     [
       'a screen viewed by its path, which names a challenge',
       { event: 'screen_viewed', props: { screen: '/challenges/c-1' } },
+    ],
+    [
+      'a recap shared with a figure (R-RECAP-7)',
+      { event: 'recap_shared', props: { via: 'image', count: 4 } },
     ],
     [
       'a game opened with a pseudonym',

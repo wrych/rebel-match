@@ -7,6 +7,11 @@ export type UiEvent =
   | { event: 'journey_chosen'; props: { journey: 'ask' | 'offer' } }
   | { event: 'feedback_opened'; props: { screen: string } }
   | { event: 'game_opened'; props: Record<string, never> }
+  | { event: 'recap_opened'; props: Record<string, never> }
+  | {
+      event: 'recap_shared'
+      props: { via: 'share_sheet' | 'linkedin' | 'image' }
+    }
   | {
       event: 'experiment_exposed'
       props: { experiment: ExperimentKey; variant: string }

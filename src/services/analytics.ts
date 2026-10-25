@@ -54,6 +54,8 @@ export type AnalyticsEvent =
       seconds: number
     }
   | { name: 'game_result_shared' }
+  | { name: 'recap_opened' }
+  | { name: 'recap_shared'; via: 'share_sheet' | 'linkedin' | 'image' }
   | { name: 'badge_earned'; row: BadgeRow; level: number }
   | { name: 'badge_earned'; row: typeof eventRow }
   | { name: 'experiment_exposed'; experiment: string; variant: string }
