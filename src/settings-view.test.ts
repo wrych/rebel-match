@@ -156,6 +156,24 @@ describe('settingsView (R-CFG-5)', () => {
     expect(find(groups, 'Database').value).toBe('Postgres')
   })
 
+  it('shows the recap’s opening time as a moment in UTC, none by default (R-RECAP-8)', () => {
+    const config = defaultConfig()
+    const at = Date.UTC(2026, 10, 8, 17, 0) / 60_000
+    const later = { ...config, limits: { ...config.limits, recapOpensAt: at } }
+    const unset = find(
+      settingsView(config, config, unchanged(config)),
+      'Opens by itself at',
+    )
+    const set = find(
+      settingsView(later, config, unchanged(later)),
+      'Opens by itself at',
+    )
+
+    expect(unset.value).toBe('Not set')
+    expect(set.value).toBe('2026-11-08 17:00 UTC')
+    expect(set.edit).toMatchObject({ kind: 'moment', value: at })
+  })
+
   it('shows the game switch as On or Off, off by default (R-GAME-17)', () => {
     const config = defaultConfig()
     const on = { ...config.game, enabled: 1 }
@@ -189,7 +207,7 @@ describe('settingsView (R-CFG-5)', () => {
 
     expect(new Set(keys).size).toBe(keys.length)
     expect(keys).toHaveLength(
-      31 + Object.keys(gameBounds).length + experimentKeys.length,
+      33 + Object.keys(gameBounds).length + experimentKeys.length,
     )
   })
 })

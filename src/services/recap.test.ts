@@ -75,7 +75,7 @@ function recapOf(members: number): {
         return Promise.resolve(timeline(members))
       },
     },
-    rule: () => ({ step: 5, minMembers: 20 }),
+    rule: () => ({ step: 5, minMembers: 20, minShare: 1 }),
   })
   return { recap, asked }
 }

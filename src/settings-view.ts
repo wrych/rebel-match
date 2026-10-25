@@ -11,8 +11,9 @@ import type { SettingOverride } from './services/settings.js'
 /** How a changeable setting is edited: its current number and bounds. */
 export interface SettingEdit {
   key: SettingKey
-  /** A number field, or an on/off switch storing 1 or 0. */
-  kind: 'number' | 'switch'
+  /** A number field, an on/off switch storing 1 or 0, or a moment storing
+   * whole minutes since 1970 in UTC, 0 for none. */
+  kind: 'number' | 'switch' | 'moment'
   value: number
   unit: string
   min: number
@@ -67,6 +68,8 @@ interface Described {
   unit?: Unit
   /** An on/off switch storing 1 or 0, shown as On or Off. */
   switch?: true
+  /** A moment, in whole minutes since 1970 in UTC, 0 for none. */
+  moment?: true
 }
 
 /** A changeable setting (R-CFG-6), read by its key. */
@@ -95,6 +98,15 @@ function withUnit(value: string | number, unit: Unit | undefined): string {
 }
 
 const onOff = (on: boolean): string => (on ? 'On' : 'Off')
+const MS_PER_MINUTE = 60_000
+const ISO_MINUTE = 16
+
+// A moment as it reads in any time zone: "2026-11-08 17:00 UTC".
+function momentOf(minutes: number): string {
+  if (minutes === 0) return 'Not set'
+  const iso = new Date(minutes * MS_PER_MINUTE).toISOString()
+  return `${iso.slice(0, ISO_MINUTE).replace('T', ' ')} UTC`
+}
 
 const SECONDS: Unit = ['second', 'seconds']
 const EMPLOYEES: Unit = ['employee', 'employees']
@@ -1025,15 +1037,25 @@ const catalogue: Group[] = [
     title: 'Your rebel record',
     explanation:
       'Each member’s own summit recap as stories, ending on a card to share. ' +
-      'Turn it on when the summit ends.',
+      'Set it to open when the summit ends.',
     entries: [
       {
         name: 'The recap',
         explanation:
-          'On offers it to every member from the menu; off hides it, and its ' +
-          'address answers as not found.',
+          'On offers it to every member from the menu, whatever the opening ' +
+          'time; off hides it until that time, and its address answers as ' +
+          'not found.',
         key: 'limits.recap',
         switch: true,
+      },
+      {
+        name: 'Opens by itself at',
+        explanation:
+          'From this moment the recap is open as if switched on, and every ' +
+          'member is told once that their record is ready. To close it ' +
+          'again, switch it off and clear this.',
+        key: 'limits.recapOpensAt',
+        moment: true,
       },
       {
         name: 'Each story stays for',
@@ -1049,16 +1071,28 @@ const catalogue: Group[] = [
         key: 'limits.recapMinMembers',
         unit: ['member', 'members'],
       },
+      {
+        name: 'Least share to compare',
+        explanation:
+          'A comparison below this share of members is left out: “ahead of ' +
+          '30%” reads as a put-down.',
+        key: 'limits.recapMinShare',
+        unit: PERCENT,
+      },
     ],
   },
   ...gameGroups,
 ]
 
 function shown(entry: Entry, value: string | number): string {
+  if (entry.moment === true && typeof value === 'number') return momentOf(value)
   return entry.switch === true
     ? onOff(value === 1)
     : withUnit(value, entry.unit)
 }
+
+const kindOf = (entry: Entry): SettingEdit['kind'] =>
+  entry.switch === true ? 'switch' : entry.moment === true ? 'moment' : 'number'
 
 function editOf(
   entry: Entry,
@@ -1067,7 +1101,7 @@ function editOf(
 ): SettingEdit {
   return {
     key,
-    kind: entry.switch === true ? 'switch' : 'number',
+    kind: kindOf(entry),
     value: valueOf(state.current, key),
     unit: entry.unit?.[1] ?? '',
     ...boundsOf(key),

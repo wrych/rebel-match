@@ -598,6 +598,7 @@ function composeRecap(
     rule: () => ({
       step: settings.limits().recapPercentStep,
       minMembers: settings.limits().recapMinMembers,
+      minShare: settings.limits().recapMinShare,
     }),
   })
 }

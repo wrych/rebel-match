@@ -171,6 +171,14 @@ const limitSpecs = {
     zeroAllowed: true,
     changeable: { min: 0, max: 1 },
   },
+  // When the recap opens by itself, in whole minutes since 1970 in UTC; 0
+  // for no time set (R-RECAP-8).
+  recapOpensAt: {
+    env: 'RECAP_OPENS_AT',
+    default: 0,
+    zeroAllowed: true,
+    changeable: { min: 0, max: 99_999_999 },
+  },
   // How long each story of the recap stays before moving on (R-RECAP-1).
   recapStorySeconds: {
     env: 'RECAP_STORY_SECONDS',
@@ -185,6 +193,13 @@ const limitSpecs = {
     env: 'RECAP_MIN_MEMBERS',
     default: 20,
     changeable: { min: 2, max: 100_000 },
+  },
+  // A comparison below this share of members reads as a put-down, so it is
+  // left out (R-RECAP-3).
+  recapMinShare: {
+    env: 'RECAP_MIN_SHARE',
+    default: 50,
+    changeable: { min: 1, max: 99 },
   },
   // Reports name who made them, so handled ones go after this (R-MOD-11).
   reportRetentionDays: { env: 'REPORT_RETENTION_DAYS', default: 180 },

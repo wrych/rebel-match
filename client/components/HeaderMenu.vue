@@ -29,7 +29,7 @@ const me = ref<Me | null>(null)
 const version = ref<ClientConfig['build'] | null>(null)
 const feedbackTo = ref<string | null>(null)
 const networkReplay = ref(0)
-const recapSwitch = ref(0)
+const recapLimits = ref({ recap: 0, recapOpensAt: 0 })
 const fresh = ref(0)
 const freshBadges = ref(0)
 const reported = ref(0)
@@ -78,7 +78,8 @@ const network = computed(
     networkOpen(networkReplay.value, me.value.permissions),
 )
 const recap = computed(
-  () => me.value?.onboarded === true && recapOpen(recapSwitch.value),
+  () =>
+    me.value?.onboarded === true && recapOpen(recapLimits.value, Date.now()),
 )
 const screen = computed(() => String(route.name ?? 'unknown'))
 const feedback = computed(() =>
@@ -91,7 +92,10 @@ function remember(config: ClientConfig): void {
   version.value = config.build
   feedbackTo.value = config.feedbackTo
   networkReplay.value = config.limits.networkReplay
-  recapSwitch.value = config.limits.recap
+  recapLimits.value = {
+    recap: config.limits.recap,
+    recapOpensAt: config.limits.recapOpensAt,
+  }
 }
 
 function feedbackOpened(): void {

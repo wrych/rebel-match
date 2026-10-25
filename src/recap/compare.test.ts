@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { shareBelow } from './compare.js'
 
-const rule = { step: 5, minMembers: 20 }
+const rule = { step: 5, minMembers: 20, minShare: 1 }
 
 describe('shareBelow (R-RECAP-3)', () => {
   it('counts the members below, the silent zero counts among them', () => {
@@ -30,5 +30,12 @@ describe('shareBelow (R-RECAP-3)', () => {
 
   it('counts the member themselves even when their count is not listed', () => {
     expect(shareBelow(2, [], 20, rule)).toBe(95)
+  })
+  it('leaves out a share below the least worth saying', () => {
+    const counts = Array.from({ length: 13 }, () => 3)
+    const half = { ...rule, minShare: 50 }
+
+    expect(shareBelow(3, counts, 40, half)).toBe(65)
+    expect(shareBelow(3, counts, 20, half)).toBeNull()
   })
 })

@@ -108,12 +108,14 @@ describe('HeaderMenu', () => {
   )
 
   it.each([
-    [1, true],
-    [0, false],
+    [1, 0, true],
+    [0, 0, false],
+    [0, 1, true],
+    [0, 99_999_999, false],
   ])(
-    'offers the recap while hosts have it on (%i): %s (R-RECAP-1)',
-    async (recap, offered) => {
-      withConfig(signedIn([]), { recap })
+    'offers the recap while on (%i) or past its time (%i): %s (R-RECAP-1, R-RECAP-8)',
+    async (recap, recapOpensAt, offered) => {
+      withConfig(signedIn([]), { recap, recapOpensAt })
 
       expect(paths(await opened()).includes('/recap')).toBe(offered)
     },

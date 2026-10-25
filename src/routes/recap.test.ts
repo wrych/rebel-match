@@ -20,7 +20,11 @@ const auth = createAuth({
   config,
 })
 
-function setup(recapOn: number): { app: Express; asked: string[] } {
+function setup(
+  recapOn: number,
+  opensAt = 0,
+  now = Date.UTC(2026, 10, 8, 18, 0),
+): { app: Express; asked: string[] } {
   const asked: string[] = []
   const recap: RecapService = {
     mine: (memberId) => {
@@ -34,8 +38,10 @@ function setup(recapOn: number): { app: Express; asked: string[] } {
     },
   }
   const app = express()
-  const settings = { limits: () => ({ ...config.limits, recap: recapOn }) }
-  app.use(recapRoutes({ auth, settings, recap }))
+  const settings = {
+    limits: () => ({ ...config.limits, recap: recapOn, recapOpensAt: opensAt }),
+  }
+  app.use(recapRoutes({ auth, settings, recap, now: () => now }))
   return { app, asked }
 }
 
@@ -66,6 +72,20 @@ describe('recap routes', () => {
 
     expect(response.status).toBe(404)
     expect(asked).toEqual([])
+  })
+
+  it('opens by itself at the time hosts set (R-RECAP-8)', async () => {
+    const opensAt = Date.UTC(2026, 10, 8, 17, 0) / 60_000
+    const cookie = await cookieFor('m-ada')
+    const before = setup(0, opensAt, Date.UTC(2026, 10, 8, 16, 59)).app
+    const after = setup(0, opensAt, Date.UTC(2026, 10, 8, 17, 0)).app
+
+    expect(
+      (await request(before).get('/api/recap').set('Cookie', cookie)).status,
+    ).toBe(404)
+    expect(
+      (await request(after).get('/api/recap').set('Cookie', cookie)).status,
+    ).toBe(200)
   })
 
   it('asks for a session', async () => {

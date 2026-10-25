@@ -92,6 +92,32 @@ function gameGroups(on: boolean): SettingsGroup[] {
   ]
 }
 
+function recapGroups(opensAt: number): SettingsGroup[] {
+  return [
+    {
+      title: 'Your rebel record',
+      explanation: 'The summit recap.',
+      settings: [
+        {
+          name: 'Opens by itself at',
+          explanation: 'From this moment the recap is open.',
+          value: opensAt === 0 ? 'Not set' : '2026-11-08 17:00 UTC',
+          changed: opensAt !== 0,
+          fixed: false,
+          edit: {
+            key: 'limits.recapOpensAt',
+            kind: 'moment',
+            value: opensAt,
+            unit: '',
+            min: 0,
+            max: 99_999_999,
+          },
+        },
+      ],
+    },
+  ]
+}
+
 type Answer = { status: number; body: unknown }
 
 /** Serves the settings and the config, and answers a change or reset with
@@ -324,6 +350,75 @@ describe('SettingsScreen (R-CFG-5, R-CFG-6)', () => {
 
     expect((toggle.element as HTMLInputElement).checked).toBe(false)
     expect(screen.find('[role="alert"]').text()).toContain('did not save')
+  })
+})
+
+describe('SettingsScreen moments (R-RECAP-8)', () => {
+  const OPENS = new Date(2026, 10, 8, 18, 0).getTime() / 60_000
+
+  function serveMoment(opensAt: number): ReturnType<typeof vi.fn> {
+    const fetchMock = vi.fn((url: string, init?: RequestInit) =>
+      Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () =>
+          url === '/api/config'
+            ? { limits: { savedTickMs: 2500 } }
+            : {
+                groups: recapGroups(
+                  init?.method === undefined
+                    ? opensAt
+                    : (JSON.parse(String(init.body)) as { value: number })
+                        .value,
+                ),
+              },
+      }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    return fetchMock
+  }
+
+  const field = (
+    screen: ReturnType<typeof mount>,
+  ): ReturnType<typeof screen.find> =>
+    screen.find('input[type="datetime-local"]')
+
+  it('edits a moment in the host’s own time and saves it as minutes', async () => {
+    const fetchMock = serveMoment(0)
+    const screen = await mountScreen()
+
+    expect(screen.text()).toContain('Not set')
+    await field(screen).setValue('2026-11-08T18:00')
+    await field(screen).trigger('change')
+    await flushPromises()
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/admin/settings/limits.recapOpensAt',
+      expect.objectContaining({
+        method: 'PUT',
+        body: JSON.stringify({ value: OPENS }),
+      }),
+    )
+    expect((field(screen).element as HTMLInputElement).value).toBe(
+      '2026-11-08T18:00',
+    )
+  })
+
+  it('clears a moment by saving none', async () => {
+    const fetchMock = serveMoment(OPENS)
+    const screen = await mountScreen()
+
+    await screen
+      .findAll('button')
+      .find((button) => button.text() === 'Clear')
+      ?.trigger('click')
+    await flushPromises()
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/admin/settings/limits.recapOpensAt',
+      expect.objectContaining({ body: '{"value":0}' }),
+    )
+    expect(screen.text()).toContain('Not set')
   })
 })
 

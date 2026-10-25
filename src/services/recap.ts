@@ -42,7 +42,7 @@ export function createRecap(deps: {
   badges: Pick<BadgeService, 'mine'>
   standings: (row: CountedRow) => Promise<Standing[]>
   network: Pick<NetworkService, 'timeline'>
-  rule: () => { step: number; minMembers: number }
+  rule: () => { step: number; minMembers: number; minShare: number }
 }): RecapService {
   async function rowOf(view: RowView, members: number): Promise<RecapRow[]> {
     if (!isCounted(view.row)) return []

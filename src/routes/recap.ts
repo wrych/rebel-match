@@ -1,14 +1,18 @@
 import { Router, type RequestHandler } from 'express'
 import type { AuthProvider } from '../auth/index.js'
 import type { LiveSettings } from '../config.js'
+import { recapOpen } from '../recap/open.js'
 import type { RecapService } from '../services/recap.js'
 import { requireSession, type GuardedLocals } from './require-permission.js'
 
-// Until hosts open the recap, its address is as absent as one that never
-// existed (R-RECAP-1, R-NAV-8).
-function whileOn(settings: Pick<LiveSettings, 'limits'>): RequestHandler {
+// Until the recap opens, its address is as absent as one that never
+// existed (R-RECAP-1, R-RECAP-8, R-NAV-8).
+function whileOpen(
+  settings: Pick<LiveSettings, 'limits'>,
+  now: () => number,
+): RequestHandler {
   return (_request, response, next) => {
-    if (settings.limits().recap === 1) {
+    if (recapOpen(settings.limits(), now())) {
       next()
       return
     }
@@ -24,12 +28,13 @@ export function recapRoutes(deps: {
   auth: AuthProvider
   settings: Pick<LiveSettings, 'limits'>
   recap: RecapService
+  now?: () => number
 }): Router {
   const router = Router()
 
   router.get(
     '/api/recap',
-    whileOn(deps.settings),
+    whileOpen(deps.settings, deps.now ?? Date.now),
     requireSession(deps.auth),
     async (_request, response) => {
       const { member } = response.locals as GuardedLocals

@@ -8,7 +8,4 @@ export async function fetchRecap(): Promise<Recap | null> {
   return findJson<Recap>('/api/recap', 'recap unavailable')
 }
 
-/** Whether the menu offers the recap: hosts have opened it (R-RECAP-1). */
-export function recapOpen(recap: number): boolean {
-  return recap === 1
-}
+export { recapOpen } from '../../src/recap/open'
