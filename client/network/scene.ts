@@ -51,6 +51,9 @@ export type SceneFactory = (
     /** Told when the member drags, pinches or scrolls the view: from then
      * on it is theirs until `recentre`. */
     onTakeOver: () => void
+    /** Where the viewer's lit point is on the stage, in pixels from its top
+     * left, while the replay steers the view; null otherwise (R-NET-14). */
+    onAnchor?: (at: { x: number; y: number } | null) => void
   },
 ) => NetworkScene
 
@@ -343,6 +346,10 @@ class Director {
     this.steering = false
   }
 
+  get isSteering(): boolean {
+    return this.steering
+  }
+
   recentre(): void {
     const { camera, controls } = this.view
     this.pose = poseOf(pointOf(camera.position), pointOf(controls.target))
@@ -399,6 +406,37 @@ function handOver(
   return () => view.controls.removeEventListener('start', takeOver)
 }
 
+// Reports the lit point's place on the stage when it moves by a pixel or
+// more, so a label can follow it without a re-render every frame.
+function anchorer(
+  view: View,
+  at: Point | null,
+  report: ((place: { x: number; y: number } | null) => void) | undefined,
+): (shown: boolean) => void {
+  const spot = new Vector3()
+  let last: { x: number; y: number } | null = null
+  return (shown) => {
+    if (report === undefined) return
+    let place: { x: number; y: number } | null = null
+    if (shown && at !== null) {
+      spot.set(at.x, at.y, at.z).project(view.camera)
+      const canvas = view.renderer.domElement
+      if (spot.z < 1)
+        place = {
+          x: ((spot.x + 1) / 2) * canvas.clientWidth,
+          y: ((1 - spot.y) / 2) * canvas.clientHeight,
+        }
+    }
+    const moved =
+      place === null || last === null
+        ? place !== last
+        : Math.abs(place.x - last.x) >= 1 || Math.abs(place.y - last.y) >= 1
+    if (!moved) return
+    last = place
+    report(place)
+  }
+}
+
 function pulse(halo: Mesh, now: number, still: boolean): void {
   if (!halo.visible) return
   const swing = still ? 1 : (Math.sin(now / tuning.haloPulseMs) + 1) / 2
@@ -436,7 +474,7 @@ export const createThreeScene: SceneFactory = (
   host,
   timeline,
   points,
-  { still, onTakeOver },
+  { still, onTakeOver, onAnchor },
 ) => {
   const palette = paletteOf(host)
   const view = viewIn(host, Math.max(reach(points), tuning.smallestRadius))
@@ -451,6 +489,7 @@ export const createThreeScene: SceneFactory = (
   const growth = new Growth(nodes, points, selfIndex, still)
   const director = new Director(view, points, tuning.smallestRadius, still)
   const release = handOver(view, director, onTakeOver)
+  const anchor = anchorer(view, self, onAnchor)
 
   const stop = everyFrame((now) => {
     growth.grow(now)
@@ -458,6 +497,7 @@ export const createThreeScene: SceneFactory = (
     director.step(now)
     pulse(halo, now, still)
     view.renderer.render(scene, view.camera)
+    anchor(halo.visible && director.isSteering)
   })
 
   return {

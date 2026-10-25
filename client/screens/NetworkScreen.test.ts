@@ -10,6 +10,9 @@ vi.mock('vue-router', () => ({
   useRoute: () => ({ path: '/network' }),
   useRouter: () => ({ replace }),
 }))
+vi.mock('../lib/session', () => ({
+  loadMe: () => Promise.resolve({ name: 'Ada Lovelace' }),
+}))
 
 const timeline: NetworkTimeline = {
   nodes: [
@@ -23,8 +26,10 @@ const timeline: NetworkTimeline = {
 
 const GraphStub = defineComponent({
   name: 'NetworkGraph',
-  props: { timeline: { type: Object, required: true } },
-  emits: ['frame', 'end'],
+  props: {
+    timeline: { type: Object, required: true },
+    selfName: { type: String, default: null },
+  },
   template: '<div class="graph-stub" />',
 })
 
@@ -64,18 +69,26 @@ describe('NetworkScreen (R-NET-1, R-NET-2)', () => {
     expect(screen.findComponent(GraphStub).props('timeline')).toEqual(timeline)
   })
 
-  it('says it is you once the replay ends, and not after going back', async () => {
+  it('hands the member’s name to the graph for their callout (R-NET-14)', async () => {
     serve(timeline)
     const screen = await mountScreen()
-    const graph = screen.findComponent(GraphStub)
 
-    graph.vm.$emit('end')
-    await flushPromises()
-    expect(screen.find('.you').exists()).toBe(true)
+    expect(screen.findComponent(GraphStub).props('selfName')).toBe(
+      'Ada Lovelace',
+    )
+  })
 
-    graph.vm.$emit('frame', { progress: 0.2, nodes: 1, links: 0, day: null })
-    await flushPromises()
-    expect(screen.find('.you').exists()).toBe(false)
+  it('explains how to read the network (R-NET-15)', async () => {
+    serve(timeline)
+    const screen = await mountScreen()
+    const legend = screen.findAll('.legend li').map((item) => item.text())
+
+    expect(legend).toEqual([
+      'Each dot is a member',
+      'Each line is a connection both of them accepted',
+      'Each moon is a challenge, circling the member who posted it',
+      'You, in the accent colour; nobody else is named',
+    ])
   })
 
   it('explains why the member’s own lines are missing (R-NET-13)', async () => {

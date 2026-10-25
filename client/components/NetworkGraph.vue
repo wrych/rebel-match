@@ -16,6 +16,8 @@ import {
   type NetworkScene,
   type SceneFactory,
 } from '../network/scene'
+import { selfStats } from '../lib/network'
+import NetworkCallout from './NetworkCallout.vue'
 import NetworkStats from './NetworkStats.vue'
 import NetworkTimelineBar from './NetworkTimelineBar.vue'
 
@@ -33,6 +35,8 @@ const props = withDefaults(
     controls?: boolean
     /** The date and counts in the scene's corner (R-NET-12). */
     stats?: boolean
+    /** The viewer's name for the callout at their point (R-NET-14). */
+    selfName?: string | null
     durationMs?: number
     scene?: SceneFactory
     ticker?: Ticker
@@ -42,6 +46,7 @@ const props = withDefaults(
     autoplay: true,
     controls: true,
     stats: true,
+    selfName: null,
     durationMs: REPLAY_MS,
     scene: createThreeScene,
     ticker: () => frameTicker,
@@ -54,6 +59,20 @@ const frame = ref<Frame>(frameAt(props.timeline, 0))
 const ended = ref(false)
 const playing = ref(false)
 const viewTaken = ref(false)
+const anchor = ref<{ x: number; y: number } | null>(null)
+const stage = ref({ width: 0, height: 0 })
+const ownStats = computed(() => selfStats(props.timeline))
+// Only the replay's own centred view at the end, as a map labels what it
+// has put in the middle; gone once the member takes the view (R-NET-14).
+const callout = computed(() =>
+  props.highlightSelf &&
+  ended.value &&
+  !viewTaken.value &&
+  anchor.value !== null &&
+  ownStats.value !== null
+    ? { at: anchor.value, stats: ownStats.value }
+    : null,
+)
 const drawn = shallowRef<NetworkScene | null>(null)
 let player: Player | null = null
 
@@ -120,6 +139,13 @@ onMounted(() => {
         onTakeOver: () => {
           viewTaken.value = true
         },
+        onAnchor: (at) => {
+          anchor.value = at
+          stage.value = {
+            width: host.value?.clientWidth ?? 0,
+            height: host.value?.clientHeight ?? 0,
+          }
+        },
       },
     )
   player = createPlayer({
@@ -138,7 +164,17 @@ onBeforeUnmount(() => {
   drawn.value?.dispose()
 })
 
-defineExpose({ play, pause, restart, seek, recentre, frame, ended, viewTaken })
+defineExpose({
+  callout,
+  play,
+  pause,
+  restart,
+  seek,
+  recentre,
+  frame,
+  ended,
+  viewTaken,
+})
 </script>
 
 <template>
@@ -146,6 +182,13 @@ defineExpose({ play, pause, restart, seek, recentre, frame, ended, viewTaken })
     <div class="frame">
       <div ref="host" class="stage" role="img" :aria-label="description" />
       <NetworkStats v-if="props.stats" class="corner" :frame="frame" />
+      <NetworkCallout
+        v-if="callout"
+        :name="props.selfName"
+        :stats="callout.stats"
+        :at="callout.at"
+        :stage="stage"
+      />
       <button
         v-if="viewTaken"
         type="button"
@@ -195,6 +238,8 @@ defineExpose({ play, pause, restart, seek, recentre, frame, ended, viewTaken })
 
 .frame {
   position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
 }
 
 .corner {

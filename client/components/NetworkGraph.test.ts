@@ -42,6 +42,7 @@ function fakeScene(): {
   highlights: boolean[]
   recentred: () => number
   takeOver: () => void
+  anchor: (at: { x: number; y: number } | null) => void
   disposed: () => boolean
   still: () => boolean | null
 } {
@@ -51,11 +52,13 @@ function fakeScene(): {
   let still: boolean | null = null
   let recentred = 0
   let takeOver = (): void => undefined
+  let anchor: (at: { x: number; y: number } | null) => void = () => undefined
   return {
     factory: (_host, _timeline, points, options) => {
       expect(points).toHaveLength(2)
       still = options.still
       takeOver = options.onTakeOver
+      anchor = options.onAnchor ?? anchor
       return {
         show: (frame) => shown.push(frame),
         highlight: (on) => highlights.push(on),
@@ -71,6 +74,7 @@ function fakeScene(): {
     highlights,
     recentred: () => recentred,
     takeOver: () => takeOver(),
+    anchor: (at) => anchor(at),
     disposed: () => disposed,
     still: () => still,
   }
@@ -224,6 +228,37 @@ describe('NetworkGraph (R-NET-1, R-NET-2)', () => {
 
     expect(scene.recentred()).toBe(1)
     expect(graph.find('button.recentre').exists()).toBe(false)
+  })
+
+  it('labels the viewer at the end, pointing at them (R-NET-14)', async () => {
+    const { graph, scene, ticker } = setup({ selfName: 'Ada Lovelace' })
+
+    ticker.advance(1000)
+    scene.anchor({ x: 40, y: 60 })
+    await graph.vm.$nextTick()
+    const callout = graph.find('.callout')
+
+    expect(callout.text()).toContain('Ada Lovelace')
+    expect(callout.text()).toContain('Challenges0')
+    expect(callout.attributes('style')).toContain('left: 40px')
+  })
+
+  it('labels nobody before the end, off the stage, or in the member’s view', async () => {
+    const { graph, scene, ticker } = setup()
+
+    scene.anchor({ x: 40, y: 60 })
+    await graph.vm.$nextTick()
+    expect(graph.find('.callout').exists()).toBe(false)
+
+    ticker.advance(1000)
+    scene.anchor(null)
+    await graph.vm.$nextTick()
+    expect(graph.find('.callout').exists()).toBe(false)
+
+    scene.anchor({ x: 40, y: 60 })
+    scene.takeOver()
+    await graph.vm.$nextTick()
+    expect(graph.find('.callout').exists()).toBe(false)
   })
 
   it('lets go of the scene when it leaves', () => {
