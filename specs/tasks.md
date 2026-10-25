@@ -480,6 +480,18 @@ Built after the spec and ADR merge. One pull request per item, in this order.
 
 ---
 
+## M10 — The network replay _(S41, F22, ADR 0057 — behind its switch)_
+
+- [x] The replay: `/api/network` behind `limits.networkReplay` and
+      `network:view`, the paced anonymous timeline, the 3D scene with its
+      layout and player, the timeline bar, S41 and the menu entry.
+      _(R-NET-1..9)_
+- [ ] A presentation mode for hosts on the same graph component: a timeline
+      marking nobody, full screen, driven without the member's controls.
+      Needs its own requirement first.
+
+---
+
 ## Post-beta backlog _(Could / Won't-for-now)_
 
 - [ ] Offer "refresh to update" when the server's version differs from the

@@ -40,6 +40,7 @@ Conventions:
                    ├──►  F9 Follow a trend
                    ├──►  F17 Notifications
                    ├──►  F19 Badges
+                   ├──►  F22 The network replay (while hosts have it on)
                    └──►  F12 Feedback
 
    Happy mode, onboarded: F18 9toRevolution (impressum → game → leaderboard)
@@ -847,3 +848,22 @@ reported member, S26 A member's page.
 - _The banned person asks to be erased_ → a host deletes them (**F11**). The
   address is free again once erased (R-MOD-10).
 - _A new report about a handled member_ → their card returns to **Open**.
+
+---
+
+## F22 — The network replay
+
+1. A member opens the menu. While hosts have `limits.networkReplay` on and
+   the member holds `network:view`, it offers **The network** (R-NET-5,
+   R-NET-6).
+2. **S41** loads the network and plays it: the first members appear, lines
+   form between them, the camera turns slowly. The timeline under it marks
+   every join and connection; the summit's crowd of joins takes up more of it
+   than its hours would, so it plays slower (R-NET-7, R-NET-8).
+3. The member may drag the timeline to any moment, pause, play on, or replay
+   from the start (R-NET-8).
+4. At the end the camera turns to the member's own point, lit in the accent
+   colour with their own lines, and the screen says _That's you_ (R-NET-2).
+   Nobody else is named, here or in what the server sent (R-NET-3).
+5. A member who prefers reduced motion sees the end at once (R-NET-9). While
+   the switch is off, `/network` is not found (R-NET-6).
