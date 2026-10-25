@@ -1,0 +1,88 @@
+/** Challenges for the dev crowd, seven per trend (R-SEED-10). Fictional, in
+ * the voice of the prototype's examples. */
+export const crowdChallenges: Readonly<Record<string, readonly string[]>> = {
+  '01': [
+    'We rewrote our mission statement with everyone involved. Six months later nobody can say what it changed.',
+    'Our purpose attracts great people, and then the day-to-day work makes them leave within a year.',
+    'Leadership talks about meaning, but every quarterly review is about margin and nothing else.',
+    'We turned down a profitable client because of our values. Half the team was proud, half was furious.',
+    'New hires are chosen for culture fit, and we are slowly becoming a company of people who think alike.',
+    'Our brand promises purpose to customers that our own employees do not recognise from the inside.',
+    'Two founders, two different ideas of what our values mean. The teams pick a side.',
+  ],
+  '02': [
+    'We split into self-organising teams, but the department heads still own every budget line.',
+    'Every reorg moves the boxes on the org chart and leaves the actual silos exactly where they were.',
+    'Middle management was removed on paper. In practice the same people run the same meetings.',
+    'Our teams of twelve work well alone, and nobody coordinates anything between them.',
+    'The network of teams works in the head office. The regional sites never adopted it.',
+    'People belong to a circle and a department at once, and both expect their loyalty.',
+    'We grew from 40 to 300 people and the flat structure quietly became a pyramid again.',
+  ],
+  '03': [
+    'Our managers were trained to coach, but they are still measured on control and targets.',
+    'I keep micromanaging my team, even though I know it slows them down. How did others let go?',
+    'Team leads became coaches overnight. Some thrive, some feel they lost their job.',
+    'Our directors say leadership means serving the teams, and then they make every call themselves.',
+    'People ask for direction and complain when they get it. Our leaders do not know which they want.',
+    'A new boss arrived and undid two years of supportive leadership in a month.',
+    'We promote our best specialists into management positions and lose them twice.',
+  ],
+  '04': [
+    'We replaced the five-year plan with experiments, and finance still asks for a forecast to the euro.',
+    'Our pilots succeed and then wait a year for the annual budget to fund the next step.',
+    'We set OKRs, and within a quarter they had turned into the old targets with a new name.',
+    'Every experiment needs a business case before it starts, so nothing small ever gets tried.',
+    'Our agile roadmap is a waterfall plan cut into two-week pieces.',
+    'Failure is celebrated in town halls and punished in performance reviews.',
+    'We run a dozen pilots at once and have no way to tell which ones to stop.',
+  ],
+  '05': [
+    'We dropped fixed working hours, and now some people never stop working at all.',
+    'Hybrid work was a success until the new office opened and attendance became a target.',
+    'Unlimited vacation sounded generous. In practice people take fewer days than before.',
+    'Every purchase over 200 euros still needs three approvals, in a company that says it trusts people.',
+    'We introduced a four-day week for the office staff and the production floor feels left behind.',
+    'Our remote policy is trust on paper and status lights on every screen.',
+    'One mistake by one team and the old rules came back for everyone.',
+  ],
+  '06': [
+    'We introduced the advice process, and now every decision takes three weeks of asking around.',
+    'Teams are allowed to decide, but nobody knows the size of their mandate until they overstep it.',
+    'Consent decision-making works in small circles and grinds to a halt in our all-hands.',
+    'Decision rights were handed to teams. The hard decisions still escalate to the CEO.',
+    'People were empowered to decide on hiring, and now they are afraid to say no to anyone.',
+    'We wrote down who decides what. The document is forty pages and nobody reads it.',
+    'Our board wants decentralised decisions and a single person to blame when one goes wrong.',
+  ],
+  '07': [
+    'We publish all financials internally, and nobody outside finance knows how to read them.',
+    'Opening the salary bands caused more conflict in a month than secrecy did in ten years.',
+    'Meeting notes are open to everyone, so the real conversations moved to private chats.',
+    'Our dashboards show every number, and people feel watched rather than informed.',
+    'We share strategy drafts early, and people treat every draft as a promise.',
+    'Self-set salaries worked for the first round. The second round exposed every grudge.',
+    'Transparency about a restructuring came early and honestly, and still felt like a betrayal.',
+  ],
+  '08': [
+    'We replaced job titles with roles, and people now worry about their next career step.',
+    'Our learning budget is generous and almost nobody uses it, because there is never time.',
+    'Peer feedback started well and turned into a popularity contest within a year.',
+    'Our experts want to go deep, and the only way up we offer is managing people.',
+    'People choose their own projects now, and the unglamorous work is left for whoever is newest.',
+    'Mastery takes years and our planning horizon is a quarter.',
+    'We dropped the annual review and have nothing yet to decide on raises and promotions.',
+  ],
+}
+
+/** A "been there" note per trend, for crowd members who offer help on it. */
+export const crowdNotes: Readonly<Record<string, string>> = {
+  '01': 'Took values from the wall into hiring and promotion criteria.',
+  '02': 'Moved two sites from departments to a network of teams.',
+  '03': 'Coached a management team through letting go of control.',
+  '04': 'Replaced the annual budget with rolling quarterly funding.',
+  '05': 'Removed approval rules one by one without losing control.',
+  '06': 'Introduced the advice process across 300 people.',
+  '07': 'Opened the books and the salary bands, with a plan for the fallout.',
+  '08': 'Built role-based careers without job titles.',
+}

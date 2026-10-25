@@ -1,6 +1,5 @@
 import { isDevelopmentDeployment, type Config } from '../config.js'
-import { challenges, expertise } from './dev/challenges.js'
-import { people } from './dev/people.js'
+import { devFixtures } from './dev/index.js'
 import { companySizes, sectors } from '../profile-options.js'
 import { caseStudies } from './shared/cases.js'
 import { roles } from './shared/roles.js'
@@ -29,7 +28,14 @@ export function planSeed(config: {
           'sign-in links readable, so real people must never be in it (R-SEED-8)',
       )
     }
-    return { ...shared, members: [], admins, challenges: [], expertise: [] }
+    return {
+      ...shared,
+      members: [],
+      admins,
+      challenges: [],
+      expertise: [],
+      connections: [],
+    }
   }
 
   if (config.env === 'production') {
@@ -44,5 +50,5 @@ export function planSeed(config: {
         'its own admin, and real addresses stay out of fixtures (R-SEED-9)',
     )
   }
-  return { ...shared, members: people, admins, challenges, expertise }
+  return { ...shared, admins, ...devFixtures() }
 }

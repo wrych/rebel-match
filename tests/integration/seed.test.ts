@@ -110,6 +110,42 @@ describe('the first admins of the prod seed (R-SEED-9)', () => {
     await db.query('DELETE FROM members WHERE email = ?', [admin])
   })
 
+  it('seeds the dev network once, timed as planned (R-SEED-10)', async () => {
+    await applySeed(db.drizzle, plan, config.consentVersion)
+    const statuses = await db.query(
+      'SELECT r.status, COUNT(*)::int AS n FROM connection_requests r ' +
+        'JOIN members m ON m.id = r.requester_id WHERE m.email IN (?) ' +
+        'GROUP BY r.status ORDER BY r.status',
+      [emails],
+    )
+    const counted: Record<string, unknown> = Object.fromEntries(
+      statuses.map((row) => [String(row['status']), row['n']]),
+    )
+    const planned = (status: string): number =>
+      plan.connections.filter((c) => c.status === status).length
+
+    expect(counted).toEqual({
+      accepted: planned('accepted'),
+      declined: planned('declined'),
+      pending: planned('pending'),
+    })
+    expect(
+      await count(
+        'SELECT COUNT(*) AS n FROM connection_requests r ' +
+          'JOIN members m ON m.id = r.requester_id ' +
+          'JOIN members t ON t.id = r.target_id ' +
+          'WHERE m.email IN (?) AND (r.created_at < greatest(m.first_onboarded_at, t.first_onboarded_at) ' +
+          'OR r.responded_at < r.created_at)',
+      ),
+    ).toBe(0)
+    expect(
+      await count(
+        "SELECT COUNT(DISTINCT date_trunc('day', first_onboarded_at)) AS n " +
+          'FROM members WHERE email IN (?)',
+      ),
+    ).toBeGreaterThan(20)
+  })
+
   it('makes a new address an active admin who still has to onboard', async () => {
     await applySeed(db.drizzle, prod, config.consentVersion)
 

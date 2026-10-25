@@ -34,12 +34,10 @@ const people = [
   'sanne.kuipers',
 ]
 
+// The counts start from nothing, so the dev seed's network goes too.
 async function cleanup(): Promise<void> {
   const [ana, marieke] = [ids['ana.ferreira'], ids['marieke.de.wit']]
-  await db.query(
-    'DELETE FROM connection_requests WHERE requester_id IN (?, ?)',
-    [ana, marieke],
-  )
+  await db.query('DELETE FROM connection_requests')
   await db.query('DELETE FROM swipes WHERE member_id = ?', [marieke])
   await db.query('DELETE FROM challenges WHERE member_id = ?', [ana])
   await db.query('DELETE FROM member_badges')
