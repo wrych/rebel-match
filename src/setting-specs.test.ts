@@ -68,8 +68,27 @@ describe.each(groups)('the $group registry', ({ group, env, changeable }) => {
 
 describe('the zero rule', () => {
   it('refuses zero for a limit, so nothing waits forever or holds nothing', () => {
-    for (const variable of Object.keys(limitsEnv))
+    const switches = ['NETWORK_REPLAY', 'NETWORK_MIN_OWN_CONNECTIONS']
+    for (const variable of Object.keys(limitsEnv).filter(
+      (each) => !switches.includes(each),
+    ))
       expect(() => loadConfig({ ...valid, [variable]: '0' })).toThrow(variable)
+  })
+
+  it('allows zero for the network replay’s switch and own-lines threshold (R-NET-6, R-NET-13)', () => {
+    const zeroAllowed = Object.keys(limitsEnv).filter((variable) => {
+      try {
+        loadConfig({ ...valid, [variable]: '0' })
+        return true
+      } catch {
+        return false
+      }
+    })
+
+    expect(zeroAllowed).toEqual([
+      'NETWORK_REPLAY',
+      'NETWORK_MIN_OWN_CONNECTIONS',
+    ])
   })
 
   it('allows zero free tries before the human check, and nowhere else in abuse (R-NFR-8)', () => {

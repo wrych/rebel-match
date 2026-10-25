@@ -996,6 +996,31 @@ const catalogue: Group[] = [
       },
     ],
   },
+  {
+    title: 'Network replay',
+    explanation:
+      'A 3D replay of how members joined and connected, ending on the ' +
+      'member watching. Nobody in it is named.',
+    entries: [
+      {
+        name: 'The replay',
+        explanation:
+          'On shows it to members from the menu; off hides it, and its ' +
+          'address answers as not found.',
+        key: 'limits.networkReplay',
+        switch: true,
+      },
+      {
+        name: 'Own connections shown from',
+        explanation:
+          'A member with fewer connections sees the replay without their ' +
+          'own lines, so they cannot tell who the dots at the ends are. 0 ' +
+          'shows everyone their lines.',
+        key: 'limits.networkMinOwnConnections',
+        unit: ['connection', 'connections'],
+      },
+    ],
+  },
   ...gameGroups,
 ]
 

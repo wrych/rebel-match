@@ -17,6 +17,8 @@ export interface SeedMember {
   sector: Sector
   companySize: CompanySize
   roles: RoleKey[]
+  /** How long before the seed runs they joined; absent, as it runs. */
+  joinedHoursAgo?: number
 }
 
 /** One of the 8 Corporate Rebels trends, with the matcher's keywords
@@ -42,6 +44,8 @@ export interface SeedChallenge {
   authorEmail: string
   trendId: string
   body: string
+  /** How long before the seed runs it was posted; absent, as it runs. */
+  postedHoursAgo?: number
 }
 
 /** A member's "been there" offer for a trend (design §2, §6.3). */
@@ -49,6 +53,18 @@ export interface SeedExpertise {
   email: string
   trendId: string
   note: string
+}
+
+/** A connection request between two seeded members over one author's
+ * challenge, timed before the seed runs (R-SEED-10). */
+export interface SeedConnection {
+  requesterEmail: string
+  targetEmail: string
+  kind: 'same_boat' | 'been_there'
+  status: 'accepted' | 'pending' | 'declined'
+  challenge: { authorEmail: string; body: string } | null
+  requestedHoursAgo: number
+  respondedHoursAgo: number | null
 }
 
 /** A pick list entry, keyed by `key` (R-ONB-2, design §2). */
@@ -68,4 +84,5 @@ export interface SeedPlan {
   admins: readonly string[]
   challenges: SeedChallenge[]
   expertise: SeedExpertise[]
+  connections: SeedConnection[]
 }

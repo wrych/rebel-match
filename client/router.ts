@@ -102,6 +102,7 @@ export const router = createRouter({
     screen('impressum', ImpressumScreen),
     screen('game', () => import('./screens/GameScreen.vue')),
     screen('game-leaderboard', () => import('./screens/LeaderboardScreen.vue')),
+    screen('network', () => import('./screens/NetworkScreen.vue')),
     screen('welcome', WelcomeScreen),
     screen('profile', ProfileScreen),
     screen('notifications', NotificationsScreen),

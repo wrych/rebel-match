@@ -11,6 +11,7 @@ import {
 import { planSeed } from '../../src/seed/plan.js'
 import { applySeed } from '../../src/seed/run.js'
 import type { DeckCard } from '../../src/services/deck.js'
+import { companySizes, sectors } from '../../src/profile-options.js'
 
 const config = loadConfig({
   DATABASE_URL: testDatabaseUrl,
@@ -62,15 +63,21 @@ describe('the swipe deck over Postgres (F6)', () => {
   })
 
   it('shows the sector and company size by label, not key (R-OFF-2)', async () => {
-    const cards = await deal()
+    const [card] = await deal()
+    const seeded = planSeed(config).members.find(
+      (m) => m.name === card?.author.name,
+    )
+    const label = (
+      options: readonly { key: string; label: string }[],
+      key?: string,
+    ): string | undefined => options.find((o) => o.key === key)?.label
 
-    expect(
-      cards.find((c) => c.author.name === 'Priya Raman')?.author,
-    ).toMatchObject({
-      org: 'Kestrel Digital',
-      sector: 'Software & technology',
-      companySize: '251–1,000 employees',
+    expect(card?.author).toMatchObject({
+      org: seeded?.org,
+      sector: label(sectors, seeded?.sector),
+      companySize: label(companySizes, seeded?.companySize),
     })
+    expect(card?.author.sector).toBeDefined()
   })
 
   it('never deals a card again once it was swiped (R-OFF-2)', async () => {

@@ -61,6 +61,7 @@ step by step so we certainly have something that works.")_
 | C5  | LLM-based trend classification (replacing keywords)                | "AI will be pretty good at matching" — a clean post-beta upgrade.           |
 | C6  | Corporate↔rebel happy mode ("CR" button, R-LOOK-2)                 | Kept from the prototype: one token set, no screen changes. Was W2.          |
 | C7  | Dark mode as a further colour mode (R-LOOK-3)                      | Later: a third token set, possibly following the phone's own setting.       |
+| C8  | The network replay in 3D (R-NET-1..9)                              | Behind a switch hosts hold; a host presentation mode builds on it later.    |
 
 ## Won't have (this beta)
 

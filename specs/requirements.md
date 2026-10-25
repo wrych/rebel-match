@@ -780,6 +780,7 @@ at a screen instead of at the front door.
   | `/impressum`                         | the people who made the app (R-PROF-4)         |
   | `/9torevolution`                     | the 9toRevolution game (R-GAME-1)              |
   | `/9torevolution/leaderboard`         | the 9toRevolution leaderboard (R-GAME-13)      |
+  | `/network`                           | the network replay (R-NET-1)                   |
   | `/welcome`                           | two doors                                      |
   | `/ask`                               | submit a challenge                             |
   | `/challenges/:id`                    | detected trend for that challenge              |
@@ -1752,6 +1753,74 @@ contact detail (R-CONN-6) or tells a reported member who reported them.
 
 ---
 
+## 8m. The network replay
+
+The maintainer wants members to watch the network grow and find themselves
+in it, and hosts to show the same picture on a stage later (ADR 0057). The
+connection graph is private, so the replay names nobody.
+
+- **R-NET-1 (Replay)** — THE SYSTEM SHALL offer a screen, S41, replaying in
+  3D how the network grew: each active, onboarded member as a point appearing
+  when they first onboarded, and each accepted connection as a line between
+  two points appearing when it was accepted.
+- **R-NET-2 (Find yourself)** — WHEN the replay ends THE SYSTEM SHALL mark the
+  viewing member's own point and turn the view to it. The viewer's own lines
+  SHALL show in the accent colour throughout.
+- **R-NET-3 (Naming nobody)** — The replay SHALL carry no member id, name,
+  email or profile field: a point is a position in a list, a line a pair of
+  positions, and the only date sent is the day. Only the viewer's own point
+  SHALL be told apart (R-NFR-1).
+- **R-NET-4 (Who is in it)** — Only active, onboarded members (R-ONB-1) and
+  accepted connections between two of them SHALL appear. A pending or
+  declined request, and a deleted, banned or unapproved member with their
+  lines, SHALL NOT. A pair connected over several challenges SHALL be one
+  line, from its first acceptance.
+- **R-NET-5 (Permission)** — The replay SHALL need `network:view`, which the
+  `member` role holds, checked on the server (R-ROLE-3, R-ROLE-5).
+- **R-NET-6 (Hosts' switch)** — WHILE `limits.networkReplay` is off THE
+  SYSTEM SHALL answer S41 and its endpoint as not found, and the menu SHALL
+  NOT offer it (R-NAV-8, R-CFG-6). It SHALL be off by default.
+- **R-NET-7 (Pace)** — The replay SHALL grow continuously rather than a day
+  at a time, and SHALL play a stretch dense with joins and connections slower
+  than its share of the calendar.
+- **R-NET-8 (Timeline)** — A timeline under the scene SHALL mark each join
+  and connection where it plays, show where the replay is and the day it has
+  reached, and let the member drag to any moment. Pause, play and replay
+  SHALL sit beside it.
+- **R-NET-9 (Reduced motion)** — WHEN the member prefers reduced motion THE
+  SYSTEM SHALL show the end of the replay at once, without turning the scene.
+- **R-NET-10 (Taking the view)** — The replay SHALL steer the camera,
+  turning slowly throughout and after the end. WHEN the member drags, pinches
+  or scrolls the scene THE SYSTEM SHALL stop steering and leave the view to
+  them, offering _Recentre view_. WHEN they choose it, or replay, THE SYSTEM
+  SHALL take the view back, easing from where they left it.
+- **R-NET-11 (Challenges as moons)** — Each challenge a member shows
+  (R-ASK-1), neither withdrawn nor hidden (R-ASK-17, R-MOD-8), SHALL circle
+  that member's point as a moon, appearing when it was posted. The replay
+  SHALL carry no challenge text, trend or id: a moon is its member's position
+  and a day. The viewer's own moons SHALL show in the accent colour.
+- **R-NET-12 (The tally)** — The scene's corner SHALL show the day the replay
+  has reached and how many members, connections and challenges show by then.
+- **R-NET-13 (Too few to hide among)** — WHILE the viewing member has fewer
+  accepted connections than `limits.networkMinOwnConnections` (5 by default,
+  hosts may change it, R-CFG-6), THE SYSTEM SHALL leave every connection of
+  theirs out of the replay, in what the server sends and not only on screen,
+  and SHALL say why and how many it takes. With so few lines a member could
+  tell who the members at their ends are, and learn from those members'
+  lines and moons what they never shared.
+- **R-NET-14 (Your callout)** — WHILE the replay has ended and still steers
+  the view (R-NET-10), THE SYSTEM SHALL show a label pointing at the viewer's
+  point, as a map labels what it has centred: _That's you_, their name, their
+  connections and challenges, and the day they joined. WHILE their own lines
+  are left out (R-NET-13), the connections SHALL carry an asterisk, and the
+  explanation under the scene SHALL begin with one.
+- **R-NET-15 (Reading the network)** — Under the scene THE SYSTEM SHALL
+  explain, each with a drawing of it, that a dot is a member, a line a
+  connection both accepted, a moon a challenge circling its author, and the
+  accent colour the viewer.
+
+---
+
 ## 9. Non-functional requirements
 
 - **R-NFR-1 (Privacy)** — Challenge text and member contact details SHALL be
@@ -1894,6 +1963,17 @@ fixtures. `design.md` §6 lists the exact records and the profile mechanism.
   the database is granted: a re-run SHALL NOT give back a role a host took
   away. The dev profile SHALL refuse `SEED_ADMINS`; it has its own admin
   (R-SEED-2).
+- **R-SEED-10 (A dev network)** — The dev seed SHALL add fictional members to
+  the prototype's roster, about 100 in all, with about 70 challenges across
+  every trend, posted over time after their authors joined, and "been
+  there" offers, so the network replay (R-NET-1), the cockpit and the badges
+  have something real to show. Members SHALL have
+  joined at times spread over several weeks before the seed runs, with one
+  event's crowd joining within a few hours. Members SHALL have sent each
+  other connection requests over those challenges, same boat and been there,
+  most accepted, some pending and a few declined, each after both members
+  joined. The network SHALL be the same on every run, and a re-run SHALL NOT
+  move a join time or add a request already there (R-SEED-7).
 
 ---
 

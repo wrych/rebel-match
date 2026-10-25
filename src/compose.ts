@@ -80,6 +80,8 @@ import { createActivity } from './services/activity.js'
 import { createActivityStore } from './services/activity-store.js'
 import { createGame } from './services/game.js'
 import { createGameStore } from './services/game-store.js'
+import { createNetwork } from './services/network.js'
+import { createNetworkStore } from './services/network-store.js'
 import { createInviteRedemption } from './services/invite-redemption-store.js'
 import { createInviteStore } from './services/invite-store.js'
 import { createInvites } from './services/invites.js'
@@ -612,6 +614,10 @@ export function composeApp(
     ...composeReports(db, track, settings),
     badges: markingBadgesOpened(badges, composeNotifications(db, settings)),
     game: composeGame(config, db, settings, track, counting),
+    network: createNetwork({
+      store: createNetworkStore(db),
+      neededOwnLinks: () => settings.limits().networkMinOwnConnections,
+    }),
     notificationMail: composeNotificationMail(config, db, mailer, hooks),
   }
   return withScheduled(config, deps, hooks.onScheduledError ?? ignoreError)

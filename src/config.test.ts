@@ -34,6 +34,24 @@ describe('loadConfig', () => {
     })
   })
 
+  it('keeps the network replay off, asking 5 own connections (R-NET-6, R-NET-13)', () => {
+    expect(loadConfig(valid).limits).toMatchObject({
+      networkReplay: 0,
+      networkMinOwnConnections: 5,
+    })
+  })
+
+  it('takes 0 for the network replay’s switch and threshold', () => {
+    const config = loadConfig({
+      ...valid,
+      NETWORK_REPLAY: '0',
+      NETWORK_MIN_OWN_CONNECTIONS: '0',
+    })
+
+    expect(config.limits.networkReplay).toBe(0)
+    expect(config.limits.networkMinOwnConnections).toBe(0)
+  })
+
   it('reads the first admins as a trimmed, lower-cased list (R-SEED-9)', () => {
     expect(loadConfig(valid).seedAdmins).toEqual([])
     expect(

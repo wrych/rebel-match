@@ -92,3 +92,4 @@ still holds except where the later ADR says otherwise.
 | [0054](0054-html-mail-from-one-description.md)                    | Send every email as plain text and HTML, rendered from one description          | Accepted                              |
 | [0055](0055-members-report-hosts-moderate.md)                     | Members report, hosts moderate by hiding, and a ban is a status                 | Accepted, amended by 0056             |
 | [0056](0056-keep-reports-behind-a-measure.md)                     | Keep the reports behind a hide or a ban while it stands                         | Accepted                              |
+| [0057](0057-replay-the-network-in-3d-naming-nobody.md)            | Replay the network's growth in 3D, naming nobody but the viewer                 | Accepted                              |
