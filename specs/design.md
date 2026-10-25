@@ -494,6 +494,39 @@ The screen and `three` are one chunk, loaded when S41 is opened, outside the
 bundle budget as the game is. `limits.networkReplay` (0, a switch hosts hold)
 turns it on.
 
+### The network presentation
+
+S42 plays a scripted film of the network for the stage (R-PRES-1..7, ADR
+0058). It is built from the replay's parts, with one difference that shapes
+everything: the picture is a pure function of the second reached.
+
+- **Script** (`client/presentation/script.ts`, committed): the length and
+  timed cues, each with a start and an end in seconds: words, the camera's
+  aim (the network, a cast member, a group, the lone dot), how far the real
+  network has grown, and what lights up. People are named by handle only.
+- **Director** (`client/presentation/director.ts`, pure): the script, the
+  world and a second give everything on screen: the words and their fade,
+  the camera's pose, eased between aims, the replay's progress, the invented
+  parts, the highlights and the flash. Nothing carries over from the last
+  frame, so scrubbing, pausing and recording all show the same picture.
+- **World**: the real network without a viewer, the two invented founders
+  joined by an invented line at its centre, invented copies of the network
+  for the growth past today, and the lone dot of the closing world.
+- **Stage** (`PresentationStage.vue`): a 16:9 frame on a dark background,
+  the scene, the words as large display type, name labels with photos, the
+  founders' cards (the app's challenge card), and the controls, hidden while
+  playing: space or a tap on the stage to play or pause, arrows to seek, F
+  for full screen, with Play and Full screen buttons for a phone. A phone
+  held upright is asked to turn sideways; where the browser allows full
+  screen to videos only, as on an iPhone, there is no full screen button.
+- **Cast**: the server reads `PRESENTATION_CAST_FILE` once at start, a JSON
+  list of `{handle, name, photo?, email?, groups?}`, photos as data URLs. It
+  matches emails to active members and sends each cast member's handle,
+  name, photo, groups and network position, never the email (R-PRES-6).
+  Without a file a development deployment uses a fictional cast over the dev
+  seed; any other deployment names nobody, and cues for missing people pass
+  over the network instead.
+
 ### Badges
 
 Private badges counted from what members already do (R-BADGE-1..14,
@@ -1470,6 +1503,12 @@ records are limited per member (`GAME_RECORDS_PER_MINUTE`).
 | ------ | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | GET    | `/api/network` | `{nodes[], links[], moons[]}`: each node `{id, at, day, self}`, each link `{source, target, at, day}`, each moon `{node, at, day}`, and `own` `{count, needed, shown}` (R-NET-13), `id` and `node` a position and `at` the place in the replay (R-NET-3, R-NET-7, R-NET-11). `404` while `limits.networkReplay` is off or without `network:view`. |
 
+### Network presentation (R-PRES-1..7, ADR 0058)
+
+| Method | Path                      | Behavior                                                                                                                                                                                        |
+| ------ | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/admin/presentation` | `{timeline, cast[]}`: the replay's timeline with no viewer (R-NET-3) and each cast member as `{handle, name, photo, groups, node}`, `node` their position or null, no email. `network:present`. |
+
 ### Admin (permission-guarded, not role-name-guarded — R-ROLE-3)
 
 | Method | Path                                 | Behavior                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
@@ -1579,6 +1618,7 @@ sets it again after every navigation, as _Rebel Match | Screen_.
 | S39 | **Moderation** — _Open_ / _Handled_ tabs; one card per reported member: name · organization, status, "5 reports from 4 members", "2 challenges · 1 note", reasons with counts, the latest report's time; outlined from `limits.reportersToFlag` different reporters (R-MOD-6)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | `/admin/moderation`                                   |
 | S40 | **A reported member** — the member with a link to S26; each reported item with its text, state and reports, and _Hide_ / _Unhide_ and _Dismiss_; _Ban member…_ or _Lift ban_; the history of actions (R-MOD-7..9)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | `/admin/moderation/:memberId`                         |
 | S41 | **The network** — the network growing in 3D, every member a point and every accepted connection a line, every challenge a moon circling its author, nobody named; in the corner the day and how many members, connections and challenges; under it a timeline marking each join and connection with where the replay is and its day, Pause / Play and Replay; drag, pinch or scroll to take the view, _Recentre view_ to hand it back; with fewer connections than `limits.networkMinOwnConnections`, none of the member's own and a starred footnote saying why (R-NET-13); at the end the member's own point lit up, with a label pointing at it: _That's you_, their name, connections and challenges, the day they joined in small type (R-NET-14); under the scene a key drawing a dot, a line, a moon and the accent colour (R-NET-15) (R-NET-1..9) | `/network`                                            |
+| S42 | **Network presentation** — a full-screen film of the network on a dark background, no header or tab bar: an invented beginning with the founders, the real network growing, named cast members with their photos, the figures since launch, an invented zoom past today and a closing thank-you; words in large display type; controls hidden while playing (R-PRES-1..7)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `/admin/presentation`                                 |
 
 Remaining overlays, deliberately: the "really decline this request?" confirm, the
 "link sent" / "copied" toasts, and the feedback action (a `mailto:`, not a

@@ -12,6 +12,7 @@ import { activityRoutes } from './routes/activity.js'
 import { badgeRoutes } from './routes/badges.js'
 import { gameRoutes } from './routes/game.js'
 import { networkRoutes } from './routes/network.js'
+import { presentationRoutes } from './routes/presentation.js'
 import { swipeRoutes } from './routes/swipes.js'
 import { cockpitRoutes } from './routes/cockpit.js'
 import { guardApi } from './routes/api-guard.js'
@@ -52,6 +53,7 @@ import type { ActivityService } from './services/activity.js'
 import type { BadgeService } from './services/badges.js'
 import type { GameService } from './services/game.js'
 import type { NetworkService } from './services/network.js'
+import type { PresentationService } from './services/presentation.js'
 import type { SwipeService } from './services/swipes.js'
 import type { CockpitService } from './services/cockpit.js'
 import type { FollowService } from './services/follows.js'
@@ -98,6 +100,7 @@ export interface AppDeps {
   activity: ActivityService
   game: GameService
   network: NetworkService
+  presentation: PresentationService
   badges: BadgeService
   connections: ConnectionService
   swipes: SwipeService
@@ -201,7 +204,7 @@ export function createApp(deps: AppDeps): Express {
   app.use(adminWhitelistRoutes(deps), adminChallengeRoutes(deps))
   app.use(adminApplicantRoutes(deps), adminReportRoutes(deps))
   app.use(adminInviteRoutes(deps), adminBanRoutes(deps))
-  app.use(adminOutboxRoutes(deps))
+  app.use(adminOutboxRoutes(deps), presentationRoutes(deps))
   app.use(adminSettingsRoutes(deps), gameRoutes(deps), networkRoutes(deps))
 
   app.get('/api/health', async (_request, response) => {

@@ -49,6 +49,7 @@ Conventions:
 
    Admin only: F10 Approvals · F16 Invite links · F11 GDPR deletion
                F14 Outbound message log · F21 Moderation
+               F23 The network presentation
 ```
 
 ---
@@ -879,3 +880,22 @@ reported member, S26 A member's page.
    (R-NET-15).
 6. A member who prefers reduced motion sees the end at once (R-NET-9). While
    the switch is off, `/network` is not found (R-NET-6).
+
+---
+
+## F23 — The network presentation
+
+1. A host holding `network:present` opens **S42**, `/admin/presentation`,
+   on the laptop wired to the stage screen, and presses F for full screen
+   (R-PRES-1).
+2. Space plays the film. Two invented dots, the founders, meet over a shared
+   challenge; the real network grows around them; the camera visits the
+   people the cast file names; the figures since launch count up; the
+   network grows past today until it is a point, flashes, and a lone dot,
+   whoever is watching, is thanked (R-PRES-2, R-PRES-4, R-PRES-7).
+3. In rehearsal the host pauses, seeks with the arrows and plays again; the
+   same second always shows the same picture (R-PRES-3). On a phone, held
+   sideways, a tap plays and pauses and the scrubber seeks.
+4. Without a cast file, a production deployment names nobody and the film
+   stays on the whole network where it would have visited someone
+   (R-PRES-5).

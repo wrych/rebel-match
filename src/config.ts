@@ -195,6 +195,8 @@ const envSchema = z
       )
       .pipe(z.array(z.email())),
 
+    PRESENTATION_CAST_FILE: z.string().min(1).optional(),
+
     CONSENT_VERSION: z
       .string()
       .min(1)
@@ -418,6 +420,8 @@ export interface Config {
   seedProfile: Env['SEED_PROFILE']
   /** Addresses the prod seed makes admins (R-SEED-9). */
   seedAdmins: string[]
+  /** The private file naming the presentation's cast (R-PRES-5). */
+  presentationCastFile?: string
   consentVersion: string
   /** The analytics opt-in words in force (R-ANA-4); new words ship as code. */
   analyticsVersion: string
@@ -531,6 +535,9 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): Config {
     feedbackTo: env.FEEDBACK_TO,
     seedProfile: env.SEED_PROFILE,
     seedAdmins: env.SEED_ADMINS,
+    ...(env.PRESENTATION_CAST_FILE === undefined
+      ? {}
+      : { presentationCastFile: env.PRESENTATION_CAST_FILE }),
     consentVersion: env.CONSENT_VERSION,
     analyticsVersion: latestAnalyticsVersion,
     analytics: analyticsFrom(env),

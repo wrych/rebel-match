@@ -8,6 +8,8 @@ export interface NetworkStore {
   /** Active, onboarded members and the accepted connections between them
    * (R-NET-4). */
   facts(): Promise<NetworkFacts>
+  /** The ids of active members with these emails, by lower-cased email. */
+  idsByEmail(emails: readonly string[]): Promise<Map<string, string>>
 }
 
 export interface NetworkService {

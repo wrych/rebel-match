@@ -489,9 +489,10 @@ Built after the spec and ADR merge. One pull request per item, in this order.
 - [x] A dev network to try it on: a crowd of fictional members, their
       challenges and offers, join times over weeks with an event's crowd, and
       connection requests in every state. _(R-SEED-10)_
-- [ ] A presentation mode for hosts on the same graph component: a timeline
-      marking nobody, full screen, driven without the member's controls.
-      Needs its own requirement first.
+- [ ] The network presentation: the script, the pure director, the stage,
+      the invented beginning, growth and closing world, and the cast file.
+      _(R-PRES-1..7)_ The real cast, photos and the founders' challenges
+      replace the fictional ones before the summit; music comes later.
 
 ---
 

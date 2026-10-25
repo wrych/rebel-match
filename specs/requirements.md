@@ -781,6 +781,7 @@ at a screen instead of at the front door.
   | `/9torevolution`                     | the 9toRevolution game (R-GAME-1)              |
   | `/9torevolution/leaderboard`         | the 9toRevolution leaderboard (R-GAME-13)      |
   | `/network`                           | the network replay (R-NET-1)                   |
+  | `/admin/presentation`                | the network presentation (R-PRES-1)            |
   | `/welcome`                           | two doors                                      |
   | `/ask`                               | submit a challenge                             |
   | `/challenges/:id`                    | detected trend for that challenge              |
@@ -1818,6 +1819,42 @@ connection graph is private, so the replay names nobody.
   explain, each with a drawing of it, that a dot is a member, a line a
   connection both accepted, a moon a challenge circling its author, and the
   accent colour the viewer.
+
+## 8n. The network presentation
+
+For the summit stage the maintainer wants a short film of the network: an
+invented beginning with the two founders, the real network growing, the
+people who shaped the movement, the figures since launch, and a thank-you
+to everyone in the room (ADR 0058). It reuses the replay (§8m) and is for
+hosts only.
+
+- **R-PRES-1 (The film)** — A member holding `network:present` SHALL be able
+  to play the presentation at `/admin/presentation` (S42), filling the
+  screen without the app's header or tab bar, on a dark background.
+- **R-PRES-2 (One script)** — The presentation SHALL follow one script kept
+  with the code: its length, and at set times the words shown, where the
+  camera looks, how far the real network has grown, and what lights up.
+  Changing it SHALL need a change to the script, not an editor.
+- **R-PRES-3 (The same every time)** — The picture SHALL depend only on the
+  second reached, so the presentation can be scrubbed to any moment, paused
+  and played again in rehearsal, and recorded frame by frame.
+- **R-PRES-4 (What is invented)** — The founders' beginning, the growth past
+  today and the closing world's lone dot (the viewer, whoever they are) SHALL
+  be invented; everything else SHALL be the real network as the replay builds
+  it, with no viewer marked (R-NET-1, R-NET-11).
+- **R-PRES-5 (The cast)** — The people the presentation names SHALL come
+  only from a private cast file the deployment points to
+  (`PRESENTATION_CAST_FILE`), never from the repository: for each a handle the
+  script uses, a display name, and optionally a photo, a member's email and
+  groups such as developers. Hosts SHALL put in it only people who agreed to
+  be shown. In a development deployment without a file, a fictional cast
+  mapped to the dev seed SHALL stand in (R-SEED-2).
+- **R-PRES-6 (What leaves the server)** — For each cast member THE SYSTEM
+  SHALL send the client their handle, name, photo, groups and position in the
+  network, and never their email. Everyone else SHALL stay as anonymous as in
+  the replay (R-NET-3).
+- **R-PRES-7 (The figures)** — The members, challenges and connections the
+  presentation counts SHALL be those since launch: the whole network.
 
 ---
 

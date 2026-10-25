@@ -112,6 +112,13 @@ function deps(
       seeHint: () => Promise.resolve(),
       leaderboard: () => Promise.resolve({ rows: [], own: null, of: 0 }),
     },
+    presentation: {
+      show: () =>
+        Promise.resolve({
+          timeline: { nodes: [], links: [], moons: [], own: null },
+          cast: [],
+        }),
+    },
     network: {
       timeline: () =>
         Promise.resolve({ nodes: [], links: [], moons: [], own: null }),
