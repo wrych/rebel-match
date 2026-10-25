@@ -95,3 +95,4 @@ still holds except where the later ADR says otherwise.
 | [0057](0057-replay-the-network-in-3d-naming-nobody.md)                    | Replay the network's growth in 3D, naming nobody but the viewer                 | Accepted                              |
 | [0058](0058-a-scripted-presentation-cast-from-a-private-file.md)          | Play the summit presentation in the app, scripted, cast from a private file     | Accepted                              |
 | [0059](0059-a-summit-recap-of-each-members-own-shared-from-the-device.md) | Give each member a summit recap of their own, shared from their device          | Accepted                              |
+| [0060](0060-open-the-recap-at-a-set-time-and-announce-it-once.md)         | Open the recap at a set time, and announce it once                              | Accepted                              |
