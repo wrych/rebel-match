@@ -107,6 +107,18 @@ describe('HeaderMenu', () => {
     },
   )
 
+  it.each([
+    [1, true],
+    [0, false],
+  ])(
+    'offers the recap while hosts have it on (%i): %s (R-RECAP-1)',
+    async (recap, offered) => {
+      withConfig(signedIn([]), { recap })
+
+      expect(paths(await opened()).includes('/recap')).toBe(offered)
+    },
+  )
+
   it('starts closed, and says so', async () => {
     signedIn([])
     const menu = await mountMenu()

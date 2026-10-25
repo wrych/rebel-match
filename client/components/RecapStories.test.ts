@@ -1,0 +1,208 @@
+// @vitest-environment jsdom
+import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Recap } from '../lib/recap'
+import type { Ticker } from '../network/replay'
+import type { SceneFactory } from '../network/scene'
+import RecapStories from './RecapStories.vue'
+
+const recap: Recap = {
+  joined: '2026-09-02',
+  members: 2,
+  rows: [
+    {
+      row: 'speak',
+      count: 3,
+      level: 'Agitator',
+      crown: { name: 'Ringleader', held: true },
+      below: 80,
+    },
+    {
+      row: 'help',
+      count: 0,
+      level: null,
+      crown: { name: 'Liberator', held: false },
+      below: null,
+    },
+  ],
+  timeline: {
+    nodes: [
+      { id: 0, at: 0, day: '2026-09-01', self: false },
+      { id: 1, at: 0.5, day: '2026-09-02', self: true },
+    ],
+    links: [],
+    moons: [],
+    own: null,
+  },
+}
+
+function fakeTicker(): Ticker & { advance(ms: number): void } {
+  let time = 0
+  let queued: (() => void)[] = []
+  return {
+    now: () => time,
+    next(step) {
+      queued.push(step)
+      return () => {
+        queued = queued.filter((candidate) => candidate !== step)
+      }
+    },
+    advance(ms) {
+      time += ms
+      const due = queued
+      queued = []
+      for (const step of due) step()
+    },
+  }
+}
+
+const scene: SceneFactory = () => ({
+  show: () => undefined,
+  highlight: () => undefined,
+  recentre: () => undefined,
+  dispose: () => undefined,
+})
+
+const STORY_MS = 1000
+let wrapper: VueWrapper | null = null
+
+function mountStories(ticker = fakeTicker()): {
+  wrapper: VueWrapper
+  ticker: ReturnType<typeof fakeTicker>
+  rendered: string[]
+} {
+  const rendered: string[] = []
+  wrapper = mount(RecapStories, {
+    attachTo: document.body,
+    props: {
+      recap,
+      name: 'Ada Rebel',
+      storyMs: STORY_MS,
+      site: 'https://rebel.test',
+      ticker,
+      scene,
+      render: (card) => {
+        rendered.push(card.name)
+        return Promise.resolve(new File(['png'], 'card.png'))
+      },
+    },
+  })
+  return { wrapper, ticker, rendered }
+}
+
+const story = (): string =>
+  [...(document.querySelector('.story')?.children ?? [])]
+    .map((child) => child.textContent?.trim() ?? '')
+    .join(' ')
+
+function tap(at: 'left' | 'right'): void {
+  const taps = document.querySelector('.taps') as HTMLElement
+  Object.defineProperty(taps, 'clientWidth', { value: 300 })
+  taps.dispatchEvent(new PointerEvent('pointerdown'))
+  const up = new PointerEvent('pointerup')
+  Object.defineProperty(up, 'offsetX', { value: at === 'left' ? 20 : 280 })
+  taps.dispatchEvent(up)
+}
+
+beforeEach(() => {
+  vi.stubGlobal('matchMedia', () => ({ matches: false }))
+  URL.createObjectURL = () => 'blob:card'
+  URL.revokeObjectURL = () => undefined
+})
+
+afterEach(() => {
+  wrapper?.unmount()
+  wrapper = null
+  vi.unstubAllGlobals()
+})
+
+describe('RecapStories (R-RECAP-1, R-RECAP-2)', () => {
+  it('tells the beats in order, a bar each, the zero row left out', () => {
+    const { wrapper } = mountStories()
+
+    const kinds = (wrapper.vm as unknown as { beats: { kind: string }[] }).beats
+    expect(kinds.map((beat) => beat.kind)).toEqual([
+      'intro',
+      'joined',
+      'row',
+      'crowns',
+      'network',
+      'card',
+    ])
+    expect(document.querySelectorAll('.segment')).toHaveLength(6)
+    expect(story()).toContain('Your rebel record')
+  })
+
+  it('moves on by itself after each story’s time', async () => {
+    const { ticker } = mountStories()
+
+    ticker.advance(STORY_MS)
+    await flushPromises()
+
+    expect(story()).toContain('Rebel no. 2')
+  })
+
+  it('goes forward on a tap at the right and back at the left', async () => {
+    mountStories()
+
+    tap('right')
+    tap('right')
+    await flushPromises()
+    expect(story()).toContain('3 challenges posted')
+    expect(story()).toContain('Agitator')
+    expect(story()).toContain('Ahead of 80% of rebels')
+
+    tap('left')
+    await flushPromises()
+    expect(story()).toContain('Rebel no. 2')
+  })
+
+  it('holds the story while pressed', async () => {
+    const { ticker } = mountStories()
+    const taps = document.querySelector('.taps') as HTMLElement
+
+    taps.dispatchEvent(new PointerEvent('pointerdown'))
+    ticker.advance(STORY_MS * 3)
+    await flushPromises()
+
+    expect(story()).toContain('Your rebel record')
+  })
+
+  it('ends on the card, drawn once, with LinkedIn first', async () => {
+    const { wrapper, rendered } = mountStories()
+
+    ;(wrapper.vm as unknown as { go(to: number): void }).go(5)
+    await flushPromises()
+
+    expect(rendered).toEqual(['Ada Rebel'])
+    const buttons = [...document.querySelectorAll('.actions button')].map(
+      (button) => button.textContent?.trim(),
+    )
+    expect(buttons).toEqual(['Share on LinkedIn', 'Save image'])
+    expect(document.querySelector('img.card')?.getAttribute('src')).toBe(
+      'blob:card',
+    )
+  })
+
+  it('reports a saved image as shared', async () => {
+    const { wrapper } = mountStories()
+    const clicked = vi
+      .spyOn(HTMLAnchorElement.prototype, 'click')
+      .mockImplementation(() => undefined)
+
+    ;(wrapper.vm as unknown as { go(to: number): void }).go(5)
+    await flushPromises()
+    ;(document.querySelectorAll('.actions button')[1] as HTMLElement).click()
+
+    expect(clicked).toHaveBeenCalled()
+    expect(wrapper.emitted('shared')).toEqual([['image']])
+  })
+
+  it('closes on the cross', () => {
+    const { wrapper } = mountStories()
+
+    ;(document.querySelector('.close') as HTMLElement).click()
+
+    expect(wrapper.emitted('close')).toHaveLength(1)
+  })
+})
