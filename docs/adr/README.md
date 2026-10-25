@@ -93,3 +93,4 @@ still holds except where the later ADR says otherwise.
 | [0055](0055-members-report-hosts-moderate.md)                     | Members report, hosts moderate by hiding, and a ban is a status                 | Accepted, amended by 0056             |
 | [0056](0056-keep-reports-behind-a-measure.md)                     | Keep the reports behind a hide or a ban while it stands                         | Accepted                              |
 | [0057](0057-replay-the-network-in-3d-naming-nobody.md)            | Replay the network's growth in 3D, naming nobody but the viewer                 | Accepted                              |
+| [0058](0058-a-scripted-presentation-cast-from-a-private-file.md)  | Play the summit presentation in the app, scripted, cast from a private file     | Accepted                              |
