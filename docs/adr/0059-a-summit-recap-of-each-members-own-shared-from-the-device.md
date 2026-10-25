@@ -48,9 +48,10 @@ names nobody (ADR 0057), and members hold sensitive problems here.
   the post LinkedIn opens with. On phones it is one step.
 - LinkedIn's composer address is not a documented interface; if it changes,
   the fallback still saves the card and the member posts it by hand.
-- The working title, _Your summit wrapped_, echoes a streaming service's
-  trademarked campaign name. It is one constant, `RECAP_TITLE`, and the code
-  says recap throughout, so a name of our own is a one-line change.
+- Members see it as _Your rebel track_. A first idea echoed a streaming
+  service's trademarked campaign name; the title is one constant,
+  `RECAP_TITLE`, and the code says recap throughout, so renaming stays a
+  one-line change.
 - What a member shares is theirs to share. The card is built so that what it
   carries is only theirs.
 
