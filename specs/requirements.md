@@ -1198,13 +1198,18 @@ notifications: they go out at once, whatever is chosen here (R-NFR-3).
     crown (R-BADGE-10), never when they lose one;
   - **New report** — every member who can review reports, when a
     report is made (R-MOD-5), linking to the reported member's moderation page
-    (R-MOD-7).
+    (R-MOD-7);
+  - **Your record is ready** — every active, onboarded member, once, when the
+    summit recap opens (R-RECAP-9).
 - **R-NOTE-2 (Cadences)** — For each type a member can receive, they SHALL
   choose one of: **Immediately**, **Hourly**, **Daily**, **In the app only**,
   **Off**. New applicant notices SHALL also offer **Every 15 minutes**. Until
   a member chooses, connection requests and new connections SHALL be
   **Hourly**, new challenges in a followed trend **Daily**, new applicants
   **Every 15 minutes**, new badges **Daily**, and new reports **Hourly**.
+  _Your record is ready_ comes once, so it SHALL offer only whether it is
+  emailed: **Yes**, mailed at once, or **No**, in the app only; Yes until
+  the member chooses (R-RECAP-9).
 - **R-NOTE-3 (Choosing)** — The profile screen SHALL offer the choice for each
   type the member can receive, and only those, saved on change like every
   setting there (R-PROF-1). A change SHALL apply to every notification still
@@ -1883,8 +1888,9 @@ a title kept in one place. It reuses the replay (§8m) and the badges (§8k).
   the member compares, as the share of active members whose count is lower,
   rounded down to `limits.recapPercentStep` percent ("more than 80% of
   rebels"). Comparisons SHALL be left out while fewer than
-  `limits.recapMinMembers` members are active, and for a count no member
-  is below. No other member SHALL be named or counted singly.
+  `limits.recapMinMembers` members are active, and for a share below
+  `limits.recapMinShare` percent (50), so a comparison only ever says a
+  member is ahead of most. No other member SHALL be named or counted singly.
 - **R-RECAP-4 (Only theirs)** — The endpoint SHALL answer for the caller only,
   with their own figures, the share of members below each, the crowns they
   hold, and the replay's timeline with them marked under its rules
@@ -1904,6 +1910,19 @@ a title kept in one place. It reuses the replay (§8m) and the badges (§8k).
 - **R-RECAP-7 (Usage)** — For a member opted in (R-ANA-4) THE SYSTEM SHALL
   send `recap_opened` and `recap_shared` with how it was shared, and
   nothing naming anyone or carrying a figure (R-ANA-3).
+- **R-RECAP-8 (Opening time)** — Hosts SHALL be able to set the moment the
+  recap opens, `limits.recapOpensAt`, as a date and time shown and edited in
+  their own time zone; none is set until they do. From that moment THE
+  SYSTEM SHALL offer the recap as if the switch were on (R-RECAP-1). The
+  switch on SHALL open it whatever the time; to close it again, a host
+  switches it off and clears the time.
+- **R-RECAP-9 (Told once)** — WHEN the recap first opens, by the time or by
+  the switch, THE SYSTEM SHALL notify every active, onboarded member once
+  that their record is ready (R-NOTE-1), linking to `/recap`. Each member
+  SHALL choose under their notifications whether it is also emailed, **Yes**
+  or **No** only, Yes until they choose (R-NOTE-2); Yes mails it at once.
+  Closing and opening the recap again SHALL NOT notify anyone a second time,
+  and a member who joins later finds it in the menu.
 
 ---
 

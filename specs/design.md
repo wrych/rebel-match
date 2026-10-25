@@ -103,6 +103,9 @@ thresholds have sane defaults in the file and may be overridden by env.
 | `notifications.workerIntervalSeconds` | `60`                          | R-NOTE-7                  |
 | `notifications.maxAttempts`           | `5`                           | R-NOTE-10                 |
 | `limits.whitelistBatchMax`            | `1000`                        | R-AUTH-1                  |
+| `limits.recapOpensAt`                 | `0` (none)                    | R-RECAP-8                 |
+| `limits.recapMinShare`                | `50`                          | R-RECAP-3                 |
+| `recapAnnounceCheckMinutes`           | `1`                           | R-RECAP-9                 |
 | `limits.savedTickMs`                  | `2500`                        | R-PROF-1                  |
 | `limits.scrollHintShare`              | `0.4`                         | R-ONB-10                  |
 | `limits.profileDraftRetentionDays`    | `30`                          | R-ONB-15                  |
@@ -530,15 +533,30 @@ everything: the picture is a pure function of the second reached.
 ### The summit recap
 
 S43 tells a member their own time in the movement as portrait stories, and
-ends on a card to share (R-RECAP-1..7, ADR 0059).
+ends on a card to share (R-RECAP-1..9, ADR 0059, ADR 0060).
 
 - **Figures** (`src/services/recap.ts`): the badges' own counts for the
   four counted rows (R-BADGE-1), the highest level earned in each, the
   crowns held, and for each count the share of active members below it,
   from the standings the crowns are decided on. A share is rounded down to
-  `limits.recapPercentStep` (5) and left out below
-  `limits.recapMinMembers` (20) active members. The replay's timeline
-  comes with the member marked.
+  `limits.recapPercentStep` (5), and left out below
+  `limits.recapMinMembers` (20) active members or below
+  `limits.recapMinShare` (50) percent. The replay's timeline comes with
+  the member marked.
+- **Opening** (`src/recap/open.ts`, pure): the recap is open while
+  `limits.recap` is 1, or once `limits.recapOpensAt` has passed. The time is
+  stored as whole minutes since 1970 in UTC, 0 for none, so it lives among
+  the numeric settings; the settings screen edits it as a date and time in
+  the host's own time zone (R-RECAP-8). The route, the menu and the
+  announcement all ask the same function.
+- **Announcement** (`src/services/recap-announce.ts`): a scheduled job,
+  every `recapAnnounceCheckMinutes` (1). The first time it finds the recap
+  open it writes, in one transaction, a `recap` notification for every
+  active, onboarded member and the row of `recap_announcement`, so it never
+  announces twice, whatever the switch does later (R-RECAP-9). Its
+  recipient is the member it is about. The member's choice is stored as a
+  cadence: Yes is `immediately`, No is `in_app`; no other is accepted. A
+  waiting row whose recap has closed again is stale.
 - **Story** (`client/recap/story.ts`, pure): the figures become the beats,
   a zero beat dropped: joined, challenges, same boat, offers, connections,
   crowns, the network today, the card.
@@ -1112,7 +1130,8 @@ CREATE TABLE notifications (
   id               CHAR(36)    NOT NULL PRIMARY KEY,
   recipient_id     CHAR(36)    NOT NULL,
   type             ENUM('connection_request','new_connection',
-                        'trend_challenge','applicant','badge') NOT NULL,
+                        'trend_challenge','applicant','badge','report',
+                        'recap') NOT NULL,
   about_member_id  CHAR(36)    NULL,               -- requester, target, author or applicant
   connection_id    CHAR(36)    NULL,
   challenge_id     CHAR(36)    NULL,
@@ -1158,7 +1177,14 @@ later. Setting a type to _Off_ does the same to its rows not yet seen
 (R-NOTE-3).
 No `notification_settings` row means the type's default (R-NOTE-2); choosing
 the default again deletes the row. `every_15_minutes` is accepted for
-`applicant` only.
+`applicant` only, and `recap` accepts only `immediately` (Yes) and `in_app`
+(No) (R-RECAP-9).
+
+```sql
+CREATE TABLE recap_announcement (
+  done_at DATETIME NOT NULL PRIMARY KEY  -- the recap was announced (R-RECAP-9)
+);
+```
 
 The cascades erase a row with its recipient, the member it is about, and the
 request or challenge it refers to (R-NOTE-11, R-NFR-7). A `badge` row names the
@@ -1536,7 +1562,7 @@ records are limited per member (`GAME_RECORDS_PER_MINUTE`).
 | ------ | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | GET    | `/api/admin/presentation` | `{timeline, cast[]}`: the replay's timeline with no viewer (R-NET-3) and each cast member as `{handle, name, photo, groups, node}`, `node` their position or null, no email. `network:present`. |
 
-### The summit recap (R-RECAP-1..7, ADR 0059)
+### The summit recap (R-RECAP-1..9, ADR 0059, ADR 0060)
 
 | Method | Path         | Behavior                                                                                                                                                                                                                                                         |
 | ------ | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
