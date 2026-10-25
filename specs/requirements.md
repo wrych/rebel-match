@@ -1898,8 +1898,14 @@ a title kept in one place. It reuses the replay (§8m) and the badges (§8k).
 - **R-RECAP-5 (The share card)** — The last story SHALL be a card the member
   can share: their name, their figures, their highest levels and crowns, and
   the Rebel Match mark, drawn in the browser as an image 1080 by 1350
-  pixels. It SHALL show no other member's name, no challenge text and no
-  network picture.
+  pixels. It SHALL show no other member's name and no challenge text. In its
+  bottom-right corner it SHALL show the network around the member's own dot
+  as the replay lays it out: their dot vivid in the accent colour, the other
+  dots and lines fading in colour and opacity with distance until
+  invisible, every dot anonymous as in the replay (R-NET-3) and the
+  member's own lines only under its rule (R-NET-13). The card's story SHALL
+  show the same view slowly turning behind the card; the image shared stays
+  still.
 - **R-RECAP-6 (Sharing, LinkedIn first)** — _Share on LinkedIn_ SHALL be the
   first action. Where the phone can share an image, THE SYSTEM SHALL hand the
   card and a ready-written post to its share sheet; elsewhere it SHALL save

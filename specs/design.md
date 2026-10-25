@@ -565,7 +565,12 @@ ends on a card to share (R-RECAP-1..9, ADR 0059, ADR 0060).
   stories are the replay's graph without its controls.
 - **Card** (`client/recap/card.ts`): drawn on a canvas at 1080 by 1350,
   LinkedIn's portrait size, in the app's colours and type: name, figures,
-  each with its level and crown, mark. The title members see is one
+  each with its level and crown, mark, and in the bottom-right corner the
+  member's surroundings (`client/recap/halo.ts`, pure): the replay's own
+  layout of the timeline it was sent, turned to an angle and centred on
+  their dot, each other dot and line faded towards the paper and to
+  nothing by its distance from them. The card's story draws the same view
+  turning, behind the card. The title members see is one
   constant, `RECAP_TITLE` in `src/recap/title.ts`. Sharing hands it and a written post to the phone's
   share sheet where it takes files; elsewhere it saves the image and opens
   `https://www.linkedin.com/feed/?shareActive=true&text=…` with the post,
