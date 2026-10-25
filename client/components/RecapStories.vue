@@ -13,7 +13,10 @@ import { day } from '../lib/when'
 import { cardOf, RECAP_TITLE, shareText, type Card } from '../recap/card'
 import { renderCard, saveCard, shareCard, type SharedVia } from '../recap/share'
 import { storyOf, type Beat } from '../recap/story'
+import { layout } from '../network/layout'
+import { haloOf, type Halo } from '../recap/halo'
 import NetworkGraph from './NetworkGraph.vue'
+import RecapCardPreview from './RecapCardPreview.vue'
 
 const props = withDefaults(
   defineProps<{
@@ -23,7 +26,7 @@ const props = withDefaults(
     site: string
     ticker?: Ticker
     scene?: SceneFactory
-    render?: (card: Card, site: string) => Promise<File>
+    render?: (card: Card, site: string, halo: Halo | null) => Promise<File>
   }>(),
   { ticker: () => frameTicker, scene: createThreeScene, render: renderCard },
 )
@@ -34,13 +37,22 @@ const TAP_MS = 250
 // The share of a story the replay takes to reach the member's own dot.
 const ARRIVAL_SHARE = 0.75
 
+// The shared image's view of the member's surroundings; the story turns
+// it from here (R-RECAP-5).
+const CARD_ANGLE = 0.6
+
 const beats = storyOf(props.recap)
+const points = layout(
+  props.recap.timeline.nodes.length,
+  props.recap.timeline.links,
+)
+const haloAt = (angle: number): Halo | null =>
+  haloOf(props.recap.timeline, points, angle)
 const index = ref(0)
 const progress = ref(0)
 const graph = ref<InstanceType<typeof NetworkGraph> | null>(null)
 const card = cardOf(props.recap, props.name)
 const cardFile = ref<File | null>(null)
-const cardUrl = ref<string | null>(null)
 const problem = ref<string | null>(null)
 let player: Player | null = null
 let pressedAt: number | null = null
@@ -86,8 +98,7 @@ function release(event: PointerEvent): void {
 async function prepareCard(): Promise<void> {
   if (cardFile.value !== null) return
   try {
-    cardFile.value = await props.render(card, props.site)
-    cardUrl.value = URL.createObjectURL(cardFile.value)
+    cardFile.value = await props.render(card, props.site, haloAt(CARD_ANGLE))
   } catch {
     problem.value = 'The card could not be drawn.'
   }
@@ -122,7 +133,6 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   player?.stop()
-  if (cardUrl.value !== null) URL.revokeObjectURL(cardUrl.value)
 })
 
 defineExpose({ index, go, beats })
@@ -214,13 +224,14 @@ defineExpose({ index, go, beats })
 
         <template v-else>
           <p class="kicker">Share your record</p>
-          <img
-            v-if="cardUrl"
-            class="card"
-            :src="cardUrl"
-            :alt="`${RECAP_TITLE}: ${props.name}`"
+          <RecapCardPreview
+            :card="card"
+            :site="props.site"
+            :halo="haloAt"
+            :angle="CARD_ANGLE"
+            :ticker="props.ticker"
           />
-          <p v-else-if="problem" class="alert" role="alert">{{ problem }}</p>
+          <p v-if="problem" class="alert" role="alert">{{ problem }}</p>
           <div class="actions">
             <button
               type="button"
@@ -390,13 +401,6 @@ defineExpose({ index, go, beats })
 
 .crown {
   color: var(--accent);
-}
-
-.card {
-  width: 100%;
-  max-height: 58dvh;
-  object-fit: contain;
-  border-radius: var(--radius);
 }
 
 .actions {

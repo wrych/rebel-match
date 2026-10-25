@@ -65,6 +65,13 @@ function recorder(): { pen: Pen; texts: string[] } {
     translate: () => undefined,
     scale: () => undefined,
     fill: () => undefined,
+    beginPath: () => undefined,
+    arc: () => {
+      texts.push('·')
+    },
+    moveTo: () => undefined,
+    lineTo: () => undefined,
+    stroke: () => undefined,
   } as unknown as Pen
   return { pen, texts }
 }
@@ -108,6 +115,30 @@ describe('the share card (R-RECAP-5, R-RECAP-6)', () => {
       'REBEL MATCH',
       'rebel.test',
     ])
+  })
+
+  it('draws the member’s surroundings under the words (R-RECAP-5)', () => {
+    const { pen, texts } = recorder()
+    const halo = {
+      dots: [
+        { x: 0.5, y: 0.5, fade: 0.3, self: false },
+        { x: 0, y: 0, fade: 1, self: true },
+      ],
+      lines: [],
+    }
+
+    paintCard(
+      pen,
+      cardOf(recap, 'Ada Rebel'),
+      palette,
+      'rebel.test',
+      null,
+      halo,
+    )
+
+    const firstWord = texts.indexOf(RECAP_TITLE.toUpperCase())
+    expect(texts.slice(0, firstWord).length).toBeGreaterThan(2)
+    expect(texts.slice(firstWord)).not.toContain('·')
   })
 
   it('shrinks a long name to fit', () => {

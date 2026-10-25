@@ -5,7 +5,9 @@ import {
   paintCard,
   type Card,
   type CardPalette,
+  type Pen,
 } from './card'
+import type { Halo } from './halo'
 
 /** How a card left the app, as `recap_shared` reports it (R-RECAP-7). */
 export type SharedVia = 'share_sheet' | 'linkedin' | 'image'
@@ -89,11 +91,10 @@ export function paletteOfPage(element: Element): CardPalette {
   }
 }
 
-/** Draws the card on a canvas, once its fonts are in, as a PNG file
- * (R-RECAP-5). */
-export async function renderCard(card: Card, site: string): Promise<File> {
+/** The page's palette once the card's fonts are in; a font that will not
+ * load still leaves the card drawn, in a fallback. */
+export async function cardPalette(): Promise<CardPalette> {
   const palette = paletteOfPage(document.documentElement)
-  // A font that will not load still leaves the card drawn, in a fallback.
   await Promise.all(
     [
       `40px ${palette.display}`,
@@ -105,12 +106,28 @@ export async function renderCard(card: Card, site: string): Promise<File> {
         .catch(() => []),
     ),
   )
+  return palette
+}
+
+/** A canvas the card's size, and its pen. */
+export function cardCanvas(): { canvas: HTMLCanvasElement; pen: Pen } {
   const canvas = document.createElement('canvas')
   canvas.width = CARD_SIZE.width
   canvas.height = CARD_SIZE.height
   const pen = canvas.getContext('2d')
   if (pen === null) throw new Error('card unavailable')
-  paintCard(pen, card, palette, site, markPath())
+  return { canvas, pen }
+}
+
+/** Draws the card, its surroundings still, as a PNG file (R-RECAP-5). */
+export async function renderCard(
+  card: Card,
+  site: string,
+  halo: Halo | null = null,
+): Promise<File> {
+  const palette = await cardPalette()
+  const { canvas, pen } = cardCanvas()
+  paintCard(pen, card, palette, site, markPath(), halo)
   const blob = await new Promise<Blob | null>((resolve) => {
     canvas.toBlob(resolve, 'image/png')
   })

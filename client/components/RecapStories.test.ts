@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent } from 'vue'
 import type { Recap } from '../lib/recap'
 import type { Ticker } from '../network/replay'
 import type { SceneFactory } from '../network/scene'
@@ -63,17 +64,30 @@ const scene: SceneFactory = () => ({
   dispose: () => undefined,
 })
 
+const PreviewStub = defineComponent({
+  name: 'RecapCardPreview',
+  props: {
+    card: { type: Object, required: true },
+    site: { type: String, required: true },
+    halo: { type: Function, required: true },
+    angle: { type: Number, required: true },
+    ticker: { type: Object, default: null },
+  },
+  template: '<div class="preview-stub" />',
+})
+
 const STORY_MS = 1000
 let wrapper: VueWrapper | null = null
 
 function mountStories(ticker = fakeTicker()): {
   wrapper: VueWrapper
   ticker: ReturnType<typeof fakeTicker>
-  rendered: string[]
+  rendered: { name: string; halo: boolean }[]
 } {
-  const rendered: string[] = []
+  const rendered: { name: string; halo: boolean }[] = []
   wrapper = mount(RecapStories, {
     attachTo: document.body,
+    global: { stubs: { RecapCardPreview: PreviewStub } },
     props: {
       recap,
       name: 'Ada Rebel',
@@ -81,8 +95,8 @@ function mountStories(ticker = fakeTicker()): {
       site: 'https://rebel.test',
       ticker,
       scene,
-      render: (card) => {
-        rendered.push(card.name)
+      render: (card, _site, halo) => {
+        rendered.push({ name: card.name, halo: halo !== null })
         return Promise.resolve(new File(['png'], 'card.png'))
       },
     },
@@ -168,20 +182,21 @@ describe('RecapStories (R-RECAP-1, R-RECAP-2)', () => {
     expect(story()).toContain('Your rebel record')
   })
 
-  it('ends on the card, drawn once, with LinkedIn first', async () => {
+  it('ends on the card, its surroundings turning, the image drawn once with them still, LinkedIn first (R-RECAP-5)', async () => {
     const { wrapper, rendered } = mountStories()
 
     ;(wrapper.vm as unknown as { go(to: number): void }).go(5)
     await flushPromises()
 
-    expect(rendered).toEqual(['Ada Rebel'])
+    expect(rendered).toEqual([{ name: 'Ada Rebel', halo: true }])
+    const preview = wrapper.findComponent(PreviewStub)
+    expect(preview.props('angle')).toBe(0.6)
+    const halo = preview.props('halo') as (angle: number) => unknown
+    expect(halo(1)).not.toEqual(halo(2))
     const buttons = [...document.querySelectorAll('.actions button')].map(
       (button) => button.textContent?.trim(),
     )
     expect(buttons).toEqual(['Share on LinkedIn', 'Save image'])
-    expect(document.querySelector('img.card')?.getAttribute('src')).toBe(
-      'blob:card',
-    )
   })
 
   it('reports a saved image as shared', async () => {

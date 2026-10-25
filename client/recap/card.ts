@@ -1,6 +1,7 @@
 import { RECAP_TITLE } from '../../src/recap/title'
 import { MARK_APART, MARK_PLACE, MARK_R, MARK_SIZE } from '../lib/mark'
 import type { Recap } from '../lib/recap'
+import { paintHalo, type Halo, type HaloPen } from './halo'
 import { countsOf } from './story'
 
 export { RECAP_TITLE }
@@ -89,24 +90,29 @@ const layout = {
   rule: 8,
 }
 
+/** Where the member's surroundings sit: the bottom-right corner, fading out
+ * before the edges (R-RECAP-5). */
+export const HALO_BOX = { x: 500, y: 760, size: 580 }
+
 /** The calls the card is drawn with: a canvas's 2D context, or a test's
  * stand-in. */
-export type Pen = Pick<
-  CanvasRenderingContext2D,
-  | 'fillStyle'
-  | 'font'
-  | 'textAlign'
-  | 'textBaseline'
-  | 'globalCompositeOperation'
-  | 'fillRect'
-  | 'fillText'
-  | 'measureText'
-  | 'save'
-  | 'restore'
-  | 'translate'
-  | 'scale'
-  | 'fill'
->
+export type Pen = HaloPen &
+  Pick<
+    CanvasRenderingContext2D,
+    | 'fillStyle'
+    | 'font'
+    | 'textAlign'
+    | 'textBaseline'
+    | 'globalCompositeOperation'
+    | 'fillRect'
+    | 'fillText'
+    | 'measureText'
+    | 'save'
+    | 'restore'
+    | 'translate'
+    | 'scale'
+    | 'fill'
+  >
 
 // The largest size up to `size` at which `text` fits `width`.
 function fitted(
@@ -216,9 +222,38 @@ export function paintCard(
   palette: CardPalette,
   site: string,
   r: Path2D | null,
+  halo: Halo | null = null,
+): void {
+  paintGround(pen, palette, halo)
+  paintWords(pen, card, palette, site, r)
+}
+
+/** The card's paper and, in its corner, the member's surroundings: what
+ * changes as the view turns. Under the words, so a faint dot never hides a
+ * letter. */
+export function paintGround(
+  pen: Pen,
+  palette: CardPalette,
+  halo: Halo | null,
 ): void {
   pen.fillStyle = palette.paper
   pen.fillRect(0, 0, CARD_SIZE.width, CARD_SIZE.height)
+  if (halo !== null)
+    paintHalo(pen, halo, HALO_BOX, {
+      accent: palette.accent,
+      ink: palette.ink,
+      paper: palette.paper,
+    })
+}
+
+/** Everything on the card that stays still: the words and the mark. */
+export function paintWords(
+  pen: Pen,
+  card: Card,
+  palette: CardPalette,
+  site: string,
+  r: Path2D | null,
+): void {
   paintHead(pen, card, palette)
   paintFigures(pen, card, palette)
   paintFoot(pen, palette, site, r)
