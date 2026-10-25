@@ -122,6 +122,11 @@ afterAll(async () => {
   await db.query('DELETE FROM notifications WHERE challenge_id = ?', [
     challengeId,
   ])
+  // The history outlives its challenge, so it goes first: left behind, it
+  // shows up in another file's history of the same member.
+  await db.query('DELETE FROM moderation_actions WHERE challenge_id = ?', [
+    challengeId,
+  ])
   await db.query('DELETE FROM challenges WHERE id = ?', [challengeId])
   await db.close()
 })
