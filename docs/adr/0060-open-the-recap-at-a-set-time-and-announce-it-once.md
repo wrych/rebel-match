@@ -20,8 +20,8 @@ a put-down.
   settings, their overrides and their audit; the settings screen edits it as
   a date and time in the host's own time zone. The recap is open while the
   switch is on or once the time has passed. Closing it takes both off.
-- **Announced once, by a scheduled job.** The first time the job finds the
-  recap open, it writes a notification for every active, onboarded member
+- **Announced once, checked by the notification worker.** At the start of
+  each of its runs, the first time it finds the recap open, it writes a notification for every active, onboarded member
   and a row in `recap_announcement` in one transaction. Nothing announces
   it again, whatever the switch does after.
 - **A notification type of its own, `recap`, with a yes-or-no choice.**
@@ -42,13 +42,13 @@ a put-down.
 
 ## Consequences
 
-- The announcement goes out within a minute of the time on a server that is
-  up; on one scaled to zero, on its next tick.
+- The announcement goes out on the worker's first run after the time,
+  within a minute on a server that is up; on one scaled to zero, on its
+  next tick.
 - A member who joins after the announcement is not told; the menu offers
   the recap.
 - A host who closes the recap after it was announced leaves members with a
-  notification whose link answers as not found; a waiting email is not
-  sent.
+  notification whose link answers as not found.
 
 ## References
 
