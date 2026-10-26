@@ -105,6 +105,7 @@ thresholds have sane defaults in the file and may be overridden by env.
 | `limits.whitelistBatchMax`            | `1000`                        | R-AUTH-1                  |
 | `limits.recapOpensAt`                 | `0` (none)                    | R-RECAP-8                 |
 | `limits.recapMinShare`                | `50`                          | R-RECAP-3                 |
+| `limits.recapNetworkStorySeconds`     | `10`                          | R-RECAP-1                 |
 | `limits.savedTickMs`                  | `2500`                        | R-PROF-1                  |
 | `limits.scrollHintShare`              | `0.4`                         | R-ONB-10                  |
 | `limits.profileDraftRetentionDays`    | `30`                          | R-ONB-15                  |
@@ -562,7 +563,10 @@ ends on a card to share (R-RECAP-1..9, ADR 0059, ADR 0060).
 - **Player** (`RecapStories.vue`): full screen in portrait, a bar per
   story, the right of the screen forward and the left back, holding to
   pause, each story `limits.recapStorySeconds` (6). The two network
-  stories are the replay's graph without its controls.
+  stories are the replay's graph without its controls, each
+  `limits.recapNetworkStorySeconds` (10): the replay plays in the first
+  half, and the second holds its end, the camera's turn to the member
+  included.
 - **Card** (`client/recap/card.ts`): drawn on a canvas at 1080 by 1350,
   LinkedIn's portrait size, in the app's colours and type: name, figures,
   each with its level and crown, mark, and behind the words the member's

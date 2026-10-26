@@ -1877,7 +1877,10 @@ a title kept in one place. It reuses the replay (§8m) and the badges (§8k).
   from the menu: full-screen portrait stories, one beat each, with a progress
   bar per story along the top. A tap on the right SHALL go forward, on the
   left back, and holding SHALL pause; each story SHALL move on by itself
-  after `limits.recapStorySeconds`. While the switch is off, `/recap`
+  after `limits.recapStorySeconds`, and each of the two network stories
+  after `limits.recapNetworkStorySeconds`, its animation taking the first
+  half so the second leaves time to read where it ends. While the switch
+  is off, `/recap`
   and its endpoint SHALL answer as not found (R-NAV-8).
 - **R-RECAP-2 (The beats)** — The stories SHALL be the member's own: the day
   they joined, shown as their dot appearing in the network; then, each only
