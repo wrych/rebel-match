@@ -244,6 +244,34 @@ describe('badges over Postgres (R-BADGE-1, R-BADGE-2)', () => {
     ])
   })
 
+  it('stops counting a challenge withdrawn or hidden, keeping its level (R-BADGE-1, R-ASK-17)', async () => {
+    await post(
+      'ana.ferreira',
+      'Every reorganisation promises more autonomy and ends with another layer of approval.',
+    )
+    expect((await rowOf('ana.ferreira', 'speak')).count).toBe(2)
+    const [first, second] = await db.query(
+      'SELECT id FROM challenges WHERE member_id = ? ORDER BY created_at',
+      [ids['ana.ferreira']],
+    )
+
+    await request(app)
+      .post(`/api/challenges/${String(second?.['id'])}/withdraw`)
+      .set('Cookie', cookies['ana.ferreira']!)
+      .expect(204)
+    expect((await rowOf('ana.ferreira', 'speak')).count).toBe(1)
+
+    await db.query('UPDATE challenges SET hidden_at = now() WHERE id = ?', [
+      first?.['id'],
+    ])
+    const speak = await rowOf('ana.ferreira', 'speak')
+    expect(speak.count).toBe(0)
+    expect(earned(speak)).toEqual([['Spark', true]])
+    await db.query('UPDATE challenges SET hidden_at = NULL WHERE id = ?', [
+      first?.['id'],
+    ])
+  })
+
   it('keeps a level when its count falls', async () => {
     await db.query('DELETE FROM challenges WHERE member_id = ?', [
       ids['ana.ferreira'],
