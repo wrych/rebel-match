@@ -1887,8 +1887,10 @@ a title kept in one place. It reuses the replay (§8m) and the badges (§8k).
   when above zero, the challenges they posted, the times they were in the
   same boat, the offers of help they sent and the people they connected
   with, as the badges count them (R-BADGE-1), each with the highest level
-  earned; the crowns they hold; and the network today with them lit
-  (R-NET-2). A beat at zero SHALL be left out, not shown as nothing.
+  earned; the crowns they hold; the event badges they earned (R-BADGE-6),
+  as their tickets, saying how many events they attended so far and asking
+  where we meet next time; and the network today with them lit (R-NET-2). A
+  beat at zero SHALL be left out, not shown as nothing.
 - **R-RECAP-3 (Compared with everyone)** — Each counted beat SHALL say how
   the member compares, as the share of active members whose count is lower,
   rounded down to `limits.recapPercentStep` percent ("more than 80% of
