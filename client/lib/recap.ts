@@ -1,7 +1,7 @@
-import type { Recap, RecapRow } from '../../src/services/recap'
+import type { Recap, RecapEvent, RecapRow } from '../../src/services/recap'
 import { findJson } from './request'
 
-export type { Recap, RecapRow }
+export type { Recap, RecapEvent, RecapRow }
 
 /** The member's own recap, or null while hosts have it closed (R-RECAP-1). */
 export async function fetchRecap(): Promise<Recap | null> {

@@ -37,6 +37,7 @@ const recap: Recap = {
     row('help', 0),
     row('connect', 1, { level: 'Co-conspirator', reached: 1 }),
   ],
+  events: [],
   timeline: { nodes: [], links: [], moons: [], own: null },
 }
 

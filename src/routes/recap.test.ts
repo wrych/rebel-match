@@ -33,6 +33,7 @@ function setup(
         joined: '2026-10-02',
         members: 1,
         rows: [],
+        events: [],
         timeline: { nodes: [], links: [], moons: [], own: null },
       })
     },

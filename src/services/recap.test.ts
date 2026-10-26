@@ -50,7 +50,17 @@ function recapOf(members: number): {
             view('connect', 2, 1),
             view('game', 7, 3),
           ],
-          events: [],
+          events: [
+            {
+              id: 'e1',
+              name: 'Stormed the Summit',
+              ticketLine: 'SUMMIT',
+              bigLine: '26',
+              hasLogo: true,
+              earnedAt: '2026-10-01T00:00:00.000Z',
+              new: true,
+            },
+          ],
         }),
     },
     standings: (row: CountedRow) => {
@@ -129,5 +139,19 @@ describe('the recap (R-RECAP-2..4)', () => {
     expect(mine.joined).toBe('2026-09-03')
     expect(mine.members).toBe(40)
     expect(mine.timeline.nodes.filter((node) => node.self)).toHaveLength(1)
+  })
+
+  it('brings the event badges they earned, as their tickets show them', async () => {
+    const { recap } = recapOf(40)
+
+    expect((await recap.mine('me')).events).toEqual([
+      {
+        id: 'e1',
+        name: 'Stormed the Summit',
+        ticketLine: 'SUMMIT',
+        bigLine: '26',
+        hasLogo: true,
+      },
+    ])
   })
 })

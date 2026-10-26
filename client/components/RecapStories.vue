@@ -18,7 +18,9 @@ import {
   type Card,
 } from '../recap/card'
 import { renderCard, saveCard, shareCard, type SharedVia } from '../recap/share'
-import { storyOf, type Beat } from '../recap/story'
+import { attended, storyOf, type Beat } from '../recap/story'
+import { logoUrl } from '../lib/invites'
+import EventTicket from './EventTicket.vue'
 import { layout } from '../network/layout'
 import { haloOf, type Halo } from '../recap/halo'
 import NetworkGraph from './NetworkGraph.vue'
@@ -39,6 +41,9 @@ const props = withDefaults(
   { ticker: () => frameTicker, scene: createThreeScene, render: renderCard },
 )
 const emit = defineEmits<{ shared: [via: SharedVia]; close: [] }>()
+
+// The tickets fanned on the events story, as the badges screen fans them.
+const TICKETS_SHOWN = 3
 
 // A press shorter than this is a tap; longer, it held the story (R-RECAP-1).
 const TAP_MS = 250
@@ -255,6 +260,22 @@ defineExpose({ index, go, beats })
             ♛ {{ crown }}
           </p>
           <p class="line">Nobody did more.</p>
+        </template>
+
+        <template v-else-if="beat.kind === 'events'">
+          <p class="kicker">On the road</p>
+          <span class="tickets" aria-hidden="true">
+            <EventTicket
+              v-for="badge in beat.badges.slice(0, TICKETS_SHOWN)"
+              :key="badge.id"
+              :ticket-line="badge.ticketLine"
+              :big-line="badge.bigLine"
+              :logo="badge.hasLogo ? logoUrl(badge) : null"
+              :size="120"
+            />
+          </span>
+          <h2 class="big">{{ attended(beat.badges.length) }}</h2>
+          <p class="line">Where do we meet next time?</p>
         </template>
 
         <template v-else-if="beat.kind === 'network'">
@@ -475,6 +496,15 @@ defineExpose({ index, go, beats })
 
 .crown {
   color: var(--accent);
+}
+
+.tickets {
+  display: flex;
+  margin: 0.4rem 0;
+}
+
+.tickets > * + * {
+  margin-left: -1rem;
 }
 
 .actions {

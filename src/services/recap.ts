@@ -3,6 +3,7 @@ import type { Standing } from '../badges/crowns.js'
 import type { NetworkTimeline } from '../network/timeline.js'
 import { shareBelow } from '../recap/compare.js'
 import type { BadgeService, RowView } from './badges.js'
+import type { EarnedEventBadge } from './event-badge-store.js'
 import type { NetworkService } from './network.js'
 
 /** One counted row of the recap: the member's count, the highest level they
@@ -19,11 +20,19 @@ export interface RecapRow {
 }
 
 /** The member's own recap (R-RECAP-2, R-RECAP-4): the day they joined, how
- * many are in the network, their rows, and the replay with them marked. */
+ * many are in the network, their rows and event badges, and the replay with
+ * them marked. */
+/** An event badge the member earned, as its ticket shows it (R-BADGE-6). */
+export type RecapEvent = Pick<
+  EarnedEventBadge,
+  'id' | 'name' | 'ticketLine' | 'bigLine' | 'hasLogo'
+>
+
 export interface Recap {
   joined: string | null
   members: number
   rows: RecapRow[]
+  events: RecapEvent[]
   timeline: NetworkTimeline
 }
 
@@ -77,6 +86,15 @@ export function createRecap(deps: {
         joined: timeline.nodes.find((node) => node.self)?.day ?? null,
         members,
         rows: rows.flat(),
+        events: overview.events.map(
+          ({ id, name, ticketLine, bigLine, hasLogo }) => ({
+            id,
+            name,
+            ticketLine,
+            bigLine,
+            hasLogo,
+          }),
+        ),
         timeline,
       }
     },

@@ -30,6 +30,15 @@ const recap: Recap = {
       below: null,
     },
   ],
+  events: [
+    {
+      id: 'e1',
+      name: 'Stormed the Summit',
+      ticketLine: 'SUMMIT',
+      bigLine: '26',
+      hasLogo: false,
+    },
+  ],
   timeline: {
     nodes: [
       { id: 0, at: 0, day: '2026-09-01', self: false },
@@ -146,10 +155,11 @@ describe('RecapStories (R-RECAP-1, R-RECAP-2)', () => {
       'joined',
       'row',
       'crowns',
+      'events',
       'network',
       'card',
     ])
-    expect(document.querySelectorAll('.segment')).toHaveLength(6)
+    expect(document.querySelectorAll('.segment')).toHaveLength(7)
     expect(story()).toContain('Your rebel record')
   })
 
@@ -207,7 +217,7 @@ describe('RecapStories (R-RECAP-1, R-RECAP-2)', () => {
   it('ends on the card, its surroundings turning, the image drawn once with them still, LinkedIn first (R-RECAP-5)', async () => {
     const { wrapper, rendered } = mountStories()
 
-    ;(wrapper.vm as unknown as { go(to: number): void }).go(5)
+    ;(wrapper.vm as unknown as { go(to: number): void }).go(6)
     await flushPromises()
 
     expect(rendered).toEqual([{ name: 'Ada Rebel', halo: true }])
@@ -227,12 +237,23 @@ describe('RecapStories (R-RECAP-1, R-RECAP-2)', () => {
       .spyOn(HTMLAnchorElement.prototype, 'click')
       .mockImplementation(() => undefined)
 
-    ;(wrapper.vm as unknown as { go(to: number): void }).go(5)
+    ;(wrapper.vm as unknown as { go(to: number): void }).go(6)
     await flushPromises()
     ;(document.querySelectorAll('.actions button')[1] as HTMLElement).click()
 
     expect(clicked).toHaveBeenCalled()
     expect(wrapper.emitted('shared')).toEqual([['image']])
+  })
+
+  it('tells the events attended, with their tickets (R-RECAP-2)', async () => {
+    const { wrapper } = mountStories()
+
+    ;(wrapper.vm as unknown as { go(to: number): void }).go(4)
+    await flushPromises()
+
+    expect(story()).toContain('You attended 1 event so far')
+    expect(story()).toContain('Where do we meet next time?')
+    expect(document.querySelectorAll('.tickets svg')).toHaveLength(1)
   })
 
   it('closes on the cross', () => {

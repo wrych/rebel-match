@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { Recap, RecapRow } from '../lib/recap'
-import { compared, storyOf } from './story'
+import { attended, compared, storyOf } from './story'
 
 const row = (
   name: RecapRow['row'],
@@ -21,6 +21,7 @@ const recap = (rows: RecapRow[], members = 3): Recap => ({
   joined: '2026-09-02',
   members,
   rows,
+  events: [],
   timeline: {
     nodes: Array.from({ length: members }, (_, id) => ({
       id,
@@ -113,6 +114,23 @@ describe('storyOf (R-RECAP-2)', () => {
     expect(
       storyOf(recap([row('boat', 2)])).some((beat) => beat.kind === 'crowns'),
     ).toBe(false)
+  })
+
+  it('tells the events attended after the crowns, and leaves them out without any', () => {
+    const ticket = {
+      id: 'e1',
+      name: 'Stormed the Summit',
+      ticketLine: 'SUMMIT',
+      bigLine: '26',
+      hasLogo: false,
+    }
+    const kinds = storyOf({ ...recap([]), events: [ticket] }).map(
+      (beat) => beat.kind,
+    )
+
+    expect(kinds).toEqual(['intro', 'joined', 'events', 'network', 'card'])
+    expect(attended(1)).toBe('You attended 1 event so far')
+    expect(attended(3)).toBe('You attended 3 events so far')
   })
 
   it('says nothing to compare without a share', () => {

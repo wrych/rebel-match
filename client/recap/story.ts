@@ -1,5 +1,5 @@
 import { rowNames } from '../../src/badges/rows'
-import type { Recap, RecapRow } from '../lib/recap'
+import type { Recap, RecapEvent, RecapRow } from '../lib/recap'
 
 /** One story of the recap (R-RECAP-2): the opening, the day the member
  * joined, each counted row above zero, the crowns they hold, the network
@@ -22,8 +22,13 @@ export type Beat =
       compared: string | null
     }
   | { kind: 'crowns'; names: string[] }
+  | { kind: 'events'; badges: RecapEvent[] }
   | { kind: 'network'; members: number }
   | { kind: 'card' }
+
+/** How many events the member attended so far, in words (R-RECAP-2). */
+export const attended = (n: number): string =>
+  `You attended ${String(n)} ${n === 1 ? 'event' : 'events'} so far`
 
 /** How a share of members below reads: "Ahead of 80% of rebels" (R-RECAP-3). */
 export const compared = (below: number | null): string | null =>
@@ -64,6 +69,9 @@ export function storyOf(recap: Recap): Beat[] {
     ...joinedOf(recap),
     ...recap.rows.filter((row) => row.count > 0).map(rowBeat),
     ...(crowns.length > 0 ? [{ kind: 'crowns' as const, names: crowns }] : []),
+    ...(recap.events.length > 0
+      ? [{ kind: 'events' as const, badges: recap.events }]
+      : []),
     ...(recap.members > 0
       ? [{ kind: 'network' as const, members: recap.members }]
       : []),

@@ -20,6 +20,7 @@ const recap: Recap = {
   joined: '2026-09-02',
   members: 1,
   rows: [],
+  events: [],
   timeline: { nodes: [], links: [], moons: [], own: null },
 }
 
