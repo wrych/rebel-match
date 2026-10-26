@@ -1901,7 +1901,9 @@ a title kept in one place. It reuses the replay (§8m) and the badges (§8k).
   hold, and the replay's timeline with them marked under its rules
   (R-NET-3, R-NET-13). It SHALL send no other member's name, id or count.
 - **R-RECAP-5 (The share card)** — The last story SHALL be a card the member
-  can share: their name, their figures, their highest levels and crowns, and
+  can share: their name, their figures, their highest levels and crowns,
+  each row marked as the badges screen marks it, a dot per level filled
+  for those earned and its crown filled when held (R-BADGE-7), and
   the Rebel Match mark, drawn in the browser as an image 1080 by 1350
   pixels. It SHALL show no other member's name and no challenge text. Behind
   the words it SHALL show the network as the replay lays it out, framed as

@@ -569,7 +569,8 @@ ends on a card to share (R-RECAP-1..9, ADR 0059, ADR 0060).
   included.
 - **Card** (`client/recap/card.ts`): drawn on a canvas at 1080 by 1350,
   LinkedIn's portrait size, in the app's colours and type: name, figures,
-  each with its level and crown, mark, and behind the words the member's
+  each with its level and crown and the badges screen's marks (a dot per
+  level, filled when earned, and the crown, filled when held), mark, and behind the words the member's
   surroundings (`client/recap/halo.ts`, pure): the replay's own layout of
   the timeline it was sent, flattened along the line from the member's dot
   to the network's centre, the dot at the bottom right and the centre
@@ -1573,9 +1574,9 @@ records are limited per member (`GAME_RECORDS_PER_MINUTE`).
 
 ### The summit recap (R-RECAP-1..9, ADR 0059, ADR 0060)
 
-| Method | Path         | Behavior                                                                                                                                                                                                                                                         |
-| ------ | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| GET    | `/api/recap` | `{joined, members, rows[], timeline}`: for each counted row my `count`, highest `level` name or null, `crown {name, held}` and `below` (the share of active members under me, or null); the replay's timeline with me marked. `404` while `limits.recap` is off. |
+| Method | Path         | Behavior                                                                                                                                                                                                                                                                                                      |
+| ------ | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/recap` | `{joined, members, rows[], timeline}`: for each counted row my `count`, highest `level` name or null, how many levels I `reached` of its `levels`, `crown {name, held}` and `below` (the share of active members under me, or null); the replay's timeline with me marked. `404` while `limits.recap` is off. |
 
 ### Admin (permission-guarded, not role-name-guarded — R-ROLE-3)
 
