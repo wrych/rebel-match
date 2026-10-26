@@ -1524,7 +1524,9 @@ invite link (R-INV-1).
   (R-CFG-1), 1, 5 and 10 by default, the same for each row. A request a member
   makes from the matches screen to someone who has been there asks for help
   and SHALL NOT count as help offered. A posted challenge counts while it
-  exists, archived or not; a connection counts each member once, however many
+  is shown: one its author withdrew (R-ASK-17) or a host hid (R-MOD-8) no
+  longer counts, though the levels it helped earn stay (R-BADGE-2); a
+  connection counts each member once, however many
   challenges it is over (R-CONN-10). A job counts as reached when the member's
   highest level reached is its first day (R-GAME-16): Team Lead with the first
   game.
