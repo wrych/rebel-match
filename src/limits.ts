@@ -185,6 +185,13 @@ const limitSpecs = {
     default: 6,
     changeable: { min: 2, max: 30 },
   },
+  // The two network stories play their animation in the first half and
+  // hold its end for the second, so it can be read (R-RECAP-1).
+  recapNetworkStorySeconds: {
+    env: 'RECAP_NETWORK_STORY_SECONDS',
+    default: 10,
+    changeable: { min: 4, max: 60 },
+  },
   // Comparisons round down to this many percent (R-RECAP-3).
   recapPercentStep: { env: 'RECAP_PERCENT_STEP', default: 5 },
   // Below this many active members no comparison is made: it could point at

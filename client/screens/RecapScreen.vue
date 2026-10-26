@@ -15,6 +15,7 @@ const router = useRouter()
 const recap = ref<Recap | null>(null)
 const name = ref('')
 const storyMs = ref(0)
+const networkStoryMs = ref(0)
 const problem = ref<string | null>(null)
 const site = window.location.origin
 
@@ -34,6 +35,8 @@ onMounted(async () => {
     }
     name.value = me?.name ?? 'Rebel'
     storyMs.value = config.limits.recapStorySeconds * MS_PER_SECOND
+    networkStoryMs.value =
+      config.limits.recapNetworkStorySeconds * MS_PER_SECOND
     recap.value = found
     reportEvent({ event: 'recap_opened', props: {} })
   } catch {
@@ -61,6 +64,7 @@ async function close(): Promise<void> {
       :recap="recap"
       :name="name"
       :story-ms="storyMs"
+      :network-story-ms="networkStoryMs"
       :site="site"
       @shared="shared"
       @close="close"

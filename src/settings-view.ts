@@ -1064,6 +1064,14 @@ const catalogue: Group[] = [
         unit: SECONDS,
       },
       {
+        name: 'Each network story stays for',
+        explanation:
+          'The two stories that replay the network: the animation takes the ' +
+          'first half, and the second holds where it ends, to be read.',
+        key: 'limits.recapNetworkStorySeconds',
+        unit: SECONDS,
+      },
+      {
         name: 'Members before comparing',
         explanation:
           'Below this many active members the recap compares nobody with ' +

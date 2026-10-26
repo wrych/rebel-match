@@ -29,6 +29,8 @@ const props = withDefaults(
     recap: Recap
     name: string
     storyMs: number
+    /** How long each of the two network stories lasts. */
+    networkStoryMs: number
     site: string
     ticker?: Ticker
     scene?: SceneFactory
@@ -40,8 +42,9 @@ const emit = defineEmits<{ shared: [via: SharedVia]; close: [] }>()
 
 // A press shorter than this is a tap; longer, it held the story (R-RECAP-1).
 const TAP_MS = 250
-// The share of a story the replay takes to reach the member's own dot.
-const ARRIVAL_SHARE = 0.75
+// The share of a network story its replay takes; the rest holds its end,
+// to be read (R-RECAP-1).
+const ARRIVAL_SHARE = 0.5
 
 // The shared image's view of the member's surroundings; the story turns
 // it from here (R-RECAP-5).
@@ -65,10 +68,14 @@ let pressedAt: number | null = null
 
 const beat = computed<Beat>(() => beats[index.value] ?? { kind: 'card' })
 const last = computed(() => index.value === beats.length - 1)
+const isNetwork = (each: Beat): boolean =>
+  each.kind === 'joined' || each.kind === 'network'
+const lengthOf = (each: Beat): number =>
+  isNetwork(each) ? props.networkStoryMs : props.storyMs
 const arrival = computed(() =>
   beat.value.kind === 'joined'
-    ? (props.storyMs * ARRIVAL_SHARE) / Math.max(beat.value.at, 0.05)
-    : props.storyMs * ARRIVAL_SHARE,
+    ? (props.networkStoryMs * ARRIVAL_SHARE) / Math.max(beat.value.at, 0.05)
+    : props.networkStoryMs * ARRIVAL_SHARE,
 )
 
 function go(to: number): void {
@@ -120,14 +127,12 @@ function save(): void {
   if (cardFile.value !== null) emit('shared', saveCard(cardFile.value))
 }
 
-watch(index, () => {
-  player?.restart()
-  if (beat.value.kind === 'card') void prepareCard()
-})
-
-onMounted(() => {
+// Each story runs for its own length, so a story gets a player of its own.
+function start(): void {
+  player?.stop()
+  progress.value = 0
   player = createPlayer({
-    durationMs: props.storyMs,
+    durationMs: lengthOf(beat.value),
     ticker: props.ticker,
     onProgress: (at) => {
       progress.value = at
@@ -135,7 +140,14 @@ onMounted(() => {
     onEnd,
   })
   player.play()
+}
+
+watch(index, () => {
+  start()
+  if (beat.value.kind === 'card') void prepareCard()
 })
+
+onMounted(start)
 
 onBeforeUnmount(() => {
   player?.stop()

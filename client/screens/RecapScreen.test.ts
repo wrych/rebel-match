@@ -29,6 +29,7 @@ const StoriesStub = defineComponent({
     recap: { type: Object, required: true },
     name: { type: String, required: true },
     storyMs: { type: Number, required: true },
+    networkStoryMs: { type: Number, required: true },
     site: { type: String, required: true },
   },
   emits: ['shared', 'close'],
@@ -43,7 +44,10 @@ function serve(answer: Answer): ReturnType<typeof vi.fn> {
       return Promise.resolve({
         ok: true,
         status: 200,
-        json: () => Promise.resolve({ limits: { recapStorySeconds: 6 } }),
+        json: () =>
+          Promise.resolve({
+            limits: { recapStorySeconds: 6, recapNetworkStorySeconds: 10 },
+          }),
       })
     if (url === '/api/events')
       return Promise.resolve({ ok: true, status: 204, init })
@@ -88,6 +92,7 @@ describe('RecapScreen (R-RECAP-1, R-RECAP-7)', () => {
     expect(stories.props('recap')).toEqual(recap)
     expect(stories.props('name')).toBe('Ada Lovelace')
     expect(stories.props('storyMs')).toBe(6000)
+    expect(stories.props('networkStoryMs')).toBe(10_000)
     expect(sentEvents(fetchMock)).toEqual([
       { event: 'recap_opened', props: {} },
     ])

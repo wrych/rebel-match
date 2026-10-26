@@ -77,6 +77,7 @@ const PreviewStub = defineComponent({
 })
 
 const STORY_MS = 1000
+const NETWORK_MS = 3000
 let wrapper: VueWrapper | null = null
 
 function mountStories(ticker = fakeTicker()): {
@@ -92,6 +93,7 @@ function mountStories(ticker = fakeTicker()): {
       recap,
       name: 'Ada Rebel',
       storyMs: STORY_MS,
+      networkStoryMs: NETWORK_MS,
       site: 'https://rebel.test',
       ticker,
       scene,
@@ -154,6 +156,22 @@ describe('RecapStories (R-RECAP-1, R-RECAP-2)', () => {
     await flushPromises()
 
     expect(story()).toContain('Rebel no. 2')
+  })
+
+  it('keeps a network story up for its own, longer time, to read its end', async () => {
+    const { ticker } = mountStories()
+
+    ticker.advance(STORY_MS)
+    await flushPromises()
+    expect(story()).toContain('Rebel no. 2')
+
+    ticker.advance(NETWORK_MS - 1)
+    await flushPromises()
+    expect(story()).toContain('Rebel no. 2')
+
+    ticker.advance(1)
+    await flushPromises()
+    expect(story()).toContain('3 challenges posted')
   })
 
   it('goes forward on a tap at the right and back at the left', async () => {
