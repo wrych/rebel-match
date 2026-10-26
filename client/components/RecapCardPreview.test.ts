@@ -9,7 +9,14 @@ const card: Card = {
   title: 'Your rebel record',
   name: 'Ada Rebel',
   figures: [
-    { count: 3, counts: 'challenges posted', level: null, crown: null },
+    {
+      count: 3,
+      counts: 'challenges posted',
+      level: null,
+      crown: null,
+      reached: 0,
+      levels: 3,
+    },
   ],
 }
 

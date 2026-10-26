@@ -14,6 +14,11 @@ export type Beat =
       count: number
       counts: string
       level: string | null
+      /** For the badges screen's marks: levels reached, of how many, and
+       * whether the row's crown is held. */
+      reached: number
+      levels: number
+      crowned: boolean
       compared: string | null
     }
   | { kind: 'crowns'; names: string[] }
@@ -42,6 +47,9 @@ const rowBeat = (row: RecapRow): Beat => ({
   count: row.count,
   counts: countsOf(row),
   level: row.level,
+  reached: row.reached,
+  levels: row.levels,
+  crowned: row.crown.held,
   compared: compared(row.below),
 })
 

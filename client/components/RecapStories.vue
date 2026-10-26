@@ -222,7 +222,30 @@ defineExpose({ index, go, beats })
           <p class="kicker">{{ beat.title }}</p>
           <p class="huge">{{ beat.count }}</p>
           <p class="line">{{ beat.counts }}</p>
-          <p v-if="beat.level" class="tag">{{ beat.level }}</p>
+          <p
+            v-if="beat.level"
+            class="tag"
+            :aria-label="`${beat.level}, level ${beat.reached} of ${beat.levels}`"
+          >
+            <span class="marks" aria-hidden="true">
+              <span
+                v-for="level in beat.levels"
+                :key="level"
+                class="mark-dot"
+                :class="{ on: level <= beat.reached }"
+              />
+              <svg
+                class="mark-crown"
+                :class="{ on: beat.crowned }"
+                width="16"
+                height="13"
+                viewBox="0 0 24 20"
+              >
+                <path d="M3 18 L2 4 L8 9 L12 2 L16 9 L22 4 L21 18 Z" />
+              </svg>
+            </span>
+            {{ beat.level }}
+          </p>
           <p v-if="beat.compared" class="compare">{{ beat.compared }}</p>
         </template>
 
@@ -409,6 +432,39 @@ defineExpose({ index, go, beats })
   font-family: var(--font-mono);
   font-size: 0.85rem;
   text-transform: uppercase;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.marks {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.mark-dot {
+  width: 9px;
+  height: 9px;
+  border: 1.5px solid var(--muted);
+  border-radius: 50%;
+}
+
+.mark-dot.on {
+  border-color: var(--ink);
+  background: var(--accent);
+}
+
+.mark-crown path {
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 2.2;
+  stroke-linejoin: round;
+}
+
+.mark-crown.on path {
+  fill: var(--accent);
+  stroke: var(--ink);
 }
 
 .compare {

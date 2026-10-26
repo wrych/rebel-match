@@ -18,6 +18,8 @@ const row = (
   row: name,
   count,
   level: null,
+  reached: 0,
+  levels: 3,
   crown: { name: `${name} crown`, held: false },
   below: 90,
   ...extra,
@@ -29,10 +31,11 @@ const recap: Recap = {
   rows: [
     row('speak', 3, {
       level: 'Agitator',
+      reached: 2,
       crown: { name: 'Ringleader', held: true },
     }),
     row('help', 0),
-    row('connect', 1, { level: 'Co-conspirator' }),
+    row('connect', 1, { level: 'Co-conspirator', reached: 1 }),
   ],
   timeline: { nodes: [], links: [], moons: [], own: null },
 }
@@ -87,18 +90,22 @@ describe('the share card (R-RECAP-5, R-RECAP-6)', () => {
           counts: 'challenges posted',
           level: 'Agitator',
           crown: 'Ringleader',
+          reached: 2,
+          levels: 3,
         },
         {
           count: 1,
           counts: 'person connected',
           level: 'Co-conspirator',
           crown: null,
+          reached: 1,
+          levels: 3,
         },
       ],
     })
   })
 
-  it('draws only what the card carries', () => {
+  it('draws only what the card carries, each row with a dot per level', () => {
     const { pen, texts } = recorder()
 
     paintCard(pen, cardOf(recap, 'Ada Rebel'), palette, 'rebel.test', null)
@@ -108,12 +115,48 @@ describe('the share card (R-RECAP-5, R-RECAP-6)', () => {
       'Ada Rebel',
       '3',
       'challenges posted',
-      'AGITATOR · ♛ RINGLEADER',
+      '·',
+      '·',
+      '·',
+      'AGITATOR · RINGLEADER',
       '1',
       'person connected',
+      '·',
+      '·',
+      '·',
       'CO-CONSPIRATOR',
       'REBEL MATCH',
       'rebel.test',
+    ])
+  })
+
+  it('fills the dots reached and the crown held, as the badges screen does (R-RECAP-5)', () => {
+    const { pen } = recorder()
+    const fills: string[] = []
+    const watched = new Proxy(pen, {
+      get(target, key) {
+        if (key === 'fill')
+          return () => fills.push(String(Reflect.get(target, 'fillStyle')))
+        return Reflect.get(target, key) as unknown
+      },
+    })
+
+    paintCard(watched, cardOf(recap, 'Ada Rebel'), palette, 'rebel.test', null)
+
+    const accent = palette.accent
+    const marks = fills.filter(
+      (fill) => fill === accent || fill === palette.paper,
+    )
+    // Speak up: two dots of three and the crown; Connect: one and no crown.
+    expect(marks.slice(0, 8).map((fill) => fill === accent)).toEqual([
+      true,
+      true,
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
     ])
   })
 
@@ -137,8 +180,7 @@ describe('the share card (R-RECAP-5, R-RECAP-6)', () => {
     )
 
     const firstWord = texts.indexOf(RECAP_TITLE.toUpperCase())
-    expect(texts.slice(0, firstWord).length).toBeGreaterThan(2)
-    expect(texts.slice(firstWord)).not.toContain('·')
+    expect(texts.slice(0, firstWord)).toEqual(['·', '·', '·', '·', '·'])
   })
 
   it('shrinks a long name to fit', () => {

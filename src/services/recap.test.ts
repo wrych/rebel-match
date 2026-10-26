@@ -96,6 +96,8 @@ describe('the recap (R-RECAP-2..4)', () => {
       row: 'speak',
       count: 4,
       level: 'Second',
+      reached: 2,
+      levels: 3,
       crown: { name: 'speak crown', held: true },
       below: 95,
     })

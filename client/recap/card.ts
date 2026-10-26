@@ -1,7 +1,7 @@
 import { RECAP_TITLE } from '../../src/recap/title'
 import { MARK_APART, MARK_PLACE, MARK_R, MARK_SIZE } from '../lib/mark'
 import type { Recap } from '../lib/recap'
-import { paintHalo, type Halo, type HaloFrame, type HaloPen } from './halo'
+import { mix, paintHalo, type Halo, type HaloFrame, type HaloPen } from './halo'
 import { countsOf } from './story'
 
 export { RECAP_TITLE }
@@ -17,6 +17,9 @@ export interface Card {
     counts: string
     level: string | null
     crown: string | null
+    /** The levels reached, of how many, for the badges screen's marks. */
+    reached: number
+    levels: number
   }[]
 }
 
@@ -31,6 +34,8 @@ export function cardOf(recap: Recap, name: string): Card {
         counts: countsOf(row),
         level: row.level,
         crown: row.crown.held ? row.crown.name : null,
+        reached: row.reached,
+        levels: row.levels,
       })),
   }
 }
@@ -154,6 +159,58 @@ function paintHead(pen: Pen, card: Card, palette: CardPalette): void {
   pen.fillText(card.name, margin, layout.nameTop + margin)
 }
 
+/** The badges screen's marks, at the card's size: a dot per level, filled
+ * when reached, then the crown, filled when held (R-BADGE-7). */
+const marks = { dot: 10, gap: 30, crown: 32, after: 22, line: 3 }
+// How far above the line's baseline the marks' middle sits, as a share of
+// its type size.
+const MARK_RISE = 0.35
+// The crown's outline, on a 24 by 20 grid, as the badges screen draws it.
+const CROWN = [
+  [3, 18],
+  [2, 4],
+  [8, 9],
+  [12, 2],
+  [16, 9],
+  [22, 4],
+  [21, 18],
+] as const
+const CROWN_GRID = { width: 24, height: 20 }
+
+function markStyle(pen: Pen, palette: CardPalette, on: boolean): void {
+  pen.lineWidth = marks.line
+  pen.strokeStyle = on ? palette.ink : mix(palette.muted, palette.paper, 0.4)
+  pen.fillStyle = on ? palette.accent : palette.paper
+}
+
+// Draws the marks with their middle at `at`; returns where the words go.
+function paintMarks(
+  pen: Pen,
+  figure: Card['figures'][number],
+  palette: CardPalette,
+  at: { x: number; y: number },
+): number {
+  let x = at.x + marks.dot
+  for (let level = 1; level <= figure.levels; level += 1) {
+    markStyle(pen, palette, level <= figure.reached)
+    pen.beginPath()
+    pen.arc(x, at.y, marks.dot, 0, Math.PI * 2)
+    pen.fill()
+    pen.stroke()
+    x += marks.gap
+  }
+  const scale = marks.crown / CROWN_GRID.width
+  const left = x - marks.dot
+  const top = at.y - (CROWN_GRID.height * scale) / 2
+  markStyle(pen, palette, figure.crown !== null)
+  pen.beginPath()
+  for (const [px, py] of [...CROWN, CROWN[0]])
+    pen.lineTo(left + px * scale, top + py * scale)
+  pen.fill()
+  pen.stroke()
+  return left + marks.crown + marks.after
+}
+
 function paintFigures(pen: Pen, card: Card, palette: CardPalette): void {
   const { margin } = layout
   let top = layout.figuresTop + margin
@@ -165,11 +222,15 @@ function paintFigures(pen: Pen, card: Card, palette: CardPalette): void {
     pen.font = `700 ${String(layout.labelSize)}px ${palette.body}`
     const x = margin + layout.countWidth
     pen.fillText(figure.counts, x, top + layout.countSize / 2)
-    const marks = [figure.level, figure.crown && `♛ ${figure.crown}`]
-    const line = marks.filter((mark) => mark !== null).join(' · ')
+    const after = paintMarks(pen, figure, palette, {
+      x,
+      y: top + layout.countSize - layout.levelSize * MARK_RISE,
+    })
+    const names = [figure.level, figure.crown]
+    const line = names.filter((name) => name !== null).join(' · ')
     pen.fillStyle = figure.crown === null ? palette.muted : palette.accent
     pen.font = `${String(layout.levelSize)}px ${palette.mono}`
-    pen.fillText(line.toUpperCase(), x, top + layout.countSize)
+    pen.fillText(line.toUpperCase(), after, top + layout.countSize)
     top += layout.figureHeight
   }
 }

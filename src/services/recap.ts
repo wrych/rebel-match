@@ -11,6 +11,9 @@ export interface RecapRow {
   row: CountedRow
   count: number
   level: string | null
+  /** How many of the row's levels the member reached, of how many. */
+  reached: number
+  levels: number
   crown: { name: string; held: boolean }
   below: number | null
 }
@@ -52,6 +55,8 @@ export function createRecap(deps: {
         row: view.row,
         count: view.count,
         level: highestLevel(view),
+        reached: view.levels.filter((level) => level.earnedAt !== null).length,
+        levels: view.levels.length,
         crown: { name: view.crown.name, held: view.crown.held },
         below: shareBelow(view.count, counts, members, deps.rule()),
       },

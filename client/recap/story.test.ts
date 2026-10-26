@@ -10,6 +10,8 @@ const row = (
   row: name,
   count,
   level: null,
+  reached: 0,
+  levels: 3,
   crown: { name: `${name} crown`, held: false },
   below: null,
   ...extra,
@@ -76,6 +78,9 @@ describe('storyOf (R-RECAP-2)', () => {
         count: 1,
         counts: 'offer of help',
         level: null,
+        reached: 0,
+        levels: 3,
+        crowned: false,
         compared: null,
       },
       {
@@ -85,6 +90,9 @@ describe('storyOf (R-RECAP-2)', () => {
         count: 4,
         counts: 'challenges posted',
         level: 'Agitator',
+        reached: 0,
+        levels: 3,
+        crowned: false,
         compared: 'Ahead of 80% of rebels',
       },
     ])
