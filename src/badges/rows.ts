@@ -33,7 +33,7 @@ export const rowNames: Readonly<Record<BadgeRow, RowNames>> = {
     title: 'Speak up',
     counts: ['challenge posted', 'challenges posted'],
     explains:
-      'Each challenge you post counts once its topic is set. Taking one down later does not take a badge back.',
+      'Each challenge you post counts once its topic is set, while it is shown. Taking one down later does not take a badge back.',
     levels: ['Spark', 'Agitator', 'Firebrand'],
     crown: 'Ringleader',
   },
