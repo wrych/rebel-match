@@ -19,15 +19,15 @@ export interface RecapRow {
   below: number | null
 }
 
-/** The member's own recap (R-RECAP-2, R-RECAP-4): the day they joined, how
- * many are in the network, their rows and event badges, and the replay with
- * them marked. */
 /** An event badge the member earned, as its ticket shows it (R-BADGE-6). */
 export type RecapEvent = Pick<
   EarnedEventBadge,
   'id' | 'name' | 'ticketLine' | 'bigLine' | 'hasLogo'
 >
 
+/** The member's own recap (R-RECAP-2, R-RECAP-4): the day they joined, how
+ * many are in the network, their rows and event badges, and the replay with
+ * them marked. */
 export interface Recap {
   joined: string | null
   members: number
