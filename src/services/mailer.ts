@@ -10,6 +10,7 @@ export type OutboxKind =
   | 'notification_digest'
   | 'trend_challenge'
   | 'badge'
+  | 'recap'
 
 export type DeliveryStatus = 'sent' | 'suppressed' | 'failed'
 

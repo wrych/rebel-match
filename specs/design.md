@@ -103,6 +103,9 @@ thresholds have sane defaults in the file and may be overridden by env.
 | `notifications.workerIntervalSeconds` | `60`                          | R-NOTE-7                  |
 | `notifications.maxAttempts`           | `5`                           | R-NOTE-10                 |
 | `limits.whitelistBatchMax`            | `1000`                        | R-AUTH-1                  |
+| `limits.recapOpensAt`                 | `0` (none)                    | R-RECAP-8                 |
+| `limits.recapMinShare`                | `50`                          | R-RECAP-3                 |
+| `limits.recapNetworkStorySeconds`     | `10`                          | R-RECAP-1                 |
 | `limits.savedTickMs`                  | `2500`                        | R-PROF-1                  |
 | `limits.scrollHintShare`              | `0.4`                         | R-ONB-10                  |
 | `limits.profileDraftRetentionDays`    | `30`                          | R-ONB-15                  |
@@ -526,6 +529,58 @@ everything: the picture is a pure function of the second reached.
   Without a file a development deployment uses a fictional cast over the dev
   seed; any other deployment names nobody, and cues for missing people pass
   over the network instead.
+
+### The summit recap
+
+S43 tells a member their own time in the movement as portrait stories, and
+ends on a card to share (R-RECAP-1..9, ADR 0059, ADR 0060).
+
+- **Figures** (`src/services/recap.ts`): the badges' own counts for the
+  four counted rows (R-BADGE-1), the highest level earned in each, the
+  crowns held, and for each count the share of active members below it,
+  from the standings the crowns are decided on. A share is rounded down to
+  `limits.recapPercentStep` (5), and left out below
+  `limits.recapMinMembers` (20) active members or below
+  `limits.recapMinShare` (50) percent. The replay's timeline comes with
+  the member marked.
+- **Opening** (`src/recap/open.ts`, pure): the recap is open while
+  `limits.recap` is 1, or once `limits.recapOpensAt` has passed. The time is
+  stored as whole minutes since 1970 in UTC, 0 for none, so it lives among
+  the numeric settings; the settings screen edits it as a date and time in
+  the host's own time zone (R-RECAP-8). The route, the menu and the
+  announcement all ask the same function.
+- **Announcement** (`src/services/recap-announce.ts`): checked at the start
+  of every run of the notification worker, so the same run mails it. The
+  first time it finds the recap open it writes, in one transaction, a
+  `recap` notification for every active, onboarded member and the row of
+  `recap_announcement`, so it never announces twice, whatever the switch
+  does later (R-RECAP-9). Its recipient is the member it is about. The
+  member's choice is stored as a cadence: Yes is `immediately`, No is
+  `in_app`; no other is accepted.
+- **Story** (`client/recap/story.ts`, pure): the figures become the beats,
+  a zero beat dropped: joined, challenges, same boat, offers, connections,
+  crowns, events, the network today, the card.
+- **Player** (`RecapStories.vue`): full screen in portrait, a bar per
+  story, the right of the screen forward and the left back, holding to
+  pause, each story `limits.recapStorySeconds` (6). The two network
+  stories are the replay's graph without its controls, each
+  `limits.recapNetworkStorySeconds` (10): the replay plays in the first
+  half, and the second holds its end, the camera's turn to the member
+  included.
+- **Card** (`client/recap/card.ts`): drawn on a canvas at 1080 by 1350,
+  LinkedIn's portrait size, in the app's colours and type: name, figures,
+  each with its level and crown and the badges screen's marks (a dot per
+  level, filled when earned, and the crown, filled when held), mark, and behind the words the member's
+  surroundings (`client/recap/halo.ts`, pure): the replay's own layout of
+  the timeline it was sent, flattened along the line from the member's dot
+  to the network's centre, the dot at the bottom right and the centre
+  towards the card's middle and a little past it, each other dot and line
+  faded towards the paper and to nothing by its distance from the member.
+  The card's story draws it live, turning about that line. The title members see is one
+  constant, `RECAP_TITLE` in `src/recap/title.ts`. Sharing hands it and a written post to the phone's
+  share sheet where it takes files; elsewhere it saves the image and opens
+  `https://www.linkedin.com/feed/?shareActive=true&text=…` with the post,
+  which the member completes by attaching it.
 
 ### Badges
 
@@ -1085,7 +1140,8 @@ CREATE TABLE notifications (
   id               CHAR(36)    NOT NULL PRIMARY KEY,
   recipient_id     CHAR(36)    NOT NULL,
   type             ENUM('connection_request','new_connection',
-                        'trend_challenge','applicant','badge') NOT NULL,
+                        'trend_challenge','applicant','badge','report',
+                        'recap') NOT NULL,
   about_member_id  CHAR(36)    NULL,               -- requester, target, author or applicant
   connection_id    CHAR(36)    NULL,
   challenge_id     CHAR(36)    NULL,
@@ -1131,7 +1187,14 @@ later. Setting a type to _Off_ does the same to its rows not yet seen
 (R-NOTE-3).
 No `notification_settings` row means the type's default (R-NOTE-2); choosing
 the default again deletes the row. `every_15_minutes` is accepted for
-`applicant` only.
+`applicant` only, and `recap` accepts only `immediately` (Yes) and `in_app`
+(No) (R-RECAP-9).
+
+```sql
+CREATE TABLE recap_announcement (
+  done_at DATETIME NOT NULL PRIMARY KEY  -- the recap was announced (R-RECAP-9)
+);
+```
 
 The cascades erase a row with its recipient, the member it is about, and the
 request or challenge it refers to (R-NOTE-11, R-NFR-7). A `badge` row names the
@@ -1509,6 +1572,12 @@ records are limited per member (`GAME_RECORDS_PER_MINUTE`).
 | ------ | ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | GET    | `/api/admin/presentation` | `{timeline, cast[]}`: the replay's timeline with no viewer (R-NET-3) and each cast member as `{handle, name, photo, groups, node}`, `node` their position or null, no email. `network:present`. |
 
+### The summit recap (R-RECAP-1..9, ADR 0059, ADR 0060)
+
+| Method | Path         | Behavior                                                                                                                                                                                                                                                                                                                                                                            |
+| ------ | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/recap` | `{joined, members, rows[], events[], timeline}`: my event badges `{id, name, ticketLine, bigLine, hasLogo}`; for each counted row my `count`, highest `level` name or null, how many levels I `reached` of its `levels`, `crown {name, held}` and `below` (the share of active members under me, or null); the replay's timeline with me marked. `404` while `limits.recap` is off. |
+
 ### Admin (permission-guarded, not role-name-guarded — R-ROLE-3)
 
 | Method | Path                                 | Behavior                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
@@ -1619,6 +1688,7 @@ sets it again after every navigation, as _Rebel Match | Screen_.
 | S40 | **A reported member** — the member with a link to S26; each reported item with its text, state and reports, and _Hide_ / _Unhide_ and _Dismiss_; _Ban member…_ or _Lift ban_; the history of actions (R-MOD-7..9)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | `/admin/moderation/:memberId`                         |
 | S41 | **The network** — the network growing in 3D, every member a point and every accepted connection a line, every challenge a moon circling its author, nobody named; in the corner the day and how many members, connections and challenges; under it a timeline marking each join and connection with where the replay is and its day, Pause / Play and Replay; drag, pinch or scroll to take the view, _Recentre view_ to hand it back; with fewer connections than `limits.networkMinOwnConnections`, none of the member's own and a starred footnote saying why (R-NET-13); at the end the member's own point lit up, with a label pointing at it: _That's you_, their name, connections and challenges, the day they joined in small type (R-NET-14); under the scene a key drawing a dot, a line, a moon and the accent colour (R-NET-15) (R-NET-1..9) | `/network`                                            |
 | S42 | **Network presentation** — a full-screen film of the network on a dark background, no header or tab bar: an invented beginning with the founders, the real network growing, named cast members with their photos, the figures since launch, an invented zoom past today and a closing thank-you; words in large display type; controls hidden while playing (R-PRES-1..7)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `/admin/presentation`                                 |
+| S43 | **The summit recap** — the member's own time in the movement as full-screen portrait stories with a bar each along the top: joined, challenges, same boat, offers, connections, each with its level and how they compare, crowns, the network with them lit, and a card to share, _Share on LinkedIn_ first, _Save image_ second (R-RECAP-1..7)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | `/recap`                                              |
 
 Remaining overlays, deliberately: the "really decline this request?" confirm, the
 "link sent" / "copied" toasts, and the feedback action (a `mailto:`, not a
@@ -1939,6 +2009,8 @@ Alternatives considered (kept only as fallbacks):
   | `trend_opened`                 | `trend_id`                                       |
   | `trend_follow_changed`         | `trend_id`, `followed: bool`                     |
   | `content_reported`             | `kind: challenge\|note`, `reason` (R-MOD-12)     |
+  | `recap_opened`                 | — (R-RECAP-7)                                    |
+  | `recap_shared`                 | `via: share_sheet\|linkedin\|image` (R-RECAP-7)  |
   | `screen_viewed`                | `screen` (its route name, never its path)        |
 
 - `screen_viewed` is sent once for each screen a navigation settles on, the

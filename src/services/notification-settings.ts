@@ -45,14 +45,15 @@ export interface NotificationSettingsService {
 }
 
 /** What a member can receive, so may choose for: everyone can follow a
- * trend and earn badges; applicant and report notices go to who may review
- * them (R-NOTE-1, R-MOD-5). */
+ * trend, earn badges and get the recap; applicant and report notices go to
+ * who may review them (R-NOTE-1, R-MOD-5, R-RECAP-9). */
 export function receivable(permissions: readonly string[]): ChoosableType[] {
   return [
     'connection_request',
     'new_connection',
     'trend_challenge',
     'badge',
+    'recap',
     ...(permissions.includes('applicant:review')
       ? (['applicant'] as const)
       : []),

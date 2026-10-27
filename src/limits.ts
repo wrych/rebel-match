@@ -164,6 +164,50 @@ const limitSpecs = {
     zeroAllowed: true,
     changeable: { min: 0, max: 100 },
   },
+  // Hosts open each member's summit recap when the summit ends (R-RECAP-1).
+  recap: {
+    env: 'RECAP',
+    default: 0,
+    zeroAllowed: true,
+    changeable: { min: 0, max: 1 },
+  },
+  // When the recap opens by itself, in whole minutes since 1970 in UTC; 0
+  // for no time set (R-RECAP-8).
+  recapOpensAt: {
+    env: 'RECAP_OPENS_AT',
+    default: 0,
+    zeroAllowed: true,
+    changeable: { min: 0, max: 99_999_999 },
+  },
+  // How long each story of the recap stays before moving on (R-RECAP-1).
+  recapStorySeconds: {
+    env: 'RECAP_STORY_SECONDS',
+    default: 6,
+    changeable: { min: 2, max: 30 },
+  },
+  // The two network stories play their animation in the first half and
+  // hold its end for the second, so it can be read (R-RECAP-1).
+  recapNetworkStorySeconds: {
+    env: 'RECAP_NETWORK_STORY_SECONDS',
+    default: 10,
+    changeable: { min: 4, max: 60 },
+  },
+  // Comparisons round down to this many percent (R-RECAP-3).
+  recapPercentStep: { env: 'RECAP_PERCENT_STEP', default: 5 },
+  // Below this many active members no comparison is made: it could point at
+  // someone (R-RECAP-3).
+  recapMinMembers: {
+    env: 'RECAP_MIN_MEMBERS',
+    default: 20,
+    changeable: { min: 2, max: 100_000 },
+  },
+  // A comparison below this share of members reads as a put-down, so it is
+  // left out (R-RECAP-3).
+  recapMinShare: {
+    env: 'RECAP_MIN_SHARE',
+    default: 50,
+    changeable: { min: 1, max: 99 },
+  },
   // Reports name who made them, so handled ones go after this (R-MOD-11).
   reportRetentionDays: { env: 'REPORT_RETENTION_DAYS', default: 180 },
   // The largest SVG logo an event badge takes, kept well inside the 64 kB a

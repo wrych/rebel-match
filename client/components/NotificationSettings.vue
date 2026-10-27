@@ -85,7 +85,7 @@ async function choose(
           :key="cadence"
           :value="cadence"
         >
-          {{ cadenceLabel(cadence, setting.defaultCadence) }}
+          {{ cadenceLabel(cadence, setting.defaultCadence, setting.type) }}
         </option>
       </select>
     </div>

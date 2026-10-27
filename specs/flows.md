@@ -41,6 +41,7 @@ Conventions:
                    ├──►  F17 Notifications
                    ├──►  F19 Badges
                    ├──►  F22 The network replay (while hosts have it on)
+                   ├──►  F24 The summit recap (while hosts have it on)
                    └──►  F12 Feedback
 
    Happy mode, onboarded: F18 9toRevolution (impressum → game → leaderboard)
@@ -899,3 +900,21 @@ reported member, S26 A member's page.
 4. Without a cast file, a production deployment names nobody and the film
    stays on the whole network where it would have visited someone
    (R-PRES-5).
+
+---
+
+## F24 — The summit recap
+
+1. While hosts have `limits.recap` on, the menu offers **Your rebel
+   track**; it opens **S43** full screen (R-RECAP-1).
+2. The stories play one after another, each moving on by itself: the dot of
+   the day they joined, then what they did, each with a level earned and how
+   they compare ("more than 80% of rebels"), the crowns they hold, and the
+   network today with them lit. A beat they have nothing for is skipped
+   (R-RECAP-2, R-RECAP-3).
+3. A tap on the right skips ahead, on the left goes back, a hold pauses
+   (R-RECAP-1).
+4. The last story is their card. _Share on LinkedIn_ opens the phone's share
+   sheet with the image and a post; on a laptop it saves the image and opens
+   LinkedIn's composer with the post written. _Save image_ only saves it.
+   Nothing names anyone else (R-RECAP-5, R-RECAP-6).

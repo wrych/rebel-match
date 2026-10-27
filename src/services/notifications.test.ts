@@ -139,6 +139,17 @@ describe('createNotifications', () => {
     ])
   })
 
+  it('leads the recap’s notice to the recap (R-RECAP-9)', async () => {
+    const { store } = recordingStore([
+      row({ id: 'r', type: 'recap', connectionId: null }),
+    ])
+    const notes = createNotifications({ store, pageSize: () => 20 })
+
+    const [only] = await notes.list('bob', null)
+
+    expect([only?.kind, only?.path]).toEqual(['recap', '/recap'])
+  })
+
   it('marks badge notifications seen for the rows opened, and asks nothing for none', async () => {
     const { store, calls } = recordingStore()
     const notes = createNotifications({ store, pageSize: () => 20 })

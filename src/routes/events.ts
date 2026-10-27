@@ -44,6 +44,16 @@ const uiEvent: z.ZodType<AnalyticsEvent> = z
       event: z.literal('game_opened'),
       props: z.object({}).strict(),
     }),
+    z.object({
+      event: z.literal('recap_opened'),
+      props: z.object({}).strict(),
+    }),
+    z.object({
+      event: z.literal('recap_shared'),
+      props: z
+        .object({ via: z.enum(['share_sheet', 'linkedin', 'image']) })
+        .strict(),
+    }),
     z.object({ event: z.literal('experiment_exposed'), props: exposure }),
     z.object({
       event: z.literal('matches_section_opened'),

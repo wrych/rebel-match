@@ -7,6 +7,7 @@ import {
   type SettingView,
   type SettingsGroup,
 } from '../lib/settings'
+import { localInputOf, minutesOf } from '../lib/moment'
 import { when } from '../lib/when'
 import SavedTick from './SavedTick.vue'
 
@@ -93,6 +94,19 @@ async function toggle(event: Event): Promise<void> {
   if (!saved) input.checked = edit.value === 1
 }
 
+// A moment is saved as whole minutes since 1970 in UTC; cleared, as 0.
+async function saveMoment(input: string): Promise<void> {
+  const edit = props.setting.edit
+  if (edit === undefined) return
+  const minutes = minutesOf(input)
+  if (minutes === null) {
+    problem.value = 'Use a date and a time. It was not saved.'
+    return
+  }
+  if (minutes !== edit.value)
+    await apply(() => changeSetting(edit.key, minutes))
+}
+
 async function reset(): Promise<void> {
   const edit = props.setting.edit
   if (edit !== undefined) await apply(() => resetSetting(edit.key))
@@ -116,6 +130,35 @@ async function reset(): Promise<void> {
           <span>{{ setting.name }}: {{ setting.value }}</span>
         </label>
         <SavedTick :shown="tickShown" />
+      </div>
+      <p v-if="problem" class="alert" role="alert">{{ problem }}</p>
+    </template>
+    <template v-else-if="setting.edit?.kind === 'moment' && canManage">
+      <div class="label-row">
+        <label :for="setting.edit.key" class="name">{{ setting.name }}</label>
+        <SavedTick :shown="tickShown" />
+      </div>
+      <div class="entry">
+        <input
+          :id="setting.edit.key"
+          class="input moment"
+          type="datetime-local"
+          :value="localInputOf(setting.edit.value)"
+          :disabled="busy"
+          :aria-invalid="problem !== null"
+          :aria-describedby="`${setting.edit.key}-about`"
+          @change="saveMoment(($event.target as HTMLInputElement).value)"
+        />
+        <button
+          v-if="setting.edit.value !== 0"
+          type="button"
+          class="btn btn-ghost btn-small"
+          :disabled="busy"
+          @click="saveMoment('')"
+        >
+          Clear
+        </button>
+        <span class="unit">{{ setting.value }}</span>
       </div>
       <p v-if="problem" class="alert" role="alert">{{ problem }}</p>
     </template>
@@ -212,6 +255,11 @@ async function reset(): Promise<void> {
   gap: 0.5rem;
   font-size: 1.1rem;
   overflow-wrap: anywhere;
+}
+
+.moment {
+  min-height: 2.75rem;
+  padding: 0.5rem 0.75rem;
 }
 
 .number {

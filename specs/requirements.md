@@ -782,6 +782,7 @@ at a screen instead of at the front door.
   | `/9torevolution/leaderboard`         | the 9toRevolution leaderboard (R-GAME-13)      |
   | `/network`                           | the network replay (R-NET-1)                   |
   | `/admin/presentation`                | the network presentation (R-PRES-1)            |
+  | `/recap`                             | the member's summit recap (R-RECAP-1)          |
   | `/welcome`                           | two doors                                      |
   | `/ask`                               | submit a challenge                             |
   | `/challenges/:id`                    | detected trend for that challenge              |
@@ -1197,13 +1198,18 @@ notifications: they go out at once, whatever is chosen here (R-NFR-3).
     crown (R-BADGE-10), never when they lose one;
   - **New report** — every member who can review reports, when a
     report is made (R-MOD-5), linking to the reported member's moderation page
-    (R-MOD-7).
+    (R-MOD-7);
+  - **Your record is ready** — every active, onboarded member, once, when the
+    summit recap opens (R-RECAP-9).
 - **R-NOTE-2 (Cadences)** — For each type a member can receive, they SHALL
   choose one of: **Immediately**, **Hourly**, **Daily**, **In the app only**,
   **Off**. New applicant notices SHALL also offer **Every 15 minutes**. Until
   a member chooses, connection requests and new connections SHALL be
   **Hourly**, new challenges in a followed trend **Daily**, new applicants
   **Every 15 minutes**, new badges **Daily**, and new reports **Hourly**.
+  _Your record is ready_ comes once, so it SHALL offer only whether it is
+  emailed: **Yes**, mailed at once, or **No**, in the app only; Yes until
+  the member chooses (R-RECAP-9).
 - **R-NOTE-3 (Choosing)** — The profile screen SHALL offer the choice for each
   type the member can receive, and only those, saved on change like every
   setting there (R-PROF-1). A change SHALL apply to every notification still
@@ -1857,6 +1863,83 @@ hosts only.
   the replay (R-NET-3).
 - **R-PRES-7 (The figures)** — The members, challenges and connections the
   presentation counts SHALL be those since launch: the whole network.
+
+## 8o. The summit recap
+
+When the summit ends, each member gets their own time in the movement as a
+few phone-sized stories, in the manner of a streaming service's yearly
+review, ending on a card they can share, LinkedIn first (ADR 0059). Hosts
+turn it on at the end of the summit. Members see it as _Your rebel record_,
+a title kept in one place. It reuses the replay (§8m) and the badges (§8k).
+
+- **R-RECAP-1 (Stories)** — WHILE hosts have `limits.recap` on, THE SYSTEM
+  SHALL offer each onboarded member their summit recap at `/recap` (S43),
+  from the menu: full-screen portrait stories, one beat each, with a progress
+  bar per story along the top. A tap on the right SHALL go forward, on the
+  left back, and holding SHALL pause; each story SHALL move on by itself
+  after `limits.recapStorySeconds`, and each of the two network stories
+  after `limits.recapNetworkStorySeconds`, its animation taking the first
+  half so the second leaves time to read where it ends. While the switch
+  is off, `/recap`
+  and its endpoint SHALL answer as not found (R-NAV-8).
+- **R-RECAP-2 (The beats)** — The stories SHALL be the member's own: the day
+  they joined, shown as their dot appearing in the network; then, each only
+  when above zero, the challenges they posted, the times they were in the
+  same boat, the offers of help they sent and the people they connected
+  with, as the badges count them (R-BADGE-1), each with the highest level
+  earned; the crowns they hold; the event badges they earned (R-BADGE-6),
+  as their tickets, saying how many events they attended so far and asking
+  where we meet next time; and the network today with them lit (R-NET-2). A
+  beat at zero SHALL be left out, not shown as nothing.
+- **R-RECAP-3 (Compared with everyone)** — Each counted beat SHALL say how
+  the member compares, as the share of active members whose count is lower,
+  rounded down to `limits.recapPercentStep` percent ("more than 80% of
+  rebels"). Comparisons SHALL be left out while fewer than
+  `limits.recapMinMembers` members are active, and for a share below
+  `limits.recapMinShare` percent (50), so a comparison only ever says a
+  member is ahead of most. No other member SHALL be named or counted singly.
+- **R-RECAP-4 (Only theirs)** — The endpoint SHALL answer for the caller only,
+  with their own figures, the share of members below each, the crowns they
+  hold, and the replay's timeline with them marked under its rules
+  (R-NET-3, R-NET-13). It SHALL send no other member's name, id or count.
+- **R-RECAP-5 (The share card)** — The last story SHALL be a card the member
+  can share: their name, their figures, their highest levels and crowns,
+  each row marked as the badges screen marks it, a dot per level filled
+  for those earned and its crown filled when held (R-BADGE-7), and
+  the Rebel Match mark, drawn in the browser as an image 1080 by 1350
+  pixels. It SHALL show no other member's name and no challenge text. Behind
+  the words it SHALL show the network as the replay lays it out, framed as
+  the replay's ending frames it: the member's own dot vivid in the accent
+  colour at the bottom right, the network's centre towards the middle of
+  the card, the other dots and lines faint and fading in colour and
+  opacity with distance from the member until invisible, every dot
+  anonymous as in the replay (R-NET-3) and the member's own lines only
+  under its rule (R-NET-13). The card's story SHALL show the same view
+  slowly turning about the line from the member to the centre; the image
+  shared stays still.
+- **R-RECAP-6 (Sharing, LinkedIn first)** — _Share on LinkedIn_ SHALL be the
+  first action. Where the phone can share an image, THE SYSTEM SHALL hand the
+  card and a ready-written post to its share sheet; elsewhere it SHALL save
+  the card and open LinkedIn's post composer with the text filled in, for
+  the member to attach it. _Save image_ SHALL be the second. Nothing about
+  the member SHALL be sent to LinkedIn or anywhere else by the app itself,
+  and no public page of their figures SHALL exist.
+- **R-RECAP-7 (Usage)** — For a member opted in (R-ANA-4) THE SYSTEM SHALL
+  send `recap_opened` and `recap_shared` with how it was shared, and
+  nothing naming anyone or carrying a figure (R-ANA-3).
+- **R-RECAP-8 (Opening time)** — Hosts SHALL be able to set the moment the
+  recap opens, `limits.recapOpensAt`, as a date and time shown and edited in
+  their own time zone; none is set until they do. From that moment THE
+  SYSTEM SHALL offer the recap as if the switch were on (R-RECAP-1). The
+  switch on SHALL open it whatever the time; to close it again, a host
+  switches it off and clears the time.
+- **R-RECAP-9 (Told once)** — WHEN the recap first opens, by the time or by
+  the switch, THE SYSTEM SHALL notify every active, onboarded member once
+  that their record is ready (R-NOTE-1), linking to `/recap`. Each member
+  SHALL choose under their notifications whether it is also emailed, **Yes**
+  or **No** only, Yes until they choose (R-NOTE-2); Yes mails it at once.
+  Closing and opening the recap again SHALL NOT notify anyone a second time,
+  and a member who joins later finds it in the menu.
 
 ---
 

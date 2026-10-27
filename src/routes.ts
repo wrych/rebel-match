@@ -5,6 +5,7 @@
  */
 
 import type { Permission } from './access.js'
+import { RECAP_TITLE } from './recap/title.js'
 
 export type Access = 'public' | 'session' | 'onboarded'
 
@@ -81,6 +82,7 @@ export const routeTable: readonly RouteDef[] = [
     access: 'onboarded',
     permission: 'network:view',
   },
+  { path: '/recap', name: 'recap', title: RECAP_TITLE, access: 'onboarded' },
   { path: '/welcome', name: 'welcome', title: 'Welcome', access: 'onboarded' },
   { path: '/profile', name: 'profile', title: 'Profile', access: 'onboarded' },
   {
