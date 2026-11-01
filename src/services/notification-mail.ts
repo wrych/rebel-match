@@ -6,6 +6,7 @@ import {
 } from '../badges/rows.js'
 import { createApplicantNotice } from './applicant-notice.js'
 import { badgeLine, createBadgeNotice, type BadgeNote } from './badge-notice.js'
+import { createRecapNotice, recapItem } from './recap-notice.js'
 import { createReportNotice, openReportsWords } from './report-notice.js'
 import { renderMail, type MailItem } from './mail-layout.js'
 import { noticeFooter, noticeLink } from './notice-link.js'
@@ -95,6 +96,15 @@ async function aboutBadge(
   await createBadgeNotice(deps)({ recipientId: note.recipientId, to, ...badge })
 }
 
+async function aboutRecap(
+  deps: SenderDeps & { mailer: Mailer },
+  note: DueNotification,
+): Promise<void> {
+  const to = await deps.members.emailOf(note.recipientId)
+  if (to !== null)
+    await createRecapNotice(deps)({ recipientId: note.recipientId, to })
+}
+
 // One member's name on a line of its own, as the single emails say it.
 async function nameOf(deps: SenderDeps, memberId: string): Promise<string> {
   const name = ((await deps.members.nameOf(memberId)) ?? '')
@@ -130,6 +140,7 @@ async function itemOf(
           },
         }
   if (note.type === 'badge') return badgeItem(deps, note)
+  if (note.type === 'recap') return recapItem(deps.publicUrl)
   if (note.type === 'trend_challenge') return trendItem(deps, note)
   if (note.type === 'report')
     return {
@@ -312,6 +323,7 @@ async function single(
     await aboutChallenge({ ...deps, mailer }, note)
   else if (note.type === 'badge') await aboutBadge({ ...deps, mailer }, note)
   else if (note.type === 'report') await aboutReport({ ...deps, mailer }, note)
+  else if (note.type === 'recap') await aboutRecap({ ...deps, mailer }, note)
   else await aboutRequest({ ...deps, mailer }, note)
   return status
 }

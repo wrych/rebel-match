@@ -7,6 +7,11 @@ export type UiEvent =
   | { event: 'journey_chosen'; props: { journey: 'ask' | 'offer' } }
   | { event: 'feedback_opened'; props: { screen: string } }
   | { event: 'game_opened'; props: Record<string, never> }
+  | { event: 'recap_opened'; props: Record<string, never> }
+  | {
+      event: 'recap_shared'
+      props: { via: 'share_sheet' | 'linkedin' | 'image' }
+    }
   | {
       event: 'experiment_exposed'
       props: { experiment: ExperimentKey; variant: string }
@@ -25,6 +30,7 @@ export type UiEvent =
       event: 'notification_opened'
       props: { type: NotificationKind; via: 'app' | 'email' }
     }
+  | { event: 'screen_viewed'; props: { screen: string } }
 
 /** Fire and forget: `keepalive` lets the request finish while the page moves
  * on, and a failure is never the member's problem. */

@@ -106,3 +106,42 @@ describe('a signed-in member opening an invite (R-BADGE-6)', () => {
     expect(claims()).toEqual([])
   })
 })
+
+describe('each screen a member opens (R-ANA-1)', () => {
+  const viewed = (): unknown[] =>
+    vi
+      .mocked(fetch)
+      .mock.calls.filter(([url]) => url === '/api/events')
+      .map(([, init]) => JSON.parse(String(init?.body)))
+
+  it('is reported once by its route name, never its path', async () => {
+    signedIn(member)
+
+    await router.push('/notifications')
+    await router.push('/profile')
+
+    expect(viewed()).toEqual([
+      { event: 'screen_viewed', props: { screen: 'notifications' } },
+      { event: 'screen_viewed', props: { screen: 'profile' } },
+    ])
+  })
+
+  it('is counted only where it lands after a redirect', async () => {
+    signedIn(member)
+
+    await router.push('/')
+
+    expect(viewed()).toEqual([
+      { event: 'screen_viewed', props: { screen: 'welcome' } },
+    ])
+  })
+
+  it('is not reported for a public screen or an address no screen serves', async () => {
+    signedIn(member)
+
+    await router.push('/privacy')
+    await router.push('/no-such-screen')
+
+    expect(viewed()).toEqual([])
+  })
+})

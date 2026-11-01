@@ -52,6 +52,11 @@ describe('POST /api/events', () => {
       { name: 'feedback_opened', screen: 'cockpit' },
     ],
     [{ event: 'game_opened', props: {} }, { name: 'game_opened' }],
+    [{ event: 'recap_opened', props: {} }, { name: 'recap_opened' }],
+    [
+      { event: 'recap_shared', props: { via: 'linkedin' } },
+      { name: 'recap_shared', via: 'linkedin' },
+    ],
     [
       {
         event: 'experiment_exposed',
@@ -90,6 +95,10 @@ describe('POST /api/events', () => {
         via: 'email',
       },
     ],
+    [
+      { event: 'screen_viewed', props: { screen: 'trend' } },
+      { name: 'screen_viewed', screen: 'trend' },
+    ],
   ])('relays %j for the signed-in member (ADR 0026)', async (body, event) => {
     const { app, tracked } = setup()
 
@@ -114,6 +123,14 @@ describe('POST /api/events', () => {
     [
       'a screen that is a path, not a route name',
       { event: 'feedback_opened', props: { screen: '/challenges/c-1' } },
+    ],
+    [
+      'a screen viewed by its path, which names a challenge',
+      { event: 'screen_viewed', props: { screen: '/challenges/c-1' } },
+    ],
+    [
+      'a recap shared with a figure (R-RECAP-7)',
+      { event: 'recap_shared', props: { via: 'image', count: 4 } },
     ],
     [
       'a game opened with a pseudonym',

@@ -46,6 +46,7 @@ describe('headline', () => {
     ['trend_challenge', 'Bea posted a challenge in Radical Transparency'],
     ['badge', 'New badge: Bea'],
     ['report', 'Bea was reported: 2 open reports'],
+    ['recap', 'Your rebel record is ready'],
   ] as const)('words %s (R-NOTE-5)', (kind, words) => {
     expect(headline(note(kind))).toBe(words)
   })
@@ -130,5 +131,10 @@ describe('the notification settings words', () => {
     expect(typeLabel('badge')).toBe('Badges you earn')
     expect(cadenceLabel('in_app', 'hourly')).toBe('In the app only')
     expect(cadenceLabel('hourly', 'hourly')).toBe('Hourly (default)')
+    expect(typeLabel('recap')).toBe('Email me when your rebel record is ready')
+    expect(cadenceLabel('immediately', 'immediately', 'recap')).toBe(
+      'Yes (default)',
+    )
+    expect(cadenceLabel('in_app', 'immediately', 'recap')).toBe('No')
   })
 })

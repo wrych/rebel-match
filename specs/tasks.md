@@ -363,6 +363,8 @@ printed dev link (R-DEV-6).
       and opening it clears it; cards keep their own marks. _(R-MINE-4)_
 - [x] Show the running version at the foot of the menu: CI passes the commit
       to the image, `/api/config` returns it. _(R-NFR-11)_
+- [ ] README, security policy, code of conduct and pull request template
+      at the repository root and in `.github/`. _(R-NFR-13)_
 - [ ] Live lists: Matches, a challenge's matches, notifications, the
       outbound log, members, applicants, invites and the leaderboard refresh
       on their own at
@@ -475,6 +477,26 @@ Built after the spec and ADR merge. One pull request per item, in this order.
 - [x] Erasure and retention of reports: handled reports deleted after
       `limits.reportRetentionDays`. _(R-MOD-11, R-NFR-7)_ The
       `content_reported` usage event came with the reports.
+
+---
+
+## M10 — The network replay _(S41, F22, ADR 0057 — behind its switch)_
+
+- [x] The replay: `/api/network` behind `limits.networkReplay` and
+      `network:view`, the paced anonymous timeline, the 3D scene with its
+      layout and player, the timeline bar, S41 and the menu entry.
+      _(R-NET-1..9)_
+- [x] A dev network to try it on: a crowd of fictional members, their
+      challenges and offers, join times over weeks with an event's crowd, and
+      connection requests in every state. _(R-SEED-10)_
+- [ ] The network presentation: the script, the pure director, the stage,
+      the invented beginning, growth and closing world, and the cast file.
+      _(R-PRES-1..7)_ The real cast, photos and the founders' challenges
+      replace the fictional ones before the summit; music comes later.
+
+- [ ] The summit recap: the figures and comparisons, the stories, the card and
+      sharing, LinkedIn first, opening at a time hosts set and announced to
+      every member once. _(R-RECAP-1..9)_
 
 ---
 

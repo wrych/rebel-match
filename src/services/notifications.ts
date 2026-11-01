@@ -1,3 +1,4 @@
+import { RECAP_PATH } from './recap-notice.js'
 import { eventRow, rowNames, type RowNames } from '../badges/rows.js'
 import type { BadgeService } from './badges.js'
 import type { ConnectionService } from './connections.js'
@@ -12,6 +13,7 @@ export const notificationKinds = [
   'applicant',
   'badge',
   'report',
+  'recap',
 ] as const
 
 export type NotificationKind = (typeof notificationKinds)[number]
@@ -69,6 +71,7 @@ export type StoredType =
   | 'applicant'
   | 'badge'
   | 'report'
+  | 'recap'
 
 export interface NotificationStore {
   /** The member's notifications R-NOTE-5 shows, newest first; with
@@ -161,7 +164,7 @@ function viewOf(row: NotificationRow): NotificationView {
     at: row.createdAt.toISOString(),
     isNew: row.seenAt === null,
     name: row.type === 'badge' ? badgeName(row.badge) : row.aboutName,
-    path: pathOf(row),
+    path: row.type === 'recap' ? RECAP_PATH : pathOf(row),
     trend: row.type === 'trend_challenge' ? row.trend : null,
     openReports: row.openReports,
   }

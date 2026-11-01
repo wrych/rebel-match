@@ -131,6 +131,7 @@ describe('the auth seam over Postgres', () => {
         'connection:request',
         'content:report',
         'game:play',
+        'network:view',
       ],
     })
 

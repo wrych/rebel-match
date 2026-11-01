@@ -710,8 +710,9 @@ fallback).
   the notifications list opened, a notification opened from the app or an
   email, a notification cadence changed, the swipe deck running out, a trend
   opened or (un)followed, feedback opened, the variant of an experiment a
-  member was shown (R-EXP-2), and a badge earned (R-BADGE-13). _(Andy,
-  2026-10-14.)_
+  member was shown (R-EXP-2), a badge earned (R-BADGE-13), and each screen a
+  signed-in member opens, by its name, so daily activity shows. _(Andy,
+  2026-10-14; screens 2026-10-21.)_
 - **R-ANA-2** — Analytics SHALL be attributable to a stable, **pseudonymous**
   member id (not raw email) so funnels and retention work without spreading PII
   into the analytics tool.
@@ -730,7 +731,8 @@ fallback).
   a member opted in at that moment, and never for a visitor who has not
   onboarded. The opt-in lives on the profile screen (R-PROF-2).
 - **R-ANA-5** — The chosen tool SHALL have a usable free tier at summit scale
-  (hundreds of users, thousands of events) and SHALL store event data in the EU.
+  (hundreds of users, hundreds of thousands of events a month) and SHALL store
+  event data in the EU.
   _(Resolved: Mixpanel offers EU data residency on the free plan at no extra
   cost — see `design.md` §7.)_
 - **R-ANA-6** — WHEN a member chooses to share on the usage-data step of
@@ -778,6 +780,9 @@ at a screen instead of at the front door.
   | `/impressum`                         | the people who made the app (R-PROF-4)         |
   | `/9torevolution`                     | the 9toRevolution game (R-GAME-1)              |
   | `/9torevolution/leaderboard`         | the 9toRevolution leaderboard (R-GAME-13)      |
+  | `/network`                           | the network replay (R-NET-1)                   |
+  | `/admin/presentation`                | the network presentation (R-PRES-1)            |
+  | `/recap`                             | the member's summit recap (R-RECAP-1)          |
   | `/welcome`                           | two doors                                      |
   | `/ask`                               | submit a challenge                             |
   | `/challenges/:id`                    | detected trend for that challenge              |
@@ -1193,13 +1198,18 @@ notifications: they go out at once, whatever is chosen here (R-NFR-3).
     crown (R-BADGE-10), never when they lose one;
   - **New report** — every member who can review reports, when a
     report is made (R-MOD-5), linking to the reported member's moderation page
-    (R-MOD-7).
+    (R-MOD-7);
+  - **Your record is ready** — every active, onboarded member, once, when the
+    summit recap opens (R-RECAP-9).
 - **R-NOTE-2 (Cadences)** — For each type a member can receive, they SHALL
   choose one of: **Immediately**, **Hourly**, **Daily**, **In the app only**,
   **Off**. New applicant notices SHALL also offer **Every 15 minutes**. Until
   a member chooses, connection requests and new connections SHALL be
   **Hourly**, new challenges in a followed trend **Daily**, new applicants
   **Every 15 minutes**, new badges **Daily**, and new reports **Hourly**.
+  _Your record is ready_ comes once, so it SHALL offer only whether it is
+  emailed: **Yes**, mailed at once, or **No**, in the app only; Yes until
+  the member chooses (R-RECAP-9).
 - **R-NOTE-3 (Choosing)** — The profile screen SHALL offer the choice for each
   type the member can receive, and only those, saved on change like every
   setting there (R-PROF-1). A change SHALL apply to every notification still
@@ -1520,7 +1530,9 @@ invite link (R-INV-1).
   (R-CFG-1), 1, 5 and 10 by default, the same for each row. A request a member
   makes from the matches screen to someone who has been there asks for help
   and SHALL NOT count as help offered. A posted challenge counts while it
-  exists, archived or not; a connection counts each member once, however many
+  is shown: one its author withdrew (R-ASK-17) or a host hid (R-MOD-8) no
+  longer counts, though the levels it helped earn stay (R-BADGE-2); a
+  connection counts each member once, however many
   challenges it is over (R-CONN-10). A job counts as reached when the member's
   highest level reached is its first day (R-GAME-16): Team Lead with the first
   game.
@@ -1750,6 +1762,187 @@ contact detail (R-CONN-6) or tells a reported member who reported them.
 
 ---
 
+## 8m. The network replay
+
+The maintainer wants members to watch the network grow and find themselves
+in it, and hosts to show the same picture on a stage later (ADR 0057). The
+connection graph is private, so the replay names nobody.
+
+- **R-NET-1 (Replay)** — THE SYSTEM SHALL offer a screen, S41, replaying in
+  3D how the network grew: each active, onboarded member as a point appearing
+  when they first onboarded, and each accepted connection as a line between
+  two points appearing when it was accepted.
+- **R-NET-2 (Find yourself)** — WHEN the replay ends THE SYSTEM SHALL mark the
+  viewing member's own point and turn the view to it. The viewer's own lines
+  SHALL show in the accent colour throughout.
+- **R-NET-3 (Naming nobody)** — The replay SHALL carry no member id, name,
+  email or profile field: a point is a position in a list, a line a pair of
+  positions, and the only date sent is the day. Only the viewer's own point
+  SHALL be told apart (R-NFR-1).
+- **R-NET-4 (Who is in it)** — Only active, onboarded members (R-ONB-1) and
+  accepted connections between two of them SHALL appear. A pending or
+  declined request, and a deleted, banned or unapproved member with their
+  lines, SHALL NOT. A pair connected over several challenges SHALL be one
+  line, from its first acceptance.
+- **R-NET-5 (Permission)** — The replay SHALL need `network:view`, which the
+  `member` role holds, checked on the server (R-ROLE-3, R-ROLE-5).
+- **R-NET-6 (Hosts' switch)** — WHILE `limits.networkReplay` is off THE
+  SYSTEM SHALL answer S41 and its endpoint as not found, and the menu SHALL
+  NOT offer it (R-NAV-8, R-CFG-6). It SHALL be off by default.
+- **R-NET-7 (Pace)** — The replay SHALL grow continuously rather than a day
+  at a time, and SHALL play a stretch dense with joins and connections slower
+  than its share of the calendar.
+- **R-NET-8 (Timeline)** — A timeline under the scene SHALL mark each join
+  and connection where it plays, show where the replay is and the day it has
+  reached, and let the member drag to any moment. Pause, play and replay
+  SHALL sit beside it.
+- **R-NET-9 (Reduced motion)** — WHEN the member prefers reduced motion THE
+  SYSTEM SHALL show the end of the replay at once, without turning the scene.
+- **R-NET-10 (Taking the view)** — The replay SHALL steer the camera,
+  turning slowly throughout and after the end. WHEN the member drags, pinches
+  or scrolls the scene THE SYSTEM SHALL stop steering and leave the view to
+  them, offering _Recentre view_. WHEN they choose it, or replay, THE SYSTEM
+  SHALL take the view back, easing from where they left it.
+- **R-NET-11 (Challenges as moons)** — Each challenge a member shows
+  (R-ASK-1), neither withdrawn nor hidden (R-ASK-17, R-MOD-8), SHALL circle
+  that member's point as a moon, appearing when it was posted. The replay
+  SHALL carry no challenge text, trend or id: a moon is its member's position
+  and a day. The viewer's own moons SHALL show in the accent colour.
+- **R-NET-12 (The tally)** — The scene's corner SHALL show the day the replay
+  has reached and how many members, connections and challenges show by then.
+- **R-NET-13 (Too few to hide among)** — WHILE the viewing member has fewer
+  accepted connections than `limits.networkMinOwnConnections` (5 by default,
+  hosts may change it, R-CFG-6), THE SYSTEM SHALL leave every connection of
+  theirs out of the replay, in what the server sends and not only on screen,
+  and SHALL say why and how many it takes. With so few lines a member could
+  tell who the members at their ends are, and learn from those members'
+  lines and moons what they never shared.
+- **R-NET-14 (Your callout)** — WHILE the replay has ended and still steers
+  the view (R-NET-10), THE SYSTEM SHALL show a label pointing at the viewer's
+  point, as a map labels what it has centred: _That's you_, their name, their
+  connections and challenges, and the day they joined. WHILE their own lines
+  are left out (R-NET-13), the connections SHALL carry an asterisk, and the
+  explanation under the scene SHALL begin with one.
+- **R-NET-15 (Reading the network)** — Under the scene THE SYSTEM SHALL
+  explain, each with a drawing of it, that a dot is a member, a line a
+  connection both accepted, a moon a challenge circling its author, and the
+  accent colour the viewer.
+
+## 8n. The network presentation
+
+For the summit stage the maintainer wants a short film of the network: an
+invented beginning with the two founders, the real network growing, the
+people who shaped the movement, the figures since launch, and a thank-you
+to everyone in the room (ADR 0058). It reuses the replay (§8m) and is for
+hosts only.
+
+- **R-PRES-1 (The film)** — A member holding `network:present` SHALL be able
+  to play the presentation at `/admin/presentation` (S42), filling the
+  screen without the app's header or tab bar, on a dark background.
+- **R-PRES-2 (One script)** — The presentation SHALL follow one script kept
+  with the code: its length, and at set times the words shown, where the
+  camera looks, how far the real network has grown, and what lights up.
+  Changing it SHALL need a change to the script, not an editor.
+- **R-PRES-3 (The same every time)** — The picture SHALL depend only on the
+  second reached, so the presentation can be scrubbed to any moment, paused
+  and played again in rehearsal, and recorded frame by frame.
+- **R-PRES-4 (What is invented)** — The founders' beginning, the growth past
+  today and the closing world's lone dot (the viewer, whoever they are) SHALL
+  be invented; everything else SHALL be the real network as the replay builds
+  it, with no viewer marked (R-NET-1, R-NET-11).
+- **R-PRES-5 (The cast)** — The people the presentation names SHALL come
+  only from a private cast file the deployment points to
+  (`PRESENTATION_CAST_FILE`), never from the repository: for each a handle the
+  script uses, a display name, and optionally a photo, a member's email and
+  groups such as developers. Hosts SHALL put in it only people who agreed to
+  be shown. In a development deployment without a file, a fictional cast
+  mapped to the dev seed SHALL stand in (R-SEED-2).
+- **R-PRES-6 (What leaves the server)** — For each cast member THE SYSTEM
+  SHALL send the client their handle, name, photo, groups and position in the
+  network, and never their email. Everyone else SHALL stay as anonymous as in
+  the replay (R-NET-3).
+- **R-PRES-7 (The figures)** — The members, challenges and connections the
+  presentation counts SHALL be those since launch: the whole network.
+
+## 8o. The summit recap
+
+When the summit ends, each member gets their own time in the movement as a
+few phone-sized stories, in the manner of a streaming service's yearly
+review, ending on a card they can share, LinkedIn first (ADR 0059). Hosts
+turn it on at the end of the summit. Members see it as _Your rebel record_,
+a title kept in one place. It reuses the replay (§8m) and the badges (§8k).
+
+- **R-RECAP-1 (Stories)** — WHILE hosts have `limits.recap` on, THE SYSTEM
+  SHALL offer each onboarded member their summit recap at `/recap` (S43),
+  from the menu: full-screen portrait stories, one beat each, with a progress
+  bar per story along the top. A tap on the right SHALL go forward, on the
+  left back, and holding SHALL pause; each story SHALL move on by itself
+  after `limits.recapStorySeconds`, and each of the two network stories
+  after `limits.recapNetworkStorySeconds`, its animation taking the first
+  half so the second leaves time to read where it ends. While the switch
+  is off, `/recap`
+  and its endpoint SHALL answer as not found (R-NAV-8).
+- **R-RECAP-2 (The beats)** — The stories SHALL be the member's own: the day
+  they joined, shown as their dot appearing in the network; then, each only
+  when above zero, the challenges they posted, the times they were in the
+  same boat, the offers of help they sent and the people they connected
+  with, as the badges count them (R-BADGE-1), each with the highest level
+  earned; the crowns they hold; the event badges they earned (R-BADGE-6),
+  as their tickets, saying how many events they attended so far and asking
+  where we meet next time; and the network today with them lit (R-NET-2). A
+  beat at zero SHALL be left out, not shown as nothing.
+- **R-RECAP-3 (Compared with everyone)** — Each counted beat SHALL say how
+  the member compares, as the share of active members whose count is lower,
+  rounded down to `limits.recapPercentStep` percent ("more than 80% of
+  rebels"). Comparisons SHALL be left out while fewer than
+  `limits.recapMinMembers` members are active, and for a share below
+  `limits.recapMinShare` percent (50), so a comparison only ever says a
+  member is ahead of most. No other member SHALL be named or counted singly.
+- **R-RECAP-4 (Only theirs)** — The endpoint SHALL answer for the caller only,
+  with their own figures, the share of members below each, the crowns they
+  hold, and the replay's timeline with them marked under its rules
+  (R-NET-3, R-NET-13). It SHALL send no other member's name, id or count.
+- **R-RECAP-5 (The share card)** — The last story SHALL be a card the member
+  can share: their name, their figures, their highest levels and crowns,
+  each row marked as the badges screen marks it, a dot per level filled
+  for those earned and its crown filled when held (R-BADGE-7), and
+  the Rebel Match mark, drawn in the browser as an image 1080 by 1350
+  pixels. It SHALL show no other member's name and no challenge text. Behind
+  the words it SHALL show the network as the replay lays it out, framed as
+  the replay's ending frames it: the member's own dot vivid in the accent
+  colour at the bottom right, the network's centre towards the middle of
+  the card, the other dots and lines faint and fading in colour and
+  opacity with distance from the member until invisible, every dot
+  anonymous as in the replay (R-NET-3) and the member's own lines only
+  under its rule (R-NET-13). The card's story SHALL show the same view
+  slowly turning about the line from the member to the centre; the image
+  shared stays still.
+- **R-RECAP-6 (Sharing, LinkedIn first)** — _Share on LinkedIn_ SHALL be the
+  first action. Where the phone can share an image, THE SYSTEM SHALL hand the
+  card and a ready-written post to its share sheet; elsewhere it SHALL save
+  the card and open LinkedIn's post composer with the text filled in, for
+  the member to attach it. _Save image_ SHALL be the second. Nothing about
+  the member SHALL be sent to LinkedIn or anywhere else by the app itself,
+  and no public page of their figures SHALL exist.
+- **R-RECAP-7 (Usage)** — For a member opted in (R-ANA-4) THE SYSTEM SHALL
+  send `recap_opened` and `recap_shared` with how it was shared, and
+  nothing naming anyone or carrying a figure (R-ANA-3).
+- **R-RECAP-8 (Opening time)** — Hosts SHALL be able to set the moment the
+  recap opens, `limits.recapOpensAt`, as a date and time shown and edited in
+  their own time zone; none is set until they do. From that moment THE
+  SYSTEM SHALL offer the recap as if the switch were on (R-RECAP-1). The
+  switch on SHALL open it whatever the time; to close it again, a host
+  switches it off and clears the time.
+- **R-RECAP-9 (Told once)** — WHEN the recap first opens, by the time or by
+  the switch, THE SYSTEM SHALL notify every active, onboarded member once
+  that their record is ready (R-NOTE-1), linking to `/recap`. Each member
+  SHALL choose under their notifications whether it is also emailed, **Yes**
+  or **No** only, Yes until they choose (R-NOTE-2); Yes mails it at once.
+  Closing and opening the recap again SHALL NOT notify anyone a second time,
+  and a member who joins later finds it in the menu.
+
+---
+
 ## 9. Non-functional requirements
 
 - **R-NFR-1 (Privacy)** — Challenge text and member contact details SHALL be
@@ -1839,6 +2032,12 @@ contact detail (R-CONN-6) or tells a reported member who reported them.
   anyone who copies or redistributes it to keep the copyright notice. That
   notice SHALL name the founders, Pascal Dulex, Ivo Pejakovic and Andy Moesch,
   and the Rebel Match contributors.
+- **R-NFR-13 (Contributing and disclosure)** — The repository root SHALL
+  carry a `README.md` saying what the app is, how to run it and how to
+  contribute; a `SECURITY.md` naming a private contact,
+  hello@rebel-match.com, for reporting a vulnerability; and a
+  `CODE_OF_CONDUCT.md`, the Contributor Covenant, naming the same contact. A
+  pull request template SHALL ask for the requirement and ADR a change serves.
 
 ---
 
@@ -1886,6 +2085,17 @@ fixtures. `design.md` §6 lists the exact records and the profile mechanism.
   the database is granted: a re-run SHALL NOT give back a role a host took
   away. The dev profile SHALL refuse `SEED_ADMINS`; it has its own admin
   (R-SEED-2).
+- **R-SEED-10 (A dev network)** — The dev seed SHALL add fictional members to
+  the prototype's roster, about 100 in all, with about 70 challenges across
+  every trend, posted over time after their authors joined, and "been
+  there" offers, so the network replay (R-NET-1), the cockpit and the badges
+  have something real to show. Members SHALL have
+  joined at times spread over several weeks before the seed runs, with one
+  event's crowd joining within a few hours. Members SHALL have sent each
+  other connection requests over those challenges, same boat and been there,
+  most accepted, some pending and a few declined, each after both members
+  joined. The network SHALL be the same on every run, and a re-run SHALL NOT
+  move a join time or add a request already there (R-SEED-7).
 
 ---
 

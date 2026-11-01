@@ -102,6 +102,8 @@ export const router = createRouter({
     screen('impressum', ImpressumScreen),
     screen('game', () => import('./screens/GameScreen.vue')),
     screen('game-leaderboard', () => import('./screens/LeaderboardScreen.vue')),
+    screen('network', () => import('./screens/NetworkScreen.vue')),
+    screen('recap', () => import('./screens/RecapScreen.vue')),
     screen('welcome', WelcomeScreen),
     screen('profile', ProfileScreen),
     screen('notifications', NotificationsScreen),
@@ -130,6 +132,10 @@ export const router = createRouter({
     screen('admin-moderated-member', ModeratedMemberScreen),
     screen('admin-outbox', OutboxScreen),
     screen('admin-settings', SettingsScreen),
+    screen(
+      'admin-presentation',
+      () => import('./screens/PresentationScreen.vue'),
+    ),
     {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
@@ -149,7 +155,14 @@ router.afterEach((to, _from, failure) => {
   settledAfterReload()
   afterNavigation()
   showScreen(to.meta['title'] as string)
+  reportScreen(to)
 })
+
+// No one is opted in before signing in, so a public screen is never counted.
+function reportScreen(to: RouteLocationNormalized): void {
+  if ((to.meta['access'] ?? 'public') === 'public') return
+  reportEvent({ event: 'screen_viewed', props: { screen: String(to.name) } })
+}
 
 // A member already in who scans an event's code is taken home as ever, and
 // the event's badge is theirs (R-BADGE-6).

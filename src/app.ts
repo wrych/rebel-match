@@ -11,6 +11,9 @@ import { deckRoutes } from './routes/deck.js'
 import { activityRoutes } from './routes/activity.js'
 import { badgeRoutes } from './routes/badges.js'
 import { gameRoutes } from './routes/game.js'
+import { networkRoutes } from './routes/network.js'
+import { presentationRoutes } from './routes/presentation.js'
+import { recapRoutes } from './routes/recap.js'
 import { swipeRoutes } from './routes/swipes.js'
 import { cockpitRoutes } from './routes/cockpit.js'
 import { guardApi } from './routes/api-guard.js'
@@ -50,6 +53,9 @@ import type { DeckService } from './services/deck.js'
 import type { ActivityService } from './services/activity.js'
 import type { BadgeService } from './services/badges.js'
 import type { GameService } from './services/game.js'
+import type { NetworkService } from './services/network.js'
+import type { PresentationService } from './services/presentation.js'
+import type { RecapService } from './services/recap.js'
 import type { SwipeService } from './services/swipes.js'
 import type { CockpitService } from './services/cockpit.js'
 import type { FollowService } from './services/follows.js'
@@ -95,6 +101,9 @@ export interface AppDeps {
   deck: DeckService
   activity: ActivityService
   game: GameService
+  network: NetworkService
+  presentation: PresentationService
+  recap: RecapService
   badges: BadgeService
   connections: ConnectionService
   swipes: SwipeService
@@ -188,8 +197,7 @@ export function createApp(deps: AppDeps): Express {
   app.use(onboardingRoutes(deps))
   app.use(analyticsConsentRoutes(deps))
   app.use(eventRoutes(deps), flagRoutes(deps))
-  app.use(profileRoutes(deps))
-  app.use(challengeRoutes(deps))
+  app.use(profileRoutes(deps), challengeRoutes(deps))
   app.use(deckRoutes(deps), activityRoutes(deps))
   app.use(connectionRoutes(deps))
   app.use(swipeRoutes(deps), reportRoutes(deps))
@@ -198,8 +206,9 @@ export function createApp(deps: AppDeps): Express {
   app.use(adminWhitelistRoutes(deps), adminChallengeRoutes(deps))
   app.use(adminApplicantRoutes(deps), adminReportRoutes(deps))
   app.use(adminInviteRoutes(deps), adminBanRoutes(deps))
-  app.use(adminOutboxRoutes(deps))
+  app.use(adminOutboxRoutes(deps), presentationRoutes(deps))
   app.use(adminSettingsRoutes(deps), gameRoutes(deps))
+  app.use(networkRoutes(deps), recapRoutes(deps))
 
   app.get('/api/health', async (_request, response) => {
     const database = (await databaseReachable(deps.db)) ? 'up' : 'down'

@@ -241,6 +241,7 @@ describe('GET /auth/me', () => {
         'connection:request',
         'content:report',
         'game:play',
+        'network:view',
       ],
     })
   })

@@ -8,6 +8,7 @@ export const rolePermissions = {
     'connection:request',
     'content:report',
     'game:play',
+    'network:view',
   ],
   admin: [
     'applicant:review',
@@ -21,6 +22,7 @@ export const rolePermissions = {
     'role:grant',
     'settings:read',
     'settings:manage',
+    'network:present',
   ],
 } as const satisfies Record<string, readonly string[]>
 

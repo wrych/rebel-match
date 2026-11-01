@@ -35,6 +35,7 @@ function signedIn(permissions: string[] | null): ReturnType<typeof vi.fn> {
 /** Also answers /api/config, naming where feedback goes. */
 function withConfig(
   signedInAs: ReturnType<typeof vi.fn>,
+  limits: Record<string, number> = {},
 ): ReturnType<typeof vi.fn> {
   const answer = signedInAs as unknown as (url: string) => Promise<unknown>
   const fetchMock = vi.fn((url: string) =>
@@ -46,7 +47,7 @@ function withConfig(
             Promise.resolve({
               build: { commit: 'dev', url: null },
               feedbackTo: 'owner@example.org',
-              limits: { matchesPollSeconds: 30 },
+              limits: { matchesPollSeconds: 30, ...limits },
             }),
         })
       : answer(url),
@@ -93,6 +94,33 @@ afterEach(() => {
 })
 
 describe('HeaderMenu', () => {
+  it.each([
+    [1, ['network:view'], true],
+    [0, ['network:view'], false],
+    [1, [], false],
+  ])(
+    'offers the network replay while on (%i) to %j: %s (R-NET-5, R-NET-6)',
+    async (networkReplay, permissions, offered) => {
+      withConfig(signedIn(permissions), { networkReplay })
+
+      expect(paths(await opened()).includes('/network')).toBe(offered)
+    },
+  )
+
+  it.each([
+    [1, 0, true],
+    [0, 0, false],
+    [0, 1, true],
+    [0, 99_999_999, false],
+  ])(
+    'offers the recap while on (%i) or past its time (%i): %s (R-RECAP-1, R-RECAP-8)',
+    async (recap, recapOpensAt, offered) => {
+      withConfig(signedIn([]), { recap, recapOpensAt })
+
+      expect(paths(await opened()).includes('/recap')).toBe(offered)
+    },
+  )
+
   it('starts closed, and says so', async () => {
     signedIn([])
     const menu = await mountMenu()

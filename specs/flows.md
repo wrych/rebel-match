@@ -40,6 +40,8 @@ Conventions:
                    ├──►  F9 Follow a trend
                    ├──►  F17 Notifications
                    ├──►  F19 Badges
+                   ├──►  F22 The network replay (while hosts have it on)
+                   ├──►  F24 The summit recap (while hosts have it on)
                    └──►  F12 Feedback
 
    Happy mode, onboarded: F18 9toRevolution (impressum → game → leaderboard)
@@ -48,6 +50,7 @@ Conventions:
 
    Admin only: F10 Approvals · F16 Invite links · F11 GDPR deletion
                F14 Outbound message log · F21 Moderation
+               F23 The network presentation
 ```
 
 ---
@@ -847,3 +850,71 @@ reported member, S26 A member's page.
 - _The banned person asks to be erased_ → a host deletes them (**F11**). The
   address is free again once erased (R-MOD-10).
 - _A new report about a handled member_ → their card returns to **Open**.
+
+---
+
+## F22 — The network replay
+
+1. A member opens the menu. While hosts have `limits.networkReplay` on and
+   the member holds `network:view`, it offers **The network** (R-NET-5,
+   R-NET-6).
+2. **S41** loads the network and plays it: the first members appear, lines
+   form between them, challenges start circling their authors as moons, the
+   camera turns slowly, and the corner counts members, connections and
+   challenges as of the day reached (R-NET-11, R-NET-12). The timeline under
+   it marks every join and connection; the summit's crowd of joins takes up
+   more of it than its hours would, so it plays slower (R-NET-7, R-NET-8).
+3. The member may drag the timeline to any moment, pause, play on, or replay
+   from the start (R-NET-8). Dragging, pinching or scrolling the scene hands
+   them the view and offers _Recentre view_, which hands it back (R-NET-10).
+4. At the end the camera keeps turning, drawn towards the member's own
+   point, lit in the accent colour with their own lines (R-NET-2), and a
+   label points at it: _That's you_, their name, their connections and
+   challenges, and when they joined (R-NET-14). A drag hands them the view
+   and the label goes until they recentre.
+   Nobody else is named, here or in what the server sent (R-NET-3).
+5. A member with fewer connections than hosts set (5 by default) sees the
+   replay without their own lines, their count in the label starred, and a
+   footnote under the scene saying it takes 5, they have 2, and why: with so
+   few they could tell who is at the other end (R-NET-13). Under that, a key
+   draws a dot, a line, a moon and the accent colour and says what each is
+   (R-NET-15).
+6. A member who prefers reduced motion sees the end at once (R-NET-9). While
+   the switch is off, `/network` is not found (R-NET-6).
+
+---
+
+## F23 — The network presentation
+
+1. A host holding `network:present` opens **S42**, `/admin/presentation`,
+   on the laptop wired to the stage screen, and presses F for full screen
+   (R-PRES-1).
+2. Space plays the film. Two invented dots, the founders, meet over a shared
+   challenge; the real network grows around them; the camera visits the
+   people the cast file names; the figures since launch count up; the
+   network grows past today until it is a point, flashes, and a lone dot,
+   whoever is watching, is thanked (R-PRES-2, R-PRES-4, R-PRES-7).
+3. In rehearsal the host pauses, seeks with the arrows and plays again; the
+   same second always shows the same picture (R-PRES-3). On a phone, held
+   sideways, a tap plays and pauses and the scrubber seeks.
+4. Without a cast file, a production deployment names nobody and the film
+   stays on the whole network where it would have visited someone
+   (R-PRES-5).
+
+---
+
+## F24 — The summit recap
+
+1. While hosts have `limits.recap` on, the menu offers **Your rebel
+   track**; it opens **S43** full screen (R-RECAP-1).
+2. The stories play one after another, each moving on by itself: the dot of
+   the day they joined, then what they did, each with a level earned and how
+   they compare ("more than 80% of rebels"), the crowns they hold, and the
+   network today with them lit. A beat they have nothing for is skipped
+   (R-RECAP-2, R-RECAP-3).
+3. A tap on the right skips ahead, on the left goes back, a hold pauses
+   (R-RECAP-1).
+4. The last story is their card. _Share on LinkedIn_ opens the phone's share
+   sheet with the image and a post; on a laptop it saves the image and opens
+   LinkedIn's composer with the post written. _Save image_ only saves it.
+   Nothing names anyone else (R-RECAP-5, R-RECAP-6).

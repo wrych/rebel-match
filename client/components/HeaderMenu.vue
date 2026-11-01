@@ -6,6 +6,9 @@ import { fetchConfig, type ClientConfig } from '../lib/api'
 import { BADGES_SEEN, badgesLabel, fetchNewBadges } from '../lib/badges'
 import { reportEvent } from '../lib/events'
 import { feedbackMailto } from '../lib/feedback'
+import { networkOpen } from '../lib/network'
+import { recapOpen } from '../lib/recap'
+import { RECAP_TITLE } from '../../src/recap/title'
 import { fetchOpenReported, moderationLabel } from '../lib/moderation'
 import type { Mood } from '../lib/mood'
 import {
@@ -25,6 +28,8 @@ const open = ref(false)
 const me = ref<Me | null>(null)
 const version = ref<ClientConfig['build'] | null>(null)
 const feedbackTo = ref<string | null>(null)
+const networkReplay = ref(0)
+const recapLimits = ref({ recap: 0, recapOpensAt: 0 })
 const fresh = ref(0)
 const freshBadges = ref(0)
 const reported = ref(0)
@@ -67,6 +72,15 @@ const button = ref<HTMLButtonElement | null>(null)
 const hostTools = computed(() =>
   me.value === null ? [] : adminLinksFor(me.value.permissions),
 )
+const network = computed(
+  () =>
+    me.value?.onboarded === true &&
+    networkOpen(networkReplay.value, me.value.permissions),
+)
+const recap = computed(
+  () =>
+    me.value?.onboarded === true && recapOpen(recapLimits.value, Date.now()),
+)
 const screen = computed(() => String(route.name ?? 'unknown'))
 const feedback = computed(() =>
   feedbackTo.value === null || me.value?.onboarded !== true
@@ -77,6 +91,11 @@ const feedback = computed(() =>
 function remember(config: ClientConfig): void {
   version.value = config.build
   feedbackTo.value = config.feedbackTo
+  networkReplay.value = config.limits.networkReplay
+  recapLimits.value = {
+    recap: config.limits.recap,
+    recapOpensAt: config.limits.recapOpensAt,
+  }
 }
 
 function feedbackOpened(): void {
@@ -193,6 +212,18 @@ onBeforeUnmount(() => {
         @click="close(false)"
         >{{ badgesLabel(freshBadges) }}</RouterLink
       >
+
+      <RouterLink
+        v-if="network"
+        to="/network"
+        class="item"
+        @click="close(false)"
+        >The network</RouterLink
+      >
+
+      <RouterLink v-if="recap" to="/recap" class="item" @click="close(false)">{{
+        RECAP_TITLE
+      }}</RouterLink>
 
       <RouterLink
         v-if="me?.onboarded"

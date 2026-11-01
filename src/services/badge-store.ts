@@ -14,6 +14,7 @@ import {
 } from '../db/schema.js'
 import { badgeRows, type BadgeRow, type CountedRow } from '../badges/rows.js'
 import type { Standing } from '../badges/crowns.js'
+import { isShown } from './challenge-store.js'
 import { insertBadgeNotification } from './notification-store.js'
 import type { BadgeStore, Crown, EarnedLevel } from './badges.js'
 
@@ -25,7 +26,7 @@ function acts(row: CountedRow): SQL {
     case 'speak':
       return sql`select ${challenges.memberId} as member, ${challenges.id} as item,
         ${challenges.createdAt} as at from ${challenges}
-        where ${challenges.trendId} is not null and ${challenges.status} <> 'draft'`
+        where ${challenges.trendId} is not null and ${isShown()}`
     case 'help':
       return sql`select ${swipes.memberId} as member, ${swipes.challengeId} as item,
         ${swipes.createdAt} as at from ${swipes}

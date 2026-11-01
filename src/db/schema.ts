@@ -221,6 +221,7 @@ export const outboxKind = pgEnum('outbox_kind', [
   'notification_digest',
   'trend_challenge',
   'badge',
+  'recap',
 ])
 
 export const outboxStatus = pgEnum('outbox_status', [
@@ -499,6 +500,7 @@ export const notificationType = pgEnum('notification_type', [
   'applicant',
   'badge',
   'report',
+  'recap',
 ])
 
 export const notificationMailStatus = pgEnum('notification_mail_status', [
@@ -710,6 +712,12 @@ export const memberEventBadges = pgTable(
 // One row once the badges already earned before launch were recorded, so
 // that is done once, quietly (R-BADGE-11).
 export const badgeLaunch = pgTable('badge_launch', {
+  doneAt: at('done_at').primaryKey(),
+})
+
+// Members were told once that the summit recap is open; never again,
+// whatever the switch does after (R-RECAP-9, ADR 0060).
+export const recapAnnouncement = pgTable('recap_announcement', {
   doneAt: at('done_at').primaryKey(),
 })
 

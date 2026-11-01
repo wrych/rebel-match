@@ -112,6 +112,18 @@ function deps(
       seeHint: () => Promise.resolve(),
       leaderboard: () => Promise.resolve({ rows: [], own: null, of: 0 }),
     },
+    presentation: {
+      show: () =>
+        Promise.resolve({
+          timeline: { nodes: [], links: [], moons: [], own: null },
+          cast: [],
+        }),
+    },
+    network: {
+      timeline: () =>
+        Promise.resolve({ nodes: [], links: [], moons: [], own: null }),
+    },
+    recap: { mine: () => Promise.reject(new Error('not used')) },
     badges: {
       recount: () => Promise.resolve(),
       mine: () => Promise.resolve({ rows: [], events: [] }),

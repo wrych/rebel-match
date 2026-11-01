@@ -11,6 +11,7 @@ const adminScreens: readonly AdminLink[] = [
   { name: 'admin-moderation', label: 'Moderation' },
   { name: 'admin-outbox', label: 'Outbound message log' },
   { name: 'admin-settings', label: 'Settings' },
+  { name: 'admin-presentation', label: 'Presentation' },
 ].flatMap(({ name, label }) => {
   const route = routeTable.find((candidate) => candidate.name === name)
   return route === undefined ? [] : [{ ...route, label }]

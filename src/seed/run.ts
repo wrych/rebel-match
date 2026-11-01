@@ -1,11 +1,12 @@
 import { randomUUID } from 'node:crypto'
-import { and, eq, sql } from 'drizzle-orm'
+import { and, eq, isNull, sql } from 'drizzle-orm'
 import type { RoleKey } from '../access.js'
 import type { Database } from '../db/connect.js'
 import {
   cases,
   challenges,
   companySizes,
+  connectionRequests,
   memberExpertise,
   memberRoles,
   members,
@@ -16,6 +17,7 @@ import {
 import type {
   SeedCase,
   SeedChallenge,
+  SeedConnection,
   SeedExpertise,
   SeedMember,
   SeedOption,
@@ -23,6 +25,10 @@ import type {
 } from './types.js'
 
 const SEEDED_ADMIN_ROLES: readonly RoleKey[] = ['member', 'admin']
+const MS_PER_HOUR = 3_600_000
+
+const hoursBefore = (now: Date, hours: number): Date =>
+  new Date(now.getTime() - hours * MS_PER_HOUR)
 
 // The value an upsert would have written: Postgres calls that row `excluded`.
 const excluded = (column: string): ReturnType<typeof sql> =>
@@ -52,11 +58,15 @@ async function memberIdOf(db: Database, email: string): Promise<string | null> {
   return row?.id ?? null
 }
 
+// Times are written only when the member is new, so a re-run never moves
+// when someone joined (R-SEED-7, R-SEED-10).
 async function upsertMember(
   db: Database,
   member: SeedMember,
   consentVersion: string,
+  now: Date,
 ): Promise<void> {
+  const joinedAt = hoursBefore(now, member.joinedHoursAgo ?? 0)
   await db
     .insert(members)
     .values({
@@ -69,7 +79,9 @@ async function upsertMember(
       companySize: member.companySize,
       status: 'active',
       consentVersion,
-      consentAt: new Date(),
+      consentAt: joinedAt,
+      firstOnboardedAt: joinedAt,
+      createdAt: joinedAt,
       analyticsId: randomUUID(),
     })
     .onConflictDoUpdate({
@@ -126,6 +138,7 @@ async function upsertCase(db: Database, item: SeedCase): Promise<void> {
 async function insertChallenge(
   db: Database,
   challenge: SeedChallenge,
+  now: Date,
 ): Promise<void> {
   const memberId = await memberIdOf(db, challenge.authorEmail)
   if (memberId === null) return
@@ -146,6 +159,72 @@ async function insertChallenge(
     body: challenge.body,
     trendId: challenge.trendId,
     autoTrend: challenge.trendId,
+    createdAt: hoursBefore(now, challenge.postedHoursAgo ?? 0),
+  })
+}
+
+async function challengeIdOf(
+  db: Database,
+  challenge: SeedConnection['challenge'],
+): Promise<string | null> {
+  if (challenge === null) return null
+  const authorId = await memberIdOf(db, challenge.authorEmail)
+  if (authorId === null) return null
+  const [row] = await db
+    .select({ id: challenges.id })
+    .from(challenges)
+    .where(
+      and(
+        eq(challenges.memberId, authorId),
+        eq(challenges.body, challenge.body),
+      ),
+    )
+    .limit(1)
+  return row?.id ?? null
+}
+
+// A request is known by its two members and its challenge; one already there,
+// in whatever state, is left as it is (R-SEED-7). An accepted one counts as
+// opened by both, so a dev nav does not start badged.
+async function insertConnection(
+  db: Database,
+  request: SeedConnection,
+  now: Date,
+): Promise<void> {
+  const requesterId = await memberIdOf(db, request.requesterEmail)
+  const targetId = await memberIdOf(db, request.targetEmail)
+  if (requesterId === null || targetId === null) return
+  const challengeId = await challengeIdOf(db, request.challenge)
+  const [existing] = await db
+    .select({ id: connectionRequests.id })
+    .from(connectionRequests)
+    .where(
+      and(
+        eq(connectionRequests.requesterId, requesterId),
+        eq(connectionRequests.targetId, targetId),
+        challengeId === null
+          ? isNull(connectionRequests.challengeId)
+          : eq(connectionRequests.challengeId, challengeId),
+      ),
+    )
+    .limit(1)
+  if (existing !== undefined) return
+  const respondedAt =
+    request.respondedHoursAgo === null
+      ? null
+      : hoursBefore(now, request.respondedHoursAgo)
+  const seenAt = request.status === 'accepted' ? respondedAt : null
+  await db.insert(connectionRequests).values({
+    id: randomUUID(),
+    requesterId,
+    targetId,
+    challengeId,
+    kind: request.kind,
+    status: request.status,
+    createdAt: hoursBefore(now, request.requestedHoursAgo),
+    respondedAt,
+    requesterSeenAt: seenAt,
+    targetSeenAt: seenAt,
   })
 }
 
@@ -200,12 +279,16 @@ async function applyPlan(
   for (const item of plan.cases) await upsertCase(db, item)
   await upsertOptions(db, sectors, plan.sectors)
   await upsertOptions(db, companySizes, plan.companySizes)
+  const now = new Date()
   for (const member of plan.members) {
-    await upsertMember(db, member, consentVersion)
+    await upsertMember(db, member, consentVersion, now)
   }
   for (const email of plan.admins) await insertAdmin(db, email)
-  for (const challenge of plan.challenges) await insertChallenge(db, challenge)
+  for (const challenge of plan.challenges)
+    await insertChallenge(db, challenge, now)
   for (const offer of plan.expertise) await upsertExpertise(db, offer)
+  for (const request of plan.connections)
+    await insertConnection(db, request, now)
 }
 
 /** Applies a plan in one transaction, upserting by natural key so a re-run

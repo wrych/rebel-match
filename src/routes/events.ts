@@ -15,6 +15,7 @@ const screens: readonly string[] = [
   ...routeTable.map((route) => route.name),
   'not-found',
 ]
+const screenName = z.string().refine((name) => screens.includes(name))
 
 // A variant counts only beside its own experiment.
 const exposure = z
@@ -37,15 +38,21 @@ const uiEvent: z.ZodType<AnalyticsEvent> = z
     }),
     z.object({
       event: z.literal('feedback_opened'),
-      props: z
-        .object({
-          screen: z.string().refine((name) => screens.includes(name)),
-        })
-        .strict(),
+      props: z.object({ screen: screenName }).strict(),
     }),
     z.object({
       event: z.literal('game_opened'),
       props: z.object({}).strict(),
+    }),
+    z.object({
+      event: z.literal('recap_opened'),
+      props: z.object({}).strict(),
+    }),
+    z.object({
+      event: z.literal('recap_shared'),
+      props: z
+        .object({ via: z.enum(['share_sheet', 'linkedin', 'image']) })
+        .strict(),
     }),
     z.object({ event: z.literal('experiment_exposed'), props: exposure }),
     z.object({
@@ -74,6 +81,10 @@ const uiEvent: z.ZodType<AnalyticsEvent> = z
           via: z.enum(['app', 'email']),
         })
         .strict(),
+    }),
+    z.object({
+      event: z.literal('screen_viewed'),
+      props: z.object({ screen: screenName }).strict(),
     }),
   ])
   .transform(

@@ -371,3 +371,40 @@ describe('several: one digest (R-NOTE-8, R-MSG-6)', () => {
     ).toBeNull()
   })
 })
+
+const recapNote = due({
+  id: 'n9',
+  type: 'recap',
+  aboutMemberId: 'm-bob',
+  connectionId: null,
+  requestStatus: null,
+})
+
+describe('the recap is ready (R-RECAP-9)', () => {
+  it('mails the member their own record’s link, about nobody else', async () => {
+    const { send, sent } = sender()
+
+    expect(await send([recapNote])).toBe('sent')
+
+    expect(sent[0]).toMatchObject({
+      memberId: 'm-bob',
+      to: 'm-bob@example.invalid',
+      kind: 'recap',
+      subject: 'Your rebel record is ready',
+    })
+    expect(sent[0]?.text).toContain(
+      'See your rebel record here:\nhttp://localhost:5173/recap?notice=recap',
+    )
+    expect(sent[0]?.text).not.toContain('Ada')
+  })
+
+  it('takes a line of its own in a digest', async () => {
+    const { send, sent } = sender()
+
+    await send([due(), recapNote])
+
+    expect(sent[0]?.text).toContain(
+      'Your rebel record is ready: the summit, as you lived it.\nhttp://localhost:5173/recap?notice=recap',
+    )
+  })
+})

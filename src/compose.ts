@@ -80,6 +80,14 @@ import { createActivity } from './services/activity.js'
 import { createActivityStore } from './services/activity-store.js'
 import { createGame } from './services/game.js'
 import { createGameStore } from './services/game-store.js'
+import { createNetwork, type NetworkService } from './services/network.js'
+import { createNetworkStore } from './services/network-store.js'
+import { createRecap } from './services/recap.js'
+import { createRecapAnnouncer } from './services/recap-announce.js'
+import { createRecapAnnounceStore } from './services/recap-announce-store.js'
+import { recapOpen } from './recap/open.js'
+import { createPresentation } from './services/presentation.js'
+import { presentationCast } from './presentation/load.js'
 import { createInviteRedemption } from './services/invite-redemption-store.js'
 import { createInviteStore } from './services/invite-store.js'
 import { createInvites } from './services/invites.js'
@@ -381,12 +389,17 @@ const ignoreError = (): void => undefined
 
 // The worker that mails notifications, each type's own email as it was sent
 // from the request before (R-NOTE-7..11, ADR 0037).
-function composeNotificationMail(
+function composeNoticeMail(
   config: Config,
   db: Database,
   mailer: Mailer,
   hooks: { onNotificationError?: (error: unknown) => void },
+  settings: LiveSettings,
 ): AppDeps['notificationMail'] {
+  const recap = createRecapAnnouncer({
+    store: createRecapAnnounceStore(db),
+    open: () => recapOpen(settings.limits(), Date.now()),
+  })
   const store = createNotificationMailStore(db)
   const worker = createNotificationWorker({
     store,
@@ -400,8 +413,13 @@ function composeNotificationMail(
     settings: () => config.notificationWorker,
     onError: hooks.onNotificationError ?? ignoreError,
   })
+  // The recap is announced before the run mails, so the same run sends it
+  // (R-RECAP-9, ADR 0060); a failed announcement waits for the next run.
   return {
-    deliverDue: () => worker.deliverDue(),
+    deliverDue: async () => {
+      await recap.announce().catch(hooks.onNotificationError ?? ignoreError)
+      await worker.deliverDue()
+    },
     purgeBefore: (cutoff) => store.purgeBefore(cutoff),
   }
 }
@@ -557,6 +575,47 @@ function withScheduled(
   }
 }
 
+// The member's replay and the hosts' presentation of the same network
+// (ADR 0057, ADR 0058).
+function composeNetwork(
+  config: Config,
+  db: Database,
+  settings: LiveSettings,
+): Pick<AppDeps, 'network' | 'presentation'> {
+  const store = createNetworkStore(db)
+  return {
+    network: createNetwork({
+      store,
+      neededOwnLinks: () => settings.limits().networkMinOwnConnections,
+    }),
+    presentation: createPresentation({
+      store,
+      cast: presentationCast(config),
+    }),
+  }
+}
+
+// Each member's summit recap, from the badges' counts and the replay
+// (ADR 0059).
+function composeRecap(
+  db: Database,
+  settings: LiveSettings,
+  badges: BadgeService,
+  network: NetworkService,
+): AppDeps['recap'] {
+  const store = createBadgeStore(db)
+  return createRecap({
+    badges,
+    standings: (row) => store.standings(row),
+    network,
+    rule: () => ({
+      step: settings.limits().recapPercentStep,
+      minMembers: settings.limits().recapMinMembers,
+      minShare: settings.limits().recapMinShare,
+    }),
+  })
+}
+
 /** Background work the server reports on: an analytics event that could not
  * be sent, a notification that could not be mailed, a scheduled job that
  * failed. */
@@ -587,6 +646,7 @@ export function composeApp(
     service: badges,
     onError: hooks.onBadgeError ?? ignoreError,
   }
+  const networks = composeNetwork(config, db, settings)
 
   const deps: Omit<AppDeps, 'scheduled'> = {
     config,
@@ -612,7 +672,9 @@ export function composeApp(
     ...composeReports(db, track, settings),
     badges: markingBadgesOpened(badges, composeNotifications(db, settings)),
     game: composeGame(config, db, settings, track, counting),
-    notificationMail: composeNotificationMail(config, db, mailer, hooks),
+    ...networks,
+    recap: composeRecap(db, settings, badges, networks.network),
+    notificationMail: composeNoticeMail(config, db, mailer, hooks, settings),
   }
   return withScheduled(config, deps, hooks.onScheduledError ?? ignoreError)
 }
