@@ -1199,7 +1199,8 @@ notifications: they go out at once, whatever is chosen here (R-NFR-3).
   - **Connection request** — the target, when a request is made (R-CONN-2);
   - **New connection** — the requester, when their request is accepted
     (R-CONN-7), and the target, when a member already connected with them
-    connects over another challenge (R-CONN-9);
+    connects over another challenge (R-CONN-9), and the owner of a live code
+    when someone connects by scanning it (R-CODE-6);
   - **New challenge in a followed trend** — every member following the trend,
     except its author, when a challenge is posted in it, linking to the deck
     opened at its card (R-ASK-9, R-OFF-7);
@@ -2073,7 +2074,9 @@ connects at once (ADR 0063).
   name and a link to the contact screen, no address and no challenge, since
   there is none (R-NAV-9). It is a `connection_added` notification worded
   for a direct connection. A code whose owner is no longer active SHALL
-  NOT connect (R-CODE-10). Between members already connected over a direct
+  NOT connect (R-CODE-10). Every request pending between the two, either
+  side, SHALL be accepted with it, as R-CONN-11 does, leaving the waiting
+  list and showing under _Connected over_. Between members already connected over a direct
   request, nothing SHALL be added, and both land as R-CONN-8 says.
 - **R-CODE-7 (A live code that cannot be used)** — Signed out, `/c/:token`
   SHALL say "Sign in to use live connect codes", with a way to sign in, and
