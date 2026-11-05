@@ -59,8 +59,8 @@ code admits a non-member; that stays the invites' job.
 - A photographed live code is usable for at most
   `liveCodeSeconds + liveCodeGraceSeconds`, and only once. Hosts can shorten
   both.
-- The owner learns who connected on the code screen and by the R-CONN-9
-  notification; the scanner lands on the contact screen.
+- The owner learns who connected on the code screen and by a
+  `connection_added` notification worded for a direct connection; the scanner lands on the contact screen.
 - Codes are deleted with their member and stop working on a ban or a
   deletion request.
 - A new client dependency, `uqr`, in its own chunk.

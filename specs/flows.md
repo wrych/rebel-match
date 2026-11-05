@@ -981,8 +981,8 @@ While hosts have `limits.connectCodes` on (R-CODE-1).
 2. The scanner, signed in, opens `/c/:token` → the token is spent, an
    accepted direct request is recorded, and the scanner lands on **S16**
    with the owner's address (R-CODE-6).
-3. The owner's S47 shows who just connected; they are notified as for
-   R-CONN-9.
+3. The owner's S47 shows who just connected, and a `connection_added`
+   notification tells them too (R-CODE-6).
 
 **Branches**
 

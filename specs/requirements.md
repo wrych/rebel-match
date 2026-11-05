@@ -2047,8 +2047,8 @@ connects at once (ADR 0063).
   `/p/:token/connect` and on as R-FIND-7. Signed out, the visitor SHALL go
   through login and come back to it (R-NAV-5). A code reset or turned off,
   unknown, the visitor's own, or an owner no longer active SHALL answer as
-  not found, saying nothing about the owner. The token SHALL be taken out of
-  the address once read (as R-INV-12).
+  not found, saying nothing about the owner. The token stays in the address:
+  the link is the code, meant to be shared, and reset is what stops it.
 - **R-CODE-4 (Turning it off, resetting it)** — The profile screen and S47
   SHALL offer **Profile code: on / off** and **Reset code**. Off SHALL make
   the code not found until turned on again, the same code; Reset SHALL replace
@@ -2067,8 +2067,12 @@ connects at once (ADR 0063).
   **accepted** direct request from the scanner to the owner, with no note,
   and take the scanner to the contact screen (R-CONN-3). Showing the code is
   the owner's opt-in, scanning it the scanner's (ADR 0063). The owner SHALL
-  see on S47, within `limits.liveCodeSeconds`, who just connected, and be told
-  as R-CONN-9 tells a target. A code whose owner is no longer active SHALL
+  see on S47, within `limits.liveCodeSeconds`, who just connected, and SHALL
+  be notified, in the app and by email at the cadence they chose (R-NOTE-2),
+  that the scanner connected with them by their live code: the scanner's
+  name and a link to the contact screen, no address and no challenge, since
+  there is none (R-NAV-9). It is a `connection_added` notification worded
+  for a direct connection. A code whose owner is no longer active SHALL
   NOT connect (R-CODE-10). Between members already connected over a direct
   request, nothing SHALL be added, and both land as R-CONN-8 says.
 - **R-CODE-7 (A live code that cannot be used)** — Signed out, `/c/:token`
