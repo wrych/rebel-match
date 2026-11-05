@@ -640,8 +640,10 @@ connect.")_
 - **R-CONN-10 (Connected over)** — The contact screen SHALL list, under
   _Connected over_, every accepted request between the two members, each with
   its challenge and trend, whether it was same boat or been there, and the note
-  sent. The newest SHALL come first, those the viewer has not opened yet above
-  the rest and outlined.
+  sent. A direct request (R-FIND-7, R-CODE-6) has no challenge, trend or side:
+  it SHALL show as _Connected directly_, with its note if one was sent. The
+  newest SHALL come first, those the viewer has not opened yet above the rest
+  and outlined.
 - **R-CONN-11** — WHEN the target accepts a request THE SYSTEM SHALL accept with
   it every other request pending between the same two members, whichever side
   sent it, since they are then connected (R-CONN-8). Those requests SHALL leave
@@ -826,7 +828,8 @@ at a screen instead of at the front door.
 - **R-NAV-5** — WHEN an unauthenticated visitor opens any deep link THE SYSTEM
   SHALL show the login screen and, after a successful magic-link verify, send
   them to the **originally requested URL** rather than the generic welcome
-  screen.
+  screen. A live code (`/c/:token`) is the one exception: it is not a deep
+  link to keep, and shows its own sign-in notice instead (R-CODE-7).
 - **R-NAV-6** — The redirect target SHALL be validated as a **relative in-app
   path**. IF it is absolute, external, or otherwise unrecognized THEN THE SYSTEM
   SHALL fall back to `/` (no open redirect).
