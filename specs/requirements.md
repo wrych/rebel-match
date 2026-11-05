@@ -593,8 +593,8 @@ connect.")_
 - **R-CONN-1** — WHEN a member initiates a connection (same boat, been there,
   or direct, R-FIND-7) THE SYSTEM SHALL create a **pending connection
   request** to the target member and SHALL NOT reveal either party's email at
-  this point. A live code is the one exception, recorded accepted at once
-  (R-CODE-6).
+  this point. Two exceptions are recorded accepted at once: between members
+  already connected (R-CONN-8), and by a live code (R-CODE-6).
 - **R-CONN-2** — The system SHALL notify the target member, in the app and by
   email at the cadence they chose (R-NOTE-2), that someone wants to connect,
   including the requester's name and message/offer note, and in-app the

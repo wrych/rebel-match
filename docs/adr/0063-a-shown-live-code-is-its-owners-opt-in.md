@@ -54,8 +54,9 @@ code admits a non-member; that stays the invites' job.
 
 ## Consequences
 
-- ADR 0004's "a request is created pending" now has one exception, and it is
-  this one: a live code redeemed within its time. R-CONN-1 says so.
+- ADR 0004's "a request is created pending" gains a second exception, after
+  ADR 0035's members already connected: a live code redeemed within its time.
+  R-CONN-1 names both.
 - A photographed live code is usable for at most
   `liveCodeSeconds + liveCodeGraceSeconds`, and only once. Hosts can shorten
   both.
