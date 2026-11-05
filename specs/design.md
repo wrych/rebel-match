@@ -610,7 +610,11 @@ S44–S47 let members find each other and connect without a challenge
 - **Live codes** (`src/services/live-codes.ts`): the screen asks for a code
   on opening and every `limits.liveCodeSeconds`; each is a 128-bit random
   token, stored hashed as magic links are, usable until issued +
-  `limits.liveCodeSeconds` + `limits.liveCodeGraceSeconds`. Redeeming is one
+  `limits.liveCodeSeconds` + `limits.liveCodeGraceSeconds`. Issuing one, in
+  the same transaction, cuts every older unspent code of the member to at
+  most now + `limits.liveCodeGraceSeconds`, so only the newest code and, for
+  the grace, the one before it can be used, however often the screen asks
+  (R-CODE-5). Redeeming is one
   statement that sets `spent_at` where it is null and the code is not
   expired, so two scans cannot both win, and only while owner and scanner
   are both active and onboarded, so a banned owner's code stops at once.
