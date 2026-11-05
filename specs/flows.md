@@ -42,6 +42,8 @@ Conventions:
                    ├──►  F19 Badges
                    ├──►  F22 The network replay (while hosts have it on)
                    ├──►  F24 The summit recap (while hosts have it on)
+                   ├──►  F25 Find a member ──►  F7 Connect (direct)
+                   ├──►  F26 Connect codes  ──►  F7, or connected at once
                    └──►  F12 Feedback
 
    Happy mode, onboarded: F18 9toRevolution (impressum → game → leaderboard)
@@ -918,3 +920,79 @@ reported member, S26 A member's page.
    sheet with the image and a post; on a laptop it saves the image and opens
    LinkedIn's composer with the post written. _Save image_ only saves it.
    Nothing names anyone else (R-RECAP-5, R-RECAP-6).
+
+---
+
+## F25 — Find a member and connect directly
+
+**Screens:** S44 Find a member → S45 A member's card → S46 Connect directly →
+S13 Request sent. While hosts have `limits.memberSearch` on (R-FIND-1).
+
+1. From Matches or the menu, the member opens **S44** `/people`.
+2. They type a name, or a query such as
+   `name:and* company:"corporate rebels"`, or build one with **+ Company**,
+   **+ Title**, **+ Sector**. Each operator shows as a chip; the query stays
+   in the URL (R-FIND-2, R-FIND-4).
+3. `GET /api/members/search?q=` returns at most
+   `limits.memberSearchMaxResults` cards, best first, no email; with more,
+   "add a term to narrow it down" (R-FIND-3).
+4. A card opens **S45** `/people/:memberId` → **Connect** → **S46**, with an
+   optional note → `POST /api/connections` with
+   `{targetId, kind: 'direct', message?}` (R-FIND-6, R-FIND-7).
+5. From here it is **F7**: pending until the target accepts or declines;
+   already connected goes straight to S16 (R-CONN-1..4, R-CONN-8).
+
+**Branches**
+
+- _Query too short, or no terms_ → nothing searched; the screen says how to
+  search (R-FIND-2).
+- _The target is not findable, or no longer active_ → S45 and the request
+  answer not found (R-FIND-5, R-FIND-6, R-NAV-8).
+- _Over `limits.directRequestsPerDay`_ → the request is refused with a
+  plain message (R-FIND-7).
+- _A member turns **Findable in search** off_ → they leave every result at
+  once; their codes still work until turned off (R-FIND-5, R-CODE-4).
+
+---
+
+## F26 — Connect codes
+
+**Screens:** S47 Your code; S45/S46 reached by a profile code; S16 Contact.
+While hosts have `limits.connectCodes` on (R-CODE-1).
+
+**Profile code (long-lived, double opt-in)**
+
+1. The owner opens **S47** `/me/code` → **Share my profile**. The first time,
+   a profile code is made; they show the QR, copy the link or share it
+   (R-CODE-2).
+2. The scanner opens `/p/:token`. Signed in, they see the owner's card
+   (S45) → **Connect** → `/p/:token/connect` with an optional note → a
+   pending direct request → **F7** (R-CODE-3, R-FIND-7).
+3. Signed out, the scanner signs in and comes back to the card (R-NAV-5,
+   **F13**).
+
+**Live code (short-lived, connects at once)**
+
+1. The owner opens **Connect now** on S47. A QR code shows with a ring
+   counting down `limits.liveCodeSeconds`; a new code replaces it on the same
+   screen, and the old one still works for `limits.liveCodeGraceSeconds`
+   (R-CODE-5).
+2. The scanner, signed in, opens `/c/:token` → the token is spent, an
+   accepted direct request is recorded, and the scanner lands on **S16**
+   with the owner's address (R-CODE-6).
+3. The owner's S47 shows who just connected; they are notified as for
+   R-CONN-9.
+
+**Branches**
+
+- _Live code scanned signed out_ → "Sign in to use live connect codes"; the
+  token is not kept (R-CODE-7).
+- _Live code spent, expired, or one's own_ → "This code has expired — ask
+  for a fresh one" (R-CODE-7).
+- _Profile code reset, turned off, unknown or one's own_ → not found
+  (R-CODE-3, R-CODE-4).
+- _Already connected_ → nothing added for a direct connection they already
+  share; both land as F7 says (R-CODE-6, R-CONN-8).
+- _A photo of a live code is posted_ → it expired within
+  `limits.liveCodeSeconds + limits.liveCodeGraceSeconds`, or was spent by the
+  first scan (ADR 0063).

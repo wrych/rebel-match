@@ -500,6 +500,27 @@ Built after the spec and ADR merge. One pull request per item, in this order.
 
 ---
 
+## M11 — Finding members and connect codes _(C11, C12, F25, F26, ADR 0062, ADR 0063 — behind their switches)_
+
+- [ ] The `direct` request kind, reach, and `POST /api/connections` taking
+      it, capped per day. _(R-FIND-7, R-CONN-1)_
+- [ ] The query parser and printer, pure, shared by client and server.
+      _(R-FIND-2)_
+- [ ] Search: `/api/members/search` behind `limits.memberSearch` and
+      `member:search`, **Findable in search** on the profile, S44 with its
+      chips, S45, S46. _(R-FIND-1..8)_
+- [ ] Profile codes: the table, on / off and reset, `/p/:token` to S45 and
+      S46, S47's first tab with the QR, Copy link and Share. _(R-CODE-1..4)_
+- [ ] Live codes: issue and redeem, the grace, the tick's clean-up, S47's
+      second tab with its ring and who just connected, `/c/:token` and its
+      answers. _(R-CODE-5..7)_
+- [ ] The host settings, the usage events, erasure. _(R-CODE-8..10,
+      R-FIND-8)_
+- [ ] On a phone: scan a live code at the end of its ring, and a profile code
+      signed out, through sign-in and back. _(R-CODE-5, R-NAV-5)_
+
+---
+
 ## Post-beta backlog _(Could / Won't-for-now)_
 
 - [ ] Offer "refresh to update" when the server's version differs from the
@@ -519,6 +540,9 @@ Built after the spec and ADR merge. One pull request per item, in this order.
       pin once `concurrently` depends on `shell-quote` 1.11.0 or later, and the
       `esbuild` pin once `drizzle-kit` no longer pulls in
       `@esbuild-kit/core-utils`. Run `npm audit` again while there. _(R-QA-7)_
+- [ ] A profile code opened signed out: say "Sign in to connect" on the card
+      screen itself with the email field, rather than the plain login
+      screen. _(R-CODE-3, R-NAV-5)_
 - [ ] (Deferred) frontier nomination, platform integration, phone/LinkedIn
       connect. _(W3–W7)_
 
