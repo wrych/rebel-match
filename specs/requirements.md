@@ -2018,8 +2018,10 @@ connects at once (ADR 0063).
   connect code they show or share, and that the profile code is turned off
   separately (R-CODE-4).
 - **R-FIND-6 (A member's card)** — A result SHALL open the member's card at
-  `/people/:memberId` (S45), with **Connect**. The card SHALL answer as not
-  found unless the member would be returned by a search (R-FIND-3).
+  `/people/:memberId` (S45), with **Connect**. Opened from search, at that
+  address, the card SHALL answer as not found unless the member would be
+  returned by a search (R-FIND-3); opened by a profile code, R-CODE-3 governs
+  it instead.
 - **R-FIND-7 (Connect directly)** — **Connect** SHALL open
   `/people/:memberId/connect` (S46): the target's card, an optional note
   (R-OFF-4's limits do not apply; the note's own maximum does), and
