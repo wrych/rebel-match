@@ -498,6 +498,10 @@ front door (R-NAV-1..10).
   goes to `/` (R-NAV-6). No open redirect.
 - _Member is not a party to the linked challenge or request_ → generic
   not-found; the app does not confirm the row exists (R-NAV-8).
+- _A connect code_ → a profile link, `/p#t=…` or `/p/connect#t=…`, is
+  remembered whole, its fragment included, so the card opens after sign-in
+  (R-CODE-3); a live code, `/c#t=…`, is never remembered and says "Sign in to
+  use live connect codes" instead (R-CODE-7).
 - _Link forwarded to someone else_ → it is just a URL; it grants nothing. The
   recipient still needs their own session, and the authorization check in the
   branch above applies.

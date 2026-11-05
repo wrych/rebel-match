@@ -103,6 +103,14 @@ thresholds have sane defaults in the file and may be overridden by env.
 | `notifications.workerIntervalSeconds` | `60`                          | R-NOTE-7                  |
 | `notifications.maxAttempts`           | `5`                           | R-NOTE-10                 |
 | `limits.whitelistBatchMax`            | `1000`                        | R-AUTH-1                  |
+| `limits.memberSearch` (switch)        | `0`                           | R-FIND-1                  |
+| `limits.memberSearchMinChars`         | `2`                           | R-FIND-2                  |
+| `limits.memberSearchMaxResults`       | `20`                          | R-FIND-3                  |
+| `limits.directRequestsPerDay`         | `20`                          | R-FIND-7                  |
+| `limits.connectCodes` (switch)        | `0`                           | R-CODE-1                  |
+| `limits.liveCodeSeconds`              | `30` (10–120)                 | R-CODE-5, R-CODE-8        |
+| `limits.liveCodeGraceSeconds`         | `10` (0–30, ≤ the above)      | R-CODE-5, R-CODE-8        |
+| `limits.liveCodeKeepMinutes`          | `60`                          | R-CODE-6                  |
 | `limits.recapOpensAt`                 | `0` (none)                    | R-RECAP-8                 |
 | `limits.recapMinShare`                | `50`                          | R-RECAP-3                 |
 | `limits.recapNetworkStorySeconds`     | `10`                          | R-RECAP-1                 |

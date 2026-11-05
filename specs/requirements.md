@@ -2099,7 +2099,8 @@ connects at once (ADR 0063).
   scanner's own, or one whose owner is no longer active SHALL say "This code
   has expired — ask for a fresh one", saying nothing about its owner.
 - **R-CODE-8 (Host settings)** — Hosts SHALL be able to change
-  `limits.liveCodeSeconds` and `limits.liveCodeGraceSeconds`, within bounds,
+  `limits.liveCodeSeconds` (10 to 120) and `limits.liveCodeGraceSeconds` (0 to
+  30, and never above the first, an order R-CFG-6 checks),
   and both switches, `limits.memberSearch` and `limits.connectCodes`, in the
   host tools (R-CFG-6).
 - **R-CODE-9 (Usage)** — For a member opted in (R-ANA-4) THE SYSTEM SHALL send
