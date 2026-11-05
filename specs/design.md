@@ -611,9 +611,10 @@ S44–S47 let members find each other and connect without a challenge
   token, stored hashed as magic links are, usable until issued +
   `limits.liveCodeSeconds` + `limits.liveCodeGraceSeconds`. Redeeming is one
   statement that sets `spent_at` where it is null and the code is not
-  expired, so two scans cannot both win, and only while both owner and
-  scanner are reachable (reach, above), so a banned owner's code stops at
-  once. The response that hands out the next code lists who connected
+  expired, so two scans cannot both win, and only while owner and scanner
+  are both active and onboarded, so a banned owner's code stops at once.
+  Live codes do not ask reach: findable and the search switch have no say
+  over them (R-FIND-5). The response that hands out the next code lists who connected
   through the owner's codes not yet reported, which is how S47 shows them,
   and marks them `reported_at`. The tick (ADR 0049) deletes expired unspent
   rows, spent rows once reported, and spent rows never reported after
@@ -1076,8 +1077,8 @@ A profile code is shown on screen and re-drawn, so its token is kept as is,
 like an invite's (ADR 0014); it only ever lets someone _ask_. A live code
 connects at once, lives seconds, and is never shown again, so only its hash
 is stored. Both cascade with their member (R-CODE-10). A banned member's
-codes stop at once: opening a profile code and redeeming a live code both ask
-reach (§1), which requires an active owner.
+codes stop at once: opening a profile code asks reach (§1), and redeeming a
+live code checks both members are active (§1); both require an active owner.
 
 ### follows
 
@@ -2086,36 +2087,39 @@ Alternatives considered (kept only as fallbacks):
   or name.
 - Capture these events with non-identifying properties only:
 
-  | event                          | properties                                       |
-  | ------------------------------ | ------------------------------------------------ |
-  | `login_completed`              | —                                                |
-  | `onboarding_completed`         | `consent_version`, `seconds_to_onboard`?         |
-  | `journey_chosen`               | `journey: ask\|offer`                            |
-  | `challenge_submitted`          | `char_count`                                     |
-  | `trend_assigned`               | `trend_id`, `overridden: bool`                   |
-  | `swipe`                        | `action`, `trend_id`                             |
-  | `connection_requested`         | `kind`                                           |
-  | `connection_responded`         | `status: accepted\|declined`, `hours_to_respond` |
-  | `contact_opened`               | `unseen: bool` (R-CONN-7)                        |
-  | `contact_reached_out`          | `method: email\|copy`                            |
-  | `feedback_opened`              | `screen`                                         |
-  | `game_opened`                  | —                                                |
-  | `game_day_finished`            | `mode`, `level`, `outcome`, `seconds`            |
-  | `game_result_shared`           | —                                                |
-  | `badge_earned`                 | `row`, `level` (`event`, no level, for an event) |
-  | `experiment_exposed`           | `experiment`, `variant` (R-EXP-2)                |
-  | `matches_section_opened`       | `section: same_boat\|been_there\|cases`          |
-  | `match_connect_tapped`         | `kind` (R-ASK-16)                                |
-  | `notifications_list_opened`    | `new_count`                                      |
-  | `notification_opened`          | `type` (its kind), `via: app\|email`             |
-  | `notification_cadence_changed` | `type`, `from`, `to` (R-NOTE-2)                  |
-  | `deck_emptied`                 | —                                                |
-  | `trend_opened`                 | `trend_id`                                       |
-  | `trend_follow_changed`         | `trend_id`, `followed: bool`                     |
-  | `content_reported`             | `kind: challenge\|note`, `reason` (R-MOD-12)     |
-  | `recap_opened`                 | — (R-RECAP-7)                                    |
-  | `recap_shared`                 | `via: share_sheet\|linkedin\|image` (R-RECAP-7)  |
-  | `screen_viewed`                | `screen` (its route name, never its path)        |
+  | event                          | properties                                                                                                          |
+  | ------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+  | `login_completed`              | —                                                                                                                   |
+  | `onboarding_completed`         | `consent_version`, `seconds_to_onboard`?                                                                            |
+  | `journey_chosen`               | `journey: ask\|offer`                                                                                               |
+  | `challenge_submitted`          | `char_count`                                                                                                        |
+  | `trend_assigned`               | `trend_id`, `overridden: bool`                                                                                      |
+  | `swipe`                        | `action`, `trend_id`                                                                                                |
+  | `connection_requested`         | `kind`                                                                                                              |
+  | `connection_responded`         | `status: accepted\|declined`, `hours_to_respond`                                                                    |
+  | `contact_opened`               | `unseen: bool` (R-CONN-7)                                                                                           |
+  | `contact_reached_out`          | `method: email\|copy`                                                                                               |
+  | `feedback_opened`              | `screen`                                                                                                            |
+  | `game_opened`                  | —                                                                                                                   |
+  | `game_day_finished`            | `mode`, `level`, `outcome`, `seconds`                                                                               |
+  | `game_result_shared`           | —                                                                                                                   |
+  | `badge_earned`                 | `row`, `level` (`event`, no level, for an event)                                                                    |
+  | `experiment_exposed`           | `experiment`, `variant` (R-EXP-2)                                                                                   |
+  | `matches_section_opened`       | `section: same_boat\|been_there\|cases`                                                                             |
+  | `match_connect_tapped`         | `kind` (R-ASK-16)                                                                                                   |
+  | `notifications_list_opened`    | `new_count`                                                                                                         |
+  | `notification_opened`          | `type` (its kind), `via: app\|email`                                                                                |
+  | `notification_cadence_changed` | `type`, `from`, `to` (R-NOTE-2)                                                                                     |
+  | `deck_emptied`                 | —                                                                                                                   |
+  | `trend_opened`                 | `trend_id`                                                                                                          |
+  | `trend_follow_changed`         | `trend_id`, `followed: bool`                                                                                        |
+  | `content_reported`             | `kind: challenge\|note`, `reason` (R-MOD-12)                                                                        |
+  | `recap_opened`                 | — (R-RECAP-7)                                                                                                       |
+  | `recap_shared`                 | `via: share_sheet\|linkedin\|image` (R-RECAP-7)                                                                     |
+  | `member_searched`              | `operators[]`, `results: none\|some\|more` (R-FIND-8), sent by the search route                                     |
+  | `connect_code_shown`           | `code: profile\|live` (R-CODE-9), sent by the routes that hand out a code                                           |
+  | `connect_code_opened`          | `code: profile\|live`, `outcome: opened\|connected\|expired` (R-CODE-9), sent by the routes that read or redeem one |
+  | `screen_viewed`                | `screen` (its route name, never its path)                                                                           |
 
 - `screen_viewed` is sent once for each screen a navigation settles on, the
   first one of a page load included, and not for a public screen: no one is

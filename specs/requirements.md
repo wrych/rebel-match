@@ -2086,8 +2086,10 @@ connects at once (ADR 0063).
   host tools (R-CFG-6).
 - **R-CODE-9 (Usage)** — For a member opted in (R-ANA-4) THE SYSTEM SHALL send
   `connect_code_shown` and `connect_code_opened` with which code, and for an
-  opened one whether it connected, needed a sign-in, or had expired; never a
-  token or who (R-ANA-3).
+  opened one whether it was opened, connected, or had expired; never a token
+  or who (R-ANA-3). All three SHALL be sent by the server routes themselves,
+  not through `/api/events`; a signed-out visitor has no opt-in, so sends
+  none.
 - **R-CODE-10 (Erased with the account)** — A member's codes SHALL be deleted
   with them, and SHALL stop working the moment they are banned or ask to be
   deleted (R-MOD-9, R-NFR-7).
