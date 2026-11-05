@@ -627,11 +627,13 @@ connect.")_
   contact screen. Both opted in to sharing addresses already, so nothing new is
   revealed (R-CONN-6). A connection about a challenge they are already
   connected over SHALL add nothing, and SHALL take the requester to the contact
-  screen the same way.
+  screen the same way; so SHALL a direct connection (R-FIND-7, R-CODE-6)
+  between two members who already share a direct one, by any route, with no
+  notification.
 - **R-CONN-9** — WHEN a connection is recorded under R-CONN-8 THE SYSTEM SHALL
   notify the target, in the app and by email at the cadence they chose
   (R-NOTE-2), that the requester connected with
-  them over another challenge. The email carries the requester's name, their
+  them over another challenge, or, for a direct request, directly. The email carries the requester's name, their
   note and a link to the contact screen, but no address and no challenge text
   (R-NAV-9). The connection's card SHALL stay outlined in the cockpit
   (R-MINE-6) until the target first opens that contact screen, however the
