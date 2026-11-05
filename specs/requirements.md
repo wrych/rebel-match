@@ -2058,9 +2058,11 @@ connects at once (ADR 0063).
   in its fragment, as the sign-in link carries its own (R-NAV-4): the link is
   the code, meant to be shared, and reset is what stops it. A fragment never
   reaches the server, so no request line or log holds it (R-NFR-9); the client
-  sends it in a request body. Through sign-in, R-NAV-5 sends only `/p` as
-  `next`; the token waits in the browser's session storage, and the card
-  takes it from there on return, so the server never stores it either.
+  sends it in a request body. Through sign-in, R-NAV-5 carries the whole
+  `/p#t=…` as `next`, since the link may be opened in another tab or the mail
+  app's browser: it is stored with the magic link and gone with it (R-AUTH-5),
+  and never logged. R-NAV-6 SHALL accept a fragment on `/p` and drop it on
+  every other path.
 - **R-CODE-4 (Turning it off, resetting it)** — The profile screen and S47
   SHALL offer **Profile code: on / off** and **Reset code**. Off SHALL make
   the code not found until turned on again, the same code; Reset SHALL replace
