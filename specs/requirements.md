@@ -2057,7 +2057,9 @@ connects at once (ADR 0063).
 - **R-CODE-4 (Turning it off, resetting it)** — The profile screen and S47
   SHALL offer **Profile code: on / off** and **Reset code**. Off SHALL make
   the code not found until turned on again, the same code; Reset SHALL replace
-  it at once, so a code printed or posted stops working (R-CODE-3).
+  it at once, so a code printed or posted stops working (R-CODE-3). While
+  `limits.connectCodes` is off the profile screen SHALL NOT show them, and
+  **Findable in search** SHALL show whichever switch is set.
 - **R-CODE-5 (Live code)** — **Connect now** SHALL show a live code: a QR
   code of `/c/:token` with a single-use token from the server, replaced on
   the same screen every `limits.liveCodeSeconds` (30) by a new one, with a
