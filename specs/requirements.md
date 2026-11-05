@@ -2061,8 +2061,8 @@ connects at once (ADR 0063).
   sends it in a request body. Through sign-in, R-NAV-5 carries the whole
   `/p#t=…` as `next`, since the link may be opened in another tab or the mail
   app's browser: it is stored with the magic link and gone with it (R-AUTH-5),
-  and never logged. R-NAV-6 SHALL accept a fragment on `/p` and drop it on
-  every other path.
+  and never logged. R-NAV-6 SHALL accept a fragment on `/p` and `/p/connect`
+  and drop it on every other path.
 - **R-CODE-4 (Turning it off, resetting it)** — The profile screen and S47
   SHALL offer **Profile code: on / off** and **Reset code**. Off SHALL make
   the code not found until turned on again, the same code; Reset SHALL replace

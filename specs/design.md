@@ -1822,14 +1822,14 @@ validator, so neither side can develop a private opinion about which paths exist
 - **Deep link while signed out** → the client remembers the path, routes to
   `/login`, and sends it as `next` on `POST /auth/request-link`. It is stored
   with the token, and the sign-in screen goes there once `POST /auth/verify` has
-  created the session (R-NAV-5). Two exceptions: for `/p` it remembers the
-  fragment too, which holds the profile code (R-CODE-3); `/c` is never
+  created the session (R-NAV-5). Two exceptions: for `/p` and `/p/connect` it
+  remembers the fragment too, which holds the profile code (R-CODE-3); `/c` is never
   remembered, and shows its own sign-in notice (R-CODE-7).
 - **`next` validation happens on the server**, because it arrives in an email:
   accept only a path starting with a single `/` and present in the route table;
   anything else (absolute URL, `//host`, unknown path) falls back to `/`
-  (R-NAV-6). A fragment is kept on `/p` alone and dropped on every other
-  path; `/c` is refused like an unknown path. The client refuses to navigate anywhere not in the table either.
+  (R-NAV-6). A fragment is kept on `/p` and `/p/connect` alone and dropped
+  on every other path; `/c` is refused like an unknown path. The client refuses to navigate anywhere not in the table either.
 - **Onboarding wins** — a guard sends an un-onboarded member to `/onboarding` and
   carries `next` through it; the server independently refuses every other `/api/*`
   route until onboarding is complete (R-NAV-7, R-ONB-1).
