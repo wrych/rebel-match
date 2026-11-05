@@ -2070,7 +2070,7 @@ connects at once (ADR 0063).
   the code not found until turned on again, the same code; Reset SHALL replace
   it at once, so a code printed or posted stops working (R-CODE-3). While
   `limits.connectCodes` is off the profile screen SHALL NOT show them, and
-  **Findable in search** SHALL show whichever switch is set.
+  **Findable in search** SHALL leave out its note about codes (R-FIND-5).
 - **R-CODE-5 (Live code)** — **Connect now** SHALL show a live code: a QR
   code of `/c#t=…` with a single-use token from the server, replaced on
   the same screen every `limits.liveCodeSeconds` (30) by a new one, with a
