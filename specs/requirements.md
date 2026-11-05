@@ -2298,14 +2298,14 @@ fixtures. `design.md` §6 lists the exact records and the profile mechanism.
 6. **Controller and contact** — _(Resolved; see below.)_
 7. **Full privacy notice** — _(Resolved; see below.)_
 8. **Moderation** — _(Resolved; see below.)_
-9. **Search in the privacy words** — members are findable unless they opt out
-   (R-FIND-5). R-ONB-5 already says profile information may be seen by
-   other members wherever the app shows them, so the consent version need not
-   change; should the full privacy notice name the search and the codes, and
-   who approves that wording before launch?
+9. **Search in the privacy words** — _(Resolved; see below.)_
 
 ### Resolved
 
+- **Search in the privacy words** (2026-11-05) — no wording change: R-ONB-5
+  and the privacy notice already say a member's profile may be seen by other
+  members wherever the app shows them, which covers search and the connect
+  codes (R-FIND-5, R-CODE-2). The consent version stays as it is.
 - **Moderation** (2026-10-21) — members withdraw their own challenges, report
   challenges and notes, and hosts hide content or ban a member, for the
   launch (R-ASK-17, R-MOD-1..12, ADR 0055). Hosts see who reported. Nothing

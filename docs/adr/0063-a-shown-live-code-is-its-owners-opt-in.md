@@ -1,6 +1,6 @@
 # 0063. A live code shown is its owner's opt-in; a profile code only asks
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-05
 - **Deciders:** Andy Moesch
 

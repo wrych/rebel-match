@@ -1,6 +1,6 @@
 # 0062. Find members by a capped query, never a directory
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-11-05
 - **Deciders:** Andy Moesch
 
