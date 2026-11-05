@@ -949,7 +949,8 @@ S13 Request sent. While hosts have `limits.memberSearch` on (R-FIND-1).
 - _The target is not findable, or no longer active_ → S45 and the request
   answer not found (R-FIND-5, R-FIND-6, R-NAV-8).
 - _Over `limits.directRequestsPerDay`_ → the request is refused with a
-  plain message (R-FIND-7).
+  plain message saying the day's limit is reached, not as not found
+  (R-FIND-7).
 - _A member turns **Findable in search** off_ → they leave every result at
   once; their codes still work until turned off (R-FIND-5, R-CODE-4).
 

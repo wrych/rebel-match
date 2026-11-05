@@ -2023,7 +2023,8 @@ connects at once (ADR 0063).
   contact (R-CONN-8). A direct request SHALL be allowed only to a member the
   requester can reach: findable while search is on, or through a usable
   profile code (R-CODE-3); otherwise not found. A member SHALL send at most
-  `limits.directRequestsPerDay` direct requests a day (20).
+  `limits.directRequestsPerDay` direct requests a day (20); one more SHALL be
+  refused with a message saying so, not as not found.
 - **R-FIND-8 (Usage)** — For a member opted in (R-ANA-4) THE SYSTEM SHALL
   send `member_searched` with which operators were used and whether there
   were none, some, or more results than shown, and never the query
@@ -2067,7 +2068,8 @@ connects at once (ADR 0063).
   and take the scanner to the contact screen (R-CONN-3). Showing the code is
   the owner's opt-in, scanning it the scanner's (ADR 0063). The owner SHALL
   see on S47, within `limits.liveCodeSeconds`, who just connected, and be told
-  as R-CONN-9 tells a target. Between members already connected over a direct
+  as R-CONN-9 tells a target. A code whose owner is no longer active SHALL
+  NOT connect (R-CODE-10). Between members already connected over a direct
   request, nothing SHALL be added, and both land as R-CONN-8 says.
 - **R-CODE-7 (A live code that cannot be used)** — Signed out, `/c/:token`
   SHALL say "Sign in to use live connect codes", with a way to sign in, and

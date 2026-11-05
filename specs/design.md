@@ -611,10 +611,14 @@ S44–S47 let members find each other and connect without a challenge
   token, stored hashed as magic links are, usable until issued +
   `limits.liveCodeSeconds` + `limits.liveCodeGraceSeconds`. Redeeming is one
   statement that sets `spent_at` where it is null and the code is not
-  expired, so two scans cannot both win. Spent and expired rows are deleted
-  on the tick (ADR 0049). The same response that hands out the next code
-  lists who connected through the owner's codes since the last one, which is
-  how S47 shows them.
+  expired, so two scans cannot both win, and only while both owner and
+  scanner are reachable (reach, above), so a banned owner's code stops at
+  once. The response that hands out the next code lists who connected
+  through the owner's codes not yet reported, which is how S47 shows them,
+  and marks them `reported_at`. The tick (ADR 0049) deletes expired unspent
+  rows, spent rows once reported, and spent rows never reported after
+  `limits.liveCodeKeepMinutes` (60), when the owner has long left the
+  screen; the R-CONN-9 notification told them all the same.
 - **QR codes**: drawn in the browser by `uqr` (MIT, no dependencies), loaded
   with S47 only, so outside the bundle budget. Dark modules on the paper
   colour in every look, with the quiet zone the standard asks for.
@@ -1061,6 +1065,7 @@ CREATE TABLE live_codes (
   usable_until DATETIME NOT NULL,                 -- issued + seconds + grace (R-CODE-5)
   spent_at    DATETIME  NULL,
   spent_by    CHAR(36)  NULL,
+  reported_at DATETIME  NULL,                     -- shown on the owner's S47 (R-CODE-6)
   KEY ix_live_member (member_id),
   FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE,
   FOREIGN KEY (spent_by)  REFERENCES members(id) ON DELETE CASCADE
@@ -1070,8 +1075,9 @@ CREATE TABLE live_codes (
 A profile code is shown on screen and re-drawn, so its token is kept as is,
 like an invite's (ADR 0014); it only ever lets someone _ask_. A live code
 connects at once, lives seconds, and is never shown again, so only its hash
-is stored. Both cascade with their member (R-CODE-10); a banned member's
-codes answer not found because reach (§1) requires an active owner.
+is stored. Both cascade with their member (R-CODE-10). A banned member's
+codes stop at once: opening a profile code and redeeming a live code both ask
+reach (§1), which requires an active owner.
 
 ### follows
 
@@ -1650,8 +1656,9 @@ records are limited per member (`GAME_RECORDS_PER_MINUTE`).
 
 ### Finding members and connect codes (R-FIND-1..8, R-CODE-1..10)
 
-Every route below answers `404` while its switch is off: `limits.memberSearch`
-for the first two, `limits.connectCodes` for the rest.
+Search and `/api/members/:id/card` answer `404` while `limits.memberSearch` is
+off; the profile-code and live-code routes while `limits.connectCodes` is off.
+`PUT /api/me/findable` answers whatever either switch says.
 
 | Method | Path                            | Behavior                                                                                                                                                                                           |
 | ------ | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -1666,8 +1673,9 @@ for the first two, `limits.connectCodes` for the rest.
 | POST   | `/api/live-codes/:token/redeem` | Spend the code and record an accepted direct request from me to its owner, notifying them as R-CONN-9 does → `{id}` of the request, for S16. Spent, expired, unknown or mine → `410` (R-CODE-6,7). |
 
 `POST /api/connections` also takes `kind: 'direct'` with no `challengeId` and
-an optional `profileCode`. It is allowed only when reach allows it, and at
-most `limits.directRequestsPerDay` a day; otherwise `404` (R-FIND-7).
+an optional `profileCode`. A target reach does not allow → `404`; over
+`limits.directRequestsPerDay` today → `429 {result: 'limit'}`, which S46 shows
+as a plain message (R-FIND-7).
 
 ### Admin (permission-guarded, not role-name-guarded — R-ROLE-3)
 
@@ -1761,7 +1769,7 @@ sets it again after every navigation, as _Rebel Match | Screen_.
 | S22 | **Admin invites** — invite links with label, window, uses/cap, state; create with an optional event badge and its logo, give an existing invite one or change it, revoke, and the join URL / QR to display (R-INV-9, R-INV-13)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | `/admin/invites`                                      |
 | S23 | **Admin members** — member cards (name; job title · organization · sector; email, roles, status), searchable; tap a card's selector or hold the card to choose several; selected cards are outlined; a bar above the list, staying at the top while scrolling, gives or takes a role, or deletes them (R-MEM-1,3)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | `/admin/members`                                      |
 | S26 | **A member's page** — everything held about one member; change their roles, delete them, and for a deleted account the erasure date with restore and erase-now (R-MEM-2, ADR 0032)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | `/admin/members/:id`                                  |
-| S24 | **Profile & privacy** — edit name, job title, organization, sector and company size, each saved on change with a tick; the accepted consent, read-only with version and date; the analytics opt-in; **Findable in search**, saying that codes still reach the member and are turned off separately, and **Profile code: on / off** (R-FIND-5, R-CODE-4); how each notification arrives (R-NOTE-3); how to leave (R-PROF-1,2)                                                                                                                                                                                                                                                                                                                                                                                                                              | `/profile`                                            |
+| S24 | **Profile & privacy** — edit name, job title, organization, sector and company size, each saved on change with a tick; the accepted consent, read-only with version and date; the analytics opt-in; **Findable in search**, saying that codes still reach the member and are turned off separately, and **Profile code: on / off** and **Reset code** (R-FIND-5, R-CODE-4); how each notification arrives (R-NOTE-3); how to leave (R-PROF-1,2)                                                                                                                                                                                                                                                                                                                                                                                                           | `/profile`                                            |
 | S27 | **Notifications** — newest first, each one line naming who it is about and its time; tapping it opens the screen it comes from; new ones outlined (R-NOTE-5)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | `/notifications`                                      |
 | S25 | **Settings** — every configured value in named groups such as Spam protection, folded to their titles with how many values differ from the default, and a search that opens the groups holding what it finds; marking what differs from the default; the values R-CFG-6 allows are fields saved on change with a tick, with who changed them and a way back to the deployment value (R-CFG-5,6)                                                                                                                                                                                                                                                                                                                                                                                                                                                           | `/admin/settings`                                     |
 | S28 | **Onboarding: privacy** — step 2 of 3: the consent summary under headings, links to S30 and S31, the **profile preview** with Edit, a scroll hint while the button is out of view, and one button, _I have read the privacy notice and the terms of use_, which makes the draft the profile and records the consent, with "Other members see your profile once you tap this button" below it, or "once a host has let you in" for an applicant (R-ONB-3, R-ONB-8, R-ONB-10, R-ONB-14)                                                                                                                                                                                                                                                                                                                                                                     | `/onboarding/privacy`                                 |
