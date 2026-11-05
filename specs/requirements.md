@@ -814,8 +814,8 @@ at a screen instead of at the front door.
   | `/people/:memberId`                  | a member's card (R-FIND-6)                     |
   | `/people/:memberId/connect`          | connect directly (R-FIND-7)                    |
   | `/me/code`                           | your profile and live codes (R-CODE-1)         |
-  | `/p/:token`, `/p/:token/connect`     | a profile code's card, connect (R-CODE-3)      |
-  | `/c/:token`                          | a live code, connecting at once (R-CODE-6)     |
+  | `/p#t=…`, `/p/connect#t=…`           | a profile code's card, connect (R-CODE-3)      |
+  | `/c#t=…`                             | a live code, connecting at once (R-CODE-6)     |
   | `/admin/applicants`                  | admin approvals                                |
   | `/admin/invites`                     | invite links (R-INV-9)                         |
   | `/admin/members`                     | members (R-MEM-1,3, R-NFR-7)                   |
@@ -830,7 +830,7 @@ at a screen instead of at the front door.
 - **R-NAV-5** — WHEN an unauthenticated visitor opens any deep link THE SYSTEM
   SHALL show the login screen and, after a successful magic-link verify, send
   them to the **originally requested URL** rather than the generic welcome
-  screen. A live code (`/c/:token`) is the one exception: it is not a deep
+  screen. A live code (`/c#t=…`) is the one exception: it is not a deep
   link to keep, and shows its own sign-in notice instead (R-CODE-7).
 - **R-NAV-6** — The redirect target SHALL be validated as a **relative in-app
   path**. IF it is absolute, external, or otherwise unrecognized THEN THE SYSTEM
@@ -2045,17 +2045,21 @@ connects at once (ADR 0063).
   found.
 - **R-CODE-2 (Profile code)** — The first time a member opens **Share my
   profile**, THE SYSTEM SHALL give them a profile code: a random token, never
-  their id, shown as a QR code of `/p/:token` with their name, **Copy link**
+  their id, shown as a QR code of `/p#t=…` with their name, **Copy link**
   and **Share** (the phone's share sheet). Showing or sharing it is the
   member's opt-in to being reached by whoever holds it, whether or not they
   are findable (R-FIND-5).
-- **R-CODE-3 (Opening a profile code)** — `/p/:token` SHALL show, to a
+- **R-CODE-3 (Opening a profile code)** — `/p#t=…` SHALL show, to a
   signed-in member, the owner's card as S45 does, with **Connect** leading to
-  `/p/:token/connect` and on as R-FIND-7. Signed out, the visitor SHALL go
+  `/p/connect#t=…` and on as R-FIND-7. Signed out, the visitor SHALL go
   through login and come back to it (R-NAV-5). A code reset or turned off,
   unknown, the visitor's own, or an owner no longer active SHALL answer as
-  not found, saying nothing about the owner. The token stays in the address:
-  the link is the code, meant to be shared, and reset is what stops it.
+  not found, saying nothing about the owner. The token stays in the address,
+  in its fragment, as the sign-in link carries its own (R-NAV-4): the link is
+  the code, meant to be shared, and reset is what stops it. A fragment never
+  reaches the server, so no request line or log holds it (R-NFR-9); the client
+  sends it in a request body, and R-NAV-5 carries it through sign-in with the
+  path.
 - **R-CODE-4 (Turning it off, resetting it)** — The profile screen and S47
   SHALL offer **Profile code: on / off** and **Reset code**. Off SHALL make
   the code not found until turned on again, the same code; Reset SHALL replace
@@ -2063,7 +2067,7 @@ connects at once (ADR 0063).
   `limits.connectCodes` is off the profile screen SHALL NOT show them, and
   **Findable in search** SHALL show whichever switch is set.
 - **R-CODE-5 (Live code)** — **Connect now** SHALL show a live code: a QR
-  code of `/c/:token` with a single-use token from the server, replaced on
+  code of `/c#t=…` with a single-use token from the server, replaced on
   the same screen every `limits.liveCodeSeconds` (30) by a new one, with a
   ring beside it emptying as the code's time on screen runs out, as an
   authenticator app shows it. A code SHALL stay usable for
@@ -2072,7 +2076,7 @@ connects at once (ADR 0063).
   while the page is hidden. The live code SHALL offer no Copy or Share: it is
   for scanning face to face.
 - **R-CODE-6 (Scanning a live code)** — WHEN a signed-in member opens a
-  usable `/c/:token` THE SYSTEM SHALL spend the token and record an
+  usable `/c#t=…` THE SYSTEM SHALL spend the token and record an
   **accepted** direct request from the scanner to the owner, with no note,
   and take the scanner to the contact screen (R-CONN-3). Showing the code is
   the owner's opt-in, scanning it the scanner's (ADR 0063). The owner SHALL
@@ -2086,7 +2090,7 @@ connects at once (ADR 0063).
   side, SHALL be accepted with it, as R-CONN-11 does, leaving the waiting
   list and showing under _Connected over_. Between members already connected over a direct
   request, nothing SHALL be added, and both land as R-CONN-8 says.
-- **R-CODE-7 (A live code that cannot be used)** — Signed out, `/c/:token`
+- **R-CODE-7 (A live code that cannot be used)** — Signed out, `/c#t=…`
   SHALL say "Sign in to use live connect codes", with a way to sign in, and
   SHALL NOT keep the token for after. A token spent, expired, unknown, or the
   scanner's own SHALL say "This code has expired — ask for a fresh one",

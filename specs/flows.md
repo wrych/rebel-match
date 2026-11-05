@@ -966,8 +966,8 @@ While hosts have `limits.connectCodes` on (R-CODE-1).
 1. The owner opens **S47** `/me/code` → **Share my profile**. The first time,
    a profile code is made; they show the QR, copy the link or share it
    (R-CODE-2).
-2. The scanner opens `/p/:token`. Signed in, they see the owner's card
-   (S45) → **Connect** → `/p/:token/connect` with an optional note → a
+2. The scanner opens `/p#t=…`. Signed in, they see the owner's card
+   (S45) → **Connect** → `/p/connect#t=…` with an optional note → a
    pending direct request → **F7** (R-CODE-3, R-FIND-7).
 3. Signed out, the scanner signs in and comes back to the card (R-NAV-5,
    **F13**).
@@ -978,7 +978,7 @@ While hosts have `limits.connectCodes` on (R-CODE-1).
    counting down `limits.liveCodeSeconds`; a new code replaces it on the same
    screen, and the old one still works for `limits.liveCodeGraceSeconds`
    (R-CODE-5).
-2. The scanner, signed in, opens `/c/:token` → the token is spent, an
+2. The scanner, signed in, opens `/c#t=…` → the token is spent, an
    accepted direct request is recorded, and the scanner lands on **S16**
    with the owner's address (R-CODE-6).
 3. The owner's S47 shows who just connected, and a `connection_added`
