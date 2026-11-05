@@ -2058,8 +2058,9 @@ connects at once (ADR 0063).
   in its fragment, as the sign-in link carries its own (R-NAV-4): the link is
   the code, meant to be shared, and reset is what stops it. A fragment never
   reaches the server, so no request line or log holds it (R-NFR-9); the client
-  sends it in a request body, and R-NAV-5 carries it through sign-in with the
-  path.
+  sends it in a request body. Through sign-in, R-NAV-5 sends only `/p` as
+  `next`; the token waits in the browser's session storage, and the card
+  takes it from there on return, so the server never stores it either.
 - **R-CODE-4 (Turning it off, resetting it)** — The profile screen and S47
   SHALL offer **Profile code: on / off** and **Reset code**. Off SHALL make
   the code not found until turned on again, the same code; Reset SHALL replace
@@ -2092,9 +2093,9 @@ connects at once (ADR 0063).
   request, nothing SHALL be added, and both land as R-CONN-8 says.
 - **R-CODE-7 (A live code that cannot be used)** — Signed out, `/c#t=…`
   SHALL say "Sign in to use live connect codes", with a way to sign in, and
-  SHALL NOT keep the token for after. A token spent, expired, unknown, or the
-  scanner's own SHALL say "This code has expired — ask for a fresh one",
-  saying nothing about its owner.
+  SHALL NOT keep the token for after. A token spent, expired, unknown, the
+  scanner's own, or one whose owner is no longer active SHALL say "This code
+  has expired — ask for a fresh one", saying nothing about its owner.
 - **R-CODE-8 (Host settings)** — Hosts SHALL be able to change
   `limits.liveCodeSeconds` and `limits.liveCodeGraceSeconds`, within bounds,
   and both switches, `limits.memberSearch` and `limits.connectCodes`, in the
