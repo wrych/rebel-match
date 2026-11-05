@@ -603,8 +603,9 @@ S44–S47 let members find each other and connect without a challenge
   Ranking: name before other fields, whole word before prefix, then name.
 - **Reach** (`src/services/reach.ts`, pure): whether a caller may see a
   member's card or send them a direct request: the member is active and
-  onboarded, and either findable while `limits.memberSearch` is on, or named
-  by a profile code that is on while `limits.connectCodes` is on. Fails
+  onboarded, and either findable while `limits.memberSearch` is on, or the
+  caller presents that member's profile code token, the code on, while
+  `limits.connectCodes` is on. That a code merely exists never counts. Fails
   closed. S45, S46 and
   `POST /api/connections` with `kind: 'direct'` all ask it.
 - **Live codes** (`src/services/live-codes.ts`): the screen asks for a code
