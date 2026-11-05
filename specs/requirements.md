@@ -2091,8 +2091,10 @@ connects at once (ADR 0063).
   name and a link to the contact screen, no address and no challenge, since
   there is none (R-NAV-9). It is a `connection_added` notification worded
   for a direct connection. A code whose owner is no longer active SHALL
-  NOT connect (R-CODE-10). Every request pending between the two, either
-  side, SHALL be accepted with it, as R-CONN-11 does, leaving the waiting
+  NOT connect (R-CODE-10). IF a direct request is already pending between
+  the two, either side, THE SYSTEM SHALL accept that one instead of adding
+  another. Every request pending between the two, either side, SHALL be
+  accepted with it, as R-CONN-11 does, leaving the waiting
   list and showing under _Connected over_. Between members already connected over a direct
   request, nothing SHALL be added, and both land as R-CONN-8 says.
 - **R-CODE-7 (A live code that cannot be used)** — Signed out, `/c#t=…`
