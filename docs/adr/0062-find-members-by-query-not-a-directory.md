@@ -58,8 +58,9 @@ allowed only to a member the requester can reach, and capped per day.
   count.
 - `connection_requests.kind` gains `direct`; the badges count it under
   Connect, not Shared pain.
-- Members who never open the profile screen are findable. Whether the full
-  privacy notice should say so is an open question (requirements §11, 9).
+- Members who never open the profile screen are findable. The consent words
+  and the privacy notice already say other members may see a member's
+  profile, so neither changes (requirements §11, 9, resolved).
 - The query is a name, so it is never logged nor sent to analytics; only
   which operators were used and whether anything came back.
 - A determined member can still walk the alphabet two letters at a time; the
