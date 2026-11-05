@@ -97,3 +97,5 @@ still holds except where the later ADR says otherwise.
 | [0059](0059-a-summit-recap-of-each-members-own-shared-from-the-device.md) | Give each member a summit recap of their own, shared from their device          | Accepted                              |
 | [0060](0060-open-the-recap-at-a-set-time-and-announce-it-once.md)         | Open the recap at a set time, and announce it once                              | Accepted                              |
 | [0061](0061-show-the-members-surroundings-on-the-share-card.md)           | Show the member's surroundings on the share card                                | Accepted                              |
+| [0062](0062-find-members-by-query-not-a-directory.md)                     | Find members by a capped query, never a directory                               | Proposed                              |
+| [0063](0063-a-shown-live-code-is-its-owners-opt-in.md)                    | A live code shown is its owner's opt-in; a profile code only asks               | Proposed                              |
