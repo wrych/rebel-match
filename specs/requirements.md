@@ -2087,7 +2087,7 @@ connects at once (ADR 0063).
 - **R-CODE-9 (Usage)** — For a member opted in (R-ANA-4) THE SYSTEM SHALL send
   `connect_code_shown` and `connect_code_opened` with which code, and for an
   opened one whether it was opened, connected, or had expired; never a token
-  or who (R-ANA-3). All three SHALL be sent by the server routes themselves,
+  or who (R-ANA-3). These two and `member_searched` (R-FIND-8) SHALL be sent by the server routes themselves,
   not through `/api/events`; a signed-out visitor has no opt-in, so sends
   none.
 - **R-CODE-10 (Erased with the account)** — A member's codes SHALL be deleted
