@@ -103,6 +103,14 @@ thresholds have sane defaults in the file and may be overridden by env.
 | `notifications.workerIntervalSeconds` | `60`                          | R-NOTE-7                  |
 | `notifications.maxAttempts`           | `5`                           | R-NOTE-10                 |
 | `limits.whitelistBatchMax`            | `1000`                        | R-AUTH-1                  |
+| `limits.memberSearch` (switch)        | `0`                           | R-FIND-1                  |
+| `limits.memberSearchMinChars`         | `2`                           | R-FIND-2                  |
+| `limits.memberSearchMaxResults`       | `20`                          | R-FIND-3                  |
+| `limits.directRequestsPerDay`         | `20`                          | R-FIND-7                  |
+| `limits.connectCodes` (switch)        | `0`                           | R-CODE-1                  |
+| `limits.liveCodeSeconds`              | `30` (10–120)                 | R-CODE-5, R-CODE-8        |
+| `limits.liveCodeGraceSeconds`         | `10` (0–30, ≤ the above)      | R-CODE-5, R-CODE-8        |
+| `limits.liveCodeKeepMinutes`          | `60`                          | R-CODE-6                  |
 | `limits.recapOpensAt`                 | `0` (none)                    | R-RECAP-8                 |
 | `limits.recapMinShare`                | `50`                          | R-RECAP-3                 |
 | `limits.recapNetworkStorySeconds`     | `10`                          | R-RECAP-1                 |
@@ -582,6 +590,54 @@ ends on a card to share (R-RECAP-1..9, ADR 0059, ADR 0060).
   `https://www.linkedin.com/feed/?shareActive=true&text=…` with the post,
   which the member completes by attaching it.
 
+### Member search and connect codes
+
+S44–S47 let members find each other and connect without a challenge
+(R-FIND-1..8, R-CODE-1..10, ADR 0062, ADR 0063).
+
+- **Query parser** (`src/search/query.ts`, pure, shared with the client):
+  text in, `{name[], company[], title[], sector[], free[]}` out, each term
+  folded to lower case without accents and a trailing `*` dropped. Quotes
+  make one term of a phrase; `org:` is `company:`; an unknown operator is a
+  free word. It reports whether any term reaches
+  `limits.memberSearchMinChars`. The chips on S44 are drawn from its output
+  and written back through its printer, so box and chips cannot disagree.
+- **Search** (`src/services/member-search.ts`): free words and `name:` match
+  the start of a word of `members.name`, the others of `org`, `job_title` and
+  the sector's label or key, all ANDed, as parameterised `ILIKE` on folded
+  text with `%` and `_` escaped. Only active, onboarded, findable members
+  other than the caller. It asks for `limits.memberSearchMaxResults + 1` rows
+  and reports `more` when the extra one came back; the extra is dropped.
+  Ranking: name before other fields, whole word before prefix, then name.
+- **Reach** (`src/services/reach.ts`, pure): whether a caller may see a
+  member's card or send them a direct request: the member is not the caller,
+  is active and onboarded, and either findable while `limits.memberSearch` is on, or the
+  caller presents that member's profile code token, the code on, while
+  `limits.connectCodes` is on. That a code merely exists never counts. Fails
+  closed. S45, S46 and
+  `POST /api/connections` with `kind: 'direct'` all ask it.
+- **Live codes** (`src/services/live-codes.ts`): the screen asks for a code
+  on opening and every `limits.liveCodeSeconds`; each is a 128-bit random
+  token, stored hashed as magic links are, usable until issued +
+  `limits.liveCodeSeconds` + `limits.liveCodeGraceSeconds`. Issuing one, in
+  the same transaction, cuts every older unspent code of the member to at
+  most now + `limits.liveCodeGraceSeconds`, so only the newest code and, for
+  the grace, the one before it can be used, however often the screen asks
+  (R-CODE-5). Redeeming is one
+  statement that sets `spent_at` where it is null and the code is not
+  expired, so two scans cannot both win, and only while owner and scanner
+  are both active and onboarded, so a banned owner's code stops at once.
+  Live codes do not ask reach: findable and the search switch have no say
+  over them (R-FIND-5). The response that hands out the next code lists who connected
+  through the owner's codes not yet reported, which is how S47 shows them,
+  and marks them `reported_at`. The tick (ADR 0049) deletes expired unspent
+  rows, spent rows once reported, and spent rows never reported after
+  `limits.liveCodeKeepMinutes` (60), when the owner has long left the
+  screen; the `connection_added` notification of R-CODE-6 told them all the same.
+- **QR codes**: drawn in the browser by `uqr` (MIT, no dependencies), loaded
+  with S47 only, so outside the bundle budget. Dark modules on the paper
+  colour in every look, with the quiet zone the standard asks for.
+
 ### Badges
 
 Private badges counted from what members already do (R-BADGE-1..14,
@@ -657,7 +713,8 @@ capture against the EU endpoint, `helmet` for the security headers (ADR 0034). S
 
 **Client** (ADR 0017) — **Vue 3** (Composition API) with `vue-router` in history
 mode, built by **Vite**; no analytics script (ADR 0026). `three` draws the
-network replay, in its own chunk (ADR 0057). Tests use
+network replay, in its own chunk (ADR 0057). `uqr` draws the connect codes,
+in S47's chunk (ADR 0063). Tests use
 `@vue/test-utils` with jsdom.
 
 Two builds: `tsc` for the server, Vite for the client. The Vite dev server
@@ -699,6 +756,7 @@ CREATE TABLE members (
   joined_via_invite_id CHAR(36) NULL,            -- which invite admitted them (R-INV-8)
   analytics_id   CHAR(36)     NOT NULL,           -- pseudonymous id for Mixpanel
   matches_seen_at DATETIME   NULL,              -- last opened the Matches screen (R-MINE-4)
+  findable       BOOLEAN    NOT NULL DEFAULT TRUE, -- returned by member search (R-FIND-5)
   created_at     DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY uq_members_email (email)
 );
@@ -836,6 +894,7 @@ is one new implementation, with no guard touched:
 | `content:report` (R-MOD-1,2)                   |    ✅    |   ✅    |          ✅          |
 | `report:review` (R-MOD-6,7)                    |    —     |   ✅    |          ✅          |
 | `member:ban` (R-MOD-9)                         |    —     |   ✅    |          ✅          |
+| `member:search` (R-FIND-1)                     |    ✅    |   ✅    |          ✅          |
 
 - Route guards SHALL check a **permission**, never a role name —
   `requirePermission('applicant:review')`, not `if (member.isAdmin)`. Adding
@@ -976,7 +1035,7 @@ CREATE TABLE connection_requests (
   requester_id  CHAR(36) NOT NULL,
   target_id     CHAR(36) NOT NULL,
   challenge_id  CHAR(36) NULL,                     -- the challenge in context
-  kind          ENUM('same_boat','been_there') NOT NULL,
+  kind          ENUM('same_boat','been_there','direct') NOT NULL, -- direct: no challenge (R-FIND-7)
   message       VARCHAR(600) NULL,                 -- offer note / intro
   status        ENUM('pending','accepted','declined') NOT NULL DEFAULT 'pending',
   created_at    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -1002,6 +1061,38 @@ makes the database refuse a second pending request between the same two members
 about the same challenge, or about none, however close the race. An answered
 request clears it and does not block a later one: R-CONN-5 forbids duplicate
 _pending_ requests only.
+
+### profile_codes and live_codes (R-CODE-1..10, ADR 0063)
+
+```sql
+CREATE TABLE profile_codes (
+  member_id   CHAR(36)    NOT NULL PRIMARY KEY,
+  token       VARCHAR(43) NOT NULL,              -- shown on the code, so kept as is
+  enabled     BOOLEAN     NOT NULL DEFAULT TRUE, -- off: not found (R-CODE-4)
+  created_at  DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP, -- reset: a new token, a new time
+  UNIQUE KEY uq_profile_code_token (token),
+  FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE
+);
+
+CREATE TABLE live_codes (
+  token_hash  CHAR(64)  NOT NULL PRIMARY KEY,     -- sha-256, as magic_tokens
+  member_id   CHAR(36)  NOT NULL,
+  usable_until DATETIME NOT NULL,                 -- issued + seconds + grace (R-CODE-5)
+  spent_at    DATETIME  NULL,
+  spent_by    CHAR(36)  NULL,
+  reported_at DATETIME  NULL,                     -- shown on the owner's S47 (R-CODE-6)
+  KEY ix_live_member (member_id),
+  FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE,
+  FOREIGN KEY (spent_by)  REFERENCES members(id) ON DELETE CASCADE
+);
+```
+
+A profile code is shown on screen and re-drawn, so its token is kept as is,
+like an invite's (ADR 0014); it only ever lets someone _ask_. A live code
+connects at once, lives seconds, and is never shown again, so only its hash
+is stored. Both cascade with their member (R-CODE-10). A banned member's
+codes stop at once: opening a profile code asks reach (§1), and redeeming a
+live code checks both members are active (§1); both require an active owner.
 
 ### follows
 
@@ -1485,15 +1576,15 @@ member prefers reduced motion (R-ONB-10).
 
 ### Connections (double opt-in)
 
-| Method | Path                           | Body                                       | Behavior                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| ------ | ------------------------------ | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| POST   | `/api/connections`             | `{targetId, challengeId?, kind, message?}` | Create a pending request to an active, onboarded member other than oneself; a `challengeId` must belong to one of the two. **No email revealed.** A request already made from this requester to this target about this challenge → `409 {result: 'exists', id}` (R-CONN-1, R-CONN-5). Between members already connected, it is accepted at once and the target emailed a link to the contact → `200 {result: 'joined', id}`; about a challenge they are already connected over, nothing is added and that request's id comes back (R-CONN-8,9). |
-| GET    | `/api/connections/incoming`    | —                                          | Pending requests addressed to me, with the requester's card, note and challenge, no email (R-MINE-2, R-CONN-2).                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| GET    | `/api/connections/connected`   | —                                          | Accepted requests I am a party to, either side, newest first: the other member's card, no email, and `unseen` while I have not opened its contact since it was accepted without me (R-MINE-5, R-CONN-7,9). The screen lists each other member once (R-MINE-5,6).                                                                                                                                                                                                                                                                                |
-| GET    | `/api/connections/:id`         | —                                          | The request as one of its two parties sees it: direction, status, the other member's card, note and challenge, no email. Anyone else → `404`.                                                                                                                                                                                                                                                                                                                                                                                                   |
-| POST   | `/api/connections/:id/accept`  | —                                          | Target only, pending only: mark accepted, seen by the target (R-CONN-3), accept every other request pending between the two, either side (R-CONN-11), and email the requester a link to the contact once (R-CONN-7). Anyone else, or a request already answered → `404`.                                                                                                                                                                                                                                                                        |
-| POST   | `/api/connections/:id/decline` | —                                          | Target only, pending only: mark declined; emails stay private for good (R-CONN-4).                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| GET    | `/api/connections/:id/contact` | —                                          | If accepted and I'm a party → the other member's name, email, a prefilled mailto and `over`: every accepted request between us, as `/connected` shows them (R-CONN-10). The read then marks them all seen for me (R-CONN-7,9). Anything else → `404`, never `403` (ADR 0004, R-NAV-8).                                                                                                                                                                                                                                                          |
+| Method | Path                           | Body                                       | Behavior                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ------ | ------------------------------ | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| POST   | `/api/connections`             | `{targetId, challengeId?, kind, message?}` | Create a pending request to an active, onboarded member other than oneself; a `challengeId` must belong to one of the two. **No email revealed.** A request already made from this requester to this target about this challenge → `409 {result: 'exists', id}` (R-CONN-1, R-CONN-5). Between members already connected, it is accepted at once and the target emailed a link to the contact → `200 {result: 'joined', id}`; about a challenge they are already connected over, or a `direct` one when they already share a direct one, nothing is added and that request's id comes back (R-CONN-8,9). |
+| GET    | `/api/connections/incoming`    | —                                          | Pending requests addressed to me, with the requester's card, note and challenge, no email (R-MINE-2, R-CONN-2).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| GET    | `/api/connections/connected`   | —                                          | Accepted requests I am a party to, either side, newest first: the other member's card, no email, and `unseen` while I have not opened its contact since it was accepted without me (R-MINE-5, R-CONN-7,9). The screen lists each other member once (R-MINE-5,6).                                                                                                                                                                                                                                                                                                                                        |
+| GET    | `/api/connections/:id`         | —                                          | The request as one of its two parties sees it: direction, status, the other member's card, note and challenge, no email. Anyone else → `404`.                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| POST   | `/api/connections/:id/accept`  | —                                          | Target only, pending only: mark accepted, seen by the target (R-CONN-3), accept every other request pending between the two, either side (R-CONN-11), and email the requester a link to the contact once (R-CONN-7). Anyone else, or a request already answered → `404`.                                                                                                                                                                                                                                                                                                                                |
+| POST   | `/api/connections/:id/decline` | —                                          | Target only, pending only: mark declined; emails stay private for good (R-CONN-4).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| GET    | `/api/connections/:id/contact` | —                                          | If accepted and I'm a party → the other member's name, email, a prefilled mailto and `over`: every accepted request between us, as `/connected` shows them (R-CONN-10). The read then marks them all seen for me (R-CONN-7,9). Anything else → `404`, never `403` (ADR 0004, R-NAV-8).                                                                                                                                                                                                                                                                                                                  |
 
 ### Follow
 
@@ -1577,6 +1668,29 @@ records are limited per member (`GAME_RECORDS_PER_MINUTE`).
 | Method | Path         | Behavior                                                                                                                                                                                                                                                                                                                                                                            |
 | ------ | ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | GET    | `/api/recap` | `{joined, members, rows[], events[], timeline}`: my event badges `{id, name, ticketLine, bigLine, hasLogo}`; for each counted row my `count`, highest `level` name or null, how many levels I `reached` of its `levels`, `crown {name, held}` and `below` (the share of active members under me, or null); the replay's timeline with me marked. `404` while `limits.recap` is off. |
+
+### Finding members and connect codes (R-FIND-1..8, R-CODE-1..10)
+
+Search and `/api/members/:id/card` answer `404` while `limits.memberSearch` is
+off; the profile-code and live-code routes while `limits.connectCodes` is off.
+`PUT /api/me/findable` answers whatever either switch says.
+
+| Method | Path                         | Behavior                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ------ | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| GET    | `/api/members/search?q=`     | `member:search`. `{results[], more}`: member cards, no email, at most `limits.memberSearchMaxResults`; no term long enough → `{results: [], more: false, tooShort: true}` (R-FIND-2,3).                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| PUT    | `/api/me/findable`           | `{findable}`: whether member search returns me; saved on change (R-FIND-5). Works with the switch off, so the choice is kept.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+| GET    | `/api/members/:id/card`      | The card, if reach allows it (§1); else `404` (R-FIND-6).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| GET    | `/api/me/profile-code`       | My profile code `{token, enabled}`, made on first call (R-CODE-2).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| PATCH  | `/api/me/profile-code`       | `{enabled}`: turn it on or off (R-CODE-4).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| POST   | `/api/me/profile-code/reset` | A new token at once; the old one is not found from now (R-CODE-4).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| POST   | `/api/profile-codes/open`    | `{token}` in the body, never the path, so no log keeps it (R-NFR-9): the owner's card and id, if the code is on, the owner reachable and not me; else `404` (R-CODE-3).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| POST   | `/api/me/live-codes`         | A new live code `{token, showForSeconds, usableUntil}` and `connected[]`: members who connected through my codes since my previous call, names only (R-CODE-5, R-CODE-6). Rate-limited.                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| POST   | `/api/live-codes/redeem`     | `{token}` in the body, as above. Spend the code; in the same transaction record an accepted direct request from me to its owner, or accept the direct one already pending between us instead, and accept every request pending between us, either side (R-CONN-11), notifying the owner as R-CODE-6 says (`connection_added`, worded for a direct connection) → `{id}` of the request, for S16. If we already share a direct connection, the code is spent, nothing is added, nobody is notified, and that request's `{id}` comes back (R-CONN-8). Spent, expired, unknown, mine, or its owner no longer active → `410`, the same answer for each (R-CODE-6,7). |
+
+`POST /api/connections` also takes `kind: 'direct'` with no `challengeId` and
+an optional `profileCode`. A target reach does not allow → `404`; over
+`limits.directRequestsPerDay` today → `429 {result: 'limit'}`, which S46 shows
+as a plain message (R-FIND-7).
 
 ### Admin (permission-guarded, not role-name-guarded — R-ROLE-3)
 
@@ -1670,7 +1784,7 @@ sets it again after every navigation, as _Rebel Match | Screen_.
 | S22 | **Admin invites** — invite links with label, window, uses/cap, state; create with an optional event badge and its logo, give an existing invite one or change it, revoke, and the join URL / QR to display (R-INV-9, R-INV-13)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | `/admin/invites`                                      |
 | S23 | **Admin members** — member cards (name; job title · organization · sector; email, roles, status), searchable; tap a card's selector or hold the card to choose several; selected cards are outlined; a bar above the list, staying at the top while scrolling, gives or takes a role, or deletes them (R-MEM-1,3)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | `/admin/members`                                      |
 | S26 | **A member's page** — everything held about one member; change their roles, delete them, and for a deleted account the erasure date with restore and erase-now (R-MEM-2, ADR 0032)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | `/admin/members/:id`                                  |
-| S24 | **Profile & privacy** — edit name, job title, organization, sector and company size, each saved on change with a tick; the accepted consent, read-only with version and date; the analytics opt-in; how each notification arrives (R-NOTE-3); how to leave (R-PROF-1,2)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | `/profile`                                            |
+| S24 | **Profile & privacy** — edit name, job title, organization, sector and company size, each saved on change with a tick; the accepted consent, read-only with version and date; the analytics opt-in; **Findable in search**; and, only while `limits.connectCodes` is on, its note that codes still reach the member and are turned off separately, **Profile code: on / off** and **Reset code** (R-FIND-5, R-CODE-4); how each notification arrives (R-NOTE-3); how to leave (R-PROF-1,2)                                                                                                                                                                                                                                                                                                                                                                | `/profile`                                            |
 | S27 | **Notifications** — newest first, each one line naming who it is about and its time; tapping it opens the screen it comes from; new ones outlined (R-NOTE-5)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | `/notifications`                                      |
 | S25 | **Settings** — every configured value in named groups such as Spam protection, folded to their titles with how many values differ from the default, and a search that opens the groups holding what it finds; marking what differs from the default; the values R-CFG-6 allows are fields saved on change with a tick, with who changed them and a way back to the deployment value (R-CFG-5,6)                                                                                                                                                                                                                                                                                                                                                                                                                                                           | `/admin/settings`                                     |
 | S28 | **Onboarding: privacy** — step 2 of 3: the consent summary under headings, links to S30 and S31, the **profile preview** with Edit, a scroll hint while the button is out of view, and one button, _I have read the privacy notice and the terms of use_, which makes the draft the profile and records the consent, with "Other members see your profile once you tap this button" below it, or "once a host has let you in" for an applicant (R-ONB-3, R-ONB-8, R-ONB-10, R-ONB-14)                                                                                                                                                                                                                                                                                                                                                                     | `/onboarding/privacy`                                 |
@@ -1689,6 +1803,11 @@ sets it again after every navigation, as _Rebel Match | Screen_.
 | S41 | **The network** — the network growing in 3D, every member a point and every accepted connection a line, every challenge a moon circling its author, nobody named; in the corner the day and how many members, connections and challenges; under it a timeline marking each join and connection with where the replay is and its day, Pause / Play and Replay; drag, pinch or scroll to take the view, _Recentre view_ to hand it back; with fewer connections than `limits.networkMinOwnConnections`, none of the member's own and a starred footnote saying why (R-NET-13); at the end the member's own point lit up, with a label pointing at it: _That's you_, their name, connections and challenges, the day they joined in small type (R-NET-14); under the scene a key drawing a dot, a line, a moon and the accent colour (R-NET-15) (R-NET-1..9) | `/network`                                            |
 | S42 | **Network presentation** — a full-screen film of the network on a dark background, no header or tab bar: an invented beginning with the founders, the real network growing, named cast members with their photos, the figures since launch, an invented zoom past today and a closing thank-you; words in large display type; controls hidden while playing (R-PRES-1..7)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `/admin/presentation`                                 |
 | S43 | **The summit recap** — the member's own time in the movement as full-screen portrait stories with a bar each along the top: joined, challenges, same boat, offers, connections, each with its level and how they compare, crowns, the network with them lit, and a card to share, _Share on LinkedIn_ first, _Save image_ second (R-RECAP-1..7)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | `/recap`                                              |
+| S44 | **Find a member** — a search box holding the query, its operators as chips with a remove mark, **+ Company**, **+ Title**, **+ Sector**; member cards below, best first, and _More match — add a term to narrow it down_ when there are more; a link to **Your code** (R-FIND-1..4)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | `/people`, `/people?q=…`                              |
+| S45 | **A member's card** — the member card as the deck shows it, no email, with **Connect**; reached from a result or a profile code (R-FIND-6, R-CODE-3)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | `/people/:memberId`, `/p#t=…`                         |
+| S46 | **Connect directly** — the member's card, an optional note, **Send request**; S13 follows, or S16 when already connected (R-FIND-7)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | `/people/:memberId/connect`, `/p/connect#t=…`         |
+| S47 | **Your code** — two tabs. _Share my profile_: the profile code's QR, the member's name, **Copy link**, **Share**, **Profile code: on / off**, **Reset code**. _Connect now_: the live code's QR with a ring emptying as its time on screen runs out, replaced in place, and who just connected (R-CODE-1..6)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | `/me/code`                                            |
+| —   | **A live code opened** — connecting, then on to S16; or _Sign in to use live connect codes_; or _This code has expired — ask for a fresh one_ (R-CODE-6, R-CODE-7)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | `/c#t=…`                                              |
 
 Remaining overlays, deliberately: the "really decline this request?" confirm, the
 "link sent" / "copied" toasts, and the feedback action (a `mailto:`, not a
@@ -1711,11 +1830,14 @@ validator, so neither side can develop a private opinion about which paths exist
 - **Deep link while signed out** → the client remembers the path, routes to
   `/login`, and sends it as `next` on `POST /auth/request-link`. It is stored
   with the token, and the sign-in screen goes there once `POST /auth/verify` has
-  created the session (R-NAV-5).
+  created the session (R-NAV-5). Two exceptions: for `/p` and `/p/connect` it
+  remembers the fragment too, which holds the profile code (R-CODE-3); `/c` is never
+  remembered, and shows its own sign-in notice (R-CODE-7).
 - **`next` validation happens on the server**, because it arrives in an email:
   accept only a path starting with a single `/` and present in the route table;
   anything else (absolute URL, `//host`, unknown path) falls back to `/`
-  (R-NAV-6). The client refuses to navigate anywhere not in the table either.
+  (R-NAV-6). A fragment is kept on `/p` and `/p/connect` alone and dropped
+  on every other path; `/c` is refused like an unknown path. The client refuses to navigate anywhere not in the table either.
 - **Onboarding wins** — a guard sends an un-onboarded member to `/onboarding` and
   carries `next` through it; the server independently refuses every other `/api/*`
   route until onboarding is complete (R-NAV-7, R-ONB-1).
@@ -1982,36 +2104,39 @@ Alternatives considered (kept only as fallbacks):
   or name.
 - Capture these events with non-identifying properties only:
 
-  | event                          | properties                                       |
-  | ------------------------------ | ------------------------------------------------ |
-  | `login_completed`              | —                                                |
-  | `onboarding_completed`         | `consent_version`, `seconds_to_onboard`?         |
-  | `journey_chosen`               | `journey: ask\|offer`                            |
-  | `challenge_submitted`          | `char_count`                                     |
-  | `trend_assigned`               | `trend_id`, `overridden: bool`                   |
-  | `swipe`                        | `action`, `trend_id`                             |
-  | `connection_requested`         | `kind`                                           |
-  | `connection_responded`         | `status: accepted\|declined`, `hours_to_respond` |
-  | `contact_opened`               | `unseen: bool` (R-CONN-7)                        |
-  | `contact_reached_out`          | `method: email\|copy`                            |
-  | `feedback_opened`              | `screen`                                         |
-  | `game_opened`                  | —                                                |
-  | `game_day_finished`            | `mode`, `level`, `outcome`, `seconds`            |
-  | `game_result_shared`           | —                                                |
-  | `badge_earned`                 | `row`, `level` (`event`, no level, for an event) |
-  | `experiment_exposed`           | `experiment`, `variant` (R-EXP-2)                |
-  | `matches_section_opened`       | `section: same_boat\|been_there\|cases`          |
-  | `match_connect_tapped`         | `kind` (R-ASK-16)                                |
-  | `notifications_list_opened`    | `new_count`                                      |
-  | `notification_opened`          | `type` (its kind), `via: app\|email`             |
-  | `notification_cadence_changed` | `type`, `from`, `to` (R-NOTE-2)                  |
-  | `deck_emptied`                 | —                                                |
-  | `trend_opened`                 | `trend_id`                                       |
-  | `trend_follow_changed`         | `trend_id`, `followed: bool`                     |
-  | `content_reported`             | `kind: challenge\|note`, `reason` (R-MOD-12)     |
-  | `recap_opened`                 | — (R-RECAP-7)                                    |
-  | `recap_shared`                 | `via: share_sheet\|linkedin\|image` (R-RECAP-7)  |
-  | `screen_viewed`                | `screen` (its route name, never its path)        |
+  | event                          | properties                                                                                                          |
+  | ------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+  | `login_completed`              | —                                                                                                                   |
+  | `onboarding_completed`         | `consent_version`, `seconds_to_onboard`?                                                                            |
+  | `journey_chosen`               | `journey: ask\|offer`                                                                                               |
+  | `challenge_submitted`          | `char_count`                                                                                                        |
+  | `trend_assigned`               | `trend_id`, `overridden: bool`                                                                                      |
+  | `swipe`                        | `action`, `trend_id`                                                                                                |
+  | `connection_requested`         | `kind`                                                                                                              |
+  | `connection_responded`         | `status: accepted\|declined`, `hours_to_respond`                                                                    |
+  | `contact_opened`               | `unseen: bool` (R-CONN-7)                                                                                           |
+  | `contact_reached_out`          | `method: email\|copy`                                                                                               |
+  | `feedback_opened`              | `screen`                                                                                                            |
+  | `game_opened`                  | —                                                                                                                   |
+  | `game_day_finished`            | `mode`, `level`, `outcome`, `seconds`                                                                               |
+  | `game_result_shared`           | —                                                                                                                   |
+  | `badge_earned`                 | `row`, `level` (`event`, no level, for an event)                                                                    |
+  | `experiment_exposed`           | `experiment`, `variant` (R-EXP-2)                                                                                   |
+  | `matches_section_opened`       | `section: same_boat\|been_there\|cases`                                                                             |
+  | `match_connect_tapped`         | `kind` (R-ASK-16)                                                                                                   |
+  | `notifications_list_opened`    | `new_count`                                                                                                         |
+  | `notification_opened`          | `type` (its kind), `via: app\|email`                                                                                |
+  | `notification_cadence_changed` | `type`, `from`, `to` (R-NOTE-2)                                                                                     |
+  | `deck_emptied`                 | —                                                                                                                   |
+  | `trend_opened`                 | `trend_id`                                                                                                          |
+  | `trend_follow_changed`         | `trend_id`, `followed: bool`                                                                                        |
+  | `content_reported`             | `kind: challenge\|note`, `reason` (R-MOD-12)                                                                        |
+  | `recap_opened`                 | — (R-RECAP-7)                                                                                                       |
+  | `recap_shared`                 | `via: share_sheet\|linkedin\|image` (R-RECAP-7)                                                                     |
+  | `member_searched`              | `operators[]`, `results: none\|some\|more` (R-FIND-8), sent by the search route                                     |
+  | `connect_code_shown`           | `code: profile\|live` (R-CODE-9), sent by the routes that hand out a code                                           |
+  | `connect_code_opened`          | `code: profile\|live`, `outcome: opened\|connected\|expired` (R-CODE-9), sent by the routes that read or redeem one |
+  | `screen_viewed`                | `screen` (its route name, never its path)                                                                           |
 
 - `screen_viewed` is sent once for each screen a navigation settles on, the
   first one of a page load included, and not for a public screen: no one is

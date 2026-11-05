@@ -40,7 +40,7 @@ still holds except where the later ADR says otherwise.
 | [0001](0001-record-architecture-decisions.md)                             | Record architecture decisions                                                   | Accepted                              |
 | [0002](0002-node-express-mysql.md)                                        | Node.js, Express and MySQL                                                      | Accepted, amended by 0024             |
 | [0003](0003-passwordless-magic-link-auth.md)                              | Passwordless magic-link auth over a whitelist                                   | Accepted, amended by 0027             |
-| [0004](0004-double-opt-in-contact-exchange.md)                            | Double opt-in before any contact detail is shared                               | Accepted                              |
+| [0004](0004-double-opt-in-contact-exchange.md)                            | Double opt-in before any contact detail is shared                               | Accepted, amended by 0063             |
 | [0005](0005-mixpanel-eu-residency.md)                                     | Mixpanel with EU data residency for analytics                                   | Accepted, amended by 0026             |
 | [0006](0006-role-based-access-control.md)                                 | Role-based access control instead of an is_admin flag                           | Accepted, amended by 0021             |
 | [0007](0007-addressable-screens-not-modals.md)                            | Addressable screens instead of modals                                           | Accepted                              |
@@ -97,3 +97,5 @@ still holds except where the later ADR says otherwise.
 | [0059](0059-a-summit-recap-of-each-members-own-shared-from-the-device.md) | Give each member a summit recap of their own, shared from their device          | Accepted                              |
 | [0060](0060-open-the-recap-at-a-set-time-and-announce-it-once.md)         | Open the recap at a set time, and announce it once                              | Accepted                              |
 | [0061](0061-show-the-members-surroundings-on-the-share-card.md)           | Show the member's surroundings on the share card                                | Accepted                              |
+| [0062](0062-find-members-by-query-not-a-directory.md)                     | Find members by a capped query, never a directory                               | Accepted                              |
+| [0063](0063-a-shown-live-code-is-its-owners-opt-in.md)                    | A live code shown is its owner's opt-in; a profile code only asks               | Accepted                              |

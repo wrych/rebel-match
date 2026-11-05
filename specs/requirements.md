@@ -590,9 +590,11 @@ to get in touch with this person, and then you send an email." Andy: "if we do
 that we need to make it very explicit that the emails will be shared when you
 connect.")_
 
-- **R-CONN-1** — WHEN a member initiates a connection (same boat or been there)
-  THE SYSTEM SHALL create a **pending connection request** to the target member
-  and SHALL NOT reveal either party's email at this point.
+- **R-CONN-1** — WHEN a member initiates a connection (same boat, been there,
+  or direct, R-FIND-7) THE SYSTEM SHALL create a **pending connection
+  request** to the target member and SHALL NOT reveal either party's email at
+  this point. Two exceptions are recorded accepted at once: between members
+  already connected (R-CONN-8), and by a live code (R-CODE-6).
 - **R-CONN-2** — The system SHALL notify the target member, in the app and by
   email at the cadence they chose (R-NOTE-2), that someone wants to connect,
   including the requester's name and message/offer note, and in-app the
@@ -606,7 +608,9 @@ connect.")_
   same two members for the same challenge.
 - **R-CONN-6** — Email addresses SHALL only ever be exchanged between two
   whitelisted members who have both opted in. The system SHALL NOT expose a
-  member directory or bulk contact export.
+  member directory or bulk contact export: member search answers a query with
+  a few cards and never an email, never a list of everyone (R-FIND-2,3, ADR
+  0062).
 - **R-CONN-7** — WHEN the target member **accepts** THE SYSTEM SHALL notify the
   requester, in the app and by email at the cadence they chose (R-NOTE-2),
   that they are now connected. The email carries the target's name and a link
@@ -623,11 +627,13 @@ connect.")_
   contact screen. Both opted in to sharing addresses already, so nothing new is
   revealed (R-CONN-6). A connection about a challenge they are already
   connected over SHALL add nothing, and SHALL take the requester to the contact
-  screen the same way.
+  screen the same way; so SHALL a direct connection (R-FIND-7, R-CODE-6)
+  between two members who already share a direct one, by any route, with no
+  notification.
 - **R-CONN-9** — WHEN a connection is recorded under R-CONN-8 THE SYSTEM SHALL
   notify the target, in the app and by email at the cadence they chose
   (R-NOTE-2), that the requester connected with
-  them over another challenge. The email carries the requester's name, their
+  them over another challenge, or, for a direct request, directly. The email carries the requester's name, their
   note and a link to the contact screen, but no address and no challenge text
   (R-NAV-9). The connection's card SHALL stay outlined in the cockpit
   (R-MINE-6) until the target first opens that contact screen, however the
@@ -636,8 +642,10 @@ connect.")_
 - **R-CONN-10 (Connected over)** — The contact screen SHALL list, under
   _Connected over_, every accepted request between the two members, each with
   its challenge and trend, whether it was same boat or been there, and the note
-  sent. The newest SHALL come first, those the viewer has not opened yet above
-  the rest and outlined.
+  sent. A direct request (R-FIND-7, R-CODE-6) has no challenge, trend or side:
+  it SHALL show as _Connected directly_, with its note if one was sent. The
+  newest SHALL come first, those the viewer has not opened yet above the rest
+  and outlined.
 - **R-CONN-11** — WHEN the target accepts a request THE SYSTEM SHALL accept with
   it every other request pending between the same two members, whichever side
   sent it, since they are then connected (R-CONN-8). Those requests SHALL leave
@@ -802,6 +810,12 @@ at a screen instead of at the front door.
   | `/badges/:row`                       | one row of badges (R-BADGE-8)                  |
   | `/badges/events`                     | the member's event badges (R-BADGE-8)          |
   | `/profile`                           | profile & privacy (R-PROF-1,2)                 |
+  | `/people`, `/people?q=…`             | find a member (R-FIND-1)                       |
+  | `/people/:memberId`                  | a member's card (R-FIND-6)                     |
+  | `/people/:memberId/connect`          | connect directly (R-FIND-7)                    |
+  | `/me/code`                           | your profile and live codes (R-CODE-1)         |
+  | `/p#t=…`, `/p/connect#t=…`           | a profile code's card, connect (R-CODE-3)      |
+  | `/c#t=…`                             | a live code, connecting at once (R-CODE-6)     |
   | `/admin/applicants`                  | admin approvals                                |
   | `/admin/invites`                     | invite links (R-INV-9)                         |
   | `/admin/members`                     | members (R-MEM-1,3, R-NFR-7)                   |
@@ -816,7 +830,8 @@ at a screen instead of at the front door.
 - **R-NAV-5** — WHEN an unauthenticated visitor opens any deep link THE SYSTEM
   SHALL show the login screen and, after a successful magic-link verify, send
   them to the **originally requested URL** rather than the generic welcome
-  screen.
+  screen. A live code (`/c#t=…`) is the one exception: it is not a deep
+  link to keep, and shows its own sign-in notice instead (R-CODE-7).
 - **R-NAV-6** — The redirect target SHALL be validated as a **relative in-app
   path**. IF it is absolute, external, or otherwise unrecognized THEN THE SYSTEM
   SHALL fall back to `/` (no open redirect).
@@ -1019,7 +1034,8 @@ What differs by environment is only whether mail **leaves the machine**.
   the minimum challenge and "been there" note lengths (ADR 0031), how often
   the badges and each live list refresh (R-MINE-4, R-NAV-12, ADR 0050), each
   experiment's share (R-EXP-3, ADR 0051), and the 9toRevolution switch and
-  tuning (R-GAME-17, ADR 0045). Each change SHALL be
+  tuning (R-GAME-17, ADR 0045), and the member search and connect code
+  switches and live code timings (R-CODE-8). Each change SHALL be
   checked against bounds and the order of paired limits (the minimum challenge
   length never above the maximum), take effect without a restart on every server
   within a minute, and show who made it and when. The host SHALL be able to go
@@ -1188,7 +1204,8 @@ notifications: they go out at once, whatever is chosen here (R-NFR-3).
   - **Connection request** — the target, when a request is made (R-CONN-2);
   - **New connection** — the requester, when their request is accepted
     (R-CONN-7), and the target, when a member already connected with them
-    connects over another challenge (R-CONN-9);
+    connects over another challenge (R-CONN-9), and the owner of a live code
+    when someone connects by scanning it (R-CODE-6);
   - **New challenge in a followed trend** — every member following the trend,
     except its author, when a challenge is posted in it, linking to the deck
     opened at its card (R-ASK-9, R-OFF-7);
@@ -1943,6 +1960,168 @@ a title kept in one place. It reuses the replay (§8m) and the badges (§8k).
 
 ---
 
+## 8p. Finding members and connect codes
+
+Members who meet at the summit, or know of each other, want to connect
+without waiting for a challenge to bring them together. They can **find a
+member** by name, organization, job title or sector, and connect from the
+result; or show a **connect code** for the other to scan. A connection made
+this way is **direct**: about no challenge. Search is not a directory: it
+answers a query with a few cards, never a list of everyone (R-CONN-6, ADR
+0062). _(Andy, 2026-11-05: opt-out, Gmail-style search, two codes.)_
+
+**Words.** A **profile code** is a member's long-lived QR code and link to
+their card. A **live code** is a QR code that changes every few seconds and
+connects at once (ADR 0063).
+
+- **R-FIND-1 (Search)** — WHILE hosts have `limits.memberSearch` on, THE
+  SYSTEM SHALL offer a member holding `member:search` a search at `/people`
+  (S44), from the tab bar's Matches screen and the menu. Every active,
+  onboarded member SHALL hold it. The query SHALL stay in the URL
+  (`/people?q=…`), so a reload or a shared link keeps it (R-NAV-1). While the
+  switch is off, `/people`, its cards and its endpoint SHALL answer as not
+  found (R-NAV-8).
+- **R-FIND-2 (Query language)** — The query SHALL be read as follows, by one
+  pure parser shared by client and server (R-CFG-2):
+  - a plain word matches the start of any word of the **name**;
+  - `name:`, `company:` (also `org:`), `title:` and `sector:` match the start
+    of any word of the display name, organization, job title, and the
+    sector's label or key;
+  - `*` at the end of a word is allowed and means the same: a prefix;
+  - quotes make a phrase: `company:"corporate rebels"`;
+  - every term SHALL match (AND); there is no OR and no negation;
+  - case and accents SHALL be ignored;
+  - an unknown operator, such as `foo:bar`, SHALL be read as a plain word.
+
+  A query SHALL need at least one term of `limits.memberSearchMinChars`
+  characters (2), any field; with none, nothing is searched and the screen
+  says how to search. A name is not required: `company:acme` alone is a valid
+  query.
+
+- **R-FIND-3 (Results)** — THE SYSTEM SHALL answer with at most
+  `limits.memberSearchMaxResults` member cards (20), best match first: a
+  name match before other fields, a whole word before a prefix, then by
+  name. With more matches the screen SHALL say "More match — add a term to
+  narrow it down", and SHALL NOT say how many. Each card SHALL show what the
+  deck's member card shows — name, job title, organization, sector, company
+  size — and never an email (R-CONN-6). The caller, and members not active,
+  not onboarded, banned, deleted, or not findable (R-FIND-5), SHALL never be
+  returned.
+- **R-FIND-4 (Chips)** — Below the search box the screen SHALL show each
+  operator in the query as a chip with a remove mark, and offer **+ Company**,
+  **+ Title** and **+ Sector**; the first two add the operator to the query
+  and focus the box, **+ Sector** picks from the sector list. The chips and
+  the box SHALL always show the same query.
+- **R-FIND-5 (Findable)** — The profile screen SHALL offer **Findable in
+  search**, on until the member turns it off, saved on change (R-PROF-1). Its
+  explanation SHALL say that others can still reach the member through a
+  connect code they show or share, and that the profile code is turned off
+  separately (R-CODE-4).
+- **R-FIND-6 (A member's card)** — A result SHALL open the member's card at
+  `/people/:memberId` (S45), with **Connect**. Opened from search, at that
+  address, the card SHALL answer as not found unless the member would be
+  returned by a search (R-FIND-3); opened by a profile code, R-CODE-3 governs
+  it instead.
+- **R-FIND-7 (Connect directly)** — **Connect** SHALL open
+  `/people/:memberId/connect` (S46): the target's card, an optional note
+  (R-OFF-4's limits do not apply; the note's own maximum does), and
+  **Send request**. THE SYSTEM SHALL create a pending request of kind
+  **direct** about no challenge, and from there F7 holds: the target accepts
+  or declines (R-CONN-1..4), members already connected go straight to the
+  contact (R-CONN-8). A direct request sent this way, from S46, SHALL be
+  allowed only to a member the requester can reach: findable while search is on, or through a usable
+  profile code (R-CODE-3); otherwise not found. A member SHALL send at most
+  `limits.directRequestsPerDay` direct requests a day (20); one more SHALL be
+  refused with a message saying so, not as not found. A live code is not
+  sent this way and is governed by R-CODE-6 alone.
+- **R-FIND-8 (Usage)** — For a member opted in (R-ANA-4) THE SYSTEM SHALL
+  send `member_searched` with which operators were used and whether there
+  were none, some, or more results than shown, and never the query
+  (R-ANA-3). The query SHALL NOT be logged (R-NFR-1).
+
+- **R-CODE-1 (The code screen)** — WHILE hosts have `limits.connectCodes` on,
+  THE SYSTEM SHALL offer every active, onboarded member **Your code** at
+  `/me/code` (S47), from the menu and from S44, with two tabs: **Share my
+  profile** (R-CODE-2) and **Connect now** (R-CODE-5). While the switch is
+  off, the screen, the code routes and their endpoints SHALL answer as not
+  found.
+- **R-CODE-2 (Profile code)** — The first time a member opens **Share my
+  profile**, THE SYSTEM SHALL give them a profile code: a random token, never
+  their id, shown as a QR code of `/p#t=…` with their name, **Copy link**
+  and **Share** (the phone's share sheet). Showing or sharing it is the
+  member's opt-in to being reached by whoever holds it, whether or not they
+  are findable (R-FIND-5).
+- **R-CODE-3 (Opening a profile code)** — `/p#t=…` SHALL show, to a
+  signed-in member, the owner's card as S45 does, with **Connect** leading to
+  `/p/connect#t=…` and on as R-FIND-7. Signed out, the visitor SHALL go
+  through login and come back to it (R-NAV-5). A code reset or turned off,
+  unknown, the visitor's own, or an owner no longer active SHALL answer as
+  not found, saying nothing about the owner. The token stays in the address,
+  in its fragment, as the sign-in link carries its own (R-NAV-4): the link is
+  the code, meant to be shared, and reset is what stops it. A fragment never
+  reaches the server, so no request line or log holds it (R-NFR-9); the client
+  sends it in a request body. Through sign-in, R-NAV-5 carries the whole
+  `/p#t=…` as `next`, since the link may be opened in another tab or the mail
+  app's browser: it is stored with the magic link and gone with it (R-AUTH-5),
+  and never logged. R-NAV-6 SHALL accept a fragment on `/p` and `/p/connect`
+  and drop it on every other path.
+- **R-CODE-4 (Turning it off, resetting it)** — The profile screen and S47
+  SHALL offer **Profile code: on / off** and **Reset code**. Off SHALL make
+  the code not found until turned on again, the same code; Reset SHALL replace
+  it at once, so a code printed or posted stops working (R-CODE-3). While
+  `limits.connectCodes` is off the profile screen SHALL NOT show them, and
+  **Findable in search** SHALL leave out its note about codes (R-FIND-5).
+- **R-CODE-5 (Live code)** — **Connect now** SHALL show a live code: a QR
+  code of `/c#t=…` with a single-use token from the server, replaced on
+  the same screen every `limits.liveCodeSeconds` (30) by a new one, with a
+  ring beside it emptying as the code's time on screen runs out, as an
+  authenticator app shows it. A code SHALL stay usable for
+  `limits.liveCodeGraceSeconds` (10) after the next one replaced it, so a scan
+  begun at the end still works, and no longer. No new code SHALL be asked for
+  while the page is hidden. The live code SHALL offer no Copy or Share: it is
+  for scanning face to face.
+- **R-CODE-6 (Scanning a live code)** — WHEN a signed-in member opens a
+  usable `/c#t=…` THE SYSTEM SHALL spend the token and record an
+  **accepted** direct request from the scanner to the owner, with no note,
+  and take the scanner to the contact screen (R-CONN-3). Showing the code is
+  the owner's opt-in, scanning it the scanner's (ADR 0063). The owner SHALL
+  see on S47, within `limits.liveCodeSeconds`, who just connected, and SHALL
+  be notified, in the app and by email at the cadence they chose (R-NOTE-2),
+  that the scanner connected with them by their live code: the scanner's
+  name and a link to the contact screen, no address and no challenge, since
+  there is none (R-NAV-9). It is a `connection_added` notification worded
+  for a direct connection. A code whose owner is no longer active SHALL
+  NOT connect (R-CODE-10). IF a direct request is already pending between
+  the two, either side, THE SYSTEM SHALL accept that one instead of adding
+  another. Every request pending between the two, either side, SHALL be
+  accepted with it, as R-CONN-11 does, leaving the waiting
+  list and showing under _Connected over_. Between members already connected over a direct
+  request, nothing SHALL be added, and both land as R-CONN-8 says.
+- **R-CODE-7 (A live code that cannot be used)** — Signed out, `/c#t=…`
+  SHALL say "Sign in to use live connect codes", with a way to sign in, and
+  SHALL NOT keep the token for after. A token spent, expired, unknown, the
+  scanner's own, or one whose owner is no longer active SHALL say "This code
+  has expired — ask for a fresh one", saying nothing about its owner.
+- **R-CODE-8 (Host settings)** — Hosts SHALL be able to change
+  `limits.liveCodeSeconds` (10 to 120) and `limits.liveCodeGraceSeconds` (0 to
+  30, and never above the first, an order R-CFG-6 checks),
+  and both switches, `limits.memberSearch` and `limits.connectCodes`, in the
+  host tools (R-CFG-6).
+- **R-CODE-9 (Usage)** — For a member opted in (R-ANA-4) THE SYSTEM SHALL send
+  `connect_code_shown` and `connect_code_opened` with which code, and for an
+  opened one whether it was opened, connected, or had expired; never a token
+  or who (R-ANA-3). These two and `member_searched` (R-FIND-8) SHALL be sent by the server routes themselves,
+  not through `/api/events`; a signed-out visitor has no opt-in, so sends
+  none.
+- **R-CODE-10 (Erased with the account)** — A member's codes SHALL be deleted
+  with them, and SHALL stop working the moment they are banned or ask to be
+  deleted (R-MOD-9, R-NFR-7).
+
+A direct connection counts in the badges' **Connect** row once accepted, as
+any connection does (R-BADGE-1). It does not count as **Shared pain**.
+
+---
+
 ## 9. Non-functional requirements
 
 - **R-NFR-1 (Privacy)** — Challenge text and member contact details SHALL be
@@ -2121,9 +2300,14 @@ fixtures. `design.md` §6 lists the exact records and the profile mechanism.
 6. **Controller and contact** — _(Resolved; see below.)_
 7. **Full privacy notice** — _(Resolved; see below.)_
 8. **Moderation** — _(Resolved; see below.)_
+9. **Search in the privacy words** — _(Resolved; see below.)_
 
 ### Resolved
 
+- **Search in the privacy words** (2026-11-05) — no wording change: R-ONB-5
+  and the privacy notice already say a member's profile may be seen by other
+  members wherever the app shows them, which covers search and the connect
+  codes (R-FIND-5, R-CODE-2). The consent version stays as it is.
 - **Moderation** (2026-10-21) — members withdraw their own challenges, report
   challenges and notes, and hosts hide content or ban a member, for the
   launch (R-ASK-17, R-MOD-1..12, ADR 0055). Hosts see who reported. Nothing
