@@ -2021,11 +2021,12 @@ connects at once (ADR 0063).
   **Send request**. THE SYSTEM SHALL create a pending request of kind
   **direct** about no challenge, and from there F7 holds: the target accepts
   or declines (R-CONN-1..4), members already connected go straight to the
-  contact (R-CONN-8). A direct request SHALL be allowed only to a member the
-  requester can reach: findable while search is on, or through a usable
+  contact (R-CONN-8). A direct request sent this way, from S46, SHALL be
+  allowed only to a member the requester can reach: findable while search is on, or through a usable
   profile code (R-CODE-3); otherwise not found. A member SHALL send at most
   `limits.directRequestsPerDay` direct requests a day (20); one more SHALL be
-  refused with a message saying so, not as not found.
+  refused with a message saying so, not as not found. A live code is not
+  sent this way and is governed by R-CODE-6 alone.
 - **R-FIND-8 (Usage)** — For a member opted in (R-ANA-4) THE SYSTEM SHALL
   send `member_searched` with which operators were used and whether there
   were none, some, or more results than shown, and never the query
