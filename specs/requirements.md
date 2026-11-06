@@ -1936,9 +1936,9 @@ a title kept in one place. It reuses the replay (§8m) and the badges (§8k).
   shared stays still.
 - **R-RECAP-6 (Sharing, LinkedIn first)** — _Share_ SHALL be the first
   action. Where the phone can share an image, THE SYSTEM SHALL hand the card
-  and a ready-written post to its share sheet, for LinkedIn, WhatsApp or
-  any app; where the sheet takes the image only alone, it SHALL hand it
-  alone and copy the post for pasting. Elsewhere it SHALL save the card and
+  alone to its share sheet, for LinkedIn, WhatsApp or any app, and copy a
+  ready-written post for pasting, since apps such as LinkedIn drop an image
+  sent with text. Elsewhere it SHALL save the card and
   open LinkedIn's post composer with the text filled in, for the member to
   attach it. _(Andy, 2026-11-06: the image did not reach LinkedIn.)_
   _Save image_ SHALL be the second. Nothing about
