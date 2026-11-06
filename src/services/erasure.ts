@@ -60,7 +60,8 @@ export interface ErasureService {
    * they deleted themselves. */
   restoreOwn(memberId: string): Promise<boolean>
   /** Erases every deleted account whose time has come; one that cannot be
-   * erased now is tried again next time. Returns how many went. */
+   * erased now is tried again next time. Returns how many went; when any
+   * failed, rejects after trying the rest, with an AggregateError of them. */
   eraseDue(): Promise<number>
 }
 
@@ -99,8 +100,19 @@ export function createErasureService(deps: {
     restoreOwn: (memberId) => deps.store.restore(memberId, true),
     eraseDue: async () => {
       let erased = 0
+      const failures: unknown[] = []
       for (const memberId of await deps.store.due(now())) {
-        if ((await erase(memberId)) === 'erased') erased += 1
+        try {
+          if ((await erase(memberId)) === 'erased') erased += 1
+        } catch (error) {
+          failures.push(error)
+        }
+      }
+      if (failures.length > 0) {
+        throw new AggregateError(
+          failures,
+          `erasure sweep: ${String(failures.length)} failed, ${String(erased)} erased`,
+        )
       }
       return erased
     },
