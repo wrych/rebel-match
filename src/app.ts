@@ -72,6 +72,7 @@ import type { OutboxLog } from './services/outbox-log.js'
 import type { AnalyticsConsentService } from './services/analytics-consent.js'
 import type { Track } from './services/analytics.js'
 import type { ErasureService } from './services/erasure.js'
+import type { SignIn } from './services/sign-in.js'
 import type { MemberRoster } from './services/member-roster.js'
 import type { ProfileStore } from './services/profile.js'
 import type { RoleService } from './services/roles.js'
@@ -89,6 +90,7 @@ export interface AppDeps {
   settings: SettingsService
   db: Database
   auth: AuthProvider
+  signIn: SignIn
   profiles: MemberProfiles
   roles: RoleService
   erasure: ErasureService
