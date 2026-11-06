@@ -4,7 +4,6 @@ import {
   createNotificationWorker,
   retryAfter,
   skipReason,
-  startNotificationWorker,
   type DueNotification,
   type NotificationMailStore,
 } from './notification-worker.js'
@@ -313,39 +312,5 @@ describe('createNotificationWorker', () => {
 
     expect(calls).toContainEqual(['skipped', 'a', 'stale'])
     expect(errors).toHaveLength(1)
-  })
-})
-
-describe('startNotificationWorker', () => {
-  it('runs at once and then on the interval, one run at a time', async () => {
-    let runs = 0
-    let finish: () => void = () => undefined
-    let tick: () => void = () => undefined
-    const stop = startNotificationWorker({
-      worker: {
-        deliverDue: () => {
-          runs++
-          return new Promise<void>((resolve) => {
-            finish = resolve
-          })
-        },
-      },
-      intervalSeconds: 60,
-      onError: () => undefined,
-      schedule: (run, everyMs) => {
-        expect(everyMs).toBe(60_000)
-        tick = run
-        return () => undefined
-      },
-    })
-
-    tick()
-    expect(runs).toBe(1)
-    finish()
-    await Promise.resolve()
-    await Promise.resolve()
-    tick()
-    expect(runs).toBe(2)
-    stop()
   })
 })

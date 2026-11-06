@@ -4,12 +4,9 @@ import { createApp } from './app.js'
 import { composeApp } from './compose.js'
 import { loadRuntimeConfig } from './runtime-config.js'
 import { openDatabase } from './db/open.js'
-import { startOutboxRetention } from './services/outbox-retention.js'
-import { startCrownCheck } from './services/crown-check.js'
-import { startTokenPurge } from './services/token-purge.js'
-import { startErasureSweep } from './services/erasure-sweep.js'
-import { startSettingsRefresh } from './services/settings-refresh.js'
-import { startNotificationWorker } from './services/notification-worker.js'
+import { startEvery, timerJobs } from './services/scheduled-jobs.js'
+
+const MS_PER_SECOND = 1000
 
 const config = await loadRuntimeConfig()
 const connection = await openDatabase(config, () => {
@@ -40,91 +37,15 @@ await deps.badges.awardAtLaunch().catch(() => {
   console.warn('badges: the award at launch failed, will retry next start')
 })
 
-// The server's own timers, unless a scheduler's tick runs the same work
-// (ADR 0049). Notifications are mailed by a timer, not by the request that
-// caused them, and kept as long as the outbound log is purged (R-NOTE-7,
-// R-NOTE-11).
-function startTimers(): void {
-  startSettingsRefresh({
-    settings: deps.settings,
-    intervalSeconds: config.settingsRefreshSeconds,
-    onError: () => {
-      console.warn('settings: refresh failed, keeping the values in force')
-    },
-  })
-
-  startErasureSweep({
-    erasure: deps.erasure,
-    intervalHours: config.erasureSweepIntervalHours,
-    onError: () => {
-      console.warn('erasure sweep: failed, will retry next interval')
-    },
-  })
-
-  startTokenPurge({
-    auth: deps.auth,
-    intervalHours: config.tokenPurgeIntervalHours,
-    onError: () => {
-      console.warn('token purge: failed, will retry next interval')
-    },
-  })
-
-  startOutboxRetention({
-    log: deps.outbox,
-    retentionDays: config.limits.outboxRetentionDays,
-    intervalHours: config.outboxPurgeIntervalHours,
-    onError: () => {
-      console.warn('outbox retention: purge failed, will retry next interval')
-    },
-  })
-
-  startNotificationWorker({
-    worker: deps.notificationMail,
-    intervalSeconds: config.notificationWorker.intervalSeconds,
-    onError: () => {
-      console.warn('notifications: the worker failed, will retry next interval')
-    },
-  })
-
-  startOutboxRetention({
-    log: deps.notificationMail,
-    retentionDays: config.limits.notificationRetentionDays,
-    intervalHours: config.outboxPurgeIntervalHours,
-    onError: () => {
-      console.warn(
-        'notification retention: purge failed, will retry next interval',
-      )
-    },
-  })
-}
-
-// Crowns move when counts fall with nobody acting (R-BADGE-3).
-function startBadgeTimers(): void {
-  startCrownCheck({
-    badges: deps.badges,
-    intervalMinutes: config.badgeCrownCheckMinutes,
-    onError: () => {
-      console.warn('badges: the crown check failed, will retry next interval')
-    },
-  })
-}
-
-// Live codes expire in seconds; their rows go as sign-in tokens' do
-// (R-CODE-6).
-function startLiveCodeCleanUp(): void {
-  startTokenPurge({
-    auth: { purgeExpired: () => deps.liveCodes.purge() },
-    intervalHours: config.tokenPurgeIntervalHours,
-    onError: () => {
-      console.warn('live codes: clean-up failed, will retry next interval')
-    },
-  })
-}
-
+// The server's own timers run the tick's jobs and the settings refresh,
+// unless a scheduler's tick runs the same work (ADR 0049).
 if (config.scheduledWork.mode === 'timers') {
-  startTimers()
-  startBadgeTimers()
-  startLiveCodeCleanUp()
+  startEvery(timerJobs(config, deps), {
+    everyTickMs: config.notificationWorker.intervalSeconds * MS_PER_SECOND,
+    onError: (name) => {
+      console.warn(`${name}: failed, will retry next interval`)
+    },
+  })
 }
 
 // Close the database before exiting, so a local PGlite folder is released
