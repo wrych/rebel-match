@@ -186,7 +186,12 @@ Requirements:
   continuing. THE SYSTEM SHALL record the consent version and timestamp
   (ADR 0041).
 - **R-ONB-4** — IF the user has not accepted the current consent version THEN THE
-  SYSTEM SHALL block access to the main app and re-present the consent.
+  SYSTEM SHALL block access to the main app and re-present the consent. The
+  block is on the member's own use only: WHILE a newer version waits for their
+  acceptance, other members SHALL still see and reach them under the version
+  they last accepted, since showing a profile rests on providing the service,
+  not on consent (privacy notice §3). A member who never accepted any version
+  SHALL NOT be shown to anyone.
 - **R-ONB-5** — The consent copy SHALL state plainly that **email addresses are
   shared with another member only when both sides accept a connection**, and that
   the app is **closed: membership is by invitation**, whether from the whitelist

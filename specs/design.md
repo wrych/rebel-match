@@ -767,7 +767,9 @@ A member on the **whitelist** is simply a `members` row with `status='active'`
 (or pre-seeded with `status='active'` and `name=NULL`). An **applicant** is
 `status='applicant'`. Onboarding is complete only when **both** `name` and
 `consent_at` are set; a profile draft never satisfies the onboarding gate
-(R-ONB-1, R-ONB-15). `requested_name` and `requested_org` are dropped once the
+(R-ONB-1, R-ONB-15). Who others can see and reach is the same pair on an
+active row, whatever consent version was accepted; only the member's own
+gate asks for the current one (R-ONB-4). `requested_name` and `requested_org` are dropped once the
 drafts below replace them (ADR 0043).
 
 ### profile_drafts
