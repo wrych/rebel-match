@@ -46,3 +46,12 @@ export async function deleteHistory(): Promise<void> {
   const response = await send('/api/me/history', 'DELETE')
   ensureOk(response, 'deleting the history failed')
 }
+
+/** Saves whether member search finds the member (R-FIND-5). Throws when it
+ * did not save, so a failure is never shown as saved. */
+export async function saveFindable(findable: boolean): Promise<void> {
+  ensureOk(
+    await send('/api/me/findable', 'PUT', { findable }),
+    'findable not saved',
+  )
+}

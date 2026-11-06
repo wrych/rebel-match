@@ -8,6 +8,7 @@ import {
   sectors,
 } from '../../src/profile-options'
 import AnalyticsToggle from '../components/AnalyticsToggle.vue'
+import FindableToggle from '../components/FindableToggle.vue'
 import ConsentWords from '../components/ConsentWords.vue'
 import NotificationSettings from '../components/NotificationSettings.vue'
 import DeleteAccount from '../components/DeleteAccount.vue'
@@ -220,6 +221,8 @@ function save(field: Field): Promise<void> {
       </div>
 
       <NotificationSettings />
+
+      <FindableToggle :findable="profile.findable" />
 
       <AnalyticsToggle :opted-in="profile.analyticsOptIn" />
 

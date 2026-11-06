@@ -30,14 +30,17 @@ const own: OwnProfile = {
   consentVersion: '2026-11-01',
   consentAt: '2026-11-08T10:00:00.000Z',
   analyticsOptIn: false,
+  findable: true,
 }
 
 function setup(outcome: EraseOutcome = 'erased'): {
   app: Express
   edits: { memberId: string; edit: ProfileEdit }[]
   erased: string[]
+  findable: [string, boolean][]
 } {
   const edits: { memberId: string; edit: ProfileEdit }[] = []
+  const findable: [string, boolean][] = []
   const erased: string[] = []
   const app = express()
   app.use(express.json())
@@ -49,6 +52,10 @@ function setup(outcome: EraseOutcome = 'erased'): {
         own: (memberId) => Promise.resolve(memberId === 'm-ada' ? own : null),
         update: (memberId, edit) => {
           edits.push({ memberId, edit })
+          return Promise.resolve()
+        },
+        setFindable: (memberId, choice) => {
+          findable.push([memberId, choice])
           return Promise.resolve()
         },
       },
@@ -71,7 +78,7 @@ function setup(outcome: EraseOutcome = 'erased'): {
       },
     }),
   )
-  return { app, edits, erased }
+  return { app, edits, erased, findable }
 }
 
 async function cookie(): Promise<string> {
@@ -197,5 +204,39 @@ describe('DELETE /api/profile', () => {
 
     expect((await request(app).delete('/api/profile')).status).toBe(401)
     expect(erased).toEqual([])
+  })
+})
+
+describe('PUT /api/me/findable (R-FIND-5)', () => {
+  it('saves the member’s own choice', async () => {
+    const { app, findable } = setup()
+
+    const response = await request(app)
+      .put('/api/me/findable')
+      .set('Cookie', await cookie())
+      .send({ findable: false })
+
+    expect(response.status).toBe(204)
+    expect(findable).toEqual([['m-ada', false]])
+  })
+
+  it('refuses anything but a yes or no', async () => {
+    const { app, findable } = setup()
+
+    const response = await request(app)
+      .put('/api/me/findable')
+      .set('Cookie', await cookie())
+      .send({ findable: 'no' })
+
+    expect(response.status).toBe(400)
+    expect(findable).toEqual([])
+  })
+
+  it('needs a session', async () => {
+    const response = await request(setup().app)
+      .put('/api/me/findable')
+      .send({ findable: false })
+
+    expect(response.status).toBe(401)
   })
 })

@@ -12,6 +12,8 @@ export interface OwnProfile {
   consentVersion: string | null
   consentAt: string | null
   analyticsOptIn: boolean
+  /** Whether member search returns them (R-FIND-5). */
+  findable: boolean
 }
 
 export interface ProfileEdit {
@@ -26,4 +28,5 @@ export interface ProfileStore {
   own(memberId: string): Promise<OwnProfile | null>
   /** Saves the name and sets the optional fields, clearing a left-out one. */
   update(memberId: string, edit: ProfileEdit): Promise<void>
+  setFindable(memberId: string, findable: boolean): Promise<void>
 }
