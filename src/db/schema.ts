@@ -821,3 +821,24 @@ export const profileCodes = pgTable(
   },
   (t) => [uniqueIndex('uq_profile_code_token').on(t.token)],
 )
+
+// A live code (R-CODE-5): single-use, its token stored hashed as sign-in
+// tokens are; spent by whoever scanned it, and reported to its owner's
+// screen once. It goes with its owner (R-CODE-10).
+export const liveCodes = pgTable(
+  'live_codes',
+  {
+    tokenHash: varchar('token_hash', { length: 64 }).primaryKey(),
+    memberId: id('member_id')
+      .notNull()
+      .references(() => members.id, { onDelete: 'cascade' }),
+    usableUntil: at('usable_until').notNull(),
+    spentAt: at('spent_at'),
+    spentBy: id('spent_by').references(() => members.id, {
+      onDelete: 'cascade',
+    }),
+    reportedAt: at('reported_at'),
+    createdAt: at('created_at').notNull().defaultNow(),
+  },
+  (t) => [index('ix_live_codes_member').on(t.memberId, t.spentAt)],
+)

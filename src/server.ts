@@ -109,9 +109,22 @@ function startBadgeTimers(): void {
   })
 }
 
+// Live codes expire in seconds; their rows go as sign-in tokens' do
+// (R-CODE-6).
+function startLiveCodeCleanUp(): void {
+  startTokenPurge({
+    auth: { purgeExpired: () => deps.liveCodes.purge() },
+    intervalHours: config.tokenPurgeIntervalHours,
+    onError: () => {
+      console.warn('live codes: clean-up failed, will retry next interval')
+    },
+  })
+}
+
 if (config.scheduledWork.mode === 'timers') {
   startTimers()
   startBadgeTimers()
+  startLiveCodeCleanUp()
 }
 
 // Close the database before exiting, so a local PGlite folder is released

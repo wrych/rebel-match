@@ -16,6 +16,7 @@ import { presentationRoutes } from './routes/presentation.js'
 import { recapRoutes } from './routes/recap.js'
 import { memberRoutes } from './routes/members.js'
 import { profileCodeRoutes } from './routes/profile-codes.js'
+import { liveCodeRoutes } from './routes/live-codes.js'
 import { swipeRoutes } from './routes/swipes.js'
 import { cockpitRoutes } from './routes/cockpit.js'
 import { guardApi } from './routes/api-guard.js'
@@ -60,6 +61,7 @@ import type { PresentationService } from './services/presentation.js'
 import type { RecapService } from './services/recap.js'
 import type { MemberSearchService } from './services/member-search.js'
 import type { ProfileCodeService } from './services/profile-codes.js'
+import type { LiveCodeService } from './services/live-codes.js'
 import type { SwipeService } from './services/swipes.js'
 import type { CockpitService } from './services/cockpit.js'
 import type { FollowService } from './services/follows.js'
@@ -110,6 +112,7 @@ export interface AppDeps {
   recap: RecapService
   memberSearch: MemberSearchService
   profileCodes: ProfileCodeService
+  liveCodes: LiveCodeService
   badges: BadgeService
   connections: ConnectionService
   swipes: SwipeService
@@ -181,7 +184,7 @@ function mountScheduled(
 // The game, the replay and recap, and finding and reaching members.
 function mountPlayAndPeople(app: Express, deps: AppDeps): void {
   app.use(gameRoutes(deps), networkRoutes(deps), recapRoutes(deps))
-  app.use(memberRoutes(deps), profileCodeRoutes(deps))
+  app.use(memberRoutes(deps), profileCodeRoutes(deps), liveCodeRoutes(deps))
 }
 
 /** Builds the app from injected dependencies, so tests can supply fakes

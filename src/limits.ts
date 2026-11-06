@@ -183,6 +183,24 @@ const limitSpecs = {
     zeroAllowed: true,
     changeable: { min: 0, max: 1 },
   },
+  // How long each live code is shown before the next replaces it
+  // (R-CODE-5, R-CODE-8).
+  liveCodeSeconds: {
+    env: 'LIVE_CODE_SECONDS',
+    default: 30,
+    changeable: { min: 10, max: 120 },
+  },
+  // How long a replaced live code still works, so a scan begun at the end
+  // of its time succeeds (R-CODE-5, R-CODE-8).
+  liveCodeGraceSeconds: {
+    env: 'LIVE_CODE_GRACE_SECONDS',
+    default: 10,
+    zeroAllowed: true,
+    changeable: { min: 0, max: 30 },
+  },
+  // How long a spent live code waits for its owner's screen to report it
+  // before the tick deletes it (R-CODE-6).
+  liveCodeKeepMinutes: { env: 'LIVE_CODE_KEEP_MINUTES', default: 60 },
   // Direct requests a member may send in a day, so search cannot be used to
   // ask everyone (R-FIND-7).
   directRequestsPerDay: { env: 'DIRECT_REQUESTS_PER_DAY', default: 50 },
