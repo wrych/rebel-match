@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import KindChip from '../components/KindChip.vue'
 import { computed, onMounted, ref } from 'vue'
 import ChallengeCard from '../components/ChallengeCard.vue'
 import PullToRefresh from '../components/PullToRefresh.vue'
@@ -144,15 +145,7 @@ onMounted(() => live.refresh())
           <RouterLink :to="requestPath(request.id)" class="request-row">
             <span class="card-head">
               <span class="card-title">{{ request.other.name }}</span>
-              <span
-                class="chip"
-                :class="
-                  request.kind === 'same_boat' ? 'chip-accent' : 'chip-ink'
-                "
-                >{{
-                  request.kind === 'same_boat' ? 'Same boat' : 'Been there'
-                }}</span
-              >
+              <KindChip :kind="request.kind" />
             </span>
             <span v-if="request.message" class="small request-note">{{
               request.message

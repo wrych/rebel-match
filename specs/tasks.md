@@ -502,7 +502,7 @@ Built after the spec and ADR merge. One pull request per item, in this order.
 
 ## M11 — Finding members and connect codes _(C11, C12, F25, F26, ADR 0062, ADR 0063 — behind their switches)_
 
-- [ ] The `direct` request kind, reach, and `POST /api/connections` taking
+- [x] The `direct` request kind, reach, and `POST /api/connections` taking
       it, capped per day. _(R-FIND-7, R-CONN-1)_
 - [ ] The query parser and printer, pure, shared by client and server.
       _(R-FIND-2)_

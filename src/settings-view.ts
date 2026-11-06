@@ -1009,6 +1009,23 @@ const catalogue: Group[] = [
     ],
   },
   {
+    title: 'Finding members',
+    explanation:
+      'Members finding each other by name, organization, job title or ' +
+      'sector, and connecting directly, about no challenge.',
+    entries: [
+      {
+        name: 'Member search',
+        explanation:
+          'On lets every member search; off hides it, and its addresses ' +
+          'answer as not found. Members who turned off being findable are ' +
+          'never found.',
+        key: 'limits.memberSearch',
+        switch: true,
+      },
+    ],
+  },
+  {
     title: 'Network replay',
     explanation:
       'A 3D replay of how members joined and connected, ending on the ' +

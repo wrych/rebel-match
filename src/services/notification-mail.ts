@@ -14,6 +14,7 @@ import { badgeName, badgePath, type NotificationKind } from './notifications.js'
 import { createTrendNotice, deckAt } from './trend-notice.js'
 import {
   createAcceptNotice,
+  addedWords,
   createAddedNotice,
   createConnectionNotice,
   type MemberDirectory,
@@ -223,7 +224,7 @@ async function requestItem(
       }
     : {
         name,
-        text: 'connected with you over another challenge.',
+        text: `${addedWords(record.kind)}.`,
         ...wrote,
         action: {
           label: 'See your connection',

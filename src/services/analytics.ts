@@ -21,7 +21,10 @@ export type AnalyticsEvent =
       action: 'same_boat' | 'been_there' | 'follow' | 'skip'
       trend_id: string
     }
-  | { name: 'connection_requested'; kind: 'same_boat' | 'been_there' }
+  | {
+      name: 'connection_requested'
+      kind: 'same_boat' | 'been_there' | 'direct'
+    }
   | {
       name: 'connection_responded'
       status: 'accepted' | 'declined'

@@ -58,6 +58,7 @@ const row = (over: Partial<NotificationRow>): NotificationRow => ({
   aboutName: 'Bea There',
   aboutMemberId: 'm-bea',
   openReports: null,
+  direct: false,
   connectionId: 'r/1',
   recipientRequested: false,
   challengeId: null,
@@ -104,6 +105,19 @@ describe('createNotifications', () => {
       name: 'Bea There',
       at: '2026-10-06T08:00:00.000Z',
     })
+  })
+
+  it('marks a connection about no challenge as direct (R-CODE-6)', async () => {
+    const { store } = recordingStore([
+      row({ id: 'c', type: 'new_connection', direct: true }),
+    ])
+
+    const [entry] = await createNotifications({
+      store,
+      pageSize: () => 20,
+    }).list('bob', null)
+
+    expect(entry).toMatchObject({ kind: 'connection_added', direct: true })
   })
 
   it('names a badge gained, never its recipient, and links its row (R-BADGE-10)', async () => {

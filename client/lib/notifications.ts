@@ -44,6 +44,13 @@ export async function fetchNewNotifications(): Promise<number> {
     : 0
 }
 
+// Made at once: over another challenge, or about none (R-CONN-9, R-CODE-6).
+function addedHeadline(note: NotificationView): string {
+  return note.direct
+    ? `${note.name} connected with you directly`
+    : `${note.name} connected with you over another challenge`
+}
+
 /** What happened, in one line, naming who it is about (R-NOTE-5). */
 export function headline(note: NotificationView): string {
   switch (note.kind) {
@@ -52,7 +59,7 @@ export function headline(note: NotificationView): string {
     case 'connection_accepted':
       return `${note.name} accepted your request`
     case 'connection_added':
-      return `${note.name} connected with you over another challenge`
+      return addedHeadline(note)
     case 'trend_challenge':
       return `${note.name} posted a challenge in ${note.trend ?? 'a trend you follow'}`
     case 'applicant':

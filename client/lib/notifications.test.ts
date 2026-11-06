@@ -31,6 +31,7 @@ const note = (kind: NotificationView['kind']): NotificationView => ({
   path: '/x',
   trend: kind === 'trend_challenge' ? 'Radical Transparency' : null,
   openReports: kind === 'report' ? 2 : null,
+  direct: false,
 })
 
 afterEach(() => {
@@ -49,6 +50,12 @@ describe('headline', () => {
     ['recap', 'Your rebel record is ready'],
   ] as const)('words %s (R-NOTE-5)', (kind, words) => {
     expect(headline(note(kind))).toBe(words)
+  })
+
+  it('words a direct connection as made directly (R-CODE-6)', () => {
+    expect(headline({ ...note('connection_added'), direct: true })).toBe(
+      'Bea connected with you directly',
+    )
   })
 
   it.each([

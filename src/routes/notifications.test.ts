@@ -33,6 +33,7 @@ const entry: NotificationView = {
   name: 'Bea There',
   path: '/matches/requests/r1',
   trend: null,
+  direct: false,
   openReports: null,
 }
 

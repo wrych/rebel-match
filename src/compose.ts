@@ -54,7 +54,7 @@ import { createModerationStore } from './services/moderation-store.js'
 import { createChallenges } from './services/challenges.js'
 import { newestFirst } from './services/match-ranker.js'
 import { createConnectionStore } from './services/connection-store.js'
-import { createConnections } from './services/connections.js'
+import { createConnections, type DirectRules } from './services/connections.js'
 import { createMemberDirectory } from './services/member-directory-store.js'
 import { createSwipeStore } from './services/swipe-store.js'
 import { createSwipes } from './services/swipes.js'
@@ -158,6 +158,15 @@ function composeDeck(config: Config, db: Database, track: Track): DeckService {
   })
 }
 
+// Read on every request, so a host's switch applies at once (ADR 0031).
+function directRules(settings: LiveSettings): DirectRules {
+  const limits = settings.limits()
+  return {
+    searchOn: limits.memberSearch === 1,
+    perDay: limits.directRequestsPerDay,
+  }
+}
+
 interface Counting {
   service: BadgeService
   onError: (error: unknown) => void
@@ -170,6 +179,7 @@ function composeCounted(
   db: Database,
   track: Track,
   badges: Counting,
+  settings: LiveSettings,
 ): Pick<AppDeps, 'challenges' | 'connections'> {
   return {
     challenges: countingChallenges(
@@ -187,6 +197,7 @@ function composeCounted(
         store: createConnectionStore(db),
         newId: randomUUID,
         track,
+        direct: () => directRules(settings),
       }),
       badges.service,
       badges.onError,
@@ -213,7 +224,8 @@ function composeJourneys(
   | 'notificationSettings'
 > {
   const notes = composeNotifications(db, settings)
-  const { challenges, connections } = composeCounted(config, db, track, badges)
+  const counted = composeCounted(config, db, track, badges, settings)
+  const { challenges, connections } = counted
   const follows = createFollows({
     store: createFollowStore(db),
     trends: () => challenges.trends(),

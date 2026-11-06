@@ -16,6 +16,7 @@ const entry = (
   path: `/matches/requests/${id}`,
   trend: null,
   openReports: null,
+  direct: false,
   ...over,
 })
 
