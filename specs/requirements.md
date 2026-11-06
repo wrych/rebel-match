@@ -2021,7 +2021,10 @@ connects at once (ADR 0063).
   `/people/:memberId` (S45), with **Connect**. Opened from search, at that
   address, the card SHALL answer as not found unless the member would be
   returned by a search (R-FIND-3); opened by a profile code, R-CODE-3 governs
-  it instead.
+  it instead. For a member the viewer is already connected with, over
+  anything, the card and each search result SHALL say so, and the card SHALL
+  lead to the contact (S16) in place of **Connect**; S46 opened all the same
+  SHALL go straight there (R-CONN-8). _(Andy, 2026-11-06, from testing.)_
 - **R-FIND-7 (Connect directly)** — **Connect** SHALL open
   `/people/:memberId/connect` (S46): the target's card, an optional note
   (R-OFF-4's limits do not apply; the note's own maximum does), and
