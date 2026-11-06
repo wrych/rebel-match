@@ -113,6 +113,7 @@ export const router = createRouter({
       'profile-code-connect',
       () => import('./screens/PersonConnectScreen.vue'),
     ),
+    screen('live-code', () => import('./screens/LiveCodeScreen.vue')),
     screen('welcome', WelcomeScreen),
     screen('profile', ProfileScreen),
     screen('notifications', NotificationsScreen),
