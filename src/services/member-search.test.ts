@@ -16,6 +16,7 @@ const card = (memberId: string): MemberCard => ({
   org: null,
   sector: null,
   companySize: null,
+  connectionId: null,
 })
 
 const rules: SearchRules = { searchOn: true, minChars: 2, maxResults: 2 }

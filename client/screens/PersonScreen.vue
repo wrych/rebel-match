@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import PersonCard from '../components/PersonCard.vue'
 import { profileConnectPath } from '../lib/codes'
+import { contactPath } from '../lib/connections'
 import { personConnectPath, reachedFrom, type Reached } from '../lib/people'
 
 const route = useRoute()
@@ -40,7 +41,17 @@ onMounted(async () => {
         <h1 class="display display-lg">{{ reached.card.name }}</h1>
       </div>
       <PersonCard :card="reached.card" />
-      <RouterLink :to="connectPath" class="btn btn-primary">Connect</RouterLink>
+      <template v-if="reached.card.connectionId">
+        <p class="lede">You are already connected.</p>
+        <RouterLink
+          :to="contactPath(reached.card.connectionId)"
+          class="btn btn-primary"
+          >Open contact</RouterLink
+        >
+      </template>
+      <RouterLink v-else :to="connectPath" class="btn btn-primary"
+        >Connect</RouterLink
+      >
       <RouterLink
         v-if="reached.profileCode === null"
         to="/people"

@@ -17,6 +17,9 @@ export interface MemberCard {
   org: string | null
   sector: string | null
   companySize: string | null
+  /** The viewer's accepted request with this member to open the contact
+   * by, or null while they are not connected (R-CONN-8). */
+  connectionId: string | null
 }
 
 /** What a search narrows by: folded terms, words split by single spaces,
@@ -40,8 +43,9 @@ export interface MemberSearchStore {
     terms: SearchTerms,
     limit: number,
   ): Promise<MemberCard[]>
-  /** A member's card whatever their state, or null for no such member. */
-  card(memberId: string): Promise<CardFacts | null>
+  /** A member's card as `viewerId` sees it, whatever the member's state,
+   * or null for no such member. */
+  card(viewerId: string, memberId: string): Promise<CardFacts | null>
 }
 
 /** The limits a search runs by, read per request (ADR 0031). */
@@ -130,7 +134,7 @@ export function createMemberSearch(deps: {
       return answer
     },
     card: async (callerId, memberId) => {
-      const facts = await deps.store.card(memberId)
+      const facts = await deps.store.card(callerId, memberId)
       if (facts === null) return null
       const reached = canReach({
         isCaller: memberId === callerId,

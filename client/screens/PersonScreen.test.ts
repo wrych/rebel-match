@@ -21,6 +21,7 @@ const card = {
   org: 'Acme',
   sector: null,
   companySize: null,
+  connectionId: null as string | null,
 }
 
 function server(status: number): ReturnType<typeof vi.fn> {
@@ -46,6 +47,7 @@ async function mountScreen(): Promise<ReturnType<typeof mount>> {
 afterEach(() => {
   vi.unstubAllGlobals()
   replace.mockReset()
+  card.connectionId = null
   Object.assign(route, {
     path: '/people/m-ben',
     params: { memberId: 'm-ben' },
@@ -101,5 +103,18 @@ describe('PersonScreen (S45)', () => {
       params: { pathMatch: ['p'] },
     })
     expect(screen.text()).toBe('')
+  })
+
+  it('leads a member already connected to the contact, not to Connect (R-CONN-8)', async () => {
+    card.connectionId = 'r 1'
+    server(200)
+    const screen = await mountScreen()
+
+    expect(screen.text()).toContain('You are already connected')
+    expect(screen.text()).toContain('Connected')
+    expect(linkTargets(screen)).toEqual([
+      '/matches/requests/r%201/contact',
+      '/people',
+    ])
   })
 })

@@ -124,7 +124,7 @@ onMounted(async () => {
       >
     </div>
 
-    <form class="stack-tight" role="search" @submit.prevent="search">
+    <form class="stack" role="search" @submit.prevent="search">
       <div class="search-row">
         <input
           id="people-query"
@@ -228,8 +228,11 @@ onMounted(async () => {
   list-style: none;
 }
 
-.chip-row button {
+.chip-row button:not(.chip-ink) {
   background: none;
+}
+
+.chip-row button {
   cursor: pointer;
 }
 

@@ -28,6 +28,7 @@ const card = {
   org: null,
   sector: null,
   companySize: null,
+  connectionId: null,
 }
 
 const asked: unknown[] = []

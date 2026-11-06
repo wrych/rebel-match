@@ -44,7 +44,7 @@ export interface ProfileCodeService {
  * code shared too widely. */
 export function createProfileCodes(deps: {
   store: ProfileCodeStore
-  cards: { card(memberId: string): Promise<CardFacts | null> }
+  cards: { card(viewerId: string, memberId: string): Promise<CardFacts | null> }
   newToken: () => string
 }): ProfileCodeService {
   const { store } = deps
@@ -63,7 +63,8 @@ export function createProfileCodes(deps: {
     },
     open: async (callerId, token) => {
       const owner = await store.ownerOf(token)
-      const facts = owner === null ? null : await deps.cards.card(owner)
+      const facts =
+        owner === null ? null : await deps.cards.card(callerId, owner)
       if (owner === null || facts === null) return null
       const reached = canReach({
         isCaller: owner === callerId,

@@ -36,6 +36,7 @@ let app: ReturnType<typeof createApp>
 let cookie = ''
 
 async function clear(): Promise<void> {
+  await db.query("DELETE FROM connection_requests WHERE id = 'qs-conn'")
   await db.query("DELETE FROM members WHERE id LIKE 'qs-%'")
   await db.query("DELETE FROM sectors WHERE key = 'qs-quoxcraft'")
 }
@@ -139,8 +140,28 @@ describe('member search on Postgres (R-FIND-2, R-FIND-3)', () => {
         org: 'Quox & Partners',
         sector: null,
         companySize: null,
+        connectionId: null,
       },
     })
     expect(hidden.status).toBe(404)
+  })
+
+  it('names the connection to open for a member already connected (R-CONN-8)', async () => {
+    await db.query(
+      "INSERT INTO connection_requests (id, requester_id, target_id, kind, status, responded_at) VALUES ('qs-conn', 'qs-zoe', 'qs-caller', 'same_boat', 'accepted', now())",
+    )
+
+    const found = await request(app)
+      .get('/api/members/qs-zoe/card')
+      .set('Cookie', cookie)
+    const searched = await request(app)
+      .get('/api/members/search')
+      .query({ q: 'zoe' })
+      .set('Cookie', cookie)
+
+    expect(found.body).toMatchObject({ card: { connectionId: 'qs-conn' } })
+    expect(searched.body).toMatchObject({
+      results: [{ name: 'Zoë Quoxbery', connectionId: 'qs-conn' }],
+    })
   })
 })

@@ -41,6 +41,7 @@ const facts = (memberId: string, reachable = true): CardFacts => ({
     org: null,
     sector: null,
     companySize: null,
+    connectionId: null,
   },
   reachable,
   findable: false,
@@ -51,7 +52,7 @@ function setup(inactive: string[] = []): ReturnType<typeof createProfileCodes> {
   return createProfileCodes({
     store: memoryStore(),
     cards: {
-      card: (memberId) =>
+      card: (_viewerId, memberId) =>
         Promise.resolve(
           memberId === 'm-ghost'
             ? null
