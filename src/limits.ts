@@ -176,6 +176,13 @@ const limitSpecs = {
   memberSearchMinChars: { env: 'MEMBER_SEARCH_MIN_CHARS', default: 2 },
   // Search answers a query with a few cards, never a directory (R-FIND-3).
   memberSearchMaxResults: { env: 'MEMBER_SEARCH_MAX_RESULTS', default: 20 },
+  // Hosts open connect codes; off until they do (R-CODE-1).
+  connectCodes: {
+    env: 'CONNECT_CODES',
+    default: 0,
+    zeroAllowed: true,
+    changeable: { min: 0, max: 1 },
+  },
   // Direct requests a member may send in a day, so search cannot be used to
   // ask everyone (R-FIND-7).
   directRequestsPerDay: { env: 'DIRECT_REQUESTS_PER_DAY', default: 50 },

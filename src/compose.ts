@@ -85,6 +85,12 @@ import { createNetworkStore } from './services/network-store.js'
 import { createRecap } from './services/recap.js'
 import { createMemberSearch } from './services/member-search.js'
 import { createMemberSearchStore } from './services/member-search-store.js'
+import {
+  createProfileCodes,
+  type ProfileCodeStore,
+} from './services/profile-codes.js'
+import { createProfileCodeStore } from './services/profile-code-store.js'
+import { newSecret } from './auth/tokens.js'
 import { createRecapAnnouncer } from './services/recap-announce.js'
 import { createRecapAnnounceStore } from './services/recap-announce-store.js'
 import { recapOpen } from './recap/open.js'
@@ -161,11 +167,16 @@ function composeDeck(config: Config, db: Database, track: Track): DeckService {
 }
 
 // Read on every request, so a host's switch applies at once (ADR 0031).
-function directRules(settings: LiveSettings): DirectRules {
+function directRules(
+  settings: LiveSettings,
+  codes: ProfileCodeStore,
+): DirectRules {
   const limits = settings.limits()
   return {
     searchOn: limits.memberSearch === 1,
     perDay: limits.directRequestsPerDay,
+    codesOn: limits.connectCodes === 1,
+    codeOwner: (token) => codes.ownerOf(token),
   }
 }
 
@@ -199,7 +210,7 @@ function composeCounted(
         store: createConnectionStore(db),
         newId: randomUUID,
         track,
-        direct: () => directRules(settings),
+        direct: () => directRules(settings, createProfileCodeStore(db)),
       }),
       badges.service,
       badges.onError,
@@ -650,6 +661,15 @@ function composeMemberSearch(
   })
 }
 
+// A random token per member, never their id (R-CODE-2).
+function composeProfileCodes(db: Database): AppDeps['profileCodes'] {
+  return createProfileCodes({
+    store: createProfileCodeStore(db),
+    cards: createMemberSearchStore(db),
+    newToken: newSecret,
+  })
+}
+
 /** Background work the server reports on: an analytics event that could not
  * be sent, a notification that could not be mailed, a scheduled job that
  * failed. */
@@ -709,6 +729,7 @@ export function composeApp(
     ...networks,
     recap: composeRecap(db, settings, badges, networks.network),
     memberSearch: composeMemberSearch(db, settings, track),
+    profileCodes: composeProfileCodes(db),
     notificationMail: composeNoticeMail(config, db, mailer, hooks, settings),
   }
   return withScheduled(config, deps, hooks.onScheduledError ?? ignoreError)

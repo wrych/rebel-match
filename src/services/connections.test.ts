@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { AnalyticsEvent } from './analytics.js'
 import {
   createConnections,
+  type DirectRules,
   type ConnectionRecord,
   type ConnectionStore,
   type ConnectionView,
@@ -559,7 +560,9 @@ describe('already connected (R-CONN-8, R-CONN-9, ADR 0035)', () => {
 })
 
 describe('direct requests (R-FIND-7)', () => {
-  function direct(rules: { searchOn: boolean; perDay: number }): {
+  function direct(
+    rules: Pick<DirectRules, 'searchOn' | 'perDay'> & Partial<DirectRules>,
+  ): {
     service: ReturnType<typeof createConnections>
     store: ReturnType<typeof fakeStore>
   } {
@@ -568,7 +571,12 @@ describe('direct requests (R-FIND-7)', () => {
     const service = createConnections({
       store,
       newId: () => `r-${String(++n)}`,
-      direct: () => rules,
+      direct: () => ({
+        codesOn: false,
+        codeOwner: (token) =>
+          Promise.resolve(token === 'code-eve' ? 'm-eve' : null),
+        ...rules,
+      }),
     })
     return { service, store }
   }
@@ -623,6 +631,34 @@ describe('direct requests (R-FIND-7)', () => {
     })
     expect(store.rows.size).toBe(0)
   })
+
+  it('reaches a member who is not findable through their profile code (R-CODE-3)', async () => {
+    const { service } = direct({ searchOn: false, perDay: 5, codesOn: true })
+
+    expect(
+      await service.request('m-ada', {
+        ...toBob,
+        targetId: 'm-eve',
+        profileCode: 'code-eve',
+      }),
+    ).toEqual({ result: 'created', id: 'r-1' })
+  })
+
+  it.each([
+    ['codes are off', false, 'code-eve', 'm-eve'],
+    ['the code is someone else’s', true, 'code-eve', 'm-bob'],
+    ['the code is unknown or off', true, 'code-old', 'm-eve'],
+  ])(
+    'answers not found by a profile code when %s (R-CODE-3)',
+    async (_why, codesOn, profileCode, targetId) => {
+      const { service, store } = direct({ searchOn: false, perDay: 5, codesOn })
+
+      expect(
+        await service.request('m-ada', { ...toBob, targetId, profileCode }),
+      ).toEqual({ result: 'not_found' })
+      expect(store.rows.size).toBe(0)
+    },
+  )
 
   it('stops at the day’s limit, saying so rather than not found', async () => {
     const { service, store } = direct({ searchOn: true, perDay: 1 })

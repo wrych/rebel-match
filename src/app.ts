@@ -15,6 +15,7 @@ import { networkRoutes } from './routes/network.js'
 import { presentationRoutes } from './routes/presentation.js'
 import { recapRoutes } from './routes/recap.js'
 import { memberRoutes } from './routes/members.js'
+import { profileCodeRoutes } from './routes/profile-codes.js'
 import { swipeRoutes } from './routes/swipes.js'
 import { cockpitRoutes } from './routes/cockpit.js'
 import { guardApi } from './routes/api-guard.js'
@@ -58,6 +59,7 @@ import type { NetworkService } from './services/network.js'
 import type { PresentationService } from './services/presentation.js'
 import type { RecapService } from './services/recap.js'
 import type { MemberSearchService } from './services/member-search.js'
+import type { ProfileCodeService } from './services/profile-codes.js'
 import type { SwipeService } from './services/swipes.js'
 import type { CockpitService } from './services/cockpit.js'
 import type { FollowService } from './services/follows.js'
@@ -107,6 +109,7 @@ export interface AppDeps {
   presentation: PresentationService
   recap: RecapService
   memberSearch: MemberSearchService
+  profileCodes: ProfileCodeService
   badges: BadgeService
   connections: ConnectionService
   swipes: SwipeService
@@ -175,6 +178,12 @@ function mountScheduled(
   app.use(tickRoutes(scheduled))
 }
 
+// The game, the replay and recap, and finding and reaching members.
+function mountPlayAndPeople(app: Express, deps: AppDeps): void {
+  app.use(gameRoutes(deps), networkRoutes(deps), recapRoutes(deps))
+  app.use(memberRoutes(deps), profileCodeRoutes(deps))
+}
+
 /** Builds the app from injected dependencies, so tests can supply fakes
  * (constitution §4). */
 export function createApp(deps: AppDeps): Express {
@@ -210,8 +219,8 @@ export function createApp(deps: AppDeps): Express {
   app.use(adminApplicantRoutes(deps), adminReportRoutes(deps))
   app.use(adminInviteRoutes(deps), adminBanRoutes(deps))
   app.use(adminOutboxRoutes(deps), presentationRoutes(deps))
-  app.use(adminSettingsRoutes(deps), gameRoutes(deps))
-  app.use(networkRoutes(deps), recapRoutes(deps), memberRoutes(deps))
+  app.use(adminSettingsRoutes(deps))
+  mountPlayAndPeople(app, deps)
 
   app.get('/api/health', async (_request, response) => {
     const database = (await databaseReachable(deps.db)) ? 'up' : 'down'

@@ -805,3 +805,19 @@ export const moderationActions = pgTable(
   },
   (t) => [index('ix_moderation_member').on(t.memberId, t.createdAt)],
 )
+
+// A member's long-lived profile code (R-CODE-2): the token is shown on the
+// code, so it is kept as is; reset replaces it, off makes it not found
+// (R-CODE-4). It goes with the member (R-CODE-10).
+export const profileCodes = pgTable(
+  'profile_codes',
+  {
+    memberId: id('member_id')
+      .primaryKey()
+      .references(() => members.id, { onDelete: 'cascade' }),
+    token: varchar('token', { length: 43 }).notNull(),
+    enabled: boolean('enabled').notNull().default(true),
+    createdAt: at('created_at').notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex('uq_profile_code_token').on(t.token)],
+)

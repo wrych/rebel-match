@@ -1012,7 +1012,8 @@ const catalogue: Group[] = [
     title: 'Finding members',
     explanation:
       'Members finding each other by name, organization, job title or ' +
-      'sector, and connecting directly, about no challenge.',
+      'sector, or by a code one shows the other, and connecting directly, ' +
+      'about no challenge.',
     entries: [
       {
         name: 'Member search',
@@ -1021,6 +1022,15 @@ const catalogue: Group[] = [
           'answer as not found. Members who turned off being findable are ' +
           'never found.',
         key: 'limits.memberSearch',
+        switch: true,
+      },
+      {
+        name: 'Connect codes',
+        explanation:
+          'On lets every member show a profile code to share and a live ' +
+          'code to scan, whether or not they are findable; off hides them, ' +
+          'and their addresses answer as not found.',
+        key: 'limits.connectCodes',
         switch: true,
       },
     ],

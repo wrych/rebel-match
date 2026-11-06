@@ -70,6 +70,8 @@ export interface NewConnection {
   challengeId?: string | undefined
   kind: ConnectionKind
   message?: string | undefined
+  /** For a direct request, the target's profile code (R-CODE-3). */
+  profileCode?: string | undefined
 }
 
 export interface ConnectionStore {
@@ -190,16 +192,34 @@ async function contextHolds(
   return author === requesterId || author === input.targetId
 }
 
-/** Whether direct requests may be sent now, and how many a day (R-FIND-7). */
+/** Whether direct requests may be sent now, how many a day, and whose
+ * profile code a token is (R-FIND-7, R-CODE-3). */
 export interface DirectRules {
   searchOn: boolean
   perDay: number
+  codesOn: boolean
+  /** The owner of the profile code `token`, while it is on; else null. */
+  codeOwner: (token: string) => Promise<string | null>
 }
 
-const directClosed = (): DirectRules => ({ searchOn: false, perDay: 0 })
+const directClosed = (): DirectRules => ({
+  searchOn: false,
+  perDay: 0,
+  codesOn: false,
+  codeOwner: () => Promise.resolve(null),
+})
+
+async function presentsCode(
+  rules: DirectRules,
+  input: NewConnection,
+): Promise<boolean> {
+  if (input.profileCode === undefined || !rules.codesOn) return false
+  return (await rules.codeOwner(input.profileCode)) === input.targetId
+}
 
 // A direct request is about no challenge, and reaches only a member search
-// would find (R-FIND-7, ADR 0062).
+// would find, or one whose usable profile code the requester holds
+// (R-FIND-7, R-CODE-3, ADR 0062).
 async function reachesDirectly(
   store: ConnectionStore,
   rules: DirectRules,
@@ -212,6 +232,8 @@ async function reachesDirectly(
     reachable: await store.isReachable(input.targetId),
     findable: await store.isFindable(input.targetId),
     searchOn: rules.searchOn,
+    presentsCode: await presentsCode(rules, input),
+    codesOn: rules.codesOn,
   })
 }
 
