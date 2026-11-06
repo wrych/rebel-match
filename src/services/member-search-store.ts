@@ -3,13 +3,13 @@ import {
   asc,
   desc,
   eq,
-  isNotNull,
   ne,
   sql,
   type SQL,
   type SQLWrapper,
 } from 'drizzle-orm'
 import type { Database } from '../db/connect.js'
+import { isReachableMember } from '../db/member-predicates.js'
 import { connectionRequests as r, members, sectors } from '../db/schema.js'
 import { ACCENTS } from '../search/query.js'
 import type {
@@ -67,8 +67,6 @@ function wholeWords(terms: SearchTerms, fields: (keyof SearchTerms)[]): SQL[] {
   return hits.length === 0 ? [] : [desc(sql.join(hits, sql` + `))]
 }
 
-const reachable = and(eq(members.status, 'active'), isNotNull(members.name))
-
 // The newest accepted request between the viewer and the member, whatever
 // it was about, so a card can lead to the contact (R-CONN-8).
 const memberColumn = sql`${members}.${sql.identifier('id')}`
@@ -105,7 +103,7 @@ export function createMemberSearchStore(db: Database): MemberSearchStore {
         .from(members)
         .where(
           and(
-            reachable,
+            isReachableMember(),
             eq(members.findable, true),
             ne(members.id, callerId),
             ...matchesAll(terms),
@@ -122,7 +120,7 @@ export function createMemberSearchStore(db: Database): MemberSearchStore {
       const [row] = await db
         .select({
           ...cardColumns(viewerId),
-          reachable: sql<boolean>`(${reachable})`,
+          reachable: isReachableMember(),
           findable: members.findable,
         })
         .from(members)

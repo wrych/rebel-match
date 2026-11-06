@@ -1,5 +1,6 @@
-import { and, eq, isNotNull, ne, notExists, sql } from 'drizzle-orm'
+import { and, eq, ne, notExists, sql } from 'drizzle-orm'
 import type { Database } from '../db/connect.js'
+import { isReachableMember } from '../db/member-predicates.js'
 import {
   challenges,
   deckViews,
@@ -58,8 +59,7 @@ export function createActivityStore(db: Database): ActivityStore {
           and(
             eq(challenges.id, challengeId),
             isShown(),
-            eq(members.status, 'active'),
-            isNotNull(members.name),
+            isReachableMember(),
             ne(challenges.memberId, memberId),
             notExists(answered),
           ),
