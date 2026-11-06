@@ -28,8 +28,7 @@ const OPERATOR = /^([a-z]+):(.*)$/is
 const SPACE = /\s/
 const QUOTE = '"'
 
-// Splits on white space outside quotes; an unclosed quote runs to the end.
-function segments(query: string): string[] {
+function splitOutsideQuotes(query: string): string[] {
   const parts: string[] = []
   let current = ''
   let quoted = false
@@ -59,7 +58,7 @@ function tokenOf(segment: string): QueryToken {
 /** The query as typed, part by part, so chips can show and remove each one
  * (R-FIND-4). An unknown operator is a plain word. */
 export function tokenize(query: string): QueryToken[] {
-  return segments(query).map(tokenOf)
+  return splitOutsideQuotes(query).map(tokenOf)
 }
 
 /** One part written back as it would be typed. */
