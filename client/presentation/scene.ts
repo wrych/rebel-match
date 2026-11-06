@@ -405,10 +405,12 @@ function anchorsOf(
   )
 }
 
-/** Draws the film in three.js on a dark stage (R-PRES-1). */
+/** Draws the film in three.js on a dark stage (R-PRES-1). A resize clears
+ * the canvas, so `onResize` is told to draw again. */
 export function createPresentationScene(
   host: HTMLElement,
   world: World,
+  onResize: () => void = () => undefined,
 ): PresentationScene {
   const palette = paletteOf(host)
   const renderer = stageRenderer(host)
@@ -423,6 +425,7 @@ export function createPresentationScene(
   const stopFollowing = followSize(host, (next) => {
     size = next
     renderer.setSize(next.width, next.height, false)
+    onResize()
   })
 
   return {
