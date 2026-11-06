@@ -10,12 +10,13 @@ export type { Contact, ConnectionView }
 export type ConnectionKind = NewConnection['kind']
 
 export type RequestOutcome =
-  | { result: 'created' | 'exists' | 'not_found' }
+  | { result: 'created' | 'exists' | 'not_found' | 'limit' }
   | { result: 'joined'; id: string }
 
 /** Asks a peer to connect. Nothing is shared until they accept (R-CONN-1);
- * a pending request already sent reads as 'exists' (R-CONN-5), and one to a
- * member already connected as 'joined', with its id (R-CONN-8). */
+ * a pending request already sent reads as 'exists' (R-CONN-5), one to a
+ * member already connected as 'joined', with its id (R-CONN-8), and a direct
+ * one past the day's limit as 'limit' (R-FIND-7). */
 export async function requestConnection(
   input: NewConnection,
 ): Promise<RequestOutcome> {
@@ -23,6 +24,7 @@ export async function requestConnection(
   if (response.status === 201) return { result: 'created' }
   if (response.status === 409) return { result: 'exists' }
   if (response.status === 404) return { result: 'not_found' }
+  if (response.status === 429) return { result: 'limit' }
   if (response.status === 200) {
     const { id } = (await response.json()) as { id: string }
     return { result: 'joined', id }

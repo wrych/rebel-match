@@ -83,6 +83,27 @@ export const routeTable: readonly RouteDef[] = [
     permission: 'network:view',
   },
   { path: '/recap', name: 'recap', title: RECAP_TITLE, access: 'onboarded' },
+  {
+    path: '/people',
+    name: 'people',
+    title: 'Find a member',
+    access: 'onboarded',
+    permission: 'member:search',
+  },
+  {
+    path: '/people/:memberId',
+    name: 'person',
+    title: 'A member',
+    access: 'onboarded',
+    permission: 'member:search',
+  },
+  {
+    path: '/people/:memberId/connect',
+    name: 'person-connect',
+    title: 'Connect directly',
+    access: 'onboarded',
+    permission: 'member:search',
+  },
   { path: '/welcome', name: 'welcome', title: 'Welcome', access: 'onboarded' },
   { path: '/profile', name: 'profile', title: 'Profile', access: 'onboarded' },
   {
