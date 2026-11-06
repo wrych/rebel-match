@@ -12,7 +12,9 @@ import {
   profileCodeLink,
   type ProfileCode,
 } from '../lib/codes'
+import { renderCodeCard } from '../lib/code-card'
 import { loadMe } from '../lib/session'
+import { shareImage } from '../lib/share-sheet'
 
 const route = useRoute()
 const router = useRouter()
@@ -20,7 +22,8 @@ const code = ref<ProfileCode | null>(null)
 const name = ref<string | null>(null)
 const tickMs = ref<number | null>(null)
 const problem = ref<string | null>(null)
-const canShare = typeof navigator.share === 'function'
+const sharing = ref(false)
+const cardFile = ref<File | null>(null)
 
 const link = computed(() =>
   code.value === null
@@ -28,23 +31,51 @@ const link = computed(() =>
     : profileCodeLink(window.location.origin, code.value.token),
 )
 
-async function share(): Promise<void> {
+// Drawn once code and name are known, and again after a reset, so a tap
+// on Share opens the sheet at once: iOS refuses one opened after a wait.
+async function drawCard(): Promise<void> {
+  cardFile.value = null
+  if (link.value === '' || name.value === null) return
+  const drawing = link.value
   try {
-    await navigator.share({ title: 'Rebel Match', url: link.value })
+    const file = await renderCodeCard({
+      name: name.value,
+      link: drawing,
+      site: window.location.origin,
+    })
+    if (drawing === link.value) cardFile.value = file
   } catch {
-    // Backing out of the share sheet is no failure to report.
+    problem.value = 'The card could not be drawn. Copy link still works.'
+  }
+}
+
+watch([link, name], drawCard)
+
+async function share(): Promise<void> {
+  if (cardFile.value === null) return
+  sharing.value = true
+  problem.value = null
+  try {
+    await shareImage(
+      cardFile.value,
+      `Scan my code or open this link to connect on Rebel Match: ${link.value}`,
+    )
+  } catch {
+    problem.value = 'The card could not be shared. Try Copy link instead.'
+  } finally {
+    sharing.value = false
   }
 }
 
 type Tab = 'profile' | 'now'
 
 const tab = computed<Tab>(() =>
-  route.query['tab'] === 'now' ? 'now' : 'profile',
+  route.query['tab'] === 'profile' ? 'profile' : 'now',
 )
 const retrySeconds = ref<number | null>(null)
 
 function showTab(next: Tab): void {
-  void router.replace({ query: next === 'profile' ? {} : { tab: next } })
+  void router.replace({ query: next === 'now' ? {} : { tab: next } })
 }
 
 async function notFound(): Promise<void> {
@@ -98,27 +129,28 @@ onMounted(async () => {
         type="button"
         role="tab"
         class="btn btn-small"
-        :class="tab === 'profile' ? 'btn-dark' : 'btn-ghost'"
-        :aria-selected="tab === 'profile'"
-        @click="showTab('profile')"
-      >
-        Share my profile
-      </button>
-      <button
-        type="button"
-        role="tab"
-        class="btn btn-small"
         :class="tab === 'now' ? 'btn-dark' : 'btn-ghost'"
         :aria-selected="tab === 'now'"
         @click="showTab('now')"
       >
         Connect now
       </button>
+      <button
+        type="button"
+        role="tab"
+        class="btn btn-small"
+        :class="tab === 'profile' ? 'btn-dark' : 'btn-ghost'"
+        :aria-selected="tab === 'profile'"
+        @click="showTab('profile')"
+      >
+        Share my profile
+      </button>
     </div>
 
     <LiveCodePanel
       v-if="tab === 'now' && retrySeconds !== null"
       :retry-seconds="retrySeconds"
+      :name="name ?? ''"
       @off="notFound"
     />
 
@@ -127,32 +159,29 @@ onMounted(async () => {
       class="stack"
       aria-label="Share my profile"
     >
-      <p class="lede">
-        Whoever scans or opens this sees your card and can ask to connect, even
-        if you are not findable in search. Your email stays private until you
-        accept.
-      </p>
       <div class="card code-card" :class="{ off: !code.enabled }">
+        <span class="corner">
+          <CopyButton :text="link" label="Copy link" :tick-ms="tickMs" />
+        </span>
         <QrCode :value="link" :label="`Profile code of ${name ?? 'you'}`" />
         <p class="card-title">{{ name }}</p>
         <p v-if="!code.enabled" class="small">
           Your code is off: it answers as not found.
         </p>
       </div>
-      <div class="actions">
-        <span class="copy-link">
-          <CopyButton :text="link" label="Copy link" :tick-ms="tickMs" />
-          <span class="small" aria-hidden="true">Copy link</span>
-        </span>
-        <button
-          v-if="canShare"
-          type="button"
-          class="btn btn-ghost btn-small"
-          @click="share"
-        >
-          Share
-        </button>
-      </div>
+      <button
+        type="button"
+        class="btn btn-primary"
+        :disabled="sharing || cardFile === null || !code.enabled"
+        @click="share"
+      >
+        Share
+      </button>
+      <p class="small">
+        Whoever scans or opens it sees your card and can ask to connect, even if
+        you are not findable in search. Your email stays private until you
+        accept.
+      </p>
       <ProfileCodeControls :code="code" @changed="code = $event" />
     </section>
 
@@ -162,6 +191,7 @@ onMounted(async () => {
 
 <style scoped>
 .code-card {
+  position: relative;
   display: grid;
   justify-items: center;
   gap: 0.75rem;
@@ -172,15 +202,9 @@ onMounted(async () => {
   opacity: 0.4;
 }
 
-.copy-link {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+.corner {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
 }
 </style>

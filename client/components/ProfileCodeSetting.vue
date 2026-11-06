@@ -25,7 +25,7 @@ onMounted(async () => {
   >
     <h2 id="profile-code-heading" class="kicker">Profile code</h2>
     <ProfileCodeControls v-if="code" :code="code" @changed="code = $event" />
-    <RouterLink v-if="code" to="/me/code" class="row-link"
+    <RouterLink v-if="code" to="/me/code?tab=profile" class="row-link"
       >Show your code</RouterLink
     >
     <p v-if="problem" class="alert" role="alert">{{ problem }}</p>

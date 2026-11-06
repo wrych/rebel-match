@@ -7,7 +7,7 @@ import { onMounted, onUnmounted, ref } from 'vue'
 import { issueLiveCode, liveCodeLink, type IssuedCode } from '../lib/codes'
 import QrCode from './QrCode.vue'
 
-const props = defineProps<{ retrySeconds: number }>()
+const props = defineProps<{ retrySeconds: number; name: string }>()
 const emit = defineEmits<{ off: [] }>()
 
 const MS_PER_SECOND = 1000
@@ -88,10 +88,6 @@ onUnmounted(() => {
     </p>
     <div class="card code-card">
       <template v-if="code">
-        <QrCode
-          :value="liveCodeLink(origin, code.token)"
-          label="Live connect code"
-        />
         <svg
           :key="code.token"
           class="ring"
@@ -103,6 +99,11 @@ onUnmounted(() => {
           <circle class="ring-track" cx="18" cy="18" r="15.9" />
           <circle class="ring-time" cx="18" cy="18" r="15.9" />
         </svg>
+        <QrCode
+          :value="liveCodeLink(origin, code.token)"
+          label="Live connect code"
+        />
+        <p class="card-title">{{ props.name }}</p>
       </template>
       <p v-else-if="waiting" class="small" role="status">
         A new code comes in a moment.
@@ -116,7 +117,7 @@ onUnmounted(() => {
     >
       <h3 id="just-connected" class="kicker kicker-accent">Just connected</h3>
       <ul class="stack-tight plain">
-        <li v-for="(name, index) in connected" :key="index">{{ name }}</li>
+        <li v-for="(who, index) in connected" :key="index">{{ who }}</li>
       </ul>
       <RouterLink to="/matches" class="row-link"
         >See them in your matches</RouterLink
@@ -127,6 +128,7 @@ onUnmounted(() => {
 
 <style scoped>
 .code-card {
+  position: relative;
   display: grid;
   justify-items: center;
   gap: 0.75rem;
@@ -135,9 +137,13 @@ onUnmounted(() => {
 }
 
 .ring {
-  width: 2.5rem;
-  height: 2.5rem;
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  width: 1.25rem;
+  height: 1.25rem;
   transform: rotate(-90deg);
+  opacity: 0.7;
 }
 
 .ring circle {

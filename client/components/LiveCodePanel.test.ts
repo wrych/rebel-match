@@ -43,7 +43,7 @@ function setHidden(hidden: boolean): void {
 
 async function mounted(): Promise<ReturnType<typeof mount>> {
   const panel = mount(LiveCodePanel, {
-    props: { retrySeconds: 30 },
+    props: { retrySeconds: 30, name: 'Ada Lovelace' },
     global: { stubs: { RouterLink: RouterLinkStub } },
   })
   await flushPromises()
@@ -129,7 +129,7 @@ describe('LiveCodePanel (R-CODE-5, R-CODE-6)', () => {
     )
     vi.stubGlobal('fetch', fetchMock)
     mount(LiveCodePanel, {
-      props: { retrySeconds: 30 },
+      props: { retrySeconds: 30, name: 'Ada Lovelace' },
       global: { stubs: { RouterLink: RouterLinkStub } },
     })
     setHidden(true)
