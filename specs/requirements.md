@@ -1940,7 +1940,8 @@ a title kept in one place. It reuses the replay (§8m) and the badges (§8k).
   any app; where the sheet takes the image only alone, it SHALL hand it
   alone and copy the post for pasting. Elsewhere it SHALL save the card and
   open LinkedIn's post composer with the text filled in, for the member to
-  attach it. _(Andy, 2026-11-06: the image did not reach LinkedIn.)_ _Save image_ SHALL be the second. Nothing about
+  attach it. _(Andy, 2026-11-06: the image did not reach LinkedIn.)_
+  _Save image_ SHALL be the second. Nothing about
   the member SHALL be sent to LinkedIn or anywhere else by the app itself,
   and no public page of their figures SHALL exist.
 - **R-RECAP-7 (Usage)** — For a member opted in (R-ANA-4) THE SYSTEM SHALL
