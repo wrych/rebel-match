@@ -33,6 +33,7 @@ function requestBody(
       .max(limits.connectionMessageMaxChars)
       .optional()
       .transform((m) => (m === '' ? undefined : m)),
+    profileCode: z.string().min(1).max(100).optional(),
   })
 }
 

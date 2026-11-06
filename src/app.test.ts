@@ -129,6 +129,12 @@ function deps(
       search: () => Promise.reject(new Error('not used')),
       card: () => Promise.reject(new Error('not used')),
     },
+    profileCodes: {
+      mine: () => Promise.reject(new Error('not used')),
+      setEnabled: () => Promise.reject(new Error('not used')),
+      reset: () => Promise.reject(new Error('not used')),
+      open: () => Promise.reject(new Error('not used')),
+    },
     badges: {
       recount: () => Promise.resolve(),
       mine: () => Promise.resolve({ rows: [], events: [] }),

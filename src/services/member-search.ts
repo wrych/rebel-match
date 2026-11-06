@@ -137,6 +137,8 @@ export function createMemberSearch(deps: {
         reachable: facts.reachable,
         findable: facts.findable,
         searchOn: deps.rules().searchOn,
+        presentsCode: false,
+        codesOn: false,
       })
       return reached ? facts.card : null
     },
