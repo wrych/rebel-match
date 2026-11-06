@@ -1934,11 +1934,13 @@ a title kept in one place. It reuses the replay (§8m) and the badges (§8k).
   under its rule (R-NET-13). The card's story SHALL show the same view
   slowly turning about the line from the member to the centre; the image
   shared stays still.
-- **R-RECAP-6 (Sharing, LinkedIn first)** — _Share on LinkedIn_ SHALL be the
-  first action. Where the phone can share an image, THE SYSTEM SHALL hand the
-  card and a ready-written post to its share sheet; elsewhere it SHALL save
-  the card and open LinkedIn's post composer with the text filled in, for
-  the member to attach it. _Save image_ SHALL be the second. Nothing about
+- **R-RECAP-6 (Sharing, LinkedIn first)** — _Share_ SHALL be the first
+  action. Where the phone can share an image, THE SYSTEM SHALL hand the card
+  and a ready-written post to its share sheet, for LinkedIn, WhatsApp or
+  any app; where the sheet takes the image only alone, it SHALL hand it
+  alone and copy the post for pasting. Elsewhere it SHALL save the card and
+  open LinkedIn's post composer with the text filled in, for the member to
+  attach it. _(Andy, 2026-11-06: the image did not reach LinkedIn.)_ _Save image_ SHALL be the second. Nothing about
   the member SHALL be sent to LinkedIn or anywhere else by the app itself,
   and no public page of their figures SHALL exist.
 - **R-RECAP-7 (Usage)** — For a member opted in (R-ANA-4) THE SYSTEM SHALL

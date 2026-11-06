@@ -920,8 +920,9 @@ reported member, S26 A member's page.
    (R-RECAP-2, R-RECAP-3).
 3. A tap on the right skips ahead, on the left goes back, a hold pauses
    (R-RECAP-1).
-4. The last story is their card. _Share on LinkedIn_ opens the phone's share
-   sheet with the image and a post; on a laptop it saves the image and opens
+4. The last story is their card. _Share_ opens the phone's share sheet with
+   the image and a post, or the image alone and the post copied, for
+   LinkedIn, WhatsApp or any app; on a laptop it saves the image and opens
    LinkedIn's composer with the post written. _Save image_ only saves it.
    Nothing names anyone else (R-RECAP-5, R-RECAP-6).
 
