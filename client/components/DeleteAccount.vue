@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import ConfirmAction from './ConfirmAction.vue'
 import { deleteAccount, type DeleteOutcome } from '../lib/profile'
 import { forgetMe } from '../lib/session'
 import { graceSpan } from '../lib/when'
@@ -51,37 +52,16 @@ async function erase(): Promise<void> {
       email and the email lets you keep your account.
     </p>
     <p v-if="problem" class="alert" role="alert">{{ problem }}</p>
-    <div v-if="confirming" class="stack-tight">
-      <p class="alert" role="alert">
-        Delete your account? You are signed out now, and it is erased after
-        {{ graceSpan(graceDays) }} unless you keep it.
-      </p>
-      <div class="actions">
-        <button
-          type="button"
-          class="btn btn-dark btn-small"
-          :disabled="busy"
-          @click="erase"
-        >
-          Delete my account
-        </button>
-        <button
-          type="button"
-          class="btn btn-ghost btn-small"
-          :disabled="busy"
-          @click="confirming = false"
-        >
-          Keep it
-        </button>
-      </div>
-    </div>
-    <button
-      v-else
-      type="button"
-      class="btn btn-ghost btn-small"
-      @click="confirming = true"
+    <ConfirmAction
+      v-model:open="confirming"
+      trigger-label="Delete my account…"
+      confirm-label="Delete my account"
+      keep-label="Keep it"
+      :busy="busy"
+      @confirm="erase"
     >
-      Delete my account…
-    </button>
+      Delete your account? You are signed out now, and it is erased after
+      {{ graceSpan(graceDays) }} unless you keep it.
+    </ConfirmAction>
   </section>
 </template>

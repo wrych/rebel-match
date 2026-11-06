@@ -2,6 +2,7 @@
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { rolePermissions } from '../../src/access'
+import ConfirmAction from '../components/ConfirmAction.vue'
 import MemberBan from '../components/MemberBan.vue'
 import MemberChallenges from '../components/MemberChallenges.vue'
 import { peerLine } from '../lib/challenges'
@@ -278,91 +279,54 @@ async function erase(): Promise<void> {
               : ', as a host deleted them. Only a host can restore them.'
           }}
         </p>
-        <div v-if="confirmingNow" class="stack-tight">
-          <p class="alert" role="alert">
-            Erase {{ member.email }} now? Everything about them goes for good,
-            and nobody can restore it.
-          </p>
-          <div class="actions">
+        <ConfirmAction
+          v-model:open="confirmingNow"
+          trigger-label="Erase now…"
+          confirm-label="Erase now"
+          keep-label="Keep for now"
+          closed-class="actions"
+          :busy="busy"
+          :trigger-disabled="busy"
+          @confirm="erase"
+        >
+          Erase {{ member.email }} now? Everything about them goes for good, and
+          nobody can restore it.
+          <template #closed>
             <button
               type="button"
-              class="btn btn-dark btn-small"
+              class="btn btn-primary btn-small"
               :disabled="busy"
-              @click="erase"
+              @click="restore"
             >
-              Erase now
+              Restore
             </button>
-            <button
-              type="button"
-              class="btn btn-ghost btn-small"
-              :disabled="busy"
-              @click="confirmingNow = false"
-            >
-              Keep for now
-            </button>
-          </div>
-        </div>
-        <div v-else class="actions">
-          <button
-            type="button"
-            class="btn btn-primary btn-small"
-            :disabled="busy"
-            @click="restore"
-          >
-            Restore
-          </button>
-          <button
-            type="button"
-            class="btn btn-ghost btn-small"
-            :disabled="busy"
-            @click="confirmingNow = true"
-          >
-            Erase now…
-          </button>
-        </div>
+          </template>
+        </ConfirmAction>
       </article>
 
       <article v-else class="card">
         <h2 class="card-title">Delete</h2>
-        <div v-if="confirming" class="stack-tight">
-          <p class="alert" role="alert">
-            Delete {{ member.email }}? They are hidden from everyone at once and
-            erased with everything they wrote after {{ graceSpan(graceDays) }},
-            unless restored.
-          </p>
-          <div class="actions">
-            <button
-              type="button"
-              class="btn btn-dark btn-small"
-              :disabled="busy"
-              @click="remove"
-            >
-              Delete
-            </button>
-            <button
-              type="button"
-              class="btn btn-ghost btn-small"
-              :disabled="busy"
-              @click="confirming = false"
-            >
-              Keep
-            </button>
-          </div>
-        </div>
-        <div v-else class="stack-tight">
-          <p class="small">
-            Hides them at once and erases them with their challenges, requests,
-            swipes, follows and messages after {{ graceSpan(graceDays) }} (GDPR
-            erasure). Until then you can restore them.
-          </p>
-          <button
-            type="button"
-            class="btn btn-ghost btn-small"
-            @click="confirming = true"
-          >
-            Delete…
-          </button>
-        </div>
+        <ConfirmAction
+          v-model:open="confirming"
+          trigger-label="Delete…"
+          confirm-label="Delete"
+          keep-label="Keep"
+          closed-class="stack-tight"
+          :busy="busy"
+          @confirm="remove"
+        >
+          Delete {{ member.email }}? They are hidden from everyone at once and
+          erased with everything they wrote after {{ graceSpan(graceDays) }},
+          unless restored.
+          <template #closed>
+            <p class="small">
+              Hides them at once and erases them with their challenges,
+              requests, swipes, follows and messages after
+              {{ graceSpan(graceDays) }} (GDPR erasure). Until then you can
+              restore them.
+            </p>
+          </template>
+        </ConfirmAction>
       </article>
     </template>
   </section>

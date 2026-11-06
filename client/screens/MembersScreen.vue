@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import ConfirmAction from '../components/ConfirmAction.vue'
 import PullToRefresh from '../components/PullToRefresh.vue'
 import RefreshButton from '../components/RefreshButton.vue'
 import { rolePermissions } from '../../src/access'
@@ -291,41 +292,21 @@ async function erase(): Promise<void> {
           Take away
         </button>
       </div>
-      <div v-if="canDelete && confirmingDelete" class="stack-tight">
-        <p class="alert" role="alert">
-          Delete {{ chosen.length }}
-          {{ chosen.length === 1 ? 'member' : 'members' }}? They are hidden from
-          everyone at once and erased with everything they wrote after
-          {{ graceSpan(graceDays) }}, unless restored.
-        </p>
-        <div class="actions">
-          <button
-            type="button"
-            class="btn btn-dark btn-small"
-            :disabled="busy"
-            @click="erase"
-          >
-            Delete
-          </button>
-          <button
-            type="button"
-            class="btn btn-ghost btn-small"
-            :disabled="busy"
-            @click="confirmingDelete = false"
-          >
-            Keep
-          </button>
-        </div>
-      </div>
-      <button
-        v-else-if="canDelete"
-        type="button"
-        class="btn btn-ghost btn-small"
-        :disabled="busy || chosen.length === 0"
-        @click="confirmingDelete = true"
+      <ConfirmAction
+        v-if="canDelete"
+        v-model:open="confirmingDelete"
+        trigger-label="Delete…"
+        confirm-label="Delete"
+        keep-label="Keep"
+        :busy="busy"
+        :trigger-disabled="busy || chosen.length === 0"
+        @confirm="erase"
       >
-        Delete…
-      </button>
+        Delete {{ chosen.length }}
+        {{ chosen.length === 1 ? 'member' : 'members' }}? They are hidden from
+        everyone at once and erased with everything they wrote after
+        {{ graceSpan(graceDays) }}, unless restored.
+      </ConfirmAction>
     </div>
 
     <ul class="stack members">

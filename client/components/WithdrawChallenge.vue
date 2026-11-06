@@ -4,6 +4,7 @@
  * default slot; the eye sits over it rather than inside it, as the card may
  * be a link. Emits `withdrawn` once it is gone, or was already. */
 import { ref } from 'vue'
+import ConfirmAction from './ConfirmAction.vue'
 import { withdrawChallenge } from '../lib/challenges'
 
 const props = withDefaults(
@@ -61,30 +62,16 @@ async function withdraw(): Promise<void> {
       </button>
     </div>
     <p v-if="problem" class="alert" role="alert">{{ problem }}</p>
-    <div v-if="confirming" class="stack-tight">
-      <p class="alert" role="alert">
-        Withdraw this challenge? Nobody will see it again, and requests waiting
-        about it close. This cannot be undone.
-      </p>
-      <div class="actions">
-        <button
-          type="button"
-          class="btn btn-dark btn-small"
-          :disabled="busy"
-          @click="withdraw"
-        >
-          Withdraw
-        </button>
-        <button
-          type="button"
-          class="btn btn-ghost btn-small"
-          :disabled="busy"
-          @click="confirming = false"
-        >
-          Keep it
-        </button>
-      </div>
-    </div>
+    <ConfirmAction
+      v-model:open="confirming"
+      confirm-label="Withdraw"
+      keep-label="Keep it"
+      :busy="busy"
+      @confirm="withdraw"
+    >
+      Withdraw this challenge? Nobody will see it again, and requests waiting
+      about it close. This cannot be undone.
+    </ConfirmAction>
   </div>
 </template>
 

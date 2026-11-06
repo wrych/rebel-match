@@ -5,6 +5,23 @@ import { defineConfig } from 'vitest/config'
 // title of its own, all three read "Vitest Test Report".
 const onGithubActions = process.env['GITHUB_ACTIONS'] === 'true'
 
+// The modules R-QA-1 names, held to constitution §2's 90% branch floor each.
+const criticalModules = [
+  'src/services/matcher.ts',
+  'src/auth/tokens.ts',
+  'src/auth/provider.ts',
+  'src/permissions.ts',
+  'src/access.ts',
+  'src/services/connections.ts',
+  'src/routes.ts',
+  'src/config.ts',
+  'src/limits.ts',
+  'src/setting-specs.ts',
+  'src/routes/challenges.ts',
+  'src/routes/swipes.ts',
+]
+const CRITICAL_BRANCH_FLOOR = 90
+
 export default defineConfig({
   plugins: [vue()],
   test: {
@@ -51,6 +68,12 @@ export default defineConfig({
         functions: 80,
         branches: 80,
         statements: 80,
+        ...Object.fromEntries(
+          criticalModules.map((file) => [
+            file,
+            { branches: CRITICAL_BRANCH_FLOOR },
+          ]),
+        ),
       },
     },
   },

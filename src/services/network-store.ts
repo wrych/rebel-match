@@ -1,18 +1,14 @@
 import { and, eq, inArray, isNotNull, sql } from 'drizzle-orm'
 import type { Database } from '../db/connect.js'
+import { isReachableMember } from '../db/member-predicates.js'
 import { challenges, connectionRequests, members } from '../db/schema.js'
 import { isShown } from './challenge-store.js'
 import type { NetworkFacts } from '../network/timeline.js'
 import type { NetworkStore } from './network.js'
 
-// Onboarded as the matches view counts it (R-ONB-1): a name and a consent.
 // The first onboarding is when they joined; consent stands in for a member
 // onboarded before that was recorded.
-const onboarded = and(
-  eq(members.status, 'active'),
-  isNotNull(members.name),
-  isNotNull(members.consentAt),
-)
+const onboarded = isReachableMember()
 
 async function factsOf(db: Database): Promise<NetworkFacts> {
   const people = await db
