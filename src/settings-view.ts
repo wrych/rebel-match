@@ -466,6 +466,15 @@ const catalogue: Group[] = [
         unit: MINUTES,
       },
       {
+        name: 'Live codes per member a minute',
+        explanation:
+          'New live codes one member’s screen may ask for in a minute; ' +
+          'past it the screen hides its code until its next turn. The ' +
+          'screen asks about seven times a minute at its fastest.',
+        key: 'abuse.liveCodesPerMinute',
+        unit: ['code', 'codes'],
+      },
+      {
         name: 'Trusted proxies in front of the server',
         explanation:
           'How many proxies are trusted to report the visitor’s address: 1 ' +
@@ -1032,6 +1041,22 @@ const catalogue: Group[] = [
           'and their addresses answer as not found.',
         key: 'limits.connectCodes',
         switch: true,
+      },
+      {
+        name: 'Time each live code is shown',
+        explanation:
+          'A live code is replaced on screen after this long, its ring ' +
+          'emptying as the time runs out.',
+        key: 'limits.liveCodeSeconds',
+        unit: SECONDS,
+      },
+      {
+        name: 'Grace after a live code is replaced',
+        explanation:
+          'How long a replaced live code still works, so a scan begun at ' +
+          'the end succeeds. Never more than the time it is shown.',
+        key: 'limits.liveCodeGraceSeconds',
+        unit: SECONDS,
       },
     ],
   },

@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto'
+import { randomBytes, randomUUID } from 'node:crypto'
 import {
   createAuth,
   createAuthStore,
@@ -90,7 +90,9 @@ import {
   type ProfileCodeStore,
 } from './services/profile-codes.js'
 import { createProfileCodeStore } from './services/profile-code-store.js'
-import { newSecret } from './auth/tokens.js'
+import { hashSecret, newSecret } from './auth/tokens.js'
+import { createLiveCodes } from './services/live-codes.js'
+import { createLiveCodeStore } from './services/live-code-store.js'
 import { createRecapAnnouncer } from './services/recap-announce.js'
 import { createRecapAnnounceStore } from './services/recap-announce-store.js'
 import { recapOpen } from './recap/open.js'
@@ -530,32 +532,17 @@ function composeInvites(
 const MS_PER_HOUR = 3_600_000
 const MS_PER_MINUTE = 60_000
 
-// The work the server's timers do, as jobs a tick runs (ADR 0049).
-function scheduledJobs(
+// What is kept only so long: the outbound log, notifications and handled
+// reports (R-NOTE-11, ADR 0049).
+function retentionJobs(
   config: Config,
-  deps: Pick<
-    AppDeps,
-    'auth' | 'erasure' | 'outbox' | 'notificationMail' | 'badges' | 'moderation'
-  >,
+  deps: Pick<AppDeps, 'outbox' | 'notificationMail' | 'moderation'>,
 ): ScheduledJob[] {
   const purgeHours = config.outboxPurgeIntervalHours * MS_PER_HOUR
   const purgeOlderThan =
     (log: { purgeBefore(cutoff: Date): Promise<number> }, days: number) => () =>
       log.purgeBefore(retentionCutoff(new Date(), days))
   return [
-    { run: () => deps.notificationMail.deliverDue(), everyMs: 0 },
-    {
-      run: () => deps.badges.checkCrowns(),
-      everyMs: config.badgeCrownCheckMinutes * MS_PER_MINUTE,
-    },
-    {
-      run: () => deps.erasure.eraseDue(),
-      everyMs: config.erasureSweepIntervalHours * MS_PER_HOUR,
-    },
-    {
-      run: () => deps.auth.purgeExpired(),
-      everyMs: config.tokenPurgeIntervalHours * MS_PER_HOUR,
-    },
     {
       run: purgeOlderThan(deps.outbox, config.limits.outboxRetentionDays),
       everyMs: purgeHours,
@@ -574,6 +561,42 @@ function scheduledJobs(
       ),
       everyMs: purgeHours,
     },
+  ]
+}
+
+// The work the server's timers do, as jobs a tick runs (ADR 0049).
+function scheduledJobs(
+  config: Config,
+  deps: Pick<
+    AppDeps,
+    | 'auth'
+    | 'erasure'
+    | 'outbox'
+    | 'notificationMail'
+    | 'badges'
+    | 'moderation'
+    | 'liveCodes'
+  >,
+): ScheduledJob[] {
+  return [
+    { run: () => deps.notificationMail.deliverDue(), everyMs: 0 },
+    {
+      run: () => deps.badges.checkCrowns(),
+      everyMs: config.badgeCrownCheckMinutes * MS_PER_MINUTE,
+    },
+    {
+      run: () => deps.erasure.eraseDue(),
+      everyMs: config.erasureSweepIntervalHours * MS_PER_HOUR,
+    },
+    {
+      run: () => deps.auth.purgeExpired(),
+      everyMs: config.tokenPurgeIntervalHours * MS_PER_HOUR,
+    },
+    {
+      run: () => deps.liveCodes.purge(),
+      everyMs: config.tokenPurgeIntervalHours * MS_PER_HOUR,
+    },
+    ...retentionJobs(config, deps),
   ]
 }
 
@@ -670,6 +693,44 @@ function composeProfileCodes(db: Database): AppDeps['profileCodes'] {
   })
 }
 
+const LIVE_CODE_BYTES = 16
+const LIVE_CODE_WINDOW_MINUTES = 1
+
+// A 128-bit token, stored hashed, given out at most so often a minute
+// (R-CODE-5, ADR 0063).
+function composeLiveCodes(
+  db: Database,
+  settings: LiveSettings,
+): AppDeps['liveCodes'] {
+  const issues = createWindowCounter({
+    windowMinutes: () => LIVE_CODE_WINDOW_MINUTES,
+  })
+  return createLiveCodes({
+    store: createLiveCodeStore(db),
+    times: () => ({
+      seconds: settings.limits().liveCodeSeconds,
+      graceSeconds: settings.limits().liveCodeGraceSeconds,
+    }),
+    keepMinutes: () => settings.limits().liveCodeKeepMinutes,
+    newToken: () => randomBytes(LIVE_CODE_BYTES).toString('base64url'),
+    hash: hashSecret,
+    newId: randomUUID,
+    mayIssue: (memberId) =>
+      issues.take(memberId, settings.abuse().liveCodesPerMinute),
+  })
+}
+
+// Profile codes and live codes (ADR 0063).
+function composeCodes(
+  db: Database,
+  settings: LiveSettings,
+): Pick<AppDeps, 'profileCodes' | 'liveCodes'> {
+  return {
+    profileCodes: composeProfileCodes(db),
+    liveCodes: composeLiveCodes(db, settings),
+  }
+}
+
 /** Background work the server reports on: an analytics event that could not
  * be sent, a notification that could not be mailed, a scheduled job that
  * failed. */
@@ -729,7 +790,7 @@ export function composeApp(
     ...networks,
     recap: composeRecap(db, settings, badges, networks.network),
     memberSearch: composeMemberSearch(db, settings, track),
-    profileCodes: composeProfileCodes(db),
+    ...composeCodes(db, settings),
     notificationMail: composeNoticeMail(config, db, mailer, hooks, settings),
   }
   return withScheduled(config, deps, hooks.onScheduledError ?? ignoreError)

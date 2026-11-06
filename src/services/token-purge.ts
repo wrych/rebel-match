@@ -1,12 +1,10 @@
-import type { AuthProvider } from '../auth/index.js'
-
 const MS_PER_HOUR = 3_600_000
 
 /** Deletes expired sessions and sign-in tokens, now and then on every interval
  * (ADR 0034). A failed run is reported and the next one still happens.
  * Returns a stop function. */
 export function startTokenPurge(deps: {
-  auth: Pick<AuthProvider, 'purgeExpired'>
+  auth: { purgeExpired(): Promise<unknown> }
   intervalHours: number
   onError: (error: unknown) => void
   schedule?: (run: () => void, everyMs: number) => () => void

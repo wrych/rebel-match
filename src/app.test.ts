@@ -135,6 +135,11 @@ function deps(
       reset: () => Promise.reject(new Error('not used')),
       open: () => Promise.reject(new Error('not used')),
     },
+    liveCodes: {
+      issue: () => Promise.reject(new Error('not used')),
+      redeem: () => Promise.reject(new Error('not used')),
+      purge: () => Promise.reject(new Error('not used')),
+    },
     badges: {
       recount: () => Promise.resolve(),
       mine: () => Promise.resolve({ rows: [], events: [] }),

@@ -73,6 +73,7 @@ describe('the zero rule', () => {
       'NETWORK_MIN_OWN_CONNECTIONS',
       'MEMBER_SEARCH',
       'CONNECT_CODES',
+      'LIVE_CODE_GRACE_SECONDS',
       'RECAP',
       'RECAP_OPENS_AT',
     ]
@@ -82,7 +83,7 @@ describe('the zero rule', () => {
       expect(() => loadConfig({ ...valid, [variable]: '0' })).toThrow(variable)
   })
 
-  it('allows zero for the replay’s switch and own-lines threshold, the search and codes switches, and the recap’s switch and opening time (R-NET-6, R-NET-13, R-FIND-1, R-CODE-1, R-RECAP-1, R-RECAP-8)', () => {
+  it('allows zero for the replay’s switch and own-lines threshold, the search and codes switches, the live code grace, and the recap’s switch and opening time (R-NET-6, R-NET-13, R-FIND-1, R-CODE-1, R-CODE-5, R-RECAP-1, R-RECAP-8)', () => {
     const zeroAllowed = Object.keys(limitsEnv).filter((variable) => {
       try {
         loadConfig({ ...valid, [variable]: '0' })
@@ -97,6 +98,7 @@ describe('the zero rule', () => {
       'NETWORK_MIN_OWN_CONNECTIONS',
       'MEMBER_SEARCH',
       'CONNECT_CODES',
+      'LIVE_CODE_GRACE_SECONDS',
       'RECAP',
       'RECAP_OPENS_AT',
     ])

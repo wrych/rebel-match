@@ -67,6 +67,13 @@ const abuseSpecs = {
     default: 5,
     changeable: { min: 1, max: 60 },
   },
+  // Live codes one member is given a minute; their screen asks about
+  // seven times a minute at the shortest setting (R-CODE-5).
+  liveCodesPerMinute: {
+    env: 'LIVE_CODES_PER_MINUTE',
+    default: 20,
+    changeable: { min: 7, max: 600 },
+  },
 } as const satisfies Specs
 
 type AbuseSpecs = typeof abuseSpecs

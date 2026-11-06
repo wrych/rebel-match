@@ -68,7 +68,8 @@ function unseenBy(row: typeof r.$inferSelect, viewerId: string): boolean {
   return seenAt === null
 }
 
-const between = (a: string, b: string): SQL | undefined =>
+/** Requests between two members, either side. */
+export const between = (a: string, b: string): SQL | undefined =>
   or(
     and(eq(r.requesterId, a), eq(r.targetId, b)),
     and(eq(r.requesterId, b), eq(r.targetId, a)),
@@ -370,26 +371,35 @@ function answers(
 ): Pick<ConnectionStore, 'respond' | 'acceptPending'> {
   return {
     respond: (id, targetId, status) => respond(db, id, targetId, status),
-    acceptPending: async (accepterId, otherId) => {
-      const seenBy = (column: typeof r.targetId): SQL =>
-        sql`CASE WHEN ${column} = ${accepterId} THEN now() END`
-      await db
-        .update(r)
-        .set({
-          status: 'accepted',
-          respondedAt: sql`now()`,
-          requesterSeenAt: seenBy(r.requesterId),
-          targetSeenAt: seenBy(r.targetId),
-        })
-        .where(
-          and(
-            between(accepterId, otherId),
-            eq(r.status, 'pending'),
-            requesterActive,
-          ),
-        )
-    },
+    acceptPending: (accepterId, otherId) =>
+      acceptPendingBetween(db, accepterId, otherId),
   }
+}
+
+/** Accepts every request still pending between the two, either side, as
+ * seen by `accepterId`, who just accepted one of them (R-CONN-11). */
+export async function acceptPendingBetween(
+  db: Database,
+  accepterId: string,
+  otherId: string,
+): Promise<void> {
+  const seenBy = (column: typeof r.targetId): SQL =>
+    sql`CASE WHEN ${column} = ${accepterId} THEN now() END`
+  await db
+    .update(r)
+    .set({
+      status: 'accepted',
+      respondedAt: sql`now()`,
+      requesterSeenAt: seenBy(r.requesterId),
+      targetSeenAt: seenBy(r.targetId),
+    })
+    .where(
+      and(
+        between(accepterId, otherId),
+        eq(r.status, 'pending'),
+        requesterActive,
+      ),
+    )
 }
 
 // The target's notification of a request just made (R-CONN-2, R-CONN-9).

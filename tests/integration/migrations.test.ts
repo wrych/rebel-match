@@ -56,6 +56,7 @@ describe('migrations', () => {
       'game_players',
       'invite_opens',
       'invites',
+      'live_codes',
       'magic_tokens',
       'member_badges',
       'member_event_badges',
