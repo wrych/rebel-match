@@ -3,6 +3,7 @@ import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Cockpit } from '../lib/cockpit'
 import type { ConnectionView } from '../lib/connections'
+import { forgetMe } from '../lib/session'
 import CockpitScreen from './CockpitScreen.vue'
 
 const cockpit: Cockpit = {
@@ -44,7 +45,17 @@ const request: ConnectionView = {
   unseen: false,
 }
 
-const config = { limits: { matchesPollSeconds: 30, cockpitPollSeconds: 8 } }
+const config = {
+  limits: { matchesPollSeconds: 30, cockpitPollSeconds: 8, memberSearch: 0 },
+}
+const me = {
+  id: 'm1',
+  name: 'Ada',
+  onboarded: true,
+  analyticsOptIn: false,
+  roles: ['member'],
+  permissions: ['member:search'],
+}
 
 function serve(
   mine: Cockpit,
@@ -53,6 +64,7 @@ function serve(
 ): void {
   const bodies: Record<string, () => unknown> = {
     '/api/config': () => config,
+    '/auth/me': () => me,
     '/api/cockpit': () => mine,
     '/api/connections/incoming': () => ({ requests: waiting() }),
     '/api/connections/connected': () => ({ connections: people() }),
@@ -92,9 +104,25 @@ function paths(screen: ReturnType<typeof mount>): unknown[] {
 
 afterEach(() => {
   vi.unstubAllGlobals()
+  forgetMe()
+  config.limits.memberSearch = 0
 })
 
 describe('CockpitScreen', () => {
+  it.each([
+    [1, true],
+    [0, false],
+  ])(
+    'offers Find a member while search is on (%i): %s (R-FIND-1)',
+    async (memberSearch, offered) => {
+      config.limits.memberSearch = memberSearch
+      serve(cockpit, () => [])
+      const screen = await mountScreen()
+
+      expect(paths(screen).includes('/people')).toBe(offered)
+    },
+  )
+
   it('records the visit before reading, so the badge clears (R-MINE-4)', async () => {
     serve(cockpit, () => [request])
     await mountScreen()

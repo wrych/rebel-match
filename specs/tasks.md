@@ -506,7 +506,7 @@ Built after the spec and ADR merge. One pull request per item, in this order.
       it, capped per day. _(R-FIND-7, R-CONN-1)_
 - [x] The query parser and printer, pure, shared by client and server.
       _(R-FIND-2)_
-- [ ] Search: `/api/members/search` behind `limits.memberSearch` and
+- [x] Search: `/api/members/search` behind `limits.memberSearch` and
       `member:search`, **Findable in search** on the profile, S44 with its
       chips, S45, S46. _(R-FIND-1..8)_
 - [ ] Profile codes: the table, on / off and reset, `/p#t=…` to S45 and

@@ -7,6 +7,7 @@ import { BADGES_SEEN, badgesLabel, fetchNewBadges } from '../lib/badges'
 import { reportEvent } from '../lib/events'
 import { feedbackMailto } from '../lib/feedback'
 import { networkOpen } from '../lib/network'
+import { searchOpen } from '../lib/people'
 import { recapOpen } from '../lib/recap'
 import { RECAP_TITLE } from '../../src/recap/title'
 import { fetchOpenReported, moderationLabel } from '../lib/moderation'
@@ -29,6 +30,7 @@ const me = ref<Me | null>(null)
 const version = ref<ClientConfig['build'] | null>(null)
 const feedbackTo = ref<string | null>(null)
 const networkReplay = ref(0)
+const memberSearch = ref(0)
 const recapLimits = ref({ recap: 0, recapOpensAt: 0 })
 const fresh = ref(0)
 const freshBadges = ref(0)
@@ -77,6 +79,11 @@ const network = computed(
     me.value?.onboarded === true &&
     networkOpen(networkReplay.value, me.value.permissions),
 )
+const people = computed(
+  () =>
+    me.value?.onboarded === true &&
+    searchOpen(memberSearch.value, me.value.permissions),
+)
 const recap = computed(
   () =>
     me.value?.onboarded === true && recapOpen(recapLimits.value, Date.now()),
@@ -92,6 +99,7 @@ function remember(config: ClientConfig): void {
   version.value = config.build
   feedbackTo.value = config.feedbackTo
   networkReplay.value = config.limits.networkReplay
+  memberSearch.value = config.limits.memberSearch
   recapLimits.value = {
     recap: config.limits.recap,
     recapOpensAt: config.limits.recapOpensAt,
@@ -211,6 +219,10 @@ onBeforeUnmount(() => {
         class="item"
         @click="close(false)"
         >{{ badgesLabel(freshBadges) }}</RouterLink
+      >
+
+      <RouterLink v-if="people" to="/people" class="item" @click="close(false)"
+        >Find a member</RouterLink
       >
 
       <RouterLink
