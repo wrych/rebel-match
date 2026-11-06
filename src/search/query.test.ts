@@ -99,6 +99,20 @@ describe('tokenize and printQuery (R-FIND-4)', () => {
     )
   })
 
+  it('closes an unclosed quote, so a part added after it stays its own', () => {
+    const tokens = [
+      ...tokenize('title:"head of'),
+      { field: 'company', value: 'acme', quoted: false } as const,
+    ]
+    const printed = printQuery(tokens)
+
+    expect(printed).toBe('title:"head of" company:acme')
+    expect(parseQuery(printed)).toMatchObject({
+      title: ['head of'],
+      company: ['acme'],
+    })
+  })
+
   it('quotes a value holding a space', () => {
     expect(
       printQuery([{ field: 'title', value: 'head of', quoted: false }]),

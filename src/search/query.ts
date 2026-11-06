@@ -44,6 +44,12 @@ function splitOutsideQuotes(query: string): string[] {
   return parts
 }
 
+// An unclosed quote is closed, so a part printed after it stays its own.
+function closed(segment: string): string {
+  const quotes = segment.split(QUOTE).length - 1
+  return quotes % 2 === 0 ? segment : `${segment}${QUOTE}`
+}
+
 function tokenOf(segment: string): QueryToken {
   const match = OPERATOR.exec(segment)
   const field =
@@ -53,7 +59,7 @@ function tokenOf(segment: string): QueryToken {
     field: field ?? null,
     value: rest.replaceAll(QUOTE, ''),
     quoted: rest.includes(QUOTE),
-    raw: segment,
+    raw: closed(segment),
   }
 }
 
