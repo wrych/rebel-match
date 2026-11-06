@@ -1,6 +1,5 @@
 import {
   CARD_SIZE,
-  linkedInUrl,
   markPath,
   paintCard,
   type Card,
@@ -9,71 +8,7 @@ import {
 } from './card'
 import type { Halo } from './halo'
 
-/** How a card left the app, as `recap_shared` reports it (R-RECAP-7). */
-export type SharedVia = 'share_sheet' | 'linkedin' | 'image'
-
-/** What sharing needs of the browser, so a test can stand in for it. */
-export interface ShareHost {
-  canShare?: (data: ShareData) => boolean
-  share?: (data: ShareData) => Promise<void>
-  open: (url: string) => void
-  save: (file: File) => void
-}
-
-export const CARD_FILE = 'rebel-record.png'
-
-const browserHost = (): ShareHost => ({
-  ...(typeof navigator.canShare === 'function'
-    ? {
-        canShare: (data) => navigator.canShare(data),
-        share: (data) => navigator.share(data),
-      }
-    : {}),
-  open: (url) => {
-    window.open(url, '_blank', 'noopener')
-  },
-  save: (file) => {
-    const link = document.createElement('a')
-    link.href = URL.createObjectURL(file)
-    link.download = file.name
-    link.click()
-    URL.revokeObjectURL(link.href)
-  },
-})
-
-const aborted = (error: unknown): boolean =>
-  error instanceof DOMException && error.name === 'AbortError'
-
-/** Shares the card, LinkedIn first (R-RECAP-6): to the phone's share sheet
- * where it takes an image, else saved and LinkedIn's composer opened with
- * the post for the member to attach it. Null when the member backed out. */
-export async function shareCard(
-  file: File,
-  text: string,
-  host: ShareHost = browserHost(),
-): Promise<SharedVia | null> {
-  const data: ShareData = { files: [file], text }
-  if (host.canShare?.(data) === true && host.share !== undefined) {
-    try {
-      await host.share(data)
-      return 'share_sheet'
-    } catch (error) {
-      if (aborted(error)) return null
-    }
-  }
-  host.save(file)
-  host.open(linkedInUrl(text))
-  return 'linkedin'
-}
-
-/** Saves the card as an image (R-RECAP-6). */
-export function saveCard(
-  file: File,
-  host: ShareHost = browserHost(),
-): SharedVia {
-  host.save(file)
-  return 'image'
-}
+const CARD_FILE = 'rebel-record.png'
 
 /** The app's own colours and type, read from the page. */
 export function paletteOfPage(element: Element): CardPalette {

@@ -6,7 +6,7 @@ import { fetchConfig } from '../lib/api'
 import { reportEvent } from '../lib/events'
 import { fetchRecap, type Recap } from '../lib/recap'
 import { loadMe } from '../lib/session'
-import type { SharedVia } from '../recap/share'
+import type { SharedVia } from '../lib/share-sheet'
 
 const MS_PER_SECOND = 1000
 

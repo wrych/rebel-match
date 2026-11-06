@@ -228,7 +228,7 @@ describe('RecapStories (R-RECAP-1, R-RECAP-2)', () => {
     const buttons = [...document.querySelectorAll('.actions button')].map(
       (button) => button.textContent?.trim(),
     )
-    expect(buttons).toEqual(['Share on LinkedIn', 'Save image'])
+    expect(buttons).toEqual(['Share', 'Save image'])
   })
 
   it('reports a saved image as shared', async () => {

@@ -58,10 +58,6 @@ export function shareText(card: Card, site: string): string {
   return lines.join('\n')
 }
 
-/** LinkedIn's post composer with the text filled in (R-RECAP-6). */
-export const linkedInUrl = (text: string): string =>
-  `https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(text)}`
-
 /** LinkedIn's portrait size. */
 export const CARD_SIZE = { width: 1080, height: 1350 }
 
