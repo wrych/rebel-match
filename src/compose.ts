@@ -119,6 +119,7 @@ import { createOutboxLog } from './services/outbox-log-store.js'
 import { createOutboxStore } from './services/outbox-store.js'
 import { createErasureService } from './services/erasure.js'
 import { createErasureStore } from './services/erasure-store.js'
+import { createSignIn } from './services/sign-in.js'
 import { createMemberRoster } from './services/member-roster-store.js'
 import { createProfileStore } from './services/profile-store.js'
 import { createWhitelist } from './services/whitelist.js'
@@ -286,24 +287,34 @@ function composeReports(
   }
 }
 
+// Signing in sits with erasure: a keep-it link restores the account first
+// (ADR 0032).
 function composeMembershipAdmin(
   config: Config,
   db: Database,
   auth: AuthProvider,
+  track: Track,
 ): Pick<
   AppDeps,
-  'roles' | 'erasure' | 'roster' | 'whitelist' | 'challengeModeration'
+  | 'signIn'
+  | 'roles'
+  | 'erasure'
+  | 'roster'
+  | 'whitelist'
+  | 'challengeModeration'
 > {
+  const erasure = createErasureService({
+    store: createErasureStore(db),
+    policy: configPolicy,
+    graceDays: () => config.limits.erasureGraceDays,
+  })
   return {
+    signIn: createSignIn({ auth, erasure, track }),
     roles: createRoleService({
       store: createRoleGrantStore(db),
       policy: configPolicy,
     }),
-    erasure: createErasureService({
-      store: createErasureStore(db),
-      policy: configPolicy,
-      graceDays: () => config.limits.erasureGraceDays,
-    }),
+    erasure,
     roster: createMemberRoster(db, config.analyticsVersion),
     challengeModeration: createChallengeModeration(
       createChallengeModerationStore(db),
@@ -710,7 +721,7 @@ export function composeApp(
       analyticsVersion: config.analyticsVersion,
     }),
     profile: createProfileStore(db, config.analyticsVersion),
-    ...composeMembershipAdmin(config, db, auth),
+    ...composeMembershipAdmin(config, db, auth, track),
     outbox: createOutboxLog(db),
     ...composeAdmission(config, settings, db, auth),
     ...composeOnboarding(config, db, track),

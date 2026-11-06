@@ -35,6 +35,7 @@ function deps(
       deliver: () => Promise.resolve(),
       config,
     }),
+    signIn: () => Promise.resolve({ ok: false, reason: 'unknown' }),
     profiles: { profile: () => Promise.resolve(null) },
     roles: {
       grant: () => Promise.resolve('no_member'),
