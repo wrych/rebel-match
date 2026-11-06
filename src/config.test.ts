@@ -19,6 +19,10 @@ describe('loadConfig', () => {
     expect(config.limits.approvalLinkTtlHours).toBe(24)
   })
 
+  it('allows fifty direct requests a day, enough for a summit (R-FIND-7)', () => {
+    expect(loadConfig(valid).limits.directRequestsPerDay).toBe(50)
+  })
+
   it('defaults the abuse limits ADR 0029 fixes (R-NFR-8)', () => {
     const config = loadConfig(valid)
 

@@ -173,7 +173,7 @@ const limitSpecs = {
   },
   // Direct requests a member may send in a day, so search cannot be used to
   // ask everyone (R-FIND-7).
-  directRequestsPerDay: { env: 'DIRECT_REQUESTS_PER_DAY', default: 20 },
+  directRequestsPerDay: { env: 'DIRECT_REQUESTS_PER_DAY', default: 50 },
   // Hosts open each member's summit recap when the summit ends (R-RECAP-1).
   recap: {
     env: 'RECAP',
