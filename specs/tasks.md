@@ -514,7 +514,7 @@ Built after the spec and ADR merge. One pull request per item, in this order.
 - [x] Live codes: issue and redeem, the grace, the tick's clean-up, S47's
       second tab with its ring and who just connected, `/c#t=…` and its
       answers. _(R-CODE-5..7)_
-- [ ] The host settings, the usage events, erasure. _(R-CODE-8..10,
+- [x] The host settings, the usage events, erasure. _(R-CODE-8..10,
       R-FIND-8)_
 - [ ] On a phone: scan a live code at the end of its ring, and a profile code
       signed out, through sign-in and back. _(R-CODE-5, R-NAV-5)_

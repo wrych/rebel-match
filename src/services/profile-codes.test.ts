@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import type { AnalyticsEvent } from './analytics.js'
 import type { CardFacts } from './member-search.js'
 import {
   createProfileCodes,
@@ -47,9 +48,16 @@ const facts = (memberId: string, reachable = true): CardFacts => ({
   findable: false,
 })
 
+const events: AnalyticsEvent[] = []
+
 function setup(inactive: string[] = []): ReturnType<typeof createProfileCodes> {
   let n = 0
+  events.length = 0
   return createProfileCodes({
+    track: (_memberId, event) => {
+      events.push(event)
+      return Promise.resolve()
+    },
     store: memoryStore(),
     cards: {
       card: (_viewerId, memberId) =>
@@ -145,5 +153,29 @@ describe('opening a profile code (R-CODE-3)', () => {
     await codes.setEnabled('m-ada', false)
 
     expect(await codes.open('m-bob', 'token-1')).toBeNull()
+  })
+})
+
+describe('profile code usage (R-CODE-9)', () => {
+  it('reports a code shown and opened, never its token or who', async () => {
+    const codes = setup()
+    await codes.mine('m-ada')
+    await codes.open('m-bob', 'token-1')
+    await codes.open('m-bob', 'token-9')
+
+    expect(events).toEqual([
+      { name: 'connect_code_shown', code: 'profile' },
+      { name: 'connect_code_opened', code: 'profile', outcome: 'opened' },
+      { name: 'connect_code_opened', code: 'profile', outcome: 'expired' },
+    ])
+    expect(JSON.stringify(events)).not.toMatch(/token-|m-ada|m-bob/)
+  })
+
+  it('reports a reset code as shown, and on / off as nothing', async () => {
+    const codes = setup()
+    await codes.setEnabled('m-ada', false)
+    await codes.reset('m-ada')
+
+    expect(events).toEqual([{ name: 'connect_code_shown', code: 'profile' }])
   })
 })

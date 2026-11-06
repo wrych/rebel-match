@@ -1,3 +1,4 @@
+import { trackNothing, type Track } from './analytics.js'
 import type { CardFacts, MemberCard } from './member-search.js'
 import { canReach } from './reach.js'
 
@@ -39,42 +40,71 @@ export interface ProfileCodeService {
   open(callerId: string, token: string): Promise<OpenedCode | null>
 }
 
+interface Opening {
+  store: ProfileCodeStore
+  cards: {
+    card(viewerId: string, memberId: string): Promise<CardFacts | null>
+  }
+}
+
+async function opening(
+  deps: Opening,
+  callerId: string,
+  token: string,
+): Promise<OpenedCode | null> {
+  const owner = await deps.store.ownerOf(token)
+  const facts = owner === null ? null : await deps.cards.card(callerId, owner)
+  if (owner === null || facts === null) return null
+  const reached = canReach({
+    isCaller: owner === callerId,
+    reachable: facts.reachable,
+    findable: facts.findable,
+    searchOn: false,
+    presentsCode: true,
+    codesOn: true,
+  })
+  return reached ? { memberId: owner, card: facts.card } : null
+}
+
 /** Profile codes (R-CODE-2..4, ADR 0063): a random token, never the
  * member's id, that reaches its owner while on; reset is what stops a
- * code shared too widely. */
-export function createProfileCodes(deps: {
-  store: ProfileCodeStore
-  cards: { card(viewerId: string, memberId: string): Promise<CardFacts | null> }
-  newToken: () => string
-}): ProfileCodeService {
+ * code shared too widely. Its usage events name the code, never the token
+ * or who (R-CODE-9). */
+export function createProfileCodes(
+  deps: Opening & {
+    newToken: () => string
+    track?: Track
+  },
+): ProfileCodeService {
   const { store } = deps
-  const mine = async (memberId: string): Promise<ProfileCode> =>
+  const track = deps.track ?? trackNothing
+  const made = async (memberId: string): Promise<ProfileCode> =>
     (await store.find(memberId)) ?? store.create(memberId, deps.newToken())
+  const shown = (memberId: string, code: ProfileCode): ProfileCode => {
+    void track(memberId, { name: 'connect_code_shown', code: 'profile' })
+    return code
+  }
   return {
-    mine,
+    mine: async (memberId) => shown(memberId, await made(memberId)),
     setEnabled: async (memberId, enabled) => {
-      await mine(memberId)
-      return (await store.setEnabled(memberId, enabled)) ?? mine(memberId)
+      await made(memberId)
+      return (await store.setEnabled(memberId, enabled)) ?? made(memberId)
     },
     reset: async (memberId) => {
-      await mine(memberId)
+      await made(memberId)
       const token = deps.newToken()
-      return (await store.replaceToken(memberId, token)) ?? mine(memberId)
+      const code =
+        (await store.replaceToken(memberId, token)) ?? (await made(memberId))
+      return shown(memberId, code)
     },
     open: async (callerId, token) => {
-      const owner = await store.ownerOf(token)
-      const facts =
-        owner === null ? null : await deps.cards.card(callerId, owner)
-      if (owner === null || facts === null) return null
-      const reached = canReach({
-        isCaller: owner === callerId,
-        reachable: facts.reachable,
-        findable: facts.findable,
-        searchOn: false,
-        presentsCode: true,
-        codesOn: true,
+      const opened = await opening(deps, callerId, token)
+      void track(callerId, {
+        name: 'connect_code_opened',
+        code: 'profile',
+        outcome: opened === null ? 'expired' : 'opened',
       })
-      return reached ? { memberId: owner, card: facts.card } : null
+      return opened
     },
   }
 }
