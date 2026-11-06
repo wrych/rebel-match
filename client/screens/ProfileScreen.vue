@@ -9,6 +9,7 @@ import {
 } from '../../src/profile-options'
 import AnalyticsToggle from '../components/AnalyticsToggle.vue'
 import FindableToggle from '../components/FindableToggle.vue'
+import ProfileCodeSetting from '../components/ProfileCodeSetting.vue'
 import ConsentWords from '../components/ConsentWords.vue'
 import NotificationSettings from '../components/NotificationSettings.vue'
 import DeleteAccount from '../components/DeleteAccount.vue'
@@ -222,7 +223,12 @@ function save(field: Field): Promise<void> {
 
       <NotificationSettings />
 
-      <FindableToggle :findable="profile.findable" />
+      <FindableToggle
+        :findable="profile.findable"
+        :codes-on="limits?.connectCodes === 1"
+      />
+
+      <ProfileCodeSetting v-if="limits?.connectCodes === 1" />
 
       <AnalyticsToggle :opted-in="profile.analyticsOptIn" />
 

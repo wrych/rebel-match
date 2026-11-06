@@ -509,7 +509,7 @@ Built after the spec and ADR merge. One pull request per item, in this order.
 - [x] Search: `/api/members/search` behind `limits.memberSearch` and
       `member:search`, **Findable in search** on the profile, S44 with its
       chips, S45, S46. _(R-FIND-1..8)_
-- [ ] Profile codes: the table, on / off and reset, `/p#t=…` to S45 and
+- [x] Profile codes: the table, on / off and reset, `/p#t=…` to S45 and
       S46, S47's first tab with the QR, Copy link and Share. _(R-CODE-1..4)_
 - [ ] Live codes: issue and redeem, the grace, the tick's clean-up, S47's
       second tab with its ring and who just connected, `/c#t=…` and its

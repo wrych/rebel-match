@@ -107,6 +107,12 @@ export const router = createRouter({
     screen('people', () => import('./screens/PeopleScreen.vue')),
     screen('person', () => import('./screens/PersonScreen.vue')),
     screen('person-connect', () => import('./screens/PersonConnectScreen.vue')),
+    screen('my-code', () => import('./screens/MyCodeScreen.vue')),
+    screen('profile-code', () => import('./screens/PersonScreen.vue')),
+    screen(
+      'profile-code-connect',
+      () => import('./screens/PersonConnectScreen.vue'),
+    ),
     screen('welcome', WelcomeScreen),
     screen('profile', ProfileScreen),
     screen('notifications', NotificationsScreen),

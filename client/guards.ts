@@ -1,4 +1,4 @@
-import type { Access } from '../src/routes'
+import { nextOf, type Access } from '../src/routes'
 import type { Me } from './lib/session'
 
 export interface Target {
@@ -17,7 +17,7 @@ const PRIVACY_STEP = '/onboarding/privacy'
 const USAGE_STEP = '/onboarding/usage'
 
 function withNext(path: string, next: string): string {
-  return `${path}?next=${encodeURIComponent(next)}`
+  return `${path}?next=${encodeURIComponent(nextOf(next))}`
 }
 
 function homeOf(me: Me): string {

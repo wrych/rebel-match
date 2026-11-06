@@ -10,13 +10,13 @@ import {
   requestConnection,
   type RequestOutcome,
 } from '../lib/connections'
-import { fetchMemberCard, personPath, type MemberCard } from '../lib/people'
+import { profileCodePath } from '../lib/codes'
+import { personPath, reachedFrom, type Reached } from '../lib/people'
 
 const route = useRoute()
 const router = useRouter()
-const memberId = String(route.params['memberId'])
-
-const card = ref<MemberCard | null>(null)
+const reached = ref<Reached | null>(null)
+const card = computed(() => reached.value?.card ?? null)
 const missing = ref(false)
 const message = ref('')
 const maxChars = ref<number | null>(null)
@@ -25,14 +25,22 @@ const outcome = ref<RequestOutcome['result'] | null>(null)
 const problem = ref<string | null>(null)
 
 const firstName = computed(() => card.value?.name.split(' ')[0] ?? '')
+const byCode = computed(() => (reached.value?.profileCode ?? null) !== null)
+const cancelPath = computed(() => {
+  if (reached.value === null) return '/people'
+  const { card: shown, profileCode } = reached.value
+  return profileCode === null
+    ? personPath(shown.memberId)
+    : profileCodePath(profileCode)
+})
 
 onMounted(async () => {
   try {
     const [found, config] = await Promise.all([
-      fetchMemberCard(memberId),
+      reachedFrom(route),
       fetchConfig(),
     ])
-    card.value = found
+    reached.value = found
     missing.value = found === null
     maxChars.value = config.limits.connectionMessageMaxChars
   } catch {
@@ -41,13 +49,15 @@ onMounted(async () => {
 })
 
 async function send(): Promise<void> {
+  if (reached.value === null) return
   sending.value = true
   problem.value = null
   try {
     const sent = await requestConnection({
-      targetId: memberId,
+      targetId: reached.value.card.memberId,
       kind: 'direct',
       message: message.value,
+      profileCode: reached.value.profileCode ?? undefined,
     })
     if (sent.result === 'joined') {
       await router.replace(contactPath(sent.id))
@@ -72,8 +82,8 @@ async function send(): Promise<void> {
       v-else-if="outcome === 'created' || outcome === 'exists'"
       :first-name="firstName"
       :outcome="outcome"
-      back-to="/people"
-      back-label="Back to Find a member"
+      :back-to="byCode ? '/matches' : '/people'"
+      :back-label="byCode ? 'Back to your matches' : 'Back to Find a member'"
     />
 
     <template v-else-if="card">
@@ -113,9 +123,7 @@ async function send(): Promise<void> {
           Send request
         </button>
       </form>
-      <RouterLink :to="personPath(memberId)" class="btn btn-ghost"
-        >Cancel</RouterLink
-      >
+      <RouterLink :to="cancelPath" class="btn btn-ghost">Cancel</RouterLink>
     </template>
 
     <p v-if="problem" class="alert" role="alert">{{ problem }}</p>

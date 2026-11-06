@@ -34,13 +34,14 @@ const ben = {
 function server(
   answer: unknown = { results: [ben], more: false },
   memberSearch = 1,
+  connectCodes = 0,
 ): ReturnType<typeof vi.fn> {
   const fetchMock = vi.fn((url: string) => {
     if (url === '/api/config')
       return Promise.resolve({
         ok: true,
         status: 200,
-        json: async () => ({ limits: { memberSearch } }),
+        json: async () => ({ limits: { memberSearch, connectCodes } }),
       })
     return Promise.resolve(
       answer === null
@@ -230,6 +231,23 @@ describe('PeopleScreen (S44)', () => {
       query: { q: 'ben sector:retail' },
     })
   })
+
+  it.each([
+    [1, true],
+    [0, false],
+  ])(
+    'offers Your code while codes are on (%i): %s (R-CODE-1)',
+    async (connectCodes, offered) => {
+      server(undefined, 1, connectCodes)
+      const screen = await mountScreen()
+
+      expect(
+        screen
+          .findAllComponents(RouterLinkStub)
+          .some((link) => link.props('to') === '/me/code'),
+      ).toBe(offered)
+    },
+  )
 
   it('is not found while hosts have search off (R-FIND-1)', async () => {
     server(undefined, 0)

@@ -1,23 +1,27 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import PersonCard from '../components/PersonCard.vue'
-import {
-  fetchMemberCard,
-  personConnectPath,
-  type MemberCard,
-} from '../lib/people'
+import { profileConnectPath } from '../lib/codes'
+import { personConnectPath, reachedFrom, type Reached } from '../lib/people'
 
 const route = useRoute()
 const router = useRouter()
-const memberId = String(route.params['memberId'])
-const card = ref<MemberCard | null>(null)
+const reached = ref<Reached | null>(null)
 const problem = ref<string | null>(null)
+
+const connectPath = computed(() => {
+  if (reached.value === null) return ''
+  const { card, profileCode } = reached.value
+  return profileCode === null
+    ? personConnectPath(card.memberId)
+    : profileConnectPath(profileCode)
+})
 
 onMounted(async () => {
   try {
-    card.value = await fetchMemberCard(memberId)
-    if (card.value === null)
+    reached.value = await reachedFrom(route)
+    if (reached.value === null)
       await router.replace({
         name: 'not-found',
         params: { pathMatch: route.path.slice(1).split('/') },
@@ -30,16 +34,17 @@ onMounted(async () => {
 
 <template>
   <section class="screen">
-    <template v-if="card">
+    <template v-if="reached">
       <div class="stack">
         <p class="kicker kicker-accent">A member</p>
-        <h1 class="display display-lg">{{ card.name }}</h1>
+        <h1 class="display display-lg">{{ reached.card.name }}</h1>
       </div>
-      <PersonCard :card="card" />
-      <RouterLink :to="personConnectPath(card.memberId)" class="btn btn-primary"
-        >Connect</RouterLink
-      >
-      <RouterLink to="/people" class="btn btn-ghost"
+      <PersonCard :card="reached.card" />
+      <RouterLink :to="connectPath" class="btn btn-primary">Connect</RouterLink>
+      <RouterLink
+        v-if="reached.profileCode === null"
+        to="/people"
+        class="btn btn-ghost"
         >Back to Find a member</RouterLink
       >
     </template>
