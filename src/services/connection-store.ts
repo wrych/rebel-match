@@ -207,11 +207,31 @@ async function markSeen(
 // A request from someone deleted since cannot be answered (ADR 0032).
 const requesterActive = sql`exists (select 1 from ${members} where ${members.id} = ${r.requesterId} and ${members.status} = 'active')`
 
-// What a direct request is checked against: whether search may find the
-// target, and how many the requester sent today (R-FIND-5, R-FIND-7).
-function directLookups(
-  db: Database,
-): Pick<ConnectionStore, 'isFindable' | 'directSentToday'> {
+// Whether the requester may store another direct request today. The lock,
+// held to the end of the transaction, makes requests from one member wait
+// on each other, so parallel ones cannot all pass the count (R-FIND-7).
+async function underCap(
+  tx: Database,
+  requesterId: string,
+  cap: number | null,
+): Promise<boolean> {
+  if (cap === null) return true
+  await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${requesterId}))`)
+  const [row] = await tx
+    .select({ n: count() })
+    .from(r)
+    .where(
+      and(
+        eq(r.requesterId, requesterId),
+        eq(r.kind, 'direct'),
+        gt(r.createdAt, sql`now() - interval '1 day'`),
+      ),
+    )
+  return (row?.n ?? 0) < cap
+}
+
+// Whether search may find the target (R-FIND-5).
+function findableLookup(db: Database): Pick<ConnectionStore, 'isFindable'> {
   return {
     isFindable: async (memberId) => {
       const rows = await db
@@ -219,19 +239,6 @@ function directLookups(
         .from(members)
         .where(and(eq(members.id, memberId), eq(members.findable, true)))
       return rows.length > 0
-    },
-    directSentToday: async (requesterId) => {
-      const [row] = await db
-        .select({ n: count() })
-        .from(r)
-        .where(
-          and(
-            eq(r.requesterId, requesterId),
-            eq(r.kind, 'direct'),
-            gt(r.createdAt, sql`now() - interval '1 day'`),
-          ),
-        )
-      return row?.n ?? 0
     },
   }
 }
@@ -398,36 +405,49 @@ function toldOf(
   }
 }
 
+// Storing a request with its target's notification, within the day's cap
+// for a direct one (R-FIND-7).
+function inserts(
+  db: Database,
+): Pick<ConnectionStore, 'insert' | 'insertAccepted'> {
+  return {
+    // uq_pending refuses a second pending request (R-CONN-5); that refusal is
+    // the answer, not an error. The target's notification is stored with it
+    // (R-CONN-2, R-NOTE-10).
+    insert: (record, cap) =>
+      db.transaction(async (tx) => {
+        if (!(await underCap(tx, record.requesterId, cap))) return 'limit'
+        const stored = await tx
+          .insert(r)
+          .values(record)
+          .onConflictDoNothing()
+          .returning({ id: r.id })
+        if (stored.length === 0) return 'taken'
+        await insertNotification(tx, toldOf(record, 'connection_request'))
+        return 'stored'
+      }),
+    insertAccepted: (record, cap) =>
+      db.transaction(async (tx) => {
+        if (!(await underCap(tx, record.requesterId, cap))) return 'limit'
+        await tx
+          .insert(r)
+          .values({ ...record, status: 'accepted', respondedAt: sql`now()` })
+        await insertNotification(tx, toldOf(record, 'new_connection'))
+        return 'stored'
+      }),
+  }
+}
+
 /** Connection requests over Postgres. The one query that reads an email
  * checks accepted status and party membership itself, so no caller can forget
  * to (R-CONN-3, R-CONN-6, ADR 0004). */
 export function createConnectionStore(db: Database): ConnectionStore {
   return {
     ...lookups(db),
-    ...directLookups(db),
+    ...findableLookup(db),
     ...acceptedLookups(db),
     ...answers(db),
-    // uq_pending refuses a second pending request (R-CONN-5); that refusal is
-    // the answer, not an error. The target's notification is stored with it
-    // (R-CONN-2, R-NOTE-10).
-    insert: (record) =>
-      db.transaction(async (tx) => {
-        const stored = await tx
-          .insert(r)
-          .values(record)
-          .onConflictDoNothing()
-          .returning({ id: r.id })
-        if (stored.length === 1)
-          await insertNotification(tx, toldOf(record, 'connection_request'))
-        return stored.length === 1
-      }),
-    insertAccepted: (record) =>
-      db.transaction(async (tx) => {
-        await tx
-          .insert(r)
-          .values({ ...record, status: 'accepted', respondedAt: sql`now()` })
-        await insertNotification(tx, toldOf(record, 'new_connection'))
-      }),
+    ...inserts(db),
     find: async (id) => {
       const [row] = await db.select().from(r).where(eq(r.id, id))
       return row === undefined ? null : recordOf(row)

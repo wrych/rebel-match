@@ -77,8 +77,6 @@ export interface ConnectionStore {
   isReachable(memberId: string): Promise<boolean>
   /** True for a member who has not turned findable off (R-FIND-5). */
   isFindable(memberId: string): Promise<boolean>
-  /** Direct requests the member sent in the last day (R-FIND-7). */
-  directSentToday(requesterId: string): Promise<number>
   /** The author of an active challenge, or null. */
   challengeAuthor(challengeId: string): Promise<string | null>
   /** The pending request from requester to target about the same
@@ -97,17 +95,21 @@ export interface ConnectionStore {
     otherId: string,
     challengeId: string | null,
   ): Promise<string | null>
-  /** Stores a pending request with its target's notification; false when one
-   * is already pending between the same two members about the same
-   * challenge, however close the race (R-CONN-5, R-NOTE-10). */
+  /** Stores a pending request with its target's notification: `taken` when
+   * one is already pending between the same two members about the same
+   * challenge, `limit` when the requester already sent `cap` direct
+   * requests in the last day, however close the race (R-CONN-5, R-FIND-7,
+   * R-NOTE-10). */
   insert(
     record: Omit<ConnectionRecord, 'status' | 'createdAt'>,
-  ): Promise<boolean>
+    cap: number | null,
+  ): Promise<Stored>
   /** Stores a request accepted at once, unseen by both, with its target's
-   * notification (R-CONN-8, R-CONN-9). */
+   * notification, or `limit` as `insert` (R-CONN-8, R-CONN-9). */
   insertAccepted(
     record: Omit<ConnectionRecord, 'status' | 'createdAt'>,
-  ): Promise<void>
+    cap: number | null,
+  ): Promise<Exclude<Stored, 'taken'>>
   /** Accepts every request still pending between the two, either side, as
    * seen by `accepterId`, who just accepted one of them (R-CONN-11). */
   acceptPending(accepterId: string, otherId: string): Promise<void>
@@ -137,6 +139,9 @@ export interface ConnectionStore {
    * two, which ends their notices (R-CONN-7, R-CONN-9). */
   markSeen(viewerId: string, otherId: string): Promise<void>
 }
+
+/** What storing a request came to. */
+export type Stored = 'stored' | 'taken' | 'limit'
 
 export type RequestOutcome =
   | { result: 'created'; id: string }
@@ -223,25 +228,20 @@ async function mayRequest(
   return contextHolds(store, requesterId, input)
 }
 
-async function overDirectLimit(
-  store: ConnectionStore,
-  rules: DirectRules,
-  requesterId: string,
-  input: NewConnection,
-): Promise<boolean> {
-  if (input.kind !== 'direct') return false
-  return (await store.directSentToday(requesterId)) >= rules.perDay
-}
+// The day's cap applies to direct requests only; null leaves a request
+// uncapped (R-FIND-7).
+const capOf = (rules: DirectRules, input: NewConnection): number | null =>
+  input.kind === 'direct' ? rules.perDay : null
 
 /** Stores a pending request unless one is already pending between the same
  * two members about the same challenge; the database's partial unique index
  * settles a race between two such inserts (R-CONN-5). */
 async function storePending(
-  store: ConnectionStore,
-  newId: () => string,
+  deps: Asking,
   requesterId: string,
   input: NewConnection,
 ): Promise<RequestOutcome> {
+  const { store, newId } = deps
   const challengeId = input.challengeId ?? null
   const pending = (): Promise<string | null> =>
     store.findPending(requesterId, input.targetId, challengeId)
@@ -249,15 +249,19 @@ async function storePending(
   if (existing !== null) return { result: 'exists', id: existing }
 
   const id = newId()
-  const stored = await store.insert({
-    id,
-    requesterId,
-    targetId: input.targetId,
-    challengeId,
-    kind: input.kind,
-    message: input.message ?? null,
-  })
-  if (stored) return { result: 'created', id }
+  const stored = await store.insert(
+    {
+      id,
+      requesterId,
+      targetId: input.targetId,
+      challengeId,
+      kind: input.kind,
+      message: input.message ?? null,
+    },
+    deps.cap,
+  )
+  if (stored === 'stored') return { result: 'created', id }
+  if (stored === 'limit') return { result: 'limit' }
   const raced = await pending()
   return raced === null
     ? { result: 'not_found' }
@@ -268,6 +272,7 @@ interface Asking {
   store: ConnectionStore
   newId: () => string
   track: Track
+  cap: number | null
 }
 
 // The double opt-in proper: pending, and the target told, by a notification
@@ -277,7 +282,7 @@ async function ask(
   requesterId: string,
   input: NewConnection,
 ): Promise<RequestOutcome> {
-  const outcome = await storePending(deps.store, deps.newId, requesterId, input)
+  const outcome = await storePending(deps, requesterId, input)
   if (outcome.result !== 'created') return outcome
   void deps.track(requesterId, {
     name: 'connection_requested',
@@ -302,14 +307,18 @@ async function join(
   if (existing !== null) return { result: 'joined', id: existing }
 
   const id = deps.newId()
-  await deps.store.insertAccepted({
-    id,
-    requesterId,
-    targetId: input.targetId,
-    challengeId,
-    kind: input.kind,
-    message: input.message ?? null,
-  })
+  const stored = await deps.store.insertAccepted(
+    {
+      id,
+      requesterId,
+      targetId: input.targetId,
+      challengeId,
+      kind: input.kind,
+      message: input.message ?? null,
+    },
+    deps.cap,
+  )
+  if (stored === 'limit') return { result: 'limit' }
   void deps.track(requesterId, {
     name: 'connection_requested',
     kind: input.kind,
@@ -391,18 +400,17 @@ export function createConnections(deps: {
   const { store } = deps
   const direct = deps.direct ?? directClosed
   const track = deps.track ?? trackNothing
-  const asking: Asking = { store, newId: deps.newId, track }
+  const asking: Asking = { store, newId: deps.newId, track, cap: null }
   const now = deps.now ?? ((): Date => new Date())
   return {
     request: async (requesterId, input) => {
       const rules = direct()
       if (!(await mayRequest(store, rules, requesterId, input)))
         return { result: 'not_found' }
-      if (await overDirectLimit(store, rules, requesterId, input))
-        return { result: 'limit' }
+      const capped = { ...asking, cap: capOf(rules, input) }
       return (await store.isConnected(requesterId, input.targetId))
-        ? join(asking, requesterId, input)
-        : ask(asking, requesterId, input)
+        ? join(capped, requesterId, input)
+        : ask(capped, requesterId, input)
     },
     incoming: (memberId) => store.incoming(memberId),
     connected: (memberId) => store.connected(memberId),

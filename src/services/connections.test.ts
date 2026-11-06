@@ -11,6 +11,7 @@ const emails: Record<string, string> = {
   'm-ada': 'ada@example.invalid',
   'm-bob': 'bob@example.invalid',
   'm-eve': 'eve@example.invalid',
+  'm-dee': 'dee@example.invalid',
 }
 const challenges: Record<string, string> = {
   'c-ada': 'm-ada',
@@ -48,6 +49,11 @@ function fakeStore(): ConnectionStore & {
         r.targetId === tgt &&
         r.challengeId === ch,
     )?.id ?? null
+  const underCap = (req: string, cap: number | null): boolean =>
+    cap === null ||
+    [...rows.values()].filter(
+      (r) => r.requesterId === req && r.kind === 'direct',
+    ).length < cap
   const acceptedBetween = (a: string, b: string): ConnectionRecord[] =>
     [...rows.values()].filter(
       (r) => r.status === 'accepted' && party(r, a) && party(r, b),
@@ -78,17 +84,12 @@ function fakeStore(): ConnectionStore & {
     told,
     isReachable: (id) => Promise.resolve(id in emails),
     isFindable: (id) => Promise.resolve(id !== 'm-eve'),
-    directSentToday: (req) =>
-      Promise.resolve(
-        [...rows.values()].filter(
-          (r) => r.requesterId === req && r.kind === 'direct',
-        ).length,
-      ),
     challengeAuthor: (id) => Promise.resolve(challenges[id] ?? null),
     findPending: (req, tgt, ch) => Promise.resolve(pendingId(req, tgt, ch)),
-    insert: (r) => {
+    insert: (r, cap) => {
+      if (!underCap(r.requesterId, cap)) return Promise.resolve('limit')
       if (pendingId(r.requesterId, r.targetId, r.challengeId) !== null) {
-        return Promise.resolve(false)
+        return Promise.resolve('taken')
       }
       rows.set(r.id, {
         ...r,
@@ -96,21 +97,22 @@ function fakeStore(): ConnectionStore & {
         createdAt: '2026-11-08T10:00:00.000Z',
       })
       told.push({ to: r.targetId, type: 'connection_request', id: r.id })
-      return Promise.resolve(true)
+      return Promise.resolve('stored')
     },
     isConnected: (a, b) => Promise.resolve(acceptedBetween(a, b).length > 0),
     findAccepted: (a, b, ch) =>
       Promise.resolve(
         acceptedBetween(a, b).find((r) => r.challengeId === ch)?.id ?? null,
       ),
-    insertAccepted: (r) => {
+    insertAccepted: (r, cap) => {
+      if (!underCap(r.requesterId, cap)) return Promise.resolve('limit')
       rows.set(r.id, {
         ...r,
         status: 'accepted',
         createdAt: '2026-11-08T11:00:00.000Z',
       })
       told.push({ to: r.targetId, type: 'new_connection', id: r.id })
-      return Promise.resolve()
+      return Promise.resolve('stored')
     },
     acceptPending: (a, b) => {
       for (const r of rows.values()) {
@@ -624,21 +626,41 @@ describe('direct requests (R-FIND-7)', () => {
 
   it('stops at the day’s limit, saying so rather than not found', async () => {
     const { service, store } = direct({ searchOn: true, perDay: 1 })
-    await service.request('m-ada', toBob)
 
-    const outcome = await service.request('m-bob', {
+    const first = await service.request('m-ada', toBob)
+    const over = await service.request('m-ada', { ...toBob, targetId: 'm-dee' })
+    const theirs = await service.request('m-dee', {
       ...toBob,
       targetId: 'm-ada',
     })
-    const over = await service.request('m-ada', {
-      ...toBob,
-      targetId: 'm-bob',
-      message: 'again',
-    })
 
-    expect(outcome.result).toBe('created')
+    expect(first.result).toBe('created')
     expect(over).toEqual({ result: 'limit' })
+    expect(theirs.result).toBe('created')
     expect(store.rows.size).toBe(2)
+  })
+
+  it('still leads to the contact at the limit when nothing would be added (R-CONN-8)', async () => {
+    const { service } = direct({ searchOn: true, perDay: 1 })
+    await service.request('m-ada', toBob)
+    await service.respond('m-bob', 'r-1', 'accepted')
+
+    expect(await service.request('m-ada', toBob)).toEqual({
+      result: 'joined',
+      id: 'r-1',
+    })
+  })
+
+  it('counts a direct request joined at once toward the limit', async () => {
+    const { service } = direct({ searchOn: true, perDay: 1 })
+    await service.request('m-ada', sameBoat)
+    await service.respond('m-bob', 'r-1', 'accepted')
+
+    const joined = await service.request('m-ada', toBob)
+    const over = await service.request('m-ada', { ...toBob, targetId: 'm-dee' })
+
+    expect(joined).toEqual({ result: 'joined', id: 'r-2' })
+    expect(over).toEqual({ result: 'limit' })
   })
 
   it('is closed when no rules are given', async () => {

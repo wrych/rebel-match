@@ -114,4 +114,14 @@ describe('direct requests (R-FIND-7, F25)', () => {
       { kind: 'direct', challenge: null },
     ])
   })
+
+  it('holds the cap when requests arrive at once', async () => {
+    await clear()
+
+    const statuses = await Promise.all(
+      ['tobias', 'priya'].map(async (to) => (await send('ana', to)).status),
+    )
+
+    expect(statuses.sort()).toEqual([201, 429])
+  })
 })
