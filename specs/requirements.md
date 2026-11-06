@@ -2079,7 +2079,11 @@ connects at once (ADR 0063).
   `limits.liveCodeGraceSeconds` (10) after the next one replaced it, so a scan
   begun at the end still works, and no longer. No new code SHALL be asked for
   while the page is hidden. The live code SHALL offer no Copy or Share: it is
-  for scanning face to face.
+  for scanning face to face. THE SYSTEM SHALL give one member at most
+  `abuse.liveCodesPerMinute` (20) live codes a minute; IF a request
+  for one is refused, THEN S47 SHALL hide the code, rather than show one that
+  may have stopped working, say a new one comes in a moment, and ask again at
+  its next turn.
 - **R-CODE-6 (Scanning a live code)** — WHEN a signed-in member opens a
   usable `/c#t=…` THE SYSTEM SHALL spend the token and record an
   **accepted** direct request from the scanner to the owner, with no note,

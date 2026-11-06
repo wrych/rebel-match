@@ -137,6 +137,7 @@ thresholds have sane defaults in the file and may be overridden by env.
 | `abuse.applicantWindowMinutes`        | `60`                          | R-NFR-8                   |
 | `abuse.humanCheckCost`                | `1000`                        | R-NFR-8                   |
 | `abuse.humanCheckMinutes`             | `5`                           | R-NFR-8                   |
+| `abuse.liveCodesPerMinute`            | `20`                          | R-CODE-5                  |
 | `trustProxy` (`TRUST_PROXY`)          | `0`; `1` on Cloud Run         | R-NFR-8                   |
 | `settingsRefreshSeconds`              | `60`                          | R-CFG-6                   |
 | `seed.profile`                        | `dev` \| `prod`               | R-SEED-4                  |
@@ -1684,7 +1685,7 @@ off; the profile-code and live-code routes while `limits.connectCodes` is off.
 | PATCH  | `/api/me/profile-code`       | `{enabled}`: turn it on or off (R-CODE-4).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | POST   | `/api/me/profile-code/reset` | A new token at once; the old one is not found from now (R-CODE-4).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | POST   | `/api/profile-codes/open`    | `{token}` in the body, never the path, so no log keeps it (R-NFR-9): the owner's card and id, if the code is on, the owner reachable and not me; else `404` (R-CODE-3).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| POST   | `/api/me/live-codes`         | A new live code `{token, showForSeconds, usableUntil}` and `connected[]`: members who connected through my codes since my previous call, names only (R-CODE-5, R-CODE-6). Rate-limited.                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| POST   | `/api/me/live-codes`         | A new live code `{token, showForSeconds, usableUntil}` and `connected[]`: members who connected through my codes since my previous call, names only (R-CODE-5, R-CODE-6). At most `abuse.liveCodesPerMinute` a minute per member, past which `429`.                                                                                                                                                                                                                                                                                                                                                                                                             |
 | POST   | `/api/live-codes/redeem`     | `{token}` in the body, as above. Spend the code; in the same transaction record an accepted direct request from me to its owner, or accept the direct one already pending between us instead, and accept every request pending between us, either side (R-CONN-11), notifying the owner as R-CODE-6 says (`connection_added`, worded for a direct connection) → `{id}` of the request, for S16. If we already share a direct connection, the code is spent, nothing is added, nobody is notified, and that request's `{id}` comes back (R-CONN-8). Spent, expired, unknown, mine, or its owner no longer active → `410`, the same answer for each (R-CODE-6,7). |
 
 `POST /api/connections` also takes `kind: 'direct'` with no `challengeId` and
@@ -2240,6 +2241,12 @@ Alternatives considered (kept only as fallbacks):
     accepted once; `abuse.humanCheckCost` (1000) sets the PBKDF2 work per
     try. The widget loads only when a check is asked for, with its
     interaction signature off.
+  - per member, `abuse.liveCodesPerMinute` (20) live codes a minute on
+    `POST /api/me/live-codes`: over it, `429`, and S47 hides the code it
+    shows and asks again at its next turn (R-CODE-5). S47 asks once on opening and once every
+    `limits.liveCodeSeconds`, at most seven times a minute at its shortest
+    (10), so the rest is room for reloads; the count keeps a loop from
+    filling `live_codes` (R-CODE-5).
   - The `abuse.*` values stay on the server: `GET /api/config` does not serve
     them, so a script cannot read how far it can go.
   - The client IP comes from `X-Forwarded-For` only through `TRUST_PROXY`
