@@ -81,10 +81,16 @@ describe('the network replay over Postgres (R-NET-1..4)', () => {
 
   it('draws an accepted connection, and not a pending or declined one', async () => {
     const before = (await network()).links.length
+    // Peers not yet connected to the member: a second connection between
+    // the same two adds no link, and other files leave connections behind.
     const peers = await db.query(
-      `SELECT id FROM members WHERE status = 'active' AND name IS NOT NULL
-        AND consent_at IS NOT NULL AND id <> ? ORDER BY id LIMIT 3`,
-      [memberId],
+      `SELECT id FROM members m WHERE status = 'active' AND name IS NOT NULL
+        AND consent_at IS NOT NULL AND id <> ?
+        AND NOT EXISTS (SELECT 1 FROM connection_requests r
+          WHERE (r.requester_id = ? AND r.target_id = m.id)
+             OR (r.requester_id = m.id AND r.target_id = ?))
+        ORDER BY id LIMIT 3`,
+      [memberId, memberId, memberId],
     )
     const [a, b, c] = peers.map((row) => String(row['id']))
     await db.query(
