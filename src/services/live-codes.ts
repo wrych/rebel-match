@@ -1,3 +1,5 @@
+import { trackNothing, type Track } from './analytics.js'
+
 /** A live code as the owner's screen shows it, with who connected through
  * the owner's codes since the screen last asked (R-CODE-5, R-CODE-6). */
 export interface IssuedCode {
@@ -52,7 +54,8 @@ export interface LiveCodeService {
 
 /** Live codes (R-CODE-5..7, ADR 0063): single-use tokens replaced every
  * few seconds, stored hashed, which connect at once; only the newest and,
- * for the grace, the one before can be used. */
+ * for the grace, the one before can be used. Their usage events never
+ * carry a token or who (R-CODE-9). */
 export function createLiveCodes(deps: {
   store: LiveCodeStore
   times: () => LiveCodeTimes
@@ -62,13 +65,16 @@ export function createLiveCodes(deps: {
   newId: () => string
   /** Counts one issue for the member; false past the minute's limit. */
   mayIssue: (memberId: string) => boolean
+  track?: Track
 }): LiveCodeService {
+  const track = deps.track ?? trackNothing
   return {
     issue: async (memberId) => {
       if (!deps.mayIssue(memberId)) return { result: 'limit' }
       const token = deps.newToken()
       const times = deps.times()
       const stored = await deps.store.issue(memberId, deps.hash(token), times)
+      void track(memberId, { name: 'connect_code_shown', code: 'live' })
       return {
         result: 'issued',
         code: {
@@ -79,8 +85,19 @@ export function createLiveCodes(deps: {
         },
       }
     },
-    redeem: (scannerId, token) =>
-      deps.store.redeem(scannerId, deps.hash(token), deps.newId()),
+    redeem: async (scannerId, token) => {
+      const id = await deps.store.redeem(
+        scannerId,
+        deps.hash(token),
+        deps.newId(),
+      )
+      void track(scannerId, {
+        name: 'connect_code_opened',
+        code: 'live',
+        outcome: id === null ? 'expired' : 'connected',
+      })
+      return id
+    },
     purge: () => deps.store.purge(deps.keepMinutes()),
   }
 }

@@ -685,8 +685,12 @@ function composeMemberSearch(
 }
 
 // A random token per member, never their id (R-CODE-2).
-function composeProfileCodes(db: Database): AppDeps['profileCodes'] {
+function composeProfileCodes(
+  db: Database,
+  track: Track,
+): AppDeps['profileCodes'] {
   return createProfileCodes({
+    track,
     store: createProfileCodeStore(db),
     cards: createMemberSearchStore(db),
     newToken: newSecret,
@@ -701,11 +705,13 @@ const LIVE_CODE_WINDOW_MINUTES = 1
 function composeLiveCodes(
   db: Database,
   settings: LiveSettings,
+  track: Track,
 ): AppDeps['liveCodes'] {
   const issues = createWindowCounter({
     windowMinutes: () => LIVE_CODE_WINDOW_MINUTES,
   })
   return createLiveCodes({
+    track,
     store: createLiveCodeStore(db),
     times: () => ({
       seconds: settings.limits().liveCodeSeconds,
@@ -724,10 +730,11 @@ function composeLiveCodes(
 function composeCodes(
   db: Database,
   settings: LiveSettings,
+  track: Track,
 ): Pick<AppDeps, 'profileCodes' | 'liveCodes'> {
   return {
-    profileCodes: composeProfileCodes(db),
-    liveCodes: composeLiveCodes(db, settings),
+    profileCodes: composeProfileCodes(db, track),
+    liveCodes: composeLiveCodes(db, settings, track),
   }
 }
 
@@ -790,7 +797,7 @@ export function composeApp(
     ...networks,
     recap: composeRecap(db, settings, badges, networks.network),
     memberSearch: composeMemberSearch(db, settings, track),
-    ...composeCodes(db, settings),
+    ...composeCodes(db, settings, track),
     notificationMail: composeNoticeMail(config, db, mailer, hooks, settings),
   }
   return withScheduled(config, deps, hooks.onScheduledError ?? ignoreError)

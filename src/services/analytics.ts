@@ -78,6 +78,12 @@ export type AnalyticsEvent =
       operators: SearchField[]
       results: 'none' | 'some' | 'more'
     }
+  | { name: 'connect_code_shown'; code: 'profile' | 'live' }
+  | {
+      name: 'connect_code_opened'
+      code: 'profile' | 'live'
+      outcome: 'opened' | 'connected' | 'expired'
+    }
   | { name: 'screen_viewed'; screen: string }
 
 /** Reports what a member did. It never rejects and is not awaited by the

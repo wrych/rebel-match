@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import type { AnalyticsEvent } from './analytics.js'
 import {
   createLiveCodes,
   type LiveCodeService,
@@ -8,8 +9,10 @@ import {
 function setup(allowed = true): {
   service: LiveCodeService
   calls: unknown[]
+  events: AnalyticsEvent[]
 } {
   const calls: unknown[] = []
+  const events: AnalyticsEvent[] = []
   const store: LiveCodeStore = {
     issue: (memberId, tokenHash, times) => {
       calls.push(['issue', memberId, tokenHash, times])
@@ -35,8 +38,12 @@ function setup(allowed = true): {
     hash: (token) => `hash:${token}`,
     newId: () => 'r-new',
     mayIssue: () => allowed,
+    track: (_memberId, event) => {
+      events.push(event)
+      return Promise.resolve()
+    },
   })
-  return { service, calls }
+  return { service, calls, events }
 }
 
 describe('live codes (R-CODE-5, R-CODE-6)', () => {
@@ -76,5 +83,27 @@ describe('live codes (R-CODE-5, R-CODE-6)', () => {
 
     expect(await service.purge()).toBe(2)
     expect(calls).toEqual([['purge', 60]])
+  })
+})
+
+describe('live code usage (R-CODE-9)', () => {
+  it('reports codes shown and scans connected or expired, never a token', async () => {
+    const { service, events } = setup()
+    await service.issue('m-ada')
+    await service.redeem('m-bob', 'good')
+    await service.redeem('m-bob', 'bad')
+
+    expect(events).toEqual([
+      { name: 'connect_code_shown', code: 'live' },
+      { name: 'connect_code_opened', code: 'live', outcome: 'connected' },
+      { name: 'connect_code_opened', code: 'live', outcome: 'expired' },
+    ])
+  })
+
+  it('reports nothing shown past the minute’s limit', async () => {
+    const { service, events } = setup(false)
+    await service.issue('m-ada')
+
+    expect(events).toEqual([])
   })
 })
