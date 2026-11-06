@@ -208,37 +208,3 @@ export function createNotificationWorker(deps: WorkerDeps): {
     },
   }
 }
-
-/** Runs the worker now and then on every interval, one run at a time.
- * Returns a stop function. */
-export function startNotificationWorker(deps: {
-  worker: { deliverDue(): Promise<void> }
-  intervalSeconds: number
-  onError: (error: unknown) => void
-  schedule?: (run: () => void, everyMs: number) => () => void
-}): () => void {
-  let running = false
-  const run = (): void => {
-    if (running) return
-    running = true
-    deps.worker
-      .deliverDue()
-      .catch(deps.onError)
-      .finally(() => {
-        running = false
-      })
-  }
-  run()
-  return (deps.schedule ?? everyInterval)(
-    run,
-    deps.intervalSeconds * MS_PER_SECOND,
-  )
-}
-
-function everyInterval(run: () => void, everyMs: number): () => void {
-  const timer = setInterval(run, everyMs)
-  timer.unref()
-  return () => {
-    clearInterval(timer)
-  }
-}

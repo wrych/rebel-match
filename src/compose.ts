@@ -35,10 +35,10 @@ import { createNotificationStore } from './services/notification-store.js'
 import { createNotificationMailStore } from './services/notification-mail-store.js'
 import { createNotificationSender } from './services/notification-mail.js'
 import { createNotificationWorker } from './services/notification-worker.js'
-import { createTick, type ScheduledJob } from './services/tick.js'
+import { createTick } from './services/tick.js'
+import { scheduledJobs } from './services/scheduled-jobs.js'
 import { createInvokerCheck } from './services/tick-invoker.js'
 import { createFreshSettings } from './services/fresh-settings.js'
-import { retentionCutoff } from './services/outbox-log.js'
 import { createApprovalStore } from './services/approval-store.js'
 import { createApprovals } from './services/approvals.js'
 import { mailLinks } from './services/link-delivery.js'
@@ -527,77 +527,6 @@ function composeInvites(
     cleanLogo: (text) => cleanLogo(text, settings.limits().badgeLogoMaxBytes),
     track,
   })
-}
-
-const MS_PER_HOUR = 3_600_000
-const MS_PER_MINUTE = 60_000
-
-// What is kept only so long: the outbound log, notifications and handled
-// reports (R-NOTE-11, ADR 0049).
-function retentionJobs(
-  config: Config,
-  deps: Pick<AppDeps, 'outbox' | 'notificationMail' | 'moderation'>,
-): ScheduledJob[] {
-  const purgeHours = config.outboxPurgeIntervalHours * MS_PER_HOUR
-  const purgeOlderThan =
-    (log: { purgeBefore(cutoff: Date): Promise<number> }, days: number) => () =>
-      log.purgeBefore(retentionCutoff(new Date(), days))
-  return [
-    {
-      run: purgeOlderThan(deps.outbox, config.limits.outboxRetentionDays),
-      everyMs: purgeHours,
-    },
-    {
-      run: purgeOlderThan(
-        deps.notificationMail,
-        config.limits.notificationRetentionDays,
-      ),
-      everyMs: purgeHours,
-    },
-    {
-      run: purgeOlderThan(
-        { purgeBefore: (cutoff) => deps.moderation.purgeHandledBefore(cutoff) },
-        config.limits.reportRetentionDays,
-      ),
-      everyMs: purgeHours,
-    },
-  ]
-}
-
-// The work the server's timers do, as jobs a tick runs (ADR 0049).
-function scheduledJobs(
-  config: Config,
-  deps: Pick<
-    AppDeps,
-    | 'auth'
-    | 'erasure'
-    | 'outbox'
-    | 'notificationMail'
-    | 'badges'
-    | 'moderation'
-    | 'liveCodes'
-  >,
-): ScheduledJob[] {
-  return [
-    { run: () => deps.notificationMail.deliverDue(), everyMs: 0 },
-    {
-      run: () => deps.badges.checkCrowns(),
-      everyMs: config.badgeCrownCheckMinutes * MS_PER_MINUTE,
-    },
-    {
-      run: () => deps.erasure.eraseDue(),
-      everyMs: config.erasureSweepIntervalHours * MS_PER_HOUR,
-    },
-    {
-      run: () => deps.auth.purgeExpired(),
-      everyMs: config.tokenPurgeIntervalHours * MS_PER_HOUR,
-    },
-    {
-      run: () => deps.liveCodes.purge(),
-      everyMs: config.tokenPurgeIntervalHours * MS_PER_HOUR,
-    },
-    ...retentionJobs(config, deps),
-  ]
 }
 
 // The tick, its caller check and the settings refresh it replaces, when the
