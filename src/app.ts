@@ -14,6 +14,7 @@ import { gameRoutes } from './routes/game.js'
 import { networkRoutes } from './routes/network.js'
 import { presentationRoutes } from './routes/presentation.js'
 import { recapRoutes } from './routes/recap.js'
+import { memberRoutes } from './routes/members.js'
 import { swipeRoutes } from './routes/swipes.js'
 import { cockpitRoutes } from './routes/cockpit.js'
 import { guardApi } from './routes/api-guard.js'
@@ -56,6 +57,7 @@ import type { GameService } from './services/game.js'
 import type { NetworkService } from './services/network.js'
 import type { PresentationService } from './services/presentation.js'
 import type { RecapService } from './services/recap.js'
+import type { MemberSearchService } from './services/member-search.js'
 import type { SwipeService } from './services/swipes.js'
 import type { CockpitService } from './services/cockpit.js'
 import type { FollowService } from './services/follows.js'
@@ -104,6 +106,7 @@ export interface AppDeps {
   network: NetworkService
   presentation: PresentationService
   recap: RecapService
+  memberSearch: MemberSearchService
   badges: BadgeService
   connections: ConnectionService
   swipes: SwipeService
@@ -208,7 +211,7 @@ export function createApp(deps: AppDeps): Express {
   app.use(adminInviteRoutes(deps), adminBanRoutes(deps))
   app.use(adminOutboxRoutes(deps), presentationRoutes(deps))
   app.use(adminSettingsRoutes(deps), gameRoutes(deps))
-  app.use(networkRoutes(deps), recapRoutes(deps))
+  app.use(networkRoutes(deps), recapRoutes(deps), memberRoutes(deps))
 
   app.get('/api/health', async (_request, response) => {
     const database = (await databaseReachable(deps.db)) ? 'up' : 'down'

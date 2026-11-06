@@ -83,6 +83,8 @@ import { createGameStore } from './services/game-store.js'
 import { createNetwork, type NetworkService } from './services/network.js'
 import { createNetworkStore } from './services/network-store.js'
 import { createRecap } from './services/recap.js'
+import { createMemberSearch } from './services/member-search.js'
+import { createMemberSearchStore } from './services/member-search-store.js'
 import { createRecapAnnouncer } from './services/recap-announce.js'
 import { createRecapAnnounceStore } from './services/recap-announce-store.js'
 import { recapOpen } from './recap/open.js'
@@ -628,6 +630,26 @@ function composeRecap(
   })
 }
 
+// Read on every request, so a host's change applies at once (ADR 0031).
+function composeMemberSearch(
+  db: Database,
+  settings: LiveSettings,
+  track: Track,
+): AppDeps['memberSearch'] {
+  return createMemberSearch({
+    store: createMemberSearchStore(db),
+    track,
+    rules: () => {
+      const limits = settings.limits()
+      return {
+        searchOn: limits.memberSearch === 1,
+        minChars: limits.memberSearchMinChars,
+        maxResults: limits.memberSearchMaxResults,
+      }
+    },
+  })
+}
+
 /** Background work the server reports on: an analytics event that could not
  * be sent, a notification that could not be mailed, a scheduled job that
  * failed. */
@@ -686,6 +708,7 @@ export function composeApp(
     game: composeGame(config, db, settings, track, counting),
     ...networks,
     recap: composeRecap(db, settings, badges, networks.network),
+    memberSearch: composeMemberSearch(db, settings, track),
     notificationMail: composeNoticeMail(config, db, mailer, hooks, settings),
   }
   return withScheduled(config, deps, hooks.onScheduledError ?? ignoreError)

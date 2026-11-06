@@ -1,4 +1,5 @@
 import type { BadgeRow, eventRow } from '../badges/rows.js'
+import type { SearchField } from '../search/query.js'
 import type { ModerationReason } from './challenge-moderation.js'
 import type { Cadence, ChoosableType } from './notification-cadence.js'
 import type { NotificationKind } from './notifications.js'
@@ -71,6 +72,11 @@ export type AnalyticsEvent =
       name: 'content_reported'
       kind: 'challenge' | 'note'
       reason: ModerationReason
+    }
+  | {
+      name: 'member_searched'
+      operators: SearchField[]
+      results: 'none' | 'some' | 'more'
     }
   | { name: 'screen_viewed'; screen: string }
 

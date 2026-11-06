@@ -84,11 +84,36 @@ export function printQuery(tokens: readonly QueryToken[]): string {
   return tokens.map(printToken).join(' ')
 }
 
+const ACCENT_RANGES: readonly (readonly [number, number])[] = [
+  [0x0300, 0x036f],
+  [0x1ab0, 0x1aff],
+  [0x1dc0, 0x1dff],
+  [0x20d0, 0x20ff],
+  [0xfe20, 0xfe2f],
+]
+
+const escaped = (point: number): string =>
+  `\\u${point.toString(16).padStart(4, '0')}`
+
+/** The accents folding drops, the combining diacritical marks, as a
+ * character class Postgres reads, so a term and the text searched are
+ * folded the same (R-FIND-2). */
+export const ACCENTS = `[${ACCENT_RANGES.map(
+  ([from, to]) => `${escaped(from)}-${escaped(to)}`,
+).join('')}]`
+
+function isAccent(char: string): boolean {
+  const point = char.codePointAt(0) ?? 0
+  return ACCENT_RANGES.some(([from, to]) => point >= from && point <= to)
+}
+
 /** Lower case, accents dropped, trailing `*` dropped (R-FIND-2). */
 export function fold(value: string): string {
   return value
     .normalize('NFD')
-    .replace(/\p{M}/gu, '')
+    .split('')
+    .filter((char) => !isAccent(char))
+    .join('')
     .toLowerCase()
     .trim()
     .replace(/\*+$/, '')

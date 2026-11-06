@@ -125,6 +125,10 @@ function deps(
         Promise.resolve({ nodes: [], links: [], moons: [], own: null }),
     },
     recap: { mine: () => Promise.reject(new Error('not used')) },
+    memberSearch: {
+      search: () => Promise.reject(new Error('not used')),
+      card: () => Promise.reject(new Error('not used')),
+    },
     badges: {
       recount: () => Promise.resolve(),
       mine: () => Promise.resolve({ rows: [], events: [] }),

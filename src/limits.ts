@@ -171,6 +171,11 @@ const limitSpecs = {
     zeroAllowed: true,
     changeable: { min: 0, max: 1 },
   },
+  // The shortest term a search runs on, so one letter cannot list everyone
+  // (R-FIND-2).
+  memberSearchMinChars: { env: 'MEMBER_SEARCH_MIN_CHARS', default: 2 },
+  // Search answers a query with a few cards, never a directory (R-FIND-3).
+  memberSearchMaxResults: { env: 'MEMBER_SEARCH_MAX_RESULTS', default: 20 },
   // Direct requests a member may send in a day, so search cannot be used to
   // ask everyone (R-FIND-7).
   directRequestsPerDay: { env: 'DIRECT_REQUESTS_PER_DAY', default: 50 },
