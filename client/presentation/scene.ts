@@ -328,7 +328,10 @@ function futureDots(world: World, palette: Palette): InstancedMesh {
 }
 
 // The closing world's lone dot: whoever is watching (R-PRES-4).
-function loneDot(world: World, palette: Palette): Group {
+function loneDot(
+  world: World,
+  palette: Palette,
+): { group: Group; parts: Mesh[] } {
   const group = new Group()
   const dot = new Mesh(sphere(), new MeshBasicMaterial({ color: palette.self }))
   dot.scale.setScalar(look.loneRadius)
@@ -344,7 +347,7 @@ function loneDot(world: World, palette: Palette): Group {
   halo.scale.setScalar(look.haloRadius)
   group.add(dot, halo)
   group.position.set(world.lone.x, world.lone.y, world.lone.z)
-  return group
+  return { group, parts: [dot, halo] }
 }
 
 function stageCamera(
@@ -420,7 +423,7 @@ export function createPresentationScene(
   const future = futureDots(world, palette)
   const lone = loneDot(world, palette)
   const scene = new Scene()
-  scene.add(network.group, founders.group, future, lone)
+  scene.add(network.group, founders.group, future, lone.group)
   let size = { width: 1, height: 1 }
   const stopFollowing = followSize(host, (next) => {
     size = next
@@ -437,8 +440,8 @@ export function createPresentationScene(
       future.count = Math.round(
         state.parts.future * Number(future.userData['total']),
       )
-      lone.visible = state.parts.lone > 0
-      lone.scale.setScalar(state.parts.lone)
+      lone.group.visible = state.parts.lone > 0
+      lone.group.scale.setScalar(state.parts.lone)
       renderer.render(scene, camera)
       return anchorsOf(
         named.map((handle) => [handle, placeOf(world, handle, state)]),
@@ -450,7 +453,7 @@ export function createPresentationScene(
       stopFollowing()
       network.dispose()
       founders.dispose()
-      disposeAll([future])
+      disposeAll([future, ...lone.parts])
       renderer.dispose()
       renderer.domElement.remove()
     },
