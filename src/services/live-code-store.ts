@@ -75,6 +75,13 @@ async function spend(
   return spent?.ownerId ?? null
 }
 
+// Held to the end of the transaction, so two members scanning each other's
+// codes at once connect once, not twice (R-CODE-6).
+async function lockPair(tx: Database, a: string, b: string): Promise<void> {
+  const pair = [a, b].sort().join(':')
+  await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${pair}))`)
+}
+
 async function directBetween(
   tx: Database,
   a: string,
@@ -143,6 +150,7 @@ export function createLiveCodeStore(db: Database): LiveCodeStore {
       db.transaction(async (tx) => {
         const ownerId = await spend(tx, scannerId, tokenHash)
         if (ownerId === null) return null
+        await lockPair(tx, scannerId, ownerId)
         const joined = await directBetween(tx, scannerId, ownerId, 'accepted')
         return joined ?? connect(tx, scannerId, ownerId, newId)
       }),

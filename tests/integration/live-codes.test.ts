@@ -166,7 +166,7 @@ describe('live codes on Postgres (R-CODE-5..7, F26)', () => {
     expect((await scan('tobias', code.token)).status).toBe(410)
   })
 
-  it('accepts the requests pending between the two instead of adding one', async () => {
+  it('accepts the owner’s pending request instead of adding one, telling them it was accepted', async () => {
     await db.query(
       "INSERT INTO connection_requests (id, requester_id, target_id, kind, status) VALUES ('lc-pending', ?, ?, 'direct', 'pending')",
       [ids['ana'], ids['tobias']],
@@ -175,6 +175,17 @@ describe('live codes on Postgres (R-CODE-5..7, F26)', () => {
     const scanned = await scan('tobias', code.token)
 
     expect(scanned.body).toEqual({ id: 'lc-pending' })
+    const told = await db.query(
+      'SELECT type, connection_id FROM notifications WHERE recipient_id = ?',
+      [ids['ana']],
+    )
+    expect(told).toEqual([
+      { type: 'new_connection', connection_id: 'lc-pending' },
+    ])
+    const listed = await request(app)
+      .get('/api/notifications')
+      .set('Cookie', cookies['ana'] ?? '')
+    expect(JSON.stringify(listed.body)).toContain('connection_accepted')
     expect(await requestsBetween('tobias', 'ana')).toEqual([
       { kind: 'direct', status: 'accepted', requester_id: ids['ana'] },
     ])
@@ -185,6 +196,18 @@ describe('live codes on Postgres (R-CODE-5..7, F26)', () => {
     const again = await scan('tobias', (await issue('ana')).token)
 
     expect(again.body).toEqual(first.body)
+    expect(await requestsBetween('tobias', 'ana')).toHaveLength(1)
+  })
+
+  it('connects once when two members scan each other’s codes at once', async () => {
+    const [ana, tobias] = await Promise.all([issue('ana'), issue('tobias')])
+
+    const scans = await Promise.all([
+      scan('tobias', ana.token),
+      scan('ana', tobias.token),
+    ])
+
+    expect(scans.map((each) => each.status)).toEqual([200, 200])
     expect(await requestsBetween('tobias', 'ana')).toHaveLength(1)
   })
 
