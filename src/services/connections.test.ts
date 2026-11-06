@@ -77,6 +77,13 @@ function fakeStore(): ConnectionStore & {
     seen,
     told,
     isReachable: (id) => Promise.resolve(id in emails),
+    isFindable: (id) => Promise.resolve(id !== 'm-eve'),
+    directSentToday: (req) =>
+      Promise.resolve(
+        [...rows.values()].filter(
+          (r) => r.requesterId === req && r.kind === 'direct',
+        ).length,
+      ),
     challengeAuthor: (id) => Promise.resolve(challenges[id] ?? null),
     findPending: (req, tgt, ch) => Promise.resolve(pendingId(req, tgt, ch)),
     insert: (r) => {
@@ -546,5 +553,127 @@ describe('already connected (R-CONN-8, R-CONN-9, ADR 0035)', () => {
     const contact = await service.contact('m-ada', 'r-1')
 
     expect(contact?.over.map((each) => each.id)).toEqual(['r-1', 'r-2'])
+  })
+})
+
+describe('direct requests (R-FIND-7)', () => {
+  function direct(rules: { searchOn: boolean; perDay: number }): {
+    service: ReturnType<typeof createConnections>
+    store: ReturnType<typeof fakeStore>
+  } {
+    let n = 0
+    const store = fakeStore()
+    const service = createConnections({
+      store,
+      newId: () => `r-${String(++n)}`,
+      direct: () => rules,
+    })
+    return { service, store }
+  }
+  const toBob = { targetId: 'm-bob', kind: 'direct' } as const
+
+  it('sends a pending request about no challenge to a findable member', async () => {
+    const { service, store } = direct({ searchOn: true, perDay: 5 })
+
+    const outcome = await service.request('m-ada', {
+      ...toBob,
+      message: 'We met at the coffee bar',
+    })
+
+    expect(outcome).toEqual({ result: 'created', id: 'r-1' })
+    expect(store.rows.get('r-1')).toMatchObject({
+      kind: 'direct',
+      challengeId: null,
+      status: 'pending',
+    })
+    expect(store.told).toEqual([
+      { to: 'm-bob', type: 'connection_request', id: 'r-1' },
+    ])
+  })
+
+  it.each([
+    ['search is off', { searchOn: false, perDay: 5 }, toBob],
+    [
+      'the target is not findable',
+      { searchOn: true, perDay: 5 },
+      { ...toBob, targetId: 'm-eve' },
+    ],
+    [
+      'the target is the requester',
+      { searchOn: true, perDay: 5 },
+      { ...toBob, targetId: 'm-ada' },
+    ],
+    [
+      'the target is not a member',
+      { searchOn: true, perDay: 5 },
+      { ...toBob, targetId: 'm-ghost' },
+    ],
+    [
+      'it names a challenge',
+      { searchOn: true, perDay: 5 },
+      { ...toBob, challengeId: 'c-bob' },
+    ],
+  ] as const)('answers not found when %s', async (_why, rules, input) => {
+    const { service, store } = direct(rules)
+
+    expect(await service.request('m-ada', input)).toEqual({
+      result: 'not_found',
+    })
+    expect(store.rows.size).toBe(0)
+  })
+
+  it('stops at the day’s limit, saying so rather than not found', async () => {
+    const { service, store } = direct({ searchOn: true, perDay: 1 })
+    await service.request('m-ada', toBob)
+
+    const outcome = await service.request('m-bob', {
+      ...toBob,
+      targetId: 'm-ada',
+    })
+    const over = await service.request('m-ada', {
+      ...toBob,
+      targetId: 'm-bob',
+      message: 'again',
+    })
+
+    expect(outcome.result).toBe('created')
+    expect(over).toEqual({ result: 'limit' })
+    expect(store.rows.size).toBe(2)
+  })
+
+  it('is closed when no rules are given', async () => {
+    const { service } = setup()
+
+    expect(await service.request('m-ada', toBob)).toEqual({
+      result: 'not_found',
+    })
+  })
+
+  it('adds nothing between members who already share a direct connection (R-CONN-8)', async () => {
+    const { service, store } = direct({ searchOn: true, perDay: 5 })
+    await service.request('m-ada', toBob)
+    await service.respond('m-bob', 'r-1', 'accepted')
+
+    const again = await service.request('m-bob', {
+      ...toBob,
+      targetId: 'm-ada',
+    })
+
+    expect(again).toEqual({ result: 'joined', id: 'r-1' })
+    expect(store.rows.size).toBe(1)
+  })
+
+  it('joins members already connected over a challenge at once (R-CONN-8)', async () => {
+    const { service, store } = direct({ searchOn: true, perDay: 5 })
+    await service.request('m-ada', sameBoat)
+    await service.respond('m-bob', 'r-1', 'accepted')
+
+    const joined = await service.request('m-ada', toBob)
+
+    expect(joined).toEqual({ result: 'joined', id: 'r-2' })
+    expect(store.rows.get('r-2')).toMatchObject({
+      kind: 'direct',
+      status: 'accepted',
+    })
   })
 })

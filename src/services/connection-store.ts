@@ -1,7 +1,9 @@
 import {
   and,
+  count,
   desc,
   eq,
+  gt,
   isNotNull,
   isNull,
   or,
@@ -205,6 +207,35 @@ async function markSeen(
 // A request from someone deleted since cannot be answered (ADR 0032).
 const requesterActive = sql`exists (select 1 from ${members} where ${members.id} = ${r.requesterId} and ${members.status} = 'active')`
 
+// What a direct request is checked against: whether search may find the
+// target, and how many the requester sent today (R-FIND-5, R-FIND-7).
+function directLookups(
+  db: Database,
+): Pick<ConnectionStore, 'isFindable' | 'directSentToday'> {
+  return {
+    isFindable: async (memberId) => {
+      const rows = await db
+        .select({ id: members.id })
+        .from(members)
+        .where(and(eq(members.id, memberId), eq(members.findable, true)))
+      return rows.length > 0
+    },
+    directSentToday: async (requesterId) => {
+      const [row] = await db
+        .select({ n: count() })
+        .from(r)
+        .where(
+          and(
+            eq(r.requesterId, requesterId),
+            eq(r.kind, 'direct'),
+            gt(r.createdAt, sql`now() - interval '1 day'`),
+          ),
+        )
+      return row?.n ?? 0
+    },
+  }
+}
+
 // What a request is checked against before it is made.
 function lookups(
   db: Database,
@@ -373,6 +404,7 @@ function toldOf(
 export function createConnectionStore(db: Database): ConnectionStore {
   return {
     ...lookups(db),
+    ...directLookups(db),
     ...acceptedLookups(db),
     ...answers(db),
     // uq_pending refuses a second pending request (R-CONN-5); that refusal is

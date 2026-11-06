@@ -108,6 +108,8 @@ export const members = pgTable(
     analyticsId: id('analytics_id').notNull(),
     // The Matches badge counts only what arrived after this (R-MINE-4).
     matchesSeenAt: at('matches_seen_at'),
+    // Member search returns them; on until they turn it off (R-FIND-5).
+    findable: boolean('findable').notNull().default(true),
     createdAt: at('created_at').notNull().defaultNow(),
   },
   (t) => [
@@ -424,6 +426,8 @@ export const deckViews = pgTable(
 export const connectionKind = pgEnum('connection_kind', [
   'same_boat',
   'been_there',
+  // About no challenge: from search or a connect code (R-FIND-7, R-CODE-6).
+  'direct',
 ])
 
 export const connectionStatus = pgEnum('connection_status', [

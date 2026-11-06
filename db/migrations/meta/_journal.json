@@ -225,6 +225,13 @@
       "when": 1792963862732,
       "tag": "0031_announce_recap",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1793935822802,
+      "tag": "0032_direct_connections",
+      "breakpoints": true
     }
   ]
 }

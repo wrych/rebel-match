@@ -36,6 +36,9 @@ function setup(): { app: Express; requests: NewConnection[] } {
       if (input.targetId === 'm-friend') {
         return Promise.resolve({ result: 'joined', id: 'r-new' })
       }
+      if (input.targetId === 'm-busy') {
+        return Promise.resolve({ result: 'limit' })
+      }
       if (input.targetId === 'm-ghost') {
         return Promise.resolve({ result: 'not_found' })
       }
@@ -72,6 +75,30 @@ async function cookieFor(memberId: string): Promise<string> {
 }
 
 describe('connection routes', () => {
+  it('takes a direct request about no challenge (R-FIND-7)', async () => {
+    const { app, requests } = setup()
+
+    const response = await request(app)
+      .post('/api/connections')
+      .set('Cookie', await cookieFor('m-ada'))
+      .send({ targetId: 'm-bob', kind: 'direct' })
+
+    expect(response.status).toBe(201)
+    expect(requests).toEqual([{ targetId: 'm-bob', kind: 'direct' }])
+  })
+
+  it('answers 429 past the day’s direct requests, not 404 (R-FIND-7)', async () => {
+    const { app } = setup()
+
+    const response = await request(app)
+      .post('/api/connections')
+      .set('Cookie', await cookieFor('m-ada'))
+      .send({ targetId: 'm-busy', kind: 'direct' })
+
+    expect(response.status).toBe(429)
+    expect(response.body).toEqual({ result: 'limit' })
+  })
+
   it('creates a request, trimming the note (R-CONN-1)', async () => {
     const { app, requests } = setup()
 

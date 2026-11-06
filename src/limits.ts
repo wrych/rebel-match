@@ -164,6 +164,16 @@ const limitSpecs = {
     zeroAllowed: true,
     changeable: { min: 0, max: 100 },
   },
+  // Hosts open member search; off until they do (R-FIND-1).
+  memberSearch: {
+    env: 'MEMBER_SEARCH',
+    default: 0,
+    zeroAllowed: true,
+    changeable: { min: 0, max: 1 },
+  },
+  // Direct requests a member may send in a day, so search cannot be used to
+  // ask everyone (R-FIND-7).
+  directRequestsPerDay: { env: 'DIRECT_REQUESTS_PER_DAY', default: 20 },
   // Hosts open each member's summit recap when the summit ends (R-RECAP-1).
   recap: {
     env: 'RECAP',

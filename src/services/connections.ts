@@ -1,7 +1,8 @@
 import type { ModerationReason } from './challenge-moderation.js'
 import { trackNothing, type Track } from './analytics.js'
+import { canReach } from './reach.js'
 
-export type ConnectionKind = 'same_boat' | 'been_there'
+export type ConnectionKind = 'same_boat' | 'been_there' | 'direct'
 export type ConnectionStatus = 'pending' | 'accepted' | 'declined'
 
 /** Who a member is on a request card: never how to reach them (R-CONN-1). */
@@ -74,6 +75,10 @@ export interface NewConnection {
 export interface ConnectionStore {
   /** True for an active, onboarded member: someone a request can reach. */
   isReachable(memberId: string): Promise<boolean>
+  /** True for a member who has not turned findable off (R-FIND-5). */
+  isFindable(memberId: string): Promise<boolean>
+  /** Direct requests the member sent in the last day (R-FIND-7). */
+  directSentToday(requesterId: string): Promise<number>
   /** The author of an active challenge, or null. */
   challengeAuthor(challengeId: string): Promise<string | null>
   /** The pending request from requester to target about the same
@@ -137,6 +142,7 @@ export type RequestOutcome =
   | { result: 'created'; id: string }
   | { result: 'exists'; id: string }
   | { result: 'joined'; id: string }
+  | { result: 'limit' }
   | { result: 'not_found' }
 
 export interface ConnectionService {
@@ -179,14 +185,52 @@ async function contextHolds(
   return author === requesterId || author === input.targetId
 }
 
-async function mayRequest(
+/** Whether direct requests may be sent now, and how many a day (R-FIND-7). */
+export interface DirectRules {
+  searchOn: boolean
+  perDay: number
+}
+
+const directClosed = (): DirectRules => ({ searchOn: false, perDay: 0 })
+
+// A direct request is about no challenge, and reaches only a member search
+// would find (R-FIND-7, ADR 0062).
+async function reachesDirectly(
   store: ConnectionStore,
+  rules: DirectRules,
   requesterId: string,
   input: NewConnection,
 ): Promise<boolean> {
+  if (input.challengeId !== undefined) return false
+  return canReach({
+    isCaller: input.targetId === requesterId,
+    reachable: await store.isReachable(input.targetId),
+    findable: await store.isFindable(input.targetId),
+    searchOn: rules.searchOn,
+  })
+}
+
+async function mayRequest(
+  store: ConnectionStore,
+  rules: DirectRules,
+  requesterId: string,
+  input: NewConnection,
+): Promise<boolean> {
+  if (input.kind === 'direct')
+    return reachesDirectly(store, rules, requesterId, input)
   if (input.targetId === requesterId) return false
   if (!(await store.isReachable(input.targetId))) return false
   return contextHolds(store, requesterId, input)
+}
+
+async function overDirectLimit(
+  store: ConnectionStore,
+  rules: DirectRules,
+  requesterId: string,
+  input: NewConnection,
+): Promise<boolean> {
+  if (input.kind !== 'direct') return false
+  return (await store.directSentToday(requesterId)) >= rules.perDay
 }
 
 /** Stores a pending request unless one is already pending between the same
@@ -334,22 +378,28 @@ async function readContact(
 /** The double opt-in (ADR 0004, F7): a request starts pending, reveals
  * nothing and tells its target; only the target may answer, and an acceptance
  * tells the requester. Between members already connected it is accepted at
- * once (ADR 0035). An email is read only for an accepted request by a party.
+ * once (ADR 0035). A direct request reaches only a member search would
+ * find, capped per day (ADR 0062). An email is read only for an accepted request by a party.
  * Hidden reads as not found (R-NAV-8). */
 export function createConnections(deps: {
   store: ConnectionStore
   newId: () => string
   track?: Track
   now?: () => Date
+  direct?: () => DirectRules
 }): ConnectionService {
   const { store } = deps
+  const direct = deps.direct ?? directClosed
   const track = deps.track ?? trackNothing
   const asking: Asking = { store, newId: deps.newId, track }
   const now = deps.now ?? ((): Date => new Date())
   return {
     request: async (requesterId, input) => {
-      if (!(await mayRequest(store, requesterId, input)))
+      const rules = direct()
+      if (!(await mayRequest(store, rules, requesterId, input)))
         return { result: 'not_found' }
+      if (await overDirectLimit(store, rules, requesterId, input))
+        return { result: 'limit' }
       return (await store.isConnected(requesterId, input.targetId))
         ? join(asking, requesterId, input)
         : ask(asking, requesterId, input)

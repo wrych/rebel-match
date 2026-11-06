@@ -178,6 +178,7 @@ interface ListedRow {
   email: string
   connectionId: string | null
   requesterId: string | null
+  connectionKind: string | null
   challengeId: string | null
   trend: string | null
   badgeRow: string | null
@@ -206,6 +207,7 @@ function rowOf(row: ListedRow, memberId: string): NotificationRow {
     openReports: row.type === 'report' ? row.openReports : null,
     connectionId: row.connectionId,
     recipientRequested: row.requesterId === memberId,
+    direct: row.connectionKind === 'direct',
     challengeId: row.challengeId,
     trend: row.trend,
     badge:
@@ -239,6 +241,7 @@ async function list(
       email: about.email,
       connectionId: n.connectionId,
       requesterId: request.requesterId,
+      connectionKind: request.kind,
       challengeId: n.challengeId,
       trend: trends.short,
       badgeRow: n.badgeRow,

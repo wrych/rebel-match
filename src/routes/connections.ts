@@ -26,7 +26,7 @@ function requestBody(
   return z.object({
     targetId: z.string().min(1),
     challengeId: z.string().min(1).optional(),
-    kind: z.enum(['same_boat', 'been_there']),
+    kind: z.enum(['same_boat', 'been_there', 'direct']),
     message: z
       .string()
       .trim()
@@ -36,7 +36,12 @@ function requestBody(
   })
 }
 
-const statusOf = { created: 201, exists: 409, joined: 200 } as const
+const statusOf = {
+  created: 201,
+  exists: 409,
+  joined: 200,
+  limit: 429,
+} as const
 
 function create(deps: Deps): RequestHandler {
   const body = requestBody(deps.config.limits)

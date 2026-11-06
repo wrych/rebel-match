@@ -45,6 +45,7 @@ const request: NewRequest = {
   id: 'r-1',
   requesterId: 'm-ada',
   targetId: 'm-bob',
+  kind: 'same_boat',
   message: 'Same reorg here; shall we compare notes?',
 }
 
@@ -184,6 +185,16 @@ describe('createAddedNotice', () => {
     expect(sent[0]?.text).toContain(
       'https://match.example.invalid/matches/requests/r-1/contact',
     )
+  })
+
+  it('words a direct connection as made directly, naming no challenge (R-CODE-6)', async () => {
+    const sent: OutboundMessage[] = []
+
+    await createAddedNotice(deps(sent))({ ...request, kind: 'direct' })
+
+    expect(sent[0]?.subject).toBe('Ada Lovelace connected with you directly')
+    expect(sent[0]?.text).toContain('connected with you directly')
+    expect(sent[0]?.text).not.toContain('challenge')
   })
 
   it('carries no address (R-NAV-9)', async () => {

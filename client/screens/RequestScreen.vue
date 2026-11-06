@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import KindChip from '../components/KindChip.vue'
 import { hiddenAs } from '../lib/moderation'
 import { reportPath } from '../lib/reports'
 import { computed, onMounted, ref } from 'vue'
@@ -26,9 +27,6 @@ const waitingForMe = computed(
     !stale.value &&
     request.value?.direction === 'incoming' &&
     request.value.status === 'pending',
-)
-const kindLabel = computed(() =>
-  request.value?.kind === 'same_boat' ? 'Same boat' : 'Been there',
 )
 const statusLine = computed(() => {
   const view = request.value
@@ -88,11 +86,7 @@ async function answer(verdict: 'accept' | 'decline'): Promise<void> {
 
     <template v-else-if="request">
       <div class="stack">
-        <span
-          class="chip"
-          :class="request.kind === 'same_boat' ? 'chip-accent' : 'chip-ink'"
-          >{{ kindLabel }}</span
-        >
+        <KindChip :kind="request.kind" />
         <h1 class="display display-lg">
           {{
             request.direction === 'incoming'

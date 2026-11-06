@@ -2,6 +2,7 @@ import { renderMail, type MailBlock, type MailContent } from './mail-layout.js'
 import type { Mailer } from './mailer.js'
 import { noticeFooter, noticeLink } from './notice-link.js'
 import type { NotificationKind } from './notifications.js'
+import type { ConnectionKind } from './connections.js'
 
 export interface MemberDirectory {
   /** The address of an active member, or null. */
@@ -15,6 +16,7 @@ export interface NewRequest {
   id: string
   requesterId: string
   targetId: string
+  kind: ConnectionKind
   message: string | null
 }
 
@@ -163,21 +165,33 @@ export function createAcceptNotice(
   }
 }
 
+/** How a connection made at once is told: over another challenge, or about
+ * none, directly (R-CONN-9, R-CODE-6). */
+export function addedWords(kind: ConnectionKind): string {
+  return kind === 'direct'
+    ? 'connected with you directly'
+    : 'connected with you over another challenge'
+}
+
 function addedMail(
   name: string,
-  message: string | null,
+  request: NewRequest,
   link: string,
   publicUrl: string,
 ): MailContent {
+  const words = addedWords(request.kind)
   return {
-    heading: `${name} connected with you again`,
-    preview: `${name} connected with you over another challenge.`,
+    heading:
+      request.kind === 'direct'
+        ? `${name} connected with you`
+        : `${name} connected with you again`,
+    preview: `${name} ${words}.`,
     blocks: [
       {
         kind: 'paragraph',
-        text: `${name} connected with you over another challenge on Rebel Match.`,
+        text: `${name} ${words} on Rebel Match.`,
       },
-      ...noteBlocks(message),
+      ...noteBlocks(request.message),
       {
         kind: 'action',
         action: {
@@ -207,11 +221,11 @@ export function createAddedNotice(
       aboutMemberId: request.requesterId,
       to,
       kind: 'connection_added',
-      subject: `${from} connected with you over another challenge`,
+      subject: `${from} ${addedWords(request.kind)}`,
       ...renderMail(
         addedMail(
           from,
-          request.message,
+          request,
           linkTo(deps, request.id, 'connection_added', '/contact'),
           deps.publicUrl,
         ),
