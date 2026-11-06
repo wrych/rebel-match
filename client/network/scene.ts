@@ -2,7 +2,7 @@ import {
   BufferGeometry,
   Color,
   Float32BufferAttribute,
-  InstancedMesh,
+  type InstancedMesh,
   LineBasicMaterial,
   LineSegments,
   Matrix4,
@@ -11,8 +11,8 @@ import {
   PerspectiveCamera,
   Scene,
   SphereGeometry,
-  Vector3,
-  WebGLRenderer,
+  type Vector3,
+  type WebGLRenderer,
 } from 'three'
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js'
 import type { NetworkTimeline } from '../../src/network/timeline'
@@ -29,6 +29,13 @@ import {
 import type { Point } from './layout'
 import { moonAt, orbitsOf, type Orbit } from './orbits'
 import type { Frame } from './replay'
+import {
+  disposeAll,
+  instancedSpheres,
+  projector,
+  rendererIn,
+  type StagePlace,
+} from './three-kit'
 
 /** What draws the replay. The graph component drives it and never touches
  * the 3D library, so a presentation can drive the same scene. */
@@ -73,7 +80,6 @@ const tuning = {
   sphereSegments: { around: 12, up: 8 },
   moonSegments: { around: 8, up: 6 },
   haloSegments: { around: 14, up: 10 },
-  maxPixelRatio: 2,
 }
 
 /** The scene's colours, read from the theme's tokens on the host. */
@@ -128,19 +134,10 @@ function linkLines(
 }
 
 function nodeMesh(timeline: NetworkTimeline, palette: Palette): InstancedMesh {
-  const { around, up } = tuning.sphereSegments
-  const mesh = new InstancedMesh(
-    new SphereGeometry(1, around, up),
-    new MeshBasicMaterial(),
-    Math.max(timeline.nodes.length, 1),
-  )
+  const mesh = instancedSpheres(timeline.nodes.length, tuning.sphereSegments)
   timeline.nodes.forEach((node, index) =>
     mesh.setColorAt(index, node.self ? palette.self : palette.node),
   )
-  mesh.count = 0
-  // Its bounds are reckoned before any point is placed, so culling by them
-  // would hide every point once the camera turns away from the centre.
-  mesh.frustumCulled = false
   return mesh
 }
 
@@ -180,9 +177,7 @@ function cameraFor(radius: number): PerspectiveCamera {
 }
 
 function viewIn(host: HTMLElement, radius: number): View {
-  const renderer = new WebGLRenderer({ antialias: true, alpha: true })
-  renderer.setPixelRatio(Math.min(devicePixelRatio, tuning.maxPixelRatio))
-  host.appendChild(renderer.domElement)
+  const renderer = rendererIn(host, { antialias: true, alpha: true })
   const camera = cameraFor(radius)
   const controls = new OrbitControls(camera, renderer.domElement)
   controls.enableDamping = true
@@ -225,19 +220,12 @@ export class Moons {
     palette: Palette,
     private readonly still: boolean,
   ) {
-    const { around, up } = tuning.moonSegments
     this.orbits = orbitsOf(timeline)
-    this.mesh = new InstancedMesh(
-      new SphereGeometry(1, around, up),
-      new MeshBasicMaterial(),
-      Math.max(this.orbits.length, 1),
-    )
+    this.mesh = instancedSpheres(this.orbits.length, tuning.moonSegments)
     this.orbits.forEach((orbit, index) => {
       const own = timeline.nodes[orbit.node]?.self === true
       this.mesh.setColorAt(index, own ? palette.self : palette.moon)
     })
-    this.mesh.count = 0
-    this.mesh.frustumCulled = false
   }
 
   show(count: number, now: number): void {
@@ -415,22 +403,20 @@ function handOver(
 function anchorer(
   view: View,
   at: Point | null,
-  report: ((place: { x: number; y: number } | null) => void) | undefined,
+  report: ((place: StagePlace | null) => void) | undefined,
 ): (shown: boolean) => void {
-  const spot = new Vector3()
-  let last: { x: number; y: number } | null = null
+  const project = projector(view.camera)
+  let last: StagePlace | null = null
   return (shown) => {
     if (report === undefined) return
-    let place: { x: number; y: number } | null = null
-    if (shown && at !== null) {
-      spot.set(at.x, at.y, at.z).project(view.camera)
-      const canvas = view.renderer.domElement
-      if (spot.z < 1)
-        place = {
-          x: ((spot.x + 1) / 2) * canvas.clientWidth,
-          y: ((1 - spot.y) / 2) * canvas.clientHeight,
-        }
-    }
+    const canvas = view.renderer.domElement
+    const place =
+      shown && at !== null
+        ? project(at, {
+            width: canvas.clientWidth,
+            height: canvas.clientHeight,
+          })
+        : null
     const moved =
       place === null || last === null
         ? place !== last
@@ -452,13 +438,6 @@ function sceneOf(objects: (Mesh | LineSegments)[]): Scene {
   const scene = new Scene()
   scene.add(...objects)
   return scene
-}
-
-function disposeAll(objects: (Mesh | LineSegments)[]): void {
-  for (const object of objects) {
-    object.geometry.dispose()
-    ;(object.material as MeshBasicMaterial).dispose()
-  }
 }
 
 function everyFrame(draw: (now: number) => void): () => void {

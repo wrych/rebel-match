@@ -20,6 +20,8 @@ const people = [
   ['qs-banned', 'Bert Quoxman', 'Quoxworks', 'Coach', 'banned', true],
   ['qs-ram', 'राम Quoxi', 'Quoxguild', 'Guide', 'active', true],
   ['qs-new', null, 'Quoxworks', 'Coach', 'active', true],
+  ['qs-unsure', 'Una Wellby', 'Quoxworks', 'Coach', 'active', true],
+  ['qs-earlier', 'Edda Holmberg', 'Quoxhaven', 'Coach', 'active', true],
 ] as const
 
 let db: TestDatabase
@@ -47,8 +49,11 @@ beforeAll(async () => {
     "UPDATE members SET sector = 'qs-quoxcraft' WHERE id = 'qs-quox'",
   )
   await db.query(
-    "UPDATE members SET consent_version = ?, consent_at = now() WHERE id = 'qs-caller'",
+    "UPDATE members SET consent_version = ?, consent_at = now() WHERE id LIKE 'qs-%' AND name IS NOT NULL AND id <> 'qs-unsure'",
     [config.consentVersion],
+  )
+  await db.query(
+    "UPDATE members SET consent_version = 'qs-before' WHERE id = 'qs-earlier'",
   )
   await db.query(
     "INSERT INTO member_roles (member_id, role_key) VALUES ('qs-caller', 'member')",
@@ -92,6 +97,10 @@ describe('member search on Postgres (R-FIND-2, R-FIND-3)', () => {
     const { names } = await search('company:quoxworks')
 
     expect(names).toEqual(['Jean-Luc Quoxton'])
+  })
+
+  it('still returns a member whose newer consent waits for them (R-ONB-4)', async () => {
+    expect((await search('company:quoxhaven')).names).toEqual(['Edda Holmberg'])
   })
 
   it('ANDs every term, field by field, phrases included', async () => {

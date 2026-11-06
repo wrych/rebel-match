@@ -1,10 +1,8 @@
 import { Router, type RequestHandler, type Response } from 'express'
 import { z } from 'zod'
 import type { AuthProvider, SessionCookie } from '../auth/index.js'
-import { trackNothing, type Track } from '../services/analytics.js'
-import type { ErasureService } from '../services/erasure.js'
 import type { MemberProfiles } from '../services/member-profiles.js'
-import { safeNextPath } from '../routes.js'
+import type { SignIn } from '../services/sign-in.js'
 
 const verifyBody = z.object({ token: z.string().min(1) })
 
@@ -24,33 +22,19 @@ export function renewSessions(auth: AuthProvider): RequestHandler {
 }
 
 // Signs in with a link's token from the sign-in screen's button (ADR 0027).
-function verify(
-  deps: {
-    auth: AuthProvider
-    erasure: Pick<ErasureService, 'restoreOwn'>
-  },
-  track: Track,
-): RequestHandler {
+function verify(signIn: SignIn): RequestHandler {
   return async (request, response) => {
     const body = verifyBody.safeParse(request.body)
     const result = body.success
-      ? await deps.auth.verifyToken(body.data.token)
+      ? await signIn(request, body.data.token)
       : ({ ok: false, reason: 'unknown' } as const)
 
     if (!result.ok) {
       response.status(400).json({ reason: result.reason })
       return
     }
-    // A keep-it link restores the account its member deleted before they
-    // are signed in, or the new session would find nobody active (ADR 0032).
-    if (result.kind === 'restore')
-      await deps.erasure.restoreOwn(result.memberId)
-    // A browser someone else used, or one handed a planted cookie, must not
-    // carry that session past the moment its new owner signs in.
-    await deps.auth.endSession(request)
-    setCookie(response, await deps.auth.createSession(result.memberId))
-    void track(result.memberId, { name: 'login_completed' })
-    response.json({ next: safeNextPath(result.next) })
+    setCookie(response, result.cookie)
+    response.json({ next: result.next })
   }
 }
 
@@ -60,13 +44,11 @@ function verify(
 export function authRoutes(deps: {
   auth: AuthProvider
   profiles: MemberProfiles
-  erasure: Pick<ErasureService, 'restoreOwn'>
-  track?: Track
+  signIn: SignIn
 }): Router {
-  const track = deps.track ?? trackNothing
   const router = Router()
 
-  router.post('/auth/verify', verify(deps, track))
+  router.post('/auth/verify', verify(deps.signIn))
 
   router.get('/auth/me', async (request, response) => {
     const member = await deps.auth.currentMember(request)

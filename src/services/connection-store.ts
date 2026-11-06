@@ -4,13 +4,13 @@ import {
   desc,
   eq,
   gt,
-  isNotNull,
   isNull,
   or,
   sql,
   type SQL,
 } from 'drizzle-orm'
 import type { Database } from '../db/connect.js'
+import { isReachableMember } from '../db/member-predicates.js'
 import { insertNotification } from './notification-store.js'
 import {
   challenges,
@@ -253,13 +253,7 @@ function lookups(
       const rows = await db
         .select({ id: members.id })
         .from(members)
-        .where(
-          and(
-            eq(members.id, memberId),
-            eq(members.status, 'active'),
-            isNotNull(members.name),
-          ),
-        )
+        .where(and(eq(members.id, memberId), isReachableMember()))
       return rows.length > 0
     },
     challengeAuthor: async (challengeId) => {
