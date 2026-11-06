@@ -9,6 +9,7 @@ export const rolePermissions = {
     'content:report',
     'game:play',
     'network:view',
+    'member:search',
   ],
   admin: [
     'applicant:review',

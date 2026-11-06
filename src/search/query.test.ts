@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  ACCENTS,
   fold,
   isSearchable,
   parseQuery,
@@ -150,5 +151,18 @@ describe('isSearchable (R-FIND-2)', () => {
 describe('fold', () => {
   it('trims white space around the star', () => {
     expect(fold(' Ana * ')).toBe('ana')
+  })
+
+  it('drops accents and keeps marks that are letters of their script', () => {
+    expect(fold('Zoë Ćosić')).toBe('zoe cosic')
+    expect(fold('राम')).toBe('राम'.normalize('NFD'))
+  })
+})
+
+describe('ACCENTS', () => {
+  it('names the combining diacritical marks as Postgres reads them', () => {
+    expect(ACCENTS).toBe(
+      '[\\u0300-\\u036f\\u1ab0-\\u1aff\\u1dc0-\\u1dff\\u20d0-\\u20ff\\ufe20-\\ufe2f]',
+    )
   })
 })
