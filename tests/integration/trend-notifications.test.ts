@@ -2,19 +2,16 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import request from 'supertest'
 import { createApp, type AppDeps } from '../../src/app.js'
 import { composeApp } from '../../src/compose.js'
-import { loadConfig } from '../../src/config.js'
-import { planSeed } from '../../src/seed/plan.js'
-import { applySeed } from '../../src/seed/run.js'
 import type { NotificationView } from '../../src/services/notifications.js'
+import type { TestDatabase } from './support/database.js'
 import {
-  openTestDatabase,
-  testDatabaseUrl,
-  type TestDatabase,
-} from './support/database.js'
+  cookieFor,
+  idOf,
+  openSeededDatabase,
+  testConfig,
+} from './support/app.js'
 
-const config = loadConfig({
-  DATABASE_URL: testDatabaseUrl,
-  SESSION_SECRET: 'integration-session-secret-of-32-chars',
+const config = testConfig({
   NODE_ENV: 'development',
   MAIL_DELIVERY: 'none',
   SEED_PROFILE: 'dev',
@@ -48,20 +45,15 @@ async function forget(): Promise<void> {
 }
 
 beforeAll(async () => {
-  db = await openTestDatabase()
-  await applySeed(db.drizzle, planSeed(config), config.consentVersion)
+  db = await openSeededDatabase(config)
   deps = composeApp(config, db.drizzle)
   app = createApp(deps)
   for (const [who, email] of Object.entries(people)) {
     await db.query("UPDATE members SET status = 'active' WHERE email = ?", [
       email,
     ])
-    const rows = await db.query('SELECT id FROM members WHERE email = ?', [
-      email,
-    ])
-    ids[who] = String(rows[0]?.['id'])
-    const session = await deps.auth.createSession(ids[who])
-    cookies[who] = `${session.name}=${session.value}`
+    ids[who] = await idOf(db, email)
+    cookies[who] = await cookieFor(deps.auth, ids[who])
   }
   await forget()
   await db.query(

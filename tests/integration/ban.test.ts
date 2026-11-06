@@ -3,22 +3,19 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import request from 'supertest'
 import { createApp } from '../../src/app.js'
 import { composeApp } from '../../src/compose.js'
-import { loadConfig } from '../../src/config.js'
 import { DEV_ADMIN_EMAIL } from '../../src/seed/dev/people.js'
-import { planSeed } from '../../src/seed/plan.js'
-import { applySeed } from '../../src/seed/run.js'
 import type { ConnectionView } from '../../src/services/connections.js'
 import type { ModerationPage } from '../../src/services/moderation.js'
 import { createWhitelistStore } from '../../src/services/whitelist-store.js'
+import type { TestDatabase } from './support/database.js'
 import {
-  openTestDatabase,
-  testDatabaseUrl,
-  type TestDatabase,
-} from './support/database.js'
+  cookieFor,
+  idOf,
+  openSeededDatabase,
+  testConfig,
+} from './support/app.js'
 
-const config = loadConfig({
-  DATABASE_URL: testDatabaseUrl,
-  SESSION_SECRET: 'integration-session-secret-of-32-chars',
+const config = testConfig({
   NODE_ENV: 'development',
   MAIL_DELIVERY: 'none',
   SEED_PROFILE: 'dev',
@@ -34,11 +31,6 @@ let banned: string
 let other: string
 let hostId: string
 let bannedId: string
-
-async function idOf(email: string): Promise<string> {
-  const rows = await db.query('SELECT id FROM members WHERE email = ?', [email])
-  return String(rows[0]?.['id'])
-}
 
 async function valueOf(sql: string, id: string): Promise<unknown> {
   const rows = await db.query(sql, [id])
@@ -63,23 +55,18 @@ async function otherSees(): Promise<boolean> {
 }
 
 beforeAll(async () => {
-  db = await openTestDatabase()
-  await applySeed(db.drizzle, planSeed(config), config.consentVersion)
+  db = await openSeededDatabase(config)
   const deps = composeApp(config, db.drizzle)
   app = createApp(deps)
-  const cookie = async (id: string): Promise<string> => {
-    const session = await deps.auth.createSession(id)
-    return `${session.name}=${session.value}`
-  }
   await db.query("UPDATE members SET status = 'active' WHERE email IN (?)", [
     [DEV_ADMIN_EMAIL, bannedEmail],
   ])
-  hostId = await idOf(DEV_ADMIN_EMAIL)
-  bannedId = await idOf(bannedEmail)
-  const otherId = await idOf('milan.horvat@example.invalid')
-  host = await cookie(hostId)
-  banned = await cookie(bannedId)
-  other = await cookie(otherId)
+  hostId = await idOf(db, DEV_ADMIN_EMAIL)
+  bannedId = await idOf(db, bannedEmail)
+  const otherId = await idOf(db, 'milan.horvat@example.invalid')
+  host = await cookieFor(deps.auth, hostId)
+  banned = await cookieFor(deps.auth, bannedId)
+  other = await cookieFor(deps.auth, otherId)
   await db.query(
     `INSERT INTO connection_requests (id, requester_id, target_id, kind, message, status)
      VALUES (?, ?, ?, 'been_there', 'Use my code REBEL50.', 'pending'),

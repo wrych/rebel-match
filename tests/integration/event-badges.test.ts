@@ -3,20 +3,16 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import request from 'supertest'
 import { createApp } from '../../src/app.js'
 import { composeApp } from '../../src/compose.js'
-import { loadConfig } from '../../src/config.js'
 import type { BadgeOverview } from '../../src/services/badges.js'
+import type { TestDatabase } from './support/database.js'
 import {
-  openTestDatabase,
-  testDatabaseUrl,
-  type TestDatabase,
-} from './support/database.js'
-import { planSeed } from '../../src/seed/plan.js'
-import { applySeed } from '../../src/seed/run.js'
+  cookieFor,
+  idOf,
+  openSeededDatabase,
+  testConfig,
+} from './support/app.js'
 
-const config = loadConfig({
-  DATABASE_URL: testDatabaseUrl,
-  SESSION_SECRET: 'integration-session-secret-of-32-chars',
-  NODE_ENV: 'test',
+const config = testConfig({
   SEED_PROFILE: 'dev',
   MAIL_DELIVERY: 'none',
 })
@@ -72,23 +68,15 @@ async function insertInvites(adminId: string): Promise<void> {
 }
 
 beforeAll(async () => {
-  db = await openTestDatabase()
-  await applySeed(db.drizzle, planSeed(config), config.consentVersion)
+  db = await openSeededDatabase(config)
   const deps = composeApp(config, db.drizzle)
   app = createApp(deps)
   const [admin] = await db.query(
     "SELECT member_id FROM member_roles WHERE role_key = 'admin' LIMIT 1",
   )
-  const [member] = await db.query('SELECT id FROM members WHERE email = ?', [
-    'milan.horvat@example.invalid',
-  ])
-  milan = String(member?.['id'])
-  const session = await deps.auth.createSession(milan)
-  cookie = `${session.name}=${session.value}`
-  const adminSession = await deps.auth.createSession(
-    String(admin?.['member_id']),
-  )
-  adminCookie = `${adminSession.name}=${adminSession.value}`
+  milan = await idOf(db, 'milan.horvat@example.invalid')
+  cookie = await cookieFor(deps.auth, milan)
+  adminCookie = await cookieFor(deps.auth, String(admin?.['member_id']))
   await db.query(
     'INSERT INTO event_badges (id, name, ticket_line, big_line) VALUES (?, ?, ?, ?)',
     [badgeId, 'Stormed the Summit', 'SUMMIT', '2026'],
@@ -157,10 +145,7 @@ describe('earning event badges over Postgres (R-BADGE-6)', () => {
       .send({ email: scanner, invite: invites.open.token })
       .expect(200)
 
-    const [joined] = await db.query('SELECT id FROM members WHERE email = ?', [
-      scanner,
-    ])
-    const id = String(joined?.['id'])
+    const id = await idOf(db, scanner)
     expect(await earnedBy(id)).toEqual([badgeId])
     expect(await badgeNotesOf(id)).toEqual([['event', badgeId]])
     expect(await usesOf(invites.open.id)).toBe(1)
@@ -277,10 +262,7 @@ describe('giving an existing invite a badge over Postgres (R-INV-13)', () => {
       .post('/auth/request-link')
       .send({ email: late, invite: plain.token })
       .expect(200)
-    const [joined] = await db.query('SELECT id FROM members WHERE email = ?', [
-      late,
-    ])
-    const id = String(joined?.['id'])
+    const id = await idOf(db, late)
     expect(await earnedBy(id)).toEqual([])
 
     const response = await put({ eventBadgeId: badgeId }).expect(200)
@@ -299,10 +281,7 @@ describe('giving an existing invite a badge over Postgres (R-INV-13)', () => {
       'INSERT INTO event_badges (id, name, ticket_line, big_line) VALUES (?, ?, ?, ?)',
       [laterBadge, 'Lobby Legend', 'LOBBY', '26'],
     )
-    const [joined] = await db.query('SELECT id FROM members WHERE email = ?', [
-      late,
-    ])
-    const id = String(joined?.['id'])
+    const id = await idOf(db, late)
 
     await put({ eventBadgeId: laterBadge }).expect(200)
     await put({}).expect(200)

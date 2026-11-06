@@ -3,19 +3,11 @@ import request from 'supertest'
 import { createApp } from '../../src/app.js'
 import type { AuthProvider } from '../../src/auth/index.js'
 import { composeApp, composeAuth, composeMailer } from '../../src/compose.js'
-import { loadConfig } from '../../src/config.js'
-import {
-  openTestDatabase,
-  testDatabaseUrl,
-  type TestDatabase,
-} from './support/database.js'
+import type { TestDatabase } from './support/database.js'
+import { openSeededDatabase, testConfig } from './support/app.js'
 import { DEV_ADMIN_EMAIL } from '../../src/seed/dev/people.js'
-import { planSeed } from '../../src/seed/plan.js'
-import { applySeed } from '../../src/seed/run.js'
 
-const config = loadConfig({
-  DATABASE_URL: testDatabaseUrl,
-  SESSION_SECRET: 'integration-session-secret-of-32-chars',
+const config = testConfig({
   NODE_ENV: 'development',
   MAIL_DELIVERY: 'none',
 })
@@ -34,8 +26,7 @@ async function linkFromOutbox(): Promise<string> {
 }
 
 beforeAll(async () => {
-  db = await openTestDatabase()
-  await applySeed(db.drizzle, planSeed(config), config.consentVersion)
+  db = await openSeededDatabase(config)
   auth = composeAuth(config, db.drizzle, composeMailer(config, db.drizzle))
 })
 

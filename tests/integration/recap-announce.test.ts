@@ -1,18 +1,11 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { composeApp } from '../../src/compose.js'
-import { loadConfig } from '../../src/config.js'
 import { planSeed } from '../../src/seed/plan.js'
 import { applySeed } from '../../src/seed/run.js'
-import {
-  openTestDatabase,
-  testDatabaseUrl,
-  type TestDatabase,
-} from './support/database.js'
+import { openTestDatabase, type TestDatabase } from './support/database.js'
+import { idOf, testConfig } from './support/app.js'
 
 const env = {
-  DATABASE_URL: testDatabaseUrl,
-  SESSION_SECRET: 'integration-session-secret-of-32-chars',
-  NODE_ENV: 'test',
   SEED_PROFILE: 'dev',
 }
 const declines = 'milan.horvat@example.invalid'
@@ -38,7 +31,7 @@ async function clear(): Promise<void> {
 
 beforeAll(async () => {
   db = await openTestDatabase()
-  await applySeed(db.drizzle, planSeed(loadConfig(env)), 'v1')
+  await applySeed(db.drizzle, planSeed(testConfig(env)), 'v1')
   await clear()
 })
 
@@ -49,17 +42,14 @@ afterAll(async () => {
 
 describe('the recap’s announcement over Postgres (R-RECAP-9)', () => {
   it('tells nobody while the recap is closed', async () => {
-    await composeApp(loadConfig(env), db.drizzle).notificationMail.deliverDue()
+    await composeApp(testConfig(env), db.drizzle).notificationMail.deliverDue()
 
     expect(await recapNotes()).toBe(0)
   })
 
   it('tells every onboarded member once, and mails those who said yes', async () => {
-    const deps = composeApp(loadConfig({ ...env, RECAP: '1' }), db.drizzle)
-    const rows = await db.query('SELECT id FROM members WHERE email = ?', [
-      declines,
-    ])
-    const declinerId = String(rows[0]?.['id'])
+    const deps = composeApp(testConfig({ ...env, RECAP: '1' }), db.drizzle)
+    const declinerId = await idOf(db, declines)
     expect(
       await deps.notificationSettings.choose(declinerId, [], 'recap', 'in_app'),
     ).toBe('done')
@@ -81,7 +71,7 @@ describe('the recap’s announcement over Postgres (R-RECAP-9)', () => {
 
   it('never tells anyone twice, even from a fresh server', async () => {
     const before = await recapNotes()
-    const again = composeApp(loadConfig({ ...env, RECAP: '1' }), db.drizzle)
+    const again = composeApp(testConfig({ ...env, RECAP: '1' }), db.drizzle)
 
     await again.notificationMail.deliverDue()
 
@@ -89,18 +79,11 @@ describe('the recap’s announcement over Postgres (R-RECAP-9)', () => {
   })
 
   it('refuses any choice but yes or no (R-NOTE-2)', async () => {
-    const deps = composeApp(loadConfig(env), db.drizzle)
-    const rows = await db.query('SELECT id FROM members WHERE email = ?', [
-      declines,
-    ])
+    const deps = composeApp(testConfig(env), db.drizzle)
+    const declinerId = await idOf(db, declines)
 
     expect(
-      await deps.notificationSettings.choose(
-        String(rows[0]?.['id']),
-        [],
-        'recap',
-        'daily',
-      ),
+      await deps.notificationSettings.choose(declinerId, [], 'recap', 'daily'),
     ).toBe('not_offered')
   })
 })

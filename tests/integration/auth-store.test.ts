@@ -7,17 +7,12 @@ import {
   type OutgoingLink,
   type SessionCookie,
 } from '../../src/auth/index.js'
-import { loadConfig } from '../../src/config.js'
-import {
-  openTestDatabase,
-  testDatabaseUrl,
-  type TestDatabase,
-} from './support/database.js'
+import { openTestDatabase, type TestDatabase } from './support/database.js'
+import { testConfig } from './support/app.js'
 import { configPolicy } from '../../src/permissions.js'
 
-const config = loadConfig({
-  DATABASE_URL: testDatabaseUrl,
-  SESSION_SECRET: 'integration-session-secret-of-32-chars',
+const config = testConfig({
+  NODE_ENV: 'development',
 })
 
 const active = { id: randomUUID(), email: `${randomUUID()}@example.invalid` }

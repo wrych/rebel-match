@@ -3,23 +3,19 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import request from 'supertest'
 import { createApp } from '../../src/app.js'
 import { composeApp } from '../../src/compose.js'
-import { loadConfig } from '../../src/config.js'
+import type { TestDatabase } from './support/database.js'
 import {
-  openTestDatabase,
-  testDatabaseUrl,
-  type TestDatabase,
-} from './support/database.js'
-import { planSeed } from '../../src/seed/plan.js'
-import { applySeed } from '../../src/seed/run.js'
+  cookieFor,
+  idOf,
+  openSeededDatabase,
+  testConfig,
+} from './support/app.js'
 import type { Matches } from '../../src/services/challenges.js'
 import type { ConnectionView } from '../../src/services/connections.js'
 import type { DeckCard } from '../../src/services/deck.js'
 
 const PER_DAY = 4
-const config = loadConfig({
-  DATABASE_URL: testDatabaseUrl,
-  SESSION_SECRET: 'integration-session-secret-of-32-chars',
-  NODE_ENV: 'test',
+const config = testConfig({
   SEED_PROFILE: 'dev',
   REPORTS_PER_DAY: String(PER_DAY),
 })
@@ -35,11 +31,6 @@ let bystander: string
 let authorId: string
 let reporterId: string
 let challengeId: string
-
-async function idOf(email: string): Promise<string> {
-  const rows = await db.query('SELECT id FROM members WHERE email = ?', [email])
-  return String(rows[0]?.['id'])
-}
 
 async function statusOf(id: string): Promise<unknown> {
   const rows = await db.query(
@@ -84,19 +75,17 @@ async function newestOf(cookie: string): Promise<string> {
 }
 
 beforeAll(async () => {
-  db = await openTestDatabase()
-  await applySeed(db.drizzle, planSeed(config), config.consentVersion)
+  db = await openSeededDatabase(config)
   const deps = composeApp(config, db.drizzle)
   app = createApp(deps)
-  authorId = await idOf('sanne.kuipers@example.invalid')
-  reporterId = await idOf('milan.horvat@example.invalid')
-  const cookie = async (id: string): Promise<string> => {
-    const session = await deps.auth.createSession(id)
-    return `${session.name}=${session.value}`
-  }
-  author = await cookie(authorId)
-  reporter = await cookie(reporterId)
-  bystander = await cookie(await idOf('priya.raman@example.invalid'))
+  authorId = await idOf(db, 'sanne.kuipers@example.invalid')
+  reporterId = await idOf(db, 'milan.horvat@example.invalid')
+  author = await cookieFor(deps.auth, authorId)
+  reporter = await cookieFor(deps.auth, reporterId)
+  bystander = await cookieFor(
+    deps.auth,
+    await idOf(db, 'priya.raman@example.invalid'),
+  )
   await db.query('DELETE FROM reports WHERE reporter_id = ?', [reporterId])
 
   const created = await request(app)

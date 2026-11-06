@@ -3,21 +3,12 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import request from 'supertest'
 import { createApp } from '../../src/app.js'
 import { composeApp } from '../../src/compose.js'
-import { loadConfig } from '../../src/config.js'
-import {
-  openTestDatabase,
-  testDatabaseUrl,
-  type Row,
-  type TestDatabase,
-} from './support/database.js'
+import type { Row, TestDatabase } from './support/database.js'
+import { openSeededDatabase, testConfig } from './support/app.js'
 import { DEV_ADMIN_EMAIL } from '../../src/seed/dev/people.js'
-import { planSeed } from '../../src/seed/plan.js'
-import { applySeed } from '../../src/seed/run.js'
 import { createApplicantHandles } from '../../src/services/applicant-handle.js'
 
-const config = loadConfig({
-  DATABASE_URL: testDatabaseUrl,
-  SESSION_SECRET: 'integration-session-secret-of-32-chars',
+const config = testConfig({
   NODE_ENV: 'development',
   MAIL_DELIVERY: 'none',
 })
@@ -42,8 +33,7 @@ async function outboxFor(to: string, kind: string): Promise<Row[]> {
 }
 
 beforeAll(async () => {
-  db = await openTestDatabase()
-  await applySeed(db.drizzle, planSeed(config), config.consentVersion)
+  db = await openSeededDatabase(config)
   await db.query("UPDATE members SET status = 'active' WHERE email IN (?, ?)", [
     DEV_ADMIN_EMAIL,
     member,

@@ -3,24 +3,15 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import request from 'supertest'
 import { createApp } from '../../src/app.js'
 import { composeApp } from '../../src/compose.js'
-import { loadConfig } from '../../src/config.js'
 import type {
   DayResult,
   GameState,
   Leaderboard,
 } from '../../src/services/game.js'
-import {
-  openTestDatabase,
-  testDatabaseUrl,
-  type TestDatabase,
-} from './support/database.js'
-import { planSeed } from '../../src/seed/plan.js'
-import { applySeed } from '../../src/seed/run.js'
+import type { TestDatabase } from './support/database.js'
+import { cookieFor, openSeededDatabase, testConfig } from './support/app.js'
 
-const config = loadConfig({
-  DATABASE_URL: testDatabaseUrl,
-  SESSION_SECRET: 'integration-session-secret-of-32-chars',
-  NODE_ENV: 'test',
+const config = testConfig({
   SEED_PROFILE: 'dev',
 })
 
@@ -45,8 +36,7 @@ async function newMember(): Promise<{ id: string; cookie: string }> {
     "INSERT INTO member_roles (member_id, role_key) VALUES (?, 'member')",
     [id],
   )
-  const session = await deps.auth.createSession(id)
-  return { id, cookie: `${session.name}=${session.value}` }
+  return { id, cookie: await cookieFor(deps.auth, id) }
 }
 
 async function count(table: string, memberId: string): Promise<number> {
@@ -69,8 +59,7 @@ const day = (
   request(app).post('/api/game/days').set('Cookie', cookie).send(body)
 
 beforeAll(async () => {
-  db = await openTestDatabase()
-  await applySeed(db.drizzle, planSeed(config), config.consentVersion)
+  db = await openSeededDatabase(config)
   deps = composeApp(config, db.drizzle)
   app = createApp(deps)
   const host = await newMember()
