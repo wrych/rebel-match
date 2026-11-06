@@ -2047,14 +2047,17 @@ connects at once (ADR 0063).
 
 - **R-CODE-1 (The code screen)** — WHILE hosts have `limits.connectCodes` on,
   THE SYSTEM SHALL offer every active, onboarded member **Your code** at
-  `/me/code` (S47), from the menu and from S44, with two tabs: **Share my
-  profile** (R-CODE-2) and **Connect now** (R-CODE-5). While the switch is
+  `/me/code` (S47), from the menu and from S44, with two tabs, opening on
+  **Connect now** (R-CODE-5), then **Share my profile** (R-CODE-2).
+  _(Andy, 2026-11-06, from testing.)_ While the switch is
   off, the screen, the code routes and their endpoints SHALL answer as not
   found.
 - **R-CODE-2 (Profile code)** — The first time a member opens **Share my
   profile**, THE SYSTEM SHALL give them a profile code: a random token, never
   their id, shown as a QR code of `/p#t=…` with their name, **Copy link**
-  and **Share** (the phone's share sheet). Showing or sharing it is the
+  and **Share**: the code and their name as an image, through the phone's
+  share sheet as R-RECAP-6 shares the recap card, the link copied with it.
+  Showing or sharing it is the
   member's opt-in to being reached by whoever holds it, whether or not they
   are findable (R-FIND-5).
 - **R-CODE-3 (Opening a profile code)** — `/p#t=…` SHALL show, to a
@@ -2078,10 +2081,11 @@ connects at once (ADR 0063).
   `limits.connectCodes` is off the profile screen SHALL NOT show them, and
   **Findable in search** SHALL leave out its note about codes (R-FIND-5).
 - **R-CODE-5 (Live code)** — **Connect now** SHALL show a live code: a QR
-  code of `/c#t=…` with a single-use token from the server, replaced on
-  the same screen every `limits.liveCodeSeconds` (30) by a new one, with a
-  ring beside it emptying as the code's time on screen runs out, as an
-  authenticator app shows it. A code SHALL stay usable for
+  code of `/c#t=…` with a single-use token from the server and the
+  member's name, replaced on the same screen every `limits.liveCodeSeconds`
+  (30) by a new one, with a small ring in its corner emptying as the
+  code's time on screen runs out, as an authenticator app shows it. A code
+  SHALL stay usable for
   `limits.liveCodeGraceSeconds` (10) after the next one replaced it, so a scan
   begun at the end still works, and no longer. No new code SHALL be asked for
   while the page is hidden. The live code SHALL offer no Copy or Share: it is

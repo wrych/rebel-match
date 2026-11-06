@@ -19,6 +19,18 @@ vi.mock('vue-router', () => ({
   useRoute: () => route,
   useRouter: () => ({ replace }),
 }))
+const shareImage = vi.fn((_file: File, _text: string) =>
+  Promise.resolve('share_sheet'),
+)
+const renderCodeCard = vi.fn((_card: unknown) =>
+  Promise.resolve(new File(['png'], 'code.png')),
+)
+vi.mock('../lib/share-sheet', () => ({
+  shareImage: (file: File, text: string) => shareImage(file, text),
+}))
+vi.mock('../lib/code-card', () => ({
+  renderCodeCard: (card: unknown) => renderCodeCard(card),
+}))
 
 function server(code: unknown, connectCodes = 1): ReturnType<typeof vi.fn> {
   const bodies: Record<string, unknown> = {
@@ -61,12 +73,15 @@ enableAutoUnmount(afterEach)
 afterEach(() => {
   vi.unstubAllGlobals()
   replace.mockReset()
+  renderCodeCard.mockClear()
+  shareImage.mockClear()
   forgetMe()
   route.query = {}
 })
 
 describe('MyCodeScreen (S47, R-CODE-1, R-CODE-2)', () => {
   it('shows the profile code as a QR of its link, with the member’s name', async () => {
+    route.query = { tab: 'profile' }
     server({ token: 'tok-1', enabled: true })
     const screen = await mountScreen()
 
@@ -74,26 +89,27 @@ describe('MyCodeScreen (S47, R-CODE-1, R-CODE-2)', () => {
       'Profile code of Ada Lovelace',
     )
     expect(screen.text()).toContain('Ada Lovelace')
-    expect(screen.text()).toContain('Copy link')
+    expect(screen.find('button[aria-label="Copy link"]').exists()).toBe(true)
     expect(screen.text()).toContain('Profile code: on')
   })
 
   it('says the code is off while it is', async () => {
+    route.query = { tab: 'profile' }
     server({ token: 'tok-1', enabled: false })
     const screen = await mountScreen()
 
     expect(screen.text()).toContain('Your code is off')
   })
 
-  it('shows the live code on Connect now, with no Copy or Share, and makes no profile code (R-CODE-5)', async () => {
-    route.query = { tab: 'now' }
+  it('opens on Connect now: the live code with the member’s name, no Copy or Share, and no profile code made (R-CODE-5)', async () => {
     const fetchMock = server({ token: 'tok-1', enabled: true })
     const screen = await mountScreen()
 
     expect(screen.find('svg[aria-label="Live connect code"]').exists()).toBe(
       true,
     )
-    expect(screen.text()).not.toContain('Copy link')
+    expect(screen.find('.code-card').text()).toContain('Ada Lovelace')
+    expect(screen.find('button[aria-label="Copy link"]').exists()).toBe(false)
     expect(
       screen.findAll('button').map((button) => button.text()),
     ).not.toContain('Share')
@@ -103,16 +119,75 @@ describe('MyCodeScreen (S47, R-CODE-1, R-CODE-2)', () => {
   it('switches tabs through the address', async () => {
     server({ token: 'tok-1', enabled: true })
     const screen = await mountScreen()
-    const now = screen
+    const profile = screen
       .findAll('[role=tab]')
-      .find((each) => each.text() === 'Connect now')
-    await now?.trigger('click')
+      .find((each) => each.text() === 'Share my profile')
+    await profile?.trigger('click')
 
-    expect(replace).toHaveBeenCalledWith({ query: { tab: 'now' } })
+    expect(replace).toHaveBeenCalledWith({ query: { tab: 'profile' } })
+  })
+
+  it('draws the card ahead, so Share hands it over in the tap (R-CODE-2)', async () => {
+    route.query = { tab: 'profile' }
+    server({ token: 'tok-1', enabled: true })
+    const screen = await mountScreen()
+    const renderedBeforeTap = renderCodeCard.mock.calls.length
+    const share = screen
+      .findAll('button')
+      .find((each) => each.text() === 'Share')
+    await share?.trigger('click')
+    await flushPromises()
+
+    expect(renderedBeforeTap).toBe(1)
+    expect(renderCodeCard).toHaveBeenCalledTimes(1)
+    expect(renderCodeCard).toHaveBeenCalledWith({
+      name: 'Ada Lovelace',
+      link: `${window.location.origin}/p#t=tok-1`,
+      site: window.location.origin,
+    })
+    expect(shareImage.mock.calls[0]?.[1]).toContain('/p#t=tok-1')
+  })
+
+  it('offers no Share while the profile code is off (R-CODE-4)', async () => {
+    route.query = { tab: 'profile' }
+    server({ token: 'tok-1', enabled: false })
+    const screen = await mountScreen()
+    const share = screen
+      .findAll('button')
+      .find((each) => each.text() === 'Share')
+
+    expect(share?.attributes('disabled')).toBeDefined()
+  })
+
+  it('says so when the card cannot be drawn, Copy link still there', async () => {
+    route.query = { tab: 'profile' }
+    renderCodeCard.mockRejectedValueOnce(new Error('no canvas'))
+    server({ token: 'tok-1', enabled: true })
+    const screen = await mountScreen()
+
+    expect(screen.find('[role=alert]').text()).toContain(
+      'The card could not be drawn',
+    )
+    expect(screen.find('button[aria-label="Copy link"]').exists()).toBe(true)
+  })
+
+  it('says so when sharing fails', async () => {
+    route.query = { tab: 'profile' }
+    shareImage.mockRejectedValueOnce(new Error('denied'))
+    server({ token: 'tok-1', enabled: true })
+    const screen = await mountScreen()
+    await screen
+      .findAll('button')
+      .find((each) => each.text() === 'Share')
+      ?.trigger('click')
+    await flushPromises()
+
+    expect(screen.find('[role=alert]').text()).toContain(
+      'The card could not be shared',
+    )
   })
 
   it('is not found while hosts have codes off, asking for no code (R-CODE-1)', async () => {
-    route.query = { tab: 'now' }
     const fetchMock = server(null, 0)
     await mountScreen()
 

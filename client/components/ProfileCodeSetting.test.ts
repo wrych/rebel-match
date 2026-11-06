@@ -31,7 +31,9 @@ describe('ProfileCodeSetting (R-CODE-4)', () => {
 
     expect(setting.text()).toContain('Profile code: on')
     expect(setting.text()).toContain('Reset code')
-    expect(setting.findComponent(RouterLinkStub).props('to')).toBe('/me/code')
+    expect(setting.findComponent(RouterLinkStub).props('to')).toBe(
+      '/me/code?tab=profile',
+    )
   })
 
   it('shows nothing while hosts have codes off', async () => {
