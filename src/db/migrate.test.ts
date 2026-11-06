@@ -2,16 +2,42 @@ import { mkdtemp, readFile, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { sql } from 'drizzle-orm'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { connect, type Connection } from './connect.js'
+import { PGlite } from '@electric-sql/pglite'
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+} from 'vitest'
+import { onClient, type Connection } from './connect.js'
 import { applyMigrations } from './migrate.js'
 
 const MIGRATIONS = 'db/migrations'
 
+// Starting PGlite costs seconds; a clone of one empty database costs a
+// fraction of that and is just as empty.
+let pristine: PGlite
 let connection: Connection
 
+beforeAll(async () => {
+  pristine = await PGlite.create()
+})
+
+afterAll(async () => {
+  await pristine.close()
+})
+
+async function emptyCopy(): Promise<PGlite> {
+  const copy = await pristine.clone()
+  if (!(copy instanceof PGlite)) throw new Error('the clone is not a PGlite')
+  return copy
+}
+
 beforeEach(async () => {
-  connection = await connect({ kind: 'pglite' })
+  connection = onClient(await emptyCopy())
 })
 
 afterEach(async () => {

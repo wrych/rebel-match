@@ -59,7 +59,15 @@ function onServer(
 async function inProcess(dataDir?: string): Promise<Connection> {
   const release =
     dataDir === undefined ? () => Promise.resolve() : await lockFolder(dataDir)
-  const client = await PGlite.create(dataDir)
+  return onClient(await PGlite.create(dataDir), release)
+}
+
+/** A connection over a PGlite client already open, such as a clone; closing
+ * it closes the client. */
+export function onClient(
+  client: PGlite,
+  release: () => Promise<void> = () => Promise.resolve(),
+): Connection {
   const db = onPglite(client, { schema })
   return {
     db,
