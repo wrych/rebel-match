@@ -3,19 +3,11 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import request from 'supertest'
 import { createApp } from '../../src/app.js'
 import { composeApp } from '../../src/compose.js'
-import { loadConfig } from '../../src/config.js'
-import {
-  openTestDatabase,
-  testDatabaseUrl,
-  type TestDatabase,
-} from './support/database.js'
+import { openTestDatabase, type TestDatabase } from './support/database.js'
+import { testConfig } from './support/app.js'
 import { createInviteStore } from '../../src/services/invite-store.js'
 
-const config = loadConfig({
-  DATABASE_URL: testDatabaseUrl,
-  SESSION_SECRET: 'integration-session-secret-of-32-chars',
-  NODE_ENV: 'test',
-})
+const config = testConfig()
 const host = { id: randomUUID(), email: `${randomUUID()}@example.invalid` }
 const invite = { id: randomUUID(), token: randomUUID() }
 

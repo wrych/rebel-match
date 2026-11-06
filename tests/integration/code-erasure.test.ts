@@ -1,18 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { composeApp } from '../../src/compose.js'
-import { loadConfig } from '../../src/config.js'
-import { planSeed } from '../../src/seed/plan.js'
-import { applySeed } from '../../src/seed/run.js'
-import {
-  openTestDatabase,
-  testDatabaseUrl,
-  type TestDatabase,
-} from './support/database.js'
+import type { TestDatabase } from './support/database.js'
+import { openSeededDatabase, testConfig } from './support/app.js'
 
-const config = loadConfig({
-  DATABASE_URL: testDatabaseUrl,
-  SESSION_SECRET: 'integration-session-secret-of-32-chars',
-  NODE_ENV: 'test',
+const config = testConfig({
   SEED_PROFILE: 'dev',
   CONNECT_CODES: '1',
 })
@@ -33,8 +24,7 @@ async function codesOf(memberId: string): Promise<number> {
 }
 
 beforeAll(async () => {
-  db = await openTestDatabase()
-  await applySeed(db.drizzle, planSeed(config), config.consentVersion)
+  db = await openSeededDatabase(config)
   await db.query("DELETE FROM members WHERE id LIKE 'ce-%'")
   for (const id of ['ce-owner', 'ce-scanner', 'ce-erased'])
     await db.query(

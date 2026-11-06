@@ -3,24 +3,20 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import request from 'supertest'
 import { createApp } from '../../src/app.js'
 import { composeApp } from '../../src/compose.js'
-import { loadConfig } from '../../src/config.js'
+import type { TestDatabase } from './support/database.js'
 import {
-  openTestDatabase,
-  testDatabaseUrl,
-  type TestDatabase,
-} from './support/database.js'
+  cookieFor,
+  idOf,
+  openSeededDatabase,
+  testConfig,
+} from './support/app.js'
 import { DEV_ADMIN_EMAIL } from '../../src/seed/dev/people.js'
-import { planSeed } from '../../src/seed/plan.js'
-import { applySeed } from '../../src/seed/run.js'
 import type { ModeratedChallenge } from '../../src/services/challenge-moderation.js'
 import type { Cockpit } from '../../src/services/cockpit.js'
 import type { ConnectionView } from '../../src/services/connections.js'
 import type { DeckCard } from '../../src/services/deck.js'
 
-const config = loadConfig({
-  DATABASE_URL: testDatabaseUrl,
-  SESSION_SECRET: 'integration-session-secret-of-32-chars',
-  NODE_ENV: 'test',
+const config = testConfig({
   SEED_PROFILE: 'dev',
 })
 const authorEmail = 'sanne.kuipers@example.invalid'
@@ -37,11 +33,6 @@ let peer: string
 let host: string
 let authorId: string
 let challengeId: string
-
-async function idOf(email: string): Promise<string> {
-  const rows = await db.query('SELECT id FROM members WHERE email = ?', [email])
-  return String(rows[0]?.['id'])
-}
 
 async function statusOf(id: string): Promise<unknown> {
   const rows = await db.query(
@@ -69,22 +60,17 @@ async function listed(): Promise<ModeratedChallenge | undefined> {
 }
 
 beforeAll(async () => {
-  db = await openTestDatabase()
-  await applySeed(db.drizzle, planSeed(config), config.consentVersion)
+  db = await openSeededDatabase(config)
   await db.query("UPDATE members SET status = 'active' WHERE email = ?", [
     DEV_ADMIN_EMAIL,
   ])
   const deps = composeApp(config, db.drizzle)
   app = createApp(deps)
-  authorId = await idOf(authorEmail)
-  const peerId = await idOf(peerEmail)
-  const cookie = async (id: string): Promise<string> => {
-    const session = await deps.auth.createSession(id)
-    return `${session.name}=${session.value}`
-  }
-  author = await cookie(authorId)
-  peer = await cookie(peerId)
-  host = await cookie(await idOf(DEV_ADMIN_EMAIL))
+  authorId = await idOf(db, authorEmail)
+  const peerId = await idOf(db, peerEmail)
+  author = await cookieFor(deps.auth, authorId)
+  peer = await cookieFor(deps.auth, peerId)
+  host = await cookieFor(deps.auth, await idOf(db, DEV_ADMIN_EMAIL))
 
   const created = await request(app)
     .post('/api/challenges')

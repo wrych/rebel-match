@@ -2,20 +2,16 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import request from 'supertest'
 import { createApp } from '../../src/app.js'
 import { composeApp } from '../../src/compose.js'
-import { loadConfig } from '../../src/config.js'
+import type { TestDatabase } from './support/database.js'
 import {
-  openTestDatabase,
-  testDatabaseUrl,
-  type TestDatabase,
-} from './support/database.js'
-import { planSeed } from '../../src/seed/plan.js'
-import { applySeed } from '../../src/seed/run.js'
+  cookieFor,
+  idOf,
+  openSeededDatabase,
+  testConfig,
+} from './support/app.js'
 import type { Cockpit } from '../../src/services/cockpit.js'
 
-const config = loadConfig({
-  DATABASE_URL: testDatabaseUrl,
-  SESSION_SECRET: 'integration-session-secret-of-32-chars',
-  NODE_ENV: 'test',
+const config = testConfig({
   SEED_PROFILE: 'dev',
 })
 const member = 'milan.horvat@example.invalid'
@@ -31,20 +27,15 @@ async function cockpit(): Promise<Cockpit> {
 }
 
 beforeAll(async () => {
-  db = await openTestDatabase()
-  await applySeed(db.drizzle, planSeed(config), config.consentVersion)
+  db = await openSeededDatabase(config)
   const deps = composeApp(config, db.drizzle)
   app = createApp(deps)
-  const rows = await db.query('SELECT id FROM members WHERE email = ?', [
-    member,
-  ])
-  memberId = String(rows[0]?.['id'])
+  memberId = await idOf(db, member)
   await db.query('DELETE FROM follows WHERE member_id = ?', [memberId])
   await db.query('DELETE FROM connection_requests WHERE target_id = ?', [
     memberId,
   ])
-  const session = await deps.auth.createSession(memberId)
-  cookie = `${session.name}=${session.value}`
+  cookie = await cookieFor(deps.auth, memberId)
 })
 
 afterAll(async () => {
@@ -103,22 +94,17 @@ describe('the cockpit over Postgres (F8)', () => {
   })
 
   it('counts the requests waiting for the member, for the badge (R-MINE-4)', async () => {
-    const someone = await db.query(
-      "SELECT id FROM members WHERE email = 'sanne.kuipers@example.invalid'",
-    )
+    const someone = await idOf(db, 'sanne.kuipers@example.invalid')
     await db.query(
       "INSERT INTO connection_requests (id, requester_id, target_id, kind) VALUES (gen_random_uuid()::text, ?, ?, 'same_boat')",
-      [someone[0]?.['id'], memberId],
+      [someone, memberId],
     )
 
     expect((await cockpit()).pendingIncoming).toBe(1)
   })
 
   it('counts only what arrived since the member opened Matches, answered or not (R-MINE-4)', async () => {
-    const [someone] = await db.query(
-      "SELECT id FROM members WHERE email = 'sanne.kuipers@example.invalid'",
-    )
-    const other = someone?.['id']
+    const other = await idOf(db, 'sanne.kuipers@example.invalid')
     await db.query(
       "INSERT INTO connection_requests (id, requester_id, target_id, kind, status, responded_at) VALUES (gen_random_uuid()::text, ?, ?, 'been_there', 'accepted', now())",
       [memberId, other],
@@ -142,12 +128,10 @@ describe('the cockpit over Postgres (F8)', () => {
     )
     expect(pending[0]?.['n']).toBe(1)
 
-    const [third] = await db.query(
-      "SELECT id FROM members WHERE email = 'nadia.osei@example.invalid'",
-    )
+    const third = await idOf(db, 'nadia.osei@example.invalid')
     await db.query(
       "INSERT INTO connection_requests (id, requester_id, target_id, kind) VALUES (gen_random_uuid()::text, ?, ?, 'same_boat')",
-      [third?.['id'], memberId],
+      [third, memberId],
     )
     expect((await cockpit()).pendingIncoming).toBe(1)
   })

@@ -3,20 +3,11 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import request from 'supertest'
 import { createApp } from '../../src/app.js'
 import { composeApp } from '../../src/compose.js'
-import { loadConfig } from '../../src/config.js'
-import {
-  openTestDatabase,
-  testDatabaseUrl,
-  type Row,
-  type TestDatabase,
-} from './support/database.js'
+import type { Row, TestDatabase } from './support/database.js'
+import { idOf, openSeededDatabase, testConfig } from './support/app.js'
 import { DEV_ADMIN_EMAIL } from '../../src/seed/dev/people.js'
-import { planSeed } from '../../src/seed/plan.js'
-import { applySeed } from '../../src/seed/run.js'
 
-const config = loadConfig({
-  DATABASE_URL: testDatabaseUrl,
-  SESSION_SECRET: 'integration-session-secret-of-32-chars',
+const config = testConfig({
   NODE_ENV: 'development',
   MAIL_DELIVERY: 'none',
 })
@@ -45,12 +36,8 @@ async function usesOf(id: string): Promise<number> {
 }
 
 beforeAll(async () => {
-  db = await openTestDatabase()
-  await applySeed(db.drizzle, planSeed(config), config.consentVersion)
-  const admin = await db.query('SELECT id FROM members WHERE email = ?', [
-    DEV_ADMIN_EMAIL,
-  ])
-  adminId = String(admin[0]?.['id'])
+  db = await openSeededDatabase(config)
+  adminId = await idOf(db, DEV_ADMIN_EMAIL)
   const now = Date.now()
   for (const [row, maxUses, revokedAt] of [
     [invite, 2, null],

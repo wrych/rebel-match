@@ -1,12 +1,11 @@
 import { randomUUID } from 'node:crypto'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { loadConfig } from '../../src/config.js'
 import {
   openTestDatabase,
-  testDatabaseUrl,
   type Row,
   type TestDatabase,
 } from './support/database.js'
+import { testConfig } from './support/app.js'
 import {
   createMailer,
   REDACTED,
@@ -15,9 +14,8 @@ import {
 } from '../../src/services/mailer.js'
 import { createOutboxStore } from '../../src/services/outbox-store.js'
 
-const config = loadConfig({
-  DATABASE_URL: testDatabaseUrl,
-  SESSION_SECRET: 'integration-session-secret-of-32-chars',
+const config = testConfig({
+  NODE_ENV: 'development',
 })
 const to = `${randomUUID()}@example.invalid`
 const link = `https://match.example.org/auth/verify?token=${randomUUID()}`
