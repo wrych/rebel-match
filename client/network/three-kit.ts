@@ -51,6 +51,30 @@ export function disposeAll(objects: readonly (Mesh | Line)[]): void {
   }
 }
 
+/** A stage size in pixels. */
+export interface StageSize {
+  width: number
+  height: number
+}
+
+/** Calls `onSize` with `host`'s size now and whenever it changes, never per
+ * frame: setting a canvas's size clears what it holds. Returns a stop
+ * function. */
+export function followSize(
+  host: HTMLElement,
+  onSize: (size: StageSize) => void,
+): () => void {
+  const read = (): void => {
+    onSize({ width: host.clientWidth || 1, height: host.clientHeight || 1 })
+  }
+  const observer = new ResizeObserver(read)
+  observer.observe(host)
+  read()
+  return () => {
+    observer.disconnect()
+  }
+}
+
 /** A renderer on a canvas appended to `host`, its pixel ratio capped. */
 export function rendererIn(
   host: HTMLElement,

@@ -21,6 +21,7 @@ import { frameAt } from '../network/replay'
 import { coordinates, Moons, paletteOf, type Palette } from '../network/scene'
 import {
   disposeAll,
+  followSize,
   instancedSpheres,
   projector,
   rendererIn,
@@ -418,14 +419,14 @@ export function createPresentationScene(
   const lone = loneDot(world, palette)
   const scene = new Scene()
   scene.add(network.group, founders.group, future, lone)
+  let size = { width: 1, height: 1 }
+  const stopFollowing = followSize(host, (next) => {
+    size = next
+    renderer.setSize(next.width, next.height, false)
+  })
 
   return {
     render(state, named) {
-      const size = {
-        width: host.clientWidth || 1,
-        height: host.clientHeight || 1,
-      }
-      renderer.setSize(size.width, size.height, false)
       camera.aspect = size.width / size.height
       stageCamera(camera, world, state)
       network.render(state)
@@ -443,6 +444,7 @@ export function createPresentationScene(
       )
     },
     dispose() {
+      stopFollowing()
       network.dispose()
       founders.dispose()
       disposeAll([future])
