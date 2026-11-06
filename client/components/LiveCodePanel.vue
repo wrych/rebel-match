@@ -82,10 +82,6 @@ onUnmounted(() => {
 
 <template>
   <div class="stack">
-    <p class="lede">
-      Let the other person scan this with their phone’s camera. You are
-      connected at once, and both get each other’s email.
-    </p>
     <div class="card code-card">
       <template v-if="code">
         <svg
@@ -110,6 +106,10 @@ onUnmounted(() => {
       </p>
       <p v-else-if="problem" class="small" role="status">{{ problem }}</p>
     </div>
+    <p class="small">
+      Let the other person scan this with their phone’s camera. You are
+      connected at once, and both get each other’s email.
+    </p>
     <section
       v-if="connected.length > 0"
       class="stack-tight"
