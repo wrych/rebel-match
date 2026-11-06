@@ -504,7 +504,7 @@ Built after the spec and ADR merge. One pull request per item, in this order.
 
 - [x] The `direct` request kind, reach, and `POST /api/connections` taking
       it, capped per day. _(R-FIND-7, R-CONN-1)_
-- [ ] The query parser and printer, pure, shared by client and server.
+- [x] The query parser and printer, pure, shared by client and server.
       _(R-FIND-2)_
 - [ ] Search: `/api/members/search` behind `limits.memberSearch` and
       `member:search`, **Findable in search** on the profile, S44 with its
