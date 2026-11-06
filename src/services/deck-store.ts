@@ -1,5 +1,6 @@
-import { and, desc, eq, isNotNull, ne, notExists, sql } from 'drizzle-orm'
+import { and, desc, eq, ne, notExists, sql } from 'drizzle-orm'
 import type { Database } from '../db/connect.js'
+import { isReachableMember } from '../db/member-predicates.js'
 import { challenges, members, swipes, trends } from '../db/schema.js'
 import { challengeTrend, isShown, notReportedBy } from './challenge-store.js'
 import type { DeckStore } from './deck.js'
@@ -40,8 +41,7 @@ export function createDeckStore(db: Database): DeckStore {
           and(
             isShown(),
             notReportedBy(viewerId),
-            eq(members.status, 'active'),
-            isNotNull(members.name),
+            isReachableMember(),
             ne(challenges.memberId, viewerId),
             notExists(swiped),
           ),

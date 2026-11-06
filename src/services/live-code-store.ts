@@ -1,5 +1,6 @@
 import { and, eq, inArray, isNotNull, isNull, lt, or, sql } from 'drizzle-orm'
 import type { Database } from '../db/connect.js'
+import { isReachableMember } from '../db/member-predicates.js'
 import { connectionRequests as r, liveCodes, members } from '../db/schema.js'
 import { acceptPendingBetween, between } from './connection-store.js'
 import type { LiveCodeStore, LiveCodeTimes } from './live-codes.js'
@@ -9,7 +10,7 @@ const seconds = (n: number): ReturnType<typeof sql> =>
   sql`now() + make_interval(secs => ${n})`
 
 const activeAndOnboarded = (memberId: unknown): ReturnType<typeof sql> =>
-  sql`exists (select 1 from ${members} where ${members.id} = ${memberId} and ${members.status} = 'active' and ${members.name} is not null)`
+  sql`exists (select 1 from ${members} where ${members.id} = ${memberId} and ${isReachableMember()})`
 
 async function cutOlder(
   tx: Database,
