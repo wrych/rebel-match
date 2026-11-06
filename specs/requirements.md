@@ -2097,7 +2097,9 @@ connects at once (ADR 0063).
   for a direct connection. A code whose owner is no longer active SHALL
   NOT connect (R-CODE-10). IF a direct request is already pending between
   the two, either side, THE SYSTEM SHALL accept that one instead of adding
-  another. Every request pending between the two, either side, SHALL be
+  another; when it is the owner's own, the owner SHALL be told the scanner
+  accepted it, as R-CONN-7 says, rather than that they connected by the
+  live code. Every request pending between the two, either side, SHALL be
   accepted with it, as R-CONN-11 does, leaving the waiting
   list and showing under _Connected over_. Between members already connected over a direct
   request, nothing SHALL be added, and both land as R-CONN-8 says.
