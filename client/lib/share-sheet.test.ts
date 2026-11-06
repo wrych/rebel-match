@@ -30,12 +30,18 @@ function host(overrides: Partial<ShareHost> = {}): {
   }
 }
 
-describe('sharing an image (R-RECAP-6, R-CODE-2)', () => {
-  it('hands the card and the post to a share sheet that takes files', async () => {
+describe('sharing an image (R-RECAP-6)', () => {
+  it('hands the image alone to the sheet, the post copied in the same tap', async () => {
+    const steps: string[] = []
     const shared: ShareData[] = []
     const fake = host({
       canShare: () => true,
+      copy: (text) => {
+        steps.push(`copy ${text}`)
+        return new Promise(() => undefined)
+      },
       share: (data) => {
+        steps.push('share')
         shared.push(data)
         return Promise.resolve()
       },
@@ -44,7 +50,8 @@ describe('sharing an image (R-RECAP-6, R-CODE-2)', () => {
     const via = await shareImage(file, 'post', fake.host)
 
     expect(via).toBe('share_sheet')
-    expect(shared).toEqual([{ files: [file], text: 'post' }])
+    expect(shared).toEqual([{ files: [file] }])
+    expect(steps).toEqual(['copy post', 'share'])
     expect(fake.opened).toEqual([])
   })
 
@@ -83,27 +90,6 @@ describe('sharing an image (R-RECAP-6, R-CODE-2)', () => {
     })
 
     expect(await shareImage(file, 'post', fake.host)).toBe('linkedin')
-  })
-
-  it('shares the image alone, the text copied, where the sheet takes no text with it', async () => {
-    const copied: string[] = []
-    const shared: ShareData[] = []
-    const fake = host({
-      canShare: (data) => data.text === undefined,
-      share: (data) => {
-        shared.push(data)
-        return Promise.resolve()
-      },
-      copy: (text) => {
-        copied.push(text)
-        return Promise.resolve()
-      },
-    })
-
-    expect(await shareImage(file, 'post', fake.host)).toBe('share_sheet')
-    expect(shared).toEqual([{ files: [file] }])
-    expect(copied).toEqual(['post'])
-    expect(fake.saved).toEqual([])
   })
 
   it('opens LinkedIn’s composer with the text filled in', () => {
