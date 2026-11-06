@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm'
 import type { Database } from '../db/connect.js'
+import { isReachableMember } from '../db/member-predicates.js'
 import { members, notifications, recapAnnouncement } from '../db/schema.js'
 import type { RecapAnnounceStore } from './recap-announce.js'
 
@@ -27,9 +28,7 @@ export function createRecapAnnounceStore(db: Database): RecapAnnounceStore {
           insert into ${notifications} (id, recipient_id, type, about_member_id)
           select gen_random_uuid()::text, ${members.id}, 'recap', ${members.id}
           from ${members}
-          where ${members.status} = 'active'
-            and ${members.name} is not null
-            and ${members.consentAt} is not null`)
+          where ${isReachableMember()}`)
         await tx.insert(recapAnnouncement).values({ doneAt: at })
         return true
       }),

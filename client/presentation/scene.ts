@@ -3,7 +3,7 @@ import {
   Color,
   Float32BufferAttribute,
   Group,
-  InstancedMesh,
+  type InstancedMesh,
   Line,
   LineBasicMaterial,
   LineSegments,
@@ -13,13 +13,18 @@ import {
   PerspectiveCamera,
   Scene,
   SphereGeometry,
-  Vector3,
-  WebGLRenderer,
+  type WebGLRenderer,
 } from 'three'
 import { fitOf, positionOf, steering } from '../network/camera'
 import type { Point } from '../network/layout'
 import { frameAt } from '../network/replay'
 import { coordinates, Moons, paletteOf, type Palette } from '../network/scene'
+import {
+  disposeAll,
+  instancedSpheres,
+  projector,
+  rendererIn,
+} from '../network/three-kit'
 import { lightKey, type StageState } from './director'
 import type { World } from './world'
 
@@ -46,7 +51,6 @@ const look = {
   futureBudget: 40_000,
   segments: { around: 12, up: 8 },
   linkOpacity: 0.5,
-  maxPixelRatio: 2,
 }
 
 const pulse = (level: number, t: number): number =>
@@ -55,16 +59,12 @@ const pulse = (level: number, t: number): number =>
 const sphere = (): SphereGeometry =>
   new SphereGeometry(1, look.segments.around, look.segments.up)
 
-function dots(count: number, color: Color): InstancedMesh {
-  const mesh = new InstancedMesh(
-    sphere(),
+const dots = (count: number, color: Color): InstancedMesh =>
+  instancedSpheres(
+    count,
+    look.segments,
     new MeshBasicMaterial({ color, transparent: true }),
-    Math.max(count, 1),
   )
-  mesh.count = 0
-  mesh.frustumCulled = false
-  return mesh
-}
 
 function segments(world: World, palette: Palette): LineSegments {
   const positions = world.timeline.links.flatMap(({ source, target }) => [
@@ -221,10 +221,7 @@ class RealNetwork {
   }
 
   dispose(): void {
-    for (const object of [this.nodes, this.links, this.moons.mesh]) {
-      object.geometry.dispose()
-      ;(object.material as MeshBasicMaterial).dispose()
-    }
+    disposeAll([this.nodes, this.links, this.moons.mesh])
   }
 }
 
@@ -300,10 +297,7 @@ class Founders {
   }
 
   dispose(): void {
-    for (const object of [this.line, this.moons.mesh, ...this.dots]) {
-      object.geometry.dispose()
-      ;(object.material as MeshBasicMaterial).dispose()
-    }
+    disposeAll([this.line, this.moons.mesh, ...this.dots])
   }
 }
 
@@ -376,13 +370,11 @@ function stageRenderer(host: HTMLElement): WebGLRenderer {
   const background = new Color(
     getComputedStyle(host).getPropertyValue('--paper').trim() || '#0b0d14',
   )
-  const renderer = new WebGLRenderer({
+  const renderer = rendererIn(host, {
     antialias: true,
     preserveDrawingBuffer: true,
   })
-  renderer.setPixelRatio(Math.min(devicePixelRatio, look.maxPixelRatio))
   renderer.setClearColor(background)
-  host.appendChild(renderer.domElement)
   return renderer
 }
 
@@ -403,21 +395,12 @@ function anchorsOf(
   camera: PerspectiveCamera,
   size: { width: number; height: number },
 ): Anchors {
-  const spot = new Vector3()
+  const project = projector(camera)
   return new Map(
-    places.map(([handle, at]) => {
-      if (at === null) return [handle, null]
-      spot.set(at.x, at.y, at.z).project(camera)
-      return [
-        handle,
-        spot.z < 1
-          ? {
-              x: ((spot.x + 1) / 2) * size.width,
-              y: ((1 - spot.y) / 2) * size.height,
-            }
-          : null,
-      ]
-    }),
+    places.map(([handle, at]) => [
+      handle,
+      at === null ? null : project(at, size),
+    ]),
   )
 }
 
@@ -462,8 +445,7 @@ export function createPresentationScene(
     dispose() {
       network.dispose()
       founders.dispose()
-      future.geometry.dispose()
-      ;(future.material as MeshBasicMaterial).dispose()
+      disposeAll([future])
       renderer.dispose()
       renderer.domElement.remove()
     },

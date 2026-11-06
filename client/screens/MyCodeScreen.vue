@@ -160,23 +160,23 @@ onMounted(async () => {
       aria-label="Share my profile"
     >
       <div class="card code-card" :class="{ off: !code.enabled }">
-        <span class="corner">
-          <CopyButton :text="link" label="Copy link" :tick-ms="tickMs" />
-        </span>
         <QrCode :value="link" :label="`Profile code of ${name ?? 'you'}`" />
         <p class="card-title">{{ name }}</p>
         <p v-if="!code.enabled" class="small">
           Your code is off: it answers as not found.
         </p>
       </div>
-      <button
-        type="button"
-        class="btn btn-primary"
-        :disabled="sharing || cardFile === null || !code.enabled"
-        @click="share"
-      >
-        Share
-      </button>
+      <div class="share-row">
+        <button
+          type="button"
+          class="btn btn-primary"
+          :disabled="sharing || cardFile === null || !code.enabled"
+          @click="share"
+        >
+          Share
+        </button>
+        <CopyButton :text="link" label="Copy link" :tick-ms="tickMs" />
+      </div>
       <p class="small">
         Whoever scans or opens it sees your card and can ask to connect, even if
         you are not findable in search. Your email stays private until you
@@ -191,7 +191,6 @@ onMounted(async () => {
 
 <style scoped>
 .code-card {
-  position: relative;
   display: grid;
   justify-items: center;
   gap: 0.75rem;
@@ -202,9 +201,13 @@ onMounted(async () => {
   opacity: 0.4;
 }
 
-.corner {
-  position: absolute;
-  top: 0.5rem;
-  left: 0.5rem;
+.share-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.share-row .btn-primary {
+  flex: 1;
 }
 </style>
