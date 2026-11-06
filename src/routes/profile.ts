@@ -1,4 +1,4 @@
-import { Router } from 'express'
+import { Router, type RequestHandler } from 'express'
 import { z } from 'zod'
 import type { AuthProvider } from '../auth/index.js'
 import type { Limits } from '../config.js'
@@ -24,9 +24,25 @@ function editBody(limits: TextLimits): z.ZodType<ProfileEdit> {
   })
 }
 
+const findableBody = z.object({ findable: z.boolean() })
+
+function setFindable(profile: ProfileStore): RequestHandler {
+  return async (request, response) => {
+    const choice = findableBody.safeParse(request.body)
+    if (!choice.success) {
+      response.status(400).json({ error: 'bad_request' })
+      return
+    }
+    const member = (response.locals as GuardedLocals).member
+    await profile.setFindable(member.id, choice.data.findable)
+    response.status(204).end()
+  }
+}
+
 /** `GET`, `PUT` and `DELETE /api/profile` (design §3): the member's own
  * profile and privacy, edits within the onboarding limits, and erasing their
- * own account (R-PROF-1,2). */
+ * own account (R-PROF-1,2); `PUT /api/me/findable`, whether search finds
+ * them, whatever the switches say (R-FIND-5). */
 export function profileRoutes(deps: {
   auth: AuthProvider
   profile: ProfileStore
@@ -57,6 +73,8 @@ export function profileRoutes(deps: {
     await deps.profile.update(member.id, edit.data)
     response.status(204).end()
   })
+
+  router.put('/api/me/findable', guard, setFindable(deps.profile))
 
   // Deleting as a host does, refused for the same reasons, but marked as the
   // member's own so their emailed link can undo it (ADR 0032). The session

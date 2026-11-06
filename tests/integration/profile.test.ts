@@ -90,6 +90,25 @@ describe('the profile over Postgres (R-PROF-1,2)', () => {
   })
 })
 
+describe('being findable over Postgres (R-FIND-5)', () => {
+  it('is on until the member turns it off, and stays as they leave it', async () => {
+    const before = await request(app).get('/api/profile').set('Cookie', cookie)
+    const off = await request(app)
+      .put('/api/me/findable')
+      .set('Cookie', cookie)
+      .send({ findable: false })
+    const after = await request(app).get('/api/profile').set('Cookie', cookie)
+    await request(app)
+      .put('/api/me/findable')
+      .set('Cookie', cookie)
+      .send({ findable: true })
+
+    expect((before.body as { findable: boolean }).findable).toBe(true)
+    expect(off.status).toBe(204)
+    expect((after.body as { findable: boolean }).findable).toBe(false)
+  })
+})
+
 describe('deleting your own account over Postgres (R-PROF-2, ADR 0032)', () => {
   it('deactivates the member, ends their session, and their emailed link keeps it', async () => {
     const leaver = {

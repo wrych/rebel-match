@@ -61,6 +61,7 @@ function deps(
     profile: {
       own: () => Promise.resolve(null),
       update: () => Promise.resolve(),
+      setFindable: () => Promise.resolve(),
     },
     whitelist: { add: () => Promise.resolve([]) },
     outbox: {

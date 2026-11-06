@@ -27,6 +27,7 @@ export function createProfileStore(
         consentVersion: row.consentVersion,
         consentAt: row.consentAt?.toISOString() ?? null,
         analyticsOptIn: isOptedIn(row, analyticsVersion),
+        findable: row.findable,
       }
     },
     update: async (memberId, edit) => {
@@ -40,6 +41,9 @@ export function createProfileStore(
           companySize: edit.companySize ?? null,
         })
         .where(eq(members.id, memberId))
+    },
+    setFindable: async (memberId, findable) => {
+      await db.update(members).set({ findable }).where(eq(members.id, memberId))
     },
   }
 }
