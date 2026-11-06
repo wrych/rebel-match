@@ -91,6 +91,14 @@ describe('tokenize and printQuery (R-FIND-4)', () => {
     )
   })
 
+  it('writes back a part it could not read as typed, quotes included', () => {
+    const tokens = tokenize('ana foo:"x y" company:acme')
+
+    expect(printQuery(tokens.filter((t) => t.field !== 'company'))).toBe(
+      'ana foo:"x y"',
+    )
+  })
+
   it('quotes a value holding a space', () => {
     expect(
       printQuery([{ field: 'title', value: 'head of', quoted: false }]),
@@ -99,7 +107,12 @@ describe('tokenize and printQuery (R-FIND-4)', () => {
 
   it('keeps the value as typed, case and accents included', () => {
     expect(tokenize('company:Zürich')).toEqual([
-      { field: 'company', value: 'Zürich', quoted: false },
+      {
+        field: 'company',
+        value: 'Zürich',
+        quoted: false,
+        raw: 'company:Zürich',
+      },
     ])
   })
 })

@@ -3,12 +3,13 @@ export const searchFields = ['name', 'company', 'title', 'sector'] as const
 
 export type SearchField = (typeof searchFields)[number]
 
-/** One part of a query as typed: its operator, if any, and its value as
- * written, without quotes. */
+/** One part of a query: its operator, if any, and its value without quotes;
+ * `raw` is the part exactly as typed, absent for one a chip added. */
 export interface QueryToken {
   field: SearchField | null
   value: string
   quoted: boolean
+  raw?: string
 }
 
 /** A query ready to search: each value folded to lower case without accents
@@ -52,6 +53,7 @@ function tokenOf(segment: string): QueryToken {
     field: field ?? null,
     value: rest.replaceAll(QUOTE, ''),
     quoted: rest.includes(QUOTE),
+    raw: segment,
   }
 }
 
@@ -61,8 +63,9 @@ export function tokenize(query: string): QueryToken[] {
   return splitOutsideQuotes(query).map(tokenOf)
 }
 
-/** One part written back as it would be typed. */
+/** One part written back: as it was typed, or as one would type it. */
 export function printToken(token: QueryToken): string {
+  if (token.raw !== undefined) return token.raw
   const prefix = token.field === null ? '' : `${token.field}:`
   const needsQuotes = token.quoted || SPACE.test(token.value)
   return needsQuotes
