@@ -17,7 +17,8 @@ import {
   shareText,
   type Card,
 } from '../recap/card'
-import { renderCard, saveCard, shareCard, type SharedVia } from '../recap/share'
+import { renderCard } from '../recap/share'
+import { saveImage, shareImage, type SharedVia } from '../lib/share-sheet'
 import { attended, storyOf, type Beat } from '../recap/story'
 import { logoUrl } from '../lib/invites'
 import EventTicket from './EventTicket.vue'
@@ -124,12 +125,12 @@ async function prepareCard(): Promise<void> {
 
 async function share(): Promise<void> {
   if (cardFile.value === null) return
-  const via = await shareCard(cardFile.value, shareText(card, props.site))
+  const via = await shareImage(cardFile.value, shareText(card, props.site))
   if (via !== null) emit('shared', via)
 }
 
 function save(): void {
-  if (cardFile.value !== null) emit('shared', saveCard(cardFile.value))
+  if (cardFile.value !== null) emit('shared', saveImage(cardFile.value))
 }
 
 // Each story runs for its own length, so a story gets a player of its own.
@@ -301,7 +302,7 @@ defineExpose({ index, go, beats })
               :disabled="!cardFile"
               @click="share"
             >
-              Share on LinkedIn
+              Share
             </button>
             <button
               type="button"
