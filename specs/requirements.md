@@ -2031,7 +2031,7 @@ connects at once (ADR 0063).
   contact (R-CONN-8). A direct request sent this way, from S46, SHALL be
   allowed only to a member the requester can reach: findable while search is on, or through a usable
   profile code (R-CODE-3); otherwise not found. A member SHALL send at most
-  `limits.directRequestsPerDay` direct requests a day (20); one more SHALL be
+  `limits.directRequestsPerDay` direct requests a day (50); one more SHALL be
   refused with a message saying so, not as not found. A live code is not
   sent this way and is governed by R-CODE-6 alone.
 - **R-FIND-8 (Usage)** — For a member opted in (R-ANA-4) THE SYSTEM SHALL
