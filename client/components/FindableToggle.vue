@@ -4,7 +4,7 @@ import { fetchConfig } from '../lib/api'
 import { saveFindable } from '../lib/profile'
 import SavedTick from './SavedTick.vue'
 
-const props = defineProps<{ findable: boolean }>()
+const props = defineProps<{ findable: boolean; codesOn?: boolean }>()
 
 const checked = ref(props.findable)
 const tickMs = ref(0)
@@ -60,6 +60,10 @@ async function change(): Promise<void> {
     <p class="small">
       Other members can find you by your name, organization, job title or
       sector, and ask to connect. Your email stays private until you accept.
+    </p>
+    <p v-if="props.codesOn" class="small">
+      Turned off, others can still reach you through a connect code you show or
+      share. Your profile code is turned off separately, below.
     </p>
     <p v-if="problem" class="alert" role="alert">{{ problem }}</p>
   </section>

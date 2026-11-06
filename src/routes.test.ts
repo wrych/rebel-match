@@ -3,6 +3,7 @@ import {
   isKnownPath,
   pageTitle,
   routeTable,
+  nextOf,
   safeNextPath,
   titleForPath,
 } from './routes.js'
@@ -33,7 +34,25 @@ describe('isKnownPath', () => {
   })
 })
 
+describe('nextOf (R-CODE-3, R-NAV-6)', () => {
+  it('keeps the fragment on the profile code paths, with any query', () => {
+    expect(nextOf('/p#t=abc')).toBe('/p#t=abc')
+    expect(nextOf('/p/connect?x=1#t=abc')).toBe('/p/connect?x=1#t=abc')
+  })
+
+  it('drops the fragment on every other path, keeping its query', () => {
+    expect(nextOf('/matches?x=1#t=abc')).toBe('/matches?x=1')
+    expect(nextOf('/people#t=abc')).toBe('/people')
+    expect(nextOf('/p/elsewhere#t=abc')).toBe('/p/elsewhere')
+  })
+})
+
 describe('safeNextPath', () => {
+  it('keeps a profile code through sign-in, and no other fragment', () => {
+    expect(safeNextPath('/p#t=abc')).toBe('/p#t=abc')
+    expect(safeNextPath('/matches#t=abc')).toBe('/matches')
+  })
+
   it('passes a known in-app path through', () => {
     expect(safeNextPath('/matches/requests/42')).toBe('/matches/requests/42')
   })

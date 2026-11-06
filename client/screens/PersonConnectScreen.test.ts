@@ -3,9 +3,13 @@ import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import PersonConnectScreen from './PersonConnectScreen.vue'
 
+const route = {
+  params: { memberId: 'm-ben' } as Record<string, string>,
+  hash: '',
+}
 const replace = vi.fn()
 vi.mock('vue-router', () => ({
-  useRoute: () => ({ params: { memberId: 'm-ben' } }),
+  useRoute: () => route,
   useRouter: () => ({ replace }),
 }))
 
@@ -24,6 +28,12 @@ function server(
   cardStatus = 200,
 ): ReturnType<typeof vi.fn> {
   const fetchMock = vi.fn((url: string, init?: RequestInit) => {
+    if (url === '/api/profile-codes/open')
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: async () => ({ card, memberId: 'm-ben' }),
+      })
     if (init?.method === 'POST')
       return Promise.resolve({
         ok: status < 300,
@@ -39,7 +49,7 @@ function server(
     return Promise.resolve({
       ok: cardStatus < 300,
       status: cardStatus,
-      json: async () => ({ card }),
+      json: async () => ({ card, memberId: 'm-ben' }),
     })
   })
   vi.stubGlobal('fetch', fetchMock)
@@ -63,6 +73,7 @@ async function send(screen: ReturnType<typeof mount>): Promise<void> {
 afterEach(() => {
   vi.unstubAllGlobals()
   replace.mockReset()
+  Object.assign(route, { params: { memberId: 'm-ben' }, hash: '' })
 })
 
 describe('PersonConnectScreen (S46)', () => {
@@ -121,5 +132,25 @@ describe('PersonConnectScreen (S46)', () => {
     const screen = await mountScreen()
 
     expect(screen.find('.empty').text()).toContain('nobody to ask')
+  })
+
+  it('sends the profile code with a request reached through it (R-CODE-3)', async () => {
+    Object.assign(route, { params: {}, hash: '#t=tok-1' })
+    const fetchMock = server()
+    const screen = await mountScreen()
+    await send(screen)
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/connections',
+      expect.objectContaining({
+        body: JSON.stringify({
+          targetId: 'm-ben',
+          kind: 'direct',
+          message: 'We met at lunch',
+          profileCode: 'tok-1',
+        }),
+      }),
+    )
+    expect(screen.findComponent(RouterLinkStub).props('to')).toBe('/matches')
   })
 })

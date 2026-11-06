@@ -6,6 +6,7 @@ import {
   type QueryToken,
   type SearchField,
 } from '../../src/search/query'
+import { openProfileCode, tokenOf } from './codes'
 import { findJson } from './request'
 
 export type { MemberCard, SearchAnswer }
@@ -94,4 +95,27 @@ export function withOperator(
 ): string {
   const added: QueryToken = { field, value, quoted: false }
   return printQuery([...tokenize(query), added])
+}
+
+/** Whom S45 and S46 show, and the profile code that reached them, if any. */
+export interface Reached {
+  card: MemberCard
+  profileCode: string | null
+}
+
+/** The member a card screen is about: by id where search reaches them, or
+ * by the profile code in the address's fragment; null for neither
+ * (R-FIND-6, R-CODE-3). */
+export async function reachedFrom(route: {
+  params: Record<string, unknown>
+  hash: string
+}): Promise<Reached | null> {
+  const memberId = route.params['memberId']
+  if (typeof memberId === 'string') {
+    const card = await fetchMemberCard(memberId)
+    return card === null ? null : { card, profileCode: null }
+  }
+  const token = tokenOf(route.hash)
+  const opened = token === null ? null : await openProfileCode(token)
+  return opened === null ? null : { card: opened.card, profileCode: token }
 }

@@ -8,6 +8,7 @@ import { reportEvent } from '../lib/events'
 import { feedbackMailto } from '../lib/feedback'
 import { networkOpen } from '../lib/network'
 import { searchOpen } from '../lib/people'
+import { codesOpen } from '../lib/codes'
 import { recapOpen } from '../lib/recap'
 import { RECAP_TITLE } from '../../src/recap/title'
 import { fetchOpenReported, moderationLabel } from '../lib/moderation'
@@ -31,6 +32,7 @@ const version = ref<ClientConfig['build'] | null>(null)
 const feedbackTo = ref<string | null>(null)
 const networkReplay = ref(0)
 const memberSearch = ref(0)
+const connectCodes = ref(0)
 const recapLimits = ref({ recap: 0, recapOpensAt: 0 })
 const fresh = ref(0)
 const freshBadges = ref(0)
@@ -84,6 +86,9 @@ const people = computed(
     me.value?.onboarded === true &&
     searchOpen(memberSearch.value, me.value.permissions),
 )
+const codes = computed(
+  () => me.value?.onboarded === true && codesOpen(connectCodes.value),
+)
 const recap = computed(
   () =>
     me.value?.onboarded === true && recapOpen(recapLimits.value, Date.now()),
@@ -100,6 +105,7 @@ function remember(config: ClientConfig): void {
   feedbackTo.value = config.feedbackTo
   networkReplay.value = config.limits.networkReplay
   memberSearch.value = config.limits.memberSearch
+  connectCodes.value = config.limits.connectCodes
   recapLimits.value = {
     recap: config.limits.recap,
     recapOpensAt: config.limits.recapOpensAt,
@@ -223,6 +229,10 @@ onBeforeUnmount(() => {
 
       <RouterLink v-if="people" to="/people" class="item" @click="close(false)"
         >Find a member</RouterLink
+      >
+
+      <RouterLink v-if="codes" to="/me/code" class="item" @click="close(false)"
+        >Your code</RouterLink
       >
 
       <RouterLink

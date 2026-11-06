@@ -33,6 +33,24 @@ afterEach(() => {
 })
 
 describe('FindableToggle (R-FIND-5)', () => {
+  it.each([
+    [true, true],
+    [false, false],
+  ])(
+    'says codes still reach the member only while codes are on (%s) (R-CODE-4)',
+    async (codesOn, said) => {
+      server()
+      const toggle = mount(FindableToggle, {
+        props: { findable: true, codesOn },
+      })
+      await flushPromises()
+
+      expect(toggle.text().includes('connect code you show or share')).toBe(
+        said,
+      )
+    },
+  )
+
   it('shows the member’s current choice', async () => {
     server()
 

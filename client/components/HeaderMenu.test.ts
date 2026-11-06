@@ -108,6 +108,18 @@ describe('HeaderMenu', () => {
   )
 
   it.each([
+    [1, true],
+    [0, false],
+  ])(
+    'offers Your code while codes are on (%i): %s (R-CODE-1)',
+    async (connectCodes, offered) => {
+      withConfig(signedIn([]), { connectCodes })
+
+      expect(paths(await opened()).includes('/me/code')).toBe(offered)
+    },
+  )
+
+  it.each([
     [1, ['network:view'], true],
     [0, ['network:view'], false],
     [1, [], false],

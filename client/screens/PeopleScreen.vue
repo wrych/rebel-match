@@ -3,6 +3,7 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import PersonCard from '../components/PersonCard.vue'
 import { fetchConfig } from '../lib/api'
+import { codesOpen } from '../lib/codes'
 import {
   chipsOf,
   personPath,
@@ -26,6 +27,7 @@ const searching = ref(false)
 const problem = ref<string | null>(null)
 const box = ref<HTMLInputElement | null>(null)
 const sectorPick = ref('')
+const codesOn = ref(false)
 
 const chips = computed(() => chipsOf(draft.value))
 const showHelp = computed(
@@ -107,6 +109,7 @@ onMounted(async () => {
     await notFound()
     return
   }
+  codesOn.value = config !== null && codesOpen(config.limits.connectCodes)
   await run(queryInUrl())
 })
 </script>
@@ -116,6 +119,9 @@ onMounted(async () => {
     <div class="stack">
       <p class="kicker kicker-accent">Connect directly</p>
       <h1 class="display display-lg">Find a member</h1>
+      <RouterLink v-if="codesOn" to="/me/code" class="row-link"
+        >Or show your code</RouterLink
+      >
     </div>
 
     <form class="stack-tight" role="search" @submit.prevent="search">

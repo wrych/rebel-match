@@ -77,6 +77,40 @@ afterEach(() => {
 })
 
 describe('ProfileScreen', () => {
+  it.each([
+    [1, true],
+    [0, false],
+  ])(
+    'offers the profile code and its Findable note while codes are on (%i): %s (R-CODE-4)',
+    async (connectCodes, offered) => {
+      const fetchMock = vi.fn((url: string) => {
+        const bodies: Record<string, unknown> = {
+          '/api/config': {
+            ...config,
+            limits: { ...config.limits, connectCodes },
+          },
+          '/api/me/profile-code': { token: 't', enabled: true },
+        }
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve(bodies[url] ?? { ...profile, findable: true }),
+        })
+      })
+      vi.stubGlobal('fetch', fetchMock)
+      const screen = await mountScreen()
+
+      expect(screen.text().includes('Profile code: on')).toBe(offered)
+      expect(screen.text().includes('connect code you show or share')).toBe(
+        offered,
+      )
+      expect(
+        fetchMock.mock.calls.some(([url]) => url === '/api/me/profile-code'),
+      ).toBe(offered)
+    },
+  )
+
   it('shows the profile, the email read-only, and no save button (R-PROF-1)', async () => {
     server()
     const screen = await mountScreen()
