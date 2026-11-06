@@ -48,6 +48,12 @@ describe('nextOf (R-CODE-3, R-NAV-6)', () => {
 })
 
 describe('safeNextPath', () => {
+  it('never carries a live code through sign-in (R-CODE-7)', () => {
+    expect(safeNextPath('/c#t=abc')).toBe('/')
+    expect(safeNextPath('/c')).toBe('/')
+    expect(safeNextPath('/challenges/1')).toBe('/challenges/1')
+  })
+
   it('keeps a profile code through sign-in, and no other fragment', () => {
     expect(safeNextPath('/p#t=abc')).toBe('/p#t=abc')
     expect(safeNextPath('/matches#t=abc')).toBe('/matches')

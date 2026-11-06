@@ -102,6 +102,12 @@ export const routeTable: readonly RouteDef[] = [
     access: 'onboarded',
   },
   {
+    path: '/c',
+    name: 'live-code',
+    title: 'Live connect code',
+    access: 'public',
+  },
+  {
     path: '/people',
     name: 'people',
     title: 'Find a member',
@@ -321,6 +327,10 @@ export function isKnownPath(path: string): boolean {
 
 const CODE_PATHS: readonly string[] = ['/p', '/p/connect']
 
+// A live code lives seconds, so it is never carried through sign-in
+// (R-CODE-7).
+const isLiveCodePath = (path: string): boolean => /^\/c(?:[?#]|$)/.test(path)
+
 /** A path as `next` carries it: a fragment kept on `/p` and `/p/connect`
  * alone, where it holds the profile code, and dropped on every other path
  * (R-CODE-3, R-NAV-6). */
@@ -334,8 +344,9 @@ export function nextOf(fullPath: string): string {
 
 /**
  * Narrows a `next` parameter to somewhere safe to send a member (R-NAV-6).
- * Returns `/` for anything absolute, protocol-relative, backslash-escaped, or
- * not in the table — this value arrives from an email, so it is never trusted.
+ * Returns `/` for anything absolute, protocol-relative, backslash-escaped,
+ * a live code, or not in the table — this value arrives from an email, so
+ * it is never trusted.
  */
 export function safeNextPath(next: string | undefined): string {
   if (next === undefined || next === '') return '/'
@@ -344,5 +355,6 @@ export function safeNextPath(next: string | undefined): string {
   if (next.includes('\\')) return '/'
   if (next.includes('://')) return '/'
 
-  return isKnownPath(next) ? nextOf(next) : '/'
+  if (!isKnownPath(next) || isLiveCodePath(next)) return '/'
+  return nextOf(next)
 }

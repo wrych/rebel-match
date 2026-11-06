@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import CopyButton from '../components/CopyButton.vue'
+import LiveCodePanel from '../components/LiveCodePanel.vue'
 import ProfileCodeControls from '../components/ProfileCodeControls.vue'
 import QrCode from '../components/QrCode.vue'
 import { fetchConfig } from '../lib/api'
 import {
+  codesOpen,
   fetchProfileCode,
   profileCodeLink,
   type ProfileCode,
@@ -34,24 +36,53 @@ async function share(): Promise<void> {
   }
 }
 
-onMounted(async () => {
+type Tab = 'profile' | 'now'
+
+const tab = computed<Tab>(() =>
+  route.query['tab'] === 'now' ? 'now' : 'profile',
+)
+const retrySeconds = ref<number | null>(null)
+
+function showTab(next: Tab): void {
+  void router.replace({ query: next === 'profile' ? {} : { tab: next } })
+}
+
+async function notFound(): Promise<void> {
+  await router.replace({
+    name: 'not-found',
+    params: { pathMatch: route.path.slice(1).split('/') },
+  })
+}
+
+// The profile code is made the first time its tab is opened (R-CODE-2).
+async function loadProfileCode(): Promise<void> {
+  if (tab.value !== 'profile' || code.value !== null) return
   try {
-    const [mine, me, config] = await Promise.all([
-      fetchProfileCode(),
-      loadMe(),
-      fetchConfig(),
-    ])
-    tickMs.value = config.limits.savedTickMs
-    name.value = me?.name ?? null
-    code.value = mine
-    if (mine === null)
-      await router.replace({
-        name: 'not-found',
-        params: { pathMatch: route.path.slice(1).split('/') },
-      })
+    const mine = await fetchProfileCode()
+    if (mine === null) await notFound()
+    else code.value = mine
   } catch {
     problem.value = 'Your code could not be loaded. Reload to try again.'
   }
+}
+
+watch(tab, loadProfileCode)
+
+onMounted(async () => {
+  try {
+    const [me, config] = await Promise.all([loadMe(), fetchConfig()])
+    if (!codesOpen(config.limits.connectCodes)) {
+      await notFound()
+      return
+    }
+    tickMs.value = config.limits.savedTickMs
+    retrySeconds.value = config.limits.liveCodeSeconds
+    name.value = me?.name ?? null
+  } catch {
+    problem.value = 'Your code could not be loaded. Reload to try again.'
+    return
+  }
+  await loadProfileCode()
 })
 </script>
 
@@ -62,8 +93,40 @@ onMounted(async () => {
       <h1 class="display display-lg">Your code</h1>
     </div>
 
-    <section v-if="code" class="stack" aria-labelledby="share-heading">
-      <h2 id="share-heading" class="display display-md">Share my profile</h2>
+    <div role="tablist" aria-label="Your code" class="tabs">
+      <button
+        type="button"
+        role="tab"
+        class="btn btn-small"
+        :class="tab === 'profile' ? 'btn-dark' : 'btn-ghost'"
+        :aria-selected="tab === 'profile'"
+        @click="showTab('profile')"
+      >
+        Share my profile
+      </button>
+      <button
+        type="button"
+        role="tab"
+        class="btn btn-small"
+        :class="tab === 'now' ? 'btn-dark' : 'btn-ghost'"
+        :aria-selected="tab === 'now'"
+        @click="showTab('now')"
+      >
+        Connect now
+      </button>
+    </div>
+
+    <LiveCodePanel
+      v-if="tab === 'now' && retrySeconds !== null"
+      :retry-seconds="retrySeconds"
+      @off="notFound"
+    />
+
+    <section
+      v-else-if="tab === 'profile' && code"
+      class="stack"
+      aria-label="Share my profile"
+    >
       <p class="lede">
         Whoever scans or opens this sees your card and can ask to connect, even
         if you are not findable in search. Your email stays private until you

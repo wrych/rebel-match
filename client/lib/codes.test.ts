@@ -2,9 +2,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   codesOpen,
   fetchProfileCode,
+  issueLiveCode,
+  liveCodeLink,
   openProfileCode,
   profileCodeLink,
   profileConnectPath,
+  redeemLiveCode,
   resetProfileCode,
   setProfileCode,
   tokenOf,
@@ -88,5 +91,34 @@ describe('openProfileCode (R-CODE-3, R-NFR-9)', () => {
     answer(404)
 
     expect(await openProfileCode('old')).toBeNull()
+  })
+})
+
+describe('live codes (R-CODE-5..7)', () => {
+  it('reads a new code, the minute’s limit, and codes off', async () => {
+    answer(201, { token: 't', showForSeconds: 30 })
+    expect(await issueLiveCode()).toMatchObject({
+      result: 'issued',
+      code: { token: 't' },
+    })
+    answer(429)
+    expect(await issueLiveCode()).toEqual({ result: 'limit' })
+    answer(404)
+    expect(await issueLiveCode()).toEqual({ result: 'off' })
+  })
+
+  it('reads a scan as connected, expired, or codes off', async () => {
+    answer(200, { id: 'r1' })
+    expect(await redeemLiveCode('t')).toEqual({ result: 'connected', id: 'r1' })
+    answer(410)
+    expect(await redeemLiveCode('t')).toEqual({ result: 'expired' })
+    answer(404)
+    expect(await redeemLiveCode('t')).toEqual({ result: 'off' })
+  })
+
+  it('links a live code by its fragment', () => {
+    expect(liveCodeLink('https://app.example', 'abc')).toBe(
+      'https://app.example/c#t=abc',
+    )
   })
 })
