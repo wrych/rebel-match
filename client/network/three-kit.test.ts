@@ -1,6 +1,12 @@
 import { PerspectiveCamera } from 'three'
-import { describe, expect, it } from 'vitest'
-import { instancedSpheres, projector, stagePlaceOf } from './three-kit'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import {
+  followSize,
+  instancedSpheres,
+  projector,
+  stagePlaceOf,
+  type StageSize,
+} from './three-kit'
 
 const STAGE = { width: 800, height: 600 }
 
@@ -62,5 +68,60 @@ describe('instancedSpheres', () => {
 
   it('is never culled by bounds reckoned before its points are placed', () => {
     expect(instancedSpheres(3, { around: 8, up: 6 }).frustumCulled).toBe(false)
+  })
+})
+
+describe('followSize', () => {
+  // The browser's observer, reduced to what a test can drive by hand.
+  class Watcher {
+    static last: Watcher | null = null
+    watching = false
+    constructor(readonly changed: () => void) {
+      Watcher.last = this
+    }
+    observe(): void {
+      this.watching = true
+    }
+    disconnect(): void {
+      this.watching = false
+    }
+  }
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  function follow(host: { clientWidth: number; clientHeight: number }): {
+    sizes: StageSize[]
+    stop: () => void
+  } {
+    vi.stubGlobal('ResizeObserver', Watcher)
+    const sizes: StageSize[] = []
+    const stop = followSize(host as HTMLElement, (size) => sizes.push(size))
+    return { sizes, stop }
+  }
+
+  it('reads the size at once, then only when the host changes', () => {
+    const host = { clientWidth: 800, clientHeight: 600 }
+    const { sizes } = follow(host)
+    host.clientWidth = 1024
+    Watcher.last?.changed()
+
+    expect(sizes).toEqual([
+      { width: 800, height: 600 },
+      { width: 1024, height: 600 },
+    ])
+  })
+
+  it('never reads a size of zero from a host not laid out yet', () => {
+    expect(follow({ clientWidth: 0, clientHeight: 0 }).sizes).toEqual([
+      { width: 1, height: 1 },
+    ])
+  })
+
+  it('stops watching once told to', () => {
+    follow({ clientWidth: 800, clientHeight: 600 }).stop()
+
+    expect(Watcher.last?.watching).toBe(false)
   })
 })
