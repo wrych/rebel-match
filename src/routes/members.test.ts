@@ -31,6 +31,7 @@ const ben: MemberCard = {
   org: 'Acme',
   sector: 'Retail',
   companySize: '1–10 employees',
+  connectionId: null,
 }
 
 function setup(memberSearch = 1): Express {
@@ -38,7 +39,7 @@ function setup(memberSearch = 1): Express {
     rules: () => ({ searchOn: memberSearch === 1, minChars: 2, maxResults: 5 }),
     store: {
       search: () => Promise.resolve([ben]),
-      card: (id) =>
+      card: (_viewerId, id) =>
         Promise.resolve(
           id === 'm-ben'
             ? { card: ben, reachable: true, findable: true }

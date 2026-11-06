@@ -40,6 +40,11 @@ onMounted(async () => {
       reachedFrom(route),
       fetchConfig(),
     ])
+    const joined = found?.card.connectionId ?? null
+    if (joined !== null) {
+      await router.replace(contactPath(joined))
+      return
+    }
     reached.value = found
     missing.value = found === null
     maxChars.value = config.limits.connectionMessageMaxChars

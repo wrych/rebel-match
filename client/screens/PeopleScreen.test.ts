@@ -29,6 +29,7 @@ const ben = {
   org: 'Acme',
   sector: 'Retail',
   companySize: null,
+  connectionId: null,
 }
 
 function server(
@@ -88,6 +89,13 @@ describe('PeopleScreen (S44)', () => {
       '/people/m-ben',
     )
     expect(screen.html()).not.toContain('@')
+  })
+
+  it('marks a member already connected (R-CONN-8)', async () => {
+    server({ results: [{ ...ben, connectionId: 'r1' }], more: false })
+    const screen = await mountScreen('ben')
+
+    expect(screen.find('.peer-list').text()).toContain('Connected')
   })
 
   it('keeps a submitted query in the address (R-NAV-1)', async () => {

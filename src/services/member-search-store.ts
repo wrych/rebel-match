@@ -10,7 +10,7 @@ import {
   type SQLWrapper,
 } from 'drizzle-orm'
 import type { Database } from '../db/connect.js'
-import { members, sectors } from '../db/schema.js'
+import { connectionRequests as r, members, sectors } from '../db/schema.js'
 import { ACCENTS } from '../search/query.js'
 import type {
   MemberCard,
@@ -69,7 +69,16 @@ function wholeWords(terms: SearchTerms, fields: (keyof SearchTerms)[]): SQL[] {
 
 const reachable = and(eq(members.status, 'active'), isNotNull(members.name))
 
-const cardColumns = {
+// The newest accepted request between the viewer and the member, whatever
+// it was about, so a card can lead to the contact (R-CONN-8).
+const memberColumn = sql`${members}.${sql.identifier('id')}`
+
+const connectionWith = (viewerId: string): SQL<string | null> =>
+  sql<
+    string | null
+  >`(SELECT ${r.id} FROM ${r} WHERE ${r.status} = 'accepted' AND ((${r.requesterId} = ${viewerId} AND ${r.targetId} = ${memberColumn}) OR (${r.requesterId} = ${memberColumn} AND ${r.targetId} = ${viewerId})) ORDER BY ${r.respondedAt} DESC NULLS LAST LIMIT 1)`
+
+const baseColumns = {
   memberId: members.id,
   name: sql<string>`${members.name}`,
   jobTitle: members.jobTitle,
@@ -78,6 +87,13 @@ const cardColumns = {
   companySize: companySizeLabel,
 }
 
+const cardColumns = (
+  viewerId: string,
+): typeof baseColumns & { connectionId: SQL<string | null> } => ({
+  ...baseColumns,
+  connectionId: connectionWith(viewerId),
+})
+
 /** Member search over Postgres: every term a parameter of a `LIKE` on folded
  * text, its `%`, `_` and `\` escaped; ranked by whole name words, then whole
  * words elsewhere, then name (R-FIND-2,3, ADR 0062). */
@@ -85,7 +101,7 @@ export function createMemberSearchStore(db: Database): MemberSearchStore {
   return {
     search: async (callerId, terms, limit): Promise<MemberCard[]> =>
       db
-        .select(cardColumns)
+        .select(cardColumns(callerId))
         .from(members)
         .where(
           and(
@@ -102,10 +118,10 @@ export function createMemberSearchStore(db: Database): MemberSearchStore {
           asc(members.id),
         )
         .limit(limit),
-    card: async (memberId) => {
+    card: async (viewerId, memberId) => {
       const [row] = await db
         .select({
-          ...cardColumns,
+          ...cardColumns(viewerId),
           reachable: sql<boolean>`(${reachable})`,
           findable: members.findable,
         })

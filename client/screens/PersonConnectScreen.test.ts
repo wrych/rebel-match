@@ -20,6 +20,7 @@ const card = {
   org: 'Acme',
   sector: null,
   companySize: null,
+  connectionId: null as string | null,
 }
 
 function server(
@@ -74,6 +75,7 @@ afterEach(() => {
   vi.unstubAllGlobals()
   replace.mockReset()
   Object.assign(route, { params: { memberId: 'm-ben' }, hash: '' })
+  card.connectionId = null
 })
 
 describe('PersonConnectScreen (S46)', () => {
@@ -152,5 +154,13 @@ describe('PersonConnectScreen (S46)', () => {
       }),
     )
     expect(screen.findComponent(RouterLinkStub).props('to')).toBe('/matches')
+  })
+
+  it('takes a member already connected straight to the contact (R-CONN-8)', async () => {
+    card.connectionId = 'r1'
+    server()
+    await mountScreen()
+
+    expect(replace).toHaveBeenCalledWith('/matches/requests/r1/contact')
   })
 })
