@@ -13,9 +13,10 @@ const onGithubActions = process.env['GITHUB_ACTIONS'] === 'true'
 /**
  * API-level tests (R-QA-2) with mail.delivery=none, so the auth and double
  * opt-in journeys are exercised without sending mail. Each file runs on a
- * database of its own, so files run side by side: a fresh in-memory PGlite,
- * or on the Postgres `DATABASE_URL` names, a copy of a template migrated once
- * per run (ADR 0024).
+ * database of its own, so files run side by side, started from what the
+ * global setup migrates once per run: an in-memory PGlite loaded from a
+ * snapshot, or on the Postgres `DATABASE_URL` names, a copy of a template
+ * (ADR 0024).
  */
 export default defineConfig({
   test: {
