@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { centreSquare, ownPhotoUrl, removePhoto, savePhoto } from './photo'
+import { ownPhotoUrl, removePhoto, savePhoto } from './photo'
 
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -12,20 +12,6 @@ function answering(status: number): ReturnType<typeof vi.fn> {
   vi.stubGlobal('fetch', fetchMock)
   return fetchMock
 }
-
-describe('centreSquare', () => {
-  it('takes the middle of a landscape picture', () => {
-    expect(centreSquare(4000, 3000)).toEqual({ x: 500, y: 0, side: 3000 })
-  })
-
-  it('takes the middle of a portrait picture', () => {
-    expect(centreSquare(3000, 4001)).toEqual({ x: 0, y: 500, side: 3000 })
-  })
-
-  it('takes a square picture whole', () => {
-    expect(centreSquare(512, 512)).toEqual({ x: 0, y: 0, side: 512 })
-  })
-})
 
 describe('the photo requests (R-PROF-5)', () => {
   it('sends the JPEG itself', async () => {

@@ -1,8 +1,16 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onBeforeUnmount, ref, shallowRef } from 'vue'
 import type { ClientConfig } from '../lib/api'
-import { ownPhotoUrl, removePhoto, savePhoto, squarePhoto } from '../lib/photo'
+import type { Crop } from '../lib/crop'
+import {
+  encodeSquare,
+  ownPhotoUrl,
+  readPicture,
+  removePhoto,
+  savePhoto,
+} from '../lib/photo'
 import MemberPhoto from './MemberPhoto.vue'
+import PhotoCropper from './PhotoCropper.vue'
 import SavedTick from './SavedTick.vue'
 
 const props = defineProps<{
@@ -10,7 +18,12 @@ const props = defineProps<{
   photoAt: string | null
   limits: Pick<
     ClientConfig['limits'],
-    'savedTickMs' | 'photoSidePx' | 'photoJpegQuality'
+    | 'savedTickMs'
+    | 'photoSidePx'
+    | 'photoJpegQuality'
+    | 'photoMaxZoom'
+    | 'photoKeyStepPx'
+    | 'photoZoomStep'
   >
 }>()
 
@@ -21,6 +34,7 @@ const busy = ref(false)
 const savedShown = ref(false)
 const problem = ref<string | null>(null)
 const picker = ref<HTMLInputElement | null>(null)
+const framing = shallowRef<ImageBitmap | null>(null)
 let tickTimer: ReturnType<typeof setTimeout> | undefined
 
 function tick(): void {
@@ -31,24 +45,20 @@ function tick(): void {
   }, props.limits.savedTickMs)
 }
 
-async function shaped(file: File): Promise<Blob | null> {
-  try {
-    return await squarePhoto(file, props.limits)
-  } catch {
-    return null
-  }
+function closeFraming(): void {
+  framing.value?.close()
+  framing.value = null
 }
 
-async function upload(file: File): Promise<void> {
-  const jpeg = await shaped(file)
-  if (jpeg === null) {
-    problem.value = 'That picture could not be read. Try another one.'
-    return
-  }
+onBeforeUnmount(closeFraming)
+
+async function save(crop: Crop, picture: ImageBitmap): Promise<void> {
+  const jpeg = await encodeSquare(picture, crop, props.limits)
   if ((await savePhoto(jpeg)) === 'refused') {
     problem.value = 'That picture could not be used. Try another one.'
     return
   }
+  closeFraming()
   shown.value = ownPhotoUrl(new Date().toISOString())
   tick()
 }
@@ -70,7 +80,19 @@ async function chosen(event: Event): Promise<void> {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
   input.value = ''
-  if (file !== undefined) await run(() => upload(file))
+  if (file === undefined) return
+  problem.value = null
+  closeFraming()
+  try {
+    framing.value = await readPicture(file)
+  } catch {
+    problem.value = 'That picture could not be read. Try another one.'
+  }
+}
+
+function use(crop: Crop): Promise<void> {
+  const picture = framing.value
+  return picture === null ? Promise.resolve() : run(() => save(crop, picture))
 }
 
 function remove(): Promise<void> {
@@ -88,7 +110,15 @@ function remove(): Promise<void> {
       <h2 id="photo-heading" class="label">Your photo (optional)</h2>
       <SavedTick :shown="savedShown" />
     </div>
-    <div class="photo-row">
+    <PhotoCropper
+      v-if="framing"
+      :picture="framing"
+      :limits="props.limits"
+      :busy="busy"
+      @use="use"
+      @cancel="closeFraming"
+    />
+    <div v-else class="photo-row">
       <div class="photo">
         <MemberPhoto :name="props.name" :src="shown" />
       </div>
@@ -123,8 +153,8 @@ function remove(): Promise<void> {
       </div>
     </div>
     <p class="small">
-      Only you see your photo for now. It is cropped to a square on your device,
-      and where or when it was taken is not kept.
+      Only you see your photo for now. You choose the square it is cut to, on
+      your device, and where or when it was taken is not kept.
     </p>
     <p v-if="problem" class="alert" role="alert">{{ problem }}</p>
   </section>

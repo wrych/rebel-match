@@ -1,3 +1,4 @@
+import type { Crop } from './crop'
 import { ensureOk, failure } from './request'
 
 /** How the browser shapes a photo before it travels (R-PROF-5). */
@@ -6,37 +7,27 @@ export interface PhotoShape {
   photoJpegQuality: number
 }
 
-/** The largest centred square of a picture `width` by `height`, as the
- * source rectangle to draw from. */
-export function centreSquare(
-  width: number,
-  height: number,
-): { x: number; y: number; side: number } {
-  const side = Math.min(width, height)
-  return {
-    x: Math.floor((width - side) / 2),
-    y: Math.floor((height - side) / 2),
-    side,
-  }
+/** The chosen picture, decoded on the device, upright as it was taken;
+ * throws when the browser cannot read it. */
+export function readPicture(file: Blob): Promise<ImageBitmap> {
+  return createImageBitmap(file)
 }
 
-/** The chosen picture cropped to its centre square and scaled down to
- * `photoSidePx` as a JPEG, so the original never leaves the device; throws
- * when the browser cannot read it (ADR 0066). */
-export async function squarePhoto(
-  file: Blob,
+/** The square the member framed, scaled down to `photoSidePx` as a JPEG, so
+ * the original never leaves the device (ADR 0066). */
+export function encodeSquare(
+  picture: CanvasImageSource,
+  crop: Crop,
   shape: PhotoShape,
 ): Promise<Blob> {
-  const bitmap = await createImageBitmap(file)
-  const crop = centreSquare(bitmap.width, bitmap.height)
-  const side = Math.min(crop.side, shape.photoSidePx)
+  const side = Math.round(Math.min(crop.side, shape.photoSidePx))
   const canvas = document.createElement('canvas')
   canvas.width = side
   canvas.height = side
   const context = canvas.getContext('2d')
-  if (context === null) throw new Error('no canvas')
+  if (context === null) return Promise.reject(new Error('no canvas'))
   context.drawImage(
-    bitmap,
+    picture,
     crop.x,
     crop.y,
     crop.side,
@@ -46,7 +37,6 @@ export async function squarePhoto(
     side,
     side,
   )
-  bitmap.close()
   return new Promise((resolve, reject) => {
     canvas.toBlob(
       (blob) => {

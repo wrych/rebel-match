@@ -3,7 +3,14 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import ProfilePhoto from './ProfilePhoto.vue'
 
-const limits = { savedTickMs: 2500, photoSidePx: 512, photoJpegQuality: 0.85 }
+const limits = {
+  savedTickMs: 2500,
+  photoSidePx: 512,
+  photoJpegQuality: 0.85,
+  photoMaxZoom: 4,
+  photoKeyStepPx: 12,
+  photoZoomStep: 0.25,
+}
 const drawn: unknown[][] = []
 
 function browserDraws(): void {
@@ -43,6 +50,22 @@ async function choose(screen: ReturnType<typeof mount>): Promise<void> {
   await flushPromises()
 }
 
+async function button(
+  screen: ReturnType<typeof mount>,
+  text: string,
+): Promise<void> {
+  await screen
+    .findAll('button')
+    .find((b) => b.text() === text)
+    ?.trigger('click')
+  await flushPromises()
+}
+
+async function chooseAndUse(screen: ReturnType<typeof mount>): Promise<void> {
+  await choose(screen)
+  await button(screen, 'Use this photo')
+}
+
 beforeEach(() => {
   drawn.length = 0
 })
@@ -69,21 +92,49 @@ describe('ProfilePhoto (R-PROF-5)', () => {
     expect(screen.text()).toContain('Change photo')
   })
 
-  it('crops the centre square, scales it down, uploads it and ticks', async () => {
+  it('lets the member frame the picture before anything is sent', async () => {
     browserDraws()
     const fetchMock = answering(204)
     const screen = mountPhoto()
 
     await choose(screen)
 
-    expect(drawn[0]?.slice(1)).toEqual([500, 0, 3000, 3000, 0, 0, 512, 512])
+    expect(screen.find('input[type="range"]').exists()).toBe(true)
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('sends the framed square, scaled down, and ticks', async () => {
+    browserDraws()
+    const fetchMock = answering(204)
+    const screen = mountPhoto()
+
+    await choose(screen)
+    await screen.find('input[type="range"]').setValue('2')
+    await button(screen, 'Use this photo')
+
+    const sent = drawn.find((args) => args[7] === 512)?.slice(1)
+    expect(sent).toEqual([1250, 750, 1500, 1500, 0, 0, 512, 512])
     expect(fetchMock).toHaveBeenCalledWith(
       '/api/profile/photo',
       expect.objectContaining({ method: 'PUT' }),
     )
+    expect(screen.find('input[type="range"]').exists()).toBe(false)
     expect(screen.find('img').exists()).toBe(true)
     expect(screen.find('[role="status"]').text()).toContain('Saved')
     expect(screen.find('[role="alert"]').exists()).toBe(false)
+  })
+
+  it('cancels framing without sending anything', async () => {
+    browserDraws()
+    const fetchMock = answering(204)
+    const screen = mountPhoto()
+
+    await choose(screen)
+    await button(screen, 'Cancel')
+
+    expect(screen.find('input[type="range"]').exists()).toBe(false)
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(screen.text()).toContain('Add a photo')
   })
 
   it('says so when the browser cannot read the picture, sending nothing', async () => {
@@ -106,7 +157,8 @@ describe('ProfilePhoto (R-PROF-5)', () => {
     const screen = mountPhoto('2026-11-07T10:00:00.000Z')
     const before = screen.find('img').attributes('src')
 
-    await choose(screen)
+    await chooseAndUse(screen)
+    await button(screen, 'Cancel')
 
     expect(screen.find('[role="alert"]').text()).toContain('could not be used')
     expect(screen.find('img').attributes('src')).toBe(before)
@@ -117,7 +169,7 @@ describe('ProfilePhoto (R-PROF-5)', () => {
     answering(500)
     const screen = mountPhoto()
 
-    await choose(screen)
+    await chooseAndUse(screen)
 
     expect(screen.find('[role="alert"]').text()).toContain('did not save')
     expect(screen.find('img').exists()).toBe(false)
@@ -127,11 +179,7 @@ describe('ProfilePhoto (R-PROF-5)', () => {
     const fetchMock = answering(204)
     const screen = mountPhoto('2026-11-07T10:00:00.000Z')
 
-    await screen
-      .findAll('button')
-      .find((b) => b.text() === 'Remove photo')
-      ?.trigger('click')
-    await flushPromises()
+    await button(screen, 'Remove photo')
 
     expect(fetchMock).toHaveBeenCalledWith('/api/profile/photo', {
       method: 'DELETE',
