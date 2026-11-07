@@ -173,6 +173,7 @@ function composeProfile(
     photos: createPhotoService({
       store: createPhotoStore(db),
       limits: () => settings.limits(),
+      newKey: () => randomBytes(32).toString('base64url'),
     }),
   }
 }
@@ -595,6 +596,7 @@ function composeNetwork(
     presentation: createPresentation({
       store,
       cast: presentationCast(config),
+      photosOn: () => settings.limits().profilePhotos === 1,
     }),
   }
 }

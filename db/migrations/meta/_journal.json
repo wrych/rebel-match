@@ -253,6 +253,13 @@
       "when": 1794058471167,
       "tag": "0035_member_photos",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1794069533911,
+      "tag": "0036_photo_keys",
+      "breakpoints": true
     }
   ]
 }

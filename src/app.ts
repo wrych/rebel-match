@@ -40,7 +40,10 @@ import { analyticsConsentRoutes } from './routes/analytics-consent.js'
 import { eventRoutes } from './routes/events.js'
 import { flagRoutes } from './routes/flags.js'
 import { profileRoutes } from './routes/profile.js'
-import { profilePhotoRoutes } from './routes/profile-photo.js'
+import {
+  profilePhotoRoutes,
+  sharedPhotoRoutes,
+} from './routes/profile-photo.js'
 import { requestLinkRoutes } from './routes/request-link.js'
 import { limitPerIp, SIGN_IN_POSTS } from './routes/ip-limit.js'
 import { createWindowCounter } from './services/rate-limit.js'
@@ -186,10 +189,11 @@ function mountScheduled(
   app.use(tickRoutes(scheduled))
 }
 
-// The game, the replay and recap, and finding and reaching members.
+// The game, the replay and recap, and finding, seeing and reaching members.
 function mountPlayAndPeople(app: Express, deps: AppDeps): void {
   app.use(gameRoutes(deps), networkRoutes(deps), recapRoutes(deps))
   app.use(memberRoutes(deps), profileCodeRoutes(deps), liveCodeRoutes(deps))
+  app.use(sharedPhotoRoutes(deps))
 }
 
 /** Builds the app from injected dependencies, so tests can supply fakes

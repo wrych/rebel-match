@@ -1,7 +1,12 @@
 import { and, eq, inArray, isNotNull, sql } from 'drizzle-orm'
 import type { Database } from '../db/connect.js'
 import { isReachableMember } from '../db/member-predicates.js'
-import { challenges, connectionRequests, members } from '../db/schema.js'
+import {
+  challenges,
+  connectionRequests,
+  memberPhotos,
+  members,
+} from '../db/schema.js'
 import { isShown } from './challenge-store.js'
 import type { NetworkFacts } from '../network/timeline.js'
 import type { NetworkStore } from './network.js'
@@ -63,6 +68,19 @@ export function createNetworkStore(db: Database): NetworkStore {
         .from(members)
         .where(and(onboarded, inArray(members.email, [...emails])))
       return new Map(rows.map((row) => [row.email.toLowerCase(), row.id]))
+    },
+    async photosByEmail(emails) {
+      if (emails.length === 0) return new Map()
+      const rows = await db
+        .select({ email: members.email, key: memberPhotos.key })
+        .from(members)
+        .innerJoin(memberPhotos, eq(memberPhotos.memberId, members.id))
+        .where(and(onboarded, inArray(members.email, [...emails])))
+      return new Map(
+        rows.flatMap((row) =>
+          row.key === null ? [] : [[row.email.toLowerCase(), row.key]],
+        ),
+      )
     },
   }
 }

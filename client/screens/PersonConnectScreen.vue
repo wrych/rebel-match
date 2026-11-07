@@ -34,6 +34,8 @@ const cancelPath = computed(() => {
     : profileCodePath(profileCode)
 })
 
+const photosOn = ref(false)
+
 onMounted(async () => {
   try {
     const [found, config] = await Promise.all([
@@ -48,6 +50,7 @@ onMounted(async () => {
     reached.value = found
     missing.value = found === null
     maxChars.value = config.limits.connectionMessageMaxChars
+    photosOn.value = config.limits.profilePhotos === 1
   } catch {
     problem.value = 'This could not be loaded. Reload to try again.'
   }
@@ -97,7 +100,7 @@ async function send(): Promise<void> {
         <h1 class="display display-lg">Connect with {{ firstName }}</h1>
       </div>
 
-      <PersonCard :card="card" />
+      <PersonCard :card="card" :photos-on="photosOn" />
 
       <p class="lede">
         Nothing is shared until {{ firstName }} accepts. Then you both get each

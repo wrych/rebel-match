@@ -23,6 +23,7 @@ const peer: PeerCard = {
   org: 'Kade Collectief',
   sector: 'Agency & consulting',
   companySize: '51-250',
+  photo: null,
   note: 'Ran a decision-mapping sprint.',
   challengeId: 'c-marieke',
 }

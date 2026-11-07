@@ -132,17 +132,20 @@ describe('cleanPhoto', () => {
 })
 
 describe('the photo service', () => {
-  function service(): {
-    photos: ReturnType<typeof createPhotoService>
-    kept: Map<string, StoredPhoto>
-  } {
-    const kept = new Map<string, StoredPhoto>()
-    const photos = createPhotoService({
+  function service(): ReturnType<typeof createPhotoService> {
+    const kept = new Map<string, StoredPhoto & { key: string }>()
+    let made = 0
+    return createPhotoService({
       limits: () => limits,
+      newKey: () => `key-${String(++made)}`,
       store: {
         get: (memberId) => Promise.resolve(kept.get(memberId) ?? null),
-        set: (memberId, bytes) => {
-          kept.set(memberId, { jpeg: bytes, updatedAt: new Date(0) })
+        byKey: (key) =>
+          Promise.resolve(
+            [...kept.values()].find((stored) => stored.key === key) ?? null,
+          ),
+        set: (memberId, bytes, key) => {
+          kept.set(memberId, { jpeg: bytes, updatedAt: new Date(0), key })
           return Promise.resolve()
         },
         remove: (memberId) => {
@@ -151,17 +154,26 @@ describe('the photo service', () => {
         },
       },
     })
-    return { photos, kept }
   }
 
   it('stores only the cleaned photo', async () => {
-    const { photos } = service()
+    const photos = service()
     expect(await photos.replace('m-ada', photo(EXIF))).toBe('saved')
     expect((await photos.own('m-ada'))?.jpeg).toEqual(photo())
   })
 
+  it('gives each new photo a new key, so an old address finds nothing (ADR 0067)', async () => {
+    const photos = service()
+    await photos.replace('m-ada', photo())
+    expect((await photos.shared('key-1'))?.jpeg).toEqual(photo())
+
+    await photos.replace('m-ada', photo(COMMENT))
+    expect(await photos.shared('key-1')).toBeNull()
+    expect(await photos.shared('key-2')).not.toBeNull()
+  })
+
   it('keeps the photo there was when an upload is refused', async () => {
-    const { photos } = service()
+    const photos = service()
     await photos.replace('m-ada', photo())
     const wide = jpeg(JFIF, TABLE, frame(512, 384), SCAN)
     expect(await photos.replace('m-ada', wide)).toBe('refused')
@@ -169,9 +181,10 @@ describe('the photo service', () => {
   })
 
   it('removes the photo', async () => {
-    const { photos } = service()
+    const photos = service()
     await photos.replace('m-ada', photo())
     await photos.remove('m-ada')
     expect(await photos.own('m-ada')).toBeNull()
+    expect(await photos.shared('key-1')).toBeNull()
   })
 })

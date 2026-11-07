@@ -9,7 +9,7 @@ import {
   members,
 } from '../db/schema.js'
 import { isOptedIn } from './analytics-consent.js'
-import { companySizeLabel, sectorLabel } from './profile-labels.js'
+import { companySizeLabel, photoKey, sectorLabel } from './profile-labels.js'
 import type {
   MemberDetail,
   MemberRoster,
@@ -105,6 +105,7 @@ async function detailOf(
       analyticsConsentVersion: members.analyticsConsentVersion,
       analyticsConsentAt: members.analyticsConsentAt,
       joinedVia: invites.label,
+      photo: photoKey,
     })
     .from(members)
     .leftJoin(invites, eq(invites.id, members.joinedViaInviteId))
@@ -117,6 +118,7 @@ async function detailOf(
     requestedName: extra.requestedName,
     requestedOrg: extra.requestedOrg,
     joinedVia: extra.joinedVia,
+    photo: extra.photo,
     consentVersion: extra.consentVersion,
     consentAt: extra.consentAt?.toISOString() ?? null,
     analyticsOptIn: isOptedIn(extra, analyticsVersion),

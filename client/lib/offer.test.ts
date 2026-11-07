@@ -12,6 +12,7 @@ const card: DeckCard = {
     org: null,
     sector: null,
     companySize: null,
+    photo: null,
   },
 }
 

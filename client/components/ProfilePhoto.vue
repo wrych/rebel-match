@@ -153,8 +153,12 @@ function remove(): Promise<void> {
       </div>
     </div>
     <p class="small">
-      Only you see your photo for now. You choose the square it is cut to, on
-      your device, and where or when it was taken is not kept.
+      Other members see your photo beside your name: on match cards, in the
+      deck, in search and on your page. Hosts see it on your page in their
+      tools, and, if you are in the summit presentation, it is shown on stage.
+      In the network replay it marks your own point, for you only. You choose
+      the square it is cut to, on your device, and where or when it was taken is
+      not kept.
     </p>
     <p v-if="problem" class="alert" role="alert">{{ problem }}</p>
   </section>

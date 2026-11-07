@@ -45,11 +45,13 @@ function fakeScene(): {
   anchor: (at: { x: number; y: number } | null) => void
   disposed: () => boolean
   still: () => boolean | null
+  photo: () => string | null | undefined
 } {
   const shown: Frame[] = []
   const highlights: boolean[] = []
   let disposed = false
   let still: boolean | null = null
+  let photo: string | null | undefined
   let recentred = 0
   let takeOver = (): void => undefined
   let anchor: (at: { x: number; y: number } | null) => void = () => undefined
@@ -57,6 +59,7 @@ function fakeScene(): {
     factory: (_host, _timeline, points, options) => {
       expect(points).toHaveLength(2)
       still = options.still
+      photo = options.selfPhoto
       takeOver = options.onTakeOver
       anchor = options.onAnchor ?? anchor
       return {
@@ -77,6 +80,7 @@ function fakeScene(): {
     anchor: (at) => anchor(at),
     disposed: () => disposed,
     still: () => still,
+    photo: () => photo,
   }
 }
 
@@ -118,6 +122,11 @@ describe('NetworkGraph (R-NET-1, R-NET-2)', () => {
     expect(scene.shown.at(-1)).toMatchObject({ nodes: 2, links: 1 })
     expect(scene.highlights).toEqual([true])
     expect(graph.emitted('end')).toHaveLength(1)
+  })
+
+  it('hands the scene the viewer’s photo to draw their point as (R-NET-2, R-PROF-6)', () => {
+    const { scene } = setup({ selfPhoto: '/api/profile/photo?v=1' })
+    expect(scene.photo()).toBe('/api/profile/photo?v=1')
   })
 
   it('reports each frame', () => {

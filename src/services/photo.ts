@@ -135,14 +135,20 @@ export interface StoredPhoto {
 /** Where profile photos are kept (`member_photos`, design §2). */
 export interface PhotoStore {
   get(memberId: string): Promise<StoredPhoto | null>
-  set(memberId: string, jpeg: Buffer): Promise<void>
+  /** The photo at `key`, while its owner is an active, onboarded member. */
+  byKey(key: string): Promise<StoredPhoto | null>
+  set(memberId: string, jpeg: Buffer, key: string): Promise<void>
   remove(memberId: string): Promise<void>
 }
 
 /** The member's own photo: read, replaced once cleaned, or removed
  * (R-PROF-5). */
 export interface PhotoService {
+  /** A member's photo whatever their status: their own, or for the host
+   * tools (R-MEM-2). */
   own(memberId: string): Promise<StoredPhoto | null>
+  /** Another member's photo by the key their cards carry (R-PROF-6). */
+  shared(key: string): Promise<StoredPhoto | null>
   replace(memberId: string, upload: Buffer): Promise<'saved' | 'refused'>
   remove(memberId: string): Promise<void>
 }
@@ -151,13 +157,16 @@ export interface PhotoService {
 export function createPhotoService(deps: {
   store: PhotoStore
   limits: () => PhotoLimits
+  /** A fresh random key, so a new photo is a new address (ADR 0067). */
+  newKey: () => string
 }): PhotoService {
   return {
     own: (memberId) => deps.store.get(memberId),
+    shared: (key) => deps.store.byKey(key),
     replace: async (memberId, upload) => {
       const outcome = cleanPhoto(upload, deps.limits())
       if (outcome.result === 'refused') return 'refused'
-      await deps.store.set(memberId, outcome.jpeg)
+      await deps.store.set(memberId, outcome.jpeg, deps.newKey())
       return 'saved'
     },
     remove: (memberId) => deps.store.remove(memberId),
