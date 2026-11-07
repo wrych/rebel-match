@@ -672,12 +672,15 @@ image goes. Deleted on their own, they fail, as already gone (`PERMISSION_DENIED
 … or it may not exist`) or as still in use. So delete the tagged images, one
 per commit, and clear what is left untagged afterwards.
 
-**What must stay.** Every image a Cloud Run revision runs: production's, which
-it may roll back to (§20), staging's and each preview's. Cloud Run needs a
+**What must stay.** The image of every production revision, since production
+may roll back to any of them (§20), and the image of each staging or preview
+revision that serves traffic or carries a `pr-<n>` tag. Cloud Run needs a
 revision's image to start a new instance of it. The age cutoff does not protect
-these: production can run a month-old image. The script below never deletes
-them, and deletes nothing at all if it cannot list every revision. Before part
-2 is done, set `PROD=` (empty) so it does not look for production.
+these: production can run a month-old image. Older staging and preview
+revisions, which serve nothing, lose their images; they could not be started
+again, and nothing starts them. The script below never deletes the images that
+must stay, and deletes nothing at all if it cannot read every service. Before
+part 2 is done, set `PROD=` (empty) so it does not look for production.
 
 Paste the functions once, then run `clean_images`. Each deletion waits for
 Google, a few seconds each, so it prints where it stands as it goes: the phase,
@@ -691,13 +694,19 @@ gcloud artifacts repositories describe rebel-match --project="$NONPROD" \
   --location="$REGION" --format='value(sizeBytes)'
 gcloud artifacts docker images list "$REPO" --include-tags --sort-by=~updateTime
 
-# Every digest a revision runs, in non-prod and, with PROD set, production.
-# Fails if any list fails, so the caller deletes nothing.
+# The digests that must stay: what staging's and the previews' serving or
+# tagged revisions run, and every production revision's. Fails if any read
+# fails, so the caller deletes nothing.
 running_images() {
-  local service
+  local service json revision
   for service in rebel-match-staging rebel-match-dev; do
-    gcloud run revisions list --service="$service" --project="$NONPROD" \
-      --region="$REGION" --format='value(status.imageDigest)' || return 1
+    json=$(gcloud run services describe "$service" --project="$NONPROD" \
+      --region="$REGION" --format=json) || return 1
+    for revision in $(jq -r '(.status.traffic[]? | .revisionName // empty),
+        (.status.latestReadyRevisionName // empty)' <<<"$json" | sort -u); do
+      gcloud run revisions describe "$revision" --project="$NONPROD" \
+        --region="$REGION" --format='value(status.imageDigest)' || return 1
+    done
   done
   if [[ -n "$PROD" ]]; then
     gcloud run revisions list --service=rebel-match --project="$PROD" \
@@ -719,7 +728,7 @@ clean_images() {
   local cutoff running keep phase digests total i digest out result start spent
   cutoff=$(date -u -d '30 days ago' +%Y-%m-%dT%H:%M:%SZ)
   running=$(running_images) || {
-    echo "clean: could not list every revision, so nothing is deleted" >&2
+    echo "clean: could not read every service, so nothing is deleted" >&2
     return 1
   }
   keep=$(sed 's/.*@//' <<<"$running" | grep sha256 | sort -u)
@@ -727,7 +736,7 @@ clean_images() {
     echo "clean: no revision runs any image, which cannot be right; stopping" >&2
     return 1
   }
-  echo "keeping $(wc -l <<<"$keep") images that revisions run"
+  echo "keeping $(wc -l <<<"$keep") images that revisions serve or may roll back to"
 
   # Tagged images first, one per commit. Untagged ones left after them belong
   # to an image that is kept, and refuse; that is expected.
@@ -753,6 +762,11 @@ clean_images() {
         $((spent * (total - i) / i / 60))
     done
   done
+
+  # The size Google reports can lag the deletions by a few minutes.
+  gcloud artifacts repositories describe rebel-match --project="$NONPROD" \
+    --location="$REGION" --format='value(sizeBytes)' |
+    awk '{ printf "repository now %.0f MB\n", $1 / 1e6 }'
 }
 ```
 
