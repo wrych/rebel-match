@@ -15,7 +15,7 @@ async function tableNames(): Promise<string[]> {
   return rows.map((row) => row.t)
 }
 
-// Every file shares CI's database, so this one leaves it empty for the next.
+// The file's database comes migrated; these tests start from an empty one.
 async function dropEverything(): Promise<void> {
   await connection.runScript(
     'DROP SCHEMA public CASCADE; CREATE SCHEMA public;',
@@ -30,7 +30,6 @@ describe('migrations', () => {
     await dropEverything()
   })
   afterAll(async () => {
-    await dropEverything()
     await connection.close()
   })
 

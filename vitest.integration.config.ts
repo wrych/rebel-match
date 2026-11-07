@@ -13,8 +13,9 @@ const onGithubActions = process.env['GITHUB_ACTIONS'] === 'true'
 /**
  * API-level tests (R-QA-2) with mail.delivery=none, so the auth and double
  * opt-in journeys are exercised without sending mail. Each file runs on a
- * fresh in-memory PGlite, so files run side by side, or on the Postgres
- * `DATABASE_URL` names, which they share, so one at a time (ADR 0024).
+ * database of its own, so files run side by side: a fresh in-memory PGlite,
+ * or on the Postgres `DATABASE_URL` names, a copy of a template migrated once
+ * per run (ADR 0024).
  */
 export default defineConfig({
   test: {
@@ -32,7 +33,8 @@ export default defineConfig({
         ],
       ],
     }),
-    fileParallelism: !onPostgres,
+    globalSetup: ['tests/integration/support/global-setup.ts'],
+    setupFiles: ['tests/integration/support/setup-file.ts'],
     testTimeout: 20_000,
     hookTimeout: 20_000,
     env: {
