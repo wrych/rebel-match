@@ -31,10 +31,24 @@ export default defineConfig({
         ['github-actions', { jobSummary: { title: 'Unit tests' } }],
       ],
     }),
-    include: [
-      'src/**/*.test.ts',
-      'client/**/*.test.ts',
-      'scripts/**/*.test.ts',
+    projects: [
+      // No server or script test replaces a module or holds state across
+      // files, so their files share each worker's loaded modules rather than
+      // loading them once per file.
+      {
+        extends: true,
+        test: {
+          name: 'server',
+          include: ['src/**/*.test.ts', 'scripts/**/*.test.ts'],
+          isolate: false,
+        },
+      },
+      // Client files each mock vue-router around a route of their own, and
+      // client/lib keeps module state; shared, one file's leaks into another.
+      {
+        extends: true,
+        test: { name: 'client', include: ['client/**/*.test.ts'] },
+      },
     ],
     coverage: {
       provider: 'v8',
