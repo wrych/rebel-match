@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { LOGO_CID } from './mail-layout.js'
-import { mailOptions } from './smtp.js'
+import { mailOptions, transportOptions } from './smtp.js'
 
 const mail = {
   from: { name: 'Rebel Match', address: 'hello@example.invalid' },
@@ -25,5 +25,24 @@ describe('mailOptions (R-MSG-8)', () => {
 
   it('attaches nothing to a plain-text email', () => {
     expect(mailOptions(mail)).toEqual(mail)
+  })
+})
+
+describe('transportOptions (R-NFR-1)', () => {
+  it('refuses to send unless the server upgrades to TLS', () => {
+    expect(
+      transportOptions({ host: 'mail.example.invalid', port: 587 }),
+    ).toMatchObject({
+      host: 'mail.example.invalid',
+      port: 587,
+      requireTLS: true,
+    })
+  })
+
+  it('signs in only with both a user and a password', () => {
+    expect(
+      transportOptions({ port: 587, user: 'rebel', password: 'secret' }).auth,
+    ).toEqual({ user: 'rebel', pass: 'secret' })
+    expect(transportOptions({ port: 587, user: 'rebel' }).auth).toBeUndefined()
   })
 })
