@@ -1737,8 +1737,9 @@ as a plain message (R-FIND-7).
 | POST   | `/api/admin/members/:id/ban`             | `{note}`: status `banned`, sessions ended, pending requests either way closed, open reports handled (R-MOD-9). Self, or the last `role:grant` holder → `409`. _Requires `member:ban`._                                                                                                  |
 | POST   | `/api/admin/members/:id/unban`           | Status `active` again (R-MOD-9). Not banned → `404`. _Requires `member:ban`._                                                                                                                                                                                                           |
 
-`POST /auth/request-link` answers a banned address with `{state: 'suspended'}`,
-and sends nothing (R-MOD-10).
+`POST /auth/request-link` answers a banned address with
+`{state: 'access-requested'}`, as a pending applicant who asks again, and sends
+nothing (R-MOD-10, ADR 0065).
 
 ---
 

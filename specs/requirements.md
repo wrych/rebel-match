@@ -1759,9 +1759,10 @@ contact detail (R-CONN-6) or tells a reported member who reported them.
   reopen a closed request.
 
 - **R-MOD-10 (A banned address at the door)** — IF a banned address asks for a
-  link THEN THE SYSTEM SHALL tell them plainly that the account is suspended,
-  with the controller's contact address for questions (R-ONB-5). It SHALL send
-  no link and notify nobody, as for a rejected address (R-AUTH-13). An invite
+  link THEN THE SYSTEM SHALL answer exactly as it answers a pending applicant
+  who asks again (R-AUTH-2), so the login screen never reveals to whoever typed
+  the address that its account was banned (ADR 0065). It SHALL send no link and
+  notify nobody, as for a rejected address (R-AUTH-13). An invite
   SHALL NOT admit a banned address (R-INV-1), and the whitelist SHALL keep it
   out and report it, as it does a rejected one (R-AUTH-3). A banned person who
   asks to be erased is deleted by a host (F11). Erasure frees the address.
