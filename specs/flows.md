@@ -838,8 +838,8 @@ reported member, S26 A member's page.
      reports are marked handled, and nothing else changes.
 4. In a harder case, **Ban member…** → a reason → confirm →
    `POST /api/admin/members/:id/ban`. Their sessions end, everything of theirs
-   disappears, their pending requests close, and the door tells them the
-   account is suspended (R-MOD-9, R-MOD-10).
+   disappears, their pending requests close, and the door answers them as
+   it answers a pending applicant (R-MOD-9, R-MOD-10).
 5. The card moves to **Handled** once no open report is left. The page's
    history keeps every action, with who took it and why (R-MOD-11).
 
