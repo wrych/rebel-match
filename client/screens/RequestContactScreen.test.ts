@@ -57,7 +57,8 @@ describe('RequestContactScreen', () => {
     const screen = await mountScreen()
 
     const link = screen.find('a[href="https://www.linkedin.com/in/sam"]')
-    expect(link.text()).toBe('Sam Boat on LinkedIn')
+    expect(link.text()).toBe('/in/sam')
+    expect(link.attributes('aria-label')).toBe('Sam Boat on LinkedIn')
     expect(link.attributes('rel')).toBe('noopener noreferrer')
     expect(screen.text()).not.toContain('Instagram')
   })

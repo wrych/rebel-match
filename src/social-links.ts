@@ -65,3 +65,11 @@ export function readSocialLink(
   if (url === null || url.length > maxChars) return { result: 'invalid' }
   return { result: 'link', url }
 }
+
+/** How a saved link reads beside its network's logo: LinkedIn's path, such
+ * as `/in/ada`, and an Instagram `@handle` (R-PROF-5). */
+export function handleOf(network: SocialNetwork, url: string): string {
+  const path = new URL(url).pathname.replace(/\/+$/, '')
+  if (network === 'linkedin') return path
+  return `@${path.split('/')[1] ?? ''}`
+}

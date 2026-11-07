@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { readSocialLink } from './social-links.js'
+import { handleOf, readSocialLink } from './social-links.js'
 
 const MAX = 200
 
@@ -56,5 +56,19 @@ describe('readSocialLink (R-PROF-5)', () => {
   it('refuses a link longer than the limit', () => {
     const long = `https://www.linkedin.com/in/${'a'.repeat(MAX)}`
     expect(readSocialLink('linkedin', long, MAX)).toEqual({ result: 'invalid' })
+  })
+})
+
+describe('handleOf (R-PROF-5)', () => {
+  it('reads a LinkedIn link as its path, without a trailing slash', () => {
+    expect(
+      handleOf('linkedin', 'https://www.linkedin.com/in/andymoesch/'),
+    ).toBe('/in/andymoesch')
+  })
+
+  it('reads an Instagram link as its @handle', () => {
+    expect(handleOf('instagram', 'https://www.instagram.com/ada.l_/')).toBe(
+      '@ada.l_',
+    )
   })
 })
