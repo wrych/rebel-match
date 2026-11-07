@@ -90,7 +90,7 @@ still holds except where the later ADR says otherwise.
 | [0052](0052-summarise-each-matches-section-in-a-sentence.md)              | Summarise each matches section in a sentence, its cards on a tap                | Accepted                              |
 | [0053](0053-private-badges-counted-from-what-members-do.md)               | Give members private badges, counted from what they already do                  | Accepted                              |
 | [0054](0054-html-mail-from-one-description.md)                            | Send every email as plain text and HTML, rendered from one description          | Accepted                              |
-| [0055](0055-members-report-hosts-moderate.md)                             | Members report, hosts moderate by hiding, and a ban is a status                 | Accepted, amended by 0056             |
+| [0055](0055-members-report-hosts-moderate.md)                             | Members report, hosts moderate by hiding, and a ban is a status                 | Accepted, amended by 0056 and 0065    |
 | [0056](0056-keep-reports-behind-a-measure.md)                             | Keep the reports behind a hide or a ban while it stands                         | Accepted                              |
 | [0057](0057-replay-the-network-in-3d-naming-nobody.md)                    | Replay the network's growth in 3D, naming nobody but the viewer                 | Accepted                              |
 | [0058](0058-a-scripted-presentation-cast-from-a-private-file.md)          | Play the summit presentation in the app, scripted, cast from a private file     | Accepted                              |
@@ -99,4 +99,5 @@ still holds except where the later ADR says otherwise.
 | [0061](0061-show-the-members-surroundings-on-the-share-card.md)           | Show the member's surroundings on the share card                                | Accepted                              |
 | [0062](0062-find-members-by-query-not-a-directory.md)                     | Find members by a capped query, never a directory                               | Accepted                              |
 | [0063](0063-a-shown-live-code-is-its-owners-opt-in.md)                    | A live code shown is its owner's opt-in; a profile code only asks               | Accepted                              |
-| [0064](0064-production-promotes-only-images-built-from-main.md)           | Production promotes only images built from main                                 | Proposed                              |
+| [0064](0064-production-promotes-only-images-built-from-main.md)           | Production promotes only images built from main                                 | Accepted                              |
+| [0065](0065-a-banned-address-answers-as-a-pending-one.md)                 | A banned address is answered as a pending one                                   | Accepted                              |
