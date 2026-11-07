@@ -207,7 +207,7 @@ describe('settingsView (R-CFG-5)', () => {
 
     expect(new Set(keys).size).toBe(keys.length)
     expect(keys).toHaveLength(
-      40 + Object.keys(gameBounds).length + experimentKeys.length,
+      41 + Object.keys(gameBounds).length + experimentKeys.length,
     )
   })
 })

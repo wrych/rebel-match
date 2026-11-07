@@ -5,6 +5,12 @@ import { reportPath } from '../lib/reports'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import CopyButton from '../components/CopyButton.vue'
+import SocialLogo from '../components/SocialLogo.vue'
+import {
+  handleOf,
+  socialNetworks,
+  type SocialNetwork,
+} from '../../src/social-links'
 import { fetchConfig } from '../lib/api'
 import { fetchContact, overInOrder, type Contact } from '../lib/connections'
 import { reportEvent } from '../lib/events'
@@ -15,6 +21,18 @@ const contact = ref<Contact | null>(null)
 const missing = ref(false)
 const problem = ref<string | null>(null)
 const over = computed(() => overInOrder(contact.value?.over ?? []))
+const networkNames: Readonly<Record<SocialNetwork, string>> = {
+  linkedin: 'LinkedIn',
+  instagram: 'Instagram',
+}
+const socialLinks = computed(() =>
+  socialNetworks.flatMap((network) => {
+    const url = contact.value?.socialLinks?.[network] ?? null
+    if (url === null) return []
+    const name = `${contact.value?.name ?? ''} on ${networkNames[network]}`
+    return [{ network, url, name, handle: handleOf(network, url) }]
+  }),
+)
 const tickMs = ref<number | null>(null)
 const copyNote = ref<string | null>(null)
 
@@ -76,6 +94,21 @@ onMounted(async () => {
           />
         </div>
         <p v-if="copyNote" class="small" role="status">{{ copyNote }}</p>
+        <div v-if="socialLinks.length > 0" class="socials">
+          <p class="small socials-label">Socials</p>
+          <ul class="badges">
+            <li v-for="link in socialLinks" :key="link.network">
+              <a
+                :href="link.url"
+                class="chip social-chip"
+                target="_blank"
+                rel="noopener noreferrer"
+                :aria-label="link.name"
+                ><SocialLogo :network="link.network" />{{ link.handle }}</a
+              >
+            </li>
+          </ul>
+        </div>
       </div>
 
       <a
@@ -152,6 +185,40 @@ onMounted(async () => {
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 0.4rem;
+}
+
+.socials {
+  display: grid;
+  justify-items: end;
+  gap: 0.35rem;
+}
+
+.socials-label {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.social-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--ink);
+  text-decoration: none;
+  text-transform: none;
+  letter-spacing: 0.02em;
+  font-size: 0.72rem;
+  overflow-wrap: anywhere;
 }
 
 .email-row {

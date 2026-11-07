@@ -230,6 +230,7 @@ function composeCounted(
         newId: randomUUID,
         track,
         direct: () => directRules(settings, createProfileCodeStore(db)),
+        socialLinksOn: () => settings.limits().socialLinks === 1,
       }),
       badges.service,
       badges.onError,
