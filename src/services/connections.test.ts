@@ -148,7 +148,14 @@ function fakeStore(): ConnectionStore & {
       if (r?.status !== 'accepted' || !party(r, viewer))
         return Promise.resolve(null)
       const other = r.targetId === viewer ? r.requesterId : r.targetId
-      return Promise.resolve({ name: other, email: emails[other] ?? '' })
+      return Promise.resolve({
+        name: other,
+        email: emails[other] ?? '',
+        socialLinks: {
+          linkedin: `https://www.linkedin.com/in/${other}`,
+          instagram: null,
+        },
+      })
     },
     markSeen: (viewer, other) => {
       seen.push(`${viewer}:${other}`)
@@ -157,7 +164,7 @@ function fakeStore(): ConnectionStore & {
   }
 }
 
-function setup(): {
+function setup(socialLinksOn = false): {
   service: ReturnType<typeof createConnections>
   store: ReturnType<typeof fakeStore>
   tracked: [string, AnalyticsEvent][]
@@ -173,6 +180,7 @@ function setup(): {
       return Promise.resolve()
     },
     now: () => new Date('2026-11-08T13:20:00.000Z'),
+    socialLinksOn: () => socialLinksOn,
   })
   return { service, store, tracked }
 }
@@ -420,6 +428,28 @@ describe('the double opt-in (ADR 0004)', () => {
     expect((await service.contact('m-bob', 'r-1'))?.email).toBe(
       'ada@example.invalid',
     )
+  })
+
+  it('shows the other party’s social links while hosts have them on (R-PROF-5)', async () => {
+    const { service } = setup(true)
+    await service.request('m-ada', sameBoat)
+    await service.respond('m-bob', 'r-1', 'accepted')
+
+    expect((await service.contact('m-ada', 'r-1'))?.socialLinks).toEqual({
+      linkedin: 'https://www.linkedin.com/in/m-bob',
+      instagram: null,
+    })
+  })
+
+  it('shows no social links while hosts have them off (R-PROF-5)', async () => {
+    const { service } = setup(false)
+    await service.request('m-ada', sameBoat)
+    await service.respond('m-bob', 'r-1', 'accepted')
+
+    expect((await service.contact('m-ada', 'r-1'))?.socialLinks).toEqual({
+      linkedin: null,
+      instagram: null,
+    })
   })
 
   it('never shows a third party anything, even once accepted (R-CONN-6)', async () => {

@@ -1,5 +1,5 @@
 {
-  "id": "f7baf345-981c-4b9f-af18-97586f4f64a3",
+  "id": "e14b9e49-cf72-4a56-9037-d9b9430991b0",
   "prevId": "c4978be8-366a-47bd-9bd9-37ff0f54d199",
   "version": "7",
   "dialect": "postgresql",
@@ -1631,52 +1631,6 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.member_photos": {
-      "name": "member_photos",
-      "schema": "",
-      "columns": {
-        "member_id": {
-          "name": "member_id",
-          "type": "varchar(36)",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "jpeg": {
-          "name": "jpeg",
-          "type": "bytea",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "member_photos_member_id_members_id_fk": {
-          "name": "member_photos_member_id_members_id_fk",
-          "tableFrom": "member_photos",
-          "tableTo": "members",
-          "columnsFrom": [
-            "member_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
     "public.member_roles": {
       "name": "member_roles",
       "schema": "",
@@ -1806,6 +1760,18 @@
         "company_size": {
           "name": "company_size",
           "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "linkedin_url": {
+          "name": "linkedin_url",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "instagram_url": {
+          "name": "instagram_url",
+          "type": "varchar(200)",
           "primaryKey": false,
           "notNull": false
         },

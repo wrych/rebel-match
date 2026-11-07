@@ -1,4 +1,5 @@
 import type { CompanySize, Sector } from '../profile-options.js'
+import type { SocialLinks } from '../social-links.js'
 
 /** The member's own profile and privacy as `/profile` shows them (S24,
  * R-PROF-1,2). The email is shown, never edited. */
@@ -16,6 +17,8 @@ export interface OwnProfile {
   findable: boolean
   /** When their photo was last set, or null without one (R-PROF-6). */
   photoAt: string | null
+  /** Their own links, shown to connections only (R-PROF-5). */
+  socialLinks: SocialLinks
 }
 
 export interface ProfileEdit {
@@ -31,4 +34,6 @@ export interface ProfileStore {
   /** Saves the name and sets the optional fields, clearing a left-out one. */
   update(memberId: string, edit: ProfileEdit): Promise<void>
   setFindable(memberId: string, findable: boolean): Promise<void>
+  /** Saves both links, clearing a null one (R-PROF-5). */
+  setSocialLinks(memberId: string, links: SocialLinks): Promise<void>
 }

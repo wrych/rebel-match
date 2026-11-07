@@ -83,6 +83,14 @@ describe('PhotoCropper (R-PROF-6)', () => {
     expect((await used(cropper)).side).toBe(2400)
   })
 
+  it('ignores a sideways wheel or swipe', async () => {
+    const cropper = mountCropper()
+    await cropper.find('canvas').trigger('wheel', { deltaY: -100 })
+    await cropper.find('canvas').trigger('wheel', { deltaX: 40, deltaY: 0 })
+
+    expect((await used(cropper)).side).toBe(2400)
+  })
+
   it('cancels', async () => {
     const cropper = mountCropper()
     await cropper
