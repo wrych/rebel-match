@@ -1,6 +1,7 @@
 import type { ModerationReason } from './challenge-moderation.js'
 import { trackNothing, type Track } from './analytics.js'
 import { canReach } from './reach.js'
+import type { SocialLinks } from '../social-links.js'
 
 export type ConnectionKind = 'same_boat' | 'been_there' | 'direct'
 export type ConnectionStatus = 'pending' | 'accepted' | 'declined'
@@ -56,9 +57,15 @@ export interface ConnectionView {
   unseen: boolean
 }
 
-export interface Contact {
+/** How the other party of an accepted request is reached (R-CONN-6,
+ * R-PROF-5). */
+export interface PartyContact {
   name: string
   email: string
+  socialLinks: SocialLinks
+}
+
+export interface Contact extends PartyContact {
   mailto: string
   /** Every accepted request between the two, as the reader saw them before
    * this read (R-CONN-10). */
@@ -131,12 +138,10 @@ export interface ConnectionStore {
     targetId: string,
     status: ConnectionStatus,
   ): Promise<boolean>
-  /** The other party's name and email, only for an accepted request that
-   * `viewerId` is a party to; null in every other case (R-CONN-3, R-CONN-6). */
-  contactFor(
-    id: string,
-    viewerId: string,
-  ): Promise<{ name: string; email: string } | null>
+  /** The other party's name, email and social links, only for an accepted
+   * request that `viewerId` is a party to; null in every other case
+   * (R-CONN-3, R-CONN-6, R-PROF-5). */
+  contactFor(id: string, viewerId: string): Promise<PartyContact | null>
   /** Records the viewer's first read of the accepted requests between the
    * two, which ends their notices (R-CONN-7, R-CONN-9). */
   markSeen(viewerId: string, otherId: string): Promise<void>
@@ -386,16 +391,19 @@ async function respondTo(
   return 'done'
 }
 
+const NO_LINKS: SocialLinks = { linkedin: null, instagram: null }
+
 async function readContact(
-  store: ConnectionStore,
-  track: Track,
+  deps: { store: ConnectionStore; track: Track; linksOn: () => boolean },
   memberId: string,
   id: string,
 ): Promise<Contact | null> {
+  const { store, track } = deps
   const record = await store.find(id)
   if (record?.status !== 'accepted' || !isParty(record, memberId)) return null
-  const other = await store.contactFor(id, memberId)
-  if (other === null) return null
+  const found = await store.contactFor(id, memberId)
+  if (found === null) return null
+  const other = deps.linksOn() ? found : { ...found, socialLinks: NO_LINKS }
   const otherId = otherOf(record, memberId)
   const over = await store.connectedOver(memberId, otherId)
   await store.markSeen(memberId, otherId)
@@ -418,12 +426,15 @@ export function createConnections(deps: {
   track?: Track
   now?: () => Date
   direct?: () => DirectRules
+  /** Whether hosts have social links on; off unless given (R-PROF-5). */
+  socialLinksOn?: () => boolean
 }): ConnectionService {
   const { store } = deps
   const direct = deps.direct ?? directClosed
   const track = deps.track ?? trackNothing
   const asking: Asking = { store, newId: deps.newId, track, cap: null }
   const now = deps.now ?? ((): Date => new Date())
+  const linksOn = deps.socialLinksOn ?? ((): boolean => false)
   return {
     request: async (requesterId, input) => {
       const rules = direct()
@@ -439,6 +450,7 @@ export function createConnections(deps: {
     get: (memberId, id) => store.view(id, memberId),
     respond: (memberId, id, answer) =>
       respondTo({ ...asking, now }, memberId, id, answer),
-    contact: (memberId, id) => readContact(store, track, memberId, id),
+    contact: (memberId, id) =>
+      readContact({ store, track, linksOn }, memberId, id),
   }
 }

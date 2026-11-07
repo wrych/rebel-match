@@ -111,6 +111,37 @@ describe('ProfileScreen', () => {
     },
   )
 
+  it.each([
+    [1, true],
+    [0, false],
+  ])(
+    'offers social links while hosts have them on (%i): %s (R-PROF-5)',
+    async (socialLinks, offered) => {
+      const withLinks = {
+        ...profile,
+        socialLinks: { linkedin: null, instagram: null },
+      }
+      vi.stubGlobal(
+        'fetch',
+        vi.fn((url: string) =>
+          Promise.resolve({
+            ok: true,
+            status: 200,
+            json: () =>
+              Promise.resolve(
+                url === '/api/config'
+                  ? { ...config, limits: { ...config.limits, socialLinks } }
+                  : withLinks,
+              ),
+          }),
+        ),
+      )
+      const screen = await mountScreen()
+
+      expect(screen.find('#social-linkedin').exists()).toBe(offered)
+    },
+  )
+
   it('shows the profile, the email read-only, and no save button (R-PROF-1)', async () => {
     server()
     const screen = await mountScreen()

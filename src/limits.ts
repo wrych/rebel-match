@@ -109,6 +109,8 @@ const limitSpecs = {
   nameMaxChars: { fixed: 120 },
   jobTitleMaxChars: { fixed: 120 },
   orgMaxChars: { fixed: 160 },
+  // members.linkedin_url and instagram_url (src/db/schema.ts, R-PROF-5).
+  socialLinkMaxChars: { fixed: 200 },
   // invites.label, and a cap on invites.max_uses (src/db/schema.ts).
   inviteLabelMaxChars: { fixed: 120 },
   // How long a "Saved" tick stays beside a setting (R-PROF-1).
@@ -176,6 +178,13 @@ const limitSpecs = {
   memberSearchMinChars: { env: 'MEMBER_SEARCH_MIN_CHARS', default: 2 },
   // Search answers a query with a few cards, never a directory (R-FIND-3).
   memberSearchMaxResults: { env: 'MEMBER_SEARCH_MAX_RESULTS', default: 20 },
+  // Hosts open social links on profiles; off until they do (R-PROF-5).
+  socialLinks: {
+    env: 'SOCIAL_LINKS',
+    default: 0,
+    zeroAllowed: true,
+    changeable: { min: 0, max: 1 },
+  },
   // Hosts open connect codes; off until they do (R-CODE-1).
   connectCodes: {
     env: 'CONNECT_CODES',

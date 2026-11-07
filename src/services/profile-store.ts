@@ -2,7 +2,19 @@ import { eq } from 'drizzle-orm'
 import type { Database } from '../db/connect.js'
 import { members } from '../db/schema.js'
 import { isOptedIn } from './analytics-consent.js'
+import type { SocialLinks } from '../social-links.js'
 import type { ProfileStore } from './profile.js'
+
+async function saveLinks(
+  db: Database,
+  memberId: string,
+  links: SocialLinks,
+): Promise<void> {
+  await db
+    .update(members)
+    .set({ linkedinUrl: links.linkedin, instagramUrl: links.instagram })
+    .where(eq(members.id, memberId))
+}
 
 /** Profiles over `members` (design §2), judged against the analytics words
  * in force. */
@@ -28,6 +40,10 @@ export function createProfileStore(
         consentAt: row.consentAt?.toISOString() ?? null,
         analyticsOptIn: isOptedIn(row, analyticsVersion),
         findable: row.findable,
+        socialLinks: {
+          linkedin: row.linkedinUrl,
+          instagram: row.instagramUrl,
+        },
       }
     },
     update: async (memberId, edit) => {
@@ -45,5 +61,6 @@ export function createProfileStore(
     setFindable: async (memberId, findable) => {
       await db.update(members).set({ findable }).where(eq(members.id, memberId))
     },
+    setSocialLinks: (memberId, links) => saveLinks(db, memberId, links),
   }
 }

@@ -9,6 +9,7 @@ import {
 } from '../../src/profile-options'
 import AnalyticsToggle from '../components/AnalyticsToggle.vue'
 import FindableToggle from '../components/FindableToggle.vue'
+import SocialLinksSetting from '../components/SocialLinksSetting.vue'
 import ProfileCodeSetting from '../components/ProfileCodeSetting.vue'
 import ConsentWords from '../components/ConsentWords.vue'
 import NotificationSettings from '../components/NotificationSettings.vue'
@@ -220,6 +221,11 @@ function save(field: Field): Promise<void> {
           >. Your name and profile information may be seen by other members.
         </p>
       </div>
+
+      <SocialLinksSetting
+        v-if="limits?.socialLinks === 1"
+        :links="profile.socialLinks"
+      />
 
       <NotificationSettings />
 
