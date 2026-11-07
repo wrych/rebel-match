@@ -698,12 +698,15 @@ gcloud artifacts docker images list "$REPO" --include-tags --sort-by=~updateTime
 # tagged revisions run, and every production revision's. Fails if any read
 # fails, so the caller deletes nothing.
 running_images() {
-  local service json revision
+  local service json revisions revision
   for service in rebel-match-staging rebel-match-dev; do
     json=$(gcloud run services describe "$service" --project="$NONPROD" \
       --region="$REGION" --format=json) || return 1
-    for revision in $(jq -r '(.status.traffic[]? | .revisionName // empty),
-        (.status.latestReadyRevisionName // empty)' <<<"$json" | sort -u); do
+    revisions=$(jq -er '[(.status.traffic[]? | .revisionName // empty),
+      (.status.latestReadyRevisionName // empty)] | unique
+      | if length > 0 then .[] else error("no revision") end' <<<"$json") ||
+      return 1
+    for revision in $revisions; do
       gcloud run revisions describe "$revision" --project="$NONPROD" \
         --region="$REGION" --format='value(status.imageDigest)' || return 1
     done
