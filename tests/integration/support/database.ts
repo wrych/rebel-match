@@ -8,7 +8,6 @@ import {
   type Connection,
   type Database,
 } from '../../../src/db/connect.js'
-import { applyMigrations } from '../../../src/db/migrate.js'
 
 export type Row = Record<string, unknown>
 
@@ -55,21 +54,18 @@ function toSql(text: string, params: readonly unknown[]): SQL {
   return sql.join(chunks)
 }
 
-async function fromSnapshot(): Promise<Connection | undefined> {
-  const snapshot = inject('pgliteSnapshot')
-  if (snapshot === undefined) return undefined
-  const loadDataDir = new Blob([await readFile(snapshot)])
+async function fromSnapshot(): Promise<Connection> {
+  const loadDataDir = new Blob([await readFile(inject('pgliteSnapshot'))])
   return onClient(await PGlite.create({ loadDataDir }))
 }
 
+/** Opens this file's database, which the global setup migrated already. */
 export async function openTestDatabase(): Promise<TestDatabase> {
   const url = serverUrl()
   const connection =
     url === undefined
-      ? ((await fromSnapshot()) ?? (await connect({ kind: 'pglite' })))
+      ? await fromSnapshot()
       : await connect({ kind: 'postgres', url })
-  // Finds nothing to do on a migrated copy or snapshot, only on a fresh one.
-  await applyMigrations(connection)
   return {
     drizzle: connection.db,
     query: (text, params = []) => connection.rows<Row>(toSql(text, params)),

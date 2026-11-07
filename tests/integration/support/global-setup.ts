@@ -16,7 +16,7 @@ import {
 declare module 'vitest' {
   export interface ProvidedContext {
     /** A migrated PGlite's data folder, as a tarball each file loads. */
-    pgliteSnapshot: string | undefined
+    pgliteSnapshot: string
   }
 }
 
