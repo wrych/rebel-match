@@ -45,7 +45,7 @@ afterAll(async () => {
   await db.close()
 })
 
-describe('the profile photo over Postgres (R-PROF-5)', () => {
+describe('the profile photo over Postgres (R-PROF-6)', () => {
   it('keeps the photo without its metadata and serves it to its owner', async () => {
     await request(app)
       .put('/api/profile/photo')

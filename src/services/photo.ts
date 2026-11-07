@@ -9,7 +9,7 @@ const APP15 = 0xef
 const FRAMES = new Set([0xc0, 0xc1, 0xc2])
 
 /** What became of an uploaded photo: the JPEG without its metadata, or
- * refused (R-PROF-5). */
+ * refused (R-PROF-6). */
 export type PhotoOutcome =
   { result: 'clean'; jpeg: Buffer } | { result: 'refused' }
 
@@ -140,7 +140,7 @@ export interface PhotoStore {
 }
 
 /** The member's own photo: read, replaced once cleaned, or removed
- * (R-PROF-5). */
+ * (R-PROF-6). */
 export interface PhotoService {
   own(memberId: string): Promise<StoredPhoto | null>
   replace(memberId: string, upload: Buffer): Promise<'saved' | 'refused'>

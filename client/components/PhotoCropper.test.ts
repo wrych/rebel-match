@@ -36,7 +36,7 @@ function pointer(type: string, id: number, x: number, y: number): PointerEvent {
   return event
 }
 
-describe('PhotoCropper (R-PROF-5)', () => {
+describe('PhotoCropper (R-PROF-6)', () => {
   it('offers the largest centred square first', async () => {
     expect(await used(mountCropper())).toEqual({ x: 500, y: 0, side: 3000 })
   })

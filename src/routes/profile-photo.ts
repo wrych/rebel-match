@@ -5,7 +5,7 @@ import type { PhotoService } from '../services/photo.js'
 import { requireSession, type GuardedLocals } from './require-permission.js'
 
 /** While hosts have photos off, their addresses are as absent as ones that
- * never existed (R-PROF-5, R-NAV-8). */
+ * never existed (R-PROF-6, R-NAV-8). */
 function whilePhotosOn(settings: Pick<LiveSettings, 'limits'>): RequestHandler {
   return (_request, response, next) => {
     if (settings.limits().profilePhotos === 1) {
@@ -28,7 +28,7 @@ const memberOf = (response: express.Response): string =>
 
 /** `GET`, `PUT` and `DELETE /api/profile/photo` (design §3): the member's
  * own photo, as a picture only, replaced once cleaned, or removed; nobody
- * else's (R-PROF-5, ADR 0066). */
+ * else's (R-PROF-6, ADR 0066). */
 export function profilePhotoRoutes(deps: {
   auth: AuthProvider
   settings: Pick<LiveSettings, 'limits'>

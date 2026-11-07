@@ -1,7 +1,7 @@
 import type { Crop } from './crop'
 import { ensureOk, failure } from './request'
 
-/** How the browser shapes a photo before it travels (R-PROF-5). */
+/** How the browser shapes a photo before it travels (R-PROF-6). */
 export interface PhotoShape {
   photoSidePx: number
   photoJpegQuality: number
@@ -55,7 +55,7 @@ export const ownPhotoUrl = (photoAt: string): string =>
   `/api/profile/photo?v=${encodeURIComponent(photoAt)}`
 
 /** Saves the photo; `refused` when the server would not take it, a throw for
- * anything else, so a failure is never shown as saved (R-PROF-5). */
+ * anything else, so a failure is never shown as saved (R-PROF-6). */
 export async function savePhoto(jpeg: Blob): Promise<'saved' | 'refused'> {
   const response = await fetch('/api/profile/photo', {
     method: 'PUT',

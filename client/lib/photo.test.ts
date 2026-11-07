@@ -13,7 +13,7 @@ function answering(status: number): ReturnType<typeof vi.fn> {
   return fetchMock
 }
 
-describe('the photo requests (R-PROF-5)', () => {
+describe('the photo requests (R-PROF-6)', () => {
   it('sends the JPEG itself', async () => {
     const fetchMock = answering(204)
     const jpeg = new Blob(['x'], { type: 'image/jpeg' })

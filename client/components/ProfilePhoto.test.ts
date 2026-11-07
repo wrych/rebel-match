@@ -75,7 +75,7 @@ afterEach(() => {
   vi.restoreAllMocks()
 })
 
-describe('ProfilePhoto (R-PROF-5)', () => {
+describe('ProfilePhoto (R-PROF-6)', () => {
   it('shows initials without a photo, and says only the member sees it', () => {
     const screen = mountPhoto()
     expect(screen.text()).toContain('AR')

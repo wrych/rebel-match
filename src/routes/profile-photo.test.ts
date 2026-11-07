@@ -56,7 +56,7 @@ async function cookie(): Promise<string> {
 }
 
 describe('/api/profile/photo', () => {
-  it('saves a photo and serves it back to its owner as a picture only (R-PROF-5)', async () => {
+  it('saves a photo and serves it back to its owner as a picture only (R-PROF-6)', async () => {
     const { app } = setup()
     const saved = await request(app)
       .put('/api/profile/photo')
@@ -131,7 +131,7 @@ describe('/api/profile/photo', () => {
     ['PUT', 'put'],
     ['DELETE', 'delete'],
   ] as const)(
-    'answers %s as not found while hosts have photos off (R-PROF-5)',
+    'answers %s as not found while hosts have photos off (R-PROF-6)',
     async (_name, method) => {
       const { app, kept } = setup(0)
       kept.set('m-ada', { jpeg: GOOD, updatedAt: new Date(0) })

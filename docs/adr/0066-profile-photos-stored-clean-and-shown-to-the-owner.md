@@ -59,5 +59,5 @@ summit is tomorrow, and where photos should appear is not decided yet.
 
 ## References
 
-Requirements: `R-PROF-5`, `R-NFR-7`, open question 10. Spec sections:
+Requirements: `R-PROF-6`, `R-NFR-7`, open question 10. Spec sections:
 `specs/design.md` §2 `member_photos`, §3, §8. ADRs 0024, 0053.

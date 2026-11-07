@@ -6,7 +6,7 @@ export interface Crop {
 }
 
 /** Where the member has framed their photo: how far in, and the source
- * point at the centre of the frame (R-PROF-5). */
+ * point at the centre of the frame (R-PROF-6). */
 export interface Framing {
   zoom: number
   centreX: number
