@@ -115,6 +115,31 @@ describe('ProfileScreen', () => {
     [1, true],
     [0, false],
   ])(
+    'offers the photo only while hosts have photos on (%i): %s (R-PROF-6)',
+    async (profilePhotos, offered) => {
+      const fetchMock = vi.fn((url: string) =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve(
+              url === '/api/config'
+                ? { ...config, limits: { ...config.limits, profilePhotos } }
+                : { ...profile, photoAt: null },
+            ),
+        }),
+      )
+      vi.stubGlobal('fetch', fetchMock)
+      const screen = await mountScreen()
+
+      expect(screen.text().includes('Add a photo')).toBe(offered)
+    },
+  )
+
+  it.each([
+    [1, true],
+    [0, false],
+  ])(
     'offers social links while hosts have them on (%i): %s (R-PROF-5)',
     async (socialLinks, offered) => {
       const withLinks = {

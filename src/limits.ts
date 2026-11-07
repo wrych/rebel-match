@@ -262,6 +262,28 @@ const limitSpecs = {
   // The largest SVG logo an event badge takes, kept well inside the 64 kB a
   // request body may be once it is JSON (R-BADGE-5).
   badgeLogoMaxBytes: { env: 'BADGE_LOGO_MAX_BYTES', default: 32_768 },
+  // Hosts open profile photos; off until they do, and photos already added
+  // are kept while off (R-PROF-6).
+  profilePhotos: {
+    env: 'PROFILE_PHOTOS',
+    default: 0,
+    zeroAllowed: true,
+    changeable: { min: 0, max: 1 },
+  },
+  // The largest profile photo taken, and the request body of that one route
+  // (R-PROF-6, ADR 0066).
+  photoMaxBytes: { env: 'PHOTO_MAX_BYTES', default: 200_000 },
+  // The side of the square the browser scales a photo to, and the widest the
+  // server takes (R-PROF-6).
+  photoSidePx: { fixed: 512 },
+  // How far in a member can zoom when framing their photo (R-PROF-6).
+  photoMaxZoom: { fixed: 4 },
+  // How far one arrow key moves, and one key or wheel step zooms, the photo
+  // being framed (R-PROF-6).
+  photoKeyStepPx: { fixed: 12 },
+  photoZoomStep: { fixed: 0.25 },
+  // The JPEG quality the browser encodes a photo at, from 0 to 1 (R-PROF-6).
+  photoJpegQuality: { fixed: 0.85 },
   // event_badges.name, ticket_line and big_line (src/db/schema.ts).
   eventBadgeNameMaxChars: { fixed: 60 },
   eventBadgeTicketMaxChars: { fixed: 10 },

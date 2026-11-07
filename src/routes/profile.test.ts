@@ -32,6 +32,7 @@ const own: OwnProfile = {
   consentAt: '2026-11-08T10:00:00.000Z',
   analyticsOptIn: false,
   findable: true,
+  photoAt: null,
   socialLinks: { linkedin: 'https://www.linkedin.com/in/ada', instagram: null },
 }
 

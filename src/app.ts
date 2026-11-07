@@ -40,6 +40,7 @@ import { analyticsConsentRoutes } from './routes/analytics-consent.js'
 import { eventRoutes } from './routes/events.js'
 import { flagRoutes } from './routes/flags.js'
 import { profileRoutes } from './routes/profile.js'
+import { profilePhotoRoutes } from './routes/profile-photo.js'
 import { requestLinkRoutes } from './routes/request-link.js'
 import { limitPerIp, SIGN_IN_POSTS } from './routes/ip-limit.js'
 import { createWindowCounter } from './services/rate-limit.js'
@@ -74,6 +75,7 @@ import type { Track } from './services/analytics.js'
 import type { ErasureService } from './services/erasure.js'
 import type { SignIn } from './services/sign-in.js'
 import type { MemberRoster } from './services/member-roster.js'
+import type { PhotoService } from './services/photo.js'
 import type { ProfileStore } from './services/profile.js'
 import type { RoleService } from './services/roles.js'
 import type { WhitelistService } from './services/whitelist.js'
@@ -97,6 +99,7 @@ export interface AppDeps {
   roster: MemberRoster
   challengeModeration: ChallengeModeration
   profile: ProfileStore
+  photos: PhotoService
   whitelist: WhitelistService
   outbox: OutboxLog
   admission: AdmissionService
@@ -214,7 +217,7 @@ export function createApp(deps: AppDeps): Express {
   app.use(onboardingRoutes(deps))
   app.use(analyticsConsentRoutes(deps))
   app.use(eventRoutes(deps), flagRoutes(deps))
-  app.use(profileRoutes(deps), challengeRoutes(deps))
+  app.use(profileRoutes(deps), profilePhotoRoutes(deps), challengeRoutes(deps))
   app.use(deckRoutes(deps), activityRoutes(deps))
   app.use(connectionRoutes(deps))
   app.use(swipeRoutes(deps), reportRoutes(deps))

@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
 import type { Database } from '../db/connect.js'
-import { members } from '../db/schema.js'
+import { memberPhotos, members } from '../db/schema.js'
 import { isOptedIn } from './analytics-consent.js'
 import type { SocialLinks } from '../social-links.js'
 import type { ProfileStore } from './profile.js'
@@ -24,11 +24,13 @@ export function createProfileStore(
 ): ProfileStore {
   return {
     own: async (memberId) => {
-      const [row] = await db
-        .select()
+      const [found] = await db
+        .select({ row: members, photoAt: memberPhotos.updatedAt })
         .from(members)
+        .leftJoin(memberPhotos, eq(memberPhotos.memberId, members.id))
         .where(eq(members.id, memberId))
-      if (row === undefined) return null
+      if (found === undefined) return null
+      const { row, photoAt } = found
       return {
         name: row.name,
         jobTitle: row.jobTitle,
@@ -40,6 +42,7 @@ export function createProfileStore(
         consentAt: row.consentAt?.toISOString() ?? null,
         analyticsOptIn: isOptedIn(row, analyticsVersion),
         findable: row.findable,
+        photoAt: photoAt?.toISOString() ?? null,
         socialLinks: {
           linkedin: row.linkedinUrl,
           instagram: row.instagramUrl,

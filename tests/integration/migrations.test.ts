@@ -60,6 +60,7 @@ describe('migrations', () => {
       'member_badges',
       'member_event_badges',
       'member_expertise',
+      'member_photos',
       'member_roles',
       'members',
       'moderation_actions',

@@ -77,6 +77,7 @@ describe('the zero rule', () => {
       'LIVE_CODE_GRACE_SECONDS',
       'RECAP',
       'RECAP_OPENS_AT',
+      'PROFILE_PHOTOS',
     ]
     for (const variable of Object.keys(limitsEnv).filter(
       (each) => !switches.includes(each),
@@ -84,7 +85,7 @@ describe('the zero rule', () => {
       expect(() => loadConfig({ ...valid, [variable]: '0' })).toThrow(variable)
   })
 
-  it('allows zero for the replay’s switch and own-lines threshold, the search, social links and codes switches, the live code grace, and the recap’s switch and opening time (R-NET-6, R-NET-13, R-FIND-1, R-PROF-5, R-CODE-1, R-CODE-5, R-RECAP-1, R-RECAP-8)', () => {
+  it('allows zero for the replay’s switch and own-lines threshold, the search, social links and codes switches, the live code grace, the recap’s switch and opening time, and the photo switch (R-NET-6, R-NET-13, R-FIND-1, R-PROF-5, R-CODE-1, R-CODE-5, R-RECAP-1, R-RECAP-8, R-PROF-6)', () => {
     const zeroAllowed = Object.keys(limitsEnv).filter((variable) => {
       try {
         loadConfig({ ...valid, [variable]: '0' })
@@ -103,6 +104,7 @@ describe('the zero rule', () => {
       'LIVE_CODE_GRACE_SECONDS',
       'RECAP',
       'RECAP_OPENS_AT',
+      'PROFILE_PHOTOS',
     ])
   })
 
