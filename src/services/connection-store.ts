@@ -25,6 +25,7 @@ import type {
   ConnectionStatus,
   ConnectionStore,
   ConnectionView,
+  PartyContact,
 } from './connections.js'
 import { companySizeLabel, sectorLabel } from './profile-labels.js'
 
@@ -165,13 +166,23 @@ async function contactFor(
   db: Database,
   id: string,
   viewerId: string,
-): Promise<{ name: string; email: string } | null> {
+): Promise<PartyContact | null> {
   const [row] = await db
-    .select({ name: members.name, email: members.email })
+    .select({
+      name: members.name,
+      email: members.email,
+      linkedin: members.linkedinUrl,
+      instagram: members.instagramUrl,
+    })
     .from(r)
     .innerJoin(members, activeOtherParty(viewerId))
     .where(and(eq(r.id, id), eq(r.status, 'accepted'), isParty(viewerId)))
-  return row === undefined ? null : { name: row.name ?? '', email: row.email }
+  if (row === undefined) return null
+  return {
+    name: row.name ?? '',
+    email: row.email,
+    socialLinks: { linkedin: row.linkedin, instagram: row.instagram },
+  }
 }
 
 // Only the first read counts, so the time says when the notice ended.

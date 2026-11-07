@@ -15,6 +15,13 @@ const contact = ref<Contact | null>(null)
 const missing = ref(false)
 const problem = ref<string | null>(null)
 const over = computed(() => overInOrder(contact.value?.over ?? []))
+const socialLinks = computed(() => {
+  const links = contact.value?.socialLinks
+  return [
+    { label: 'LinkedIn', url: links?.linkedin ?? null },
+    { label: 'Instagram', url: links?.instagram ?? null },
+  ].filter((link) => link.url !== null)
+})
 const tickMs = ref<number | null>(null)
 const copyNote = ref<string | null>(null)
 
@@ -76,6 +83,19 @@ onMounted(async () => {
           />
         </div>
         <p v-if="copyNote" class="small" role="status">{{ copyNote }}</p>
+        <ul v-if="socialLinks.length > 0" class="social">
+          <li v-for="link in socialLinks" :key="link.label">
+            <a
+              :href="link.url ?? undefined"
+              class="row-link"
+              target="_blank"
+              rel="noopener noreferrer"
+              ><span class="row-link-label"
+                >{{ contact.name }} on {{ link.label }}</span
+              ></a
+            >
+          </li>
+        </ul>
       </div>
 
       <a
@@ -152,6 +172,12 @@ onMounted(async () => {
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 0.4rem;
+}
+
+.social {
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
 .email-row {

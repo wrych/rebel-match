@@ -6,6 +6,7 @@ import { loadConfig } from '../config.js'
 import { configPolicy } from '../permissions.js'
 import type { EraseOutcome } from '../services/erasure.js'
 import type { OwnProfile, ProfileEdit } from '../services/profile.js'
+import type { SocialLinks } from '../social-links.js'
 import { profileRoutes } from './profile.js'
 
 const config = loadConfig({
@@ -31,16 +32,22 @@ const own: OwnProfile = {
   consentAt: '2026-11-08T10:00:00.000Z',
   analyticsOptIn: false,
   findable: true,
+  socialLinks: { linkedin: 'https://www.linkedin.com/in/ada', instagram: null },
 }
 
-function setup(outcome: EraseOutcome = 'erased'): {
+function setup(
+  outcome: EraseOutcome = 'erased',
+  socialLinks = 1,
+): {
   app: Express
   edits: { memberId: string; edit: ProfileEdit }[]
   erased: string[]
   findable: [string, boolean][]
+  links: [string, SocialLinks][]
 } {
   const edits: { memberId: string; edit: ProfileEdit }[] = []
   const findable: [string, boolean][] = []
+  const links: [string, SocialLinks][] = []
   const erased: string[] = []
   const app = express()
   app.use(express.json())
@@ -48,6 +55,7 @@ function setup(outcome: EraseOutcome = 'erased'): {
     profileRoutes({
       auth,
       config,
+      settings: { limits: () => ({ ...config.limits, socialLinks }) },
       profile: {
         own: (memberId) => Promise.resolve(memberId === 'm-ada' ? own : null),
         update: (memberId, edit) => {
@@ -56,6 +64,10 @@ function setup(outcome: EraseOutcome = 'erased'): {
         },
         setFindable: (memberId, choice) => {
           findable.push([memberId, choice])
+          return Promise.resolve()
+        },
+        setSocialLinks: (memberId, saved) => {
+          links.push([memberId, saved])
           return Promise.resolve()
         },
       },
@@ -78,7 +90,7 @@ function setup(outcome: EraseOutcome = 'erased'): {
       },
     }),
   )
-  return { app, edits, erased, findable }
+  return { app, edits, erased, findable, links }
 }
 
 async function cookie(): Promise<string> {
@@ -236,6 +248,72 @@ describe('PUT /api/me/findable (R-FIND-5)', () => {
     const response = await request(setup().app)
       .put('/api/me/findable')
       .send({ findable: false })
+
+    expect(response.status).toBe(401)
+  })
+})
+
+describe('PUT /api/me/social-links (R-PROF-5)', () => {
+  it('saves both links as addresses, a blank or left-out one cleared', async () => {
+    const { app, links } = setup()
+
+    const response = await request(app)
+      .put('/api/me/social-links')
+      .set('Cookie', await cookie())
+      .send({ linkedin: ' linkedin.com/in/ada?trk=x ', instagram: '' })
+
+    expect(response.status).toBe(204)
+    expect(links).toEqual([
+      ['m-ada', { linkedin: 'https://linkedin.com/in/ada', instagram: null }],
+    ])
+  })
+
+  it('reads an Instagram handle as its address', async () => {
+    const { app, links } = setup()
+
+    await request(app)
+      .put('/api/me/social-links')
+      .set('Cookie', await cookie())
+      .send({ instagram: '@ada' })
+
+    expect(links[0]?.[1]).toEqual({
+      linkedin: null,
+      instagram: 'https://www.instagram.com/ada',
+    })
+  })
+
+  it.each([
+    ['a link on another site', { linkedin: 'https://example.org/in/ada' }],
+    ['a script address', { instagram: 'javascript:alert(1)' }],
+    ['a link that is not text', { linkedin: 42 }],
+  ])('refuses %s with 400 and saves nothing', async (_case, body) => {
+    const { app, links } = setup()
+
+    const response = await request(app)
+      .put('/api/me/social-links')
+      .set('Cookie', await cookie())
+      .send(body)
+
+    expect(response.status).toBe(400)
+    expect(links).toEqual([])
+  })
+
+  it('answers as not found while hosts have the switch off', async () => {
+    const { app, links } = setup('erased', 0)
+
+    const response = await request(app)
+      .put('/api/me/social-links')
+      .set('Cookie', await cookie())
+      .send({ linkedin: 'https://www.linkedin.com/in/ada' })
+
+    expect(response.status).toBe(404)
+    expect(links).toEqual([])
+  })
+
+  it('needs a session', async () => {
+    const response = await request(setup().app)
+      .put('/api/me/social-links')
+      .send({ linkedin: 'https://www.linkedin.com/in/ada' })
 
     expect(response.status).toBe(401)
   })

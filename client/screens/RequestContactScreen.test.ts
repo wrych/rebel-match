@@ -42,6 +42,26 @@ describe('RequestContactScreen', () => {
     expect(screen.find('a').attributes('href')).toBe(contact.mailto)
   })
 
+  it('links the social profiles the other party gave, and only those (R-PROF-5)', async () => {
+    const contact = {
+      name: 'Sam Boat',
+      email: 'sam@example.invalid',
+      mailto: 'mailto:sam@example.invalid',
+      socialLinks: {
+        linkedin: 'https://www.linkedin.com/in/sam',
+        instagram: null,
+      },
+      over: [],
+    }
+    serve({ ok: true, status: 200, json: async () => ({ contact }) })
+    const screen = await mountScreen()
+
+    const link = screen.find('a[href="https://www.linkedin.com/in/sam"]')
+    expect(link.text()).toBe('Sam Boat on LinkedIn')
+    expect(link.attributes('rel')).toBe('noopener noreferrer')
+    expect(screen.text()).not.toContain('Instagram')
+  })
+
   it('copies the email to the clipboard (R-CONN-3)', async () => {
     const contact = {
       name: 'Sam Boat',

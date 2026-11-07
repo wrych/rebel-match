@@ -81,6 +81,9 @@ export const members = pgTable(
       () => companySizes.key,
       { onDelete: 'set null' },
     ),
+    // Contact details, read only by the contact screen (R-PROF-5).
+    linkedinUrl: varchar('linkedin_url', { length: 200 }),
+    instagramUrl: varchar('instagram_url', { length: 200 }),
     status: memberStatus('status').notNull().default('applicant'),
     // A deleted account waits here until the sweep erases it, with what it
     // was for an undo, and whether the member deleted it (ADR 0032).
