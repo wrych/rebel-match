@@ -276,7 +276,7 @@ printed dev link (R-DEV-6).
 - [x] Photos beside names on cards, the deck, search, a person's page and the
       member page; the viewer's own point in the replay; the presentation's
       cast. _(R-PROF-6, ADR 0067)_
-- [ ] Add the photo to the privacy notice's profile list. _(R-ONB-9)_
+- [x] Add the photo to the privacy notice's profile list. _(R-ONB-9)_
 
 ## M6 — Hardening & pilot _(by 2026-11-01)_
 

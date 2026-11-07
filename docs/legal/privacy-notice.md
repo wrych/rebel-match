@@ -1,7 +1,8 @@
 # Rebel Match — Privacy notice
 
-- **Status:** Approved by the maintainer on 2026-11-07; best effort, not
-  reviewed by a lawyer
+- **Status:** Approved by the maintainer on 2026-10-21; the profile photo
+  lines, added 2026-11-07 at their request, await their approval in this
+  pull request. Best effort, not reviewed by a lawyer
 - **Version:** 2026-11-07
 - **Shown at:** `/privacy` (R-ONB-9)
 
