@@ -754,6 +754,22 @@ const catalogue: Group[] = [
         unit: ['pixel', 'pixels'],
       },
       {
+        name: 'Social links',
+        explanation:
+          'On lets members add their LinkedIn and Instagram to their ' +
+          'profile, shown only to members they are connected with; off ' +
+          'hides them everywhere and keeps what was saved.',
+        key: 'limits.socialLinks',
+        switch: true,
+      },
+      {
+        name: 'Longest social link',
+        explanation: 'Fixed by the database.',
+        fixed: true,
+        read: (c) => c.limits.socialLinkMaxChars,
+        unit: CHARACTERS,
+      },
+      {
         name: 'Addresses per attendee list upload',
         explanation: 'The most addresses one upload to the whitelist can add.',
         read: (c) => c.limits.whitelistBatchMax,

@@ -63,6 +63,7 @@ function deps(
       own: () => Promise.resolve(null),
       update: () => Promise.resolve(),
       setFindable: () => Promise.resolve(),
+      setSocialLinks: () => Promise.resolve(),
     },
     whitelist: { add: () => Promise.resolve([]) },
     outbox: {

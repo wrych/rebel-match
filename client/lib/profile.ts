@@ -1,4 +1,5 @@
 import type { OwnProfile, ProfileEdit } from '../../src/services/profile'
+import type { SocialNetwork } from '../../src/social-links'
 import { ensureOk, failure, getJson, send } from './request'
 
 export type { OwnProfile }
@@ -53,5 +54,17 @@ export async function saveFindable(findable: boolean): Promise<void> {
   ensureOk(
     await send('/api/me/findable', 'PUT', { findable }),
     'findable not saved',
+  )
+}
+
+/** Saves both social links as the form holds them, a blank one cleared
+ * (R-PROF-5). Throws when they did not save, so a failure is never shown as
+ * saved. */
+export async function saveSocialLinks(
+  links: Record<SocialNetwork, string>,
+): Promise<void> {
+  ensureOk(
+    await send('/api/me/social-links', 'PUT', links),
+    'social links not saved',
   )
 }

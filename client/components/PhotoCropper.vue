@@ -103,7 +103,7 @@ function zoomBy(steps: number): void {
 }
 
 function wheel(event: WheelEvent): void {
-  zoomBy(event.deltaY < 0 ? 1 : -1)
+  if (event.deltaY !== 0) zoomBy(event.deltaY < 0 ? 1 : -1)
 }
 
 function key(event: KeyboardEvent): void {

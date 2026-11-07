@@ -1,6 +1,6 @@
 {
-  "id": "83d9a1c4-5da1-4b36-b211-f0ac80d71722",
-  "prevId": "f7baf345-981c-4b9f-af18-97586f4f64a3",
+  "id": "9a6d0d6e-67b8-4090-b2bb-2d3eaa623ea8",
+  "prevId": "e14b9e49-cf72-4a56-9037-d9b9430991b0",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1647,12 +1647,6 @@
           "primaryKey": false,
           "notNull": true
         },
-        "key": {
-          "name": "key",
-          "type": "varchar(43)",
-          "primaryKey": false,
-          "notNull": false
-        },
         "updated_at": {
           "name": "updated_at",
           "type": "timestamp with time zone",
@@ -1661,23 +1655,7 @@
           "default": "now()"
         }
       },
-      "indexes": {
-        "uq_member_photos_key": {
-          "name": "uq_member_photos_key",
-          "columns": [
-            {
-              "expression": "key",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
+      "indexes": {},
       "foreignKeys": {
         "member_photos_member_id_members_id_fk": {
           "name": "member_photos_member_id_members_id_fk",
@@ -1828,6 +1806,18 @@
         "company_size": {
           "name": "company_size",
           "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "linkedin_url": {
+          "name": "linkedin_url",
+          "type": "varchar(200)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "instagram_url": {
+          "name": "instagram_url",
+          "type": "varchar(200)",
           "primaryKey": false,
           "notNull": false
         },
