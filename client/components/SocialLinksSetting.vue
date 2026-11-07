@@ -21,9 +21,10 @@ const placeholders: Readonly<Record<SocialNetwork, string>> = {
   instagram: '@yourhandle',
 }
 const refusals: Readonly<Record<SocialNetwork, string>> = {
-  linkedin: 'That is not a LinkedIn address, so it was not saved.',
+  linkedin:
+    'That is not a LinkedIn profile (linkedin.com/in/…), so it was not saved.',
   instagram:
-    'That is not an Instagram address or @handle, so it was not saved.',
+    'That is not an Instagram profile or @handle, so it was not saved.',
 }
 
 const typed = (): Record<SocialNetwork, string> => ({

@@ -98,7 +98,7 @@ describe('SocialLinksSetting (R-PROF-5)', () => {
 
     expect(puts(fetchMock)).toEqual([])
     expect(setting.find('[role="alert"]').text()).toContain(
-      'not a LinkedIn address',
+      'not a LinkedIn profile',
     )
   })
 

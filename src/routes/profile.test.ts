@@ -264,7 +264,10 @@ describe('PUT /api/me/social-links (R-PROF-5)', () => {
 
     expect(response.status).toBe(204)
     expect(links).toEqual([
-      ['m-ada', { linkedin: 'https://linkedin.com/in/ada', instagram: null }],
+      [
+        'm-ada',
+        { linkedin: 'https://www.linkedin.com/in/ada', instagram: null },
+      ],
     ])
   })
 

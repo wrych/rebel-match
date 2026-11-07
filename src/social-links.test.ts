@@ -19,9 +19,9 @@ describe('readSocialLink (R-PROF-5)', () => {
   })
 
   it('takes an address typed without its scheme, and a country site', () => {
-    expect(readSocialLink('linkedin', 'ch.linkedin.com/in/ada', MAX)).toEqual({
+    expect(readSocialLink('linkedin', 'ch.linkedin.com/in/ada/', MAX)).toEqual({
       result: 'link',
-      url: 'https://ch.linkedin.com/in/ada',
+      url: 'https://www.linkedin.com/in/ada',
     })
   })
 
@@ -30,9 +30,9 @@ describe('readSocialLink (R-PROF-5)', () => {
       result: 'link',
       url: 'https://www.instagram.com/ada.l_',
     })
-    expect(readSocialLink('instagram', 'instagram.com/ada', MAX)).toEqual({
+    expect(readSocialLink('instagram', 'instagram.com/ada/', MAX)).toEqual({
       result: 'link',
-      url: 'https://instagram.com/ada',
+      url: 'https://www.instagram.com/ada',
     })
   })
 
@@ -49,6 +49,13 @@ describe('readSocialLink (R-PROF-5)', () => {
     ['instagram', 'https://evil.instagram.com/ada'],
     ['instagram', '@not a handle'],
     ['instagram', 'ada'],
+    ['linkedin', 'https://www.linkedin.com/posts/ada-123'],
+    ['linkedin', 'https://www.linkedin.com/company/rebels'],
+    ['linkedin', 'https://www.linkedin.com/in/ada/details/skills'],
+    ['instagram', 'https://www.instagram.com/p/C1abc/'],
+    ['instagram', 'instagram.com/explore/tags/rebels'],
+    ['instagram', 'https://www.instagram.com/reels/'],
+    ['instagram', '@explore'],
   ] as const)('refuses %s link %s', (network, typed) => {
     expect(readSocialLink(network, typed, MAX)).toEqual({ result: 'invalid' })
   })

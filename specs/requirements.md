@@ -419,10 +419,11 @@ capability, not a secret** — and every requirement below exists because of tha
 - **R-PROF-5 (Social links)** — WHILE hosts have `limits.socialLinks` on, the
   profile screen SHALL let a member add a link to their **LinkedIn** and their
   **Instagram** profile, each optional and saved on change as R-PROF-1 says. A
-  link SHALL be accepted only as an address on that network's own site, saved
-  as `https` without its query or fragment, and an Instagram `@handle` SHALL
-  read as its profile's address; anything else SHALL NOT save and SHALL say
-  why. Social links are contact details: they SHALL be shown only on the
+  link SHALL be accepted only as a member's profile on that network's own site
+  — LinkedIn's `/in/…`, an Instagram handle, or an `@handle` — and saved as
+  its canonical `https` address; a post, a page or anything else SHALL NOT
+  save and SHALL say why. The contact screen SHALL show each as its network's
+  logo and the handle (`/in/…`, `@…`). Social links are contact details: they SHALL be shown only on the
   contact screen of an accepted connection, to its other party (S16, R-CONN-6,
   ADR 0004), and never on a member card, in search, the deck, the host tools,
   a notification or an analytics event (R-ANA-3). They go with the account

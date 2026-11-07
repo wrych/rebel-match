@@ -41,19 +41,46 @@ function isPlainWebAddress(url: URL): boolean {
   )
 }
 
+const LINKEDIN_PROFILE = /^\/in\/([A-Za-z0-9%_.-]{1,100})\/?$/
+const INSTAGRAM_PROFILE = /^\/([A-Za-z0-9._]{1,30})\/?$/
+// Instagram pages that sit where a handle would, never a member's profile.
+const INSTAGRAM_PAGES = new Set([
+  'about',
+  'accounts',
+  'direct',
+  'explore',
+  'p',
+  'reel',
+  'reels',
+  'stories',
+  'tv',
+])
+
+function profileAddress(network: SocialNetwork, path: string): string | null {
+  if (network === 'linkedin') {
+    const slug = LINKEDIN_PROFILE.exec(path)?.[1]
+    return slug === undefined ? null : `https://www.linkedin.com/in/${slug}`
+  }
+  const handle = INSTAGRAM_PROFILE.exec(path)?.[1]
+  if (handle === undefined || INSTAGRAM_PAGES.has(handle.toLowerCase()))
+    return null
+  return `https://www.instagram.com/${handle}`
+}
+
 function addressOf(network: SocialNetwork, text: string): string | null {
   const handle =
     network === 'instagram' ? INSTAGRAM_HANDLE.exec(text)?.[1] : undefined
-  if (handle !== undefined) return `https://www.instagram.com/${handle}`
+  if (handle !== undefined) return profileAddress(network, `/${handle}`)
   const url = parsed(text)
   if (url === null || !isPlainWebAddress(url)) return null
-  if (!onSite(network, url.hostname) || url.pathname === '/') return null
-  return `https://${url.hostname}${url.pathname}`
+  if (!onSite(network, url.hostname)) return null
+  return profileAddress(network, url.pathname)
 }
 
 /** Reads what a member typed as a link to their profile on `network`: blank
- * clears it; otherwise only an address on that network's own site, as `https`
- * without query or fragment, or an Instagram `@handle` (R-PROF-5). */
+ * clears it; otherwise only a profile address on that network's own site,
+ * saved as its canonical `https` address, or an Instagram `@handle`
+ * (R-PROF-5). */
 export function readSocialLink(
   network: SocialNetwork,
   typed: string,

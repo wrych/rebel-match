@@ -68,7 +68,7 @@ describe('social links over Postgres (R-PROF-5)', () => {
     expect(saved.status).toBe(204)
     expect(own.body).toMatchObject({
       socialLinks: {
-        linkedin: 'https://linkedin.com/in/tobias',
+        linkedin: 'https://www.linkedin.com/in/tobias',
         instagram: 'https://www.instagram.com/tobias',
       },
     })
@@ -100,7 +100,7 @@ describe('social links over Postgres (R-PROF-5)', () => {
     expect(forAna.body).toMatchObject({
       contact: {
         socialLinks: {
-          linkedin: 'https://linkedin.com/in/tobias',
+          linkedin: 'https://www.linkedin.com/in/tobias',
           instagram: 'https://www.instagram.com/tobias',
         },
       },
