@@ -104,8 +104,8 @@ describe('the first admins of the prod seed (R-SEED-9)', () => {
   })
 
   it('seeds the dev network once, timed as planned (R-SEED-10)', async () => {
-    // On a shared Postgres an earlier file may have answered or added
-    // requests; this one checks only what the seed writes.
+    // Earlier tests have seeded already; starting without requests, this
+    // checks only what these two runs write.
     await db.query('DELETE FROM connection_requests')
     await applySeed(db.drizzle, plan, config.consentVersion)
     await applySeed(db.drizzle, plan, config.consentVersion)
