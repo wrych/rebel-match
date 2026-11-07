@@ -54,7 +54,7 @@ const service = (
 ): string =>
   JSON.stringify({ status: { traffic, latestReadyRevisionName: latest } })
 
-describe('staging-image.sh (ADR 0025, ADR 0044)', () => {
+describe('staging-image.sh (ADR 0025, ADR 0044, ADR 0064)', () => {
   it('names the image the revision serving all of staging runs', async () => {
     expect(
       await image({
@@ -83,6 +83,17 @@ describe('staging-image.sh (ADR 0025, ADR 0044)', () => {
   it('refuses something that is not a digest', async () => {
     await expect(
       image({ DIGEST: 'latest', FAKE_SERVICE: '{}' }),
+    ).rejects.toThrow()
+  })
+
+  it('refuses an image staging serves from another repository', async () => {
+    await expect(
+      image({
+        FAKE_SERVICE: service([
+          { revisionName: 'rebel-match-staging-00042', percent: 100 },
+        ]),
+        FAKE_IMAGE: `europe-west6-docker.pkg.dev/nonprod/previews/app@${SERVED}`,
+      }),
     ).rejects.toThrow()
   })
 

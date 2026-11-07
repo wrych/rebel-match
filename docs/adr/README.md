@@ -99,4 +99,5 @@ still holds except where the later ADR says otherwise.
 | [0061](0061-show-the-members-surroundings-on-the-share-card.md)           | Show the member's surroundings on the share card                                | Accepted                              |
 | [0062](0062-find-members-by-query-not-a-directory.md)                     | Find members by a capped query, never a directory                               | Accepted                              |
 | [0063](0063-a-shown-live-code-is-its-owners-opt-in.md)                    | A live code shown is its owner's opt-in; a profile code only asks               | Accepted                              |
+| [0064](0064-production-promotes-only-images-built-from-main.md)           | Production promotes only images built from main                                 | Accepted                              |
 | [0065](0065-a-banned-address-answers-as-a-pending-one.md)                 | A banned address is answered as a pending one                                   | Accepted                              |
