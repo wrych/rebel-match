@@ -15,7 +15,7 @@
     "build": "tsc -p tsconfig.build.json && vite build",
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit && vue-tsc -p client/tsconfig.json --noEmit",
-    "lint": "eslint . && prettier --check .",
+    "lint": "eslint . --concurrency auto && prettier --check .",
     "format": "prettier --write .",
     "test": "vitest run --coverage",
     "test:watch": "vitest",
