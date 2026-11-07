@@ -143,7 +143,7 @@ describe('banning a member over Postgres (R-MOD-9, R-MOD-10)', () => {
     })
   })
 
-  it('tells the banned address at the door it is suspended, sending nothing', async () => {
+  it('answers the banned address at the door as a pending one, sending nothing', async () => {
     const mailed = (): Promise<unknown> =>
       valueOf(
         'SELECT count(*)::int AS n FROM outbox WHERE to_email = ?',
@@ -156,7 +156,7 @@ describe('banning a member over Postgres (R-MOD-9, R-MOD-10)', () => {
       .send({ email: bannedEmail })
       .expect(200)
 
-    expect(response.body).toEqual({ state: 'suspended' })
+    expect(response.body).toEqual({ state: 'access-requested' })
     expect(await mailed()).toBe(before)
   })
 

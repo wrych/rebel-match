@@ -18,7 +18,7 @@ describe('admissionFor', () => {
     ['applicant', 'already-asked'],
     ['rejected', 'not-approved'],
     ['deleted', 'set-to-be-deleted'],
-    ['banned', 'suspended'],
+    ['banned', 'already-asked'],
   ] as const)(
     'treats %s as %s (R-AUTH-1,2,4, R-MOD-10)',
     (status, admission) => {
@@ -154,12 +154,23 @@ describe('createAdmission', () => {
     expect(harness.notified).toEqual([])
   })
 
-  it('tells a banned address it is suspended, with no link and no notice (R-MOD-10)', async () => {
-    const harness = setup([['banned@example.invalid', 'banned']])
+  it('answers a banned address as a pending one, with no link and no notice (R-MOD-10)', async () => {
+    const harness = setup([
+      ['banned@example.invalid', 'banned'],
+      ['waiting@example.invalid', 'applicant'],
+    ])
 
-    expect(await harness.requestLink('banned@example.invalid')).toBe(
-      'suspended',
+    const banned = await harness.admission.requestLink(
+      'banned@example.invalid',
+      { client },
     )
+    const pending = await harness.admission.requestLink(
+      'waiting@example.invalid',
+      { client },
+    )
+
+    expect(banned).toEqual({ state: 'access-requested' })
+    expect(banned).toEqual(pending)
     expect(harness.links).toEqual([])
     expect(harness.notified).toEqual([])
   })
@@ -300,7 +311,7 @@ describe('requestLink with an invite (F15)', () => {
   it.each([
     ['applicant', 'access-requested'],
     ['rejected', 'not-approved'],
-    ['banned', 'suspended'],
+    ['banned', 'access-requested'],
   ] as const)(
     'leaves an existing %s as it is, using no seat',
     async (status, state) => {
