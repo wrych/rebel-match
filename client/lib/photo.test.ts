@@ -20,7 +20,7 @@ function answering(status: number): ReturnType<typeof vi.fn> {
   return fetchMock
 }
 
-describe('the photo requests (R-PROF-5)', () => {
+describe('the photo requests (R-PROF-6)', () => {
   it('sends the JPEG itself', async () => {
     const fetchMock = answering(204)
     const jpeg = new Blob(['x'], { type: 'image/jpeg' })
@@ -57,7 +57,7 @@ describe('the photo requests (R-PROF-5)', () => {
   })
 })
 
-describe('photo addresses (R-PROF-6)', () => {
+describe('photo addresses (R-PROF-7)', () => {
   it('reads a card’s photo by its key, and none without one', () => {
     expect(photoSrc('abc')).toBe('/api/photos/abc')
     expect(photoSrc(null)).toBeNull()

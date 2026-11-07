@@ -37,7 +37,7 @@ const props = withDefaults(
     stats?: boolean
     /** The viewer's name for the callout at their point (R-NET-14). */
     selfName?: string | null
-    /** The viewer's photo, drawn as their own point (R-NET-2, R-PROF-6). */
+    /** The viewer's photo, drawn as their own point (R-NET-2, R-PROF-7). */
     selfPhoto?: string | null
     durationMs?: number
     scene?: SceneFactory

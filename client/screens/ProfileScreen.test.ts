@@ -115,7 +115,7 @@ describe('ProfileScreen', () => {
     [1, true],
     [0, false],
   ])(
-    'offers the photo only while hosts have photos on (%i): %s (R-PROF-5)',
+    'offers the photo only while hosts have photos on (%i): %s (R-PROF-6)',
     async (profilePhotos, offered) => {
       const fetchMock = vi.fn((url: string) =>
         Promise.resolve({

@@ -12,7 +12,7 @@ export const companySizeLabel = sql<
 >`(SELECT ${companySizes.label} FROM ${companySizes} WHERE ${companySizes.key} = ${members.companySize})`
 
 /** A member's photo key as a card carries it, or null without a photo
- * (R-PROF-6, ADR 0067). */
+ * (R-PROF-7, ADR 0067). */
 export const photoKey = sql<
   string | null
 >`(SELECT ${memberPhotos.key} FROM ${memberPhotos} WHERE ${memberPhotos.memberId} = ${members.id})`

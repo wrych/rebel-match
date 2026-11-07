@@ -124,7 +124,7 @@ describe('NetworkGraph (R-NET-1, R-NET-2)', () => {
     expect(graph.emitted('end')).toHaveLength(1)
   })
 
-  it('hands the scene the viewer’s photo to draw their point as (R-NET-2, R-PROF-6)', () => {
+  it('hands the scene the viewer’s photo to draw their point as (R-NET-2, R-PROF-7)', () => {
     const { scene } = setup({ selfPhoto: '/api/profile/photo?v=1' })
     expect(scene.photo()).toBe('/api/profile/photo?v=1')
   })

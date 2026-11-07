@@ -4,7 +4,7 @@ import type { Crop } from './crop'
 import { fetchProfile } from './profile'
 import { ensureOk, failure } from './request'
 
-/** How the browser shapes a photo before it travels (R-PROF-5). */
+/** How the browser shapes a photo before it travels (R-PROF-6). */
 export interface PhotoShape {
   photoSidePx: number
   photoJpegQuality: number
@@ -58,7 +58,7 @@ export const ownPhotoUrl = (photoAt: string): string =>
   `/api/profile/photo?v=${encodeURIComponent(photoAt)}`
 
 /** Saves the photo; `refused` when the server would not take it, a throw for
- * anything else, so a failure is never shown as saved (R-PROF-5). */
+ * anything else, so a failure is never shown as saved (R-PROF-6). */
 export async function savePhoto(jpeg: Blob): Promise<'saved' | 'refused'> {
   const response = await fetch('/api/profile/photo', {
     method: 'PUT',
@@ -79,7 +79,7 @@ export async function removePhoto(): Promise<void> {
 }
 
 /** Where a card's photo key is read, null for a member without one
- * (R-PROF-6). */
+ * (R-PROF-7). */
 export const photoSrc = (key: string | null): string | null =>
   key === null ? null : sharedPhotoPath(key)
 
@@ -89,7 +89,7 @@ export const memberPhotoUrl = (memberId: string, key: string): string =>
   `/api/admin/members/${encodeURIComponent(memberId)}/photo?v=${encodeURIComponent(key)}`
 
 /** The member's own photo while hosts have photos on, else null, for the
- * replay to draw their point as (R-NET-2, R-PROF-6). */
+ * replay to draw their point as (R-NET-2, R-PROF-7). */
 export async function ownPhoto(): Promise<string | null> {
   const [config, profile] = await Promise.all([fetchConfig(), fetchProfile()])
   if (config.limits.profilePhotos !== 1 || profile.photoAt === null) return null

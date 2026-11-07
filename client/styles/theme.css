@@ -828,7 +828,7 @@ textarea.input {
 }
 
 /* A person's photo beside their name lines, wherever a card names someone
-   (R-PROF-6). */
+   (R-PROF-7). */
 .with-photo {
   display: grid;
   grid-template-columns: 2.75rem minmax(0, 1fr);

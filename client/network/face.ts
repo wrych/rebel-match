@@ -35,7 +35,7 @@ export function roundFace(
 }
 
 /** The viewer's own point drawn as their photo, always facing the camera
- * and never hidden behind another point (R-NET-2, R-PROF-6). Empty until
+ * and never hidden behind another point (R-NET-2, R-PROF-7). Empty until
  * the photo has loaded; a photo that fails leaves the plain point. */
 export function photoBall(at: Point, src: string, ring: Color): Sprite {
   const material = new SpriteMaterial({

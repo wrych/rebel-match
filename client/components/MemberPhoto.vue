@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /** A member's photo, round, filling the width its place gives it, or their
  * initials where there is none. Never a link, never enlarged, never dragged
- * out of the page (R-PROF-6). */
+ * out of the page (R-PROF-7). */
 import { computed } from 'vue'
 import { initials } from '../lib/makers'
 

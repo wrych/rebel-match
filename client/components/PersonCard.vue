@@ -3,7 +3,7 @@
  * photos are on, name, then job title, organization, sector and company
  * size, as the deck's cards do; never an email; marked when the viewer is
  * already connected with them; a link when `to` is given (R-FIND-3,
- * R-CONN-6, R-CONN-8, R-PROF-6). */
+ * R-CONN-6, R-CONN-8, R-PROF-7). */
 import { peerLine } from '../lib/challenges'
 import type { MemberCard } from '../lib/people'
 import { photoSrc } from '../lib/photo'

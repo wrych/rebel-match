@@ -60,7 +60,7 @@ async function cookie(memberId = 'm-ada'): Promise<string> {
   return `${session.name}=${session.value}`
 }
 
-describe('/api/photos/:key (R-PROF-6, ADR 0067)', () => {
+describe('/api/photos/:key (R-PROF-7, ADR 0067)', () => {
   it('serves another member’s photo by its key, to keep for good', async () => {
     const response = await request(setup().app)
       .get(`/api/photos/${BEN_KEY}`)
@@ -121,7 +121,7 @@ describe('/api/admin/members/:id/photo (R-MEM-2)', () => {
 })
 
 describe('/api/profile/photo', () => {
-  it('saves a photo and serves it back to its owner as a picture only (R-PROF-5)', async () => {
+  it('saves a photo and serves it back to its owner as a picture only (R-PROF-6)', async () => {
     const { app } = setup()
     const saved = await request(app)
       .put('/api/profile/photo')
@@ -196,7 +196,7 @@ describe('/api/profile/photo', () => {
     ['PUT', 'put'],
     ['DELETE', 'delete'],
   ] as const)(
-    'answers %s as not found while hosts have photos off (R-PROF-5)',
+    'answers %s as not found while hosts have photos off (R-PROF-6)',
     async (_name, method) => {
       const { app, kept } = setup(0)
       kept.set('m-ada', { jpeg: GOOD, updatedAt: new Date(0) })

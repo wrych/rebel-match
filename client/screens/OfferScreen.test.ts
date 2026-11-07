@@ -368,7 +368,7 @@ function seenIds(fetchMock: ReturnType<typeof vi.fn>): string[] {
     })
 }
 
-describe('the author’s photo (R-PROF-6)', () => {
+describe('the author’s photo (R-PROF-7)', () => {
   const KEY = 'k'.repeat(43)
   const pictured = cards.map((card) => ({
     ...card,
