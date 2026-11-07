@@ -676,7 +676,12 @@ per commit, and clear what is left untagged afterwards.
 it may roll back to (§20), staging's and each preview's. Cloud Run needs a
 revision's image to start a new instance of it. The age cutoff does not protect
 these: production can run a month-old image. The script below never deletes
-them.
+them, and deletes nothing at all if it cannot list every revision. Before part
+2 is done, set `PROD=` (empty) so it does not look for production.
+
+Paste the functions once, then run `clean_images`. Each deletion waits for
+Google, a few seconds each, so it prints where it stands as it goes: the phase,
+how many of how many, and the time spent and left.
 
 ```sh
 REPO="$REGION-docker.pkg.dev/$NONPROD/rebel-match/app"
@@ -686,39 +691,69 @@ gcloud artifacts repositories describe rebel-match --project="$NONPROD" \
   --location="$REGION" --format='value(sizeBytes)'
 gcloud artifacts docker images list "$REPO" --include-tags --sort-by=~updateTime
 
-# Every image a revision runs, in non-prod and, once part 2 is done, production.
-KEEP=$({
-  for SERVICE in rebel-match-staging rebel-match-dev; do
-    gcloud run revisions list --service="$SERVICE" --project="$NONPROD" \
-      --region="$REGION" --format='value(status.imageDigest)'
+# Every digest a revision runs, in non-prod and, with PROD set, production.
+# Fails if any list fails, so the caller deletes nothing.
+running_images() {
+  local service
+  for service in rebel-match-staging rebel-match-dev; do
+    gcloud run revisions list --service="$service" --project="$NONPROD" \
+      --region="$REGION" --format='value(status.imageDigest)' || return 1
   done
-  gcloud run revisions list --service=rebel-match --project="$PROD" \
-    --region="$REGION" --format='value(status.imageDigest)' 2>/dev/null
-} | sed 's/.*@//' | sort -u)
-echo "$KEEP" | grep -c sha256   # images kept because a revision runs them
-
-# Images older than 30 days, tagged (true) or not (false), less those kept.
-CUTOFF=$(date -u -d '30 days ago' +%Y-%m-%dT%H:%M:%SZ)
-old() {
-  gcloud artifacts docker images list "$REPO" --include-tags \
-    --filter="updateTime<'$CUTOFF'" --format='value(version,tags)' |
-    awk -F'\t' -v tagged="$1" '(($2 != "") ? "true" : "false") == tagged { print $1 }' |
-    grep -vxF -f <(echo "$KEEP")
+  if [[ -n "$PROD" ]]; then
+    gcloud run revisions list --service=rebel-match --project="$PROD" \
+      --region="$REGION" --format='value(status.imageDigest)' || return 1
+  fi
 }
 
-# First the tagged images, one per commit. Count them, then delete them.
-old true | grep -c sha256
-for DIGEST in $(old true); do
-  gcloud artifacts docker images delete "$REPO@$DIGEST" --delete-tags --quiet ||
-    echo "kept $DIGEST"
-done
+# old_images <cutoff> <tagged|untagged> <digests to keep>
+old_images() {
+  local list
+  list=$(gcloud artifacts docker images list "$REPO" --include-tags \
+    --filter="updateTime<'$1'" --format='value(version,tags)') || return 1
+  awk -F'\t' -v want="$2" \
+    '(($2 != "") ? "tagged" : "untagged") == want { print $1 }' <<<"$list" |
+    grep -vxF -f <(echo "$3") || true
+}
 
-# Then what is left untagged. One still in use by a kept image refuses, and
-# stays; that is expected.
-for DIGEST in $(old false); do
-  gcloud artifacts docker images delete "$REPO@$DIGEST" --quiet 2>/dev/null ||
-    echo "kept $DIGEST"
-done
+clean_images() {
+  local cutoff running keep phase digests total i digest out result start spent
+  cutoff=$(date -u -d '30 days ago' +%Y-%m-%dT%H:%M:%SZ)
+  running=$(running_images) || {
+    echo "clean: could not list every revision, so nothing is deleted" >&2
+    return 1
+  }
+  keep=$(sed 's/.*@//' <<<"$running" | grep sha256 | sort -u)
+  [[ -n "$keep" ]] || {
+    echo "clean: no revision runs any image, which cannot be right; stopping" >&2
+    return 1
+  }
+  echo "keeping $(wc -l <<<"$keep") images that revisions run"
+
+  # Tagged images first, one per commit. Untagged ones left after them belong
+  # to an image that is kept, and refuse; that is expected.
+  for phase in tagged untagged; do
+    digests=$(old_images "$cutoff" "$phase" "$keep") || return 1
+    total=$(grep -c sha256 <<<"$digests" || true)
+    echo "$phase: $total older than $cutoff"
+    i=0
+    start=$SECONDS
+    for digest in $digests; do
+      i=$((i + 1))
+      if out=$(gcloud artifacts docker images delete "$REPO@$digest" \
+        --delete-tags --quiet 2>&1); then
+        result=deleted
+      elif [[ "$phase" == tagged ]]; then
+        result="kept: $(tail -1 <<<"$out")"
+      else
+        result=kept
+      fi
+      spent=$((SECONDS - start))
+      printf '%s %d/%d %s %s · %dm%02ds, about %dm left\n' "$phase" "$i" \
+        "$total" "${digest:7:12}" "$result" $((spent / 60)) $((spent % 60)) \
+        $((spent * (total - i) / i / 60))
+    done
+  done
+}
 ```
 
 Check what production and staging run before and after, the first time:
