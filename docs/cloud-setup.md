@@ -660,7 +660,23 @@ too.
 Every deploy pushes an image, one per commit. Layers are shared, so each adds
 only what changed, but the repository never shrinks by itself; there is
 deliberately no automatic cleanup. Look now and then (storage beyond 0.5 GB
-costs about $0.10 per GB a month), and clear out old images by hand:
+costs about $0.10 per GB a month), and clear out old images by hand.
+
+**What an entry in the list is.** An image is a manifest, a list of layer
+digests. Layers are stored once and kept while any manifest still names them,
+so deleting an old image never breaks a newer one built on the same base, and
+the order of deletion does not matter. The list also shows untagged entries
+that belong to a tagged image: the manifests for its platform or its build
+attestation, depending on how Docker pushed it. They go when their tagged
+image goes. Deleted on their own, they fail, as already gone (`PERMISSION_DENIED
+… or it may not exist`) or as still in use. So delete the tagged images, one
+per commit, and clear what is left untagged afterwards.
+
+**What must stay.** Every image a Cloud Run revision runs: production's, which
+it may roll back to (§20), staging's and each preview's. Cloud Run needs a
+revision's image to start a new instance of it. The age cutoff does not protect
+these: production can run a month-old image. The script below never deletes
+them.
 
 ```sh
 REPO="$REGION-docker.pkg.dev/$NONPROD/rebel-match/app"
@@ -670,21 +686,46 @@ gcloud artifacts repositories describe rebel-match --project="$NONPROD" \
   --location="$REGION" --format='value(sizeBytes)'
 gcloud artifacts docker images list "$REPO" --include-tags --sort-by=~updateTime
 
-# Images older than 30 days: count them, then delete them.
+# Every image a revision runs, in non-prod and, once part 2 is done, production.
+KEEP=$({
+  for SERVICE in rebel-match-staging rebel-match-dev; do
+    gcloud run revisions list --service="$SERVICE" --project="$NONPROD" \
+      --region="$REGION" --format='value(status.imageDigest)'
+  done
+  gcloud run revisions list --service=rebel-match --project="$PROD" \
+    --region="$REGION" --format='value(status.imageDigest)' 2>/dev/null
+} | sed 's/.*@//' | sort -u)
+echo "$KEEP" | grep -c sha256   # images kept because a revision runs them
+
+# Images older than 30 days, tagged (true) or not (false), less those kept.
 CUTOFF=$(date -u -d '30 days ago' +%Y-%m-%dT%H:%M:%SZ)
-OLD=$(gcloud artifacts docker images list "$REPO" \
-  --filter="updateTime<'$CUTOFF'" --format='value(version)')
-echo "$OLD" | grep -c sha256
-for DIGEST in $OLD; do
-  gcloud artifacts docker images delete "$REPO@$DIGEST" --delete-tags --quiet
+old() {
+  gcloud artifacts docker images list "$REPO" --include-tags \
+    --filter="updateTime<'$CUTOFF'" --format='value(version,tags)' |
+    awk -F'\t' -v tagged="$1" '(($2 != "") ? "true" : "false") == tagged { print $1 }' |
+    grep -vxF -f <(echo "$KEEP")
+}
+
+# First the tagged images, one per commit. Count them, then delete them.
+old true | grep -c sha256
+for DIGEST in $(old true); do
+  gcloud artifacts docker images delete "$REPO@$DIGEST" --delete-tags --quiet ||
+    echo "kept $DIGEST"
+done
+
+# Then what is left untagged. One still in use by a kept image refuses, and
+# stays; that is expected.
+for DIGEST in $(old false); do
+  gcloud artifacts docker images delete "$REPO@$DIGEST" --quiet 2>/dev/null ||
+    echo "kept $DIGEST"
 done
 ```
 
-Staging is redeployed on every merge and a preview on every push, so what
-they run is newer than any sensible cutoff. A pull request left untouched for
-longer may not start its preview again after its image is gone; pushing to it
-redeploys. Once production exists (part 2), keep every image it may roll back
-to: check what it runs before deleting.
+Check what production and staging run before and after, the first time:
+`gcloud artifacts docker images describe "<image>@<digest>"` must find each.
+
+A pull request whose preview revision has been removed may not start its
+preview again after its image is gone; pushing to it redeploys.
 
 ## Taking it down
 
