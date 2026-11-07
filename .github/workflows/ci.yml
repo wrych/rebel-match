@@ -6,7 +6,8 @@ on:
   pull_request:
     # `labeled` so that adding the preview label deploys at once (ADR 0028).
     # `check` runs on it too: a skipped required check would count as passed.
-    types: [opened, synchronize, reopened, labeled]
+    # `edited` so that a renamed title is checked again before it lands.
+    types: [opened, synchronize, reopened, labeled, edited]
 
 permissions:
   contents: read
@@ -64,6 +65,14 @@ jobs:
           npx commitlint
           --from ${{ github.event.pull_request.base.sha }}
           --to ${{ github.event.pull_request.head.sha }}
+
+      # A squash merge puts the title on main, so it is checked as a commit
+      # message too, including where commitlint skips Dependabot's commits.
+      - name: Pull request title
+        if: github.event_name == 'pull_request'
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: printf '%s\n' "$TITLE" | npx commitlint
 
       # A migration on main has run on staging; editing or removing it stops
       # every later deploy there (constitution §6). A pull request
@@ -131,6 +140,7 @@ jobs:
       github.event_name == 'push' ||
       (github.event.pull_request.head.repo.full_name == github.repository &&
        contains(github.event.pull_request.labels.*.name, 'preview') &&
+       github.event.action != 'edited' &&
        (github.event.action != 'labeled' || github.event.label.name == 'preview'))
     runs-on: ubuntu-latest
     permissions:
