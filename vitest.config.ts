@@ -1,7 +1,7 @@
 import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vitest/config'
 
-// CI runs three suites in one job, and each writes a job summary; without a
+// CI runs three suites, and each adds to the run's summary; without a
 // title of its own, all three read "Vitest Test Report".
 const onGithubActions = process.env['GITHUB_ACTIONS'] === 'true'
 

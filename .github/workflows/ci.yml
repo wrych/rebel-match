@@ -13,32 +13,24 @@ permissions:
   contents: read
 
 jobs:
+  # `check` is split in parallel jobs so that it takes as long as its slowest
+  # part, not their sum; this job joins them under the name the branch rule
+  # requires. It runs when one of them fails too: a skipped required check
+  # would count as passed.
   check:
+    needs: [static, unit, integration]
+    if: always()
     runs-on: ubuntu-latest
-
-    services:
-      postgres:
-        # Same major as compose.yaml and production (ADR 0024).
-        image: postgres:17
+    steps:
+      - name: Every part passed
         env:
-          POSTGRES_PASSWORD: test
-          POSTGRES_DB: rebel_match_test
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd="pg_isready -U postgres"
-          --health-interval=5s
-          --health-timeout=5s
-          --health-retries=20
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "$RESULTS"
+          [[ "$RESULTS" =~ ^(success )*success$ ]]
 
-    env:
-      # Synthetic only. No production secret and no real attendee list ever
-      # reaches CI (R-QA-5, R-SEED-5).
-      NODE_ENV: test
-      DATABASE_URL: postgres://postgres:test@127.0.0.1:5432/rebel_match_test
-      SESSION_SECRET: ci-session-secret-at-least-32-characters
-      MAIL_DELIVERY: none
-      SEED_PROFILE: dev
+  static:
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -83,21 +75,83 @@ jobs:
         env:
           BASE: ${{ github.event_name == 'pull_request' && 'HEAD^1' || github.event.before }}
 
+  unit:
+    runs-on: ubuntu-latest
+
+    env:
+      NODE_ENV: test
+
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
       - name: Unit tests
         run: npm test
 
+  # The suite on Postgres, and on PGlite, the engine development runs on, so a
+  # difference between the two shows up here (ADR 0024).
+  integration:
+    name: integration (${{ matrix.engine }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - engine: Postgres
+            image: postgres:17
+            database-url: postgres://postgres:test@127.0.0.1:5432/rebel_match_test
+          - engine: PGlite
+            image: ''
+            database-url: ''
+
+    services:
+      postgres:
+        # Same major as compose.yaml and production (ADR 0024). An empty image
+        # starts no service, which PGlite needs none of.
+        image: ${{ matrix.image }}
+        env:
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: rebel_match_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    env:
+      # Synthetic only. No production secret and no real attendee list ever
+      # reaches CI (R-QA-5, R-SEED-5).
+      NODE_ENV: test
+      DATABASE_URL: ${{ matrix.database-url }}
+      SESSION_SECRET: ci-session-secret-at-least-32-characters
+      MAIL_DELIVERY: none
+      SEED_PROFILE: dev
+
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+
       - name: Migrations, from an empty database
+        if: matrix.engine == 'Postgres'
         run: npm run migrate
 
       - name: Integration tests
         run: npm run test:integration
-
-      # The same suite on PGlite, the engine development runs on, so a
-      # difference between the two shows up here (ADR 0024).
-      - name: Integration tests on PGlite
-        run: npm run test:integration
-        env:
-          DATABASE_URL: ''
 
   # The production build, as the image every deployment runs (ADR 0025): built
   # here once per commit, beside `check`, and handed to `deploy` as a file, so
