@@ -67,11 +67,11 @@ export const consentTexts: Readonly<Record<string, readonly Paragraph[]>> = {
     },
     {
       heading: 'What we keep',
-      text: 'Your email address, your name, and anything optional you add to your profile: job title, organization, sector and company size.',
+      text: 'Your email address, your name, and anything optional you add to your profile: a photo, job title, organization, sector and company size. A photo is kept without what a camera adds, such as where and when it was taken.',
     },
     {
       heading: 'Who sees it',
-      text: 'Your name, organization and other profile information may be seen by other members of Rebel Match. Your email address is shared with another member only when both of you accept a connection. Until then nobody sees it, and a declined request reveals nothing.',
+      text: 'Your name, organization and other profile information may be seen by other members of Rebel Match, including your photo if you add one. Your email address is shared with another member only when both of you accept a connection. Until then nobody sees it, and a declined request reveals nothing.',
     },
     {
       heading: 'Your activity',
