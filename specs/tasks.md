@@ -270,6 +270,9 @@ printed dev link (R-DEV-6).
       cards. _(S32, R-PROF-4)_
 - [x] Erasure waits 30 days: deactivate now, undo by emailed link or host,
       sweep after the grace period. _(R-NFR-7, ADR 0032)_
+- [x] A profile photo on the profile screen: add, change, remove; cropped in
+      the browser, cleaned on the server, seen by its owner. _(R-PROF-5, ADR 0066)_
+- [ ] Decide where photos appear to others. _(R-PROF-5, open question 10)_
 
 ## M6 — Hardening & pilot _(by 2026-11-01)_
 

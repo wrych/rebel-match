@@ -416,6 +416,22 @@ capability, not a secret** — and every requirement below exists because of tha
   its own URL (R-NAV-1). In happy mode, for a
   member who completed onboarding and while the game is on, the community's
   card is the door to 9toRevolution (R-GAME-1).
+- **R-PROF-5 (Profile photo)** — WHILE hosts have `limits.profilePhotos` on
+  (a switch in the host tools, R-CFG-6, off by default) an onboarded member
+  MAY add a **profile photo** on the profile screen, change it, or remove it, each saved at once
+  with the tick of R-PROF-1. The browser SHALL crop the chosen picture to a
+  square from its centre and scale it to `limits.photoSidePx` before sending
+  it, so a phone's full-size picture never travels. THE SYSTEM SHALL accept
+  only a square JPEG no wider than that and no larger than
+  `limits.photoMaxBytes`, and SHALL store it without its metadata (camera,
+  time, place), so a photo never says where it was taken (ADR 0066). IF the
+  picture cannot be read THE SYSTEM SHALL say so and keep the photo there
+  was. Until where photos appear is decided (open question 10), a photo SHALL
+  be shown to its owner only, and the profile screen SHALL say so; it goes
+  with the account (R-NFR-7). WHILE the switch is off the profile screen
+  SHALL NOT offer a photo and its addresses SHALL answer as not found
+  (R-NAV-8); photos already added SHALL be kept, to show again when it is
+  turned back on.
 
 ---
 
@@ -1040,7 +1056,8 @@ What differs by environment is only whether mail **leaves the machine**.
   the badges and each live list refresh (R-MINE-4, R-NAV-12, ADR 0050), each
   experiment's share (R-EXP-3, ADR 0051), and the 9toRevolution switch and
   tuning (R-GAME-17, ADR 0045), and the member search and connect code
-  switches and live code timings (R-CODE-8). Each change SHALL be
+  switches and live code timings (R-CODE-8), and the profile photo switch
+  (R-PROF-5). Each change SHALL be
   checked against bounds and the order of paired limits (the minimum challenge
   length never above the maximum), take effect without a restart on every server
   within a minute, and show who made it and when. The host SHALL be able to go
@@ -2196,7 +2213,8 @@ any connection does (R-BADGE-1). It does not count as **Shared pain**.
   personal data attached to them — challenges, connection requests, swipes,
   deck views (R-STAT-3), follows, role grants, notifications (R-NOTE-11), the
   profile draft (R-ONB-15), their 9toRevolution progress, results and pseudonym
-  (R-GAME-16), their earned badges and crowns (R-BADGE-14), the reports about
+  (R-GAME-16), their earned badges and crowns (R-BADGE-14), their profile
+  photo (R-PROF-5), the reports about
   them and the moderation records of those reports (R-MOD-11), and
   their **outbound message log entries** (R-MSG-6) — on
   request (GDPR erasure), at minimum via an admin action. Deleting SHALL first
@@ -2323,6 +2341,11 @@ fixtures. `design.md` §6 lists the exact records and the profile mechanism.
 7. **Full privacy notice** — _(Resolved; see below.)_
 8. **Moderation** — _(Resolved; see below.)_
 9. **Search in the privacy words** — _(Resolved; see below.)_
+10. **Where profile photos appear** — a member can add a photo (R-PROF-5), and
+    so far only they see it. Which screens show it to others — match cards,
+    the deck, a person's page, connections, search, the host tools'
+    member page (R-MEM-2), the presentation's cast — and whether the privacy
+    notice (R-ONB-9) needs a new version to say so, is still to be decided.
 
 ### Resolved
 
