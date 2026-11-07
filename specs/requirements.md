@@ -192,7 +192,8 @@ Requirements:
   the app is **closed: membership is by invitation**, whether from the whitelist
   or an event invite link (R-INV-1). It SHALL also say that the member's
   **name, organization and other profile information may be seen by other
-  members** — wherever the app shows them, not only on match cards — while the
+  members** — wherever the app shows them, not only on match cards, and with
+  their photo if they add one (R-PROF-6) — while the
   email address stays private until a connection is accepted. It SHALL name
   **who is responsible** for the data and how to reach them, and SHALL say that
   the member can ask for a copy or a correction, and can delete their activity
