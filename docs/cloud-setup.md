@@ -80,14 +80,19 @@ gcloud services enable --project="$NONPROD" \
 
 ## 3. Where images live
 
-One Docker repository, in non-prod. Previews and staging push there; production
-will pull the same images from it, so it never builds its own (ADR 0025, "build
-once").
+Two Docker repositories, in non-prod. Previews push to `rebel-match`; staging,
+built from `main`, pushes to `rebel-match-release`. Production pulls the images
+staging ran from `rebel-match-release` and never builds its own (ADR 0025,
+"build once"). No preview can write there, so no unreviewed image can reach
+production (ADR 0064).
 
 ```sh
 gcloud artifacts repositories create rebel-match --project="$NONPROD" \
   --location="$REGION" --repository-format=docker \
-  --description="Rebel Match images, one per commit"
+  --description="Rebel Match preview images, one per pull-request commit"
+gcloud artifacts repositories create rebel-match-release --project="$NONPROD" \
+  --location="$REGION" --repository-format=docker \
+  --description="Rebel Match images built from main, which production runs"
 ```
 
 ## 4. Database
@@ -161,12 +166,14 @@ for ROLE in roles/secretmanager.secretAccessor roles/cloudsql.client; do
 done
 ```
 
-## 7. The identity GitHub deploys as
+## 7. The identities GitHub deploys as
 
-It deploys, hands the runtime identity to what it deploys, pushes images, and
-creates and drops preview databases. No predefined role does the last part
-and nothing more (Cloud SQL Editor can create a database but not drop one),
-so it gets a small custom role with just those permissions.
+Two, so that a pull request cannot write what production runs (ADR 0064).
+`github-deployer` deploys previews: it deploys, hands the runtime identity to
+what it deploys, pushes preview images, and creates and drops preview
+databases. No predefined role does the last part and nothing more (Cloud SQL
+Editor can create a database but not drop one), so it gets a small custom role
+with just those permissions.
 
 ```sh
 DEPLOYER=github-deployer@$NONPROD.iam.gserviceaccount.com
@@ -191,14 +198,35 @@ gcloud artifacts repositories add-iam-policy-binding rebel-match \
   --member="serviceAccount:$DEPLOYER" --role=roles/artifactregistry.writer
 ```
 
+`staging-deployer` deploys staging from `main`. It is the only account that
+writes to `rebel-match-release`.
+
+```sh
+STAGING_DEPLOYER=staging-deployer@$NONPROD.iam.gserviceaccount.com
+gcloud iam service-accounts create staging-deployer --project="$NONPROD" \
+  --display-name="GitHub Actions deploys staging from main"
+
+gcloud projects add-iam-policy-binding "$NONPROD" --condition=None \
+  --member="serviceAccount:$STAGING_DEPLOYER" --role=roles/run.admin
+gcloud iam service-accounts add-iam-policy-binding \
+  "rebel-match-run@$NONPROD.iam.gserviceaccount.com" --project="$NONPROD" \
+  --member="serviceAccount:$STAGING_DEPLOYER" --role=roles/iam.serviceAccountUser
+gcloud artifacts repositories add-iam-policy-binding rebel-match-release \
+  --project="$NONPROD" --location="$REGION" \
+  --member="serviceAccount:$STAGING_DEPLOYER" --role=roles/artifactregistry.writer
+```
+
 ## 8. Let GitHub in without a key
 
 Workload Identity Federation: GitHub Actions presents a short-lived token that
-says which repository and which environment a job runs in, and Google trades it
-for a few minutes as `github-deployer`. No key is created, so none can leak.
+says which repository, environment and branch a job runs in, and Google trades
+it for a few minutes as one of the deployers. No key is created, so none can
+leak.
 
-The provider accepts only tokens from this repository; the bindings accept only
-jobs in the `dev` or `staging` GitHub environment.
+The provider accepts only tokens from this repository. `github-deployer` accepts
+only jobs in the `dev` environment; `staging-deployer` only jobs in the
+`staging` environment running on `main`, which Google checks through the
+`environment_ref` attribute as well as GitHub through its branch rule.
 
 ```sh
 gcloud iam workload-identity-pools create github --project="$NONPROD" \
@@ -207,14 +235,15 @@ gcloud iam workload-identity-pools providers create-oidc rebel-match \
   --project="$NONPROD" --location=global --workload-identity-pool=github \
   --display-name="wrych/rebel-match" \
   --issuer-uri="https://token.actions.githubusercontent.com" \
-  --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository,attribute.environment=assertion.environment" \
+  --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository,attribute.environment=assertion.environment,attribute.environment_ref=assertion.environment + '@' + assertion.ref" \
   --attribute-condition="assertion.repository == '$REPO'"
 
-for ENV in dev staging; do
-  gcloud iam service-accounts add-iam-policy-binding "$DEPLOYER" \
-    --project="$NONPROD" --role=roles/iam.workloadIdentityUser \
-    --member="principalSet://iam.googleapis.com/$(pool "$NONPROD")/attribute.environment/$ENV"
-done
+gcloud iam service-accounts add-iam-policy-binding "$DEPLOYER" \
+  --project="$NONPROD" --role=roles/iam.workloadIdentityUser \
+  --member="principalSet://iam.googleapis.com/$(pool "$NONPROD")/attribute.environment/dev"
+gcloud iam service-accounts add-iam-policy-binding "$STAGING_DEPLOYER" \
+  --project="$NONPROD" --role=roles/iam.workloadIdentityUser \
+  --member="principalSet://iam.googleapis.com/$(pool "$NONPROD")/attribute.environment_ref/staging@refs/heads/main"
 ```
 
 ## 9. GitHub environments
@@ -228,25 +257,32 @@ In the repository: **Settings → Environments → New environment**.
 
 Pull requests deploy previews with non-prod credentials and run the pull
 request's own code, so anyone who can push a branch can deploy to non-prod.
-That is the repository's collaborators, and non-prod holds nothing real.
-GitHub gives no token to pull requests from forks, so those get no preview.
+That is the repository's collaborators, and non-prod holds nothing real. What
+they cannot do is write to `rebel-match-release`, the only repository
+production promotes from (ADR 0064). GitHub gives no token to pull requests
+from forks, so those get no preview.
 
 ## 10. What the workflows need
 
 ```sh
 echo "GCP_REGION=$REGION"
-echo "GCP_IMAGE_REPO=$REGION-docker.pkg.dev/$NONPROD/rebel-match"
 echo "GCP_PROJECT=$NONPROD"
 echo "GCP_WIF_PROVIDER=$(pool "$NONPROD")/providers/rebel-match"
-echo "GCP_DEPLOY_SA=$DEPLOYER"
 echo "GCP_RUN_SA=rebel-match-run@$NONPROD.iam.gserviceaccount.com"
 echo "GCP_SQL_INSTANCE=$NONPROD:$REGION:rebel-match"
+echo "dev:     GCP_IMAGE_REPO=$REGION-docker.pkg.dev/$NONPROD/rebel-match"
+echo "dev:     GCP_DEPLOY_SA=$DEPLOYER"
+echo "staging: GCP_IMAGE_REPO=$REGION-docker.pkg.dev/$NONPROD/rebel-match-release"
+echo "staging: GCP_DEPLOY_SA=$STAGING_DEPLOYER"
 ```
 
 Add them as **variables** (not secrets — none is sensitive) under **Settings →
-Secrets and variables → Actions → Variables**: `GCP_REGION` and
-`GCP_IMAGE_REPO` on the **repository**, the other five on **both** `dev` and
-`staging`. The names must match exactly; the workflows read them by name.
+Secrets and variables → Actions → Variables**: `GCP_REGION` on the
+**repository**; the next four on **both** `dev` and `staging`; and
+`GCP_IMAGE_REPO` and `GCP_DEPLOY_SA` on each environment with the value given
+for it. The names must match exactly; the workflows read them by name. Leave
+no `GCP_IMAGE_REPO` or `GCP_DEPLOY_SA` on the repository: an environment
+without its own would fall back to it.
 
 ## 11. Check
 
@@ -430,14 +466,15 @@ gcloud services enable --project="$PROD" \
 ## 15. The grants on non-prod
 
 Production gets the two kinds of access to non-prod ADR 0025 names, and nothing
-more: reading staging's images, and reading which digest staging serves. The
+more: reading the images built from `main`, in `rebel-match-release`, and
+reading which digest staging serves (ADR 0064). The
 images are read by two accounts: Cloud Run's service agent, which pulls them,
 and production's deployer, since Cloud Run checks that whoever deploys an image
 may read it.
 
 ```sh
 PROD_NUMBER=$(gcloud projects describe "$PROD" --format='value(projectNumber)')
-gcloud artifacts repositories add-iam-policy-binding rebel-match \
+gcloud artifacts repositories add-iam-policy-binding rebel-match-release \
   --project="$NONPROD" --location="$REGION" \
   --member="serviceAccount:service-$PROD_NUMBER@serverless-robot-prod.iam.gserviceaccount.com" \
   --role=roles/artifactregistry.reader
@@ -509,10 +546,10 @@ gcloud iam service-accounts add-iam-policy-binding \
   --member="serviceAccount:$PROD_DEPLOYER" --role=roles/iam.serviceAccountUser
 
 # The deployer's access to non-prod (§15): which digest staging serves, and
-# the images themselves.
+# the images built from main.
 gcloud projects add-iam-policy-binding "$NONPROD" --condition=None \
   --member="serviceAccount:$PROD_DEPLOYER" --role=roles/run.viewer
-gcloud artifacts repositories add-iam-policy-binding rebel-match \
+gcloud artifacts repositories add-iam-policy-binding rebel-match-release \
   --project="$NONPROD" --location="$REGION" \
   --member="serviceAccount:$PROD_DEPLOYER" --role=roles/artifactregistry.reader
 
@@ -559,6 +596,7 @@ echo "GCP_WIF_PROVIDER=$(pool "$PROD")/providers/rebel-match"
 echo "GCP_DEPLOY_SA=$PROD_DEPLOYER"
 echo "GCP_RUN_SA=rebel-match-run@$PROD.iam.gserviceaccount.com"
 echo "GCP_SQL_INSTANCE=$PROD:$REGION:rebel-match"
+echo "GCP_IMAGE_REPO=$REGION-docker.pkg.dev/$NONPROD/rebel-match-release"
 echo "TICK_INVOKER=scheduler-tick@$PROD.iam.gserviceaccount.com"
 ```
 
@@ -606,7 +644,8 @@ the tick of §22 straight after, or nothing scheduled runs.
 the workflow with an earlier build's `digest` (`sha256:…`, from the summary of
 the promotion that deployed it), which works only while no migration has run
 since: the earlier image's migration job refuses a newer schema, and the
-serving revision stays.
+serving revision stays. Only a digest in `rebel-match-release`, a build of
+`main`, can be given (ADR 0064).
 
 ## 21. Domain, and the first real sign-in
 
@@ -658,15 +697,17 @@ too.
 ## Cleaning up old images
 
 Every deploy pushes an image, one per commit. Layers are shared, so each adds
-only what changed, but the repository never shrinks by itself; there is
+only what changed, but a repository never shrinks by itself; there is
 deliberately no automatic cleanup. Look now and then (storage beyond 0.5 GB
-costs about $0.10 per GB a month), and clear out old images by hand:
+costs about $0.10 per GB a month), and clear out old images by hand, in
+`rebel-match` for previews and `rebel-match-release` for builds of `main`:
 
 ```sh
-REPO="$REGION-docker.pkg.dev/$NONPROD/rebel-match/app"
+NAME=rebel-match            # or rebel-match-release
+REPO="$REGION-docker.pkg.dev/$NONPROD/$NAME/app"
 
 # How big the repository is, and what is in it, newest first.
-gcloud artifacts repositories describe rebel-match --project="$NONPROD" \
+gcloud artifacts repositories describe "$NAME" --project="$NONPROD" \
   --location="$REGION" --format='value(sizeBytes)'
 gcloud artifacts docker images list "$REPO" --include-tags --sort-by=~updateTime
 
@@ -683,8 +724,57 @@ done
 Staging is redeployed on every merge and a preview on every push, so what
 they run is newer than any sensible cutoff. A pull request left untouched for
 longer may not start its preview again after its image is gone; pushing to it
-redeploys. Once production exists (part 2), keep every image it may roll back
-to: check what it runs before deleting.
+redeploys. Once production exists (part 2), keep every image in
+`rebel-match-release` it may roll back to: check what it runs before deleting.
+
+## Moving an existing setup to two deployers (ADR 0064)
+
+For a setup made before ADR 0064, with one deployer and one repository. Set
+the variables of "Before you start", plus `DEPLOYER`, `STAGING_DEPLOYER` and,
+if part 2 was done, `PROD_NUMBER` and `PROD_DEPLOYER`. Production keeps
+serving throughout; only the next promotion depends on this.
+
+1. **Create** `rebel-match-release` (§3) and `staging-deployer` with its
+   grants (§7).
+2. **Add the `environment_ref` attribute** to non-prod's provider, and let
+   `staging-deployer` in:
+
+   ```sh
+   gcloud iam workload-identity-pools providers update-oidc rebel-match \
+     --project="$NONPROD" --location=global --workload-identity-pool=github \
+     --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository,attribute.environment=assertion.environment,attribute.environment_ref=assertion.environment + '@' + assertion.ref"
+   gcloud iam service-accounts add-iam-policy-binding "$STAGING_DEPLOYER" \
+     --project="$NONPROD" --role=roles/iam.workloadIdentityUser \
+     --member="principalSet://iam.googleapis.com/$(pool "$NONPROD")/attribute.environment_ref/staging@refs/heads/main"
+   ```
+
+3. **Point the environments at them** (§10, §20): on `staging`,
+   `GCP_IMAGE_REPO` to `rebel-match-release` and `GCP_DEPLOY_SA` to
+   `$STAGING_DEPLOYER`; on `production`, `GCP_IMAGE_REPO` to
+   `rebel-match-release`; on `dev`, `GCP_IMAGE_REPO` to `rebel-match`. Then
+   delete the repository-level `GCP_IMAGE_REPO`.
+4. **Let production read the new repository** (§15, §18): the two
+   `artifactregistry.reader` bindings, on `rebel-match-release`.
+5. **Merge to `main`**, or re-run the last `main` run's `deploy` job, so
+   staging serves an image from `rebel-match-release`. Until it does, a
+   promotion is refused.
+6. **Take the old access away**, once staging deploys and a promotion works:
+
+   ```sh
+   gcloud iam service-accounts remove-iam-policy-binding "$DEPLOYER" \
+     --project="$NONPROD" --role=roles/iam.workloadIdentityUser \
+     --member="principalSet://iam.googleapis.com/$(pool "$NONPROD")/attribute.environment/staging"
+   gcloud artifacts repositories remove-iam-policy-binding rebel-match \
+     --project="$NONPROD" --location="$REGION" \
+     --member="serviceAccount:service-$PROD_NUMBER@serverless-robot-prod.iam.gserviceaccount.com" \
+     --role=roles/artifactregistry.reader
+   gcloud artifacts repositories remove-iam-policy-binding rebel-match \
+     --project="$NONPROD" --location="$REGION" \
+     --member="serviceAccount:$PROD_DEPLOYER" --role=roles/artifactregistry.reader
+   ```
+
+Rolling back to an image built before the move means shifting traffic to the
+previous revision (§20); its digest is not in `rebel-match-release`.
 
 ## Taking it down
 
