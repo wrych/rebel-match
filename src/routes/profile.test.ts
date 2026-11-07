@@ -31,6 +31,7 @@ const own: OwnProfile = {
   consentAt: '2026-11-08T10:00:00.000Z',
   analyticsOptIn: false,
   findable: true,
+  photoAt: null,
 }
 
 function setup(outcome: EraseOutcome = 'erased'): {

@@ -11,6 +11,7 @@ import {
   boolean,
   char,
   check,
+  customType,
   index,
   integer,
   jsonb,
@@ -33,6 +34,11 @@ type Enum = [string, ...string[]]
 /** Member, challenge, request and token ids: UUID text. */
 const id = (name: string): PgVarcharBuilderInitial<string, Enum, 36> =>
   varchar(name, { length: 36 })
+/** Bytes as Postgres keeps them; PGlite hands back a plain `Uint8Array`. */
+const bytes = customType<{ data: Buffer; driverData: Uint8Array }>({
+  dataType: () => 'bytea',
+  fromDriver: (value) => Buffer.from(value),
+})
 /** A moment in UTC. */
 const at = (name: string): PgTimestampBuilderInitial<string> =>
   timestamp(name, { withTimezone: true, mode: 'date' })
@@ -842,3 +848,13 @@ export const liveCodes = pgTable(
   },
   (t) => [index('ix_live_codes_member').on(t.memberId, t.spentAt)],
 )
+
+// Its own table, so reading a member never reads their picture; one per
+// member, replaced whole (R-PROF-5, ADR 0066).
+export const memberPhotos = pgTable('member_photos', {
+  memberId: id('member_id')
+    .primaryKey()
+    .references(() => members.id, { onDelete: 'cascade' }),
+  jpeg: bytes('jpeg').notNull(),
+  updatedAt: at('updated_at').notNull().defaultNow(),
+})

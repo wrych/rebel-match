@@ -121,6 +121,8 @@ import { createErasureService } from './services/erasure.js'
 import { createErasureStore } from './services/erasure-store.js'
 import { createSignIn } from './services/sign-in.js'
 import { createMemberRoster } from './services/member-roster-store.js'
+import { createPhotoService } from './services/photo.js'
+import { createPhotoStore } from './services/photo-store.js'
 import { createProfileStore } from './services/profile-store.js'
 import { createWhitelist } from './services/whitelist.js'
 import { createWhitelistStore } from './services/whitelist-store.js'
@@ -159,6 +161,20 @@ export function composeAuth(
     },
     config,
   })
+}
+
+function composeProfile(
+  config: Config,
+  db: Database,
+  settings: LiveSettings,
+): Pick<AppDeps, 'profile' | 'photos'> {
+  return {
+    profile: createProfileStore(db, config.analyticsVersion),
+    photos: createPhotoService({
+      store: createPhotoStore(db),
+      limits: () => settings.limits(),
+    }),
+  }
 }
 
 function composeDeck(config: Config, db: Database, track: Track): DeckService {
@@ -720,7 +736,7 @@ export function composeApp(
       consentVersion: config.consentVersion,
       analyticsVersion: config.analyticsVersion,
     }),
-    profile: createProfileStore(db, config.analyticsVersion),
+    ...composeProfile(config, db, settings),
     ...composeMembershipAdmin(config, db, auth, track),
     outbox: createOutboxLog(db),
     ...composeAdmission(config, settings, db, auth),

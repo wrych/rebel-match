@@ -10,6 +10,7 @@ import {
 import AnalyticsToggle from '../components/AnalyticsToggle.vue'
 import FindableToggle from '../components/FindableToggle.vue'
 import ProfileCodeSetting from '../components/ProfileCodeSetting.vue'
+import ProfilePhoto from '../components/ProfilePhoto.vue'
 import ConsentWords from '../components/ConsentWords.vue'
 import NotificationSettings from '../components/NotificationSettings.vue'
 import DeleteAccount from '../components/DeleteAccount.vue'
@@ -114,6 +115,12 @@ function save(field: Field): Promise<void> {
 
     <template v-if="profile">
       <div class="stack">
+        <ProfilePhoto
+          v-if="limits?.profilePhotos === 1"
+          :name="saved.name"
+          :photo-at="profile.photoAt"
+          :limits="limits"
+        />
         <div class="field">
           <div class="label-row">
             <label for="name" class="label">Your name</label>

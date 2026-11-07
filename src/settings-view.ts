@@ -61,6 +61,7 @@ const DAYS: Unit = ['day', 'days']
 const CHARACTERS: Unit = ['character', 'characters']
 const PERCENT: Unit = ['percent', 'percent']
 const MS_PER_SECOND = 1000
+const BYTES_PER_KB = 1000
 
 interface Described {
   name: string
@@ -728,6 +729,29 @@ const catalogue: Group[] = [
         fixed: true,
         read: (c) => c.limits.orgMaxChars,
         unit: CHARACTERS,
+      },
+      {
+        name: 'Profile photos',
+        explanation:
+          'On lets every member add a photo on their profile, seen only by ' +
+          'themselves for now; off hides it, and photos already added are ' +
+          'kept.',
+        key: 'limits.profilePhotos',
+        switch: true,
+      },
+      {
+        name: 'Largest profile photo',
+        explanation:
+          'The browser scales a photo down well below this; a larger upload is refused.',
+        read: (c) => Math.round(c.limits.photoMaxBytes / BYTES_PER_KB),
+        unit: ['kB', 'kB'],
+      },
+      {
+        name: 'Profile photo size',
+        explanation: 'The side of the square a photo is cropped and scaled to.',
+        fixed: true,
+        read: (c) => c.limits.photoSidePx,
+        unit: ['pixel', 'pixels'],
       },
       {
         name: 'Addresses per attendee list upload',

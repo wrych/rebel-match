@@ -130,6 +130,11 @@ function deps(
       search: () => Promise.reject(new Error('not used')),
       card: () => Promise.reject(new Error('not used')),
     },
+    photos: {
+      own: () => Promise.reject(new Error('not used')),
+      replace: () => Promise.reject(new Error('not used')),
+      remove: () => Promise.reject(new Error('not used')),
+    },
     profileCodes: {
       mine: () => Promise.reject(new Error('not used')),
       setEnabled: () => Promise.reject(new Error('not used')),

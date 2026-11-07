@@ -14,6 +14,8 @@ export interface OwnProfile {
   analyticsOptIn: boolean
   /** Whether member search returns them (R-FIND-5). */
   findable: boolean
+  /** When their photo was last set, or null without one (R-PROF-5). */
+  photoAt: string | null
 }
 
 export interface ProfileEdit {

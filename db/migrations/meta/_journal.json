@@ -246,6 +246,13 @@
       "when": 1793967029345,
       "tag": "0034_live_codes",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1794058471167,
+      "tag": "0035_member_photos",
+      "breakpoints": true
     }
   ]
 }
