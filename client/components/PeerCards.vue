@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { peerLine, type PeerCard } from '../lib/challenges'
+import { photoSrc } from '../lib/photo'
 import type { Arrivals } from '../lib/live-list'
 import { reportPath } from '../lib/reports'
+import MemberPhoto from './MemberPhoto.vue'
 
 const props = defineProps<{
   peers: PeerCard[]
@@ -11,6 +13,8 @@ const props = defineProps<{
   nobody: string
   /** Outlines the rebels a refresh brought (R-NAV-12). */
   arrived?: Arrivals<PeerCard>
+  /** Draws each rebel's photo beside their name (R-PROF-6). */
+  photosOn?: boolean
 }>()
 const emit = defineEmits<{ connect: [] }>()
 
@@ -33,11 +37,18 @@ function connectPath(peer: PeerCard): string {
       :class="{ 'card-new': arrived?.isNew(peer) }"
       @click="arrived?.clear(peer)"
     >
-      <div class="stack-tight">
-        <span class="card-title">{{ peer.name }}</span>
-        <span v-if="peerLine(peer)" class="mono peer-meta">{{
-          peerLine(peer)
-        }}</span>
+      <div :class="{ 'with-photo': photosOn }">
+        <MemberPhoto
+          v-if="photosOn"
+          :name="peer.name"
+          :src="photoSrc(peer.photo)"
+        />
+        <div class="stack-tight">
+          <span class="card-title">{{ peer.name }}</span>
+          <span v-if="peerLine(peer)" class="mono peer-meta">{{
+            peerLine(peer)
+          }}</span>
+        </div>
       </div>
       <p class="small peer-note">{{ peer.note }}</p>
       <RouterLink

@@ -270,6 +270,13 @@ printed dev link (R-DEV-6).
       cards. _(S32, R-PROF-4)_
 - [x] Erasure waits 30 days: deactivate now, undo by emailed link or host,
       sweep after the grace period. _(R-NFR-7, ADR 0032)_
+- [x] A profile photo on the profile screen: add, change, remove; cropped in
+      the browser, cleaned on the server, seen by its owner. _(R-PROF-5, ADR 0066)_
+- [x] Decide where photos appear to others. _(R-PROF-5, open question 10)_
+- [x] Photos beside names on cards, the deck, search, a person's page and the
+      member page; the viewer's own point in the replay; the presentation's
+      cast. _(R-PROF-6, ADR 0067)_
+- [ ] Add the photo to the privacy notice's profile list. _(R-ONB-9)_
 
 ## M6 — Hardening & pilot _(by 2026-11-01)_
 
@@ -500,6 +507,27 @@ Built after the spec and ADR merge. One pull request per item, in this order.
 
 ---
 
+## M11 — Finding members and connect codes _(C11, C12, F25, F26, ADR 0062, ADR 0063 — behind their switches)_
+
+- [x] The `direct` request kind, reach, and `POST /api/connections` taking
+      it, capped per day. _(R-FIND-7, R-CONN-1)_
+- [x] The query parser and printer, pure, shared by client and server.
+      _(R-FIND-2)_
+- [x] Search: `/api/members/search` behind `limits.memberSearch` and
+      `member:search`, **Findable in search** on the profile, S44 with its
+      chips, S45, S46. _(R-FIND-1..8)_
+- [x] Profile codes: the table, on / off and reset, `/p#t=…` to S45 and
+      S46, S47's first tab with the QR, Copy link and Share. _(R-CODE-1..4)_
+- [x] Live codes: issue and redeem, the grace, the tick's clean-up, S47's
+      second tab with its ring and who just connected, `/c#t=…` and its
+      answers. _(R-CODE-5..7)_
+- [x] The host settings, the usage events, erasure. _(R-CODE-8..10,
+      R-FIND-8)_
+- [ ] On a phone: scan a live code at the end of its ring, and a profile code
+      signed out, through sign-in and back. _(R-CODE-5, R-NAV-5)_
+
+---
+
 ## Post-beta backlog _(Could / Won't-for-now)_
 
 - [ ] Offer "refresh to update" when the server's version differs from the
@@ -519,6 +547,9 @@ Built after the spec and ADR merge. One pull request per item, in this order.
       pin once `concurrently` depends on `shell-quote` 1.11.0 or later, and the
       `esbuild` pin once `drizzle-kit` no longer pulls in
       `@esbuild-kit/core-utils`. Run `npm audit` again while there. _(R-QA-7)_
+- [ ] A profile code opened signed out: say "Sign in to connect" on the card
+      screen itself with the email field, rather than the plain login
+      screen. _(R-CODE-3, R-NAV-5)_
 - [ ] (Deferred) frontier nomination, platform integration, phone/LinkedIn
       connect. _(W3–W7)_
 

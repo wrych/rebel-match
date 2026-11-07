@@ -1,4 +1,5 @@
 import nodemailer, { type SendMailOptions } from 'nodemailer'
+import type SMTPTransport from 'nodemailer/lib/smtp-transport/index.js'
 import type { Config } from '../config.js'
 import { LOGO_CID } from './mail-layout.js'
 import { MAIL_LOGO_PNG_BASE64 } from './mail-logo.js'
@@ -22,19 +23,29 @@ export function mailOptions(
     : { ...message, attachments: [logo] }
 }
 
+/** How nodemailer reaches the SMTP server: always over TLS, refusing to send
+ * in the clear when the server offers no STARTTLS, since every mail may carry a
+ * sign-in link (R-NFR-1). */
+export function transportOptions(
+  smtp: Config['mail']['smtp'],
+): SMTPTransport.Options {
+  const { host, port, user, password } = smtp
+  return {
+    ...(host === undefined ? {} : { host }),
+    port,
+    requireTLS: true,
+    ...(user === undefined || password === undefined
+      ? {}
+      : { auth: { user, pass: password } }),
+  }
+}
+
 /** The SMTP transport for `MAIL_DELIVERY=smtp`, or null when delivery is off
  * and nothing may leave the machine (R-DEV-1, R-DEV-4). */
 export function createTransport(mail: Config['mail']): MailTransport | null {
   if (mail.delivery === 'none') return null
 
-  const { host, port, user, password } = mail.smtp
-  const transporter = nodemailer.createTransport({
-    ...(host === undefined ? {} : { host }),
-    port,
-    ...(user === undefined || password === undefined
-      ? {}
-      : { auth: { user, pass: password } }),
-  })
+  const transporter = nodemailer.createTransport(transportOptions(mail.smtp))
 
   return {
     send: async (message) => {

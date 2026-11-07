@@ -1,18 +1,11 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { loadConfig } from '../../src/config.js'
-import {
-  openTestDatabase,
-  testDatabaseUrl,
-  type TestDatabase,
-} from './support/database.js'
+import { openTestDatabase, type TestDatabase } from './support/database.js'
+import { testConfig } from './support/app.js'
 import { DEV_ADMIN_EMAIL } from '../../src/seed/dev/people.js'
 import { planSeed } from '../../src/seed/plan.js'
 import { applySeed } from '../../src/seed/run.js'
 
-const config = loadConfig({
-  DATABASE_URL: testDatabaseUrl,
-  SESSION_SECRET: 'integration-session-secret-of-32-chars',
-  NODE_ENV: 'test',
+const config = testConfig({
   SEED_PROFILE: 'dev',
 })
 const plan = planSeed(config)
@@ -111,8 +104,8 @@ describe('the first admins of the prod seed (R-SEED-9)', () => {
   })
 
   it('seeds the dev network once, timed as planned (R-SEED-10)', async () => {
-    // On a shared Postgres an earlier file may have answered or added
-    // requests; this one checks only what the seed writes.
+    // Earlier tests have seeded already; starting without requests, this
+    // checks only what these two runs write.
     await db.query('DELETE FROM connection_requests')
     await applySeed(db.drizzle, plan, config.consentVersion)
     await applySeed(db.drizzle, plan, config.consentVersion)

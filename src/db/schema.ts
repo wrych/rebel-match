@@ -11,6 +11,7 @@ import {
   boolean,
   char,
   check,
+  customType,
   index,
   integer,
   jsonb,
@@ -33,6 +34,11 @@ type Enum = [string, ...string[]]
 /** Member, challenge, request and token ids: UUID text. */
 const id = (name: string): PgVarcharBuilderInitial<string, Enum, 36> =>
   varchar(name, { length: 36 })
+/** Bytes as Postgres keeps them; PGlite hands back a plain `Uint8Array`. */
+const bytes = customType<{ data: Buffer; driverData: Uint8Array }>({
+  dataType: () => 'bytea',
+  fromDriver: (value) => Buffer.from(value),
+})
 /** A moment in UTC. */
 const at = (name: string): PgTimestampBuilderInitial<string> =>
   timestamp(name, { withTimezone: true, mode: 'date' })
@@ -108,6 +114,8 @@ export const members = pgTable(
     analyticsId: id('analytics_id').notNull(),
     // The Matches badge counts only what arrived after this (R-MINE-4).
     matchesSeenAt: at('matches_seen_at'),
+    // Member search returns them; on until they turn it off (R-FIND-5).
+    findable: boolean('findable').notNull().default(true),
     createdAt: at('created_at').notNull().defaultNow(),
   },
   (t) => [
@@ -424,6 +432,8 @@ export const deckViews = pgTable(
 export const connectionKind = pgEnum('connection_kind', [
   'same_boat',
   'been_there',
+  // About no challenge: from search or a connect code (R-FIND-7, R-CODE-6).
+  'direct',
 ])
 
 export const connectionStatus = pgEnum('connection_status', [
@@ -800,4 +810,58 @@ export const moderationActions = pgTable(
     createdAt: at('created_at').notNull().defaultNow(),
   },
   (t) => [index('ix_moderation_member').on(t.memberId, t.createdAt)],
+)
+
+// A member's long-lived profile code (R-CODE-2): the token is shown on the
+// code, so it is kept as is; reset replaces it, off makes it not found
+// (R-CODE-4). It goes with the member (R-CODE-10).
+export const profileCodes = pgTable(
+  'profile_codes',
+  {
+    memberId: id('member_id')
+      .primaryKey()
+      .references(() => members.id, { onDelete: 'cascade' }),
+    token: varchar('token', { length: 43 }).notNull(),
+    enabled: boolean('enabled').notNull().default(true),
+    createdAt: at('created_at').notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex('uq_profile_code_token').on(t.token)],
+)
+
+// A live code (R-CODE-5): single-use, its token stored hashed as sign-in
+// tokens are; spent by whoever scanned it, and reported to its owner's
+// screen once. It goes with its owner (R-CODE-10).
+export const liveCodes = pgTable(
+  'live_codes',
+  {
+    tokenHash: varchar('token_hash', { length: 64 }).primaryKey(),
+    memberId: id('member_id')
+      .notNull()
+      .references(() => members.id, { onDelete: 'cascade' }),
+    usableUntil: at('usable_until').notNull(),
+    spentAt: at('spent_at'),
+    spentBy: id('spent_by').references(() => members.id, {
+      onDelete: 'cascade',
+    }),
+    reportedAt: at('reported_at'),
+    createdAt: at('created_at').notNull().defaultNow(),
+  },
+  (t) => [index('ix_live_codes_member').on(t.memberId, t.spentAt)],
+)
+
+// Its own table, so reading a member never reads their picture; one per
+// member, replaced whole (R-PROF-5, ADR 0066).
+export const memberPhotos = pgTable(
+  'member_photos',
+  {
+    memberId: id('member_id')
+      .primaryKey()
+      .references(() => members.id, { onDelete: 'cascade' }),
+    jpeg: bytes('jpeg').notNull(),
+    // The photo's address for other members, new with every upload, so it
+    // names no member id (ADR 0067).
+    key: varchar('key', { length: 43 }),
+    updatedAt: at('updated_at').notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex('uq_member_photos_key').on(t.key)],
 )

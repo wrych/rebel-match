@@ -83,6 +83,51 @@ export const routeTable: readonly RouteDef[] = [
     permission: 'network:view',
   },
   { path: '/recap', name: 'recap', title: RECAP_TITLE, access: 'onboarded' },
+  {
+    path: '/me/code',
+    name: 'my-code',
+    title: 'Your code',
+    access: 'onboarded',
+  },
+  {
+    path: '/p',
+    name: 'profile-code',
+    title: 'A member',
+    access: 'onboarded',
+  },
+  {
+    path: '/p/connect',
+    name: 'profile-code-connect',
+    title: 'Connect directly',
+    access: 'onboarded',
+  },
+  {
+    path: '/c',
+    name: 'live-code',
+    title: 'Live connect code',
+    access: 'public',
+  },
+  {
+    path: '/people',
+    name: 'people',
+    title: 'Find a member',
+    access: 'onboarded',
+    permission: 'member:search',
+  },
+  {
+    path: '/people/:memberId',
+    name: 'person',
+    title: 'A member',
+    access: 'onboarded',
+    permission: 'member:search',
+  },
+  {
+    path: '/people/:memberId/connect',
+    name: 'person-connect',
+    title: 'Connect directly',
+    access: 'onboarded',
+    permission: 'member:search',
+  },
   { path: '/welcome', name: 'welcome', title: 'Welcome', access: 'onboarded' },
   { path: '/profile', name: 'profile', title: 'Profile', access: 'onboarded' },
   {
@@ -280,10 +325,28 @@ export function isKnownPath(path: string): boolean {
   return routeFor(path) !== undefined
 }
 
+const CODE_PATHS: readonly string[] = ['/p', '/p/connect']
+
+// A live code lives seconds, so it is never carried through sign-in
+// (R-CODE-7).
+const isLiveCodePath = (path: string): boolean => /^\/c(?:[?#]|$)/.test(path)
+
+/** A path as `next` carries it: a fragment kept on `/p` and `/p/connect`
+ * alone, where it holds the profile code, and dropped on every other path
+ * (R-CODE-3, R-NAV-6). */
+export function nextOf(fullPath: string): string {
+  const [beforeFragment = '', ...fragment] = fullPath.split('#')
+  const [pathname = ''] = beforeFragment.split('?')
+  if (fragment.length === 0 || !CODE_PATHS.includes(pathname))
+    return beforeFragment
+  return `${beforeFragment}#${fragment.join('#')}`
+}
+
 /**
  * Narrows a `next` parameter to somewhere safe to send a member (R-NAV-6).
- * Returns `/` for anything absolute, protocol-relative, backslash-escaped, or
- * not in the table — this value arrives from an email, so it is never trusted.
+ * Returns `/` for anything absolute, protocol-relative, backslash-escaped,
+ * a live code, or not in the table — this value arrives from an email, so
+ * it is never trusted.
  */
 export function safeNextPath(next: string | undefined): string {
   if (next === undefined || next === '') return '/'
@@ -292,5 +355,6 @@ export function safeNextPath(next: string | undefined): string {
   if (next.includes('\\')) return '/'
   if (next.includes('://')) return '/'
 
-  return isKnownPath(next) ? next : '/'
+  if (!isKnownPath(next) || isLiveCodePath(next)) return '/'
+  return nextOf(next)
 }

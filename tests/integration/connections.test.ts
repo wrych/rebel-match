@@ -2,21 +2,16 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import request from 'supertest'
 import { createApp, type AppDeps } from '../../src/app.js'
 import { composeApp } from '../../src/compose.js'
-import { loadConfig } from '../../src/config.js'
+import type { Row, TestDatabase } from './support/database.js'
 import {
-  openTestDatabase,
-  testDatabaseUrl,
-  type Row,
-  type TestDatabase,
-} from './support/database.js'
-import { planSeed } from '../../src/seed/plan.js'
-import { applySeed } from '../../src/seed/run.js'
+  cookieFor,
+  idOf,
+  openSeededDatabase,
+  testConfig,
+} from './support/app.js'
 import type { ConnectionView } from '../../src/services/connections.js'
 
-const config = loadConfig({
-  DATABASE_URL: testDatabaseUrl,
-  SESSION_SECRET: 'integration-session-secret-of-32-chars',
-  NODE_ENV: 'test',
+const config = testConfig({
   SEED_PROFILE: 'dev',
 })
 const people = {
@@ -41,18 +36,13 @@ async function sent(query: string, params: unknown[]): Promise<Row[]> {
 }
 
 beforeAll(async () => {
-  db = await openTestDatabase()
-  await applySeed(db.drizzle, planSeed(config), config.consentVersion)
+  db = await openSeededDatabase(config)
   const deps = composeApp(config, db.drizzle)
   mail = deps.notificationMail
   app = createApp(deps)
   for (const [who, email] of Object.entries(people)) {
-    const rows = await db.query('SELECT id FROM members WHERE email = ?', [
-      email,
-    ])
-    ids[who] = String(rows[0]?.['id'])
-    const session = await deps.auth.createSession(ids[who])
-    cookies[who] = `${session.name}=${session.value}`
+    ids[who] = await idOf(db, email)
+    cookies[who] = await cookieFor(deps.auth, ids[who])
   }
   await db.query(
     'DELETE FROM connection_requests WHERE requester_id IN (?) OR target_id IN (?)',

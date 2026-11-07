@@ -90,6 +90,26 @@ describe('changeable settings (R-CFG-6, ADR 0031)', () => {
     expect(checkChange(base, 'abuse.linkEmailsCeiling', 3)).toBe('ok')
   })
 
+  it('refuses a live code grace longer than the code is shown (R-CODE-8)', () => {
+    const values = {
+      ...base,
+      limits: { ...base.limits, liveCodeSeconds: 20, liveCodeGraceSeconds: 10 },
+    }
+
+    expect(checkChange(values, 'limits.liveCodeGraceSeconds', 21)).toBe(
+      'out_of_order',
+    )
+    expect(checkChange(values, 'limits.liveCodeSeconds', 15)).toBe('ok')
+    expect(
+      checkChange(
+        { ...values, limits: { ...values.limits, liveCodeGraceSeconds: 18 } },
+        'limits.liveCodeSeconds',
+        15,
+      ),
+    ).toBe('out_of_order')
+    expect(checkChange(values, 'limits.liveCodeGraceSeconds', 20)).toBe('ok')
+  })
+
   it('refuses a shortest challenge above the longest (R-ASK-3)', () => {
     const values = {
       ...base,

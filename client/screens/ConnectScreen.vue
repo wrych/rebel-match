@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import RequestSent from '../components/RequestSent.vue'
 import { fetchConfig } from '../lib/api'
 import { fetchMatches, peerLine, type PeerCard } from '../lib/challenges'
 import {
@@ -77,25 +78,13 @@ async function send(): Promise<void> {
       There is nobody to ask here.
     </p>
 
-    <template v-else-if="outcome === 'created' || outcome === 'exists'">
-      <div class="stack">
-        <p class="kicker kicker-accent">
-          {{ outcome === 'created' ? 'Request sent' : 'Already asked' }}
-        </p>
-        <h1 class="display display-lg">Over to {{ firstName }}</h1>
-        <p class="lede">
-          {{
-            outcome === 'created'
-              ? `We let ${firstName} know.`
-              : `You already asked ${firstName}, and they have not answered yet.`
-          }}
-          When they accept, you both get each other’s contact.
-        </p>
-      </div>
-      <RouterLink :to="matchesPath" class="row-link"
-        >Back to your matches</RouterLink
-      >
-    </template>
+    <RequestSent
+      v-else-if="outcome === 'created' || outcome === 'exists'"
+      :first-name="firstName"
+      :outcome="outcome"
+      :back-to="matchesPath"
+      back-label="Back to your matches"
+    />
 
     <template v-else-if="peer">
       <div class="stack">

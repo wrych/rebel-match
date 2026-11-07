@@ -1,7 +1,8 @@
 import type { ModerationReason } from './challenge-moderation.js'
 import { trackNothing, type Track } from './analytics.js'
+import { canReach } from './reach.js'
 
-export type ConnectionKind = 'same_boat' | 'been_there'
+export type ConnectionKind = 'same_boat' | 'been_there' | 'direct'
 export type ConnectionStatus = 'pending' | 'accepted' | 'declined'
 
 /** Who a member is on a request card: never how to reach them (R-CONN-1). */
@@ -69,11 +70,15 @@ export interface NewConnection {
   challengeId?: string | undefined
   kind: ConnectionKind
   message?: string | undefined
+  /** For a direct request, the target's profile code (R-CODE-3). */
+  profileCode?: string | undefined
 }
 
 export interface ConnectionStore {
   /** True for an active, onboarded member: someone a request can reach. */
   isReachable(memberId: string): Promise<boolean>
+  /** True for a member who has not turned findable off (R-FIND-5). */
+  isFindable(memberId: string): Promise<boolean>
   /** The author of an active challenge, or null. */
   challengeAuthor(challengeId: string): Promise<string | null>
   /** The pending request from requester to target about the same
@@ -92,17 +97,21 @@ export interface ConnectionStore {
     otherId: string,
     challengeId: string | null,
   ): Promise<string | null>
-  /** Stores a pending request with its target's notification; false when one
-   * is already pending between the same two members about the same
-   * challenge, however close the race (R-CONN-5, R-NOTE-10). */
+  /** Stores a pending request with its target's notification: `taken` when
+   * one is already pending between the same two members about the same
+   * challenge, `limit` when the requester already sent `cap` direct
+   * requests in the last day, however close the race (R-CONN-5, R-FIND-7,
+   * R-NOTE-10). */
   insert(
     record: Omit<ConnectionRecord, 'status' | 'createdAt'>,
-  ): Promise<boolean>
+    cap: number | null,
+  ): Promise<Stored>
   /** Stores a request accepted at once, unseen by both, with its target's
-   * notification (R-CONN-8, R-CONN-9). */
+   * notification, or `limit` as `insert` (R-CONN-8, R-CONN-9). */
   insertAccepted(
     record: Omit<ConnectionRecord, 'status' | 'createdAt'>,
-  ): Promise<void>
+    cap: number | null,
+  ): Promise<Exclude<Stored, 'taken'>>
   /** Accepts every request still pending between the two, either side, as
    * seen by `accepterId`, who just accepted one of them (R-CONN-11). */
   acceptPending(accepterId: string, otherId: string): Promise<void>
@@ -133,10 +142,14 @@ export interface ConnectionStore {
   markSeen(viewerId: string, otherId: string): Promise<void>
 }
 
+/** What storing a request came to. */
+export type Stored = 'stored' | 'taken' | 'limit'
+
 export type RequestOutcome =
   | { result: 'created'; id: string }
   | { result: 'exists'; id: string }
   | { result: 'joined'; id: string }
+  | { result: 'limit' }
   | { result: 'not_found' }
 
 export interface ConnectionService {
@@ -179,25 +192,78 @@ async function contextHolds(
   return author === requesterId || author === input.targetId
 }
 
-async function mayRequest(
+/** Whether direct requests may be sent now, how many a day, and whose
+ * profile code a token is (R-FIND-7, R-CODE-3). */
+export interface DirectRules {
+  searchOn: boolean
+  perDay: number
+  codesOn: boolean
+  /** The owner of the profile code `token`, while it is on; else null. */
+  codeOwner: (token: string) => Promise<string | null>
+}
+
+const directClosed = (): DirectRules => ({
+  searchOn: false,
+  perDay: 0,
+  codesOn: false,
+  codeOwner: () => Promise.resolve(null),
+})
+
+async function presentsCode(
+  rules: DirectRules,
+  input: NewConnection,
+): Promise<boolean> {
+  if (input.profileCode === undefined || !rules.codesOn) return false
+  return (await rules.codeOwner(input.profileCode)) === input.targetId
+}
+
+// A direct request is about no challenge, and reaches only a member search
+// would find, or one whose usable profile code the requester holds
+// (R-FIND-7, R-CODE-3, ADR 0062).
+async function reachesDirectly(
   store: ConnectionStore,
+  rules: DirectRules,
   requesterId: string,
   input: NewConnection,
 ): Promise<boolean> {
+  if (input.challengeId !== undefined) return false
+  return canReach({
+    isCaller: input.targetId === requesterId,
+    reachable: await store.isReachable(input.targetId),
+    findable: await store.isFindable(input.targetId),
+    searchOn: rules.searchOn,
+    presentsCode: await presentsCode(rules, input),
+    codesOn: rules.codesOn,
+  })
+}
+
+async function mayRequest(
+  store: ConnectionStore,
+  rules: DirectRules,
+  requesterId: string,
+  input: NewConnection,
+): Promise<boolean> {
+  if (input.kind === 'direct')
+    return reachesDirectly(store, rules, requesterId, input)
   if (input.targetId === requesterId) return false
   if (!(await store.isReachable(input.targetId))) return false
   return contextHolds(store, requesterId, input)
 }
 
+// The day's cap applies to direct requests only; null leaves a request
+// uncapped (R-FIND-7).
+const capOf = (rules: DirectRules, input: NewConnection): number | null =>
+  input.kind === 'direct' ? rules.perDay : null
+
 /** Stores a pending request unless one is already pending between the same
  * two members about the same challenge; the database's partial unique index
  * settles a race between two such inserts (R-CONN-5). */
 async function storePending(
-  store: ConnectionStore,
-  newId: () => string,
+  deps: Asking,
   requesterId: string,
   input: NewConnection,
 ): Promise<RequestOutcome> {
+  const { store, newId } = deps
   const challengeId = input.challengeId ?? null
   const pending = (): Promise<string | null> =>
     store.findPending(requesterId, input.targetId, challengeId)
@@ -205,15 +271,19 @@ async function storePending(
   if (existing !== null) return { result: 'exists', id: existing }
 
   const id = newId()
-  const stored = await store.insert({
-    id,
-    requesterId,
-    targetId: input.targetId,
-    challengeId,
-    kind: input.kind,
-    message: input.message ?? null,
-  })
-  if (stored) return { result: 'created', id }
+  const stored = await store.insert(
+    {
+      id,
+      requesterId,
+      targetId: input.targetId,
+      challengeId,
+      kind: input.kind,
+      message: input.message ?? null,
+    },
+    deps.cap,
+  )
+  if (stored === 'stored') return { result: 'created', id }
+  if (stored === 'limit') return { result: 'limit' }
   const raced = await pending()
   return raced === null
     ? { result: 'not_found' }
@@ -224,6 +294,7 @@ interface Asking {
   store: ConnectionStore
   newId: () => string
   track: Track
+  cap: number | null
 }
 
 // The double opt-in proper: pending, and the target told, by a notification
@@ -233,7 +304,7 @@ async function ask(
   requesterId: string,
   input: NewConnection,
 ): Promise<RequestOutcome> {
-  const outcome = await storePending(deps.store, deps.newId, requesterId, input)
+  const outcome = await storePending(deps, requesterId, input)
   if (outcome.result !== 'created') return outcome
   void deps.track(requesterId, {
     name: 'connection_requested',
@@ -258,14 +329,18 @@ async function join(
   if (existing !== null) return { result: 'joined', id: existing }
 
   const id = deps.newId()
-  await deps.store.insertAccepted({
-    id,
-    requesterId,
-    targetId: input.targetId,
-    challengeId,
-    kind: input.kind,
-    message: input.message ?? null,
-  })
+  const stored = await deps.store.insertAccepted(
+    {
+      id,
+      requesterId,
+      targetId: input.targetId,
+      challengeId,
+      kind: input.kind,
+      message: input.message ?? null,
+    },
+    deps.cap,
+  )
+  if (stored === 'limit') return { result: 'limit' }
   void deps.track(requesterId, {
     name: 'connection_requested',
     kind: input.kind,
@@ -334,25 +409,30 @@ async function readContact(
 /** The double opt-in (ADR 0004, F7): a request starts pending, reveals
  * nothing and tells its target; only the target may answer, and an acceptance
  * tells the requester. Between members already connected it is accepted at
- * once (ADR 0035). An email is read only for an accepted request by a party.
+ * once (ADR 0035). A direct request reaches only a member search would
+ * find, capped per day (ADR 0062). An email is read only for an accepted request by a party.
  * Hidden reads as not found (R-NAV-8). */
 export function createConnections(deps: {
   store: ConnectionStore
   newId: () => string
   track?: Track
   now?: () => Date
+  direct?: () => DirectRules
 }): ConnectionService {
   const { store } = deps
+  const direct = deps.direct ?? directClosed
   const track = deps.track ?? trackNothing
-  const asking: Asking = { store, newId: deps.newId, track }
+  const asking: Asking = { store, newId: deps.newId, track, cap: null }
   const now = deps.now ?? ((): Date => new Date())
   return {
     request: async (requesterId, input) => {
-      if (!(await mayRequest(store, requesterId, input)))
+      const rules = direct()
+      if (!(await mayRequest(store, rules, requesterId, input)))
         return { result: 'not_found' }
+      const capped = { ...asking, cap: capOf(rules, input) }
       return (await store.isConnected(requesterId, input.targetId))
-        ? join(asking, requesterId, input)
-        : ask(asking, requesterId, input)
+        ? join(capped, requesterId, input)
+        : ask(capped, requesterId, input)
     },
     incoming: (memberId) => store.incoming(memberId),
     connected: (memberId) => store.connected(memberId),

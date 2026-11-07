@@ -55,6 +55,20 @@ describe('decide', () => {
     })
   })
 
+  it.each([
+    ['/p', '/p#t=abc', '%2Fp%23t%3Dabc'],
+    ['/p/connect', '/p/connect#t=abc', '%2Fp%2Fconnect%23t%3Dabc'],
+    ['/matches', '/matches#top', '%2Fmatches'],
+  ])(
+    'keeps the fragment through login on %s only (R-CODE-3, R-NAV-5)',
+    (path, fullPath, next) => {
+      expect(decide({ path, fullPath, access: 'onboarded' }, null)).toEqual({
+        kind: 'redirect',
+        to: `/login?next=${next}`,
+      })
+    },
+  )
+
   it('puts onboarding first, carrying the target (R-NAV-7)', () => {
     expect(decide(target('/matches', 'onboarded'), newcomer)).toEqual({
       kind: 'redirect',

@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # The image to promote, written as `image=<repository>@sha256:…` to
 # GITHUB_OUTPUT: the one staging's serving revision runs, or DIGEST to roll
-# back to an earlier build (ADR 0025, ADR 0044). Staging lives in the project
-# that holds the image repository.
+# back to an earlier build (ADR 0025, ADR 0044). Either way the image is one in
+# GCP_IMAGE_REPO, which only builds of main write to (ADR 0064). Staging lives
+# in the project that holds the image repository.
 #
 # Reads: GCP_IMAGE_REPO (<region>-docker.pkg.dev/<project>/<repository>),
 # GCP_REGION, and DIGEST (sha256:…, or empty for staging's).
@@ -31,6 +32,10 @@ else
     --format='value(status.imageDigest)')
   [[ "$image" =~ @sha256:[0-9a-f]{64}$ ]] || {
     echo "::error::staging's revision $revision names no image digest"
+    exit 1
+  }
+  [[ "$image" == "$GCP_IMAGE_REPO/app@sha256:"* ]] || {
+    echo "::error::staging serves $image, not a build of main from $GCP_IMAGE_REPO"
     exit 1
   }
 fi

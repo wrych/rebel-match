@@ -12,19 +12,17 @@ export type Admission =
   | 'record-applicant'
   | 'already-asked'
   | 'not-approved'
-  | 'suspended'
   | 'set-to-be-deleted'
 
 /** What a request for a link does, by the address's status (R-AUTH-1,2,4):
  * an active member gets a link; an unknown address becomes an applicant; a
- * pending one is told the same again; a rejected one is told plainly that it
- * was not approved (R-AUTH-13), a banned one that the account is suspended
- * (R-MOD-10). Only a new applicant notifies anyone. */
+ * pending one, or a banned one, is told the same again (R-MOD-10, ADR 0065);
+ * a rejected one is told plainly that it was not approved (R-AUTH-13). Only a
+ * new applicant notifies anyone. */
 export function admissionFor(status: MemberStatus | null): Admission {
   if (status === 'active') return 'send-link'
   if (status === null) return 'record-applicant'
   if (status === 'rejected') return 'not-approved'
-  if (status === 'banned') return 'suspended'
   if (status === 'deleted') return 'set-to-be-deleted'
   return 'already-asked'
 }
@@ -51,7 +49,6 @@ export type LinkRequestState =
   | 'check-email'
   | 'access-requested'
   | 'not-approved'
-  | 'suspended'
   | 'human-check'
   | 'try-later'
 
@@ -106,7 +103,6 @@ export function createAdmission(deps: AdmissionDeps): AdmissionService {
 
     if (admission === 'send-link') return sendLink(deps, email, opts)
     if (admission === 'not-approved') return { state: 'not-approved' }
-    if (admission === 'suspended') return { state: 'suspended' }
     if (admission === 'already-asked') return { state: 'access-requested' }
     if (admission === 'set-to-be-deleted') return keepItLink(deps, email, opts)
     if (opts.invite === undefined)

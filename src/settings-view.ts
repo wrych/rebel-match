@@ -61,6 +61,7 @@ const DAYS: Unit = ['day', 'days']
 const CHARACTERS: Unit = ['character', 'characters']
 const PERCENT: Unit = ['percent', 'percent']
 const MS_PER_SECOND = 1000
+const BYTES_PER_KB = 1000
 
 interface Described {
   name: string
@@ -466,6 +467,15 @@ const catalogue: Group[] = [
         unit: MINUTES,
       },
       {
+        name: 'Live codes per member a minute',
+        explanation:
+          'New live codes one member’s screen may ask for in a minute; ' +
+          'past it the screen hides its code until its next turn. The ' +
+          'screen asks about seven times a minute at its fastest.',
+        key: 'abuse.liveCodesPerMinute',
+        unit: ['code', 'codes'],
+      },
+      {
         name: 'Trusted proxies in front of the server',
         explanation:
           'How many proxies are trusted to report the visitor’s address: 1 ' +
@@ -719,6 +729,29 @@ const catalogue: Group[] = [
         fixed: true,
         read: (c) => c.limits.orgMaxChars,
         unit: CHARACTERS,
+      },
+      {
+        name: 'Profile photos',
+        explanation:
+          'On lets every member add a photo on their profile, shown beside ' +
+          'their name to other members; off hides photos everywhere, and ' +
+          'photos already added are kept.',
+        key: 'limits.profilePhotos',
+        switch: true,
+      },
+      {
+        name: 'Largest profile photo',
+        explanation:
+          'The browser scales a photo down well below this; a larger upload is refused.',
+        read: (c) => Math.round(c.limits.photoMaxBytes / BYTES_PER_KB),
+        unit: ['kB', 'kB'],
+      },
+      {
+        name: 'Profile photo size',
+        explanation: 'The side of the square a photo is cropped and scaled to.',
+        fixed: true,
+        read: (c) => c.limits.photoSidePx,
+        unit: ['pixel', 'pixels'],
       },
       {
         name: 'Addresses per attendee list upload',
@@ -1005,6 +1038,49 @@ const catalogue: Group[] = [
           'The share of members who see a challenge’s matches as one sentence per section, with the cards a tap away, rather than each section’s first card.',
         key: 'flags.matches_layout',
         unit: PERCENT,
+      },
+    ],
+  },
+  {
+    title: 'Finding members',
+    explanation:
+      'Members finding each other by name, organization, job title or ' +
+      'sector, or by a code one shows the other, and connecting directly, ' +
+      'about no challenge.',
+    entries: [
+      {
+        name: 'Member search',
+        explanation:
+          'On lets every member search; off hides it, and its addresses ' +
+          'answer as not found. Members who turned off being findable are ' +
+          'never found.',
+        key: 'limits.memberSearch',
+        switch: true,
+      },
+      {
+        name: 'Connect codes',
+        explanation:
+          'On lets every member show a profile code to share and a live ' +
+          'code to scan, whether or not they are findable; off hides them, ' +
+          'and their addresses answer as not found.',
+        key: 'limits.connectCodes',
+        switch: true,
+      },
+      {
+        name: 'Time each live code is shown',
+        explanation:
+          'A live code is replaced on screen after this long, its ring ' +
+          'emptying as the time runs out.',
+        key: 'limits.liveCodeSeconds',
+        unit: SECONDS,
+      },
+      {
+        name: 'Grace after a live code is replaced',
+        explanation:
+          'How long a replaced live code still works, so a scan begun at ' +
+          'the end succeeds. Never more than the time it is shown.',
+        key: 'limits.liveCodeGraceSeconds',
+        unit: SECONDS,
       },
     ],
   },

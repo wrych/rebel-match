@@ -26,6 +26,7 @@ function setup(networkReplay = 1, neededOwnLinks = 0): Express {
     neededOwnLinks: () => neededOwnLinks,
     store: {
       idsByEmail: () => Promise.resolve(new Map()),
+      photosByEmail: () => Promise.resolve(new Map()),
       facts: () =>
         Promise.resolve({
           members: [

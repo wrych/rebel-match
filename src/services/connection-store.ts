@@ -1,14 +1,16 @@
 import {
   and,
+  count,
   desc,
   eq,
-  isNotNull,
+  gt,
   isNull,
   or,
   sql,
   type SQL,
 } from 'drizzle-orm'
 import type { Database } from '../db/connect.js'
+import { isReachableMember } from '../db/member-predicates.js'
 import { insertNotification } from './notification-store.js'
 import {
   challenges,
@@ -66,7 +68,8 @@ function unseenBy(row: typeof r.$inferSelect, viewerId: string): boolean {
   return seenAt === null
 }
 
-const between = (a: string, b: string): SQL | undefined =>
+/** Requests between two members, either side. */
+export const between = (a: string, b: string): SQL | undefined =>
   or(
     and(eq(r.requesterId, a), eq(r.targetId, b)),
     and(eq(r.requesterId, b), eq(r.targetId, a)),
@@ -205,6 +208,42 @@ async function markSeen(
 // A request from someone deleted since cannot be answered (ADR 0032).
 const requesterActive = sql`exists (select 1 from ${members} where ${members.id} = ${r.requesterId} and ${members.status} = 'active')`
 
+// Whether the requester may store another direct request today. The lock,
+// held to the end of the transaction, makes requests from one member wait
+// on each other, so parallel ones cannot all pass the count (R-FIND-7).
+async function underCap(
+  tx: Database,
+  requesterId: string,
+  cap: number | null,
+): Promise<boolean> {
+  if (cap === null) return true
+  await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${requesterId}))`)
+  const [row] = await tx
+    .select({ n: count() })
+    .from(r)
+    .where(
+      and(
+        eq(r.requesterId, requesterId),
+        eq(r.kind, 'direct'),
+        gt(r.createdAt, sql`now() - interval '1 day'`),
+      ),
+    )
+  return (row?.n ?? 0) < cap
+}
+
+// Whether search may find the target (R-FIND-5).
+function findableLookup(db: Database): Pick<ConnectionStore, 'isFindable'> {
+  return {
+    isFindable: async (memberId) => {
+      const rows = await db
+        .select({ id: members.id })
+        .from(members)
+        .where(and(eq(members.id, memberId), eq(members.findable, true)))
+      return rows.length > 0
+    },
+  }
+}
+
 // What a request is checked against before it is made.
 function lookups(
   db: Database,
@@ -214,13 +253,7 @@ function lookups(
       const rows = await db
         .select({ id: members.id })
         .from(members)
-        .where(
-          and(
-            eq(members.id, memberId),
-            eq(members.status, 'active'),
-            isNotNull(members.name),
-          ),
-        )
+        .where(and(eq(members.id, memberId), isReachableMember()))
       return rows.length > 0
     },
     challengeAuthor: async (challengeId) => {
@@ -332,26 +365,35 @@ function answers(
 ): Pick<ConnectionStore, 'respond' | 'acceptPending'> {
   return {
     respond: (id, targetId, status) => respond(db, id, targetId, status),
-    acceptPending: async (accepterId, otherId) => {
-      const seenBy = (column: typeof r.targetId): SQL =>
-        sql`CASE WHEN ${column} = ${accepterId} THEN now() END`
-      await db
-        .update(r)
-        .set({
-          status: 'accepted',
-          respondedAt: sql`now()`,
-          requesterSeenAt: seenBy(r.requesterId),
-          targetSeenAt: seenBy(r.targetId),
-        })
-        .where(
-          and(
-            between(accepterId, otherId),
-            eq(r.status, 'pending'),
-            requesterActive,
-          ),
-        )
-    },
+    acceptPending: (accepterId, otherId) =>
+      acceptPendingBetween(db, accepterId, otherId),
   }
+}
+
+/** Accepts every request still pending between the two, either side, as
+ * seen by `accepterId`, who just accepted one of them (R-CONN-11). */
+export async function acceptPendingBetween(
+  db: Database,
+  accepterId: string,
+  otherId: string,
+): Promise<void> {
+  const seenBy = (column: typeof r.targetId): SQL =>
+    sql`CASE WHEN ${column} = ${accepterId} THEN now() END`
+  await db
+    .update(r)
+    .set({
+      status: 'accepted',
+      respondedAt: sql`now()`,
+      requesterSeenAt: seenBy(r.requesterId),
+      targetSeenAt: seenBy(r.targetId),
+    })
+    .where(
+      and(
+        between(accepterId, otherId),
+        eq(r.status, 'pending'),
+        requesterActive,
+      ),
+    )
 }
 
 // The target's notification of a request just made (R-CONN-2, R-CONN-9).
@@ -367,35 +409,49 @@ function toldOf(
   }
 }
 
+// Storing a request with its target's notification, within the day's cap
+// for a direct one (R-FIND-7).
+function inserts(
+  db: Database,
+): Pick<ConnectionStore, 'insert' | 'insertAccepted'> {
+  return {
+    // uq_pending refuses a second pending request (R-CONN-5); that refusal is
+    // the answer, not an error. The target's notification is stored with it
+    // (R-CONN-2, R-NOTE-10).
+    insert: (record, cap) =>
+      db.transaction(async (tx) => {
+        if (!(await underCap(tx, record.requesterId, cap))) return 'limit'
+        const stored = await tx
+          .insert(r)
+          .values(record)
+          .onConflictDoNothing()
+          .returning({ id: r.id })
+        if (stored.length === 0) return 'taken'
+        await insertNotification(tx, toldOf(record, 'connection_request'))
+        return 'stored'
+      }),
+    insertAccepted: (record, cap) =>
+      db.transaction(async (tx) => {
+        if (!(await underCap(tx, record.requesterId, cap))) return 'limit'
+        await tx
+          .insert(r)
+          .values({ ...record, status: 'accepted', respondedAt: sql`now()` })
+        await insertNotification(tx, toldOf(record, 'new_connection'))
+        return 'stored'
+      }),
+  }
+}
+
 /** Connection requests over Postgres. The one query that reads an email
  * checks accepted status and party membership itself, so no caller can forget
  * to (R-CONN-3, R-CONN-6, ADR 0004). */
 export function createConnectionStore(db: Database): ConnectionStore {
   return {
     ...lookups(db),
+    ...findableLookup(db),
     ...acceptedLookups(db),
     ...answers(db),
-    // uq_pending refuses a second pending request (R-CONN-5); that refusal is
-    // the answer, not an error. The target's notification is stored with it
-    // (R-CONN-2, R-NOTE-10).
-    insert: (record) =>
-      db.transaction(async (tx) => {
-        const stored = await tx
-          .insert(r)
-          .values(record)
-          .onConflictDoNothing()
-          .returning({ id: r.id })
-        if (stored.length === 1)
-          await insertNotification(tx, toldOf(record, 'connection_request'))
-        return stored.length === 1
-      }),
-    insertAccepted: (record) =>
-      db.transaction(async (tx) => {
-        await tx
-          .insert(r)
-          .values({ ...record, status: 'accepted', respondedAt: sql`now()` })
-        await insertNotification(tx, toldOf(record, 'new_connection'))
-      }),
+    ...inserts(db),
     find: async (id) => {
       const [row] = await db.select().from(r).where(eq(r.id, id))
       return row === undefined ? null : recordOf(row)

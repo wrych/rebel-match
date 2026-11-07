@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import ConfirmAction from './ConfirmAction.vue'
 import { deleteHistory } from '../lib/profile'
 
 const confirming = ref(false)
@@ -35,36 +36,15 @@ async function forget(): Promise<void> {
       Your activity history is deleted.
     </p>
     <p v-if="problem" class="alert" role="alert">{{ problem }}</p>
-    <div v-if="confirming" class="stack-tight">
-      <p class="alert" role="alert">
-        Delete your activity history? This cannot be undone.
-      </p>
-      <div class="actions">
-        <button
-          type="button"
-          class="btn btn-dark btn-small"
-          :disabled="busy"
-          @click="forget"
-        >
-          Delete my history
-        </button>
-        <button
-          type="button"
-          class="btn btn-ghost btn-small"
-          :disabled="busy"
-          @click="confirming = false"
-        >
-          Keep it
-        </button>
-      </div>
-    </div>
-    <button
-      v-else
-      type="button"
-      class="btn btn-ghost btn-small"
-      @click="confirming = true"
+    <ConfirmAction
+      v-model:open="confirming"
+      trigger-label="Delete my activity history…"
+      confirm-label="Delete my history"
+      keep-label="Keep it"
+      :busy="busy"
+      @confirm="forget"
     >
-      Delete my activity history…
-    </button>
+      Delete your activity history? This cannot be undone.
+    </ConfirmAction>
   </section>
 </template>

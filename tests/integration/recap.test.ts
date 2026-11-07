@@ -2,25 +2,21 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import request from 'supertest'
 import { createApp } from '../../src/app.js'
 import { composeApp } from '../../src/compose.js'
-import { loadConfig } from '../../src/config.js'
 import type { BadgeOverview } from '../../src/services/badges.js'
 import type { Recap } from '../../src/services/recap.js'
-import { planSeed } from '../../src/seed/plan.js'
-import { applySeed } from '../../src/seed/run.js'
+import type { TestDatabase } from './support/database.js'
 import {
-  openTestDatabase,
-  testDatabaseUrl,
-  type TestDatabase,
-} from './support/database.js'
+  cookieFor,
+  idOf,
+  openSeededDatabase,
+  testConfig,
+} from './support/app.js'
 
 const env = {
-  DATABASE_URL: testDatabaseUrl,
-  SESSION_SECRET: 'integration-session-secret-of-32-chars',
-  NODE_ENV: 'test',
   SEED_PROFILE: 'dev',
   NETWORK_MIN_OWN_CONNECTIONS: '0',
 }
-const config = loadConfig({ ...env, RECAP: '1' })
+const config = testConfig({ ...env, RECAP: '1' })
 const member = 'milan.horvat@example.invalid'
 
 let db: TestDatabase
@@ -32,14 +28,9 @@ async function recap(app = createApp(deps)): Promise<request.Response> {
 }
 
 beforeAll(async () => {
-  db = await openTestDatabase()
-  await applySeed(db.drizzle, planSeed(config), config.consentVersion)
+  db = await openSeededDatabase(config)
   deps = composeApp(config, db.drizzle)
-  const rows = await db.query('SELECT id FROM members WHERE email = ?', [
-    member,
-  ])
-  const session = await deps.auth.createSession(String(rows[0]?.['id']))
-  cookie = `${session.name}=${session.value}`
+  cookie = await cookieFor(deps.auth, await idOf(db, member))
 })
 
 afterAll(async () => {
@@ -90,7 +81,7 @@ describe('the summit recap over Postgres (R-RECAP-1..4)', () => {
   })
 
   it('is not found while hosts have it off (R-RECAP-1)', async () => {
-    const off = createApp(composeApp(loadConfig(env), db.drizzle))
+    const off = createApp(composeApp(testConfig(env), db.drizzle))
 
     expect((await recap(off)).status).toBe(404)
   })

@@ -32,6 +32,8 @@ export interface NotificationView {
   /** For a report: how many reports about the member are still open
    * (R-MOD-5); null for every other kind. */
   openReports: number | null
+  /** A connection about no challenge, worded as made directly. */
+  direct: boolean
 }
 
 /** A stored notification, with what the list needs to word it. */
@@ -49,6 +51,8 @@ export interface NotificationRow {
    * accepted (R-CONN-7), or received it from a member already connected
    * (R-CONN-9). */
   recipientRequested: boolean
+  /** The connection is about no challenge (R-FIND-7, R-CODE-6). */
+  direct: boolean
   challengeId: string | null
   /** The short name of a new challenge's trend. */
   trend: string | null
@@ -167,6 +171,7 @@ function viewOf(row: NotificationRow): NotificationView {
     path: row.type === 'recap' ? RECAP_PATH : pathOf(row),
     trend: row.type === 'trend_challenge' ? row.trend : null,
     openReports: row.openReports,
+    direct: row.direct,
   }
 }
 

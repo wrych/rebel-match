@@ -1,12 +1,19 @@
+import { readFile } from 'node:fs/promises'
+import { PGlite } from '@electric-sql/pglite'
 import { sql, type SQL } from 'drizzle-orm'
-import { connect, type Database } from '../../../src/db/connect.js'
-import { applyMigrations } from '../../../src/db/migrate.js'
+import { inject } from 'vitest'
+import {
+  connect,
+  onClient,
+  type Connection,
+  type Database,
+} from '../../../src/db/connect.js'
 
 export type Row = Record<string, unknown>
 
-/** A migrated database for one test file: the real Postgres that
- * `DATABASE_URL` names (as in CI), or a fresh in-memory PGlite without it
- * (ADR 0024). */
+/** A migrated database for one test file: on the Postgres `DATABASE_URL`
+ * names (as in CI), or without it an in-memory PGlite loaded from the run's
+ * migrated snapshot (ADR 0024). */
 export interface TestDatabase {
   drizzle: Database
   /** Raw SQL for setting up and checking state, with `?` placeholders. An
@@ -47,12 +54,18 @@ function toSql(text: string, params: readonly unknown[]): SQL {
   return sql.join(chunks)
 }
 
+async function fromSnapshot(): Promise<Connection> {
+  const loadDataDir = new Blob([await readFile(inject('pgliteSnapshot'))])
+  return onClient(await PGlite.create({ loadDataDir }))
+}
+
+/** Opens this file's database, which the global setup migrated already. */
 export async function openTestDatabase(): Promise<TestDatabase> {
   const url = serverUrl()
-  const connection = await connect(
-    url === undefined ? { kind: 'pglite' } : { kind: 'postgres', url },
-  )
-  await applyMigrations(connection)
+  const connection =
+    url === undefined
+      ? await fromSnapshot()
+      : await connect({ kind: 'postgres', url })
   return {
     drizzle: connection.db,
     query: (text, params = []) => connection.rows<Row>(toSql(text, params)),

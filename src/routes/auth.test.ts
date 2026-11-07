@@ -12,6 +12,7 @@ import type { MemberProfile } from '../services/member-profiles.js'
 import { authRoutes, renewSessions } from './auth.js'
 import { configPolicy } from '../permissions.js'
 import type { AnalyticsEvent } from '../services/analytics.js'
+import { createSignIn } from '../services/sign-in.js'
 
 const DAY = 86_400_000
 const config = loadConfig({
@@ -64,16 +65,19 @@ function setup(): Harness {
       profiles: {
         profile: (id) => Promise.resolve(id === ada.id ? profile : null),
       },
-      erasure: {
-        restoreOwn: (memberId) => {
-          restored.push(memberId)
-          return Promise.resolve(true)
+      signIn: createSignIn({
+        auth,
+        erasure: {
+          restoreOwn: (memberId) => {
+            restored.push(memberId)
+            return Promise.resolve(true)
+          },
         },
-      },
-      track: (memberId, event) => {
-        tracked.push([memberId, event])
-        return Promise.resolve()
-      },
+        track: (memberId, event) => {
+          tracked.push([memberId, event])
+          return Promise.resolve()
+        },
+      }),
     }),
   )
   const linkFor = async (
@@ -241,6 +245,7 @@ describe('GET /auth/me', () => {
         'connection:request',
         'content:report',
         'game:play',
+        'member:search',
         'network:view',
       ],
     })

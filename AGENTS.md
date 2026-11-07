@@ -150,6 +150,21 @@ and names what is wrong rather than failing on first use (R-CFG-1).
 - **Not found, never forbidden**, for anything the caller may not see (§5).
 - Spec prose wraps at 80 columns. Match the file you are editing.
 
+## Improving the harness
+
+The way of working here — the constitution's general rules, the reviewer agent
+and its gate, the hooks, the branch, commit and merge rules — is becoming
+[xigOS](https://github.com/wrych/xigOS), the plugin every xigo project
+installs (xigOS ADR 0002). Rebel Match moves onto it after the summit.
+
+- **An improvement any xigo project would want** is proposed in xigOS, not
+  only here. If Rebel Match needs it before it runs on xigOS, make it here as
+  well and link the two pull requests, so the copies do not drift.
+- **What only Rebel Match needs** — its privacy model, its requirement ids,
+  its critical modules, its deadline — stays in this repository.
+
+When unsure which it is, it belongs in xigOS.
+
 ## Working with a stale assumption
 
 The spec is the source of truth and it moves. If the code and `specs/` disagree,

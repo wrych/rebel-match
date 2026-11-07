@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import KindChip from '../components/KindChip.vue'
 import { hiddenAs } from '../lib/moderation'
 import { reportPath } from '../lib/reports'
 import { computed, onMounted, ref } from 'vue'
@@ -100,13 +101,7 @@ onMounted(async () => {
             }}</span>
             <span class="tags">
               <span v-if="each.unseen" class="chip chip-accent">New</span>
-              <span
-                class="chip"
-                :class="each.kind === 'same_boat' ? 'chip-accent' : 'chip-ink'"
-                >{{
-                  each.kind === 'same_boat' ? 'Same boat' : 'Been there'
-                }}</span
-              >
+              <KindChip :kind="each.kind" connected />
             </span>
           </span>
           <div v-if="each.challenge" class="stack-tight">

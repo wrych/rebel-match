@@ -70,28 +70,41 @@ function setup(): {
   ticker: ReturnType<typeof fakeTicker>
   rendered: StageState[]
   disposed: () => boolean
+  resize: () => void
 } {
   const ticker = fakeTicker()
   const rendered: StageState[] = []
   let disposed = false
+  let resize = (): void => undefined
   const stage = mount(PresentationStage, {
     props: {
       data,
       script,
       ticker,
-      scene: () => ({
-        render(state: StageState, named: readonly string[]) {
-          rendered.push(state)
-          return new Map(named.map((handle) => [handle, { x: 100, y: 50 }]))
-        },
-        dispose() {
-          disposed = true
-        },
-      }),
+      scene: (_host: HTMLElement, _world: unknown, onResize: () => void) => {
+        resize = onResize
+        return {
+          render(state: StageState, named: readonly string[]) {
+            rendered.push(state)
+            return new Map(named.map((handle) => [handle, { x: 100, y: 50 }]))
+          },
+          dispose() {
+            disposed = true
+          },
+        }
+      },
     },
     attachTo: document.body,
   })
-  return { stage, ticker, rendered, disposed: () => disposed }
+  return {
+    stage,
+    ticker,
+    rendered,
+    disposed: () => disposed,
+    resize: () => {
+      resize()
+    },
+  }
 }
 
 const press = (key: string): void => {
@@ -146,6 +159,16 @@ describe('PresentationStage (R-PRES-1..3)', () => {
     press('ArrowLeft')
     press('ArrowLeft')
     expect(rendered.at(-1)?.t).toBeCloseTo(0)
+  })
+
+  it('draws the paused frame again when the stage is resized', () => {
+    const { rendered, resize } = setup()
+    const before = rendered.length
+
+    resize()
+
+    expect(rendered).toHaveLength(before + 1)
+    expect(rendered.at(-1)?.t).toBe(rendered.at(-2)?.t)
   })
 
   it('labels a cast member where the scene places them, with their name', async () => {

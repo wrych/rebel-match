@@ -1,6 +1,6 @@
 # 0055. Members report, hosts moderate by hiding, and a ban is a status
 
-- **Status:** Accepted, amended by 0056
+- **Status:** Accepted, amended by 0056 and 0065
 - **Date:** 2026-10-21
 - **Deciders:** Andy Moesch
 
@@ -52,7 +52,7 @@ and moderation gives no route around R-CONN-6.
   is kept as evidence until the account is erased (R-NFR-7). Its author sees
   that a host hid it, and why.
 - **A ban is a member status, `banned`.** A banned member's sessions end at
-  once. The door tells them plainly that the account is suspended, sends no
+  once. The door answers them as it answers a pending applicant (ADR 0065), sends no
   link and notifies nobody, as for a rejected address (R-AUTH-13). Nothing of
   theirs is shown to anyone, as with a deleted account (R-NFR-7). But nothing
   is erased, so the address cannot come back in through the door, an invite or

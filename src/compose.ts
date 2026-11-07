@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto'
+import { randomBytes, randomUUID } from 'node:crypto'
 import {
   createAuth,
   createAuthStore,
@@ -35,10 +35,10 @@ import { createNotificationStore } from './services/notification-store.js'
 import { createNotificationMailStore } from './services/notification-mail-store.js'
 import { createNotificationSender } from './services/notification-mail.js'
 import { createNotificationWorker } from './services/notification-worker.js'
-import { createTick, type ScheduledJob } from './services/tick.js'
+import { createTick } from './services/tick.js'
+import { scheduledJobs } from './services/scheduled-jobs.js'
 import { createInvokerCheck } from './services/tick-invoker.js'
 import { createFreshSettings } from './services/fresh-settings.js'
-import { retentionCutoff } from './services/outbox-log.js'
 import { createApprovalStore } from './services/approval-store.js'
 import { createApprovals } from './services/approvals.js'
 import { mailLinks } from './services/link-delivery.js'
@@ -54,7 +54,7 @@ import { createModerationStore } from './services/moderation-store.js'
 import { createChallenges } from './services/challenges.js'
 import { newestFirst } from './services/match-ranker.js'
 import { createConnectionStore } from './services/connection-store.js'
-import { createConnections } from './services/connections.js'
+import { createConnections, type DirectRules } from './services/connections.js'
 import { createMemberDirectory } from './services/member-directory-store.js'
 import { createSwipeStore } from './services/swipe-store.js'
 import { createSwipes } from './services/swipes.js'
@@ -83,6 +83,16 @@ import { createGameStore } from './services/game-store.js'
 import { createNetwork, type NetworkService } from './services/network.js'
 import { createNetworkStore } from './services/network-store.js'
 import { createRecap } from './services/recap.js'
+import { createMemberSearch } from './services/member-search.js'
+import { createMemberSearchStore } from './services/member-search-store.js'
+import {
+  createProfileCodes,
+  type ProfileCodeStore,
+} from './services/profile-codes.js'
+import { createProfileCodeStore } from './services/profile-code-store.js'
+import { hashSecret, newSecret } from './auth/tokens.js'
+import { createLiveCodes } from './services/live-codes.js'
+import { createLiveCodeStore } from './services/live-code-store.js'
 import { createRecapAnnouncer } from './services/recap-announce.js'
 import { createRecapAnnounceStore } from './services/recap-announce-store.js'
 import { recapOpen } from './recap/open.js'
@@ -109,7 +119,10 @@ import { createOutboxLog } from './services/outbox-log-store.js'
 import { createOutboxStore } from './services/outbox-store.js'
 import { createErasureService } from './services/erasure.js'
 import { createErasureStore } from './services/erasure-store.js'
+import { createSignIn } from './services/sign-in.js'
 import { createMemberRoster } from './services/member-roster-store.js'
+import { createPhotoService } from './services/photo.js'
+import { createPhotoStore } from './services/photo-store.js'
 import { createProfileStore } from './services/profile-store.js'
 import { createWhitelist } from './services/whitelist.js'
 import { createWhitelistStore } from './services/whitelist-store.js'
@@ -150,12 +163,41 @@ export function composeAuth(
   })
 }
 
+function composeProfile(
+  config: Config,
+  db: Database,
+  settings: LiveSettings,
+): Pick<AppDeps, 'profile' | 'photos'> {
+  return {
+    profile: createProfileStore(db, config.analyticsVersion),
+    photos: createPhotoService({
+      store: createPhotoStore(db),
+      limits: () => settings.limits(),
+      newKey: () => randomBytes(32).toString('base64url'),
+    }),
+  }
+}
+
 function composeDeck(config: Config, db: Database, track: Track): DeckService {
   return createDeck({
     store: createDeckStore(db),
     pageSize: config.limits.deckPageSize,
     track,
   })
+}
+
+// Read on every request, so a host's switch applies at once (ADR 0031).
+function directRules(
+  settings: LiveSettings,
+  codes: ProfileCodeStore,
+): DirectRules {
+  const limits = settings.limits()
+  return {
+    searchOn: limits.memberSearch === 1,
+    perDay: limits.directRequestsPerDay,
+    codesOn: limits.connectCodes === 1,
+    codeOwner: (token) => codes.ownerOf(token),
+  }
 }
 
 interface Counting {
@@ -170,6 +212,7 @@ function composeCounted(
   db: Database,
   track: Track,
   badges: Counting,
+  settings: LiveSettings,
 ): Pick<AppDeps, 'challenges' | 'connections'> {
   return {
     challenges: countingChallenges(
@@ -187,6 +230,7 @@ function composeCounted(
         store: createConnectionStore(db),
         newId: randomUUID,
         track,
+        direct: () => directRules(settings, createProfileCodeStore(db)),
       }),
       badges.service,
       badges.onError,
@@ -213,7 +257,8 @@ function composeJourneys(
   | 'notificationSettings'
 > {
   const notes = composeNotifications(db, settings)
-  const { challenges, connections } = composeCounted(config, db, track, badges)
+  const counted = composeCounted(config, db, track, badges, settings)
+  const { challenges, connections } = counted
   const follows = createFollows({
     store: createFollowStore(db),
     trends: () => challenges.trends(),
@@ -259,24 +304,34 @@ function composeReports(
   }
 }
 
+// Signing in sits with erasure: a keep-it link restores the account first
+// (ADR 0032).
 function composeMembershipAdmin(
   config: Config,
   db: Database,
   auth: AuthProvider,
+  track: Track,
 ): Pick<
   AppDeps,
-  'roles' | 'erasure' | 'roster' | 'whitelist' | 'challengeModeration'
+  | 'signIn'
+  | 'roles'
+  | 'erasure'
+  | 'roster'
+  | 'whitelist'
+  | 'challengeModeration'
 > {
+  const erasure = createErasureService({
+    store: createErasureStore(db),
+    policy: configPolicy,
+    graceDays: () => config.limits.erasureGraceDays,
+  })
   return {
+    signIn: createSignIn({ auth, erasure, track }),
     roles: createRoleService({
       store: createRoleGrantStore(db),
       policy: configPolicy,
     }),
-    erasure: createErasureService({
-      store: createErasureStore(db),
-      policy: configPolicy,
-      graceDays: () => config.limits.erasureGraceDays,
-    }),
+    erasure,
     roster: createMemberRoster(db, config.analyticsVersion),
     challengeModeration: createChallengeModeration(
       createChallengeModerationStore(db),
@@ -502,56 +557,6 @@ function composeInvites(
   })
 }
 
-const MS_PER_HOUR = 3_600_000
-const MS_PER_MINUTE = 60_000
-
-// The work the server's timers do, as jobs a tick runs (ADR 0049).
-function scheduledJobs(
-  config: Config,
-  deps: Pick<
-    AppDeps,
-    'auth' | 'erasure' | 'outbox' | 'notificationMail' | 'badges' | 'moderation'
-  >,
-): ScheduledJob[] {
-  const purgeHours = config.outboxPurgeIntervalHours * MS_PER_HOUR
-  const purgeOlderThan =
-    (log: { purgeBefore(cutoff: Date): Promise<number> }, days: number) => () =>
-      log.purgeBefore(retentionCutoff(new Date(), days))
-  return [
-    { run: () => deps.notificationMail.deliverDue(), everyMs: 0 },
-    {
-      run: () => deps.badges.checkCrowns(),
-      everyMs: config.badgeCrownCheckMinutes * MS_PER_MINUTE,
-    },
-    {
-      run: () => deps.erasure.eraseDue(),
-      everyMs: config.erasureSweepIntervalHours * MS_PER_HOUR,
-    },
-    {
-      run: () => deps.auth.purgeExpired(),
-      everyMs: config.tokenPurgeIntervalHours * MS_PER_HOUR,
-    },
-    {
-      run: purgeOlderThan(deps.outbox, config.limits.outboxRetentionDays),
-      everyMs: purgeHours,
-    },
-    {
-      run: purgeOlderThan(
-        deps.notificationMail,
-        config.limits.notificationRetentionDays,
-      ),
-      everyMs: purgeHours,
-    },
-    {
-      run: purgeOlderThan(
-        { purgeBefore: (cutoff) => deps.moderation.purgeHandledBefore(cutoff) },
-        config.limits.reportRetentionDays,
-      ),
-      everyMs: purgeHours,
-    },
-  ]
-}
-
 // The tick, its caller check and the settings refresh it replaces, when the
 // configuration hands the scheduled work to a scheduler (ADR 0049).
 function withScheduled(
@@ -591,6 +596,7 @@ function composeNetwork(
     presentation: createPresentation({
       store,
       cast: presentationCast(config),
+      photosOn: () => settings.limits().profilePhotos === 1,
     }),
   }
 }
@@ -614,6 +620,80 @@ function composeRecap(
       minShare: settings.limits().recapMinShare,
     }),
   })
+}
+
+// Read on every request, so a host's change applies at once (ADR 0031).
+function composeMemberSearch(
+  db: Database,
+  settings: LiveSettings,
+  track: Track,
+): AppDeps['memberSearch'] {
+  return createMemberSearch({
+    store: createMemberSearchStore(db),
+    track,
+    rules: () => {
+      const limits = settings.limits()
+      return {
+        searchOn: limits.memberSearch === 1,
+        minChars: limits.memberSearchMinChars,
+        maxResults: limits.memberSearchMaxResults,
+      }
+    },
+  })
+}
+
+// A random token per member, never their id (R-CODE-2).
+function composeProfileCodes(
+  db: Database,
+  track: Track,
+): AppDeps['profileCodes'] {
+  return createProfileCodes({
+    track,
+    store: createProfileCodeStore(db),
+    cards: createMemberSearchStore(db),
+    newToken: newSecret,
+  })
+}
+
+const LIVE_CODE_BYTES = 16
+const LIVE_CODE_WINDOW_MINUTES = 1
+
+// A 128-bit token, stored hashed, given out at most so often a minute
+// (R-CODE-5, ADR 0063).
+function composeLiveCodes(
+  db: Database,
+  settings: LiveSettings,
+  track: Track,
+): AppDeps['liveCodes'] {
+  const issues = createWindowCounter({
+    windowMinutes: () => LIVE_CODE_WINDOW_MINUTES,
+  })
+  return createLiveCodes({
+    track,
+    store: createLiveCodeStore(db),
+    times: () => ({
+      seconds: settings.limits().liveCodeSeconds,
+      graceSeconds: settings.limits().liveCodeGraceSeconds,
+    }),
+    keepMinutes: () => settings.limits().liveCodeKeepMinutes,
+    newToken: () => randomBytes(LIVE_CODE_BYTES).toString('base64url'),
+    hash: hashSecret,
+    newId: randomUUID,
+    mayIssue: (memberId) =>
+      issues.take(memberId, settings.abuse().liveCodesPerMinute),
+  })
+}
+
+// Profile codes and live codes (ADR 0063).
+function composeCodes(
+  db: Database,
+  settings: LiveSettings,
+  track: Track,
+): Pick<AppDeps, 'profileCodes' | 'liveCodes'> {
+  return {
+    profileCodes: composeProfileCodes(db, track),
+    liveCodes: composeLiveCodes(db, settings, track),
+  }
 }
 
 /** Background work the server reports on: an analytics event that could not
@@ -658,8 +738,8 @@ export function composeApp(
       consentVersion: config.consentVersion,
       analyticsVersion: config.analyticsVersion,
     }),
-    profile: createProfileStore(db, config.analyticsVersion),
-    ...composeMembershipAdmin(config, db, auth),
+    ...composeProfile(config, db, settings),
+    ...composeMembershipAdmin(config, db, auth, track),
     outbox: createOutboxLog(db),
     ...composeAdmission(config, settings, db, auth),
     ...composeOnboarding(config, db, track),
@@ -674,6 +754,8 @@ export function composeApp(
     game: composeGame(config, db, settings, track, counting),
     ...networks,
     recap: composeRecap(db, settings, badges, networks.network),
+    memberSearch: composeMemberSearch(db, settings, track),
+    ...composeCodes(db, settings, track),
     notificationMail: composeNoticeMail(config, db, mailer, hooks, settings),
   }
   return withScheduled(config, deps, hooks.onScheduledError ?? ignoreError)

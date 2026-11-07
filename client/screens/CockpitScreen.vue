@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import KindChip from '../components/KindChip.vue'
 import { computed, onMounted, ref } from 'vue'
 import ChallengeCard from '../components/ChallengeCard.vue'
 import PullToRefresh from '../components/PullToRefresh.vue'
@@ -18,7 +19,10 @@ import {
   type ConnectedMember,
   type ConnectionView,
 } from '../lib/connections'
+import { fetchConfig } from '../lib/api'
 import { arrivals, useLiveList } from '../lib/live-list'
+import { searchOpen } from '../lib/people'
+import { loadMe } from '../lib/session'
 
 const cockpit = ref<Cockpit | null>(null)
 const incoming = ref<ConnectionView[]>([])
@@ -29,6 +33,7 @@ const answering = ref<string | null>(null)
 const notice = ref<string | null>(null)
 const failed = ref<string | null>(null)
 const withdrawnNotice = ref<string | null>(null)
+const canSearch = ref(false)
 
 const requestPath = (id: string): string =>
   `/matches/requests/${encodeURIComponent(id)}`
@@ -110,7 +115,17 @@ async function afterWithdraw(): Promise<void> {
   await live.refresh()
 }
 
-onMounted(() => live.refresh())
+// Offered only while hosts have search on, to those who may search (R-FIND-1).
+async function offerSearch(): Promise<void> {
+  const [config, me] = await Promise.all([fetchConfig(), loadMe()])
+  canSearch.value =
+    me !== null && searchOpen(config.limits.memberSearch, me.permissions)
+}
+
+onMounted(() => {
+  void offerSearch().catch(() => undefined)
+  return live.refresh()
+})
 </script>
 
 <template>
@@ -118,6 +133,9 @@ onMounted(() => live.refresh())
     <PullToRefresh :live="live" />
     <div class="stack">
       <h1 class="display display-lg">Your matches</h1>
+      <RouterLink v-if="canSearch" to="/people" class="row-link"
+        >Find a member</RouterLink
+      >
     </div>
 
     <template v-if="cockpit">
@@ -144,15 +162,7 @@ onMounted(() => live.refresh())
           <RouterLink :to="requestPath(request.id)" class="request-row">
             <span class="card-head">
               <span class="card-title">{{ request.other.name }}</span>
-              <span
-                class="chip"
-                :class="
-                  request.kind === 'same_boat' ? 'chip-accent' : 'chip-ink'
-                "
-                >{{
-                  request.kind === 'same_boat' ? 'Same boat' : 'Been there'
-                }}</span
-              >
+              <KindChip :kind="request.kind" />
             </span>
             <span v-if="request.message" class="small request-note">{{
               request.message

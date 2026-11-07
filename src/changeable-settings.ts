@@ -65,6 +65,7 @@ const pairs: readonly (readonly [floor: OrderedKey, ceiling: OrderedKey])[] = [
   ['abuse.linkEmailsBeforeCheck', 'abuse.linkEmailsCeiling'],
   ['abuse.applicantsBeforeCheck', 'abuse.applicantsCeiling'],
   ['limits.challengeMinChars', 'limits.challengeMaxChars'],
+  ['limits.liveCodeGraceSeconds', 'limits.liveCodeSeconds'],
   ...gameOrder.map(
     ([floor, ceiling]) => [`game.${floor}`, `game.${ceiling}`] as const,
   ),

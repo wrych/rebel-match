@@ -1,15 +1,7 @@
-import {
-  and,
-  desc,
-  eq,
-  isNotNull,
-  ne,
-  sql,
-  type AnyColumn,
-  type SQL,
-} from 'drizzle-orm'
+import { and, desc, eq, ne, sql, type AnyColumn, type SQL } from 'drizzle-orm'
 import { insertTrendNotifications } from './notification-store.js'
 import type { Database } from '../db/connect.js'
+import { isReachableMember } from '../db/member-predicates.js'
 import {
   cases,
   challenges,
@@ -26,7 +18,7 @@ import type {
   StoredTrend,
 } from './challenges.js'
 import type { RankablePeer } from './match-ranker.js'
-import { companySizeLabel, sectorLabel } from './profile-labels.js'
+import { companySizeLabel, sectorLabel, photoKey } from './profile-labels.js'
 
 /** The trend a challenge sits in: the confirmed one, else the matcher's. */
 export const challengeTrend = sql<
@@ -56,14 +48,11 @@ const peerColumns = {
   org: members.org,
   sector: sectorLabel,
   companySize: companySizeLabel,
+  photo: photoKey,
 }
 
 const peerFilter = (viewerId: string): SQL | undefined =>
-  and(
-    eq(members.status, 'active'),
-    isNotNull(members.name),
-    ne(members.id, viewerId),
-  )
+  and(isReachableMember(), ne(members.id, viewerId))
 
 function peerOf(
   row: Omit<RankablePeer, 'name' | 'note'> & {

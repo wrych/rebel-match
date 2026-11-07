@@ -2,20 +2,16 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import request from 'supertest'
 import { createApp } from '../../src/app.js'
 import { composeApp } from '../../src/compose.js'
-import { loadConfig } from '../../src/config.js'
 import type { NetworkTimeline } from '../../src/network/timeline.js'
-import { planSeed } from '../../src/seed/plan.js'
-import { applySeed } from '../../src/seed/run.js'
+import type { TestDatabase } from './support/database.js'
 import {
-  openTestDatabase,
-  testDatabaseUrl,
-  type TestDatabase,
-} from './support/database.js'
+  cookieFor,
+  idOf,
+  openSeededDatabase,
+  testConfig,
+} from './support/app.js'
 
-const config = loadConfig({
-  DATABASE_URL: testDatabaseUrl,
-  SESSION_SECRET: 'integration-session-secret-of-32-chars',
-  NODE_ENV: 'test',
+const config = testConfig({
   SEED_PROFILE: 'dev',
   NETWORK_REPLAY: '1',
   NETWORK_MIN_OWN_CONNECTIONS: '0',
@@ -42,16 +38,11 @@ async function activeMembers(): Promise<number> {
 }
 
 beforeAll(async () => {
-  db = await openTestDatabase()
-  await applySeed(db.drizzle, planSeed(config), config.consentVersion)
+  db = await openSeededDatabase(config)
   const deps = composeApp(config, db.drizzle)
   app = createApp(deps)
-  const rows = await db.query('SELECT id FROM members WHERE email = ?', [
-    member,
-  ])
-  memberId = String(rows[0]?.['id'])
-  const session = await deps.auth.createSession(memberId)
-  cookie = `${session.name}=${session.value}`
+  memberId = await idOf(db, member)
+  cookie = await cookieFor(deps.auth, memberId)
 })
 
 afterAll(async () => {
@@ -90,10 +81,16 @@ describe('the network replay over Postgres (R-NET-1..4)', () => {
 
   it('draws an accepted connection, and not a pending or declined one', async () => {
     const before = (await network()).links.length
+    // Peers not yet connected to the member: a second connection between
+    // the same two adds no link, and earlier tests leave connections behind.
     const peers = await db.query(
-      `SELECT id FROM members WHERE status = 'active' AND name IS NOT NULL
-        AND consent_at IS NOT NULL AND id <> ? ORDER BY id LIMIT 3`,
-      [memberId],
+      `SELECT id FROM members m WHERE status = 'active' AND name IS NOT NULL
+        AND consent_at IS NOT NULL AND id <> ?
+        AND NOT EXISTS (SELECT 1 FROM connection_requests r
+          WHERE (r.requester_id = ? AND r.target_id = m.id)
+             OR (r.requester_id = m.id AND r.target_id = ?))
+        ORDER BY id LIMIT 3`,
+      [memberId, memberId, memberId],
     )
     const [a, b, c] = peers.map((row) => String(row['id']))
     await db.query(

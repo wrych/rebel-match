@@ -1,9 +1,10 @@
-import { and, desc, eq, isNotNull, ne, notExists, sql } from 'drizzle-orm'
+import { and, desc, eq, ne, notExists, sql } from 'drizzle-orm'
 import type { Database } from '../db/connect.js'
+import { isReachableMember } from '../db/member-predicates.js'
 import { challenges, members, swipes, trends } from '../db/schema.js'
 import { challengeTrend, isShown, notReportedBy } from './challenge-store.js'
 import type { DeckStore } from './deck.js'
-import { companySizeLabel, sectorLabel } from './profile-labels.js'
+import { companySizeLabel, photoKey, sectorLabel } from './profile-labels.js'
 
 const cardColumns = {
   challengeId: challenges.id,
@@ -15,6 +16,7 @@ const cardColumns = {
   org: members.org,
   sector: sectorLabel,
   companySize: companySizeLabel,
+  photo: photoKey,
 }
 
 /** The deck over Postgres. Selects no email column (R-CONN-6); the swipe
@@ -40,8 +42,7 @@ export function createDeckStore(db: Database): DeckStore {
           and(
             isShown(),
             notReportedBy(viewerId),
-            eq(members.status, 'active'),
-            isNotNull(members.name),
+            isReachableMember(),
             ne(challenges.memberId, viewerId),
             notExists(swiped),
           ),
@@ -62,6 +63,7 @@ export function createDeckStore(db: Database): DeckStore {
           org: row.org,
           sector: row.sector,
           companySize: row.companySize,
+          photo: row.photo,
         },
       }))
     },

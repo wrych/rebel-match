@@ -1,12 +1,11 @@
 import { randomUUID } from 'node:crypto'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { loadConfig } from '../../src/config.js'
 import {
   openTestDatabase,
-  testDatabaseUrl,
   type Row,
   type TestDatabase,
 } from './support/database.js'
+import { testConfig } from './support/app.js'
 import { configPolicy } from '../../src/permissions.js'
 import { planSeed } from '../../src/seed/plan.js'
 import { applySeed } from '../../src/seed/run.js'
@@ -16,11 +15,7 @@ import {
   type RoleService,
 } from '../../src/services/roles.js'
 
-const config = loadConfig({
-  DATABASE_URL: testDatabaseUrl,
-  SESSION_SECRET: 'integration-session-secret-of-32-chars',
-  NODE_ENV: 'test',
-})
+const config = testConfig()
 const ana = { id: randomUUID(), email: `${randomUUID()}@example.invalid` }
 const ben = { id: randomUUID(), email: `${randomUUID()}@example.invalid` }
 

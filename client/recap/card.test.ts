@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest'
 import type { Recap, RecapRow } from '../lib/recap'
 import {
   cardOf,
-  linkedInUrl,
   paintCard,
   RECAP_TITLE,
   shareText,
@@ -213,11 +212,5 @@ describe('the share card (R-RECAP-5, R-RECAP-6)', () => {
     expect(text).toContain('Crowned Ringleader.')
     expect(text).toContain('https://rebel.test')
     expect(text).not.toContain('Ada')
-  })
-
-  it('opens LinkedIn’s composer with the post filled in', () => {
-    expect(linkedInUrl('a & b')).toBe(
-      'https://www.linkedin.com/feed/?shareActive=true&text=a%20%26%20b',
-    )
   })
 })

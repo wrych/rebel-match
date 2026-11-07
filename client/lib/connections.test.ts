@@ -45,11 +45,15 @@ describe('requestConnection', () => {
   it.each([
     [409, 'exists'],
     [404, 'not_found'],
-  ])('reads %i as %s (R-CONN-5, R-NAV-8)', async (status, expected) => {
-    answer(status)
+    [429, 'limit'],
+  ])(
+    'reads %i as %s (R-CONN-5, R-NAV-8, R-FIND-7)',
+    async (status, expected) => {
+      answer(status)
 
-    expect(await requestConnection(input)).toEqual({ result: expected })
-  })
+      expect(await requestConnection(input)).toEqual({ result: expected })
+    },
+  )
 
   it('reads 200 as joined, with the request to open (R-CONN-8)', async () => {
     vi.stubGlobal(

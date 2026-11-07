@@ -5,20 +5,16 @@ import request from 'supertest'
 import { createApp } from '../../src/app.js'
 import type { AppDeps } from '../../src/app.js'
 import { composeApp } from '../../src/compose.js'
-import { loadConfig } from '../../src/config.js'
 import type { BadgeOverview, RowView } from '../../src/services/badges.js'
+import type { TestDatabase } from './support/database.js'
 import {
-  openTestDatabase,
-  testDatabaseUrl,
-  type TestDatabase,
-} from './support/database.js'
-import { planSeed } from '../../src/seed/plan.js'
-import { applySeed } from '../../src/seed/run.js'
+  cookieFor,
+  idOf,
+  openSeededDatabase,
+  testConfig,
+} from './support/app.js'
 
-const config = loadConfig({
-  DATABASE_URL: testDatabaseUrl,
-  SESSION_SECRET: 'integration-session-secret-of-32-chars',
-  NODE_ENV: 'test',
+const config = testConfig({
   SEED_PROFILE: 'dev',
 })
 
@@ -54,17 +50,12 @@ async function cleanup(): Promise<void> {
 }
 
 beforeAll(async () => {
-  db = await openTestDatabase()
-  await applySeed(db.drizzle, planSeed(config), config.consentVersion)
+  db = await openSeededDatabase(config)
   deps = composeApp(config, db.drizzle)
   app = createApp(deps)
   for (const person of people) {
-    const rows = await db.query('SELECT id FROM members WHERE email = ?', [
-      `${person}@example.invalid`,
-    ])
-    ids[person] = String(rows[0]?.['id'])
-    const session = await deps.auth.createSession(ids[person])
-    cookies[person] = `${session.name}=${session.value}`
+    ids[person] = await idOf(db, `${person}@example.invalid`)
+    cookies[person] = await cookieFor(deps.auth, ids[person])
   }
   await cleanup()
 })
@@ -312,8 +303,7 @@ describe('badges over Postgres (R-BADGE-1, R-BADGE-2)', () => {
     expect(await speakCrownHolder()).toBeNull()
 
     await deps.erasure.restore(ids['ana.ferreira']!)
-    const session = await deps.auth.createSession(ids['ana.ferreira']!)
-    cookies['ana.ferreira'] = `${session.name}=${session.value}`
+    cookies['ana.ferreira'] = await cookieFor(deps.auth, ids['ana.ferreira']!)
     await deps.badges.checkCrowns()
 
     expect(await speakCrownHolder()).toBe(ids['ana.ferreira'])

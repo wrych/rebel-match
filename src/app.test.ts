@@ -35,6 +35,7 @@ function deps(
       deliver: () => Promise.resolve(),
       config,
     }),
+    signIn: () => Promise.resolve({ ok: false, reason: 'unknown' }),
     profiles: { profile: () => Promise.resolve(null) },
     roles: {
       grant: () => Promise.resolve('no_member'),
@@ -61,6 +62,7 @@ function deps(
     profile: {
       own: () => Promise.resolve(null),
       update: () => Promise.resolve(),
+      setFindable: () => Promise.resolve(),
     },
     whitelist: { add: () => Promise.resolve([]) },
     outbox: {
@@ -124,6 +126,27 @@ function deps(
         Promise.resolve({ nodes: [], links: [], moons: [], own: null }),
     },
     recap: { mine: () => Promise.reject(new Error('not used')) },
+    memberSearch: {
+      search: () => Promise.reject(new Error('not used')),
+      card: () => Promise.reject(new Error('not used')),
+    },
+    photos: {
+      own: () => Promise.reject(new Error('not used')),
+      shared: () => Promise.reject(new Error('not used')),
+      replace: () => Promise.reject(new Error('not used')),
+      remove: () => Promise.reject(new Error('not used')),
+    },
+    profileCodes: {
+      mine: () => Promise.reject(new Error('not used')),
+      setEnabled: () => Promise.reject(new Error('not used')),
+      reset: () => Promise.reject(new Error('not used')),
+      open: () => Promise.reject(new Error('not used')),
+    },
+    liveCodes: {
+      issue: () => Promise.reject(new Error('not used')),
+      redeem: () => Promise.reject(new Error('not used')),
+      purge: () => Promise.reject(new Error('not used')),
+    },
     badges: {
       recount: () => Promise.resolve(),
       mine: () => Promise.resolve({ rows: [], events: [] }),

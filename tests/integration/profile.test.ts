@@ -3,18 +3,10 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import request from 'supertest'
 import { createApp } from '../../src/app.js'
 import { composeApp } from '../../src/compose.js'
-import { loadConfig } from '../../src/config.js'
-import {
-  openTestDatabase,
-  testDatabaseUrl,
-  type TestDatabase,
-} from './support/database.js'
+import { openTestDatabase, type TestDatabase } from './support/database.js'
+import { cookieFor, testConfig } from './support/app.js'
 
-const config = loadConfig({
-  DATABASE_URL: testDatabaseUrl,
-  SESSION_SECRET: 'integration-session-secret-of-32-chars',
-  NODE_ENV: 'test',
-})
+const config = testConfig()
 const member = { id: randomUUID(), email: `${randomUUID()}@example.invalid` }
 
 let db: TestDatabase
@@ -32,8 +24,7 @@ beforeAll(async () => {
   )
   const deps = composeApp(config, db.drizzle)
   app = createApp(deps)
-  const session = await deps.auth.createSession(member.id)
-  cookie = `${session.name}=${session.value}`
+  cookie = await cookieFor(deps.auth, member.id)
 })
 
 afterAll(async () => {
@@ -90,6 +81,25 @@ describe('the profile over Postgres (R-PROF-1,2)', () => {
   })
 })
 
+describe('being findable over Postgres (R-FIND-5)', () => {
+  it('is on until the member turns it off, and stays as they leave it', async () => {
+    const before = await request(app).get('/api/profile').set('Cookie', cookie)
+    const off = await request(app)
+      .put('/api/me/findable')
+      .set('Cookie', cookie)
+      .send({ findable: false })
+    const after = await request(app).get('/api/profile').set('Cookie', cookie)
+    await request(app)
+      .put('/api/me/findable')
+      .set('Cookie', cookie)
+      .send({ findable: true })
+
+    expect((before.body as { findable: boolean }).findable).toBe(true)
+    expect(off.status).toBe(204)
+    expect((after.body as { findable: boolean }).findable).toBe(false)
+  })
+})
+
 describe('deleting your own account over Postgres (R-PROF-2, ADR 0032)', () => {
   it('deactivates the member, ends their session, and their emailed link keeps it', async () => {
     const leaver = {
@@ -103,16 +113,13 @@ describe('deleting your own account over Postgres (R-PROF-2, ADR 0032)', () => {
     )
     // A development deployment keeps the link in the outbound log, so the
     // test can follow it as the member would from their inbox (R-MSG-4).
-    const dev = loadConfig({
-      DATABASE_URL: testDatabaseUrl,
-      SESSION_SECRET: 'integration-session-secret-of-32-chars',
+    const dev = testConfig({
       NODE_ENV: 'development',
       MAIL_DELIVERY: 'none',
     })
     const deps = composeApp(dev, db.drizzle)
     const app = createApp(deps)
-    const session = await deps.auth.createSession(leaver.id)
-    const theirs = `${session.name}=${session.value}`
+    const theirs = await cookieFor(deps.auth, leaver.id)
 
     const response = await request(app)
       .delete('/api/profile')

@@ -23,6 +23,7 @@ const cards: DeckCard[] = [
       org: 'Björk',
       sector: 'Manufacturing',
       companySize: null,
+      photo: null,
     },
   },
   {
@@ -35,6 +36,7 @@ const cards: DeckCard[] = [
       org: null,
       sector: null,
       companySize: null,
+      photo: null,
     },
   },
 ]
@@ -50,6 +52,7 @@ function server(
     body: { result: 'recorded' },
   },
   followed: string[] | null = [],
+  profilePhotos = 0,
 ): ReturnType<typeof vi.fn> {
   const reads = [...decks]
   const fetchMock = vi.fn((url: string) => {
@@ -59,7 +62,9 @@ function server(
       return Promise.resolve({
         ok: true,
         status: 200,
-        json: async () => ({ limits: { swipeMinPx: SWIPE_MIN_PX } }),
+        json: async () => ({
+          limits: { swipeMinPx: SWIPE_MIN_PX, profilePhotos },
+        }),
       })
     if (url === '/api/follows')
       return Promise.resolve({
@@ -362,6 +367,32 @@ function seenIds(fetchMock: ReturnType<typeof vi.fn>): string[] {
       return (JSON.parse(body) as { challengeId: string }).challengeId
     })
 }
+
+describe('the author’s photo (R-PROF-6)', () => {
+  const KEY = 'k'.repeat(43)
+  const pictured = cards.map((card) => ({
+    ...card,
+    author: { ...card.author, photo: KEY },
+  }))
+
+  it('shows the author’s photo beside their name while photos are on', async () => {
+    server([pictured], undefined, [], 1)
+    const screen = await mountScreen()
+
+    expect(screen.find('.deck-author img').attributes('src')).toBe(
+      `/api/photos/${KEY}`,
+    )
+    screen.unmount()
+  })
+
+  it('shows no photo while photos are off', async () => {
+    server([pictured])
+    const screen = await mountScreen()
+
+    expect(screen.find('.deck-author .member-photo').exists()).toBe(false)
+    screen.unmount()
+  })
+})
 
 describe('reporting what the deck shows (R-STAT-1, ADR 0033)', () => {
   it('reports the visible card, and not the ones sent ahead', async () => {

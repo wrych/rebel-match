@@ -3,16 +3,11 @@ import request from 'supertest'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { createApp } from '../../src/app.js'
 import { composeApp } from '../../src/compose.js'
-import { loadConfig } from '../../src/config.js'
-import {
-  openTestDatabase,
-  testDatabaseUrl,
-  type TestDatabase,
-} from './support/database.js'
+import { openTestDatabase, type TestDatabase } from './support/database.js'
+import { testConfig } from './support/app.js'
 
 const base = {
-  DATABASE_URL: testDatabaseUrl,
-  SESSION_SECRET: 'integration-session-secret-of-32-chars',
+  NODE_ENV: 'development',
 }
 const SCHEDULER = 'Bearer scheduler-token'
 const to = `${randomUUID()}@example.invalid`
@@ -40,7 +35,7 @@ afterAll(async () => {
 
 describe('the tick, composed as the server runs it (ADR 0049)', () => {
   function tickApp(): ReturnType<typeof createApp> {
-    const config = loadConfig({
+    const config = testConfig({
       ...base,
       SCHEDULED_WORK: 'tick',
       TICK_INVOKER: 'scheduler-tick@p.iam.gserviceaccount.com',
@@ -78,7 +73,7 @@ describe('the tick, composed as the server runs it (ADR 0049)', () => {
   })
 
   it('has no tick while the timers run the work', async () => {
-    const app = createApp(composeApp(loadConfig(base), db.drizzle))
+    const app = createApp(composeApp(testConfig(base), db.drizzle))
 
     await request(app)
       .post('/api/internal/tick')

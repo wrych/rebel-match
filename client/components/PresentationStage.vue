@@ -25,6 +25,7 @@ const props = withDefaults(
     scene?: (
       host: HTMLElement,
       world: ReturnType<typeof buildWorld>,
+      onResize: () => void,
     ) => PresentationScene
     ticker?: Ticker
   }>(),
@@ -113,7 +114,7 @@ function onKey(event: KeyboardEvent): void {
 }
 
 onMounted(() => {
-  if (host.value !== null) drawn = props.scene(host.value, world)
+  if (host.value !== null) drawn = props.scene(host.value, world, draw)
   player = createPlayer({
     durationMs: length * MS_PER_SECOND,
     ticker: props.ticker,

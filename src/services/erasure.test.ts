@@ -28,7 +28,7 @@ describe('leavesAHolder', () => {
 const NOW = new Date('2026-10-05T10:00:00Z')
 
 /** A store that records what it is asked, answering `erased` and listing the
- * members `due` holds. */
+ * members `due` holds; erasing `broken` fails. */
 function fakeStore(due: string[] = []): ErasureStore & {
   calls: unknown[]
 } {
@@ -41,6 +41,7 @@ function fakeStore(due: string[] = []): ErasureStore & {
         guarded: guardedRoles,
         verdict: mayErase([{ memberId: 'a', role: 'admin' }]),
       })
+      if (memberId === 'broken') return Promise.reject(new Error('db down'))
       return Promise.resolve(memberId === 'kept' ? 'created_invites' : 'erased')
     },
     deactivate: (memberId, _guarded, _mayErase, plan) => {
@@ -115,5 +116,20 @@ describe('createErasureService', () => {
 
     expect(await service(store).eraseDue()).toBe(2)
     expect(store.calls[0]).toEqual({ due: NOW })
+  })
+
+  it('erases the rest of those due when one fails, then reports the failure (R-NFR-7)', async () => {
+    const store = fakeStore(['a', 'broken', 'b'])
+
+    const sweep = service(store).eraseDue()
+
+    await expect(sweep).rejects.toThrow(AggregateError)
+    await expect(sweep).rejects.not.toThrow(/broken/)
+    expect(store.calls.map((c) => (c as { erase?: string }).erase)).toEqual([
+      undefined,
+      'a',
+      'broken',
+      'b',
+    ])
   })
 })

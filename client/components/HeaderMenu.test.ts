@@ -95,6 +95,31 @@ afterEach(() => {
 
 describe('HeaderMenu', () => {
   it.each([
+    [1, ['member:search'], true],
+    [0, ['member:search'], false],
+    [1, [], false],
+  ])(
+    'offers Find a member while on (%i) to %j: %s (R-FIND-1)',
+    async (memberSearch, permissions, offered) => {
+      withConfig(signedIn(permissions), { memberSearch })
+
+      expect(paths(await opened()).includes('/people')).toBe(offered)
+    },
+  )
+
+  it.each([
+    [1, true],
+    [0, false],
+  ])(
+    'offers Your code while codes are on (%i): %s (R-CODE-1)',
+    async (connectCodes, offered) => {
+      withConfig(signedIn([]), { connectCodes })
+
+      expect(paths(await opened()).includes('/me/code')).toBe(offered)
+    },
+  )
+
+  it.each([
     [1, ['network:view'], true],
     [0, ['network:view'], false],
     [1, [], false],

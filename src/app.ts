@@ -14,6 +14,9 @@ import { gameRoutes } from './routes/game.js'
 import { networkRoutes } from './routes/network.js'
 import { presentationRoutes } from './routes/presentation.js'
 import { recapRoutes } from './routes/recap.js'
+import { memberRoutes } from './routes/members.js'
+import { profileCodeRoutes } from './routes/profile-codes.js'
+import { liveCodeRoutes } from './routes/live-codes.js'
 import { swipeRoutes } from './routes/swipes.js'
 import { cockpitRoutes } from './routes/cockpit.js'
 import { guardApi } from './routes/api-guard.js'
@@ -37,6 +40,10 @@ import { analyticsConsentRoutes } from './routes/analytics-consent.js'
 import { eventRoutes } from './routes/events.js'
 import { flagRoutes } from './routes/flags.js'
 import { profileRoutes } from './routes/profile.js'
+import {
+  profilePhotoRoutes,
+  sharedPhotoRoutes,
+} from './routes/profile-photo.js'
 import { requestLinkRoutes } from './routes/request-link.js'
 import { limitPerIp, SIGN_IN_POSTS } from './routes/ip-limit.js'
 import { createWindowCounter } from './services/rate-limit.js'
@@ -56,6 +63,9 @@ import type { GameService } from './services/game.js'
 import type { NetworkService } from './services/network.js'
 import type { PresentationService } from './services/presentation.js'
 import type { RecapService } from './services/recap.js'
+import type { MemberSearchService } from './services/member-search.js'
+import type { ProfileCodeService } from './services/profile-codes.js'
+import type { LiveCodeService } from './services/live-codes.js'
 import type { SwipeService } from './services/swipes.js'
 import type { CockpitService } from './services/cockpit.js'
 import type { FollowService } from './services/follows.js'
@@ -66,7 +76,9 @@ import type { OutboxLog } from './services/outbox-log.js'
 import type { AnalyticsConsentService } from './services/analytics-consent.js'
 import type { Track } from './services/analytics.js'
 import type { ErasureService } from './services/erasure.js'
+import type { SignIn } from './services/sign-in.js'
 import type { MemberRoster } from './services/member-roster.js'
+import type { PhotoService } from './services/photo.js'
 import type { ProfileStore } from './services/profile.js'
 import type { RoleService } from './services/roles.js'
 import type { WhitelistService } from './services/whitelist.js'
@@ -83,12 +95,14 @@ export interface AppDeps {
   settings: SettingsService
   db: Database
   auth: AuthProvider
+  signIn: SignIn
   profiles: MemberProfiles
   roles: RoleService
   erasure: ErasureService
   roster: MemberRoster
   challengeModeration: ChallengeModeration
   profile: ProfileStore
+  photos: PhotoService
   whitelist: WhitelistService
   outbox: OutboxLog
   admission: AdmissionService
@@ -104,6 +118,9 @@ export interface AppDeps {
   network: NetworkService
   presentation: PresentationService
   recap: RecapService
+  memberSearch: MemberSearchService
+  profileCodes: ProfileCodeService
+  liveCodes: LiveCodeService
   badges: BadgeService
   connections: ConnectionService
   swipes: SwipeService
@@ -172,6 +189,13 @@ function mountScheduled(
   app.use(tickRoutes(scheduled))
 }
 
+// The game, the replay and recap, and finding, seeing and reaching members.
+function mountPlayAndPeople(app: Express, deps: AppDeps): void {
+  app.use(gameRoutes(deps), networkRoutes(deps), recapRoutes(deps))
+  app.use(memberRoutes(deps), profileCodeRoutes(deps), liveCodeRoutes(deps))
+  app.use(sharedPhotoRoutes(deps))
+}
+
 /** Builds the app from injected dependencies, so tests can supply fakes
  * (constitution §4). */
 export function createApp(deps: AppDeps): Express {
@@ -197,7 +221,7 @@ export function createApp(deps: AppDeps): Express {
   app.use(onboardingRoutes(deps))
   app.use(analyticsConsentRoutes(deps))
   app.use(eventRoutes(deps), flagRoutes(deps))
-  app.use(profileRoutes(deps), challengeRoutes(deps))
+  app.use(profileRoutes(deps), profilePhotoRoutes(deps), challengeRoutes(deps))
   app.use(deckRoutes(deps), activityRoutes(deps))
   app.use(connectionRoutes(deps))
   app.use(swipeRoutes(deps), reportRoutes(deps))
@@ -207,8 +231,8 @@ export function createApp(deps: AppDeps): Express {
   app.use(adminApplicantRoutes(deps), adminReportRoutes(deps))
   app.use(adminInviteRoutes(deps), adminBanRoutes(deps))
   app.use(adminOutboxRoutes(deps), presentationRoutes(deps))
-  app.use(adminSettingsRoutes(deps), gameRoutes(deps))
-  app.use(networkRoutes(deps), recapRoutes(deps))
+  app.use(adminSettingsRoutes(deps))
+  mountPlayAndPeople(app, deps)
 
   app.get('/api/health', async (_request, response) => {
     const database = (await databaseReachable(deps.db)) ? 'up' : 'down'

@@ -164,6 +164,46 @@ const limitSpecs = {
     zeroAllowed: true,
     changeable: { min: 0, max: 100 },
   },
+  // Hosts open member search; off until they do (R-FIND-1).
+  memberSearch: {
+    env: 'MEMBER_SEARCH',
+    default: 0,
+    zeroAllowed: true,
+    changeable: { min: 0, max: 1 },
+  },
+  // The shortest term a search runs on, so one letter cannot list everyone
+  // (R-FIND-2).
+  memberSearchMinChars: { env: 'MEMBER_SEARCH_MIN_CHARS', default: 2 },
+  // Search answers a query with a few cards, never a directory (R-FIND-3).
+  memberSearchMaxResults: { env: 'MEMBER_SEARCH_MAX_RESULTS', default: 20 },
+  // Hosts open connect codes; off until they do (R-CODE-1).
+  connectCodes: {
+    env: 'CONNECT_CODES',
+    default: 0,
+    zeroAllowed: true,
+    changeable: { min: 0, max: 1 },
+  },
+  // How long each live code is shown before the next replaces it
+  // (R-CODE-5, R-CODE-8).
+  liveCodeSeconds: {
+    env: 'LIVE_CODE_SECONDS',
+    default: 30,
+    changeable: { min: 10, max: 120 },
+  },
+  // How long a replaced live code still works, so a scan begun at the end
+  // of its time succeeds (R-CODE-5, R-CODE-8).
+  liveCodeGraceSeconds: {
+    env: 'LIVE_CODE_GRACE_SECONDS',
+    default: 10,
+    zeroAllowed: true,
+    changeable: { min: 0, max: 30 },
+  },
+  // How long a spent live code waits for its owner's screen to report it
+  // before the tick deletes it (R-CODE-6).
+  liveCodeKeepMinutes: { env: 'LIVE_CODE_KEEP_MINUTES', default: 60 },
+  // Direct requests a member may send in a day, so search cannot be used to
+  // ask everyone (R-FIND-7).
+  directRequestsPerDay: { env: 'DIRECT_REQUESTS_PER_DAY', default: 50 },
   // Hosts open each member's summit recap when the summit ends (R-RECAP-1).
   recap: {
     env: 'RECAP',
@@ -213,6 +253,28 @@ const limitSpecs = {
   // The largest SVG logo an event badge takes, kept well inside the 64 kB a
   // request body may be once it is JSON (R-BADGE-5).
   badgeLogoMaxBytes: { env: 'BADGE_LOGO_MAX_BYTES', default: 32_768 },
+  // Hosts open profile photos; off until they do, and photos already added
+  // are kept while off (R-PROF-5).
+  profilePhotos: {
+    env: 'PROFILE_PHOTOS',
+    default: 0,
+    zeroAllowed: true,
+    changeable: { min: 0, max: 1 },
+  },
+  // The largest profile photo taken, and the request body of that one route
+  // (R-PROF-5, ADR 0066).
+  photoMaxBytes: { env: 'PHOTO_MAX_BYTES', default: 200_000 },
+  // The side of the square the browser scales a photo to, and the widest the
+  // server takes (R-PROF-5).
+  photoSidePx: { fixed: 512 },
+  // How far in a member can zoom when framing their photo (R-PROF-5).
+  photoMaxZoom: { fixed: 4 },
+  // How far one arrow key moves, and one key or wheel step zooms, the photo
+  // being framed (R-PROF-5).
+  photoKeyStepPx: { fixed: 12 },
+  photoZoomStep: { fixed: 0.25 },
+  // The JPEG quality the browser encodes a photo at, from 0 to 1 (R-PROF-5).
+  photoJpegQuality: { fixed: 0.85 },
   // event_badges.name, ticket_line and big_line (src/db/schema.ts).
   eventBadgeNameMaxChars: { fixed: 60 },
   eventBadgeTicketMaxChars: { fixed: 10 },

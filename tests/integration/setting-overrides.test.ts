@@ -1,19 +1,11 @@
 import { randomUUID } from 'node:crypto'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { loadConfig } from '../../src/config.js'
 import { createSettingOverrideStore } from '../../src/services/setting-override-store.js'
 import { createSettings } from '../../src/services/settings.js'
-import {
-  openTestDatabase,
-  testDatabaseUrl,
-  type TestDatabase,
-} from './support/database.js'
+import { openTestDatabase, type TestDatabase } from './support/database.js'
+import { testConfig } from './support/app.js'
 
-const config = loadConfig({
-  DATABASE_URL: testDatabaseUrl,
-  SESSION_SECRET: 'integration-session-secret-of-32-chars',
-  NODE_ENV: 'test',
-})
+const config = testConfig()
 const host = { id: randomUUID(), email: `${randomUUID()}@example.invalid` }
 const KEY = 'limits.beenThereNoteMinChars'
 

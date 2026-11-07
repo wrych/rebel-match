@@ -23,7 +23,7 @@ const auth = createAuth({
 
 const day = (d: string): Date => new Date(`2026-10-${d}T09:00:00Z`)
 
-function setup(): Express {
+function setup(photosOn = false): Express {
   const presentation = createPresentation({
     store: {
       facts: () =>
@@ -43,7 +43,16 @@ function setup(): Express {
               : [],
           ),
         ),
+      photosByEmail: (emails) =>
+        Promise.resolve(
+          new Map(
+            emails.includes('cleo@example.invalid')
+              ? [['cleo@example.invalid', 'k'.repeat(43)]]
+              : [],
+          ),
+        ),
     },
+    photosOn: () => photosOn,
     cast: [
       {
         handle: 'pioneer',
@@ -94,6 +103,18 @@ describe('presentation routes (R-PRES-1, R-PRES-6)', () => {
       },
     ])
     expect(JSON.stringify(body)).not.toContain('@')
+  })
+
+  it('shows a cast member the photo they added in the app while photos are on (R-PRES-5)', async () => {
+    const response = await request(setup(true))
+      .get('/api/admin/presentation')
+      .set('Cookie', await cookieFor('m-host'))
+    const body = response.body as { cast: { photo: string | null }[] }
+
+    expect(body.cast.map((member) => member.photo)).toEqual([
+      `/api/photos/${'k'.repeat(43)}`,
+      null,
+    ])
   })
 
   it('is not found for a member without network:present (R-ROLE-3)', async () => {

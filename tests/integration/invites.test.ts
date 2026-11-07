@@ -2,20 +2,17 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import request from 'supertest'
 import { createApp } from '../../src/app.js'
 import { composeApp } from '../../src/compose.js'
-import { loadConfig } from '../../src/config.js'
+import type { TestDatabase } from './support/database.js'
 import {
-  openTestDatabase,
-  testDatabaseUrl,
-  type TestDatabase,
-} from './support/database.js'
+  cookieFor,
+  idOf,
+  openSeededDatabase,
+  testConfig,
+} from './support/app.js'
 import { DEV_ADMIN_EMAIL } from '../../src/seed/dev/people.js'
-import { planSeed } from '../../src/seed/plan.js'
-import { applySeed } from '../../src/seed/run.js'
 import type { InviteView } from '../../src/services/invites.js'
 
-const config = loadConfig({
-  DATABASE_URL: testDatabaseUrl,
-  SESSION_SECRET: 'integration-session-secret-of-32-chars',
+const config = testConfig({
   NODE_ENV: 'development',
   MAIL_DELIVERY: 'none',
 })
@@ -27,18 +24,13 @@ let cookie: string
 let created: InviteView
 
 beforeAll(async () => {
-  db = await openTestDatabase()
-  await applySeed(db.drizzle, planSeed(config), config.consentVersion)
+  db = await openSeededDatabase(config)
   await db.query("UPDATE members SET status = 'active' WHERE email = ?", [
     DEV_ADMIN_EMAIL,
   ])
   const deps = composeApp(config, db.drizzle)
   app = createApp(deps)
-  const admin = await db.query('SELECT id FROM members WHERE email = ?', [
-    DEV_ADMIN_EMAIL,
-  ])
-  const session = await deps.auth.createSession(String(admin[0]?.['id']))
-  cookie = `${session.name}=${session.value}`
+  cookie = await cookieFor(deps.auth, await idOf(db, DEV_ADMIN_EMAIL))
 })
 
 afterAll(async () => {

@@ -11,6 +11,7 @@ import {
 } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/pg-core'
 import type { Database } from '../db/connect.js'
+import { isReachableMember } from '../db/member-predicates.js'
 import {
   cases,
   challenges,
@@ -32,8 +33,7 @@ const peer = alias(members, 'peer')
 
 // Counted the way the matches view lists them (R-ASK-8): other active,
 // onboarded members, never the member themselves.
-const isPeer = sql`${peer.status} = 'active' AND ${peer.name} IS NOT NULL
-  AND ${peer.id} <> ${challenges.memberId}`
+const isPeer = sql`${isReachableMember(peer)} AND ${peer.id} <> ${challenges.memberId}`
 
 const sameBoat = sql<number>`(SELECT count(DISTINCT ${other.memberId})::int FROM ${challenges} ${other}
   JOIN ${members} ${peer} ON ${peer.id} = ${other.memberId}

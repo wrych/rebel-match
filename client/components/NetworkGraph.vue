@@ -37,6 +37,8 @@ const props = withDefaults(
     stats?: boolean
     /** The viewer's name for the callout at their point (R-NET-14). */
     selfName?: string | null
+    /** The viewer's photo, drawn as their own point (R-NET-2, R-PROF-6). */
+    selfPhoto?: string | null
     durationMs?: number
     scene?: SceneFactory
     ticker?: Ticker
@@ -47,6 +49,7 @@ const props = withDefaults(
     controls: true,
     stats: true,
     selfName: null,
+    selfPhoto: null,
     durationMs: REPLAY_MS,
     scene: createThreeScene,
     ticker: () => frameTicker,
@@ -136,6 +139,7 @@ onMounted(() => {
       layout(props.timeline.nodes.length, props.timeline.links),
       {
         still,
+        selfPhoto: props.selfPhoto,
         onTakeOver: () => {
           viewTaken.value = true
         },

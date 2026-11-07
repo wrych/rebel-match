@@ -3,19 +3,15 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import request from 'supertest'
 import { createApp } from '../../src/app.js'
 import { composeApp } from '../../src/compose.js'
-import { loadConfig } from '../../src/config.js'
+import type { TestDatabase } from './support/database.js'
 import {
-  openTestDatabase,
-  testDatabaseUrl,
-  type TestDatabase,
-} from './support/database.js'
-import { planSeed } from '../../src/seed/plan.js'
-import { applySeed } from '../../src/seed/run.js'
+  cookieFor,
+  idOf,
+  openSeededDatabase,
+  testConfig,
+} from './support/app.js'
 
-const config = loadConfig({
-  DATABASE_URL: testDatabaseUrl,
-  SESSION_SECRET: 'integration-session-secret-of-32-chars',
-  NODE_ENV: 'test',
+const config = testConfig({
   SEED_PROFILE: 'dev',
 })
 const viewer = 'priya.raman@example.invalid'
@@ -43,17 +39,12 @@ const seen = (challengeId: string): request.Test =>
     .send({ challengeId })
 
 beforeAll(async () => {
-  db = await openTestDatabase()
-  await applySeed(db.drizzle, planSeed(config), config.consentVersion)
+  db = await openSeededDatabase(config)
   deps = composeApp(config, db.drizzle)
   app = createApp(deps)
-  const rows = await db.query('SELECT id FROM members WHERE email = ?', [
-    viewer,
-  ])
-  viewerId = String(rows[0]?.['id'])
+  viewerId = await idOf(db, viewer)
   await db.query('DELETE FROM deck_views WHERE member_id = ?', [viewerId])
-  const session = await deps.auth.createSession(viewerId)
-  cookie = `${session.name}=${session.value}`
+  cookie = await cookieFor(deps.auth, viewerId)
   const others = await db.query(
     "SELECT id FROM challenges WHERE member_id <> ? AND status = 'active' LIMIT 1",
     [viewerId],

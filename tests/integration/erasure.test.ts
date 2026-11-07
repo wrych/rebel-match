@@ -1,6 +1,5 @@
 import { randomUUID } from 'node:crypto'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { loadConfig } from '../../src/config.js'
 import { configPolicy } from '../../src/permissions.js'
 import { planSeed } from '../../src/seed/plan.js'
 import { applySeed } from '../../src/seed/run.js'
@@ -9,17 +8,10 @@ import {
   createErasureService,
   type ErasureService,
 } from '../../src/services/erasure.js'
-import {
-  openTestDatabase,
-  testDatabaseUrl,
-  type TestDatabase,
-} from './support/database.js'
+import { openTestDatabase, type TestDatabase } from './support/database.js'
+import { testConfig } from './support/app.js'
 
-const config = loadConfig({
-  DATABASE_URL: testDatabaseUrl,
-  SESSION_SECRET: 'integration-session-secret-of-32-chars',
-  NODE_ENV: 'test',
-})
+const config = testConfig()
 
 interface Person {
   id: string
@@ -36,10 +28,8 @@ let erasure: ErasureService
 let clock = new Date()
 const DAY_MS = 86_400_000
 const guard = `erasure-${randomUUID().slice(0, 8)}`
-const created: string[] = []
 
 async function addMember(member: Person): Promise<void> {
-  created.push(member.id)
   await db.query(
     "INSERT INTO members (id, email, status, analytics_id) VALUES (?, ?, 'active', ?)",
     [member.id, member.email, randomUUID()],
@@ -159,7 +149,7 @@ beforeAll(async () => {
     [guard],
   )
   // The suite's own guarded role, so the last-holder rule is checked against
-  // holders it knows, whatever other suites have in a shared database.
+  // holders it knows, whatever the seed and earlier tests granted.
   erasure = createErasureService({
     store: createErasureStore(db.drizzle),
     policy: { ...configPolicy, rolesGranting: () => [guard] },
@@ -173,12 +163,6 @@ beforeEach(async () => {
 })
 
 afterAll(async () => {
-  // Leave nothing behind: later suites on a shared database pick the oldest
-  // challenges, and these members never finished onboarding.
-  await db.query('DELETE FROM invites WHERE created_by IN (?)', [created])
-  await db.query('DELETE FROM members WHERE id IN (?)', [created])
-  await db.query('DELETE FROM member_roles WHERE role_key = ?', [guard])
-  await db.query('DELETE FROM roles WHERE role_key = ?', [guard])
   await db.close()
 })
 

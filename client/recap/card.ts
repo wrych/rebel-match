@@ -58,10 +58,6 @@ export function shareText(card: Card, site: string): string {
   return lines.join('\n')
 }
 
-/** LinkedIn's post composer with the text filled in (R-RECAP-6). */
-export const linkedInUrl = (text: string): string =>
-  `https://www.linkedin.com/feed/?shareActive=true&text=${encodeURIComponent(text)}`
-
 /** LinkedIn's portrait size. */
 export const CARD_SIZE = { width: 1080, height: 1350 }
 
@@ -143,7 +139,13 @@ function fitted(
   return at
 }
 
-function paintHead(pen: Pen, card: Card, palette: CardPalette): void {
+/** A card's head: the accent rule, its title, and the member's name fitted
+ * to the width, as the recap card draws them. */
+export function paintHead(
+  pen: Pen,
+  card: Pick<Card, 'title' | 'name'>,
+  palette: CardPalette,
+): void {
   const { margin } = layout
   const width = CARD_SIZE.width - 2 * margin
   pen.fillStyle = palette.accent
@@ -260,7 +262,8 @@ function paintMark(pen: Pen, r: Path2D, at: { x: number; y: number }): void {
   pen.restore()
 }
 
-function paintFoot(
+/** A card's foot: the mark, the app's name and the site's address. */
+export function paintFoot(
   pen: Pen,
   palette: CardPalette,
   site: string,
