@@ -16,8 +16,8 @@ summit is tomorrow, and where photos should appear is not decided yet.
 ## Decision
 
 - **The browser crops and scales; the server checks and cleans.** The client
-  takes the centre square of the chosen picture, draws it at
-  `limits.photoSidePx` and sends it as a JPEG. The server accepts only a whole
+  lets the member frame a square of the chosen picture, moving and zooming
+  it, then draws that square at `limits.photoSidePx` and sends it as a JPEG. The server accepts only a whole
   JPEG that is square, no wider than that and no larger than
   `limits.photoMaxBytes`, and removes every `APP1`–`APP15` and `COM` segment
   before storing it: no EXIF, GPS, XMP or comment survives, whatever the

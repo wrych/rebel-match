@@ -419,9 +419,13 @@ capability, not a secret** — and every requirement below exists because of tha
 - **R-PROF-5 (Profile photo)** — WHILE hosts have `limits.profilePhotos` on
   (a switch in the host tools, R-CFG-6, off by default) an onboarded member
   MAY add a **profile photo** on the profile screen, change it, or remove it, each saved at once
-  with the tick of R-PROF-1. The browser SHALL crop the chosen picture to a
-  square from its centre and scale it to `limits.photoSidePx` before sending
-  it, so a phone's full-size picture never travels. THE SYSTEM SHALL accept
+  with the tick of R-PROF-1. The member SHALL choose the square the picture
+  is cut to before it is saved: it opens on the largest centred square, and
+  they move it by dragging or the arrow keys and zoom by pinching, the wheel,
+  a slider or plus and minus, up to `limits.photoMaxZoom`, seeing it in the
+  round shape it is shown in, or cancel. The browser SHALL then scale the
+  square to `limits.photoSidePx` before sending it, so a phone's full-size
+  picture never travels. THE SYSTEM SHALL accept
   only a square JPEG no wider than that and no larger than
   `limits.photoMaxBytes`, and SHALL store it without its metadata (camera,
   time, place), so a photo never says where it was taken (ADR 0066). IF the

@@ -2236,8 +2236,8 @@ Alternatives considered (kept only as fallbacks):
   `Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; sandbox`,
   and the client shows it only through `<img>`, where an SVG runs nothing and
   loads nothing. Three layers, each enough alone against a script.
-- **Profile photos (R-PROF-5, ADR 0066).** The browser crops and scales the
-  picture and sends a JPEG; the server trusts none of that. It walks the
+- **Profile photos (R-PROF-5, ADR 0066).** The browser crops the square
+  the member framed, scales it and sends a JPEG; the server trusts none of that. It walks the
   file's segments and refuses anything that is not a whole baseline or
   progressive JPEG, square and no wider than `limits.photoSidePx` (512), or
   larger than `limits.photoMaxBytes` (200 kB, which is also the body limit of
