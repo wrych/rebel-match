@@ -63,6 +63,17 @@ export default tseslint.config(
         'error',
         { allowExpressions: true },
       ],
+
+      // No enums, by syntax: with none declared, the type-aware enum rule
+      // guards only enums from dependencies, at half of all lint time.
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'TSEnumDeclaration',
+          message: 'Use a union of string literals, not an enum.',
+        },
+      ],
+      '@typescript-eslint/no-unsafe-enum-assignment': 'off',
     },
   },
   // The client: template rules from eslint-plugin-vue, and no type-aware rules
