@@ -1,6 +1,6 @@
 # 0066. Store profile photos clean in Postgres, shown to their owner first
 
-- **Status:** Proposed
+- **Status:** Accepted, amended by 0067
 - **Date:** 2026-11-07
 - **Deciders:** Andy Moesch
 
@@ -30,9 +30,8 @@ summit is tomorrow, and where photos should appear is not decided yet.
 - **Behind a host switch**, `limits.profilePhotos`, off by default like the
   other features added for the summit. Off hides the photo and answers its
   addresses as not found; photos already added are kept.
-- **Seen by its owner only, for now.** Each place that shows a photo to
-  someone else is a separate decision, recorded in requirements open
-  question 10, together with the privacy notice's words.
+- **Seen by its owner only, at first.** Where photos show to others was
+  decided separately, in ADR 0067.
 
 ## Alternatives considered
 

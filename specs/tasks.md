@@ -272,7 +272,11 @@ printed dev link (R-DEV-6).
       sweep after the grace period. _(R-NFR-7, ADR 0032)_
 - [x] A profile photo on the profile screen: add, change, remove; cropped in
       the browser, cleaned on the server, seen by its owner. _(R-PROF-5, ADR 0066)_
-- [ ] Decide where photos appear to others. _(R-PROF-5, open question 10)_
+- [x] Decide where photos appear to others. _(R-PROF-5, open question 10)_
+- [x] Photos beside names on cards, the deck, search, a person's page and the
+      member page; the viewer's own point in the replay; the presentation's
+      cast. _(R-PROF-6, ADR 0067)_
+- [ ] Add the photo to the privacy notice's profile list. _(R-ONB-9)_
 
 ## M6 — Hardening & pilot _(by 2026-11-01)_
 
