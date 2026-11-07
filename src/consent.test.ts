@@ -72,7 +72,7 @@ describe('consent wording', () => {
     )
   })
 
-  it('says a photo is kept without where it was taken, and other members see it (R-ONB-5, R-PROF-6)', () => {
+  it('says a photo is kept without where it was taken, and other members see it (R-ONB-5, R-PROF-7)', () => {
     expect(words).toContain('a photo, job title')
     expect(words).toContain('where and when it was taken')
     expect(words).toContain('including your photo if you add one')

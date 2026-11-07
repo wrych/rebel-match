@@ -198,7 +198,7 @@ Requirements:
   or an event invite link (R-INV-1). It SHALL also say that the member's
   **name, organization and other profile information may be seen by other
   members** — wherever the app shows them, not only on match cards, and with
-  their photo if they add one (R-PROF-6) — while the
+  their photo if they add one (R-PROF-7) — while the
   email address stays private until a connection is accepted. It SHALL name
   **who is responsible** for the data and how to reach them, and SHALL say that
   the member can ask for a copy or a correction, and can delete their activity
@@ -417,7 +417,7 @@ capability, not a secret** — and every requirement below exists because of tha
   its own URL (R-NAV-1). In happy mode, for a
   member who completed onboarding and while the game is on, the community's
   card is the door to 9toRevolution (R-GAME-1).
-- **R-PROF-5 (Profile photo)** — WHILE hosts have `limits.profilePhotos` on
+- **R-PROF-6 (Profile photo)** — WHILE hosts have `limits.profilePhotos` on
   (a switch in the host tools, R-CFG-6, off by default) an onboarded member
   MAY add a **profile photo** on the profile screen, change it, or remove it, each saved at once
   with the tick of R-PROF-1. The member SHALL choose the square the picture
@@ -431,12 +431,12 @@ capability, not a secret** — and every requirement below exists because of tha
   `limits.photoMaxBytes`, and SHALL store it without its metadata (camera,
   time, place), so a photo never says where it was taken (ADR 0066). IF the
   picture cannot be read THE SYSTEM SHALL say so and keep the photo there
-  was. The profile screen SHALL say where the photo is shown (R-PROF-6). It
+  was. The profile screen SHALL say where the photo is shown (R-PROF-7). It
   goes with the account (R-NFR-7). WHILE the switch is off the profile screen
   SHALL NOT offer a photo and its addresses SHALL answer as not found
   (R-NAV-8); photos already added SHALL be kept, to show again when it is
   turned back on.
-- **R-PROF-6 (Where a photo shows)** — WHILE `limits.profilePhotos` is on, a
+- **R-PROF-7 (Where a photo shows)** — WHILE `limits.profilePhotos` is on, a
   member's photo SHALL be shown, round and small, beside their name on the
   match cards of a challenge (same boat and been there, R-ASK-8), on the
   deck's card for its author (R-OFF-2), in search results and on a person's
@@ -1079,7 +1079,7 @@ What differs by environment is only whether mail **leaves the machine**.
   experiment's share (R-EXP-3, ADR 0051), and the 9toRevolution switch and
   tuning (R-GAME-17, ADR 0045), and the member search and connect code
   switches and live code timings (R-CODE-8), and the profile photo switch
-  (R-PROF-5). Each change SHALL be
+  (R-PROF-6). Each change SHALL be
   checked against bounds and the order of paired limits (the minimum challenge
   length never above the maximum), take effect without a restart on every server
   within a minute, and show who made it and when. The host SHALL be able to go
@@ -1838,7 +1838,7 @@ connection graph is private, so the replay names nobody.
   viewing member's own point and turn the view to it. The viewer's own lines
   SHALL show in the accent colour throughout. WHILE `limits.profilePhotos` is
   on and the viewer has a photo, their own point SHALL be drawn as their
-  photo (R-PROF-6); no other point is.
+  photo (R-PROF-7); no other point is.
 - **R-NET-3 (Naming nobody)** — The replay SHALL carry no member id, name,
   email or profile field: a point is a position in a list, a line a pair of
   positions, and the only date sent is the day. Only the viewer's own point
@@ -1922,7 +1922,7 @@ hosts only.
   be shown. In a development deployment without a file, a fictional cast
   mapped to the dev seed SHALL stand in (R-SEED-2). A cast member the file
   gives no photo SHALL be shown with the photo they added in the app, found
-  by their email, WHILE `limits.profilePhotos` is on (R-PROF-6).
+  by their email, WHILE `limits.profilePhotos` is on (R-PROF-7).
 - **R-PRES-6 (What leaves the server)** — For each cast member THE SYSTEM
   SHALL send the client their handle, name, photo, groups and position in the
   network, and never their email. Everyone else SHALL stay as anonymous as in
@@ -2240,7 +2240,7 @@ any connection does (R-BADGE-1). It does not count as **Shared pain**.
   deck views (R-STAT-3), follows, role grants, notifications (R-NOTE-11), the
   profile draft (R-ONB-15), their 9toRevolution progress, results and pseudonym
   (R-GAME-16), their earned badges and crowns (R-BADGE-14), their profile
-  photo (R-PROF-5), the reports about
+  photo (R-PROF-6), the reports about
   them and the moderation records of those reports (R-MOD-11), and
   their **outbound message log entries** (R-MSG-6) — on
   request (GDPR erasure), at minimum via an admin action. Deleting SHALL first
@@ -2374,7 +2374,7 @@ fixtures. `design.md` §6 lists the exact records and the profile mechanism.
 - **Where profile photos appear** (2026-11-07) — beside the member's name on
   match cards, the deck, search results, a person's page and the host tools'
   member page; as the viewer's own point in the replay; for cast members in
-  the presentation (R-PROF-6). Not only to connections. Photos never open
+  the presentation (R-PROF-7). Not only to connections. Photos never open
   larger. The privacy notice's list of what the profile holds gains the
   photo in a change of its own, which the maintainer approves.
 - **Search in the privacy words** (2026-11-05) — no wording change: R-ONB-5

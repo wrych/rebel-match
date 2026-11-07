@@ -10,7 +10,7 @@ import {
 } from './require-permission.js'
 
 /** While hosts have photos off, their addresses are as absent as ones that
- * never existed (R-PROF-5, R-NAV-8). */
+ * never existed (R-PROF-6, R-NAV-8). */
 function whilePhotosOn(settings: Pick<LiveSettings, 'limits'>): RequestHandler {
   return (_request, response, next) => {
     if (settings.limits().profilePhotos === 1) {
@@ -51,7 +51,7 @@ function send(
 
 /** `GET /api/photos/:key` and `GET /api/admin/members/:id/photo` (design
  * §3): another member's photo by the key their cards carry, and any
- * member's for the host tools, each as a picture only (R-PROF-6, R-MEM-2,
+ * member's for the host tools, each as a picture only (R-PROF-7, R-MEM-2,
  * ADR 0067). */
 export function sharedPhotoRoutes(deps: {
   auth: AuthProvider
@@ -92,7 +92,7 @@ export function sharedPhotoRoutes(deps: {
 
 /** `GET`, `PUT` and `DELETE /api/profile/photo` (design §3): the member's
  * own photo, as a picture only, replaced once cleaned, or removed
- * (R-PROF-5, ADR 0066). */
+ * (R-PROF-6, ADR 0066). */
 export function profilePhotoRoutes(deps: {
   auth: AuthProvider
   settings: Pick<LiveSettings, 'limits'>

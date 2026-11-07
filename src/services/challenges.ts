@@ -32,7 +32,7 @@ export interface PeerCard {
   /** Labels, as a card shows them, not the stored keys. */
   sector: string | null
   companySize: string | null
-  /** Their photo's key, or null without one (R-PROF-6). */
+  /** Their photo's key, or null without one (R-PROF-7). */
   photo: string | null
   note: string
   /** The peer's own challenge, for a same-boat card, so it can be reported

@@ -4,7 +4,7 @@ import { cropOf, framingOf, panned, zoomed } from './crop'
 const landscape = { width: 4000, height: 3000 }
 const portrait = { width: 3000, height: 4000 }
 
-describe('the photo crop (R-PROF-5)', () => {
+describe('the photo crop (R-PROF-6)', () => {
   it('opens on the largest centred square', () => {
     expect(cropOf(landscape, framingOf(landscape))).toEqual({
       x: 500,

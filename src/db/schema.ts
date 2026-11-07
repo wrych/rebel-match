@@ -850,7 +850,7 @@ export const liveCodes = pgTable(
 )
 
 // Its own table, so reading a member never reads their picture; one per
-// member, replaced whole (R-PROF-5, ADR 0066).
+// member, replaced whole (R-PROF-6, ADR 0066).
 export const memberPhotos = pgTable(
   'member_photos',
   {

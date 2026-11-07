@@ -18,7 +18,7 @@ const peer = {
   challengeId: null,
 }
 
-describe('MemberPhoto (R-PROF-6)', () => {
+describe('MemberPhoto (R-PROF-7)', () => {
   it('shows the photo as a picture only: no link, not draggable', () => {
     const photo = mount(MemberPhoto, {
       props: { name: 'Ben Rebel', src: '/api/photos/x' },
@@ -38,7 +38,7 @@ describe('MemberPhoto (R-PROF-6)', () => {
   })
 })
 
-describe('photos on cards (R-PROF-6)', () => {
+describe('photos on cards (R-PROF-7)', () => {
   const stubs = { global: { stubs: { RouterLink: true } } }
 
   it('draws a rebel’s photo by its key while photos are on', () => {

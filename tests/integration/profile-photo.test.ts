@@ -47,7 +47,7 @@ afterAll(async () => {
   await db.close()
 })
 
-describe('the profile photo over Postgres (R-PROF-5)', () => {
+describe('the profile photo over Postgres (R-PROF-6)', () => {
   it('keeps the photo without its metadata and serves it to its owner', async () => {
     await request(app)
       .put('/api/profile/photo')
@@ -95,7 +95,7 @@ describe('the profile photo over Postgres (R-PROF-5)', () => {
     expect((profile.body as { photoAt: unknown }).photoAt).toBeNull()
   })
 
-  it('shows another member the photo by the key their card carries, while its owner is active (R-PROF-6)', async () => {
+  it('shows another member the photo by the key their card carries, while its owner is active (R-PROF-7)', async () => {
     const ben = { id: randomUUID(), email: `${randomUUID()}@example.invalid` }
     await db.query(
       'INSERT INTO members (id, email, name, status, consent_version, ' +

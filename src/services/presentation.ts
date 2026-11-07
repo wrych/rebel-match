@@ -27,7 +27,7 @@ export interface PresentationService {
 export function createPresentation(deps: {
   store: NetworkStore
   cast: readonly CastEntry[]
-  /** Whether hosts have profile photos on, read on every show (R-PROF-6). */
+  /** Whether hosts have profile photos on, read on every show (R-PROF-7). */
   photosOn: () => boolean
 }): PresentationService {
   return {

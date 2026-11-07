@@ -13,7 +13,7 @@ const props = defineProps<{
   nobody: string
   /** Outlines the rebels a refresh brought (R-NAV-12). */
   arrived?: Arrivals<PeerCard>
-  /** Draws each rebel's photo beside their name (R-PROF-6). */
+  /** Draws each rebel's photo beside their name (R-PROF-7). */
   photosOn?: boolean
 }>()
 const emit = defineEmits<{ connect: [] }>()
