@@ -8,6 +8,7 @@ import {
   ownLinksHint,
   type NetworkTimeline,
 } from '../lib/network'
+import { ownPhoto } from '../lib/photo'
 import { loadMe } from '../lib/session'
 
 const route = useRoute()
@@ -15,9 +16,15 @@ const router = useRouter()
 const timeline = ref<NetworkTimeline | null>(null)
 const problem = ref<string | null>(null)
 const name = ref<string | null>(null)
+const photo = ref<string | null>(null)
 
 onMounted(async () => {
-  name.value = (await loadMe().catch(() => null))?.name ?? null
+  const [me, own] = await Promise.all([
+    loadMe().catch(() => null),
+    ownPhoto().catch(() => null),
+  ])
+  name.value = me?.name ?? null
+  photo.value = own
   try {
     timeline.value = await fetchNetwork()
     if (timeline.value === null)
@@ -48,7 +55,11 @@ onMounted(async () => {
     </p>
 
     <template v-else-if="timeline">
-      <NetworkGraph :timeline="timeline" :self-name="name" />
+      <NetworkGraph
+        :timeline="timeline"
+        :self-name="name"
+        :self-photo="photo"
+      />
       <p v-if="ownLinksHint(timeline.own)" class="hint">
         {{ ownLinksHint(timeline.own) }}
       </p>

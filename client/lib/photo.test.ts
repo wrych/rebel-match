@@ -1,5 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { ownPhotoUrl, removePhoto, savePhoto } from './photo'
+import {
+  memberPhotoUrl,
+  ownPhoto,
+  ownPhotoUrl,
+  photoSrc,
+  removePhoto,
+  savePhoto,
+} from './photo'
 
 afterEach(() => {
   vi.unstubAllGlobals()
@@ -47,5 +54,49 @@ describe('the photo requests (R-PROF-6)', () => {
     expect(ownPhotoUrl('2026-11-07T10:00:00.000Z')).toBe(
       '/api/profile/photo?v=2026-11-07T10%3A00%3A00.000Z',
     )
+  })
+})
+
+describe('photo addresses (R-PROF-7)', () => {
+  it('reads a card’s photo by its key, and none without one', () => {
+    expect(photoSrc('abc')).toBe('/api/photos/abc')
+    expect(photoSrc(null)).toBeNull()
+  })
+
+  it('reads a member’s photo for the host tools by id, anew per photo', () => {
+    expect(memberPhotoUrl('m-1', 'k')).toBe('/api/admin/members/m-1/photo?v=k')
+  })
+})
+
+describe('ownPhoto (R-NET-2)', () => {
+  function serving(profilePhotos: number, photoAt: string | null): void {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) =>
+        Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () =>
+            Promise.resolve(
+              url === '/api/config'
+                ? { limits: { profilePhotos } }
+                : { photoAt },
+            ),
+        }),
+      ),
+    )
+  }
+
+  it('is the member’s own photo while photos are on', async () => {
+    serving(1, '2026-11-07T10:00:00.000Z')
+    expect(await ownPhoto()).toBe(ownPhotoUrl('2026-11-07T10:00:00.000Z'))
+  })
+
+  it.each([
+    ['photos are off', 0, '2026-11-07T10:00:00.000Z'],
+    ['there is no photo', 1, null],
+  ])('is none while %s', async (_name, on, photoAt) => {
+    serving(on, photoAt)
+    expect(await ownPhoto()).toBeNull()
   })
 })

@@ -17,6 +17,8 @@ export interface MemberCard {
   org: string | null
   sector: string | null
   companySize: string | null
+  /** Their photo's key, or null without one (R-PROF-7). */
+  photo: string | null
   /** The viewer's accepted request with this member to open the contact
    * by, or null while they are not connected (R-CONN-8). */
   connectionId: string | null

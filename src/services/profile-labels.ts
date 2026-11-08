@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm'
-import { companySizes, members, sectors } from '../db/schema.js'
+import { companySizes, memberPhotos, members, sectors } from '../db/schema.js'
 
 /** A member's sector as a card shows it: the label its key points to. */
 export const sectorLabel = sql<
@@ -10,3 +10,9 @@ export const sectorLabel = sql<
 export const companySizeLabel = sql<
   string | null
 >`(SELECT ${companySizes.label} FROM ${companySizes} WHERE ${companySizes.key} = ${members.companySize})`
+
+/** A member's photo key as a card carries it, or null without a photo
+ * (R-PROF-7, ADR 0067). */
+export const photoKey = sql<
+  string | null
+>`(SELECT ${memberPhotos.key} FROM ${memberPhotos} WHERE ${memberPhotos.memberId} = ${members.id})`

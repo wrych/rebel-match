@@ -1,8 +1,8 @@
 # Rebel Match — Privacy notice
 
-- **Status:** Approved by the maintainer on 2026-10-21; best effort, not
+- **Status:** Approved by the maintainer on 2026-11-07; best effort, not
   reviewed by a lawyer
-- **Version:** 2026-10-21
+- **Version:** 2026-11-07
 - **Shown at:** `/privacy` (R-ONB-9)
 
 Written on a best-effort basis from the DSAT.ch model privacy notice, cut down
@@ -32,8 +32,9 @@ an event invite link. We collect only what the app needs.
 
 - **Your email address.** You sign in with it. If you ask for access without an
   invitation, we also keep the name and organization you give with the request.
-- **Your profile.** Your name, and if you add them, your job title,
-  organization, sector and company size.
+- **Your profile.** Your name, and if you add them, a photo, your job title,
+  organization, sector and company size. A photo is kept without the details
+  a camera adds, such as where and when it was taken.
 - **What you post.** The challenges you describe, the trend each one is filed
   under, the notes you write when you offer help, and the trends you follow.
 - **Your connections.** The connection requests you send and receive, and
@@ -95,8 +96,10 @@ challenges. If you do not agree, nothing is sent to Mixpanel about you.
 
 ## 5. Who receives your data, and where it is
 
-- **Other members.** Your name, organization and other profile information,
-  and the challenges you post, may be seen by other members of Rebel Match.
+- **Other members.** Your name, your photo if you add one, your organization
+  and other profile information, and the challenges you post, may be seen by
+  other members of Rebel Match. Your photo is shown beside your name, for
+  example on match cards and in search.
   **Your email address is shared with another member only when both of you
   accept a connection.** Until then nobody sees it, and a declined request
   reveals nothing.

@@ -66,16 +66,22 @@ export function parseCast(text: string): CastEntry[] {
 }
 
 /** The cast as the stage gets it: each member's node from their email, or
- * none when they are not an active member or have no email (R-PRES-6). */
+ * none when they are not an active member or have no email (R-PRES-6); the
+ * file's photo, else the one they added in the app (R-PRES-5). */
 export function castOnStage(
   cast: readonly CastEntry[],
-  nodeOf: (email: string) => number | null,
+  found: {
+    nodeOf: (email: string) => number | null
+    photoOf: (email: string) => string | null
+  },
 ): CastMember[] {
   return cast.map((entry) => ({
     handle: entry.handle,
     name: entry.name,
-    photo: entry.photo ?? null,
+    photo:
+      entry.photo ??
+      (entry.email === undefined ? null : found.photoOf(entry.email)),
     groups: entry.groups,
-    node: entry.email === undefined ? null : nodeOf(entry.email),
+    node: entry.email === undefined ? null : found.nodeOf(entry.email),
   }))
 }

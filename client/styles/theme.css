@@ -827,6 +827,15 @@ textarea.input {
   overflow-wrap: anywhere;
 }
 
+/* A person's photo beside their name lines, wherever a card names someone
+   (R-PROF-7). */
+.with-photo {
+  display: grid;
+  grid-template-columns: 2.75rem minmax(0, 1fr);
+  align-items: center;
+  gap: 0.75rem;
+}
+
 .peer-note {
   color: var(--ink-soft);
 }
@@ -973,6 +982,11 @@ textarea.input {
 
 .deck-author .card-title {
   color: var(--card-fg);
+}
+
+.deck-author-lines {
+  display: grid;
+  gap: 0.15rem;
 }
 
 .answer {

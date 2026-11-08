@@ -21,6 +21,7 @@ const peer = {
   org: 'Acme',
   sector: null,
   companySize: null,
+  photo: null,
   note: 'Roles and circles, and nobody decides.',
   challengeId: 'c2',
 }

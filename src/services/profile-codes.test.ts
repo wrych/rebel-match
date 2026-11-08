@@ -42,6 +42,7 @@ const facts = (memberId: string, reachable = true): CardFacts => ({
     org: null,
     sector: null,
     companySize: null,
+    photo: null,
     connectionId: null,
   },
   reachable,

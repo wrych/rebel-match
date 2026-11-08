@@ -8,6 +8,8 @@ import {
   type Line,
   type Material,
   type Mesh,
+  type Sprite,
+  type Texture,
   type WebGLRendererParameters,
 } from 'three'
 import type { Point } from './layout'
@@ -44,10 +46,12 @@ export function projector(
 }
 
 /** Frees the geometry and material of each object. */
-export function disposeAll(objects: readonly (Mesh | Line)[]): void {
+export function disposeAll(objects: readonly (Mesh | Line | Sprite)[]): void {
   for (const object of objects) {
     object.geometry.dispose()
-    ;(object.material as Material).dispose()
+    const material = object.material as Material & { map?: Texture | null }
+    material.map?.dispose()
+    material.dispose()
   }
 }
 

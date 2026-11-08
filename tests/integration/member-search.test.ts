@@ -138,6 +138,7 @@ describe('member search on Postgres (R-FIND-2, R-FIND-3)', () => {
         org: 'Quox & Partners',
         sector: null,
         companySize: null,
+        photo: null,
         connectionId: null,
       },
     })
