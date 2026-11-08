@@ -3,6 +3,8 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import request from 'supertest'
 import { createApp } from '../../src/app.js'
 import { composeApp } from '../../src/compose.js'
+import { createMemberSearchStore } from '../../src/services/member-search-store.js'
+import { createNetworkStore } from '../../src/services/network-store.js'
 import { openTestDatabase, type TestDatabase } from './support/database.js'
 import { cookieFor, testConfig } from './support/app.js'
 
@@ -91,6 +93,71 @@ describe('the profile photo over Postgres (R-PROF-6)', () => {
       .expect(404)
     const profile = await request(app).get('/api/profile').set('Cookie', cookie)
     expect((profile.body as { photoAt: unknown }).photoAt).toBeNull()
+  })
+
+  it('shows another member the photo by the key their card carries, while its owner is active (R-PROF-7)', async () => {
+    const ben = { id: randomUUID(), email: `${randomUUID()}@example.invalid` }
+    await db.query(
+      'INSERT INTO members (id, email, name, status, consent_version, ' +
+        "consent_at, analytics_id) VALUES (?, ?, 'Ben', 'active', ?, now(), ?)",
+      [ben.id, ben.email, config.consentVersion, randomUUID()],
+    )
+    await deps.photos.replace(ben.id, jpeg(FRAME, SCAN))
+    const facts = await createMemberSearchStore(db.drizzle).card(
+      member.id,
+      ben.id,
+    )
+    const key = facts?.card.photo ?? ''
+    expect(key).toMatch(/^[\w-]{43}$/)
+
+    const shown = await request(app)
+      .get(`/api/photos/${key}`)
+      .set('Cookie', cookie)
+      .expect(200)
+    expect(shown.body).toEqual(jpeg(FRAME, SCAN))
+
+    await db.query("UPDATE members SET status = 'banned' WHERE id = ?", [
+      ben.id,
+    ])
+    await request(app)
+      .get(`/api/photos/${key}`)
+      .set('Cookie', cookie)
+      .expect(404)
+    await db.query('DELETE FROM members WHERE id = ?', [ben.id])
+  })
+
+  it('finds a cast member’s app photo by email, only while they are active (R-PRES-5)', async () => {
+    const add = async (name: string, withPhoto: boolean): Promise<string> => {
+      const id = randomUUID()
+      const email = `${randomUUID()}@example.invalid`
+      await db.query(
+        'INSERT INTO members (id, email, name, status, consent_version, ' +
+          "consent_at, analytics_id) VALUES (?, ?, ?, 'active', ?, now(), ?)",
+        [id, email, name, config.consentVersion, randomUUID()],
+      )
+      if (withPhoto) await deps.photos.replace(id, jpeg(FRAME, SCAN))
+      return email
+    }
+    const cleo = await add('Cleo', true)
+    const dan = await add('Dan', false)
+    const eve = await add('Eve', true)
+    await db.query("UPDATE members SET status = 'banned' WHERE email = ?", [
+      eve,
+    ])
+
+    const found = await createNetworkStore(db.drizzle).photosByEmail([
+      cleo,
+      dan,
+      eve,
+    ])
+
+    expect([...found.keys()]).toEqual([cleo])
+    expect(found.get(cleo)).toMatch(/^[\w-]{43}$/)
+    await db.query('DELETE FROM members WHERE email IN (?, ?, ?)', [
+      cleo,
+      dan,
+      eve,
+    ])
   })
 
   it('goes with the account when it is erased (R-NFR-7)', async () => {

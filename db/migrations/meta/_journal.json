@@ -260,6 +260,20 @@
       "when": 1794085882285,
       "tag": "0036_member_photos",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1794069533911,
+      "tag": "0036_photo_keys",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1794086703245,
+      "tag": "0037_photo_keys",
+      "breakpoints": true
     }
   ]
 }

@@ -42,6 +42,7 @@ const detail: MemberDetail = {
   requestedName: null,
   requestedOrg: null,
   joinedVia: 'Summit 2026 — main stage',
+  photo: null,
   consentVersion: '2026-11-01',
   consentAt: '2026-10-01T09:05:00.000Z',
   analyticsOptIn: false,

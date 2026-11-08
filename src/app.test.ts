@@ -133,6 +133,7 @@ function deps(
     },
     photos: {
       own: () => Promise.reject(new Error('not used')),
+      shared: () => Promise.reject(new Error('not used')),
       replace: () => Promise.reject(new Error('not used')),
       remove: () => Promise.reject(new Error('not used')),
     },

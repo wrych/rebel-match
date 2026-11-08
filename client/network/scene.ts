@@ -11,6 +11,7 @@ import {
   PerspectiveCamera,
   Scene,
   SphereGeometry,
+  type Sprite,
   type Vector3,
   type WebGLRenderer,
 } from 'three'
@@ -26,6 +27,7 @@ import {
   steering,
   type Pose,
 } from './camera'
+import { faceShown, photoBall } from './face'
 import type { Point } from './layout'
 import { moonAt, orbitsOf, type Orbit } from './orbits'
 import type { Frame } from './replay'
@@ -61,6 +63,8 @@ export type SceneFactory = (
     /** Where the viewer's lit point is on the stage, in pixels from its top
      * left, while the replay steers the view; null otherwise (R-NET-14). */
     onAnchor?: (at: { x: number; y: number } | null) => void
+    /** The viewer's photo, to draw their own point as (R-NET-2). */
+    selfPhoto?: string | null
   },
 ) => NetworkScene
 
@@ -272,9 +276,12 @@ class Growth {
     private readonly points: readonly Point[],
     private readonly selfIndex: number,
     private readonly still: boolean,
+    private readonly face: readonly Sprite[] = [],
   ) {}
 
   show(count: number, now: number): void {
+    for (const ball of this.face)
+      ball.visible = faceShown(count, this.selfIndex)
     for (let index = this.shown; index < count; index++) {
       this.bornAt[index] = now
       this.growing.add(index)
@@ -434,7 +441,37 @@ function pulse(halo: Mesh, now: number, still: boolean): void {
     tuning.haloOpacity.least + swing * tuning.haloOpacity.swing
 }
 
-function sceneOf(objects: (Mesh | LineSegments)[]): Scene {
+// The points, lines and moons, the viewer's halo and, when they have a
+// photo, their own point drawn as it (R-NET-2).
+function contentsOf(
+  timeline: NetworkTimeline,
+  points: readonly Point[],
+  how: {
+    palette: Palette
+    still: boolean
+    selfPhoto?: string | null | undefined
+  },
+): {
+  nodes: InstancedMesh
+  links: LineSegments
+  halo: Mesh
+  moons: Moons
+  face: Sprite[]
+} {
+  const self = points[timeline.nodes.findIndex((node) => node.self)]
+  return {
+    nodes: nodeMesh(timeline, how.palette),
+    links: linkLines(timeline, points, how.palette),
+    halo: haloMesh(self, how.palette),
+    moons: new Moons(timeline, points, how.palette, how.still),
+    face:
+      self !== undefined && how.selfPhoto
+        ? [photoBall(self, how.selfPhoto, how.palette.self)]
+        : [],
+  }
+}
+
+function sceneOf(objects: (Mesh | LineSegments | Sprite)[]): Scene {
   const scene = new Scene()
   scene.add(...objects)
   return scene
@@ -457,19 +494,17 @@ export const createThreeScene: SceneFactory = (
   host,
   timeline,
   points,
-  { still, onTakeOver, onAnchor },
+  { still, onTakeOver, onAnchor, selfPhoto },
 ) => {
   const palette = paletteOf(host)
   const view = viewIn(host, Math.max(reach(points), tuning.smallestRadius))
   const selfIndex = timeline.nodes.findIndex((node) => node.self)
   const self = points[selfIndex] ?? null
-  const nodes = nodeMesh(timeline, palette)
-  const links = linkLines(timeline, points, palette)
-  const halo = haloMesh(points[selfIndex], palette)
-  const moons = new Moons(timeline, points, palette, still)
-  const objects = [links, nodes, moons.mesh, halo]
+  const parts = contentsOf(timeline, points, { palette, still, selfPhoto })
+  const { nodes, links, halo, moons, face } = parts
+  const objects = [links, nodes, moons.mesh, halo, ...face]
   const scene = sceneOf(objects)
-  const growth = new Growth(nodes, points, selfIndex, still)
+  const growth = new Growth(nodes, points, selfIndex, still, face)
   const director = new Director(view, points, tuning.smallestRadius, still)
   const release = handOver(view, director, onTakeOver)
   const anchor = anchorer(view, self, onAnchor)

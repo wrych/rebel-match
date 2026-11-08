@@ -17,7 +17,7 @@ import type {
   MemberSearchStore,
   SearchTerms,
 } from './member-search.js'
-import { companySizeLabel, sectorLabel } from './profile-labels.js'
+import { companySizeLabel, photoKey, sectorLabel } from './profile-labels.js'
 
 const SEPARATORS = `[[:space:]/.,;:'’"()&+_‐‑‒–—-]+`
 
@@ -83,6 +83,7 @@ const baseColumns = {
   org: members.org,
   sector: sectorLabel,
   companySize: companySizeLabel,
+  photo: photoKey,
 }
 
 const cardColumns = (

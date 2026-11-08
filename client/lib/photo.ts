@@ -1,4 +1,7 @@
+import { sharedPhotoPath } from '../../src/photo-paths'
+import { fetchConfig } from './api'
 import type { Crop } from './crop'
+import { fetchProfile } from './profile'
 import { ensureOk, failure } from './request'
 
 /** How the browser shapes a photo before it travels (R-PROF-6). */
@@ -73,4 +76,22 @@ export async function removePhoto(): Promise<void> {
     await fetch('/api/profile/photo', { method: 'DELETE' }),
     'photo not removed',
   )
+}
+
+/** Where a card's photo key is read, null for a member without one
+ * (R-PROF-7). */
+export const photoSrc = (key: string | null): string | null =>
+  key === null ? null : sharedPhotoPath(key)
+
+/** A member's photo for the host tools, a new address with each new photo
+ * (R-MEM-2). */
+export const memberPhotoUrl = (memberId: string, key: string): string =>
+  `/api/admin/members/${encodeURIComponent(memberId)}/photo?v=${encodeURIComponent(key)}`
+
+/** The member's own photo while hosts have photos on, else null, for the
+ * replay to draw their point as (R-NET-2, R-PROF-7). */
+export async function ownPhoto(): Promise<string | null> {
+  const [config, profile] = await Promise.all([fetchConfig(), fetchProfile()])
+  if (config.limits.profilePhotos !== 1 || profile.photoAt === null) return null
+  return ownPhotoUrl(profile.photoAt)
 }

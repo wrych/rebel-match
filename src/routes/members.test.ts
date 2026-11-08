@@ -31,6 +31,7 @@ const ben: MemberCard = {
   org: 'Acme',
   sector: 'Retail',
   companySize: '1–10 employees',
+  photo: null,
   connectionId: null,
 }
 

@@ -17,6 +17,8 @@ import {
   type MemberDetail,
 } from '../lib/members'
 import { fetchConfig } from '../lib/api'
+import { memberPhotoUrl } from '../lib/photo'
+import MemberPhoto from '../components/MemberPhoto.vue'
 import { loadMe } from '../lib/session'
 import { day, graceSpan, when } from '../lib/when'
 
@@ -44,6 +46,8 @@ const eraseNotice: Record<Exclude<EraseOutcome, 'erased'>, string> = {
     'They are the only admin left, so they stay. Make someone else admin first.',
 }
 
+const photosOn = ref(false)
+
 async function load(): Promise<void> {
   const found = await fetchMember(id)
   member.value = found
@@ -54,6 +58,7 @@ onMounted(async () => {
   try {
     const [me, config] = await Promise.all([loadMe(), fetchConfig(), load()])
     graceDays.value = config.limits.erasureGraceDays
+    photosOn.value = config.limits.profilePhotos === 1
     canGrant.value = me?.permissions.includes('role:grant') ?? false
     canModerate.value = me?.permissions.includes('challenge:moderate') ?? false
     canBan.value = me?.permissions.includes('member:ban') ?? false
@@ -155,6 +160,12 @@ async function erase(): Promise<void> {
 
       <article class="card">
         <h2 class="card-title">Profile</h2>
+        <div v-if="photosOn" class="host-photo">
+          <MemberPhoto
+            :name="member.name ?? member.email"
+            :src="member.photo && memberPhotoUrl(member.id, member.photo)"
+          />
+        </div>
         <dl class="facts">
           <dt>Name</dt>
           <dd>{{ member.name ?? '—' }}</dd>
@@ -333,6 +344,10 @@ async function erase(): Promise<void> {
 </template>
 
 <style scoped>
+.host-photo {
+  width: 5rem;
+}
+
 .deleted {
   border: var(--line-width) solid var(--accent-line);
 }
