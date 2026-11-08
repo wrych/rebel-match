@@ -90,6 +90,14 @@ the pull request that broke it, before merging anything else (ADR 0028).
 A pull request gets a preview deployment only with the `preview` label; add it
 when someone wants to try the change, not by default (ADR 0028).
 
+### Rewriting your own branch
+
+An agent may rebase, squash or reword its **own** branch while its pull
+request is open, and push it with
+`git push --force-with-lease=<branch>:<sha it last pushed>` (ADR 0068). Never
+`main`, a merged branch, a branch anyone else pushed to, or a plain `--force`.
+Say in the pull request what was rewritten and why.
+
 ## First run
 
 ```sh

@@ -102,3 +102,4 @@ still holds except where the later ADR says otherwise.
 | [0064](0064-production-promotes-only-images-built-from-main.md)           | Production promotes only images built from main                                 | Accepted                              |
 | [0065](0065-a-banned-address-answers-as-a-pending-one.md)                 | A banned address is answered as a pending one                                   | Accepted                              |
 | [0066](0066-profile-photos-stored-clean-and-shown-to-the-owner.md)        | Store profile photos clean in Postgres, shown to their owner first              | Proposed                              |
+| [0068](0068-agents-may-rewrite-their-own-open-branch.md)                  | Agents may rewrite their own open branch, with a lease                          | Proposed                              |
