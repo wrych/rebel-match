@@ -266,7 +266,7 @@ const limitSpecs = {
   // (R-BADGE-15).
   badges: {
     env: 'BADGES',
-    default: 1,
+    default: 0,
     zeroAllowed: true,
     changeable: { min: 0, max: 1 },
   },
