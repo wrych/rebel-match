@@ -31,6 +31,7 @@ const card: DeckCard = {
     org: 'Vaartlicht',
     sector: 'Healthcare',
     companySize: '1001+',
+    photo: null,
   },
 }
 

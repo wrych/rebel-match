@@ -4,7 +4,7 @@ import { isReachableMember } from '../db/member-predicates.js'
 import { challenges, members, swipes, trends } from '../db/schema.js'
 import { challengeTrend, isShown, notReportedBy } from './challenge-store.js'
 import type { DeckStore } from './deck.js'
-import { companySizeLabel, sectorLabel } from './profile-labels.js'
+import { companySizeLabel, photoKey, sectorLabel } from './profile-labels.js'
 
 const cardColumns = {
   challengeId: challenges.id,
@@ -16,6 +16,7 @@ const cardColumns = {
   org: members.org,
   sector: sectorLabel,
   companySize: companySizeLabel,
+  photo: photoKey,
 }
 
 /** The deck over Postgres. Selects no email column (R-CONN-6); the swipe
@@ -62,6 +63,7 @@ export function createDeckStore(db: Database): DeckStore {
           org: row.org,
           sector: row.sector,
           companySize: row.companySize,
+          photo: row.photo,
         },
       }))
     },

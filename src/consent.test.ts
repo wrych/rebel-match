@@ -67,6 +67,23 @@ describe('consent wording', () => {
     expect(textOf(consentWordsOf('2026-11-01.3'))).not.toContain(
       'Transformation Architects',
     )
+    expect(textOf(consentWordsOf('2026-11-01.4'))).not.toContain(
+      'Reports and moderation',
+    )
+  })
+
+  it('says a photo is kept without where it was taken, and other members see it (R-ONB-5, R-PROF-7)', () => {
+    expect(words).toContain('a photo, job title')
+    expect(words).toContain('where and when it was taken')
+    expect(words).toContain('including your photo if you add one')
+    expect(textOf(consentWordsOf('2026-11-01.4'))).not.toContain('photo')
+  })
+
+  it('says members report, hosts see who reported, and may hide or ban (R-ONB-5, R-MOD-12)', () => {
+    expect(words).toContain('Reports and moderation:')
+    expect(words).toContain('Hosts see each report and who made it')
+    expect(words).toContain('the member reported is never told who')
+    expect(words).toContain('hide what was reported or ban an account')
   })
 
   it('says membership is by invitation (R-ONB-5)', () => {

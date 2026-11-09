@@ -103,6 +103,8 @@ watch(
   },
 )
 
+const photosOn = ref(false)
+
 onMounted(async () => {
   const config = await fetchConfig().catch(() => null)
   if (config !== null && config.limits.memberSearch !== 1) {
@@ -110,6 +112,7 @@ onMounted(async () => {
     return
   }
   codesOn.value = config !== null && codesOpen(config.limits.connectCodes)
+  photosOn.value = config?.limits.profilePhotos === 1
   await run(queryInUrl())
 })
 </script>
@@ -198,7 +201,11 @@ onMounted(async () => {
       </p>
       <ul v-else class="stack peer-list" aria-label="Members found">
         <li v-for="card in answer.results" :key="card.memberId">
-          <PersonCard :card="card" :to="personPath(card.memberId)" />
+          <PersonCard
+            :card="card"
+            :to="personPath(card.memberId)"
+            :photos-on="photosOn"
+          />
         </li>
       </ul>
       <p v-if="answer.more" class="small" role="status">

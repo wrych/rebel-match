@@ -10,6 +10,9 @@ export interface NetworkStore {
   facts(): Promise<NetworkFacts>
   /** The ids of active members with these emails, by lower-cased email. */
   idsByEmail(emails: readonly string[]): Promise<Map<string, string>>
+  /** The photo keys of active members with these emails who added one, by
+   * lower-cased email (R-PRES-5). */
+  photosByEmail(emails: readonly string[]): Promise<Map<string, string>>
 }
 
 export interface NetworkService {

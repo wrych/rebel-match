@@ -73,7 +73,10 @@ describe('castOnStage (R-PRES-6)', () => {
         },
         { handle: 'c', name: 'C', groups: [] },
       ],
-      (email) => (email === 'a@example.org' ? 4 : null),
+      {
+        nodeOf: (email) => (email === 'a@example.org' ? 4 : null),
+        photoOf: () => null,
+      },
     )
 
     expect(stage).toEqual([
@@ -88,6 +91,32 @@ describe('castOnStage (R-PRES-6)', () => {
       { handle: 'c', name: 'C', photo: null, groups: [], node: null },
     ])
     expect(JSON.stringify(stage)).not.toContain('@')
+  })
+})
+
+describe('castOnStage photos (R-PRES-5)', () => {
+  it('keeps the file’s photo, else takes the one added in the app', () => {
+    const fromFile = 'data:image/png;base64,AAAA'
+    const stage = castOnStage(
+      [
+        {
+          handle: 'a',
+          name: 'A',
+          email: 'a@example.org',
+          photo: fromFile,
+          groups: [],
+        },
+        { handle: 'b', name: 'B', email: 'b@example.org', groups: [] },
+        { handle: 'c', name: 'C', groups: [] },
+      ],
+      { nodeOf: () => null, photoOf: () => '/api/photos/key' },
+    )
+
+    expect(stage.map((member) => member.photo)).toEqual([
+      fromFile,
+      '/api/photos/key',
+      null,
+    ])
   })
 })
 

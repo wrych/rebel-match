@@ -197,7 +197,8 @@ Requirements:
   the app is **closed: membership is by invitation**, whether from the whitelist
   or an event invite link (R-INV-1). It SHALL also say that the member's
   **name, organization and other profile information may be seen by other
-  members** — wherever the app shows them, not only on match cards — while the
+  members** — wherever the app shows them, not only on match cards, and with
+  their photo if they add one (R-PROF-7) — while the
   email address stays private until a connection is accepted. It SHALL name
   **who is responsible** for the data and how to reach them, and SHALL say that
   the member can ask for a copy or a correction, and can delete their activity
@@ -380,7 +381,7 @@ capability, not a secret** — and every requirement below exists because of tha
   name stays.
 - **R-MEM-2 (A member's page)** — Tapping a card SHALL open that member's own
   page in the host tools, at its own URL, showing everything held about them:
-  name, job title, organization, sector, email, status, roles, when and through
+  photo, name, job title, organization, sector, email, status, roles, when and through
   which invite they joined, the consent version they accepted and when, the
   analytics opt-in, and how many challenges and connection requests they have.
   It SHALL leave out the member's 9toRevolution results, which no host sees
@@ -444,12 +445,29 @@ capability, not a secret** — and every requirement below exists because of tha
   `limits.photoMaxBytes`, and SHALL store it without its metadata (camera,
   time, place), so a photo never says where it was taken (ADR 0066). IF the
   picture cannot be read THE SYSTEM SHALL say so and keep the photo there
-  was. Until where photos appear is decided (open question 10), a photo SHALL
-  be shown to its owner only, and the profile screen SHALL say so; it goes
-  with the account (R-NFR-7). WHILE the switch is off the profile screen
+  was. The profile screen SHALL say where the photo is shown (R-PROF-7). It
+  goes with the account (R-NFR-7). WHILE the switch is off the profile screen
   SHALL NOT offer a photo and its addresses SHALL answer as not found
   (R-NAV-8); photos already added SHALL be kept, to show again when it is
   turned back on.
+- **R-PROF-7 (Where a photo shows)** — WHILE `limits.profilePhotos` is on, a
+  member's photo SHALL be shown, round and small, beside their name on the
+  match cards of a challenge (same boat and been there, R-ASK-8), on the
+  deck's card for its author (R-OFF-2), in search results and on a person's
+  page (R-FIND-3, R-CODE-3), on the host tools' member page (R-MEM-2), as
+  the viewer's own point in the network replay (R-NET-2), and for a cast
+  member in the presentation (R-PRES-5). Where a member has none, their
+  initials SHALL stand in its place, except in the replay and the
+  presentation, which keep their plain point and label. A photo SHALL NOT
+  open larger, zoom, or be dragged out of the page. (Maintainer,
+  2026-11-07.)
+  - THE SYSTEM SHALL serve another member's photo only to a signed-in,
+    onboarded member, at an address made of a random key that changes with
+    every new photo and is sent only on a card that shows the owner's name,
+    never of their member id, so the deck still names no id (R-OFF-2). WHILE
+    the owner is not active, their photo SHALL be not found, as their cards
+    are; the host tools' member page SHALL still show it to a host who may
+    read members (R-MEM-2).
 
 ---
 
@@ -1832,7 +1850,9 @@ connection graph is private, so the replay names nobody.
   two points appearing when it was accepted.
 - **R-NET-2 (Find yourself)** — WHEN the replay ends THE SYSTEM SHALL mark the
   viewing member's own point and turn the view to it. The viewer's own lines
-  SHALL show in the accent colour throughout.
+  SHALL show in the accent colour throughout. WHILE `limits.profilePhotos` is
+  on and the viewer has a photo, their own point SHALL be drawn as their
+  photo (R-PROF-7); no other point is.
 - **R-NET-3 (Naming nobody)** — The replay SHALL carry no member id, name,
   email or profile field: a point is a position in a list, a line a pair of
   positions, and the only date sent is the day. Only the viewer's own point
@@ -1914,7 +1934,9 @@ hosts only.
   script uses, a display name, and optionally a photo, a member's email and
   groups such as developers. Hosts SHALL put in it only people who agreed to
   be shown. In a development deployment without a file, a fictional cast
-  mapped to the dev seed SHALL stand in (R-SEED-2).
+  mapped to the dev seed SHALL stand in (R-SEED-2). A cast member the file
+  gives no photo SHALL be shown with the photo they added in the app, found
+  by their email, WHILE `limits.profilePhotos` is on (R-PROF-7).
 - **R-PRES-6 (What leaves the server)** — For each cast member THE SYSTEM
   SHALL send the client their handle, name, photo, groups and position in the
   network, and never their email. Everyone else SHALL stay as anonymous as in
@@ -2359,14 +2381,16 @@ fixtures. `design.md` §6 lists the exact records and the profile mechanism.
 7. **Full privacy notice** — _(Resolved; see below.)_
 8. **Moderation** — _(Resolved; see below.)_
 9. **Search in the privacy words** — _(Resolved; see below.)_
-10. **Where profile photos appear** — a member can add a photo (R-PROF-6), and
-    so far only they see it. Which screens show it to others — match cards,
-    the deck, a person's page, connections, search, the host tools'
-    member page (R-MEM-2), the presentation's cast — and whether the privacy
-    notice (R-ONB-9) needs a new version to say so, is still to be decided.
+10. **Where profile photos appear** — _(Resolved; see below.)_
 
 ### Resolved
 
+- **Where profile photos appear** (2026-11-07) — beside the member's name on
+  match cards, the deck, search results, a person's page and the host tools'
+  member page; as the viewer's own point in the replay; for cast members in
+  the presentation (R-PROF-7). Not only to connections. Photos never open
+  larger. The privacy notice's list of what the profile holds gains the
+  photo in a change of its own, which the maintainer approves.
 - **Search in the privacy words** (2026-11-05) — no wording change: R-ONB-5
   and the privacy notice already say a member's profile may be seen by other
   members wherever the app shows them, which covers search and the connect

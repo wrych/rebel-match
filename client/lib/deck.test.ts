@@ -11,6 +11,7 @@ const card: DeckCard = {
     org: 'Björk',
     sector: null,
     companySize: null,
+    photo: null,
   },
 }
 
@@ -111,6 +112,7 @@ describe('authorLine', () => {
           ...card.author,
           sector: 'Software & technology',
           companySize: '251–1,000 employees',
+          photo: null,
         },
       }),
     ).toBe('Björk · Software & technology · 251–1,000 employees')

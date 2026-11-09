@@ -854,10 +854,17 @@ export const liveCodes = pgTable(
 
 // Its own table, so reading a member never reads their picture; one per
 // member, replaced whole (R-PROF-6, ADR 0066).
-export const memberPhotos = pgTable('member_photos', {
-  memberId: id('member_id')
-    .primaryKey()
-    .references(() => members.id, { onDelete: 'cascade' }),
-  jpeg: bytes('jpeg').notNull(),
-  updatedAt: at('updated_at').notNull().defaultNow(),
-})
+export const memberPhotos = pgTable(
+  'member_photos',
+  {
+    memberId: id('member_id')
+      .primaryKey()
+      .references(() => members.id, { onDelete: 'cascade' }),
+    jpeg: bytes('jpeg').notNull(),
+    // The photo's address for other members, new with every upload, so it
+    // names no member id (ADR 0067).
+    key: varchar('key', { length: 43 }),
+    updatedAt: at('updated_at').notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex('uq_member_photos_key').on(t.key)],
+)

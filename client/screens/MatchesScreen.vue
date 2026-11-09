@@ -61,6 +61,8 @@ async function newer(): Promise<void> {
   if (matched !== null) show(matched)
 }
 
+const photosOn = ref(false)
+
 const live = useLiveList(newer, 'challengeMatchesPollSeconds')
 
 // Without the limits nothing is folded: every match shows, as before.
@@ -69,6 +71,7 @@ async function loadLimits(): Promise<void> {
     const { limits } = await fetchConfig()
     namedFirst.value = limits.matchesNamedFirst
     shownFirst.value = limits.matchesShownFirst
+    photosOn.value = limits.profilePhotos === 1
   } catch {
     namedFirst.value = null
     shownFirst.value = null
@@ -162,6 +165,7 @@ onMounted(async () => {
             :challenge-id="id"
             kind="same_boat"
             :arrived="sameBoatArrived"
+            :photos-on="photosOn"
             action="Connect"
             nobody="You’re the first rebel here. Others will find your challenge in their deck."
             @connect="connectTapped('same_boat')"
@@ -190,6 +194,7 @@ onMounted(async () => {
             :challenge-id="id"
             kind="been_there"
             :arrived="beenThereArrived"
+            :photos-on="photosOn"
             action="Ask them"
             nobody="No one has shared experience here yet. Rebels who have will see your challenge."
             @connect="connectTapped('been_there')"

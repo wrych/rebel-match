@@ -25,6 +25,8 @@ export interface MemberDetail extends RosterMember {
   requestedOrg: string | null
   /** The label of the invite they joined through, if any. */
   joinedVia: string | null
+  /** Their photo's key, whatever their status, or null (R-MEM-2). */
+  photo: string | null
   consentVersion: string | null
   consentAt: string | null
   analyticsOptIn: boolean

@@ -6,7 +6,7 @@ import { handleErrors } from '../app.js'
 import { loadConfig } from '../config.js'
 import { configPolicy } from '../permissions.js'
 import type { PhotoService, StoredPhoto } from '../services/photo.js'
-import { profilePhotoRoutes } from './profile-photo.js'
+import { profilePhotoRoutes, sharedPhotoRoutes } from './profile-photo.js'
 
 const config = loadConfig({
   DATABASE_URL: 'postgres://user:pw@localhost:5432/rebel_match',
@@ -15,6 +15,7 @@ const config = loadConfig({
 const auth = createAuth({
   store: createMemoryAuthStore([
     { id: 'm-ada', email: 'a@example.invalid', roles: ['member'] },
+    { id: 'm-host', email: 'h@example.invalid', roles: ['member', 'admin'] },
   ]),
   policy: configPolicy,
   deliver: () => Promise.resolve(),
@@ -22,6 +23,8 @@ const auth = createAuth({
 })
 
 const GOOD = Buffer.from('good photo')
+const BEN_KEY = 'b'.repeat(43)
+const BENS = { jpeg: Buffer.from('ben'), updatedAt: new Date(0) }
 
 function setup(profilePhotos = 1): {
   app: Express
@@ -30,6 +33,7 @@ function setup(profilePhotos = 1): {
   const kept = new Map<string, StoredPhoto>()
   const photos: PhotoService = {
     own: (memberId) => Promise.resolve(kept.get(memberId) ?? null),
+    shared: (key) => Promise.resolve(key === BEN_KEY ? BENS : null),
     replace: (memberId, upload) => {
       if (!upload.equals(GOOD)) return Promise.resolve('refused')
       kept.set(memberId, { jpeg: upload, updatedAt: new Date(0) })
@@ -46,14 +50,75 @@ function setup(profilePhotos = 1): {
     limits: () => ({ ...config.limits, profilePhotos, photoMaxBytes: 64 }),
   }
   app.use(profilePhotoRoutes({ auth, settings, photos }))
+  app.use(sharedPhotoRoutes({ auth, settings, photos }))
   app.use(handleErrors)
   return { app, kept }
 }
 
-async function cookie(): Promise<string> {
-  const session = await auth.createSession('m-ada')
+async function cookie(memberId = 'm-ada'): Promise<string> {
+  const session = await auth.createSession(memberId)
   return `${session.name}=${session.value}`
 }
+
+describe('/api/photos/:key (R-PROF-7, ADR 0067)', () => {
+  it('serves another member’s photo by its key, to keep for good', async () => {
+    const response = await request(setup().app)
+      .get(`/api/photos/${BEN_KEY}`)
+      .set('Cookie', await cookie())
+
+    expect(response.status).toBe(200)
+    expect(response.body).toEqual(BENS.jpeg)
+    expect(response.headers['cache-control']).toBe(
+      'private, max-age=31536000, immutable',
+    )
+    expect(response.headers['content-security-policy']).toContain('sandbox')
+  })
+
+  it.each([
+    ['an unknown key', 'x'.repeat(43)],
+    ['something not shaped like a key', 'm-ben'],
+  ])('answers not found for %s', async (_name, key) => {
+    const response = await request(setup().app)
+      .get(`/api/photos/${key}`)
+      .set('Cookie', await cookie())
+    expect(response.status).toBe(404)
+  })
+
+  it('asks for a session', async () => {
+    expect(
+      (await request(setup().app).get(`/api/photos/${BEN_KEY}`)).status,
+    ).toBe(401)
+  })
+
+  it('is not found while hosts have photos off', async () => {
+    const response = await request(setup(0).app)
+      .get(`/api/photos/${BEN_KEY}`)
+      .set('Cookie', await cookie())
+    expect(response.status).toBe(404)
+  })
+})
+
+describe('/api/admin/members/:id/photo (R-MEM-2)', () => {
+  it('shows a host any member’s photo', async () => {
+    const { app, kept } = setup()
+    kept.set('m-ada', { jpeg: GOOD, updatedAt: new Date(0) })
+    const response = await request(app)
+      .get('/api/admin/members/m-ada/photo')
+      .set('Cookie', await cookie('m-host'))
+
+    expect(response.status).toBe(200)
+    expect(response.body).toEqual(GOOD)
+  })
+
+  it('is not found for a member without the permission (R-ROLE-3)', async () => {
+    const { app, kept } = setup()
+    kept.set('m-host', { jpeg: GOOD, updatedAt: new Date(0) })
+    const response = await request(app)
+      .get('/api/admin/members/m-host/photo')
+      .set('Cookie', await cookie())
+    expect(response.status).toBe(404)
+  })
+})
 
 describe('/api/profile/photo', () => {
   it('saves a photo and serves it back to its owner as a picture only (R-PROF-6)', async () => {

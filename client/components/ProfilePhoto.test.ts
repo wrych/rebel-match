@@ -76,11 +76,13 @@ afterEach(() => {
 })
 
 describe('ProfilePhoto (R-PROF-6)', () => {
-  it('shows initials without a photo, and says only the member sees it', () => {
+  it('shows initials without a photo, and says where it is shown', () => {
     const screen = mountPhoto()
     expect(screen.text()).toContain('AR')
     expect(screen.find('img').exists()).toBe(false)
-    expect(screen.text()).toContain('Only you see your photo')
+    expect(screen.text()).toContain(
+      'Other members see your photo beside your name',
+    )
     expect(screen.text()).not.toContain('Remove photo')
   })
 

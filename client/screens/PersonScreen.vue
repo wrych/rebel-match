@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import PersonCard from '../components/PersonCard.vue'
+import { fetchConfig } from '../lib/api'
 import { profileConnectPath } from '../lib/codes'
 import { contactPath } from '../lib/connections'
 import { personConnectPath, reachedFrom, type Reached } from '../lib/people'
@@ -10,6 +11,7 @@ const route = useRoute()
 const router = useRouter()
 const reached = ref<Reached | null>(null)
 const problem = ref<string | null>(null)
+const photosOn = ref(false)
 
 const connectPath = computed(() => {
   if (reached.value === null) return ''
@@ -20,6 +22,11 @@ const connectPath = computed(() => {
 })
 
 onMounted(async () => {
+  void fetchConfig()
+    .then((config) => {
+      photosOn.value = config.limits.profilePhotos === 1
+    })
+    .catch(() => undefined)
   try {
     reached.value = await reachedFrom(route)
     if (reached.value === null)
@@ -40,7 +47,7 @@ onMounted(async () => {
         <p class="kicker kicker-accent">A member</p>
         <h1 class="display display-lg">{{ reached.card.name }}</h1>
       </div>
-      <PersonCard :card="reached.card" />
+      <PersonCard :card="reached.card" :photos-on="photosOn" />
       <template v-if="reached.card.connectionId">
         <p class="lede">You are already connected.</p>
         <RouterLink

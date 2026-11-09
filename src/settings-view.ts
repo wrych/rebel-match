@@ -733,9 +733,9 @@ const catalogue: Group[] = [
       {
         name: 'Profile photos',
         explanation:
-          'On lets every member add a photo on their profile, seen only by ' +
-          'themselves for now; off hides it, and photos already added are ' +
-          'kept.',
+          'On lets every member add a photo on their profile, shown beside ' +
+          'their name to other members; off hides photos everywhere, and ' +
+          'photos already added are kept.',
         key: 'limits.profilePhotos',
         switch: true,
       },
