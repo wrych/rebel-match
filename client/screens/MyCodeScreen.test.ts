@@ -103,6 +103,21 @@ describe('MyCodeScreen (S47, R-CODE-1, R-CODE-2)', () => {
     expect(screen.text()).not.toContain('Reset code')
   })
 
+  it('marks both tabs with a QR, the live one spinning (R-CODE-1)', async () => {
+    server({ token: 'tok-1', enabled: true })
+    const screen = await mountScreen()
+
+    const tabs = screen.findAll('[role="tab"]')
+    expect(tabs.map((tab) => tab.find('.code-icon').exists())).toEqual([
+      true,
+      true,
+    ])
+    expect(tabs.map((tab) => tab.find('.spinner').exists())).toEqual([
+      true,
+      false,
+    ])
+  })
+
   it('says the code is off, with the way to turn it on (R-CODE-4)', async () => {
     route.query = { tab: 'profile' }
     server({ token: 'tok-1', enabled: false })

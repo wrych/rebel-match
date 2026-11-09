@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import CodeIcon from '../components/CodeIcon.vue'
 import CopyButton from '../components/CopyButton.vue'
 import LiveCodePanel from '../components/LiveCodePanel.vue'
 import QrCode from '../components/QrCode.vue'
@@ -132,7 +133,7 @@ onMounted(async () => {
         :aria-selected="tab === 'now'"
         @click="showTab('now')"
       >
-        Connect now
+        <CodeIcon live />Connect now
       </button>
       <button
         type="button"
@@ -142,7 +143,7 @@ onMounted(async () => {
         :aria-selected="tab === 'profile'"
         @click="showTab('profile')"
       >
-        Share my profile
+        <CodeIcon />Share my profile
       </button>
     </div>
 

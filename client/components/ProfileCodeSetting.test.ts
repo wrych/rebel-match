@@ -34,6 +34,11 @@ describe('ProfileCodeSetting (R-CODE-4)', () => {
     expect(
       setting.findAllComponents(RouterLinkStub).map((link) => link.props('to')),
     ).toEqual(['/me/code', '/me/code?tab=profile'])
+    expect(setting.text().indexOf('Share my profile')).toBeLessThan(
+      setting.text().indexOf('Profile code: on'),
+    )
+    expect(setting.findAll('.code-icon')).toHaveLength(2)
+    expect(setting.findAll('.spinner')).toHaveLength(1)
   })
 
   it('shows nothing while hosts have codes off', async () => {
