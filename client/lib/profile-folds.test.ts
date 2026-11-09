@@ -11,6 +11,7 @@ describe('searchProfile (R-PROF-8)', () => {
   it('finds a card by its title or the words of what it holds', () => {
     expect(searchProfile(all, 'PRIVACY')).toEqual(['Privacy'])
     expect(searchProfile(all, 'linkedin')).toEqual(['Connecting'])
+    expect(searchProfile(all, 'your code')).toEqual(['Connecting'])
     expect(searchProfile(all, 'email')).toEqual(['About you', 'Notifications'])
   })
 

@@ -7,50 +7,59 @@ export type ProfileFold = { title: string; words: readonly string[] }
 /** What hosts have on that adds to the profile screen. */
 export type ProfileOffers = { socialLinks: boolean; codes: boolean }
 
+const ABOUT_YOU: ProfileFold = {
+  title: 'About you',
+  words: [
+    'Your photo',
+    'Your name',
+    'Job title',
+    'Organization',
+    'Sector',
+    'Company size',
+    'Signed in as',
+    'Email',
+  ],
+}
+const SOCIAL_WORDS = ['Social links', 'LinkedIn', 'Instagram']
+const CODE_WORDS = [
+  'Your code',
+  'Profile code',
+  'Reset code',
+  'Connect now',
+  'Share my profile',
+  'QR',
+]
+const LATER: readonly ProfileFold[] = [
+  { title: 'Notifications', words: ['Notifications', 'Email'] },
+  {
+    title: 'Privacy',
+    words: [
+      'Usage data',
+      'Analytics',
+      'The terms you accepted',
+      'Consent',
+      'Privacy notice',
+      'Terms of use',
+    ],
+  },
+  {
+    title: 'Your data',
+    words: ['Your activity history', 'Delete your account'],
+  },
+]
+
 /** The profile screen's cards, in order, each with the words of what it
  * holds as offered now (R-PROF-8). */
 export function profileFolds(offers: ProfileOffers): ProfileFold[] {
-  return [
-    {
-      title: 'About you',
-      words: [
-        'Your photo',
-        'Your name',
-        'Job title',
-        'Organization',
-        'Sector',
-        'Company size',
-        'Signed in as',
-        'Email',
-      ],
-    },
-    {
-      title: 'Connecting',
-      words: [
-        ...(offers.socialLinks
-          ? ['Social links', 'LinkedIn', 'Instagram']
-          : []),
-        ...(offers.codes ? ['Profile code', 'Reset code', 'QR'] : []),
-        'Findable in search',
-      ],
-    },
-    { title: 'Notifications', words: ['Notifications', 'Email'] },
-    {
-      title: 'Privacy',
-      words: [
-        'Usage data',
-        'Analytics',
-        'The terms you accepted',
-        'Consent',
-        'Privacy notice',
-        'Terms of use',
-      ],
-    },
-    {
-      title: 'Your data',
-      words: ['Your activity history', 'Delete your account'],
-    },
-  ]
+  const connecting: ProfileFold = {
+    title: 'Connecting',
+    words: [
+      ...(offers.socialLinks ? SOCIAL_WORDS : []),
+      ...(offers.codes ? CODE_WORDS : []),
+      'Findable in search',
+    ],
+  }
+  return [ABOUT_YOU, connecting, ...LATER]
 }
 
 /** The titles of the cards a search shows: those whose title or words hold

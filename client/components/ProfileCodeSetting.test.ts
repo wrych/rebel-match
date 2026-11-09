@@ -25,15 +25,15 @@ afterEach(() => {
 })
 
 describe('ProfileCodeSetting (R-CODE-4)', () => {
-  it('offers on / off, reset and the way to show the code', async () => {
+  it('offers on / off, reset and both tabs of Your code (R-CODE-1)', async () => {
     answer(200, { token: 't', enabled: true })
     const setting = await mounted()
 
     expect(setting.text()).toContain('Profile code: on')
     expect(setting.text()).toContain('Reset code')
-    expect(setting.findComponent(RouterLinkStub).props('to')).toBe(
-      '/me/code?tab=profile',
-    )
+    expect(
+      setting.findAllComponents(RouterLinkStub).map((link) => link.props('to')),
+    ).toEqual(['/me/code', '/me/code?tab=profile'])
   })
 
   it('shows nothing while hosts have codes off', async () => {

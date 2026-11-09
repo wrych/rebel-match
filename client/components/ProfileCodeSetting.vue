@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /** The profile screen's say over the member's profile code: on / off and
- * reset, and the way to show it (R-CODE-4). */
+ * reset, and the way into Your code, both its tabs (R-CODE-1, R-CODE-4). */
 import { onMounted, ref } from 'vue'
 import { fetchProfileCode, type ProfileCode } from '../lib/codes'
 import ProfileCodeControls from './ProfileCodeControls.vue'
@@ -23,11 +23,16 @@ onMounted(async () => {
     class="stack-tight rule"
     aria-labelledby="profile-code-heading"
   >
-    <h2 id="profile-code-heading" class="kicker">Profile code</h2>
+    <h2 id="profile-code-heading" class="kicker">Your code</h2>
     <ProfileCodeControls v-if="code" :code="code" @changed="code = $event" />
-    <RouterLink v-if="code" to="/me/code?tab=profile" class="row-link"
-      >Show your code</RouterLink
-    >
+    <template v-if="code">
+      <RouterLink to="/me/code" class="row-link">
+        <span class="row-link-label">Connect now</span>
+      </RouterLink>
+      <RouterLink to="/me/code?tab=profile" class="row-link">
+        <span class="row-link-label">Share my profile</span>
+      </RouterLink>
+    </template>
     <p v-if="problem" class="alert" role="alert">{{ problem }}</p>
   </section>
 </template>

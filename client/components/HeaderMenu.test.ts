@@ -107,15 +107,12 @@ describe('HeaderMenu', () => {
     },
   )
 
-  it.each([
-    [1, true],
-    [0, false],
-  ])(
-    'offers Your code while codes are on (%i): %s (R-CODE-1)',
-    async (connectCodes, offered) => {
+  it.each([1, 0])(
+    'leaves Your code to the profile screen, codes on or off (%i) (R-PROF-3)',
+    async (connectCodes) => {
       withConfig(signedIn([]), { connectCodes })
 
-      expect(paths(await opened()).includes('/me/code')).toBe(offered)
+      expect(paths(await opened())).not.toContain('/me/code')
     },
   )
 
