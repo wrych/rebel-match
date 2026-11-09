@@ -1,6 +1,6 @@
 <script setup lang="ts">
-/** **Profile code: on / off** and **Reset code**, on S47 and the profile
- * screen alike (R-CODE-4). */
+/** **Profile code: on / off** and **Reset code**, on the profile screen
+ * (R-CODE-4). */
 import { ref } from 'vue'
 import {
   resetProfileCode,
