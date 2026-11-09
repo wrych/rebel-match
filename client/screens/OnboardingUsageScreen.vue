@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import AnalyticsWords from '../components/AnalyticsWords.vue'
 import AskSteps from '../components/AskSteps.vue'
 import DoneNotice from '../components/DoneNotice.vue'
+import { useAction } from '../lib/action'
 import { chooseAnalytics } from '../lib/analytics-consent'
 import { fetchConfig } from '../lib/api'
 import { afterOnboarding } from '../lib/onboarding'
@@ -13,8 +14,8 @@ import { onboardingJourney } from '../lib/steps'
 const route = useRoute()
 const router = useRouter()
 const version = ref<string | null>(null)
-const sending = ref(false)
 const problem = ref<string | null>(null)
+const { busy: sending, run } = useAction(problem)
 
 const next = computed(() => {
   const given = route.query['next']
@@ -30,22 +31,18 @@ onMounted(async () => {
 })
 
 async function answer(share: boolean): Promise<void> {
-  if (version.value === null) return
-  sending.value = true
+  const wording = version.value
+  if (wording === null) return
   problem.value = null
-  try {
-    const outcome = await chooseAnalytics(share, version.value, 'onboarding')
+  await run(async () => {
+    const outcome = await chooseAnalytics(share, wording, 'onboarding')
     if (outcome === 'stale') {
       problem.value = 'The wording has just changed. Reload to read it.'
       return
     }
     forgetMe()
     await router.replace(afterOnboarding(next.value))
-  } catch {
-    problem.value = 'That did not save. Try again.'
-  } finally {
-    sending.value = false
-  }
+  }, 'That did not save. Try again.')
 }
 </script>
 

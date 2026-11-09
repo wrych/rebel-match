@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AskSteps from '../components/AskSteps.vue'
 import ConsentWords from '../components/ConsentWords.vue'
+import { useAction } from '../lib/action'
 import { fetchConfig } from '../lib/api'
 import {
   afterOnboarding,
@@ -26,8 +27,8 @@ const alreadyShares = ref(false)
 const hintShare = ref<number | null>(null)
 const confirm = ref<HTMLButtonElement | null>(null)
 const confirmInView = ref(true)
-const sending = ref(false)
 const problem = ref<string | null>(null)
+const { busy: sending, run } = useAction(problem)
 let observer: IntersectionObserver | undefined
 
 const next = computed(() => {
@@ -110,13 +111,14 @@ async function onwards(): Promise<void> {
 }
 
 async function confirmRead(): Promise<void> {
-  if (profile.value === null || consentVersion.value === null) return
-  sending.value = true
+  const read = profile.value
+  const version = consentVersion.value
+  if (read === null || version === null) return
   problem.value = null
-  try {
+  await run(async () => {
     const outcome = await completeOnboarding({
-      ...profile.value,
-      consentVersion: consentVersion.value,
+      ...read,
+      consentVersion: version,
     })
     if (outcome === 'stale') {
       problem.value = 'The words have just changed. Please read them again.'
@@ -124,11 +126,7 @@ async function confirmRead(): Promise<void> {
       return
     }
     await onwards()
-  } catch {
-    problem.value = 'That did not save. Try again.'
-  } finally {
-    sending.value = false
-  }
+  }, 'That did not save. Try again.')
 }
 </script>
 

@@ -5,6 +5,7 @@
  * be a link. Emits `withdrawn` once it is gone, or was already. */
 import { ref } from 'vue'
 import ConfirmAction from './ConfirmAction.vue'
+import { useAction } from '../lib/action'
 import { withdrawChallenge } from '../lib/challenges'
 
 const props = withDefaults(
@@ -14,20 +15,16 @@ const props = withDefaults(
 const emit = defineEmits<{ withdrawn: [] }>()
 
 const confirming = ref(false)
-const busy = ref(false)
 const problem = ref<string | null>(null)
+const { busy, run } = useAction(problem)
 
 async function withdraw(): Promise<void> {
-  busy.value = true
   problem.value = null
-  try {
+  await run(async () => {
     await withdrawChallenge(props.challengeId)
     confirming.value = false
     emit('withdrawn')
-  } catch {
-    problem.value = 'That did not go through. Your challenge is still up.'
-  }
-  busy.value = false
+  }, 'That did not go through. Your challenge is still up.')
 }
 </script>
 

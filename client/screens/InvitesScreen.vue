@@ -5,6 +5,7 @@ import EventBadgeFields from '../components/EventBadgeFields.vue'
 import EventTicket from '../components/EventTicket.vue'
 import PullToRefresh from '../components/PullToRefresh.vue'
 import RefreshButton from '../components/RefreshButton.vue'
+import { useAction } from '../lib/action'
 import { fetchConfig, type ClientConfig } from '../lib/api'
 import {
   badgesOf,
@@ -38,7 +39,7 @@ const badgeChoice = ref<BadgeChoice>({ kind: 'none' })
 const newCap = ref('')
 const problem = ref<string | null>(null)
 const notice = ref<string | null>(null)
-const busy = ref(false)
+const { busy, run } = useAction(notice)
 
 const chipFor: Record<Invite['state'], string> = {
   active: 'chip-accent',
@@ -74,8 +75,7 @@ async function load(): Promise<void> {
 const live = useLiveList(load, 'invitesPollSeconds')
 
 async function create(): Promise<void> {
-  busy.value = true
-  try {
+  await run(async () => {
     const outcome = await createInvite(draft)
     if (outcome === 'bad-date') {
       notice.value = 'Write each day as YYYY-MM-DD, for example 2026-11-08.'
@@ -88,11 +88,7 @@ async function create(): Promise<void> {
     notice.value = `Created “${outcome.label}”. Its join URL is below.`
     Object.assign(draft, blank())
     await live.refresh()
-  } catch {
-    notice.value = 'The invite was not created. Try again.'
-  } finally {
-    busy.value = false
-  }
+  }, 'The invite was not created. Try again.')
 }
 
 function startRaising(invite: Invite): void {
@@ -112,8 +108,7 @@ function startBadging(invite: Invite): void {
 }
 
 async function giveBadge(invite: Invite): Promise<void> {
-  busy.value = true
-  try {
+  await run(async () => {
     const outcome = await setInviteBadge(invite.id, badgeChoice.value)
     if (typeof outcome === 'string') {
       notice.value = refusedBecause[outcome]
@@ -125,16 +120,11 @@ async function giveBadge(invite: Invite): Promise<void> {
         : `“${invite.label}” now gives “${outcome.eventBadge.name}”, also to those who already joined through it.`
     badging.value = null
     await live.refresh()
-  } catch {
-    notice.value = `The badge of “${invite.label}” was not changed. Try again.`
-  } finally {
-    busy.value = false
-  }
+  }, `The badge of “${invite.label}” was not changed. Try again.`)
 }
 
 async function raise(invite: Invite): Promise<void> {
-  busy.value = true
-  try {
+  await run(async () => {
     const outcome = await raiseCap(invite.id, Number(newCap.value))
     if (outcome === 'bad-cap') {
       notice.value = `The new cap must be more than ${String(invite.maxUses)}${
@@ -150,24 +140,15 @@ async function raise(invite: Invite): Promise<void> {
         : `“${invite.label}” now admits up to ${String(outcome.maxUses)}. The same code keeps working.`
     raising.value = null
     await live.refresh()
-  } catch {
-    notice.value = `The cap of “${invite.label}” was not raised. Try again.`
-  } finally {
-    busy.value = false
-  }
+  }, `The cap of “${invite.label}” was not raised. Try again.`)
 }
 
 async function revoke(invite: Invite): Promise<void> {
-  busy.value = true
-  try {
+  await run(async () => {
     await revokeInvite(invite.id)
     notice.value = `Revoked “${invite.label}”: the next scan joins the queue instead.`
     await live.refresh()
-  } catch {
-    notice.value = `“${invite.label}” was not revoked. Try again.`
-  } finally {
-    busy.value = false
-  }
+  }, `“${invite.label}” was not revoked. Try again.`)
 }
 
 onMounted(async () => {

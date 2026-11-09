@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AskSteps from '../components/AskSteps.vue'
+import { useAction } from '../lib/action'
 import { askJourney } from '../lib/steps'
 import NewestChallenges from '../components/NewestChallenges.vue'
 import { fetchConfig } from '../lib/api'
@@ -14,8 +15,8 @@ import {
 const router = useRouter()
 const draft = ref('')
 const limits = ref<{ min: number; max: number } | null>(null)
-const sending = ref(false)
 const problem = ref<string | null>(null)
+const { busy: sending, run } = useAction(problem)
 const lastSubmitted = ref<NewestChallenge[]>([])
 
 // The server trims before it counts, so the counter does too (R-CFG-2).
@@ -53,16 +54,11 @@ onMounted(async () => {
 
 async function submit(): Promise<void> {
   if (!ready.value) return
-  sending.value = true
   problem.value = null
-  try {
+  await run(async () => {
     const challenge = await submitChallenge(draft.value)
     await router.push(`/challenges/${encodeURIComponent(challenge.id)}`)
-  } catch {
-    problem.value = 'That did not save. Try again.'
-  } finally {
-    sending.value = false
-  }
+  }, 'That did not save. Try again.')
 }
 </script>
 

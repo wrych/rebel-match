@@ -3,6 +3,7 @@
  * why) or Unhide (R-MOD-8, R-MEM-2). A withdrawn one shows no text. */
 import { onMounted, ref } from 'vue'
 import HideForm from './HideForm.vue'
+import { useAction } from '../lib/action'
 import {
   fetchMemberChallenges,
   hiddenAs,
@@ -17,7 +18,7 @@ const props = defineProps<{ memberId: string }>()
 const challenges = ref<ModeratedChallenge[] | null>(null)
 const problem = ref<string | null>(null)
 const hiding = ref<string | null>(null)
-const busy = ref(false)
+const { busy, run } = useAction(problem)
 
 async function load(): Promise<void> {
   try {
@@ -39,16 +40,12 @@ function hide(id: string, reason: ModerationReason): Promise<void> {
 // Each change ends by reading the list again, so it shows what the server
 // now holds, a change someone else made meanwhile included.
 async function change(act: () => Promise<'done' | 'gone'>): Promise<void> {
-  busy.value = true
   problem.value = null
-  try {
+  await run(async () => {
     if ((await act()) === 'gone')
       problem.value = 'Someone changed that meanwhile. Here is how it is now.'
     hiding.value = null
-  } catch {
-    problem.value = 'That did not go through. Try again.'
-  }
-  busy.value = false
+  }, 'That did not go through. Try again.')
   await load()
 }
 

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useAction } from '../lib/action'
 import { fetchConfig } from '../lib/api'
 import type { ModerationReason } from '../lib/moderation'
 import {
@@ -23,8 +24,8 @@ const missing = ref(false)
 const reason = ref<ModerationReason | null>(null)
 const comment = ref('')
 const maxChars = ref<number | null>(null)
-const sending = ref(false)
 const problem = ref<string | null>(null)
+const { busy: sending, run } = useAction(problem)
 const already = ref(false)
 
 const reasons: { value: ModerationReason; label: string; hint: string }[] = [
@@ -84,11 +85,11 @@ onMounted(async () => {
 })
 
 async function send(): Promise<void> {
-  if (reason.value === null || sending.value) return
-  sending.value = true
+  const why = reason.value
+  if (why === null || sending.value) return
   problem.value = null
-  try {
-    const outcome = await sendReport(item, reason.value, comment.value)
+  await run(async () => {
+    const outcome = await sendReport(item, why, comment.value)
     if (outcome === 'reported') {
       thankOnReturn(thanksFor())
       await leave()
@@ -96,11 +97,7 @@ async function send(): Promise<void> {
     }
     if (outcome === 'already_reported') already.value = true
     else problem.value = refusals[outcome]
-  } catch {
-    problem.value = 'That did not go through. Try again.'
-  } finally {
-    sending.value = false
-  }
+  }, 'That did not go through. Try again.')
 }
 </script>
 

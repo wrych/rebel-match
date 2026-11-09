@@ -9,6 +9,7 @@ import {
   reportSeen,
   type DeckCard,
 } from '../lib/deck'
+import { useAction } from '../lib/action'
 import { contactPath } from '../lib/connections'
 import { fetchFollowed } from '../lib/follows'
 import { noticeFor } from '../lib/offer'
@@ -27,9 +28,9 @@ let openAt =
     : undefined
 const cards = ref<DeckCard[]>([])
 const index = ref(0)
-const sending = ref(false)
 const notice = ref<string | null>(null)
 const problem = ref<string | null>(null)
+const { busy: sending, run } = useAction(problem)
 const followed = ref(new Set<string>())
 
 const card = computed(() => cards.value[index.value])
@@ -89,9 +90,8 @@ async function settle(answered: DeckCard): Promise<void> {
 async function answer(action: 'same_boat' | 'follow' | 'skip'): Promise<void> {
   const answered = card.value
   if (answered === undefined) return
-  sending.value = true
   clearMessages()
-  try {
+  await run(async () => {
     const result = await answerCard(answered.challengeId, action)
     if (result.result === 'joined') {
       countAnswer('sameBoat')
@@ -106,11 +106,7 @@ async function answer(action: 'same_boat' | 'follow' | 'skip'): Promise<void> {
       followed.value.add(answered.trend.id)
     }
     await settle(answered)
-  } catch {
-    problem.value = 'That did not save. Try again.'
-  } finally {
-    sending.value = false
-  }
+  }, 'That did not save. Try again.')
 }
 
 async function offerExperience(): Promise<void> {

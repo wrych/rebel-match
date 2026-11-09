@@ -5,6 +5,7 @@ import { rolePermissions } from '../../src/access'
 import ConfirmAction from '../components/ConfirmAction.vue'
 import MemberBan from '../components/MemberBan.vue'
 import MemberChallenges from '../components/MemberChallenges.vue'
+import { useAction } from '../lib/action'
 import { peerLine } from '../lib/challenges'
 import {
   deleteMember,
@@ -34,7 +35,7 @@ const canBan = ref(false)
 const confirming = ref(false)
 const confirmingNow = ref(false)
 const graceDays = ref<number | null>(null)
-const busy = ref(false)
+const { busy, run } = useAction(notice)
 const erased = ref(false)
 const roles = Object.keys(rolePermissions)
 
@@ -71,8 +72,7 @@ async function toggle(role: string, event: Event): Promise<void> {
   const box = event.target as HTMLInputElement
   const give = box.checked
   notice.value = null
-  busy.value = true
-  try {
+  await run(async () => {
     const outcome = give
       ? await grantRole(id, role)
       : await revokeRole(id, role)
@@ -80,10 +80,7 @@ async function toggle(role: string, event: Event): Promise<void> {
       notice.value = `Nobody else could give roles, so they keep ${role}.`
     if (outcome === 'gone')
       notice.value = 'They are no longer an active member.'
-  } catch {
-    notice.value = 'That did not go through. Try again.'
-  }
-  busy.value = false
+  }, 'That did not go through. Try again.')
   await load()
   // A refused change leaves the roles as they were, which Vue does not
   // re-render, so the box is set from what the member holds.
@@ -93,16 +90,12 @@ async function toggle(role: string, event: Event): Promise<void> {
 // Each change ends by reading the member again, so the page shows what the
 // server now holds.
 async function act(change: () => Promise<string | null>): Promise<void> {
-  busy.value = true
   notice.value = null
-  try {
+  await run(async () => {
     notice.value = await change()
-  } catch {
-    notice.value = 'That did not go through. Try again.'
-  }
+  }, 'That did not go through. Try again.')
   confirming.value = false
   confirmingNow.value = false
-  busy.value = false
   if (!erased.value) await load()
 }
 

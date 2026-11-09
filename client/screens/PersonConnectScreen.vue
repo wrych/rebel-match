@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import KindChip from '../components/KindChip.vue'
 import PersonCard from '../components/PersonCard.vue'
 import RequestSent from '../components/RequestSent.vue'
+import { useAction } from '../lib/action'
 import { fetchConfig } from '../lib/api'
 import {
   contactPath,
@@ -20,9 +21,9 @@ const card = computed(() => reached.value?.card ?? null)
 const missing = ref(false)
 const message = ref('')
 const maxChars = ref<number | null>(null)
-const sending = ref(false)
 const outcome = ref<RequestOutcome['result'] | null>(null)
 const problem = ref<string | null>(null)
+const { busy: sending, run } = useAction(problem)
 
 const firstName = computed(() => card.value?.name.split(' ')[0] ?? '')
 const byCode = computed(() => (reached.value?.profileCode ?? null) !== null)
@@ -57,26 +58,22 @@ onMounted(async () => {
 })
 
 async function send(): Promise<void> {
-  if (reached.value === null) return
-  sending.value = true
+  const person = reached.value
+  if (person === null) return
   problem.value = null
-  try {
+  await run(async () => {
     const sent = await requestConnection({
-      targetId: reached.value.card.memberId,
+      targetId: person.card.memberId,
       kind: 'direct',
       message: message.value,
-      profileCode: reached.value.profileCode ?? undefined,
+      profileCode: person.profileCode ?? undefined,
     })
     if (sent.result === 'joined') {
       await router.replace(contactPath(sent.id))
       return
     }
     outcome.value = sent.result
-  } catch {
-    problem.value = 'That did not send. Try again.'
-  } finally {
-    sending.value = false
-  }
+  }, 'That did not send. Try again.')
 }
 </script>
 
