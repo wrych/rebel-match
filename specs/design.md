@@ -112,6 +112,7 @@ thresholds have sane defaults in the file and may be overridden by env.
 | `limits.socialLinkMaxChars`           | `200`                         | R-PROF-5                  |
 | `limits.profilePhotos` (switch)       | `0`                           | R-PROF-6                  |
 | `limits.photoMaxBytes`                | `200000`                      | R-PROF-6                  |
+| `limits.badges` (switch)              | `1`                           | R-BADGE-15                |
 | `limits.liveCodeSeconds`              | `30` (10–120)                 | R-CODE-5, R-CODE-8        |
 | `limits.liveCodeGraceSeconds`         | `10` (0–30, ≤ the above)      | R-CODE-5, R-CODE-8        |
 | `limits.liveCodeKeepMinutes`          | `60`                          | R-CODE-6                  |
@@ -1650,9 +1651,12 @@ Opening the screen an entry links to marks it seen as well: reading a request,
 its contact screen, or the applicants list marks the reader's notifications
 about it (R-NOTE-5).
 
-### Badges (R-BADGE-1..14)
+### Badges (R-BADGE-1..15)
 
-Every endpoint returns the caller's own badges only (R-BADGE-12).
+Every endpoint returns the caller's own badges only (R-BADGE-12). While
+`limits.badges` is off, `GET /api/badges`, `GET /api/badges/new` and
+`POST /api/badges/seen` answer `404`; a claim still records its badge, quietly
+(R-BADGE-15).
 
 | Method | Path                             | Body       | Behavior                                                                                                                                                                                    |
 | ------ | -------------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
