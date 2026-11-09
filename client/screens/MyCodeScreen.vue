@@ -123,7 +123,7 @@ onMounted(async () => {
       <h1 class="display display-lg">Your code</h1>
     </div>
 
-    <div role="tablist" aria-label="Your code" class="tabs">
+    <div role="tablist" aria-label="Your code" class="screen-tabs">
       <button
         type="button"
         role="tab"
