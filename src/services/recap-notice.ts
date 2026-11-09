@@ -1,7 +1,8 @@
 import { RECAP_TITLE } from '../recap/title.js'
-import { renderMail, type MailItem } from './mail-layout.js'
+import type { MailItem } from './mail-layout.js'
 import type { Mailer } from './mailer.js'
-import { noticeFooter, noticeLink } from './notice-link.js'
+import { noticeLink } from './notice-link.js'
+import { renderNotice } from './notice-mail.js'
 
 /** Where the recap is seen. */
 export const RECAP_PATH = '/recap'
@@ -33,24 +34,15 @@ export function createRecapNotice(deps: {
       to: note.to,
       kind: 'recap',
       subject: `${RECAP_TITLE} is ready`,
-      ...renderMail({
+      ...renderNotice(deps.publicUrl, 'recap', {
         heading: `${RECAP_TITLE} is ready`,
         preview: recapLine,
-        blocks: [
-          {
-            kind: 'paragraph',
-            text: 'The summit is over. Here is what you made of it: what you posted, who you helped, who you connected with, and where you stand in the movement, ready to share.',
-          },
-          {
-            kind: 'action',
-            action: {
-              label: `See ${RECAP_TITLE.toLowerCase()}`,
-              prompt: `See ${RECAP_TITLE.toLowerCase()} here:`,
-              url: noticeLink(deps.publicUrl, RECAP_PATH, 'recap'),
-            },
-          },
-        ],
-        footer: noticeFooter(deps.publicUrl),
+        text: 'The summit is over. Here is what you made of it: what you posted, who you helped, who you connected with, and where you stand in the movement, ready to share.',
+        action: {
+          label: `See ${RECAP_TITLE.toLowerCase()}`,
+          prompt: `See ${RECAP_TITLE.toLowerCase()} here:`,
+          path: RECAP_PATH,
+        },
       }),
     })
   }

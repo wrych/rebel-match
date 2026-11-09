@@ -1,6 +1,5 @@
-import { renderMail } from './mail-layout.js'
 import type { Mailer } from './mailer.js'
-import { noticeFooter, noticeLink } from './notice-link.js'
+import { renderNotice } from './notice-mail.js'
 
 /** One reviewer's notification of one applicant. */
 export interface ApplicantNote {
@@ -21,7 +20,6 @@ export function createApplicantNotice(deps: {
   /** Where the hosts are, so the time reads as their clock shows it. */
   timeZone: string
 }): (note: ApplicantNote) => Promise<void> {
-  const review = noticeLink(deps.publicUrl, '/admin/applicants', 'applicant')
   const time = new Intl.DateTimeFormat('en-GB', {
     day: 'numeric',
     month: 'long',
@@ -37,24 +35,15 @@ export function createApplicantNotice(deps: {
       to: note.to,
       kind: 'admin_notice',
       subject: 'Someone asked to join Rebel Match',
-      ...renderMail({
+      ...renderNotice(deps.publicUrl, 'applicant', {
         heading: 'Someone asked to join',
         preview: `${note.applicantEmail} asked for access.`,
-        blocks: [
-          {
-            kind: 'paragraph',
-            text: `${note.applicantEmail} asked for access on ${time.format(note.at)}.`,
-          },
-          {
-            kind: 'action',
-            action: {
-              label: 'Review applicants',
-              prompt: 'Approve or reject them here:',
-              url: review,
-            },
-          },
-        ],
-        footer: noticeFooter(deps.publicUrl),
+        text: `${note.applicantEmail} asked for access on ${time.format(note.at)}.`,
+        action: {
+          label: 'Review applicants',
+          prompt: 'Approve or reject them here:',
+          path: '/admin/applicants',
+        },
       }),
     })
   }
