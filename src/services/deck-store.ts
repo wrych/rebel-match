@@ -4,19 +4,16 @@ import { isReachableMember } from '../db/member-predicates.js'
 import { challenges, members, swipes, trends } from '../db/schema.js'
 import { challengeTrend, isShown, notReportedBy } from './challenge-store.js'
 import type { DeckStore } from './deck.js'
-import { companySizeLabel, photoKey, sectorLabel } from './profile-labels.js'
+import { cardColumns } from './profile-labels.js'
 
-const cardColumns = {
+const { memberId: _memberId, ...author } = cardColumns
+
+const deckColumns = {
   challengeId: challenges.id,
   body: challenges.body,
   trendId: trends.id,
   short: trends.short,
-  name: members.name,
-  jobTitle: members.jobTitle,
-  org: members.org,
-  sector: sectorLabel,
-  companySize: companySizeLabel,
-  photo: photoKey,
+  ...author,
 }
 
 /** The deck over Postgres. Selects no email column (R-CONN-6); the swipe
@@ -34,7 +31,7 @@ export function createDeckStore(db: Database): DeckStore {
           ),
         )
       const rows = await db
-        .select(cardColumns)
+        .select(deckColumns)
         .from(challenges)
         .innerJoin(members, eq(members.id, challenges.memberId))
         .innerJoin(trends, eq(trends.id, challengeTrend))

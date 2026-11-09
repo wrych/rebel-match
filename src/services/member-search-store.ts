@@ -17,7 +17,7 @@ import type {
   MemberSearchStore,
   SearchTerms,
 } from './member-search.js'
-import { companySizeLabel, photoKey, sectorLabel } from './profile-labels.js'
+import { cardColumns } from './profile-labels.js'
 
 const SEPARATORS = `[[:space:]/.,;:'’"()&+_‐‑‒–—-]+`
 
@@ -77,16 +77,11 @@ const connectionWith = (viewerId: string): SQL<string | null> =>
   >`(SELECT ${r.id} FROM ${r} WHERE ${r.status} = 'accepted' AND ((${r.requesterId} = ${viewerId} AND ${r.targetId} = ${memberColumn}) OR (${r.requesterId} = ${memberColumn} AND ${r.targetId} = ${viewerId})) ORDER BY ${r.respondedAt} DESC NULLS LAST LIMIT 1)`
 
 const baseColumns = {
-  memberId: members.id,
+  ...cardColumns,
   name: sql<string>`${members.name}`,
-  jobTitle: members.jobTitle,
-  org: members.org,
-  sector: sectorLabel,
-  companySize: companySizeLabel,
-  photo: photoKey,
 }
 
-const cardColumns = (
+const searchColumns = (
   viewerId: string,
 ): typeof baseColumns & { connectionId: SQL<string | null> } => ({
   ...baseColumns,
@@ -100,7 +95,7 @@ export function createMemberSearchStore(db: Database): MemberSearchStore {
   return {
     search: async (callerId, terms, limit): Promise<MemberCard[]> =>
       db
-        .select(cardColumns(callerId))
+        .select(searchColumns(callerId))
         .from(members)
         .where(
           and(
@@ -120,7 +115,7 @@ export function createMemberSearchStore(db: Database): MemberSearchStore {
     card: async (viewerId, memberId) => {
       const [row] = await db
         .select({
-          ...cardColumns(viewerId),
+          ...searchColumns(viewerId),
           reachable: isReachableMember(),
           findable: members.findable,
         })

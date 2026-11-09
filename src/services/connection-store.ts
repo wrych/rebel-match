@@ -27,7 +27,7 @@ import type {
   ConnectionView,
   PartyContact,
 } from './connections.js'
-import { companySizeLabel, sectorLabel } from './profile-labels.js'
+import { cardColumns } from './profile-labels.js'
 
 // A note a host hid is no note to anyone reading the record, the mail
 // worker included (R-MOD-8).
@@ -76,6 +76,8 @@ export const between = (a: string, b: string): SQL | undefined =>
     and(eq(r.requesterId, b), eq(r.targetId, a)),
   )
 
+const { photo: _photo, ...otherColumns } = cardColumns
+
 // No email column is selected for a view, whatever the status (R-CONN-1).
 async function views(
   db: Database,
@@ -85,14 +87,7 @@ async function views(
   const rows = await db
     .select({
       request: r,
-      other: {
-        memberId: members.id,
-        name: members.name,
-        jobTitle: members.jobTitle,
-        org: members.org,
-        sector: sectorLabel,
-        companySize: companySizeLabel,
-      },
+      other: otherColumns,
       challenge: {
         id: challenges.id,
         body: challenges.body,
