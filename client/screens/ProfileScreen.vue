@@ -149,117 +149,119 @@ function save(field: Field): Promise<void> {
       </p>
 
       <FoldCard v-show="shown.has('About you')" v-bind="fold('About you')">
-        <ProfilePhoto
-          v-if="limits?.profilePhotos === 1"
-          :name="saved.name"
-          :photo-at="profile.photoAt"
-          :limits="limits"
-        />
-        <div class="field">
-          <div class="label-row">
-            <label for="name" class="label">Your name</label>
-            <SavedTick :shown="ticks.name" />
-          </div>
-          <input
-            id="name"
-            v-model="form.name"
-            class="input"
-            autocomplete="name"
-            :maxlength="limits?.nameMaxChars"
-            :aria-invalid="errors.name !== null"
-            aria-describedby="name-error"
-            @change="save('name')"
+        <div class="stack">
+          <ProfilePhoto
+            v-if="limits?.profilePhotos === 1"
+            :name="saved.name"
+            :photo-at="profile.photoAt"
+            :limits="limits"
           />
-          <p v-if="errors.name" id="name-error" class="alert" role="alert">
-            {{ errors.name }}
-          </p>
-        </div>
-        <div class="field">
-          <div class="label-row">
-            <label for="job-title" class="label">Job title (optional)</label>
-            <SavedTick :shown="ticks.jobTitle" />
+          <div class="field">
+            <div class="label-row">
+              <label for="name" class="label">Your name</label>
+              <SavedTick :shown="ticks.name" />
+            </div>
+            <input
+              id="name"
+              v-model="form.name"
+              class="input"
+              autocomplete="name"
+              :maxlength="limits?.nameMaxChars"
+              :aria-invalid="errors.name !== null"
+              aria-describedby="name-error"
+              @change="save('name')"
+            />
+            <p v-if="errors.name" id="name-error" class="alert" role="alert">
+              {{ errors.name }}
+            </p>
           </div>
-          <input
-            id="job-title"
-            v-model="form.jobTitle"
-            class="input"
-            autocomplete="organization-title"
-            :maxlength="limits?.jobTitleMaxChars"
-            @change="save('jobTitle')"
-          />
-          <p v-if="errors.jobTitle" class="alert" role="alert">
-            {{ errors.jobTitle }}
-          </p>
-        </div>
-        <div class="field">
-          <div class="label-row">
-            <label for="org" class="label">Organization (optional)</label>
-            <SavedTick :shown="ticks.org" />
+          <div class="field">
+            <div class="label-row">
+              <label for="job-title" class="label">Job title (optional)</label>
+              <SavedTick :shown="ticks.jobTitle" />
+            </div>
+            <input
+              id="job-title"
+              v-model="form.jobTitle"
+              class="input"
+              autocomplete="organization-title"
+              :maxlength="limits?.jobTitleMaxChars"
+              @change="save('jobTitle')"
+            />
+            <p v-if="errors.jobTitle" class="alert" role="alert">
+              {{ errors.jobTitle }}
+            </p>
           </div>
-          <input
-            id="org"
-            v-model="form.org"
-            class="input"
-            autocomplete="organization"
-            :maxlength="limits?.orgMaxChars"
-            @change="save('org')"
-          />
-          <p v-if="errors.org" class="alert" role="alert">{{ errors.org }}</p>
-        </div>
-        <div class="field">
-          <div class="label-row">
-            <label for="sector" class="label">Sector (optional)</label>
-            <SavedTick :shown="ticks.sector" />
+          <div class="field">
+            <div class="label-row">
+              <label for="org" class="label">Organization (optional)</label>
+              <SavedTick :shown="ticks.org" />
+            </div>
+            <input
+              id="org"
+              v-model="form.org"
+              class="input"
+              autocomplete="organization"
+              :maxlength="limits?.orgMaxChars"
+              @change="save('org')"
+            />
+            <p v-if="errors.org" class="alert" role="alert">{{ errors.org }}</p>
           </div>
-          <select
-            id="sector"
-            v-model="form.sector"
-            class="input"
-            @change="save('sector')"
-          >
-            <option value="">Not given</option>
-            <option
-              v-for="choice in sectors"
-              :key="choice.key"
-              :value="choice.key"
+          <div class="field">
+            <div class="label-row">
+              <label for="sector" class="label">Sector (optional)</label>
+              <SavedTick :shown="ticks.sector" />
+            </div>
+            <select
+              id="sector"
+              v-model="form.sector"
+              class="input"
+              @change="save('sector')"
             >
-              {{ choice.label }}
-            </option>
-          </select>
-          <p v-if="errors.sector" class="alert" role="alert">
-            {{ errors.sector }}
-          </p>
-        </div>
-        <div class="field">
-          <div class="label-row">
-            <label for="company-size" class="label"
-              >Company size (optional)</label
-            >
-            <SavedTick :shown="ticks.companySize" />
+              <option value="">Not given</option>
+              <option
+                v-for="choice in sectors"
+                :key="choice.key"
+                :value="choice.key"
+              >
+                {{ choice.label }}
+              </option>
+            </select>
+            <p v-if="errors.sector" class="alert" role="alert">
+              {{ errors.sector }}
+            </p>
           </div>
-          <select
-            id="company-size"
-            v-model="form.companySize"
-            class="input"
-            @change="save('companySize')"
-          >
-            <option value="">Not given</option>
-            <option
-              v-for="size in companySizes"
-              :key="size.key"
-              :value="size.key"
+          <div class="field">
+            <div class="label-row">
+              <label for="company-size" class="label"
+                >Company size (optional)</label
+              >
+              <SavedTick :shown="ticks.companySize" />
+            </div>
+            <select
+              id="company-size"
+              v-model="form.companySize"
+              class="input"
+              @change="save('companySize')"
             >
-              {{ size.label }}
-            </option>
-          </select>
-          <p v-if="errors.companySize" class="alert" role="alert">
-            {{ errors.companySize }}
+              <option value="">Not given</option>
+              <option
+                v-for="size in companySizes"
+                :key="size.key"
+                :value="size.key"
+              >
+                {{ size.label }}
+              </option>
+            </select>
+            <p v-if="errors.companySize" class="alert" role="alert">
+              {{ errors.companySize }}
+            </p>
+          </div>
+          <p class="small">
+            Signed in as <strong>{{ profile.email }}</strong
+            >. Your name and profile information may be seen by other members.
           </p>
         </div>
-        <p class="small">
-          Signed in as <strong>{{ profile.email }}</strong
-          >. Your name and profile information may be seen by other members.
-        </p>
       </FoldCard>
 
       <FoldCard v-show="shown.has('Connecting')" v-bind="fold('Connecting')">
