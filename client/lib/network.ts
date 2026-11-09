@@ -1,3 +1,4 @@
+import { apiPaths } from '../../src/api-paths'
 import type { NetworkTimeline, OwnLinks } from '../../src/network/timeline'
 import { findJson } from './request'
 
@@ -29,7 +30,7 @@ export function selfStats(timeline: NetworkTimeline): SelfStats | null {
 
 /** The network replay, or null while hosts have it off (R-NET-6). */
 export async function fetchNetwork(): Promise<NetworkTimeline | null> {
-  return findJson<NetworkTimeline>('/api/network', 'network unavailable')
+  return findJson<NetworkTimeline>(apiPaths.network, 'network unavailable')
 }
 
 /** Whether the menu offers the replay: hosts have it on and the member may

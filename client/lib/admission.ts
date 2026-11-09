@@ -1,3 +1,4 @@
+import { apiPaths } from '../../src/api-paths'
 import type { Challenge } from './human-check'
 import { jsonOf, outcomeOf, send } from './request'
 
@@ -25,7 +26,7 @@ const HANDLE_KEY = 'rm_applicant_handle'
  * code with nothing about who opened it (R-STAT-6, ADR 0038, ADR 0039).
  * Nothing waits on it, and a failure changes nothing for the visitor. */
 export function noteInviteOpened(invite: string): void {
-  send('/auth/invite-opened', 'POST', { invite }).catch(() => undefined)
+  send(apiPaths.inviteOpened, 'POST', { invite }).catch(() => undefined)
 }
 
 /** Asks for a sign-in link, carrying the deep link, the QR's invite token and
@@ -35,7 +36,7 @@ export async function requestLink(
   email: string,
   carried: { next: string | null; invite: string | null; altcha?: string },
 ): Promise<LinkRequest> {
-  const response = await send('/auth/request-link', 'POST', {
+  const response = await send(apiPaths.requestLink, 'POST', {
     email,
     ...(carried.next === null ? {} : { next: carried.next }),
     ...(carried.invite === null ? {} : { invite: carried.invite }),
@@ -72,7 +73,7 @@ export async function describeApplicant(
   handle: string,
   details: { name: string; org: string },
 ): Promise<'saved' | 'gone'> {
-  const response = await send('/auth/applicant', 'POST', {
+  const response = await send(apiPaths.applicant, 'POST', {
     handle,
     ...details,
   })

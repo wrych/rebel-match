@@ -7,6 +7,7 @@ import type {
 } from '../services/analytics-consent.js'
 import { handle } from './handle.js'
 import { requireSession } from './require-permission.js'
+import { apiPaths } from '../api-paths.js'
 
 const choiceBody: z.ZodType<AnalyticsChoice> = z.discriminatedUnion('optIn', [
   z.object({
@@ -29,7 +30,7 @@ export function analyticsConsentRoutes(deps: {
   const router = Router()
 
   router.put(
-    '/api/me/analytics',
+    apiPaths.analyticsConsent,
     requireSession(deps.auth),
     handle({ body: choiceBody }, async ({ body, member }, response) => {
       const outcome = await deps.analyticsConsent.choose(member.id, body)

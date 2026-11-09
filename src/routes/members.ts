@@ -5,6 +5,7 @@ import type { LiveSettings } from '../config.js'
 import type { MemberSearchService } from '../services/member-search.js'
 import { handle, memberOf, notFound, replyFound } from './handle.js'
 import { requirePermission } from './require-permission.js'
+import { apiPaths } from '../api-paths.js'
 
 // While hosts have search off, its addresses are as absent as ones that
 // never existed (R-FIND-1, R-NAV-8).
@@ -35,14 +36,14 @@ export function memberRoutes(deps: {
   ]
 
   router.get(
-    '/api/members/search',
+    apiPaths.memberSearch,
     ...guards,
     handle({ query: searchQuery }, async ({ query, member }, response) => {
       response.json(await deps.memberSearch.search(member.id, query.q))
     }),
   )
 
-  router.get('/api/members/:id/card', ...guards, async (request, response) => {
+  router.get(apiPaths.memberCard, ...guards, async (request, response) => {
     const card = await deps.memberSearch.card(
       memberOf(response).id,
       String(request.params['id']),

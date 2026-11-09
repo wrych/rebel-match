@@ -1,3 +1,4 @@
+import { apiPaths } from '../../src/api-paths'
 import type { SeenRow } from '../../src/badges/rows'
 import type { BadgeOverview, RowView } from '../../src/services/badges'
 import type { EarnedEventBadge } from '../../src/services/event-badge-store'
@@ -13,7 +14,7 @@ export type Tier = 'locked' | number | 'crown'
 /** The member's own badges (R-BADGE-7), or null while hosts have badges
  * off and the server answers not found (R-BADGE-15). */
 export async function fetchBadges(): Promise<BadgeOverview | null> {
-  const response = await fetch('/api/badges')
+  const response = await fetch(apiPaths.badges)
   if (response.status === NOT_FOUND) return null
   if (!response.ok)
     throw new Error(`badges unavailable (${String(response.status)})`)
@@ -28,7 +29,7 @@ export const BADGES_SEEN = 'badges-seen'
  * event badges, so none is new any more (R-BADGE-10). */
 export async function markBadgesSeen(rows: readonly SeenRow[]): Promise<void> {
   if (rows.length === 0) return
-  const response = await fetch('/api/badges/seen', {
+  const response = await fetch(apiPaths.badgesSeen, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ rows }),
@@ -42,7 +43,7 @@ export async function markBadgesSeen(rows: readonly SeenRow[]): Promise<void> {
  * server says nothing of the invite, so neither does this (R-BADGE-6,
  * R-INV-5). */
 export function claimEventBadge(invite: string): void {
-  fetch('/api/badges/claim', {
+  fetch(apiPaths.claimBadge, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ invite }),
@@ -51,7 +52,7 @@ export function claimEventBadge(invite: string): void {
 
 /** How many badges are new, for the menu; a failed read counts as none. */
 export async function fetchNewBadges(): Promise<number> {
-  const response = await fetch('/api/badges/new')
+  const response = await fetch(apiPaths.newBadges)
   if (!response.ok) return 0
   const { count } = (await response.json()) as { count?: unknown }
   return typeof count === 'number' && Number.isInteger(count) && count > 0

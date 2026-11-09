@@ -1,3 +1,4 @@
+import { apiPaths } from '../../src/api-paths'
 import type { ExperimentKey } from '../../src/experiments'
 import type { NotificationKind } from '../../src/services/notifications'
 
@@ -35,7 +36,7 @@ export type UiEvent =
 /** Fire and forget: `keepalive` lets the request finish while the page moves
  * on, and a failure is never the member's problem. */
 export function reportEvent(uiEvent: UiEvent): void {
-  fetch('/api/events', {
+  fetch(apiPaths.events, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(uiEvent),

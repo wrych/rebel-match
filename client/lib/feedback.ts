@@ -1,3 +1,4 @@
+import { apiPaths } from '../../src/api-paths'
 import { routeTable } from '../../src/routes'
 import type { Challenge } from './human-check'
 import { failure, send } from './request'
@@ -40,7 +41,7 @@ export async function sendFeedback(
   draft: FeedbackDraft,
   altcha?: string,
 ): Promise<FeedbackReply> {
-  const response = await send('/api/feedback', 'POST', {
+  const response = await send(apiPaths.feedback, 'POST', {
     message: draft.message,
     name: draft.name,
     email: draft.email,

@@ -4,6 +4,7 @@ import type { AuthProvider } from '../auth/index.js'
 import type { DeckService } from '../services/deck.js'
 import { handle } from './handle.js'
 import { requirePermission } from './require-permission.js'
+import { apiPaths } from '../api-paths.js'
 
 // The width of challenges.id (src/db/schema.ts).
 const CHALLENGE_ID_MAX_CHARS = 36
@@ -22,7 +23,7 @@ export function deckRoutes(deps: {
   const router = Router()
 
   router.get(
-    '/api/deck',
+    apiPaths.deck,
     requirePermission(deps.auth, 'challenge:swipe'),
     handle({ query: deckQuery }, async ({ query, member }, response) => {
       response.json({ cards: await deps.deck.next(member.id, query.first) })

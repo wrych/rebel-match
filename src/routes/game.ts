@@ -7,6 +7,7 @@ import { gameHints } from '../services/game.js'
 import { createWindowCounter } from '../services/rate-limit.js'
 import { handle, memberOf, notFound } from './handle.js'
 import { requirePermission } from './require-permission.js'
+import { apiPaths } from '../api-paths.js'
 
 const RECORD_WINDOW_MINUTES = 1
 
@@ -65,14 +66,14 @@ export function gameRoutes(deps: Deps): Router {
     requirePermission(deps.auth, 'game:play'),
   ]
 
-  router.get('/api/game/door', ...guard, (_request, response) => {
+  router.get(apiPaths.gameDoor, ...guard, (_request, response) => {
     response.status(204).end()
   })
-  router.get('/api/game', ...guard, async (_request, response) => {
+  router.get(apiPaths.game, ...guard, async (_request, response) => {
     response.json(await deps.game.state(memberOf(response).id))
   })
-  router.post('/api/game/days', ...guard, recordDay(deps))
-  router.get('/api/game/leaderboard', ...guard, async (_request, response) => {
+  router.post(apiPaths.gameDays, ...guard, recordDay(deps))
+  router.get(apiPaths.gameLeaderboard, ...guard, async (_request, response) => {
     response.json(
       await deps.game.leaderboard(
         memberOf(response).id,
@@ -81,14 +82,14 @@ export function gameRoutes(deps: Deps): Router {
     )
   })
   router.put(
-    '/api/game/sharing',
+    apiPaths.gameSharing,
     ...guard,
     handle({ body: sharingBody }, async ({ body, member }, response) => {
       await deps.game.share(member.id, body.shared)
       response.status(204).end()
     }),
   )
-  router.put('/api/game/hints/:hint', ...guard, async (request, response) => {
+  router.put(apiPaths.gameHint, ...guard, async (request, response) => {
     const params = hintParams.safeParse(request.params)
     if (!params.success) {
       notFound(response)

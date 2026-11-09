@@ -1,3 +1,4 @@
+import { apiPaths } from '../../src/api-paths'
 import { ensureOk, jsonOf, send } from './request'
 
 /** The signed-in member as `/auth/me` describes them (R-ROLE-4). */
@@ -13,7 +14,7 @@ export interface Me {
 let current: Promise<Me | null> | null = null
 
 async function fetchMe(): Promise<Me | null> {
-  const response = await send('/auth/me')
+  const response = await send(apiPaths.me)
   if (response.status === 401) return null
   return jsonOf<Me>(response, 'session unavailable')
 }
@@ -31,7 +32,7 @@ export function loadMe(): Promise<Me | null> {
 /** Ends the session on the server and forgets it here. Throws when the
  * server did not end it, so nobody is told they signed out when they did not. */
 export async function signOut(): Promise<void> {
-  ensureOk(await send('/auth/logout', 'POST'), 'sign-out failed')
+  ensureOk(await send(apiPaths.logout, 'POST'), 'sign-out failed')
   current = null
 }
 

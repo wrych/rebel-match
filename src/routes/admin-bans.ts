@@ -6,6 +6,7 @@ import type { LiveSettings } from '../config.js'
 import { banStatus, unbanStatus } from '../outcomes.js'
 import { handle, replyOutcome } from './handle.js'
 import { requirePermission } from './require-permission.js'
+import { apiPaths } from '../api-paths.js'
 
 type Deps = {
   auth: AuthProvider
@@ -45,7 +46,7 @@ function unban(bans: BanService): RequestHandler {
 export function adminBanRoutes(deps: Deps): Router {
   const router = Router()
   const guard = requirePermission(deps.auth, 'member:ban')
-  router.post('/api/admin/members/:id/ban', guard, ban(deps))
-  router.post('/api/admin/members/:id/unban', guard, unban(deps.bans))
+  router.post(apiPaths.banMember, guard, ban(deps))
+  router.post(apiPaths.unbanMember, guard, unban(deps.bans))
   return router
 }

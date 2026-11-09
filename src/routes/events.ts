@@ -11,6 +11,7 @@ import type { AnalyticsEvent, Track } from '../services/analytics.js'
 import { notificationKinds } from '../services/notifications.js'
 import { handle } from './handle.js'
 import { requireSession } from './require-permission.js'
+import { apiPaths } from '../api-paths.js'
 
 const screens: readonly string[] = [
   ...routeTable.map((route) => route.name),
@@ -102,7 +103,7 @@ export function eventRoutes(deps: {
   const router = Router()
 
   router.post(
-    '/api/events',
+    apiPaths.events,
     requireSession(deps.auth),
     handle({ body: uiEvent }, ({ body, member }, response) => {
       void deps.track(member.id, body)

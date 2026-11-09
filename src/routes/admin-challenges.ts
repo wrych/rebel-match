@@ -9,6 +9,7 @@ import {
 import { hideStatus, unhideStatus } from '../outcomes.js'
 import { handle, replyFound, replyOutcome } from './handle.js'
 import { requirePermission } from './require-permission.js'
+import { apiPaths } from '../api-paths.js'
 
 const idParams = z.object({ id: z.string().min(1) })
 const hideBody = z.object({
@@ -44,23 +45,15 @@ export function adminChallengeRoutes(deps: {
   const guard = requirePermission(deps.auth, 'challenge:moderate')
 
   router.get(
-    '/api/admin/members/:id/challenges',
+    apiPaths.memberChallenges,
     guard,
     handle({ params: idParams }, async ({ params }, response) => {
       const challenges = await deps.challengeModeration.ofMember(params.id)
       replyFound(response, challenges, 'challenges')
     }),
   )
-  router.post(
-    '/api/admin/challenges/:id/hide',
-    guard,
-    hide(deps.challengeModeration),
-  )
-  router.post(
-    '/api/admin/challenges/:id/unhide',
-    guard,
-    unhide(deps.challengeModeration),
-  )
+  router.post(apiPaths.hideChallenge, guard, hide(deps.challengeModeration))
+  router.post(apiPaths.unhideChallenge, guard, unhide(deps.challengeModeration))
 
   return router
 }

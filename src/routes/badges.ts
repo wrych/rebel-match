@@ -7,6 +7,7 @@ import type { BadgeService } from '../services/badges.js'
 import { inviteToken } from './invite-token.js'
 import { handle, memberOf, notFound } from './handle.js'
 import { requireSession } from './require-permission.js'
+import { apiPaths } from '../api-paths.js'
 
 const seenBody = z.object({
   rows: z.array(z.enum(seenRows)).max(seenRows.length),
@@ -37,18 +38,18 @@ export function badgeRoutes(deps: {
   const guard = requireSession(deps.auth)
   const shown = whileOn(deps.settings)
 
-  router.get('/api/badges', shown, guard, async (_request, response) => {
+  router.get(apiPaths.badges, shown, guard, async (_request, response) => {
     response.json(await deps.badges.mine(memberOf(response).id))
   })
 
-  router.get('/api/badges/new', shown, guard, async (_request, response) => {
+  router.get(apiPaths.newBadges, shown, guard, async (_request, response) => {
     response.json({
       count: await deps.badges.newCount(memberOf(response).id),
     })
   })
 
   router.post(
-    '/api/badges/seen',
+    apiPaths.badgesSeen,
     shown,
     guard,
     handle({ body: seenBody }, async ({ body, member }, response) => {
@@ -59,7 +60,7 @@ export function badgeRoutes(deps: {
 
   // The same answer whatever the invite, so a member learns nothing of one
   // that is not valid (R-BADGE-6, R-INV-5).
-  router.post('/api/badges/claim', guard, async (request, response) => {
+  router.post(apiPaths.claimBadge, guard, async (request, response) => {
     const body = claimBody.safeParse(request.body)
     if (body.success)
       await deps.badges.claim(memberOf(response).id, body.data.invite)

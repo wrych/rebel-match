@@ -91,6 +91,7 @@ import { freshSettings, tickRoutes } from './routes/tick.js'
 import type { Tick } from './services/tick.js'
 import type { InvokerCheck } from './services/tick-invoker.js'
 import type { FeedbackService } from './services/feedback.js'
+import { apiPaths } from './api-paths.js'
 
 export interface AppDeps {
   config: Config
@@ -237,13 +238,13 @@ export function createApp(deps: AppDeps): Express {
   app.use(adminSettingsRoutes(deps))
   mountPlayAndPeople(app, deps)
 
-  app.get('/api/health', async (_request, response) => {
+  app.get(apiPaths.health, async (_request, response) => {
     const database = (await databaseReachable(deps.db)) ? 'up' : 'down'
 
     response.json({ status: 'ok', database })
   })
 
-  app.get('/api/config', (_request, response) => {
+  app.get(apiPaths.config, (_request, response) => {
     response.json(clientConfig(deps.config, deps.settings.limits()))
   })
 

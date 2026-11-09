@@ -5,6 +5,7 @@ import type { LiveSettings } from '../config.js'
 import type { ProfileCodeService } from '../services/profile-codes.js'
 import { handle, memberOf, notFound, replyFound } from './handle.js'
 import { requireSession } from './require-permission.js'
+import { apiPaths } from '../api-paths.js'
 
 /** While hosts have codes off, their addresses are as absent as ones that
  * never existed (R-CODE-1, R-NAV-8). */
@@ -35,12 +36,12 @@ export function profileCodeRoutes(deps: {
   const router = Router()
   const guards = [whileCodesOn(deps.settings), requireSession(deps.auth)]
 
-  router.get('/api/me/profile-code', ...guards, async (_request, response) => {
+  router.get(apiPaths.profileCode, ...guards, async (_request, response) => {
     response.json(await deps.profileCodes.mine(memberOf(response).id))
   })
 
   router.patch(
-    '/api/me/profile-code',
+    apiPaths.profileCode,
     ...guards,
     handle({ body: enabledBody }, async ({ body, member }, response) => {
       response.json(await deps.profileCodes.setEnabled(member.id, body.enabled))
@@ -48,7 +49,7 @@ export function profileCodeRoutes(deps: {
   )
 
   router.post(
-    '/api/me/profile-code/reset',
+    apiPaths.resetProfileCode,
     ...guards,
     async (_request, response) => {
       response.json(await deps.profileCodes.reset(memberOf(response).id))
@@ -56,7 +57,7 @@ export function profileCodeRoutes(deps: {
   )
 
   router.post(
-    '/api/profile-codes/open',
+    apiPaths.openProfileCode,
     ...guards,
     handle({ body: tokenBody }, async ({ body, member }, response) => {
       replyFound(response, await deps.profileCodes.open(member.id, body.token))

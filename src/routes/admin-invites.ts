@@ -10,6 +10,7 @@ import type {
 } from '../services/invites.js'
 import { handle, notFound } from './handle.js'
 import { requirePermission } from './require-permission.js'
+import { apiPaths } from '../api-paths.js'
 
 type InviteLimits = Pick<
   Limits,
@@ -141,12 +142,12 @@ export function adminInviteRoutes(deps: {
   const body = createBody(deps.config.limits)
   const cap = capBody(deps.config.limits)
 
-  router.get('/api/admin/invites', guard, async (_request, response) => {
+  router.get(apiPaths.invites, guard, async (_request, response) => {
     response.json({ invites: await deps.invites.list() })
   })
 
   router.post(
-    '/api/admin/invites',
+    apiPaths.invites,
     guard,
     handle({ body }, async ({ body, member }, response) => {
       const outcome = await deps.invites.create(body, member.id)
@@ -159,7 +160,7 @@ export function adminInviteRoutes(deps: {
   )
 
   router.post(
-    '/api/admin/invites/:id/revoke',
+    apiPaths.revokeInvite,
     guard,
     handle({ params: inviteParams }, async ({ params }, response) => {
       const outcome = await deps.invites.revoke(params.id)
@@ -167,9 +168,9 @@ export function adminInviteRoutes(deps: {
     }),
   )
 
-  router.patch('/api/admin/invites/:id', guard, raise(deps.invites, cap))
+  router.patch(apiPaths.invite, guard, raise(deps.invites, cap))
   router.put(
-    '/api/admin/invites/:id/event-badge',
+    apiPaths.inviteEventBadge,
     guard,
     giveBadge(deps.invites, badgeBody(deps.config.limits)),
   )
@@ -182,7 +183,7 @@ export function adminInviteRoutes(deps: {
  * (R-BADGE-5, design §8). */
 export function eventBadgeLogoRoutes(deps: { invites: InviteService }): Router {
   const router = Router()
-  router.get('/api/event-badges/:id/logo.svg', async (request, response) => {
+  router.get(apiPaths.eventBadgeLogo, async (request, response) => {
     const params = inviteParams.safeParse(request.params)
     const logo = params.success ? await deps.invites.logo(params.data.id) : null
     if (logo === null) {

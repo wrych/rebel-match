@@ -1,3 +1,4 @@
+import { apiPaths } from '../../src/api-paths'
 import {
   experiments,
   type Assigned,
@@ -13,7 +14,7 @@ export async function variantOf<K extends ExperimentKey>(
   key: K,
 ): Promise<{ variant: Variant<K>; assigned: boolean }> {
   try {
-    const response = await fetch('/api/flags')
+    const response = await fetch(apiPaths.flags)
     if (response.ok) {
       const { flags } = (await response.json()) as { flags: Assigned }
       return { variant: flags[key], assigned: true }

@@ -1,3 +1,4 @@
+import { apiPaths } from '../../src/api-paths'
 import { outcomeOf, send } from './request'
 
 /** Gives or withdraws the analytics opt-in (R-ANA-4, ADR 0026); `from` marks
@@ -8,7 +9,7 @@ export async function chooseAnalytics(
   version: string,
   from?: 'onboarding',
 ): Promise<'done' | 'stale'> {
-  const response = await send('/api/me/analytics', 'PUT', {
+  const response = await send(apiPaths.analyticsConsent, 'PUT', {
     optIn,
     ...(optIn ? { version } : {}),
     ...(from ? { from } : {}),

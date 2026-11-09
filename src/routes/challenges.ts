@@ -7,6 +7,7 @@ import type { ChallengeService } from '../services/challenges.js'
 import { withdrawStatus } from '../outcomes.js'
 import { handle, replyFound, replyOutcome } from './handle.js'
 import { requirePermission, requireSession } from './require-permission.js'
+import { apiPaths } from '../api-paths.js'
 
 const challengeParams = z.object({ id: z.string().min(1) })
 const confirmBody = z.object({ trendId: z.string().min(1) })
@@ -106,11 +107,11 @@ export function challengeRoutes(deps: Deps): Router {
   const router = Router()
   const write = requirePermission(deps.auth, 'challenge:create')
 
-  router.get('/api/trends', async (_request, response) => {
+  router.get(apiPaths.trends, async (_request, response) => {
     response.json({ trends: await deps.challenges.trends() })
   })
   router.get(
-    '/api/trends/:trendId',
+    apiPaths.trend,
     requireSession(deps.auth),
     handle({ params: trendParams }, async ({ params, member }, response) => {
       replyFound(
@@ -120,20 +121,20 @@ export function challengeRoutes(deps: Deps): Router {
     }),
   )
   router.get(
-    '/api/challenges/newest',
+    apiPaths.newestChallenges,
     requirePermission(deps.auth, 'challenge:swipe'),
     newest(deps),
   )
-  router.post('/api/challenges', write, create(deps))
+  router.post(apiPaths.challenges, write, create(deps))
   router.get(
-    '/api/challenges/:id',
+    apiPaths.challenge,
     write,
     ownOnly((memberId, id) => deps.challenges.get(memberId, id), 'challenge'),
   )
-  router.patch('/api/challenges/:id', write, confirm(deps))
-  router.post('/api/challenges/:id/withdraw', write, withdraw(deps))
+  router.patch(apiPaths.challenge, write, confirm(deps))
+  router.post(apiPaths.withdrawChallenge, write, withdraw(deps))
   router.get(
-    '/api/challenges/:id/matches',
+    apiPaths.challengeMatches,
     write,
     ownOnly((memberId, id) => deps.challenges.matches(memberId, id)),
   )

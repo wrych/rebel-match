@@ -6,6 +6,7 @@ import type { NotificationService } from '../services/notifications.js'
 import type { SettingsService } from '../services/settings.js'
 import { handle, memberOf } from './handle.js'
 import { requireSession } from './require-permission.js'
+import { apiPaths } from '../api-paths.js'
 
 // The width of notifications.id (src/db/schema.ts).
 const NOTIFICATION_ID_MAX_CHARS = 36
@@ -37,7 +38,7 @@ export function notificationRoutes(deps: {
   const guard = requireSession(deps.auth)
 
   router.get(
-    '/api/notifications',
+    apiPaths.notifications,
     guard,
     handle({ query: listQuery }, async ({ query, member }, response) => {
       response.json({
@@ -49,14 +50,14 @@ export function notificationRoutes(deps: {
     }),
   )
 
-  router.get('/api/notifications/new', guard, async (_request, response) => {
+  router.get(apiPaths.newNotifications, guard, async (_request, response) => {
     response.json({
       count: await deps.notifications.newCount(memberOf(response).id),
     })
   })
 
   router.post(
-    '/api/notifications/seen',
+    apiPaths.notificationsSeen,
     guard,
     handle(
       () => ({ body: seenBody(deps.settings.limits().notificationsPageSize) }),
@@ -87,7 +88,7 @@ function settingsRoutes(
 ): void {
   const guard = requireSession(deps.auth)
   router.get(
-    '/api/me/notification-settings',
+    apiPaths.notificationSettings,
     guard,
     async (_request, response) => {
       response.json({
@@ -99,7 +100,7 @@ function settingsRoutes(
     },
   )
   router.put(
-    '/api/me/notification-settings/:type',
+    apiPaths.notificationSetting,
     guard,
     handle(
       { params: typeParams, body: choice },

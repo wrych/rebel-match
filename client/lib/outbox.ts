@@ -1,3 +1,4 @@
+import { apiPaths } from '../../src/api-paths'
 import { getJson } from './request'
 
 export type OutboxStatus = 'recorded' | 'sent' | 'suppressed' | 'failed'
@@ -30,7 +31,7 @@ export async function fetchOutbox(query: OutboxQuery): Promise<OutboxEntry[]> {
 
   const suffix = params.size > 0 ? `?${params.toString()}` : ''
   const { entries } = await getJson<{ entries: OutboxEntry[] }>(
-    `/api/admin/outbox${suffix}`,
+    `${apiPaths.outbox}${suffix}`,
     'outbox unavailable',
   )
   return entries

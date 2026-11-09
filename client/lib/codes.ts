@@ -1,3 +1,4 @@
+import { apiPaths } from '../../src/api-paths'
 import type { IssuedCode } from '../../src/services/live-codes'
 import type { OpenedCode, ProfileCode } from '../../src/services/profile-codes'
 import { findJson, jsonOf, send } from './request'
@@ -30,18 +31,18 @@ export const profileCodeLink = (origin: string, token: string): string =>
 /** The member's own profile code, made on first asking; null while hosts
  * have codes off (R-CODE-2). */
 export function fetchProfileCode(): Promise<ProfileCode | null> {
-  return findJson<ProfileCode>('/api/me/profile-code', 'code unavailable')
+  return findJson<ProfileCode>(apiPaths.profileCode, 'code unavailable')
 }
 
 /** Turns the member's profile code on or off, the same code (R-CODE-4). */
 export async function setProfileCode(enabled: boolean): Promise<ProfileCode> {
-  const response = await send('/api/me/profile-code', 'PATCH', { enabled })
+  const response = await send(apiPaths.profileCode, 'PATCH', { enabled })
   return jsonOf<ProfileCode>(response, 'code not saved')
 }
 
 /** Replaces the member's profile code at once (R-CODE-4). */
 export async function resetProfileCode(): Promise<ProfileCode> {
-  const response = await send('/api/me/profile-code/reset', 'POST')
+  const response = await send(apiPaths.resetProfileCode, 'POST')
   return jsonOf<ProfileCode>(response, 'code not reset')
 }
 
@@ -50,7 +51,7 @@ export async function resetProfileCode(): Promise<ProfileCode> {
 export async function openProfileCode(
   token: string,
 ): Promise<OpenedCode | null> {
-  const response = await send('/api/profile-codes/open', 'POST', { token })
+  const response = await send(apiPaths.openProfileCode, 'POST', { token })
   if (response.status === 404) return null
   return jsonOf<OpenedCode>(response, 'code unavailable')
 }
@@ -68,7 +69,7 @@ export type LiveCodeAnswer =
 
 /** Asks for the owner's next live code. */
 export async function issueLiveCode(): Promise<LiveCodeAnswer> {
-  const response = await send('/api/me/live-codes', 'POST')
+  const response = await send(apiPaths.liveCodes, 'POST')
   if (response.status === 429) return { result: 'limit' }
   if (response.status === 404) return { result: 'off' }
   return {
@@ -86,7 +87,7 @@ export type Redeemed =
 
 /** Scans a live code, its token in the body (R-NFR-9). */
 export async function redeemLiveCode(token: string): Promise<Redeemed> {
-  const response = await send('/api/live-codes/redeem', 'POST', { token })
+  const response = await send(apiPaths.redeemLiveCode, 'POST', { token })
   if (response.status === 410) return { result: 'expired' }
   if (response.status === 404) return { result: 'off' }
   const { id } = await jsonOf<{ id: string }>(response, 'code not used')

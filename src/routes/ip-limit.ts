@@ -1,5 +1,6 @@
 import type { Request, RequestHandler } from 'express'
 import type { WindowCounter } from '../services/rate-limit.js'
+import { apiPaths } from '../api-paths.js'
 
 /** The client's address as Express reads it: from `X-Forwarded-For` only
  * through the proxy hops `trust proxy` allows, else the socket's (R-NFR-8). */
@@ -9,10 +10,10 @@ export function clientIp(request: Request): string {
 
 /** The sign-in requests the per-IP backstop counts (R-NFR-8, design §8). */
 export const SIGN_IN_POSTS = [
-  '/auth/request-link',
-  '/auth/applicant',
-  '/auth/verify',
-  '/auth/invite-opened',
+  apiPaths.requestLink,
+  apiPaths.applicant,
+  apiPaths.verify,
+  apiPaths.inviteOpened,
 ] as const
 
 /** Answers `429` once an address has made `limit()` requests in the counter's

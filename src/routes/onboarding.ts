@@ -10,6 +10,7 @@ import { companySizeKeys, sectorKeys } from '../profile-options.js'
 import { displayName, optionalChoice, optionalText } from './profile-fields.js'
 import { handle, memberOf } from './handle.js'
 import { requireSession } from './require-permission.js'
+import { apiPaths } from '../api-paths.js'
 
 type TextLimits = Pick<
   Limits,
@@ -42,7 +43,7 @@ export function onboardingRoutes(deps: {
   const guard = requireSession(deps.auth)
   const body = onboardingBody(deps.config.limits)
 
-  router.get('/api/onboarding', guard, async (_request, response) => {
+  router.get(apiPaths.onboarding, guard, async (_request, response) => {
     const draft = await deps.onboarding.draft(memberOf(response).id)
     if (draft === null) {
       response.status(401).json({ error: 'unauthenticated' })
@@ -55,7 +56,7 @@ export function onboardingRoutes(deps: {
   })
 
   router.post(
-    '/api/onboarding',
+    apiPaths.onboarding,
     guard,
     handle({ body }, async ({ body, member }, response) => {
       const outcome = await deps.onboarding.complete(member.id, body)

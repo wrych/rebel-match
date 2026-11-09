@@ -1,3 +1,4 @@
+import { apiPaths, fill } from '../../src/api-paths'
 import { sharedPhotoPath } from '../../src/photo-paths'
 import { fetchConfig } from './api'
 import type { Crop } from './crop'
@@ -55,12 +56,12 @@ export function encodeSquare(
 /** Where the member's own photo is read, a new address each time it is set,
  * so no cached picture outlives a change. */
 export const ownPhotoUrl = (photoAt: string): string =>
-  `/api/profile/photo?v=${encodeURIComponent(photoAt)}`
+  `${apiPaths.ownPhoto}?v=${encodeURIComponent(photoAt)}`
 
 /** Saves the photo; `refused` when the server would not take it, a throw for
  * anything else, so a failure is never shown as saved (R-PROF-6). */
 export async function savePhoto(jpeg: Blob): Promise<'saved' | 'refused'> {
-  const response = await fetch('/api/profile/photo', {
+  const response = await fetch(apiPaths.ownPhoto, {
     method: 'PUT',
     headers: { 'content-type': 'image/jpeg' },
     body: jpeg,
@@ -73,7 +74,7 @@ export async function savePhoto(jpeg: Blob): Promise<'saved' | 'refused'> {
 /** Removes the photo; throws when it did not happen. */
 export async function removePhoto(): Promise<void> {
   ensureOk(
-    await fetch('/api/profile/photo', { method: 'DELETE' }),
+    await fetch(apiPaths.ownPhoto, { method: 'DELETE' }),
     'photo not removed',
   )
 }
@@ -86,7 +87,7 @@ export const photoSrc = (key: string | null): string | null =>
 /** A member's photo for the host tools, a new address with each new photo
  * (R-MEM-2). */
 export const memberPhotoUrl = (memberId: string, key: string): string =>
-  `/api/admin/members/${encodeURIComponent(memberId)}/photo?v=${encodeURIComponent(key)}`
+  `${fill(apiPaths.memberPhoto, { id: memberId })}?v=${encodeURIComponent(key)}`
 
 /** The member's own photo while hosts have photos on, else null, for the
  * replay to draw their point as (R-NET-2, R-PROF-7). */

@@ -5,6 +5,7 @@ import type { AdmissionService } from '../services/admission.js'
 import { PAYLOAD_MAX_CHARS } from '../services/human-check.js'
 import { notFound } from './handle.js'
 import { clientIp } from './ip-limit.js'
+import { apiPaths } from '../api-paths.js'
 
 function requestBody(limits: Pick<Limits, 'emailMaxChars'>): z.ZodType<{
   email: string
@@ -54,7 +55,7 @@ export function requestLinkRoutes(deps: {
   const linkBody = requestBody(deps.config.limits)
   const describeBody = applicantBody(deps.config.limits)
 
-  router.post('/auth/request-link', async (request, response) => {
+  router.post(apiPaths.requestLink, async (request, response) => {
     const body = linkBody.safeParse(request.body)
     if (!body.success) {
       response.status(400).json({ error: 'bad_request' })
@@ -72,7 +73,7 @@ export function requestLinkRoutes(deps: {
     response.json(answer)
   })
 
-  router.post('/auth/applicant', async (request, response) => {
+  router.post(apiPaths.applicant, async (request, response) => {
     const body = describeBody.safeParse(request.body)
     if (!body.success) {
       response.status(400).json({ error: 'bad_request' })

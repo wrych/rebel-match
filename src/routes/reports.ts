@@ -11,6 +11,7 @@ import type { ReportItem, ReportService } from '../services/reports.js'
 import { reportStatus } from '../outcomes.js'
 import { handle, replyFound, replyOutcome } from './handle.js'
 import { requirePermission } from './require-permission.js'
+import { apiPaths } from '../api-paths.js'
 
 const idParams = z.object({ id: z.string().min(1) })
 const reason = z.enum(
@@ -77,16 +78,16 @@ export function reportRoutes(deps: Deps): Router {
   const guard = requirePermission(deps.auth, 'content:report')
 
   router.get(
-    '/api/reports/challenge/:id',
+    apiPaths.challengeReport,
     guard,
     target(deps, (challengeId) => ({ challengeId })),
   )
   router.get(
-    '/api/reports/request/:id',
+    apiPaths.requestReport,
     guard,
     target(deps, (requestId) => ({ requestId })),
   )
-  router.post('/api/reports', guard, report(deps))
+  router.post(apiPaths.reports, guard, report(deps))
 
   return router
 }

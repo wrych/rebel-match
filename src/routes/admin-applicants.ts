@@ -6,6 +6,7 @@ import type { NotificationService } from '../services/notifications.js'
 import { approveStatus, rejectStatus } from '../outcomes.js'
 import { handle, memberOf, replyOutcome } from './handle.js'
 import { requirePermission } from './require-permission.js'
+import { apiPaths } from '../api-paths.js'
 
 const applicantParams = z.object({ id: z.string().min(1) })
 
@@ -19,14 +20,14 @@ export function adminApplicantRoutes(deps: {
   const router = Router()
   const guard = requirePermission(deps.auth, 'applicant:review')
 
-  router.get('/api/admin/applicants', guard, async (_request, response) => {
+  router.get(apiPaths.applicants, guard, async (_request, response) => {
     const applicants = await deps.approvals.listPending()
     await deps.notifications.openedApplicants(memberOf(response).id)
     response.json({ applicants })
   })
 
   router.post(
-    '/api/admin/applicants/:id/approve',
+    apiPaths.approveApplicant,
     guard,
     handle(
       { params: applicantParams },
@@ -38,7 +39,7 @@ export function adminApplicantRoutes(deps: {
   )
 
   router.post(
-    '/api/admin/applicants/:id/reject',
+    apiPaths.rejectApplicant,
     guard,
     handle({ params: applicantParams }, async ({ params }, response) => {
       replyOutcome(

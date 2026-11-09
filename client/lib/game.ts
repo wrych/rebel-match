@@ -1,3 +1,4 @@
+import { apiPaths, fill } from '../../src/api-paths'
 import type { DayRecord, Job } from '../../src/game/levels'
 import type { DayResult, GameState, Leaderboard } from '../../src/services/game'
 import { ensureOk, findJson, jsonOf, send } from './request'
@@ -19,7 +20,7 @@ export const jobName = (job: Job): string => jobNames[job]
 /** The leaderboard, or null while the game is off (R-GAME-13, R-GAME-17). */
 export async function fetchLeaderboard(): Promise<Leaderboard | null> {
   return findJson<Leaderboard>(
-    '/api/game/leaderboard',
+    apiPaths.gameLeaderboard,
     'leaderboard unavailable',
   )
 }
@@ -28,7 +29,7 @@ export async function fetchLeaderboard(): Promise<Leaderboard | null> {
  * without making a player (R-GAME-1). */
 export async function gameOpen(): Promise<boolean> {
   try {
-    return (await send('/api/game/door')).status === 204
+    return (await send(apiPaths.gameDoor)).status === 204
   } catch {
     return false
   }
@@ -36,13 +37,13 @@ export async function gameOpen(): Promise<boolean> {
 
 /** The player's state, or null while the game is off (R-GAME-16). */
 export async function fetchGame(): Promise<GameState | null> {
-  return findJson<GameState>('/api/game', 'game unavailable')
+  return findJson<GameState>(apiPaths.game, 'game unavailable')
 }
 
 /** Shows the member's name on the board, or the pseudonym (R-GAME-15). */
 export async function shareName(shared: boolean): Promise<void> {
   ensureOk(
-    await send('/api/game/sharing', 'PUT', { shared }),
+    await send(apiPaths.gameSharing, 'PUT', { shared }),
     'sharing not saved',
   )
 }
@@ -50,7 +51,7 @@ export async function shareName(shared: boolean): Promise<void> {
 /** Records a finished or abandoned day; null once the office has closed
  * (R-GAME-14, R-GAME-17). */
 export async function recordDay(day: DayRecord): Promise<DayResult | null> {
-  const response = await send('/api/game/days', 'POST', day)
+  const response = await send(apiPaths.gameDays, 'POST', day)
   if (response.status === 404) return null
   return jsonOf<DayResult>(response, 'day not recorded')
 }
@@ -60,7 +61,7 @@ export async function recordDay(day: DayRecord): Promise<DayResult | null> {
 export function abandonDay(level: number, playSeconds: number): void {
   const day: DayRecord = { level, outcome: 'abandoned', playSeconds }
   navigator.sendBeacon(
-    '/api/game/days',
+    apiPaths.gameDays,
     new Blob([JSON.stringify(day)], { type: 'application/json' }),
   )
 }
@@ -68,7 +69,5 @@ export function abandonDay(level: number, playSeconds: number): void {
 /** Marks a hint seen, so it shows once per member; a failure only means it
  * may show again (R-GAME-18). */
 export function seeHint(hint: string): void {
-  send(`/api/game/hints/${encodeURIComponent(hint)}`, 'PUT').catch(
-    () => undefined,
-  )
+  send(fill(apiPaths.gameHint, { hint }), 'PUT').catch(() => undefined)
 }

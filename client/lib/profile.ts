@@ -1,3 +1,4 @@
+import { apiPaths } from '../../src/api-paths'
 import type { OwnProfile, ProfileEdit } from '../../src/services/profile'
 import type { SocialNetwork } from '../../src/social-links'
 import { ensureOk, failure, getJson, send } from './request'
@@ -9,13 +10,13 @@ export type { OwnProfile }
 export type ProfileAnswers = Record<keyof ProfileEdit, string>
 
 export async function fetchProfile(): Promise<OwnProfile> {
-  return getJson<OwnProfile>('/api/profile', 'profile unavailable')
+  return getJson<OwnProfile>(apiPaths.profile, 'profile unavailable')
 }
 
 /** Saves the profile as it now stands (R-PROF-1). Throws on anything but a
  * save, so a failure is never shown as saved. */
 export async function saveProfile(edit: ProfileAnswers): Promise<void> {
-  ensureOk(await send('/api/profile', 'PUT', edit), 'profile not saved')
+  ensureOk(await send(apiPaths.profile, 'PUT', edit), 'profile not saved')
 }
 
 /** What became of deleting one's own account (R-PROF-2): deleted, and when
@@ -28,7 +29,7 @@ export type DeleteOutcome =
  * refusal comes back as its reason, anything else unexpected throws, so a
  * failure is never shown as done. */
 export async function deleteAccount(): Promise<DeleteOutcome> {
-  const response = await send('/api/profile', 'DELETE')
+  const response = await send(apiPaths.profile, 'DELETE')
   if (response.ok) {
     const { eraseAfter } = (await response.json()) as { eraseAfter: string }
     return { result: 'deleted', eraseAfter }
@@ -44,7 +45,7 @@ export async function deleteAccount(): Promise<DeleteOutcome> {
 /** Deletes the member's activity history, nothing else (R-STAT-4). Throws
  * when it did not happen, so a failure is never shown as done. */
 export async function deleteHistory(): Promise<void> {
-  const response = await send('/api/me/history', 'DELETE')
+  const response = await send(apiPaths.history, 'DELETE')
   ensureOk(response, 'deleting the history failed')
 }
 
@@ -52,7 +53,7 @@ export async function deleteHistory(): Promise<void> {
  * did not save, so a failure is never shown as saved. */
 export async function saveFindable(findable: boolean): Promise<void> {
   ensureOk(
-    await send('/api/me/findable', 'PUT', { findable }),
+    await send(apiPaths.findable, 'PUT', { findable }),
     'findable not saved',
   )
 }
@@ -64,7 +65,7 @@ export async function saveSocialLinks(
   links: Record<SocialNetwork, string>,
 ): Promise<void> {
   ensureOk(
-    await send('/api/me/social-links', 'PUT', links),
+    await send(apiPaths.socialLinks, 'PUT', links),
     'social links not saved',
   )
 }

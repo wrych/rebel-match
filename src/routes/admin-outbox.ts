@@ -5,6 +5,7 @@ import type { Limits } from '../config.js'
 import type { OutboxFilter, OutboxLog } from '../services/outbox-log.js'
 import { handle } from './handle.js'
 import { requirePermission } from './require-permission.js'
+import { apiPaths } from '../api-paths.js'
 
 function listQuery(pageSize: number): z.ZodType<OutboxFilter> {
   return z.object({
@@ -25,7 +26,7 @@ export function adminOutboxRoutes(deps: {
   const query = listQuery(deps.config.limits.outboxPageSize)
 
   router.get(
-    '/api/admin/outbox',
+    apiPaths.outbox,
     requirePermission(deps.auth, 'outbox:read'),
     handle({ query }, async ({ query }, response) => {
       response.json({ entries: await deps.outbox.list(query) })
