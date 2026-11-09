@@ -93,6 +93,12 @@ describe('settingsView (R-CFG-5)', () => {
     expect(setting).not.toHaveProperty('edit')
   })
 
+  it('marks the longest report comment fixed, as its spec is (R-CFG-5)', () => {
+    expect(find(view(defaultConfig()), 'Longest report comment')).toMatchObject(
+      { value: '500 characters', fixed: true, changed: false },
+    )
+  })
+
   it('offers no edit for what only a deployment changes (R-CFG-6)', () => {
     const groups = view(defaultConfig())
 
