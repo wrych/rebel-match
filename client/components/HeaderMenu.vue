@@ -11,7 +11,6 @@ import { searchOpen } from '../lib/people'
 import { recapOpen } from '../lib/recap'
 import { RECAP_TITLE } from '../../src/recap/title'
 import { fetchOpenReported, moderationLabel } from '../lib/moderation'
-import type { Mood } from '../lib/mood'
 import {
   fetchNewNotifications,
   menuLabel,
@@ -21,8 +20,6 @@ import { poll } from '../lib/poll'
 import { forgetMe, loadMe, signOut, type Me } from '../lib/session'
 import { showUnread } from '../lib/tab-title'
 
-const props = defineProps<{ mood: Mood }>()
-const emit = defineEmits<{ toggleMood: [] }>()
 const route = useRoute()
 
 const open = ref(false)
@@ -192,19 +189,6 @@ onBeforeUnmount(() => {
     </button>
 
     <div v-if="open" id="main-menu" class="panel">
-      <button
-        type="button"
-        role="switch"
-        class="item"
-        :aria-checked="props.mood === 'happy'"
-        @click="emit('toggleMood')"
-      >
-        <span>Happy colour mode</span>
-        <span class="state" aria-hidden="true">{{
-          props.mood === 'happy' ? 'On' : 'Off'
-        }}</span>
-      </button>
-
       <RouterLink
         v-if="me?.onboarded"
         to="/notifications"
@@ -369,11 +353,6 @@ onBeforeUnmount(() => {
 .item:hover,
 .item:focus-visible {
   background: var(--line);
-}
-
-.state {
-  font-size: 0.85em;
-  color: var(--muted);
 }
 
 .alert {

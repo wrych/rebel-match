@@ -400,6 +400,7 @@ describe('ProfileScreen folds and search (R-PROF-8)', () => {
       'Connecting',
       'Notifications',
       'Privacy',
+      'Look',
       'Your data',
     ])
     expect(folds(screen).every((open) => !open)).toBe(true)
@@ -414,6 +415,17 @@ describe('ProfileScreen folds and search (R-PROF-8)', () => {
 
     expect(titles(screen)).toEqual(['Privacy'])
     expect(folds(screen)[3]).toBe(true)
+    screen.unmount()
+  })
+
+  it('offers the colour mode switch in its Look card (R-LOOK-2)', async () => {
+    server()
+    const screen = await mountAttached()
+
+    await searchFor(screen, 'happy')
+
+    expect(titles(screen)).toEqual(['Look'])
+    expect(screen.find('input[role="switch"]').isVisible()).toBe(true)
     screen.unmount()
   })
 
@@ -448,7 +460,7 @@ describe('ProfileScreen folds and search (R-PROF-8)', () => {
     await searchFor(screen, 'delete')
     await searchFor(screen, '')
 
-    expect(folds(screen)).toEqual([true, false, false, false, false])
+    expect(folds(screen)).toEqual([true, false, false, false, false, false])
     screen.unmount()
   })
 })

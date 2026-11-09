@@ -56,23 +56,18 @@ function withConfig(
   return fetchMock
 }
 
-async function mountMenu(
-  mood: 'calm' | 'happy' = 'calm',
-): Promise<ReturnType<typeof mount>> {
+async function mountMenu(): Promise<ReturnType<typeof mount>> {
   vi.resetModules()
   const { default: HeaderMenu } = await import('./HeaderMenu.vue')
   const menu = mount(HeaderMenu, {
-    props: { mood },
     attachTo: document.body,
     global: { stubs: { RouterLink: RouterLinkStub } },
   })
   return menu
 }
 
-async function opened(
-  mood: 'calm' | 'happy' = 'calm',
-): Promise<ReturnType<typeof mount>> {
-  const menu = await mountMenu(mood)
+async function opened(): Promise<ReturnType<typeof mount>> {
+  const menu = await mountMenu()
   await menu.find('button[aria-label="Menu"]').trigger('click')
   await flushPromises()
   return menu
@@ -153,14 +148,12 @@ describe('HeaderMenu', () => {
     ).toBe('false')
   })
 
-  it('switches the colour mode, showing which is on (R-LOOK-2)', async () => {
+  it('leaves the colour mode to the profile screen (R-PROF-3, R-LOOK-2)', async () => {
     signedIn([])
-    const menu = await opened('happy')
-    const mode = menu.find('[role="switch"]')
+    const menu = await opened()
 
-    expect(mode.attributes('aria-checked')).toBe('true')
-    await mode.trigger('click')
-    expect(menu.emitted('toggleMood')).toHaveLength(1)
+    expect(menu.find('[role="switch"]').exists()).toBe(false)
+    expect(menu.text()).not.toContain('colour mode')
   })
 
   it('offers each host tool by the permission it needs (R-ROLE-4)', async () => {
@@ -215,11 +208,10 @@ describe('HeaderMenu', () => {
     expect(paths(await opened())).toContain('/profile')
   })
 
-  it('offers the colour mode and the impressum to nobody signed in (R-PROF-4)', async () => {
+  it('offers only the impressum to nobody signed in (R-PROF-4)', async () => {
     signedIn(null)
     const menu = await opened()
 
-    expect(menu.find('[role="switch"]').exists()).toBe(true)
     expect(menu.text()).not.toContain('Sign out')
     expect(paths(menu)).toEqual(['/impressum'])
   })

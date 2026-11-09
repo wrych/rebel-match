@@ -43,6 +43,10 @@ const LATER: readonly ProfileFold[] = [
     ],
   },
   {
+    title: 'Look',
+    words: ['Colour mode', 'Color mode', 'Happy colour mode', 'Calm'],
+  },
+  {
     title: 'Your data',
     words: ['Your activity history', 'Delete your account'],
   },

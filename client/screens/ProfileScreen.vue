@@ -8,6 +8,7 @@ import {
   sectors,
 } from '../../src/profile-options'
 import AnalyticsToggle from '../components/AnalyticsToggle.vue'
+import ColourModeSetting from '../components/ColourModeSetting.vue'
 import FindableToggle from '../components/FindableToggle.vue'
 import SocialLinksSetting from '../components/SocialLinksSetting.vue'
 import ProfileCodeSetting from '../components/ProfileCodeSetting.vue'
@@ -301,6 +302,10 @@ function save(field: Field): Promise<void> {
             <span class="row-link-label">Terms of use</span>
           </RouterLink>
         </section>
+      </FoldCard>
+
+      <FoldCard v-show="shown.has('Look')" v-bind="fold('Look')">
+        <ColourModeSetting :tick-ms="limits?.savedTickMs ?? 0" />
       </FoldCard>
 
       <FoldCard v-show="shown.has('Your data')" v-bind="fold('Your data')">

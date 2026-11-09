@@ -2,14 +2,10 @@
 import HeaderMenu from './components/HeaderMenu.vue'
 import RebelMark from './components/RebelMark.vue'
 import TabBar from './components/TabBar.vue'
-import { applyMood, currentMood as mood, savedMood } from './lib/mood'
+import { applyMood, savedMood } from './lib/mood'
 import { thanks } from './lib/thanks'
 
 applyMood(savedMood())
-
-function toggleMood(): void {
-  applyMood(mood.value === 'happy' ? 'calm' : 'happy')
-}
 </script>
 
 <template>
@@ -18,7 +14,7 @@ function toggleMood(): void {
       <RouterLink to="/" class="brand" aria-label="Rebel Match, home">
         <RebelMark class="brand-mark" />
       </RouterLink>
-      <HeaderMenu :mood="mood" @toggle-mood="toggleMood" />
+      <HeaderMenu />
     </header>
     <main class="page">
       <p v-if="thanks" class="notice notice-solid thanks" role="status">

@@ -12,6 +12,7 @@ describe('searchProfile (R-PROF-8)', () => {
     expect(searchProfile(all, 'PRIVACY')).toEqual(['Privacy'])
     expect(searchProfile(all, 'linkedin')).toEqual(['Connecting'])
     expect(searchProfile(all, 'your code')).toEqual(['Connecting'])
+    expect(searchProfile(all, 'color')).toEqual(['Look'])
     expect(searchProfile(all, 'email')).toEqual(['About you', 'Notifications'])
   })
 
