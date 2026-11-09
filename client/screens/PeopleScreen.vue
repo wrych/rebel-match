@@ -14,9 +14,11 @@ import {
 } from '../lib/people'
 import { sectors } from '../../src/profile-options'
 import type { SearchField } from '../../src/search/query'
+import { useNotFound } from '../lib/not-found'
 
 const route = useRoute()
 const router = useRouter()
+const notFound = useNotFound()
 
 const queryInUrl = (): string =>
   typeof route.query['q'] === 'string' ? route.query['q'] : ''
@@ -33,13 +35,6 @@ const chips = computed(() => chipsOf(draft.value))
 const showHelp = computed(
   () => queryInUrl().trim() === '' || answer.value?.tooShort === true,
 )
-
-async function notFound(): Promise<void> {
-  await router.replace({
-    name: 'not-found',
-    params: { pathMatch: route.path.slice(1).split('/') },
-  })
-}
 
 let latest = 0
 

@@ -1,17 +1,18 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 import RecapStories from '../components/RecapStories.vue'
 import { fetchConfig } from '../lib/api'
 import { reportEvent } from '../lib/events'
 import { fetchRecap, type Recap } from '../lib/recap'
 import { loadMe } from '../lib/session'
 import type { SharedVia } from '../lib/share-sheet'
+import { useNotFound } from '../lib/not-found'
 
 const MS_PER_SECOND = 1000
 
-const route = useRoute()
 const router = useRouter()
+const notFound = useNotFound()
 const recap = ref<Recap | null>(null)
 const name = ref('')
 const storyMs = ref(0)
@@ -27,10 +28,7 @@ onMounted(async () => {
       fetchConfig(),
     ])
     if (found === null) {
-      await router.replace({
-        name: 'not-found',
-        params: { pathMatch: route.path.slice(1).split('/') },
-      })
+      await notFound()
       return
     }
     name.value = me?.name ?? 'Rebel'

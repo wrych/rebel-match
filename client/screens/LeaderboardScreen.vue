@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
 import HappyOnly from '../components/HappyOnly.vue'
 import PullToRefresh from '../components/PullToRefresh.vue'
 import { fetchLeaderboard, jobName, type Leaderboard } from '../lib/game'
 import { arrivals, useLiveList } from '../lib/live-list'
 import { currentMood } from '../lib/mood'
+import { useNotFound } from '../lib/not-found'
 
-const route = useRoute()
-const router = useRouter()
+const notFound = useNotFound()
 const board = ref<Leaderboard | null>(null)
 const problem = ref<string | null>(null)
 
@@ -25,11 +24,7 @@ const rowsOf = (shown: Leaderboard): Row[] =>
 async function load(): Promise<void> {
   try {
     board.value = await fetchLeaderboard()
-    if (board.value === null)
-      await router.replace({
-        name: 'not-found',
-        params: { pathMatch: route.path.slice(1).split('/') },
-      })
+    if (board.value === null) await notFound()
     else arrived.see(rowsOf(board.value))
   } catch {
     // Once shown, the board stays as it is when a refresh fails.

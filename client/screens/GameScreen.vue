@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onUnmounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { FIRST_REBEL_LEVEL, firstDayOf } from '../../src/game/levels'
 import HappyOnly from '../components/HappyOnly.vue'
 import DayResults from '../game/DayResults.vue'
@@ -20,6 +20,7 @@ import {
 import { currentMood } from '../lib/mood'
 import { touchScreen, watchLandscape } from '../lib/orientation'
 import { holdZoom } from '../lib/zoom'
+import { useNotFound } from '../lib/not-found'
 
 interface Ended {
   level: number
@@ -29,8 +30,8 @@ interface Ended {
   result: DayResult
 }
 
-const route = useRoute()
 const router = useRouter()
+const notFound = useNotFound()
 const game = ref<GameState | null>(null)
 const problem = ref<string | null>(null)
 const playing = ref<{ level: number; seed: number } | null>(null)
@@ -61,13 +62,6 @@ watch(staged, (shown) => {
 })
 
 const SEED_RANGE = 0x7fffffff
-
-async function notFound(): Promise<void> {
-  await router.replace({
-    name: 'not-found',
-    params: { pathMatch: route.path.slice(1).split('/') },
-  })
-}
 
 async function load(): Promise<void> {
   try {

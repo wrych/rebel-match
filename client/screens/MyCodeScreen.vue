@@ -15,9 +15,11 @@ import {
 import { renderCodeCard } from '../lib/code-card'
 import { loadMe } from '../lib/session'
 import { shareImage } from '../lib/share-sheet'
+import { useNotFound } from '../lib/not-found'
 
 const route = useRoute()
 const router = useRouter()
+const notFound = useNotFound()
 const code = ref<ProfileCode | null>(null)
 const name = ref<string | null>(null)
 const tickMs = ref<number | null>(null)
@@ -76,13 +78,6 @@ const retrySeconds = ref<number | null>(null)
 
 function showTab(next: Tab): void {
   void router.replace({ query: next === 'now' ? {} : { tab: next } })
-}
-
-async function notFound(): Promise<void> {
-  await router.replace({
-    name: 'not-found',
-    params: { pathMatch: route.path.slice(1).split('/') },
-  })
 }
 
 // The profile code is made the first time its tab is opened (R-CODE-2).

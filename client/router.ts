@@ -9,6 +9,7 @@ import { NOT_FOUND_TITLE, routeTable, type Access } from '../src/routes'
 import { decide } from './guards'
 import { claimEventBadge } from './lib/badges'
 import { reportEvent } from './lib/events'
+import { NOT_FOUND_ROUTE } from './lib/not-found'
 import { fromNotice } from './lib/notice'
 import { typedProfile } from './lib/onboarding'
 import { scrollFor } from './lib/scroll'
@@ -150,7 +151,7 @@ export const router = createRouter({
     ),
     {
       path: '/:pathMatch(.*)*',
-      name: 'not-found',
+      name: NOT_FOUND_ROUTE,
       component: NotFoundScreen,
       meta: { title: NOT_FOUND_TITLE },
     },
@@ -185,7 +186,7 @@ function claimOnEntry(to: RouteLocationNormalized, me: Me | null): void {
 }
 
 router.beforeEach(async (to) => {
-  if (to.name === 'not-found') return true
+  if (to.name === NOT_FOUND_ROUTE) return true
 
   const me = await loadMe()
   claimOnEntry(to, me)
@@ -203,7 +204,7 @@ router.beforeEach(async (to) => {
   if (decision.kind === 'redirect') return decision.to
   if (decision.kind === 'not-found') {
     return {
-      name: 'not-found',
+      name: NOT_FOUND_ROUTE,
       params: { pathMatch: to.path.slice(1).split('/') },
       query: to.query,
       hash: to.hash,
