@@ -6,6 +6,7 @@ import {
   type ChallengeModeration,
   type ModerationReason,
 } from '../services/challenge-moderation.js'
+import { hideStatus, unhideStatus } from '../outcomes.js'
 import { handle, replyFound, replyOutcome } from './handle.js'
 import { requirePermission } from './require-permission.js'
 
@@ -15,9 +16,6 @@ const hideBody = z.object({
     moderationReasons as [ModerationReason, ...ModerationReason[]],
   ),
 })
-
-const hideStatus = { hidden: 204, not_found: 404 } as const
-const unhideStatus = { shown: 204, not_found: 404 } as const
 
 function hide(moderation: ChallengeModeration): RequestHandler {
   return handle(

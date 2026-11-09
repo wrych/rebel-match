@@ -3,17 +3,11 @@ import { z } from 'zod'
 import type { AuthProvider } from '../auth/index.js'
 import type { ApprovalService } from '../services/approvals.js'
 import type { NotificationService } from '../services/notifications.js'
+import { approveStatus, rejectStatus } from '../outcomes.js'
 import { handle, memberOf, replyOutcome } from './handle.js'
 import { requirePermission } from './require-permission.js'
 
 const applicantParams = z.object({ id: z.string().min(1) })
-
-const approveStatus = {
-  approved: 204,
-  not_pending: 404,
-  link_failed: 502,
-} as const
-const rejectStatus = { rejected: 204, not_pending: 404 } as const
 
 /** F10 (design §3): list, approve and reject applicants, behind
  * `applicant:review` (R-AUTH-3, R-AUTH-11). */

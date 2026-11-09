@@ -3,6 +3,7 @@ import { z } from 'zod'
 import type { AuthProvider } from '../auth/index.js'
 import type { BanService } from '../services/bans.js'
 import type { LiveSettings } from '../config.js'
+import { banStatus, unbanStatus } from '../outcomes.js'
 import { handle, replyOutcome } from './handle.js'
 import { requirePermission } from './require-permission.js'
 
@@ -15,12 +16,6 @@ type Deps = {
 const memberParams = z.object({ id: z.string().min(1) })
 const banBody = (maxChars: number): z.ZodType<{ note: string }> =>
   z.object({ note: z.string().trim().min(1).max(maxChars) })
-const banStatus = {
-  banned: 204,
-  not_found: 404,
-  self: 409,
-  last_admin: 409,
-} as const
 
 function ban(deps: Deps): RequestHandler {
   return handle(
@@ -40,9 +35,7 @@ function unban(bans: BanService): RequestHandler {
     { params: memberParams },
     async ({ params, member }, response) => {
       const outcome = await bans.unban(params.id, member.id)
-      response
-        .status(outcome === 'unbanned' ? 204 : 404)
-        .json({ result: outcome })
+      replyOutcome(response, unbanStatus, outcome)
     },
   )
 }

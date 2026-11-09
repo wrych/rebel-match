@@ -66,3 +66,41 @@ export function outcomeOf<T>(
   if (outcome === undefined) throw failure(what, response)
   return outcome
 }
+
+/** A server outcome table (`src/outcomes.ts`): each outcome's status. */
+export type Statuses<O extends string> = Readonly<Record<O, number>>
+
+/** The outcome `statuses` answers this status with, under the name `names`
+ * gives it, or as the server names it without `names`; throws
+ * `failure(what)` for an outcome `names` leaves out, or any other status. */
+export function outcomeFrom<O extends string>(
+  response: Response,
+  what: string,
+  statuses: Statuses<O>,
+): O
+export function outcomeFrom<
+  O extends string,
+  const N extends { readonly [K in O]?: string },
+>(
+  response: Response,
+  what: string,
+  statuses: Statuses<O>,
+  names: N & Record<Exclude<keyof N, O>, never>,
+): NonNullable<N[keyof N]>
+export function outcomeFrom<O extends string>(
+  response: Response,
+  what: string,
+  statuses: Statuses<O>,
+  names?: Partial<Record<O, string>>,
+): string {
+  const outcomes: Outcomes<string> = {}
+  for (const outcome of Object.keys(statuses) as O[]) {
+    const name = names === undefined ? outcome : names[outcome]
+    if (name === undefined) continue
+    const status = statuses[outcome]
+    if (outcomes[status] !== undefined && outcomes[status] !== name)
+      throw new Error(`${what}: ${String(status)} names two outcomes`)
+    outcomes[status] = name
+  }
+  return outcomeOf(response, what, outcomes)
+}
