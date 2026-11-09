@@ -12,7 +12,8 @@ import {
 } from '../social-links.js'
 import { displayName, optionalChoice, optionalText } from './profile-fields.js'
 import { setCookie } from './auth.js'
-import { requireSession, type GuardedLocals } from './require-permission.js'
+import { handle, memberOf, notFound } from './handle.js'
+import { requireSession } from './require-permission.js'
 
 type TextLimits = Pick<
   Limits,
@@ -57,7 +58,7 @@ function setSocialLinks(deps: {
 }): RequestHandler {
   return async (request, response) => {
     if (deps.settings.limits().socialLinks !== 1) {
-      response.status(404).json({ error: 'not_found' })
+      notFound(response)
       return
     }
     const maxChars = deps.config.limits.socialLinkMaxChars
@@ -66,23 +67,16 @@ function setSocialLinks(deps: {
       response.status(400).json({ error: 'bad_request' })
       return
     }
-    const member = (response.locals as GuardedLocals).member
-    await deps.profile.setSocialLinks(member.id, links)
+    await deps.profile.setSocialLinks(memberOf(response).id, links)
     response.status(204).end()
   }
 }
 
 function setFindable(profile: ProfileStore): RequestHandler {
-  return async (request, response) => {
-    const choice = findableBody.safeParse(request.body)
-    if (!choice.success) {
-      response.status(400).json({ error: 'bad_request' })
-      return
-    }
-    const member = (response.locals as GuardedLocals).member
-    await profile.setFindable(member.id, choice.data.findable)
+  return handle({ body: findableBody }, async ({ body, member }, response) => {
+    await profile.setFindable(member.id, body.findable)
     response.status(204).end()
-  }
+  })
 }
 
 /** `GET`, `PUT` and `DELETE /api/profile` (design §3): the member's own
@@ -101,8 +95,7 @@ export function profileRoutes(deps: {
   const body = editBody(deps.config.limits)
 
   router.get('/api/profile', guard, async (_request, response) => {
-    const member = (response.locals as GuardedLocals).member
-    const own = await deps.profile.own(member.id)
+    const own = await deps.profile.own(memberOf(response).id)
     if (own === null) {
       response.status(401).json({ error: 'unauthenticated' })
       return
@@ -110,16 +103,14 @@ export function profileRoutes(deps: {
     response.json(own)
   })
 
-  router.put('/api/profile', guard, async (request, response) => {
-    const edit = body.safeParse(request.body)
-    if (!edit.success) {
-      response.status(400).json({ error: 'bad_request' })
-      return
-    }
-    const member = (response.locals as GuardedLocals).member
-    await deps.profile.update(member.id, edit.data)
-    response.status(204).end()
-  })
+  router.put(
+    '/api/profile',
+    guard,
+    handle({ body }, async ({ body, member }, response) => {
+      await deps.profile.update(member.id, body)
+      response.status(204).end()
+    }),
+  )
 
   router.put('/api/me/findable', guard, setFindable(deps.profile))
   router.put('/api/me/social-links', guard, setSocialLinks(deps))
@@ -128,8 +119,7 @@ export function profileRoutes(deps: {
   // member's own so their emailed link can undo it (ADR 0032). The session
   // has ended, so its cookie is cleared too.
   router.delete('/api/profile', guard, async (request, response) => {
-    const member = (response.locals as GuardedLocals).member
-    const outcome = await deps.erasure.delete(member.id, true)
+    const outcome = await deps.erasure.delete(memberOf(response).id, true)
     if (
       outcome.result === 'last_admin' ||
       outcome.result === 'created_invites'

@@ -2,7 +2,8 @@ import { Router } from 'express'
 import { z } from 'zod'
 import type { AuthProvider } from '../auth/index.js'
 import type { RoleService } from '../services/roles.js'
-import { requirePermission, type GuardedLocals } from './require-permission.js'
+import { handle, replyOutcome } from './handle.js'
+import { requirePermission } from './require-permission.js'
 
 const grantBody = z.object({ role: z.string().min(1) })
 const memberParams = z.object({ id: z.string().min(1) })
@@ -27,35 +28,22 @@ export function adminRoleRoutes(deps: {
   router.post(
     '/api/admin/members/:id/roles',
     guard,
-    async (request, response) => {
-      const body = grantBody.safeParse(request.body)
-      const params = memberParams.safeParse(request.params)
-      if (!body.success || !params.success) {
-        response.status(400).json({ error: 'bad_request' })
-        return
-      }
-      const actor = (response.locals as GuardedLocals).member
-      const outcome = await deps.roles.grant(
-        actor.id,
-        params.data.id,
-        body.data.role,
-      )
-      response.status(grantStatus[outcome]).json({ result: outcome })
-    },
+    handle(
+      { params: memberParams, body: grantBody },
+      async ({ params, body, member }, response) => {
+        const outcome = await deps.roles.grant(member.id, params.id, body.role)
+        replyOutcome(response, grantStatus, outcome)
+      },
+    ),
   )
 
   router.delete(
     '/api/admin/members/:id/roles/:role',
     guard,
-    async (request, response) => {
-      const params = holdingParams.safeParse(request.params)
-      if (!params.success) {
-        response.status(400).json({ error: 'bad_request' })
-        return
-      }
-      const outcome = await deps.roles.revoke(params.data.id, params.data.role)
-      response.status(revokeStatus[outcome]).json({ result: outcome })
-    },
+    handle({ params: holdingParams }, async ({ params }, response) => {
+      const outcome = await deps.roles.revoke(params.id, params.role)
+      replyOutcome(response, revokeStatus, outcome)
+    }),
   )
 
   return router

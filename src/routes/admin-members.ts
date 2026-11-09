@@ -3,6 +3,7 @@ import { z } from 'zod'
 import type { AuthProvider } from '../auth/index.js'
 import type { ErasureService } from '../services/erasure.js'
 import type { MemberRoster } from '../services/member-roster.js'
+import { handle, notFound, replyFound, replyOutcome } from './handle.js'
 import { requirePermission } from './require-permission.js'
 
 const memberParams = z.object({ id: z.string().min(1) })
@@ -17,33 +18,28 @@ const eraseStatus = {
 // Deleting hides the member now and erases them after the grace period;
 // `?now=true` erases at once, for someone who insists (ADR 0032).
 function remove(erasure: ErasureService): RequestHandler {
-  return async (request, response) => {
-    const params = memberParams.safeParse(request.params)
-    if (!params.success) {
-      response.status(400).json({ error: 'bad_request' })
-      return
-    }
-    if (request.query.now === 'true') {
-      const outcome = await erasure.erase(params.data.id)
-      response.status(eraseStatus[outcome]).json({ result: outcome })
-      return
-    }
-    const outcome = await erasure.delete(params.data.id, false)
-    if (outcome.result !== 'scheduled') {
-      response
-        .status(eraseStatus[outcome.result])
-        .json({ result: outcome.result })
-      return
-    }
-    response.json({ eraseAfter: outcome.eraseAfter.toISOString() })
-  }
+  return handle(
+    { params: memberParams },
+    async ({ params }, response, request) => {
+      if (request.query.now === 'true') {
+        replyOutcome(response, eraseStatus, await erasure.erase(params.id))
+        return
+      }
+      const outcome = await erasure.delete(params.id, false)
+      if (outcome.result !== 'scheduled') {
+        replyOutcome(response, eraseStatus, outcome.result)
+        return
+      }
+      response.json({ eraseAfter: outcome.eraseAfter.toISOString() })
+    },
+  )
 }
 
 function restore(erasure: ErasureService): RequestHandler {
   return async (request, response) => {
     const params = memberParams.safeParse(request.params)
     if (!params.success || !(await erasure.restore(params.data.id))) {
-      response.status(404).json({ error: 'not_found' })
+      notFound(response)
       return
     }
     response.status(204).end()
@@ -70,11 +66,7 @@ export function adminMemberRoutes(deps: {
     const member = params.success
       ? await deps.roster.detail(params.data.id)
       : null
-    if (member === null) {
-      response.status(404).json({ error: 'not_found' })
-      return
-    }
-    response.json({ member })
+    replyFound(response, member, 'member')
   })
 
   router.delete('/api/admin/members/:id', guard, remove(deps.erasure))

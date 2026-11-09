@@ -3,7 +3,8 @@ import { z } from 'zod'
 import type { AuthProvider } from '../auth/index.js'
 import type { LiveSettings } from '../config.js'
 import type { MemberSearchService } from '../services/member-search.js'
-import { requirePermission, type GuardedLocals } from './require-permission.js'
+import { handle, memberOf, notFound, replyFound } from './handle.js'
+import { requirePermission } from './require-permission.js'
 
 // While hosts have search off, its addresses are as absent as ones that
 // never existed (R-FIND-1, R-NAV-8).
@@ -13,7 +14,7 @@ function whileSearchOn(settings: Pick<LiveSettings, 'limits'>): RequestHandler {
       next()
       return
     }
-    response.status(404).json({ error: 'not_found' })
+    notFound(response)
   }
 }
 
@@ -33,20 +34,20 @@ export function memberRoutes(deps: {
     requirePermission(deps.auth, 'member:search'),
   ]
 
-  router.get('/api/members/search', ...guards, async (request, response) => {
-    const { member } = response.locals as GuardedLocals
-    const { q } = searchQuery.parse(request.query)
-    response.json(await deps.memberSearch.search(member.id, q))
-  })
+  router.get(
+    '/api/members/search',
+    ...guards,
+    handle({ query: searchQuery }, async ({ query, member }, response) => {
+      response.json(await deps.memberSearch.search(member.id, query.q))
+    }),
+  )
 
   router.get('/api/members/:id/card', ...guards, async (request, response) => {
-    const { member } = response.locals as GuardedLocals
     const card = await deps.memberSearch.card(
-      member.id,
+      memberOf(response).id,
       String(request.params['id']),
     )
-    if (card === null) response.status(404).json({ error: 'not_found' })
-    else response.json({ card })
+    replyFound(response, card, 'card')
   })
 
   return router

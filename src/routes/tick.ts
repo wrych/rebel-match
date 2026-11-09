@@ -1,6 +1,7 @@
 import { Router, type RequestHandler } from 'express'
 import type { Tick } from '../services/tick.js'
 import type { InvokerCheck } from '../services/tick-invoker.js'
+import { notFound } from './handle.js'
 
 /** The scheduler's tick (ADR 0049): the due work runs before the answer, a
  * 204 when all of it succeeded. A caller who is not the scheduler learns
@@ -13,7 +14,7 @@ export function tickRoutes(deps: {
 
   router.post('/api/internal/tick', async (request, response) => {
     if (!(await deps.isInvoker(request.headers.authorization))) {
-      response.status(404).json({ error: 'not_found' })
+      notFound(response)
       return
     }
     if (await deps.tick.run()) response.status(204).end()

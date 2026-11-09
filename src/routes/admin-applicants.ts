@@ -3,7 +3,8 @@ import { z } from 'zod'
 import type { AuthProvider } from '../auth/index.js'
 import type { ApprovalService } from '../services/approvals.js'
 import type { NotificationService } from '../services/notifications.js'
-import { requirePermission, type GuardedLocals } from './require-permission.js'
+import { handle, memberOf, replyOutcome } from './handle.js'
+import { requirePermission } from './require-permission.js'
 
 const applicantParams = z.object({ id: z.string().min(1) })
 
@@ -26,39 +27,32 @@ export function adminApplicantRoutes(deps: {
 
   router.get('/api/admin/applicants', guard, async (_request, response) => {
     const applicants = await deps.approvals.listPending()
-    await deps.notifications.openedApplicants(
-      (response.locals as GuardedLocals).member.id,
-    )
+    await deps.notifications.openedApplicants(memberOf(response).id)
     response.json({ applicants })
   })
 
   router.post(
     '/api/admin/applicants/:id/approve',
     guard,
-    async (request, response) => {
-      const params = applicantParams.safeParse(request.params)
-      if (!params.success) {
-        response.status(400).json({ error: 'bad_request' })
-        return
-      }
-      const actor = (response.locals as GuardedLocals).member
-      const outcome = await deps.approvals.approve(params.data.id, actor.id)
-      response.status(approveStatus[outcome]).json({ result: outcome })
-    },
+    handle(
+      { params: applicantParams },
+      async ({ params, member }, response) => {
+        const outcome = await deps.approvals.approve(params.id, member.id)
+        replyOutcome(response, approveStatus, outcome)
+      },
+    ),
   )
 
   router.post(
     '/api/admin/applicants/:id/reject',
     guard,
-    async (request, response) => {
-      const params = applicantParams.safeParse(request.params)
-      if (!params.success) {
-        response.status(400).json({ error: 'bad_request' })
-        return
-      }
-      const outcome = await deps.approvals.reject(params.data.id)
-      response.status(rejectStatus[outcome]).json({ result: outcome })
-    },
+    handle({ params: applicantParams }, async ({ params }, response) => {
+      replyOutcome(
+        response,
+        rejectStatus,
+        await deps.approvals.reject(params.id),
+      )
+    }),
   )
 
   return router

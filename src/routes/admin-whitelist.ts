@@ -3,7 +3,8 @@ import { z } from 'zod'
 import type { AuthProvider } from '../auth/index.js'
 import type { Limits } from '../config.js'
 import type { WhitelistService } from '../services/whitelist.js'
-import { requirePermission, type GuardedLocals } from './require-permission.js'
+import { handle } from './handle.js'
+import { requirePermission } from './require-permission.js'
 
 function whitelistBody(
   limits: Pick<Limits, 'whitelistBatchMax' | 'emailMaxChars'>,
@@ -34,16 +35,10 @@ export function adminWhitelistRoutes(deps: {
   router.post(
     '/api/admin/whitelist',
     requirePermission(deps.auth, 'whitelist:manage'),
-    async (request, response) => {
-      const body = schema.safeParse(request.body)
-      if (!body.success) {
-        response.status(400).json({ error: 'bad_request' })
-        return
-      }
-      const actor = (response.locals as GuardedLocals).member
-      const results = await deps.whitelist.add(body.data.emails, actor.id)
+    handle({ body: schema }, async ({ body, member }, response) => {
+      const results = await deps.whitelist.add(body.emails, member.id)
       response.json({ results })
-    },
+    }),
   )
 
   return router

@@ -5,7 +5,8 @@ import type {
   AnalyticsChoice,
   AnalyticsConsentService,
 } from '../services/analytics-consent.js'
-import { requireSession, type GuardedLocals } from './require-permission.js'
+import { handle } from './handle.js'
+import { requireSession } from './require-permission.js'
 
 const choiceBody: z.ZodType<AnalyticsChoice> = z.discriminatedUnion('optIn', [
   z.object({
@@ -30,20 +31,14 @@ export function analyticsConsentRoutes(deps: {
   router.put(
     '/api/me/analytics',
     requireSession(deps.auth),
-    async (request, response) => {
-      const choice = choiceBody.safeParse(request.body)
-      if (!choice.success) {
-        response.status(400).json({ error: 'bad_request' })
-        return
-      }
-      const member = (response.locals as GuardedLocals).member
-      const outcome = await deps.analyticsConsent.choose(member.id, choice.data)
+    handle({ body: choiceBody }, async ({ body, member }, response) => {
+      const outcome = await deps.analyticsConsent.choose(member.id, body)
       if (outcome === 'stale') {
         response.status(409).json({ result: 'stale_analytics' })
         return
       }
       response.status(204).end()
-    },
+    }),
   )
 
   return router

@@ -3,13 +3,10 @@ import { z } from 'zod'
 import type { AuthProvider } from '../auth/index.js'
 import type { CockpitService } from '../services/cockpit.js'
 import type { FollowService } from '../services/follows.js'
-import { requireSession, type GuardedLocals } from './require-permission.js'
+import { handle, memberOf } from './handle.js'
+import { requireSession } from './require-permission.js'
 
 const trendParams = z.object({ trendId: z.string().min(1) })
-
-function memberOf(locals: unknown): string {
-  return (locals as GuardedLocals).member.id
-}
 
 /** `GET /api/cockpit`, `POST /api/matches/seen` and the follow routes
  * (design §3, F8, F9). Every member
@@ -24,30 +21,33 @@ export function cockpitRoutes(deps: {
   const guard = requireSession(deps.auth)
 
   router.get('/api/cockpit', guard, async (_request, response) => {
-    response.json(await deps.cockpit.cockpit(memberOf(response.locals)))
+    response.json(await deps.cockpit.cockpit(memberOf(response).id))
   })
   router.post('/api/matches/seen', guard, async (_request, response) => {
-    await deps.cockpit.seen(memberOf(response.locals))
+    await deps.cockpit.seen(memberOf(response).id)
     response.status(204).end()
   })
   router.get('/api/follows', guard, async (_request, response) => {
     response.json({
-      trends: await deps.follows.followed(memberOf(response.locals)),
+      trends: await deps.follows.followed(memberOf(response).id),
     })
   })
-  router.post('/api/follows/:trendId', guard, async (request, response) => {
-    const { trendId } = trendParams.parse(request.params)
-    const outcome = await deps.follows.follow(
-      memberOf(response.locals),
-      trendId,
-    )
-    response.status(outcome === 'followed' ? 204 : 404).end()
-  })
-  router.delete('/api/follows/:trendId', guard, async (request, response) => {
-    const { trendId } = trendParams.parse(request.params)
-    await deps.follows.unfollow(memberOf(response.locals), trendId)
-    response.status(204).end()
-  })
+  router.post(
+    '/api/follows/:trendId',
+    guard,
+    handle({ params: trendParams }, async ({ params, member }, response) => {
+      const outcome = await deps.follows.follow(member.id, params.trendId)
+      response.status(outcome === 'followed' ? 204 : 404).end()
+    }),
+  )
+  router.delete(
+    '/api/follows/:trendId',
+    guard,
+    handle({ params: trendParams }, async ({ params, member }, response) => {
+      await deps.follows.unfollow(member.id, params.trendId)
+      response.status(204).end()
+    }),
+  )
 
   return router
 }

@@ -6,7 +6,8 @@ import type {
   ConnectionService,
   NewConnection,
 } from '../services/connections.js'
-import { requirePermission, type GuardedLocals } from './require-permission.js'
+import { handle, memberOf, notFound, replyFound } from './handle.js'
+import { requirePermission } from './require-permission.js'
 
 type Deps = {
   auth: AuthProvider
@@ -15,10 +16,6 @@ type Deps = {
 }
 
 const idParams = z.object({ id: z.string().min(1) })
-
-function memberOf(locals: unknown): string {
-  return (locals as GuardedLocals).member.id
-}
 
 function requestBody(
   limits: Deps['config']['limits'],
@@ -46,34 +43,25 @@ const statusOf = {
 
 function create(deps: Deps): RequestHandler {
   const body = requestBody(deps.config.limits)
-  return async (request, response) => {
-    const input = body.safeParse(request.body)
-    if (!input.success) {
-      response.status(400).json({ error: 'bad_request' })
-      return
-    }
-    const outcome = await deps.connections.request(
-      memberOf(response.locals),
-      input.data,
-    )
+  return handle({ body }, async ({ body, member }, response) => {
+    const outcome = await deps.connections.request(member.id, body)
     if (outcome.result === 'not_found') {
-      response.status(404).json({ error: 'not_found' })
+      notFound(response)
       return
     }
     response.status(statusOf[outcome.result]).json(outcome)
-  }
+  })
 }
 
 function answer(deps: Deps, verdict: 'accepted' | 'declined'): RequestHandler {
-  return async (request, response) => {
-    const { id } = idParams.parse(request.params)
+  return handle({ params: idParams }, async ({ params, member }, response) => {
     const outcome = await deps.connections.respond(
-      memberOf(response.locals),
-      id,
+      member.id,
+      params.id,
       verdict,
     )
     response.status(outcome === 'done' ? 204 : 404).end()
-  }
+  })
 }
 
 // Answers what `read` finds for the caller, and 404 for anything they may not
@@ -82,15 +70,9 @@ function partyOnly(
   read: (memberId: string, id: string) => Promise<object | null>,
   key: string,
 ): RequestHandler {
-  return async (request, response) => {
-    const { id } = idParams.parse(request.params)
-    const found = await read(memberOf(response.locals), id)
-    if (found === null) {
-      response.status(404).json({ error: 'not_found' })
-      return
-    }
-    response.json({ [key]: found })
-  }
+  return handle({ params: idParams }, async ({ params, member }, response) => {
+    replyFound(response, await read(member.id, params.id), key)
+  })
 }
 
 /** The double opt-in API (design §3, F7, ADR 0004), behind
@@ -104,12 +86,12 @@ export function connectionRoutes(deps: Deps): Router {
   router.post('/api/connections', guard, create(deps))
   router.get('/api/connections/incoming', guard, async (_q, response) => {
     response.json({
-      requests: await service.incoming(memberOf(response.locals)),
+      requests: await service.incoming(memberOf(response).id),
     })
   })
   router.get('/api/connections/connected', guard, async (_q, response) => {
     response.json({
-      connections: await service.connected(memberOf(response.locals)),
+      connections: await service.connected(memberOf(response).id),
     })
   })
   router.get(

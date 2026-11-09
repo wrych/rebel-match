@@ -7,7 +7,8 @@ import {
 } from '../services/challenge-moderation.js'
 import type { ModerationService } from '../services/moderation.js'
 import type { NotificationService } from '../services/notifications.js'
-import { requirePermission, type GuardedLocals } from './require-permission.js'
+import { handle, notFound, replyOutcome } from './handle.js'
+import { requirePermission } from './require-permission.js'
 
 const stateQuery = z.object({
   state: z.enum(['open', 'handled']).default('open'),
@@ -29,62 +30,56 @@ const dismissBody = z.union([
 ])
 
 function dismiss(moderation: ModerationService): RequestHandler {
-  return async (request, response) => {
-    const item = dismissBody.safeParse(request.body)
-    if (!item.success) {
-      response.status(400).json({ error: 'bad_request' })
-      return
-    }
-    const host = (response.locals as GuardedLocals).member.id
-    const outcome = await moderation.dismiss(item.data, host)
+  return handle({ body: dismissBody }, async ({ body, member }, response) => {
+    const outcome = await moderation.dismiss(body, member.id)
     response
       .status(outcome === 'dismissed' ? 204 : 404)
       .json({ result: outcome })
-  }
+  })
 }
 
 function hideNote(moderation: ModerationService): RequestHandler {
-  return async (request, response) => {
-    const { id } = requestParams.parse(request.params)
-    const input = hideBody.safeParse(request.body)
-    if (!input.success) {
-      response.status(400).json({ error: 'bad_request' })
-      return
-    }
-    const host = (response.locals as GuardedLocals).member.id
-    const outcome = await moderation.hideNote(id, host, input.data.reason)
-    response.status(hideStatus[outcome]).json({ result: outcome })
-  }
+  return handle(
+    { params: requestParams, body: hideBody },
+    async ({ params, body, member }, response) => {
+      const outcome = await moderation.hideNote(
+        params.id,
+        member.id,
+        body.reason,
+      )
+      replyOutcome(response, hideStatus, outcome)
+    },
+  )
 }
 
 function unhideNote(moderation: ModerationService): RequestHandler {
-  return async (request, response) => {
-    const { id } = requestParams.parse(request.params)
-    const host = (response.locals as GuardedLocals).member.id
-    const outcome = await moderation.unhideNote(id, host)
-    response.status(unhideStatus[outcome]).json({ result: outcome })
-  }
+  return handle(
+    { params: requestParams },
+    async ({ params, member }, response) => {
+      const outcome = await moderation.unhideNote(params.id, member.id)
+      replyOutcome(response, unhideStatus, outcome)
+    },
+  )
 }
 
 function memberPage(
   moderation: ModerationService,
   notifications: Pick<NotificationService, 'openedReports'>,
 ): RequestHandler {
-  return async (request, response) => {
-    const { memberId } = memberParams.parse(request.params)
-    const page = await moderation.page(memberId)
-    if (page === null) {
-      response.status(404).json({ error: 'not_found' })
-      return
-    }
-    // Opening the page is what its notices lead to, so they are seen
-    // (R-NOTE-5).
-    await notifications.openedReports(
-      (response.locals as GuardedLocals).member.id,
-      memberId,
-    )
-    response.json(page)
-  }
+  return handle(
+    { params: memberParams },
+    async ({ params, member }, response) => {
+      const page = await moderation.page(params.memberId)
+      if (page === null) {
+        notFound(response)
+        return
+      }
+      // Opening the page is what its notices lead to, so they are seen
+      // (R-NOTE-5).
+      await notifications.openedReports(member.id, params.memberId)
+      response.json(page)
+    },
+  )
 }
 
 /** F21's API (design §3): reported members, one member's reports and the
@@ -99,16 +94,13 @@ export function adminReportRoutes(deps: {
   const router = Router()
   const guard = requirePermission(deps.auth, 'report:review')
 
-  router.get('/api/admin/reports', guard, async (request, response) => {
-    const query = stateQuery.safeParse(request.query)
-    if (!query.success) {
-      response.status(400).json({ error: 'bad_request' })
-      return
-    }
-    response.json({
-      members: await deps.moderation.overview(query.data.state),
-    })
-  })
+  router.get(
+    '/api/admin/reports',
+    guard,
+    handle({ query: stateQuery }, async ({ query }, response) => {
+      response.json({ members: await deps.moderation.overview(query.state) })
+    }),
+  )
   // The menu's Moderation count (R-MOD-5); before the member's page, whose
   // path would take it.
   router.get('/api/admin/reports/count', guard, async (_request, response) => {

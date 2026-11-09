@@ -2,7 +2,8 @@ import { Router, type RequestHandler } from 'express'
 import type { AuthProvider } from '../auth/index.js'
 import type { LiveSettings } from '../config.js'
 import type { NetworkService } from '../services/network.js'
-import { requirePermission, type GuardedLocals } from './require-permission.js'
+import { memberOf, notFound } from './handle.js'
+import { requirePermission } from './require-permission.js'
 
 // While hosts have the replay off, its address is as absent as one that never
 // existed (R-NET-6, R-NAV-8).
@@ -12,7 +13,7 @@ function whileOn(settings: Pick<LiveSettings, 'limits'>): RequestHandler {
       next()
       return
     }
-    response.status(404).json({ error: 'not_found' })
+    notFound(response)
   }
 }
 
@@ -30,8 +31,7 @@ export function networkRoutes(deps: {
     whileOn(deps.settings),
     requirePermission(deps.auth, 'network:view'),
     async (_request, response) => {
-      const { member } = response.locals as GuardedLocals
-      response.json(await deps.network.timeline(member.id))
+      response.json(await deps.network.timeline(memberOf(response).id))
     },
   )
 

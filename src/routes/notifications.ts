@@ -4,7 +4,8 @@ import type { AuthProvider } from '../auth/index.js'
 import type { NotificationSettingsService } from '../services/notification-settings.js'
 import type { NotificationService } from '../services/notifications.js'
 import type { SettingsService } from '../services/settings.js'
-import { requireSession, type GuardedLocals } from './require-permission.js'
+import { handle, memberOf } from './handle.js'
+import { requireSession } from './require-permission.js'
 
 // The width of notifications.id (src/db/schema.ts).
 const NOTIFICATION_ID_MAX_CHARS = 36
@@ -15,8 +16,12 @@ const listQuery = z.object({
   before: z.string().min(1).max(NOTIFICATION_ID_MAX_CHARS).optional(),
 })
 
-function memberOf(locals: unknown): string {
-  return (locals as GuardedLocals).member.id
+function seenBody(pageSize: number): z.ZodType<{ ids: string[] }> {
+  return z.object({
+    ids: z
+      .array(z.string().min(1).max(NOTIFICATION_ID_MAX_CHARS))
+      .max(pageSize),
+  })
 }
 
 /** A member's own notifications (R-NOTE-5, R-NOTE-6, design §3). Each member
@@ -31,33 +36,36 @@ export function notificationRoutes(deps: {
   const router = Router()
   const guard = requireSession(deps.auth)
 
-  router.get('/api/notifications', guard, async (request, response) => {
-    const { before } = listQuery.parse(request.query)
-    response.json({
-      notifications: await deps.notifications.list(
-        memberOf(response.locals),
-        before ?? null,
-      ),
-    })
-  })
+  router.get(
+    '/api/notifications',
+    guard,
+    handle({ query: listQuery }, async ({ query, member }, response) => {
+      response.json({
+        notifications: await deps.notifications.list(
+          member.id,
+          query.before ?? null,
+        ),
+      })
+    }),
+  )
 
   router.get('/api/notifications/new', guard, async (_request, response) => {
     response.json({
-      count: await deps.notifications.newCount(memberOf(response.locals)),
+      count: await deps.notifications.newCount(memberOf(response).id),
     })
   })
 
-  router.post('/api/notifications/seen', guard, async (request, response) => {
-    const { ids } = z
-      .object({
-        ids: z
-          .array(z.string().min(1).max(NOTIFICATION_ID_MAX_CHARS))
-          .max(deps.settings.limits().notificationsPageSize),
-      })
-      .parse(request.body)
-    await deps.notifications.seen(memberOf(response.locals), ids)
-    response.status(204).end()
-  })
+  router.post(
+    '/api/notifications/seen',
+    guard,
+    handle(
+      () => ({ body: seenBody(deps.settings.limits().notificationsPageSize) }),
+      async ({ body, member }, response) => {
+        await deps.notifications.seen(member.id, body.ids)
+        response.status(204).end()
+      },
+    ),
+  )
 
   settingsRoutes(router, deps)
   return router
@@ -66,9 +74,6 @@ export function notificationRoutes(deps: {
 const choice = z.object({ cadence: z.string().min(1).max(CHOICE_MAX_CHARS) })
 const typeParams = z.object({ type: z.string().min(1).max(CHOICE_MAX_CHARS) })
 const chooseStatus = { done: 204, not_found: 404, not_offered: 400 } as const
-
-const permissionsOf = (locals: unknown): readonly string[] =>
-  (locals as GuardedLocals).member.permissions
 
 // How each type reaches the member, chosen on the profile screen (R-NOTE-2,
 // R-NOTE-3). Applicant and report notices are offered only to who may review
@@ -87,8 +92,8 @@ function settingsRoutes(
     async (_request, response) => {
       response.json({
         settings: await deps.notificationSettings.list(
-          memberOf(response.locals),
-          permissionsOf(response.locals),
+          memberOf(response).id,
+          memberOf(response).permissions,
         ),
       })
     },
@@ -96,16 +101,17 @@ function settingsRoutes(
   router.put(
     '/api/me/notification-settings/:type',
     guard,
-    async (request, response) => {
-      const { type } = typeParams.parse(request.params)
-      const { cadence } = choice.parse(request.body)
-      const outcome = await deps.notificationSettings.choose(
-        memberOf(response.locals),
-        permissionsOf(response.locals),
-        type,
-        cadence,
-      )
-      response.status(chooseStatus[outcome]).end()
-    },
+    handle(
+      { params: typeParams, body: choice },
+      async ({ params, body, member }, response) => {
+        const outcome = await deps.notificationSettings.choose(
+          member.id,
+          member.permissions,
+          params.type,
+          body.cadence,
+        )
+        response.status(chooseStatus[outcome]).end()
+      },
+    ),
   )
 }

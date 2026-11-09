@@ -2,7 +2,8 @@ import { Router } from 'express'
 import { z } from 'zod'
 import type { AuthProvider } from '../auth/index.js'
 import type { DeckService } from '../services/deck.js'
-import { requirePermission, type GuardedLocals } from './require-permission.js'
+import { handle } from './handle.js'
+import { requirePermission } from './require-permission.js'
 
 // The width of challenges.id (src/db/schema.ts).
 const CHALLENGE_ID_MAX_CHARS = 36
@@ -23,11 +24,9 @@ export function deckRoutes(deps: {
   router.get(
     '/api/deck',
     requirePermission(deps.auth, 'challenge:swipe'),
-    async (request, response) => {
-      const viewer = (response.locals as GuardedLocals).member
-      const { first } = deckQuery.parse(request.query)
-      response.json({ cards: await deps.deck.next(viewer.id, first) })
-    },
+    handle({ query: deckQuery }, async ({ query, member }, response) => {
+      response.json({ cards: await deps.deck.next(member.id, query.first) })
+    }),
   )
 
   return router

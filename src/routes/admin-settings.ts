@@ -4,7 +4,8 @@ import type { AuthProvider } from '../auth/index.js'
 import { defaultConfig, type Config } from '../config.js'
 import type { SettingsService } from '../services/settings.js'
 import { settingsView } from '../settings-view.js'
-import { requirePermission, type GuardedLocals } from './require-permission.js'
+import { handle, notFound } from './handle.js'
+import { requirePermission } from './require-permission.js'
 
 const keyParams = z.object({ key: z.string().min(1) })
 const changeBody = z.object({ value: z.number().int() })
@@ -36,31 +37,28 @@ function responder(deps: Deps): Respond {
 }
 
 function change(deps: Deps, respond: Respond): RequestHandler {
-  return async (request, response) => {
-    const { key } = keyParams.parse(request.params)
-    const input = changeBody.safeParse(request.body)
-    if (!input.success) {
-      response.status(400).json({ error: 'bad_request' })
-      return
-    }
-    const member = (response.locals as GuardedLocals).member.id
-    const outcome = await deps.settings.change(key, input.data.value, member)
-    if (outcome === 'saved') respond(response)
-    else if (outcome === 'not_found')
-      response.status(404).json({ error: 'not_found' })
-    else response.status(400).json({ error: outcome })
-  }
+  return handle(
+    { params: keyParams, body: changeBody },
+    async ({ params, body, member }, response) => {
+      const outcome = await deps.settings.change(
+        params.key,
+        body.value,
+        member.id,
+      )
+      if (outcome === 'saved') respond(response)
+      else if (outcome === 'not_found') notFound(response)
+      else response.status(400).json({ error: outcome })
+    },
+  )
 }
 
 function reset(deps: Deps, respond: Respond): RequestHandler {
-  return async (request, response) => {
-    const { key } = keyParams.parse(request.params)
-    const outcome = await deps.settings.reset(key)
+  return handle({ params: keyParams }, async ({ params }, response) => {
+    const outcome = await deps.settings.reset(params.key)
     if (outcome === 'reset') respond(response)
-    else if (outcome === 'not_found')
-      response.status(404).json({ error: 'not_found' })
+    else if (outcome === 'not_found') notFound(response)
     else response.status(400).json({ error: outcome })
-  }
+  })
 }
 
 /** `/api/admin/settings`: the configuration in named groups behind

@@ -8,7 +8,8 @@ import type {
   NewEventBadge,
   NewInvite,
 } from '../services/invites.js'
-import { requirePermission, type GuardedLocals } from './require-permission.js'
+import { handle, notFound } from './handle.js'
+import { requirePermission } from './require-permission.js'
 
 type InviteLimits = Pick<
   Limits,
@@ -91,20 +92,19 @@ function giveBadge(
   invites: InviteService,
   choice: z.ZodType<BadgeChoice>,
 ): RequestHandler {
-  return async (request, response) => {
-    const params = inviteParams.safeParse(request.params)
-    const input = choice.safeParse(request.body)
-    if (!params.success || !input.success) {
-      response.status(400).json({ error: 'bad_request' })
-      return
-    }
-    const outcome = await invites.setBadge(params.data.id, input.data)
-    if (outcome.result === 'set') {
-      response.json({ invite: outcome.invite })
-      return
-    }
-    response.status(badgeStatus[outcome.result]).json({ error: outcome.result })
-  }
+  return handle(
+    { params: inviteParams, body: choice },
+    async ({ params, body }, response) => {
+      const outcome = await invites.setBadge(params.id, body)
+      if (outcome.result === 'set') {
+        response.json({ invite: outcome.invite })
+        return
+      }
+      response
+        .status(badgeStatus[outcome.result])
+        .json({ error: outcome.result })
+    },
+  )
 }
 
 function raise(
@@ -145,33 +145,26 @@ export function adminInviteRoutes(deps: {
     response.json({ invites: await deps.invites.list() })
   })
 
-  router.post('/api/admin/invites', guard, async (request, response) => {
-    const input = body.safeParse(request.body)
-    if (!input.success) {
-      response.status(400).json({ error: 'bad_request' })
-      return
-    }
-    const actor = (response.locals as GuardedLocals).member
-    const outcome = await deps.invites.create(input.data, actor.id)
-    if (outcome.result !== 'created') {
-      response.status(400).json({ error: outcome.result })
-      return
-    }
-    response.status(201).json({ invite: outcome.invite })
-  })
+  router.post(
+    '/api/admin/invites',
+    guard,
+    handle({ body }, async ({ body, member }, response) => {
+      const outcome = await deps.invites.create(body, member.id)
+      if (outcome.result !== 'created') {
+        response.status(400).json({ error: outcome.result })
+        return
+      }
+      response.status(201).json({ invite: outcome.invite })
+    }),
+  )
 
   router.post(
     '/api/admin/invites/:id/revoke',
     guard,
-    async (request, response) => {
-      const params = inviteParams.safeParse(request.params)
-      if (!params.success) {
-        response.status(400).json({ error: 'bad_request' })
-        return
-      }
-      const outcome = await deps.invites.revoke(params.data.id)
+    handle({ params: inviteParams }, async ({ params }, response) => {
+      const outcome = await deps.invites.revoke(params.id)
       response.status(outcome === 'revoked' ? 204 : 404).end()
-    },
+    }),
   )
 
   router.patch('/api/admin/invites/:id', guard, raise(deps.invites, cap))
@@ -193,7 +186,7 @@ export function eventBadgeLogoRoutes(deps: { invites: InviteService }): Router {
     const params = inviteParams.safeParse(request.params)
     const logo = params.success ? await deps.invites.logo(params.data.id) : null
     if (logo === null) {
-      response.status(404).json({ error: 'not_found' })
+      notFound(response)
       return
     }
     response

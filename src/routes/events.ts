@@ -9,7 +9,8 @@ import {
 import { routeTable } from '../routes.js'
 import type { AnalyticsEvent, Track } from '../services/analytics.js'
 import { notificationKinds } from '../services/notifications.js'
-import { requireSession, type GuardedLocals } from './require-permission.js'
+import { handle } from './handle.js'
+import { requireSession } from './require-permission.js'
 
 const screens: readonly string[] = [
   ...routeTable.map((route) => route.name),
@@ -100,16 +101,14 @@ export function eventRoutes(deps: {
 }): Router {
   const router = Router()
 
-  router.post('/api/events', requireSession(deps.auth), (request, response) => {
-    const event = uiEvent.safeParse(request.body)
-    if (!event.success) {
-      response.status(400).json({ error: 'bad_request' })
-      return
-    }
-    const member = (response.locals as GuardedLocals).member
-    void deps.track(member.id, event.data)
-    response.status(204).end()
-  })
+  router.post(
+    '/api/events',
+    requireSession(deps.auth),
+    handle({ body: uiEvent }, ({ body, member }, response) => {
+      void deps.track(member.id, body)
+      response.status(204).end()
+    }),
+  )
 
   return router
 }

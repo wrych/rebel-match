@@ -3,6 +3,7 @@ import { z } from 'zod'
 import type { Limits } from '../config.js'
 import type { AdmissionService } from '../services/admission.js'
 import { PAYLOAD_MAX_CHARS } from '../services/human-check.js'
+import { notFound } from './handle.js'
 import { clientIp } from './ip-limit.js'
 
 function requestBody(limits: Pick<Limits, 'emailMaxChars'>): z.ZodType<{
@@ -83,7 +84,7 @@ export function requestLinkRoutes(deps: {
       org: given(org),
     })
     if (outcome === 'not-found') {
-      response.status(404).json({ error: 'not_found' })
+      notFound(response)
       return
     }
     response.status(204).end()
