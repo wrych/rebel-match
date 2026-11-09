@@ -737,7 +737,9 @@ connect.")_
   sits beside Your connections (R-FIND-1). _(Andy, 2026-11-09.)_
 - **R-MINE-2** — The "Matches" screen SHALL list **incoming connection requests
   waiting for the member** with Accept / Decline actions (this is where R-CONN-3
-  / R-CONN-4 are triggered).
+  / R-CONN-4 are triggered). WHILE none is waiting, the list and its heading
+  SHALL NOT show, unless it holds the word on a request just answered.
+  _(Andy, 2026-11-09, to save room.)_
 - **R-MINE-3** — The system SHALL show which trends the member is following.
 - **R-MINE-4** — The navigation SHALL badge the "Matches" tab with what
   arrived since the member last opened the Matches screen: requests waiting for
