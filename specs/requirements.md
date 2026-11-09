@@ -732,7 +732,9 @@ connect.")_
 
 - **R-MINE-1** — The system SHALL provide a "Matches" screen that shows the
   member's own posted challenge(s) with per-challenge counts (same boat / been
-  there / case studies) and a way to reopen the matches view.
+  there / case studies) and a way to reopen the matches view, with a small
+  **Ask for help** button beside the **Your challenges** heading, as Search
+  sits beside Your connections (R-FIND-1). _(Andy, 2026-11-09.)_
 - **R-MINE-2** — The "Matches" screen SHALL list **incoming connection requests
   waiting for the member** with Accept / Decline actions (this is where R-CONN-3
   / R-CONN-4 are triggered).
