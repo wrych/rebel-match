@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { pathTo } from '../../src/routes'
 import { reportPath } from '../lib/reports'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -111,8 +112,9 @@ async function answer(action: 'same_boat' | 'follow' | 'skip'): Promise<void> {
 
 async function offerExperience(): Promise<void> {
   if (card.value === undefined) return
-  const id = encodeURIComponent(card.value.challengeId)
-  await router.push(`/offer/${id}/note`)
+  await router.push(
+    pathTo('offer-note', { challengeId: card.value.challengeId }),
+  )
 }
 
 const photosOn = ref(false)

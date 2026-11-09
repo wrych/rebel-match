@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { pathTo } from '../../src/routes'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AskSteps from '../components/AskSteps.vue'
@@ -57,7 +58,7 @@ async function submit(): Promise<void> {
   problem.value = null
   await run(async () => {
     const challenge = await submitChallenge(draft.value)
-    await router.push(`/challenges/${encodeURIComponent(challenge.id)}`)
+    await router.push(pathTo('challenge', { id: challenge.id }))
   }, 'That did not save. Try again.')
 }
 </script>

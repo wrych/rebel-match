@@ -2,6 +2,7 @@ import type { MailBlock } from './mail-layout.js'
 import type { Mailer } from './mailer.js'
 import { renderNotice, type Notice } from './notice-mail.js'
 import type { ConnectionKind } from './connections.js'
+import { pathTo } from '../routes.js'
 
 export interface MemberDirectory {
   /** The address of an active member, or null. */
@@ -70,9 +71,6 @@ async function displayName(
   return name === '' ? 'A Rebel Match member' : name
 }
 
-const requestPath = (id: string, tail = ''): string =>
-  `/matches/requests/${encodeURIComponent(id)}${tail}`
-
 /** Emails the target of a new connection request the requester's name, their
  * note and a link to the request; never an address or challenge text
  * (R-CONN-2, R-NAV-9). The entry is erased with either member (R-MSG-6). */
@@ -93,7 +91,11 @@ export function createConnectionNotice(
       ...renderNotice(
         deps.publicUrl,
         'connection_request',
-        requestMail(from, request.message, requestPath(request.id)),
+        requestMail(
+          from,
+          request.message,
+          pathTo('request', { id: request.id }),
+        ),
       ),
     })
   }
@@ -124,7 +126,7 @@ export function createAcceptNotice(
           label: 'Get in touch',
           prompt:
             "You can now see each other's email address. Get in touch here:",
-          path: requestPath(request.id, '/contact'),
+          path: pathTo('request-contact', { id: request.id }),
         },
       }),
     })
@@ -152,7 +154,7 @@ function addedMail(name: string, request: NewRequest): Notice {
     action: {
       label: 'See your connection',
       prompt: 'See what you are connected over here:',
-      path: requestPath(request.id, '/contact'),
+      path: pathTo('request-contact', { id: request.id }),
     },
   }
 }

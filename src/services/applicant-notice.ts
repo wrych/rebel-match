@@ -1,5 +1,6 @@
 import type { Mailer } from './mailer.js'
 import { renderNotice } from './notice-mail.js'
+import { pathTo } from '../routes.js'
 
 /** One reviewer's notification of one applicant. */
 export interface ApplicantNote {
@@ -42,7 +43,7 @@ export function createApplicantNotice(deps: {
         action: {
           label: 'Review applicants',
           prompt: 'Approve or reject them here:',
-          path: '/admin/applicants',
+          path: pathTo('admin-applicants'),
         },
       }),
     })

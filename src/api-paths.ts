@@ -125,7 +125,7 @@ export type PathParams<P extends string> =
 const PARAM = /:(\w+)/g
 
 /** The concrete path for a pattern, each parameter URI-encoded. */
-export function fill<P extends ApiPath>(
+export function fill<P extends string>(
   pattern: P,
   params: Record<PathParams<P>, string>,
 ): string {

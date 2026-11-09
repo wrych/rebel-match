@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { pathTo } from '../../src/routes'
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import ConfirmAction from '../components/ConfirmAction.vue'
@@ -50,7 +51,7 @@ const chosen = computed(() =>
 
 const who = (member: RosterMember): string => member.name ?? member.email
 const pathOf = (member: RosterMember): string =>
-  `/admin/members/${encodeURIComponent(member.id)}`
+  pathTo('admin-member', { id: member.id })
 
 // Every member counts, not only those the search shows, so clearing a
 // search outlines nobody (R-NAV-12).

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { pathTo } from '../../src/routes'
 import { computed, onMounted, ref } from 'vue'
 import BadgeArt from '../components/BadgeArt.vue'
 import EventTicket from '../components/EventTicket.vue'
@@ -83,7 +84,7 @@ onMounted(async () => {
       <ul class="tiles">
         <li v-for="row in overview.rows" :key="row.row">
           <RouterLink
-            :to="`/badges/${row.row}`"
+            :to="pathTo('badge-row', { row: row.row })"
             class="card tile"
             :class="{ 'card-new': hasNew(row) }"
             :aria-label="summary(row)"

@@ -25,6 +25,7 @@ import type {
   DueNotification,
   SendNotifications,
 } from './notification-worker.js'
+import { pathTo } from '../routes.js'
 
 interface SenderDeps {
   mailer: Mailer
@@ -120,9 +121,6 @@ const linkFor = (
   kind: NotificationKind,
 ): string => noticeLink(deps.publicUrl, path, kind)
 
-const requestPath = (id: string, tail = ''): string =>
-  `/matches/requests/${encodeURIComponent(id)}${tail}`
-
 // One entry of a digest: what happened, the note a request carries, and the
 // link its own email would give (R-NOTE-8, R-NAV-9). Null when it no longer
 // exists.
@@ -137,7 +135,7 @@ async function itemOf(
           text: `${note.applicantEmail} asked to join.`,
           action: {
             label: 'Review applicants',
-            url: linkFor(deps, '/admin/applicants', 'applicant'),
+            url: linkFor(deps, pathTo('admin-applicants'), 'applicant'),
           },
         }
   if (note.type === 'badge') return badgeItem(deps, note)
@@ -151,7 +149,7 @@ async function itemOf(
         label: 'Review the reports',
         url: linkFor(
           deps,
-          `/admin/moderation/${encodeURIComponent(note.aboutMemberId)}`,
+          pathTo('admin-moderated-member', { memberId: note.aboutMemberId }),
           'report',
         ),
       },
@@ -199,6 +197,7 @@ async function requestItem(
   if (record === null) return null
   const name = await nameOf(deps, note.aboutMemberId)
   const wrote = record.message === null ? {} : { quote: record.message }
+  const contact = pathTo('request-contact', { id: record.id })
   if (note.type === 'connection_request')
     return {
       name,
@@ -206,7 +205,11 @@ async function requestItem(
       ...wrote,
       action: {
         label: 'See the request',
-        url: linkFor(deps, requestPath(record.id), 'connection_request'),
+        url: linkFor(
+          deps,
+          pathTo('request', { id: record.id }),
+          'connection_request',
+        ),
       },
     }
   return note.recipientId === record.requesterId
@@ -215,11 +218,7 @@ async function requestItem(
         text: 'accepted your request.',
         action: {
           label: 'Get in touch',
-          url: linkFor(
-            deps,
-            requestPath(record.id, '/contact'),
-            'connection_accepted',
-          ),
+          url: linkFor(deps, contact, 'connection_accepted'),
         },
       }
     : {
@@ -228,11 +227,7 @@ async function requestItem(
         ...wrote,
         action: {
           label: 'See your connection',
-          url: linkFor(
-            deps,
-            requestPath(record.id, '/contact'),
-            'connection_added',
-          ),
+          url: linkFor(deps, contact, 'connection_added'),
         },
       }
 }

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { pathTo } from '../../src/routes'
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import HideForm from '../components/HideForm.vue'
@@ -123,7 +124,7 @@ onMounted(load)
           }}</time>
         </p>
         <RouterLink
-          :to="`/admin/members/${encodeURIComponent(page.member.id)}`"
+          :to="pathTo('admin-member', { id: page.member.id })"
           class="small"
           >Open their member page</RouterLink
         >

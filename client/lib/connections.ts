@@ -5,6 +5,7 @@ import type {
   NewConnection,
 } from '../../src/services/connections'
 import { failure, findJson, outcomeOf, send } from './request'
+import { pathTo } from '../../src/routes'
 
 export type { Contact, ConnectionView }
 
@@ -36,7 +37,7 @@ export async function requestConnection(
 /** Where a connection's contact, and what the two are connected over, is
  * shown (S16). */
 export const contactPath = (id: string): string =>
-  `/matches/requests/${encodeURIComponent(id)}/contact`
+  pathTo('request-contact', { id })
 
 /** The kind named in a link, or null for anything else. */
 export function kindOf(value: unknown): ConnectionKind | null {

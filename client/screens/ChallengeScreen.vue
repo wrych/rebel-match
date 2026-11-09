@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { pathTo } from '../../src/routes'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AskSteps from '../components/AskSteps.vue'
@@ -32,7 +33,7 @@ const trendNumber = computed(
   () => trends.value.findIndex((each) => each.id === trend.value?.id) + 1,
 )
 const pickerPath = computed(() => {
-  const base = `/challenges/${encodeURIComponent(id)}/trend`
+  const base = pathTo('trend-picker', { id })
   return trend.value === null
     ? base
     : `${base}?current=${encodeURIComponent(trend.value.id)}`
@@ -55,7 +56,7 @@ async function confirm(): Promise<void> {
   problem.value = null
   await run(async () => {
     await confirmTrend(id, chosen.id)
-    await router.push(`/challenges/${encodeURIComponent(id)}/matches?posted=1`)
+    await router.push(`${pathTo('matches', { id })}?posted=1`)
   }, 'That did not save. Try again.')
 }
 </script>

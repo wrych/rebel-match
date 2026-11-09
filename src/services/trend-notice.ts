@@ -1,5 +1,6 @@
 import type { Mailer } from './mailer.js'
 import { renderNotice } from './notice-mail.js'
+import { pathTo } from '../routes.js'
 
 /** One follower's notification of a challenge posted in a trend. */
 export interface TrendNote {
@@ -13,7 +14,7 @@ export interface TrendNote {
 
 /** Where a new challenge is seen: the deck, opened at its card (R-OFF-7). */
 export function deckAt(challengeId: string): string {
-  return `/offer?challenge=${encodeURIComponent(challengeId)}`
+  return `${pathTo('offer')}?challenge=${encodeURIComponent(challengeId)}`
 }
 
 /** Emails a follower that a challenge was posted in their trend, with a link

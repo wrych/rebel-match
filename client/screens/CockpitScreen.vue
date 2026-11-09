@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { pathTo } from '../../src/routes'
 import KindChip from '../components/KindChip.vue'
 import { computed, onMounted, ref } from 'vue'
 import ChallengeCard from '../components/ChallengeCard.vue'
@@ -39,10 +40,8 @@ const failed = ref<string | null>(null)
 const withdrawnNotice = ref<string | null>(null)
 const canSearch = ref(false)
 
-const requestPath = (id: string): string =>
-  `/matches/requests/${encodeURIComponent(id)}`
-const matchesPath = (id: string): string =>
-  `/challenges/${encodeURIComponent(id)}/matches`
+const requestPath = (id: string): string => pathTo('request', { id })
+const matchesPath = (id: string): string => pathTo('matches', { id })
 
 const arrived = arrivals<ConnectionView>((request) => request.id)
 
@@ -270,7 +269,7 @@ onMounted(() => {
         <ul v-else class="follow-list">
           <li v-for="trend in cockpit.following" :key="trend.id">
             <RouterLink
-              :to="`/trends/${encodeURIComponent(trend.id)}`"
+              :to="pathTo('trend', { trendId: trend.id })"
               class="chip"
               >{{ trend.short }}</RouterLink
             >
