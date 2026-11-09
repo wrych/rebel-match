@@ -1,6 +1,5 @@
-import { renderMail } from './mail-layout.js'
 import type { Mailer } from './mailer.js'
-import { noticeFooter, noticeLink } from './notice-link.js'
+import { renderNotice } from './notice-mail.js'
 
 /** One host's notification of reports about one member. */
 export interface ReportNote {
@@ -24,11 +23,6 @@ export function createReportNotice(deps: {
   publicUrl: string
 }): (note: ReportNote) => Promise<void> {
   return async (note) => {
-    const review = noticeLink(
-      deps.publicUrl,
-      `/admin/moderation/${encodeURIComponent(note.reportedId)}`,
-      'report',
-    )
     const open = openReportsWords(note.openReports)
     await deps.mailer.send({
       memberId: note.reviewerId,
@@ -36,24 +30,15 @@ export function createReportNotice(deps: {
       to: note.to,
       kind: 'admin_notice',
       subject: 'A member was reported on Rebel Match',
-      ...renderMail({
+      ...renderNotice(deps.publicUrl, 'report', {
         heading: 'A member was reported',
         preview: `${note.reportedName} was reported; ${open}.`,
-        blocks: [
-          {
-            kind: 'paragraph',
-            text: `${note.reportedName} was reported. ${open} about them.`,
-          },
-          {
-            kind: 'action',
-            action: {
-              label: 'Review the reports',
-              prompt: 'Hide what was reported, or dismiss the reports, here:',
-              url: review,
-            },
-          },
-        ],
-        footer: noticeFooter(deps.publicUrl),
+        text: `${note.reportedName} was reported. ${open} about them.`,
+        action: {
+          label: 'Review the reports',
+          prompt: 'Hide what was reported, or dismiss the reports, here:',
+          path: `/admin/moderation/${encodeURIComponent(note.reportedId)}`,
+        },
       }),
     })
   }

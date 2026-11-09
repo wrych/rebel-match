@@ -1,7 +1,6 @@
-import { renderMail, type MailBlock, type MailContent } from './mail-layout.js'
+import type { MailBlock } from './mail-layout.js'
 import type { Mailer } from './mailer.js'
-import { noticeFooter, noticeLink } from './notice-link.js'
-import type { NotificationKind } from './notifications.js'
+import { renderNotice, type Notice } from './notice-mail.js'
 import type { ConnectionKind } from './connections.js'
 
 export interface MemberDirectory {
@@ -41,32 +40,19 @@ function noteBlocks(message: string | null): MailBlock[] {
 function requestMail(
   name: string,
   message: string | null,
-  link: string,
-  publicUrl: string,
-): MailContent {
+  path: string,
+): Notice {
   return {
     heading: `${name} wants to connect`,
     preview: `${name} would like to connect with you on Rebel Match.`,
-    blocks: [
-      {
-        kind: 'paragraph',
-        text: `${name} would like to connect with you on Rebel Match.`,
-      },
-      ...noteBlocks(message),
-      {
-        kind: 'action',
-        action: {
-          label: 'See the request',
-          prompt: 'See their request, and accept or decline it, here:',
-          url: link,
-        },
-      },
-      {
-        kind: 'aside',
-        text: 'Your email address stays private unless you accept.',
-      },
-    ],
-    footer: noticeFooter(publicUrl),
+    text: `${name} would like to connect with you on Rebel Match.`,
+    blocks: noteBlocks(message),
+    action: {
+      label: 'See the request',
+      prompt: 'See their request, and accept or decline it, here:',
+      path,
+    },
+    aside: 'Your email address stays private unless you accept.',
   }
 }
 
@@ -84,15 +70,8 @@ async function displayName(
   return name === '' ? 'A Rebel Match member' : name
 }
 
-function linkTo(
-  deps: NoticeDeps,
-  id: string,
-  kind: NotificationKind,
-  tail = '',
-): string {
-  const path = `/matches/requests/${encodeURIComponent(id)}${tail}`
-  return noticeLink(deps.publicUrl, path, kind)
-}
+const requestPath = (id: string, tail = ''): string =>
+  `/matches/requests/${encodeURIComponent(id)}${tail}`
 
 /** Emails the target of a new connection request the requester's name, their
  * note and a link to the request; never an address or challenge text
@@ -111,13 +90,10 @@ export function createConnectionNotice(
       to,
       kind: 'connection_request',
       subject: `${from} wants to connect with you on Rebel Match`,
-      ...renderMail(
-        requestMail(
-          from,
-          request.message,
-          linkTo(deps, request.id, 'connection_request'),
-          deps.publicUrl,
-        ),
+      ...renderNotice(
+        deps.publicUrl,
+        'connection_request',
+        requestMail(from, request.message, requestPath(request.id)),
       ),
     })
   }
@@ -133,7 +109,6 @@ export function createAcceptNotice(
     const to = await deps.members.emailOf(request.requesterId)
     if (to === null) return
     const by = await displayName(deps.members, request.targetId)
-    const link = linkTo(deps, request.id, 'connection_accepted', '/contact')
 
     await deps.mailer.send({
       memberId: request.requesterId,
@@ -141,25 +116,16 @@ export function createAcceptNotice(
       to,
       kind: 'connection_accepted',
       subject: `${by} accepted your request on Rebel Match`,
-      ...renderMail({
+      ...renderNotice(deps.publicUrl, 'connection_accepted', {
         heading: `${by} accepted your request`,
         preview: "You can now see each other's email address.",
-        blocks: [
-          {
-            kind: 'paragraph',
-            text: `${by} accepted your request to connect on Rebel Match.`,
-          },
-          {
-            kind: 'action',
-            action: {
-              label: 'Get in touch',
-              prompt:
-                "You can now see each other's email address. Get in touch here:",
-              url: link,
-            },
-          },
-        ],
-        footer: noticeFooter(deps.publicUrl),
+        text: `${by} accepted your request to connect on Rebel Match.`,
+        action: {
+          label: 'Get in touch',
+          prompt:
+            "You can now see each other's email address. Get in touch here:",
+          path: requestPath(request.id, '/contact'),
+        },
       }),
     })
   }
@@ -173,12 +139,7 @@ export function addedWords(kind: ConnectionKind): string {
     : 'connected with you over another challenge'
 }
 
-function addedMail(
-  name: string,
-  request: NewRequest,
-  link: string,
-  publicUrl: string,
-): MailContent {
+function addedMail(name: string, request: NewRequest): Notice {
   const words = addedWords(request.kind)
   return {
     heading:
@@ -186,22 +147,13 @@ function addedMail(
         ? `${name} connected with you`
         : `${name} connected with you again`,
     preview: `${name} ${words}.`,
-    blocks: [
-      {
-        kind: 'paragraph',
-        text: `${name} ${words} on Rebel Match.`,
-      },
-      ...noteBlocks(request.message),
-      {
-        kind: 'action',
-        action: {
-          label: 'See your connection',
-          prompt: 'See what you are connected over here:',
-          url: link,
-        },
-      },
-    ],
-    footer: noticeFooter(publicUrl),
+    text: `${name} ${words} on Rebel Match.`,
+    blocks: noteBlocks(request.message),
+    action: {
+      label: 'See your connection',
+      prompt: 'See what you are connected over here:',
+      path: requestPath(request.id, '/contact'),
+    },
   }
 }
 
@@ -222,13 +174,10 @@ export function createAddedNotice(
       to,
       kind: 'connection_added',
       subject: `${from} ${addedWords(request.kind)}`,
-      ...renderMail(
-        addedMail(
-          from,
-          request,
-          linkTo(deps, request.id, 'connection_added', '/contact'),
-          deps.publicUrl,
-        ),
+      ...renderNotice(
+        deps.publicUrl,
+        'connection_added',
+        addedMail(from, request),
       ),
     })
   }

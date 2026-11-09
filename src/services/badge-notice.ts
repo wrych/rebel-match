@@ -1,6 +1,5 @@
-import { renderMail } from './mail-layout.js'
 import type { Mailer } from './mailer.js'
-import { noticeFooter, noticeLink } from './notice-link.js'
+import { renderNotice } from './notice-mail.js'
 
 /** One member's notification of a badge they gained. */
 export interface BadgeNote {
@@ -36,21 +35,15 @@ export function createBadgeNotice(deps: {
       to: note.to,
       kind: 'badge',
       subject: `New badge on Rebel Match: ${note.name}`,
-      ...renderMail({
+      ...renderNotice(deps.publicUrl, 'badge', {
         heading: note.crown ? 'You hold a crown' : 'A new badge',
         preview: badgeLine(note),
-        blocks: [
-          { kind: 'paragraph', text: badgeLine(note) },
-          {
-            kind: 'action',
-            action: {
-              label: 'See your badges',
-              prompt: 'See your badges here:',
-              url: noticeLink(deps.publicUrl, note.path, 'badge'),
-            },
-          },
-        ],
-        footer: noticeFooter(deps.publicUrl),
+        text: badgeLine(note),
+        action: {
+          label: 'See your badges',
+          prompt: 'See your badges here:',
+          path: note.path,
+        },
       }),
     })
   }
