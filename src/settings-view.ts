@@ -476,6 +476,21 @@ const catalogue: Group[] = [
         unit: ['code', 'codes'],
       },
       {
+        name: 'Feedback per member or network, at most',
+        explanation:
+          'Feedback messages one member, or one network when not signed ' +
+          'in, may send before being asked to wait. Visitors also pass the ' +
+          'human check for each one.',
+        key: 'abuse.feedbackCeiling',
+        unit: ['message', 'messages'],
+      },
+      {
+        name: 'Time window for feedback',
+        explanation: 'The period the feedback limit above counts over.',
+        key: 'abuse.feedbackWindowMinutes',
+        unit: MINUTES,
+      },
+      {
         name: 'Trusted proxies in front of the server',
         explanation:
           'How many proxies are trusted to report the visitor’s address: 1 ' +
@@ -852,7 +867,7 @@ const catalogue: Group[] = [
       },
       {
         name: 'Feedback goes to',
-        explanation: 'Where the Feedback link in the menu sends mail.',
+        explanation: 'Where the feedback form sends mail.',
         read: (c) => c.feedbackTo,
       },
       {

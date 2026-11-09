@@ -11,6 +11,7 @@ export type OutboxKind =
   | 'trend_challenge'
   | 'badge'
   | 'recap'
+  | 'feedback'
 
 export type DeliveryStatus = 'sent' | 'suppressed' | 'failed'
 
@@ -28,6 +29,8 @@ export interface OutboundMessage {
   text: string
   /** The same email as HTML; sent, never stored (R-MSG-8). */
   html?: string
+  /** Where a reply goes, when not to the sender (R-FB-1). */
+  replyTo?: string
   credential?: string
 }
 
@@ -63,6 +66,7 @@ export interface MailTransport {
     subject: string
     text: string
     html?: string
+    replyTo?: string
   }): Promise<void>
 }
 
@@ -112,6 +116,7 @@ async function deliver(
       subject: message.subject,
       text: message.text,
       ...(message.html === undefined ? {} : { html: message.html }),
+      ...(message.replyTo === undefined ? {} : { replyTo: message.replyTo }),
     })
   } catch (error) {
     await deps.store.markFailed(id, storableError(error, message.credential))

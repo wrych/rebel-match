@@ -385,7 +385,6 @@ export interface ClientConfig {
   limits: Limits
   consentVersion: string
   analyticsVersion: string
-  feedbackTo: string
   build: BuildVersion
 }
 
@@ -586,7 +585,6 @@ export function clientConfig(config: Config, limits: Limits): ClientConfig {
     limits,
     consentVersion: config.consentVersion,
     analyticsVersion: config.analyticsVersion,
-    feedbackTo: config.feedbackTo,
     build: buildVersion(config.build),
   }
 }

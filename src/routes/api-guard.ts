@@ -3,9 +3,10 @@ import type { AuthProvider } from '../auth/index.js'
 import type { MemberProfiles } from '../services/member-profiles.js'
 
 // Paths under /api, as Express sees them below the mount. Health and config
-// carry nothing about anyone (R-CFG-2); onboarding is how a member becomes
-// onboarded, so it cannot require it (R-ONB-1).
-const OPEN = new Set(['/health', '/config'])
+// carry nothing about anyone (R-CFG-2); feedback is for visitors too
+// (R-FB-1); onboarding is how a member becomes onboarded, so it cannot
+// require it (R-ONB-1).
+const OPEN = new Set(['/health', '/config', '/feedback'])
 const BEFORE_ONBOARDING = new Set(['/onboarding'])
 
 /** The server's own check before every `/api/*` route, whatever the client

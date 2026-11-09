@@ -94,7 +94,7 @@ onMounted(async () => {
       </p>
     </div>
 
-    <div role="tablist" aria-label="Reports" class="tabs">
+    <div role="tablist" aria-label="Reports" class="screen-tabs">
       <button
         type="button"
         role="tab"
@@ -170,12 +170,6 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.tabs {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.45rem;
-}
-
 .reported {
   list-style: none;
   margin: 0;

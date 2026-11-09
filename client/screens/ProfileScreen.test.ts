@@ -23,7 +23,6 @@ const config = {
     savedTickMs: 2500,
   },
   analyticsVersion: '2026-10-05',
-  feedbackTo: 'host@example.org',
 }
 
 /** Serves the profile and config, and answers each save with `status`. */

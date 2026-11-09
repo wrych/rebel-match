@@ -56,6 +56,15 @@ describe('guardApi', () => {
     },
   )
 
+  it('lets a visitor nobody signed in post feedback (R-FB-1)', async () => {
+    const response = await request(app())
+      .post('/api/feedback')
+      .send({ message: 'Hi' })
+
+    expect(response.status).toBe(200)
+    expect(response.body).toEqual({ reached: true })
+  })
+
   it.each(['/api/onboarding', '/api/admin/outbox', '/api/anything'])(
     'answers 401 to nobody at %s',
     async (path) => {

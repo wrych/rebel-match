@@ -4,7 +4,6 @@ import { useRoute, useRouter } from 'vue-router'
 import CodeIcon from '../components/CodeIcon.vue'
 import CopyButton from '../components/CopyButton.vue'
 import LiveCodePanel from '../components/LiveCodePanel.vue'
-import ProfileCodeControls from '../components/ProfileCodeControls.vue'
 import QrCode from '../components/QrCode.vue'
 import { fetchConfig } from '../lib/api'
 import {
@@ -125,7 +124,7 @@ onMounted(async () => {
       <h1 class="display display-lg">Your code</h1>
     </div>
 
-    <div role="tablist" aria-label="Your code" class="tabs">
+    <div role="tablist" aria-label="Your code" class="screen-tabs">
       <button
         type="button"
         role="tab"
@@ -164,7 +163,8 @@ onMounted(async () => {
         <QrCode :value="link" :label="`Profile code of ${name ?? 'you'}`" />
         <p class="card-title">{{ name }}</p>
         <p v-if="!code.enabled" class="small">
-          Your code is off: it answers as not found.
+          Your code is off: it answers as not found. Turn it on in
+          <RouterLink to="/profile">Profile &amp; privacy</RouterLink>.
         </p>
       </div>
       <div class="share-row">
@@ -183,7 +183,6 @@ onMounted(async () => {
         you are not findable in search. Your email stays private until you
         accept.
       </p>
-      <ProfileCodeControls :code="code" @changed="code = $event" />
     </section>
 
     <p v-if="problem" class="alert" role="alert">{{ problem }}</p>

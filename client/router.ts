@@ -24,6 +24,7 @@ import BadgesScreen from './screens/BadgesScreen.vue'
 import ChallengeScreen from './screens/ChallengeScreen.vue'
 import CockpitScreen from './screens/CockpitScreen.vue'
 import ConnectScreen from './screens/ConnectScreen.vue'
+import FeedbackScreen from './screens/FeedbackScreen.vue'
 import ImpressumScreen from './screens/ImpressumScreen.vue'
 import InvitesScreen from './screens/InvitesScreen.vue'
 import LoginScreen from './screens/LoginScreen.vue'
@@ -100,6 +101,7 @@ export const router = createRouter({
     screen('privacy', PrivacyScreen),
     screen('terms', TermsScreen),
     screen('impressum', ImpressumScreen),
+    screen('feedback', FeedbackScreen),
     screen('game', () => import('./screens/GameScreen.vue')),
     screen('game-leaderboard', () => import('./screens/LeaderboardScreen.vue')),
     screen('network', () => import('./screens/NetworkScreen.vue')),

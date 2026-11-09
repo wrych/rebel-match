@@ -74,6 +74,15 @@ afterEach(() => {
 })
 
 describe('ModerationScreen (S39, R-MOD-6)', () => {
+  it('draws its tabs as a row of buttons, not as the bottom bar (R-LOOK-4)', async () => {
+    server([rik, ines])
+    const screen = await mountScreen()
+
+    const tablist = screen.find('[role="tablist"]')
+    expect(tablist.classes()).toContain('screen-tabs')
+    expect(tablist.classes()).not.toContain('tabs')
+  })
+
   it('shows one card per reported member: reports, reporters, items, reasons', async () => {
     server([rik, ines])
     const screen = await mountScreen()

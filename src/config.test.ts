@@ -362,13 +362,7 @@ describe('clientConfig', () => {
       Object.keys(
         clientConfig(loadConfig(valid), loadConfig(valid).limits),
       ).sort(),
-    ).toEqual([
-      'analyticsVersion',
-      'build',
-      'consentVersion',
-      'feedbackTo',
-      'limits',
-    ])
+    ).toEqual(['analyticsVersion', 'build', 'consentVersion', 'limits'])
   })
 
   it('sends feedback nowhere real by default, and refuses that in production (R-FB-1)', () => {

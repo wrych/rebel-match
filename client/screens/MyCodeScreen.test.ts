@@ -80,7 +80,16 @@ afterEach(() => {
 })
 
 describe('MyCodeScreen (S47, R-CODE-1, R-CODE-2)', () => {
-  it('shows the profile code as a QR of its link, with the member’s name', async () => {
+  it('draws its tabs as a row of buttons, not as the bottom bar (R-LOOK-4)', async () => {
+    server({ token: 'tok-1', enabled: true })
+    const screen = await mountScreen()
+
+    const tablist = screen.find('[role="tablist"]')
+    expect(tablist.classes()).toContain('screen-tabs')
+    expect(tablist.classes()).not.toContain('tabs')
+  })
+
+  it('shows the profile code as a QR of its link, with the member’s name and no controls (R-CODE-4)', async () => {
     route.query = { tab: 'profile' }
     server({ token: 'tok-1', enabled: true })
     const screen = await mountScreen()
@@ -90,7 +99,8 @@ describe('MyCodeScreen (S47, R-CODE-1, R-CODE-2)', () => {
     )
     expect(screen.text()).toContain('Ada Lovelace')
     expect(screen.find('button[aria-label="Copy link"]').exists()).toBe(true)
-    expect(screen.text()).toContain('Profile code: on')
+    expect(screen.text()).not.toContain('Profile code: on')
+    expect(screen.text()).not.toContain('Reset code')
   })
 
   it('marks both tabs with a QR, the live one spinning (R-CODE-1)', async () => {
@@ -108,12 +118,15 @@ describe('MyCodeScreen (S47, R-CODE-1, R-CODE-2)', () => {
     ])
   })
 
-  it('says the code is off while it is', async () => {
+  it('says the code is off, with the way to turn it on (R-CODE-4)', async () => {
     route.query = { tab: 'profile' }
     server({ token: 'tok-1', enabled: false })
     const screen = await mountScreen()
 
     expect(screen.text()).toContain('Your code is off')
+    expect(
+      screen.findAllComponents(RouterLinkStub).map((link) => link.props('to')),
+    ).toContain('/profile')
   })
 
   it('opens on Connect now: the live code with the member’s name, no Copy or Share, and no profile code made (R-CODE-5)', async () => {

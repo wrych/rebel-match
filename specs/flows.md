@@ -471,8 +471,19 @@ before both sides agree.**
 
 ## F12 — Feedback
 
-1. From the header menu the member taps Feedback, which opens a prefilled
-   `mailto:` to the team (R-FB-1). No in-app ticketing in the beta.
+**Screens:** S48 Feedback
+
+1. From the foot of the header menu, or from the not-found screen, anyone taps
+   Feedback and lands on `/feedback?from=<screen>` (R-FB-1).
+2. Signed in, the name and email are filled in from the profile; signed out,
+   they are empty. Both stay editable and optional; the message is required.
+3. **Send**: signed out, the human check runs first, by itself (R-FB-2). The
+   server emails `FEEDBACK_TO` with the message, the name and email given and
+   the screen, replying to the email given, and the form says thank you. No
+   in-app ticketing in the beta.
+
+- _Too many from this member or network_ → `429`; the form says to try later.
+- _The check did not finish_ → the form says so and keeps what was written.
 
 ---
 
