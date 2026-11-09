@@ -31,6 +31,7 @@ const me = ref<Me | null>(null)
 const version = ref<ClientConfig['build'] | null>(null)
 const feedbackTo = ref<string | null>(null)
 const networkReplay = ref(0)
+const badgesOn = ref(0)
 const memberSearch = ref(0)
 const connectCodes = ref(0)
 const recapLimits = ref({ recap: 0, recapOpensAt: 0 })
@@ -49,9 +50,11 @@ async function readFresh(): Promise<void> {
 }
 
 // Read as the notifications are, and at once when a badges screen marked
-// what it showed (R-BADGE-10).
+// what it showed (R-BADGE-10); never asked while hosts have badges off
+// (R-BADGE-15).
 async function readFreshBadges(): Promise<void> {
-  freshBadges.value = await fetchNewBadges().catch(() => 0)
+  freshBadges.value =
+    badgesOn.value === 1 ? await fetchNewBadges().catch(() => 0) : 0
 }
 
 // Refreshed as the matches badge is, and at once when the notifications
@@ -60,10 +63,10 @@ onMounted(async () => {
   window.addEventListener(NOTIFICATIONS_SEEN, readFresh)
   window.addEventListener(BADGES_SEEN, readFreshBadges)
   void readFresh()
-  void readFreshBadges()
   const config = await fetchConfig().catch(() => null)
   if (config === null || gone) return
   remember(config)
+  void readFreshBadges()
   stopPolling = poll(() => {
     void readFresh()
     void readFreshBadges()
@@ -75,6 +78,9 @@ const button = ref<HTMLButtonElement | null>(null)
 
 const hostTools = computed(() =>
   me.value === null ? [] : adminLinksFor(me.value.permissions),
+)
+const badges = computed(
+  () => me.value?.onboarded === true && badgesOn.value === 1,
 )
 const network = computed(
   () =>
@@ -104,6 +110,7 @@ function remember(config: ClientConfig): void {
   version.value = config.build
   feedbackTo.value = config.feedbackTo
   networkReplay.value = config.limits.networkReplay
+  badgesOn.value = config.limits.badges
   memberSearch.value = config.limits.memberSearch
   connectCodes.value = config.limits.connectCodes
   recapLimits.value = {
@@ -220,7 +227,7 @@ onBeforeUnmount(() => {
       >
 
       <RouterLink
-        v-if="me?.onboarded"
+        v-if="badges"
         to="/badges"
         class="item"
         @click="close(false)"

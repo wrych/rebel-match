@@ -134,16 +134,19 @@ function memoryStore(): BadgeStore & {
 function memoryEvents(): EventBadgeStore & {
   earned: EarnedEventBadge[]
   claims: string[][]
+  seenClaims: string[][]
 } {
   const events = {
     earned: [] as EarnedEventBadge[],
     claims: [] as string[][],
+    seenClaims: [] as string[][],
     // A token claimed again gives nothing new.
-    claim: (memberId: string, token: string) => {
+    claim: (memberId: string, token: string, _now: Date, seen: boolean) => {
       const fresh = !events.claims.some(
         ([who, what]) => who === memberId && what === token,
       )
       events.claims.push([memberId, token])
+      if (seen) events.seenClaims.push([memberId, token])
       return Promise.resolve(fresh)
     },
     mine: () => Promise.resolve(events.earned),
@@ -157,7 +160,10 @@ function memoryEvents(): EventBadgeStore & {
   return events
 }
 
-function setup(gameOn = false): {
+function setup(
+  gameOn = false,
+  badgesOn = true,
+): {
   badges: BadgeService
   store: ReturnType<typeof memoryStore>
   events: ReturnType<typeof memoryEvents>
@@ -174,6 +180,7 @@ function setup(gameOn = false): {
       events,
       levelCounts: () => levelCounts,
       gameOn: () => gameOn,
+      badgesOn: () => badgesOn,
       track: (memberId, event) => {
         tracked.push([memberId, event])
         return Promise.resolve()
@@ -230,6 +237,43 @@ describe('notifying gains (R-BADGE-10)', () => {
     expect(gains.filter((gain) => gain.level === 0)).toEqual([
       { memberId: 'ben', row: 'speak', level: 0 },
     ])
+  })
+})
+
+describe('while hosts have badges off (R-BADGE-15)', () => {
+  it('records each level gained, quietly and seen', async () => {
+    const { badges, store } = setup(false, false)
+    await badges.checkCrowns()
+    store.counts.set('ana:help', 5)
+
+    await badges.recount('ana', ['help'])
+
+    expect(store.held.map((each) => each.level)).toEqual([1, 2])
+    expect(store.notified).toEqual([])
+    expect(await badges.newCount('ana')).toBe(0)
+  })
+
+  it('moves a crown quietly', async () => {
+    const { badges, store } = setup(false, false)
+    store.counts.set('ana:speak', 2)
+    await badges.awardAtLaunch()
+    await badges.checkCrowns()
+    store.counts.set('ben:speak', 3)
+
+    await badges.recount('ben', ['speak'])
+
+    expect(store.crownList).toContainEqual(
+      expect.objectContaining({ row: 'speak', memberId: 'ben' }),
+    )
+    expect(store.notified).toEqual([])
+  })
+
+  it("claims an invite's badge as already seen", async () => {
+    const { badges, events } = setup(false, false)
+
+    await badges.claim('ana', 'token-1')
+
+    expect(events.seenClaims).toEqual([['ana', 'token-1']])
   })
 })
 

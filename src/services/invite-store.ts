@@ -64,6 +64,7 @@ async function setBadge(
   inviteId: string,
   badgeId: string | null,
   newBadge: StoredEventBadge | null,
+  quietBadges: boolean,
 ): Promise<string[] | null> {
   return db.transaction(async (tx) => {
     const [invite] = await tx
@@ -89,7 +90,7 @@ async function setBadge(
       )
     const earned: string[] = []
     for (const { id } of admitted)
-      if (await earnEventBadge(tx, id, badgeId)) earned.push(id)
+      if (await earnEventBadge(tx, id, badgeId, quietBadges)) earned.push(id)
     return earned
   })
 }
@@ -121,8 +122,12 @@ async function logoOf(db: Database, badgeId: string): Promise<string | null> {
 }
 
 /** Invites over `invites` (design §2). Every read goes to the table, never a
- * cache, so a revocation holds on the next use (R-INV-3). */
-export function createInviteStore(db: Database): InviteStore {
+ * cache, so a revocation holds on the next use (R-INV-3). Badges given are
+ * earned quietly while `quietBadges` holds (R-BADGE-15). */
+export function createInviteStore(
+  db: Database,
+  quietBadges: () => boolean,
+): InviteStore {
   return {
     list: () => listAll(db),
     find: async (id) => {
@@ -136,7 +141,7 @@ export function createInviteStore(db: Database): InviteStore {
     },
     insert: (invite, newBadge) => insertWithBadge(db, invite, newBadge),
     setBadge: (inviteId, badgeId, newBadge) =>
-      setBadge(db, inviteId, badgeId, newBadge),
+      setBadge(db, inviteId, badgeId, newBadge, quietBadges()),
     badgeExists: (id) => badgeExists(db, id),
     logo: (badgeId) => logoOf(db, badgeId),
     revoke: async (id, at) => {

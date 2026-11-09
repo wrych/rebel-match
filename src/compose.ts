@@ -400,7 +400,11 @@ function composeAdmission(
       auth,
       handles: createApplicantHandles(config.sessionSecret),
       ...composeGates(config, settings),
-      redeemInvite: createInviteRedemption(db, admittedRole),
+      redeemInvite: createInviteRedemption(
+        db,
+        admittedRole,
+        badgesQuiet(settings),
+      ),
     }),
     approvals: createApprovals({
       store: createApprovalStore(db),
@@ -502,6 +506,13 @@ function composeOnboarding(
   }
 }
 
+// While hosts have badges off, those earned are recorded as seen and not
+// notified (R-BADGE-15).
+const badgesQuiet =
+  (settings: LiveSettings): (() => boolean) =>
+  () =>
+    settings.limits().badges !== 1
+
 // The game's promotions are a row only while hosts have the game on
 // (R-BADGE-9, R-GAME-17).
 function composeBadges(
@@ -515,6 +526,7 @@ function composeBadges(
     events: createEventBadgeStore(db),
     levelCounts: () => config.badgeLevelCounts,
     gameOn: () => settings.game().enabled === 1,
+    badgesOn: () => !badgesQuiet(settings)(),
     track,
   })
 }
@@ -549,7 +561,7 @@ function composeInvites(
   track: Track,
 ): AppDeps['invites'] {
   return createInvites({
-    store: createInviteStore(db),
+    store: createInviteStore(db, badgesQuiet(settings)),
     publicUrl: config.publicUrl,
     defaults: () => settings.limits(),
     newId: randomUUID,
