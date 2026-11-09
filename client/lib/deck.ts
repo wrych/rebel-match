@@ -1,3 +1,4 @@
+import { apiPaths } from '../../src/api-paths'
 import type { DeckCard } from '../../src/services/deck'
 import type { SwipeAction } from '../../src/services/swipes'
 import { getJson, jsonOf, send } from './request'
@@ -18,7 +19,7 @@ export type SwipeResult =
 export async function fetchDeck(first?: string): Promise<DeckCard[]> {
   const query = first === undefined ? '' : `?first=${encodeURIComponent(first)}`
   const { cards } = await getJson<{ cards: DeckCard[] }>(
-    `/api/deck${query}`,
+    `${apiPaths.deck}${query}`,
     'deck unavailable',
   )
   return cards
@@ -30,7 +31,7 @@ export async function answerCard(
   action: SwipeAction,
   note?: string,
 ): Promise<SwipeResult> {
-  const response = await send('/api/swipe', 'POST', {
+  const response = await send(apiPaths.swipe, 'POST', {
     challengeId,
     action,
     note,
@@ -48,7 +49,7 @@ export async function answerCard(
 /** Tells the server a card became the visible one (R-STAT-1). Fire and
  * forget: a view that fails to record never stops the deck. */
 export function reportSeen(challengeId: string): void {
-  void send('/api/deck/seen', 'POST', { challengeId }).catch(() => undefined)
+  void send(apiPaths.deckSeen, 'POST', { challengeId }).catch(() => undefined)
 }
 
 /** Who wrote a card, as one line: organization, sector and company size. */

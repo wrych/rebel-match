@@ -1,3 +1,4 @@
+import { apiPaths, fill } from '../../src/api-paths'
 import { ensureOk, getJson, jsonOf, send } from './request'
 
 export type InviteState =
@@ -53,7 +54,7 @@ export interface InviteDraft {
 
 /** Where an event badge's cleaned logo is served (R-BADGE-5). */
 export function logoUrl(badge: Pick<EventBadge, 'id'>): string {
-  return `/api/event-badges/${encodeURIComponent(badge.id)}/logo.svg`
+  return fill(apiPaths.eventBadgeLogo, { id: badge.id })
 }
 
 /** Each event badge once, as the invites carry them, newest first. */
@@ -90,7 +91,7 @@ type Refusal = (typeof refusals)[keyof typeof refusals]
 
 export async function fetchInvites(): Promise<Invite[]> {
   const { invites } = await getJson<{ invites: Invite[] }>(
-    '/api/admin/invites',
+    apiPaths.invites,
     'invites unavailable',
   )
   return invites
@@ -133,7 +134,7 @@ export async function createInvite(
   const validFrom = instant(draft.validFrom, false)
   const validUntil = instant(draft.validUntil, true)
   if (validFrom === null || validUntil === null) return 'bad-date'
-  const response = await send('/api/admin/invites', 'POST', {
+  const response = await send(apiPaths.invites, 'POST', {
     label: draft.label,
     validFrom,
     validUntil,
@@ -158,7 +159,7 @@ export async function setInviteBadge(
   badge: BadgeChoice,
 ): Promise<Invite | 'bad-logo' | 'bad-badge'> {
   const response = await send(
-    `/api/admin/invites/${encodeURIComponent(id)}/event-badge`,
+    fill(apiPaths.inviteEventBadge, { id }),
     'PUT',
     badgeFields(badge),
   )
@@ -177,20 +178,15 @@ export async function raiseCap(
   id: string,
   maxUses: number,
 ): Promise<Invite | 'bad-cap' | 'revoked'> {
-  const response = await send(
-    `/api/admin/invites/${encodeURIComponent(id)}`,
-    'PATCH',
-    { maxUses },
-  )
+  const response = await send(fill(apiPaths.invite, { id }), 'PATCH', {
+    maxUses,
+  })
   if (response.status === 400) return 'bad-cap'
   if (response.status === 409) return 'revoked'
   return (await jsonOf<{ invite: Invite }>(response, 'cap not raised')).invite
 }
 
 export async function revokeInvite(id: string): Promise<void> {
-  const response = await send(
-    `/api/admin/invites/${encodeURIComponent(id)}/revoke`,
-    'POST',
-  )
+  const response = await send(fill(apiPaths.revokeInvite, { id }), 'POST')
   ensureOk(response, 'invite not revoked')
 }

@@ -1,3 +1,4 @@
+import { apiPaths, fill } from '../../src/api-paths'
 import type { MemberCard, SearchAnswer } from '../../src/services/member-search'
 import { sectors } from '../../src/profile-options'
 import {
@@ -32,7 +33,7 @@ export function searchOpen(
  * (R-FIND-1, R-FIND-3). */
 export function searchMembers(query: string): Promise<SearchAnswer | null> {
   return findJson<SearchAnswer>(
-    `/api/members/search?q=${encodeURIComponent(query)}`,
+    `${apiPaths.memberSearch}?q=${encodeURIComponent(query)}`,
     'search unavailable',
   )
 }
@@ -42,7 +43,7 @@ export async function fetchMemberCard(
   memberId: string,
 ): Promise<MemberCard | null> {
   const found = await findJson<{ card: MemberCard }>(
-    `/api/members/${encodeURIComponent(memberId)}/card`,
+    fill(apiPaths.memberCard, { id: memberId }),
     'card unavailable',
   )
   return found?.card ?? null

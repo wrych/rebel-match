@@ -10,6 +10,7 @@ import type {
 } from '../services/feedback.js'
 import { PAYLOAD_MAX_CHARS } from '../services/human-check.js'
 import { clientIp } from './ip-limit.js'
+import { apiPaths } from '../api-paths.js'
 
 const screens: readonly string[] = [
   ...routeTable.map((route) => route.name),
@@ -49,7 +50,7 @@ export function feedbackRoutes(deps: {
   const router = Router()
   const body = feedbackBody(deps.config.limits)
 
-  router.post('/api/feedback', async (request, response) => {
+  router.post(apiPaths.feedback, async (request, response) => {
     const parsed = body.safeParse(request.body)
     if (!parsed.success) {
       response.status(400).json({ error: 'bad_request' })

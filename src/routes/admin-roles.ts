@@ -5,6 +5,7 @@ import type { RoleService } from '../services/roles.js'
 import { grantStatus, revokeStatus } from '../outcomes.js'
 import { handle, replyOutcome } from './handle.js'
 import { requirePermission } from './require-permission.js'
+import { apiPaths } from '../api-paths.js'
 
 const grantBody = z.object({ role: z.string().min(1) })
 const memberParams = z.object({ id: z.string().min(1) })
@@ -19,7 +20,7 @@ export function adminRoleRoutes(deps: {
   const guard = requirePermission(deps.auth, 'role:grant')
 
   router.post(
-    '/api/admin/members/:id/roles',
+    apiPaths.memberRoles,
     guard,
     handle(
       { params: memberParams, body: grantBody },
@@ -31,7 +32,7 @@ export function adminRoleRoutes(deps: {
   )
 
   router.delete(
-    '/api/admin/members/:id/roles/:role',
+    apiPaths.memberRole,
     guard,
     handle({ params: holdingParams }, async ({ params }, response) => {
       const outcome = await deps.roles.revoke(params.id, params.role)

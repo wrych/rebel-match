@@ -1,3 +1,4 @@
+import { apiPaths, fill } from '../../src/api-paths'
 import { reportStatus } from '../../src/outcomes'
 import type { ModerationReason } from '../../src/services/challenge-moderation'
 import type {
@@ -11,8 +12,8 @@ export type { ReportItem, ReportOutcome, ReportTarget }
 
 const targetPath = (item: ReportItem): string =>
   'challengeId' in item
-    ? `/api/reports/challenge/${encodeURIComponent(item.challengeId)}`
-    : `/api/reports/request/${encodeURIComponent(item.requestId)}`
+    ? fill(apiPaths.challengeReport, { id: item.challengeId })
+    : fill(apiPaths.requestReport, { id: item.requestId })
 
 /** What the report screen shows; null when there is nothing the member may
  * report there (R-NAV-8). */
@@ -33,7 +34,7 @@ export async function sendReport(
   reason: ModerationReason,
   comment: string,
 ): Promise<ReportOutcome> {
-  const response = await send('/api/reports', 'POST', {
+  const response = await send(apiPaths.reports, 'POST', {
     ...item,
     reason,
     comment,

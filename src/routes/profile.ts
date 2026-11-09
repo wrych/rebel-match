@@ -14,6 +14,7 @@ import { displayName, optionalChoice, optionalText } from './profile-fields.js'
 import { setCookie } from './auth.js'
 import { handle, memberOf, notFound } from './handle.js'
 import { requireSession } from './require-permission.js'
+import { apiPaths } from '../api-paths.js'
 
 type TextLimits = Pick<
   Limits,
@@ -94,7 +95,7 @@ export function profileRoutes(deps: {
   const guard = requireSession(deps.auth)
   const body = editBody(deps.config.limits)
 
-  router.get('/api/profile', guard, async (_request, response) => {
+  router.get(apiPaths.profile, guard, async (_request, response) => {
     const own = await deps.profile.own(memberOf(response).id)
     if (own === null) {
       response.status(401).json({ error: 'unauthenticated' })
@@ -104,7 +105,7 @@ export function profileRoutes(deps: {
   })
 
   router.put(
-    '/api/profile',
+    apiPaths.profile,
     guard,
     handle({ body }, async ({ body, member }, response) => {
       await deps.profile.update(member.id, body)
@@ -112,13 +113,13 @@ export function profileRoutes(deps: {
     }),
   )
 
-  router.put('/api/me/findable', guard, setFindable(deps.profile))
-  router.put('/api/me/social-links', guard, setSocialLinks(deps))
+  router.put(apiPaths.findable, guard, setFindable(deps.profile))
+  router.put(apiPaths.socialLinks, guard, setSocialLinks(deps))
 
   // Deleting as a host does, refused for the same reasons, but marked as the
   // member's own so their emailed link can undo it (ADR 0032). The session
   // has ended, so its cookie is cleared too.
-  router.delete('/api/profile', guard, async (request, response) => {
+  router.delete(apiPaths.profile, guard, async (request, response) => {
     const outcome = await deps.erasure.delete(memberOf(response).id, true)
     if (
       outcome.result === 'last_admin' ||

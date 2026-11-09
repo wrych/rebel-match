@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import type { Express } from 'express'
 import request from 'supertest'
 import { describe, expect, it, vi } from 'vitest'
+import { apiPaths } from './api-paths.js'
 import { createApp, handleErrors, type AppDeps } from './app.js'
 import { createAuth, createMemoryAuthStore } from './auth/index.js'
 import { loadConfig } from './config.js'
@@ -387,6 +388,38 @@ async function signedIn(): Promise<{ app: Express; cookie: string }> {
   })
   return { app, cookie: `${session.name}=${session.value}` }
 }
+
+interface Layer {
+  route?: { path: string | string[] }
+  handle: { stack?: Layer[] }
+}
+
+function registeredPaths(layers: Layer[]): string[] {
+  return layers.flatMap((layer) =>
+    layer.route !== undefined
+      ? [layer.route.path].flat()
+      : registeredPaths(layer.handle.stack ?? []),
+  )
+}
+
+describe('the API path table (ADR 0017)', () => {
+  it('names only paths the app serves', () => {
+    const app = createApp({
+      ...deps(),
+      scheduled: {
+        tick: { run: () => Promise.resolve(true) },
+        isInvoker: () => Promise.resolve(false),
+        freshSettings: () => Promise.resolve(),
+      },
+    })
+    const { stack } = (app as unknown as { router: { stack: Layer[] } }).router
+
+    const served = new Set(registeredPaths(stack))
+    expect(Object.values(apiPaths).filter((path) => !served.has(path))).toEqual(
+      [],
+    )
+  })
+})
 
 describe('unknown api routes', () => {
   it('answer 404 without describing what is missing', async () => {

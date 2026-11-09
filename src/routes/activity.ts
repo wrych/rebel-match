@@ -5,6 +5,7 @@ import type { ActivityService } from '../services/activity.js'
 import { inviteToken } from './invite-token.js'
 import { handle, memberOf, notFound } from './handle.js'
 import { requirePermission, requireSession } from './require-permission.js'
+import { apiPaths } from '../api-paths.js'
 
 const seenBody = z.object({ challengeId: z.string().min(1) })
 const openedBody = z.object({ invite: inviteToken })
@@ -19,7 +20,7 @@ export function activityRoutes(deps: {
   const router = Router()
 
   router.post(
-    '/api/deck/seen',
+    apiPaths.deckSeen,
     requirePermission(deps.auth, 'challenge:swipe'),
     handle({ body: seenBody }, async ({ body, member }, response) => {
       const outcome = await deps.activity.viewed(member.id, body.challengeId)
@@ -33,7 +34,7 @@ export function activityRoutes(deps: {
 
   // No session: the visitor has just scanned a code. Every well-formed body
   // gets the same answer, so it says nothing about which tokens exist.
-  router.post('/auth/invite-opened', async (request, response) => {
+  router.post(apiPaths.inviteOpened, async (request, response) => {
     const body = openedBody.safeParse(request.body)
     if (!body.success) {
       response.status(400).json({ error: 'bad_request' })
@@ -44,7 +45,7 @@ export function activityRoutes(deps: {
   })
 
   router.delete(
-    '/api/me/history',
+    apiPaths.history,
     requireSession(deps.auth),
     async (_request, response) => {
       await deps.activity.forgetHistory(memberOf(response).id)

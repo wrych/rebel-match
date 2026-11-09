@@ -10,6 +10,7 @@ import type { NotificationService } from '../services/notifications.js'
 import { dismissStatus, hideStatus, unhideStatus } from '../outcomes.js'
 import { handle, notFound, replyOutcome } from './handle.js'
 import { requirePermission } from './require-permission.js'
+import { apiPaths } from '../api-paths.js'
 
 const stateQuery = z.object({
   state: z.enum(['open', 'handled']).default('open'),
@@ -92,7 +93,7 @@ export function adminReportRoutes(deps: {
   const guard = requirePermission(deps.auth, 'report:review')
 
   router.get(
-    '/api/admin/reports',
+    apiPaths.moderationReports,
     guard,
     handle({ query: stateQuery }, async ({ query }, response) => {
       response.json({ members: await deps.moderation.overview(query.state) })
@@ -100,26 +101,18 @@ export function adminReportRoutes(deps: {
   )
   // The menu's Moderation count (R-MOD-5); before the member's page, whose
   // path would take it.
-  router.get('/api/admin/reports/count', guard, async (_request, response) => {
+  router.get(apiPaths.reportCount, guard, async (_request, response) => {
     response.json({ members: await deps.moderation.openMembers() })
   })
   router.get(
-    '/api/admin/reports/:memberId',
+    apiPaths.memberReports,
     guard,
     memberPage(deps.moderation, deps.notifications),
   )
-  router.post('/api/admin/reports/dismiss', guard, dismiss(deps.moderation))
+  router.post(apiPaths.dismissReport, guard, dismiss(deps.moderation))
   const hides = requirePermission(deps.auth, 'challenge:moderate')
-  router.post(
-    '/api/admin/requests/:id/hide-note',
-    hides,
-    hideNote(deps.moderation),
-  )
-  router.post(
-    '/api/admin/requests/:id/unhide-note',
-    hides,
-    unhideNote(deps.moderation),
-  )
+  router.post(apiPaths.hideRequestNote, hides, hideNote(deps.moderation))
+  router.post(apiPaths.unhideRequestNote, hides, unhideNote(deps.moderation))
 
   return router
 }

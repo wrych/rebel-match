@@ -5,6 +5,7 @@ import { recapOpen } from '../recap/open.js'
 import type { RecapService } from '../services/recap.js'
 import { memberOf, notFound } from './handle.js'
 import { requireSession } from './require-permission.js'
+import { apiPaths } from '../api-paths.js'
 
 // Until the recap opens, its address is as absent as one that never
 // existed (R-RECAP-1, R-RECAP-8, R-NAV-8).
@@ -34,7 +35,7 @@ export function recapRoutes(deps: {
   const router = Router()
 
   router.get(
-    '/api/recap',
+    apiPaths.recap,
     whileOpen(deps.settings, deps.now ?? Date.now),
     requireSession(deps.auth),
     async (_request, response) => {

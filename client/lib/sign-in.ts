@@ -1,3 +1,4 @@
+import { apiPaths } from '../../src/api-paths'
 import { failure, send } from './request'
 
 export type SignInResult =
@@ -16,7 +17,7 @@ export function tokenFromHash(hash: string): string | null {
  * when the server could not answer, so a network hiccup is not reported as
  * a dead link. */
 export async function signIn(token: string): Promise<SignInResult> {
-  const response = await send('/auth/verify', 'POST', { token })
+  const response = await send(apiPaths.verify, 'POST', { token })
   if (response.ok) {
     const { next } = (await response.json()) as { next: string }
     return { ok: true, next }

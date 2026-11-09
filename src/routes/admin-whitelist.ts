@@ -5,6 +5,7 @@ import type { Limits } from '../config.js'
 import type { WhitelistService } from '../services/whitelist.js'
 import { handle } from './handle.js'
 import { requirePermission } from './require-permission.js'
+import { apiPaths } from '../api-paths.js'
 
 function whitelistBody(
   limits: Pick<Limits, 'whitelistBatchMax' | 'emailMaxChars'>,
@@ -33,7 +34,7 @@ export function adminWhitelistRoutes(deps: {
   const schema = whitelistBody(deps.config.limits)
 
   router.post(
-    '/api/admin/whitelist',
+    apiPaths.whitelist,
     requirePermission(deps.auth, 'whitelist:manage'),
     handle({ body: schema }, async ({ body, member }, response) => {
       const results = await deps.whitelist.add(body.emails, member.id)

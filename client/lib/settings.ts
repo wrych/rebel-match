@@ -1,3 +1,4 @@
+import { apiPaths, fill } from '../../src/api-paths'
 import type { SettingView, SettingsGroup } from '../../src/settings-view'
 
 import { holds, searchTerm } from './folds'
@@ -25,7 +26,7 @@ async function answer(
 
 /** Reads the configuration in its named groups (R-CFG-5). */
 export async function fetchSettings(): Promise<SettingsGroup[]> {
-  return (await getJson<Groups>('/api/admin/settings', 'settings unavailable'))
+  return (await getJson<Groups>(apiPaths.settings, 'settings unavailable'))
     .groups
 }
 
@@ -35,11 +36,7 @@ export async function changeSetting(
   key: string,
   value: number,
 ): Promise<SettingsGroup[] | Refusal> {
-  const response = await send(
-    `/api/admin/settings/${encodeURIComponent(key)}`,
-    'PUT',
-    { value },
-  )
+  const response = await send(fill(apiPaths.setting, { key }), 'PUT', { value })
   return answer(response, 'setting not saved')
 }
 
@@ -47,10 +44,7 @@ export async function changeSetting(
 export async function resetSetting(
   key: string,
 ): Promise<SettingsGroup[] | Refusal> {
-  const response = await send(
-    `/api/admin/settings/${encodeURIComponent(key)}`,
-    'DELETE',
-  )
+  const response = await send(fill(apiPaths.setting, { key }), 'DELETE')
   return answer(response, 'setting not reset')
 }
 

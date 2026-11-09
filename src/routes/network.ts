@@ -4,6 +4,7 @@ import type { LiveSettings } from '../config.js'
 import type { NetworkService } from '../services/network.js'
 import { memberOf, notFound } from './handle.js'
 import { requirePermission } from './require-permission.js'
+import { apiPaths } from '../api-paths.js'
 
 // While hosts have the replay off, its address is as absent as one that never
 // existed (R-NET-6, R-NAV-8).
@@ -27,7 +28,7 @@ export function networkRoutes(deps: {
   const router = Router()
 
   router.get(
-    '/api/network',
+    apiPaths.network,
     whileOn(deps.settings),
     requirePermission(deps.auth, 'network:view'),
     async (_request, response) => {

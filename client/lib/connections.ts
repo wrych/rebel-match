@@ -1,3 +1,4 @@
+import { apiPaths, fill } from '../../src/api-paths'
 import type {
   Contact,
   ConnectionView,
@@ -20,7 +21,7 @@ export type RequestOutcome =
 export async function requestConnection(
   input: NewConnection,
 ): Promise<RequestOutcome> {
-  const response = await send('/api/connections', 'POST', input)
+  const response = await send(apiPaths.connections, 'POST', input)
   if (response.status === 201) return { result: 'created' }
   if (response.status === 409) return { result: 'exists' }
   if (response.status === 404) return { result: 'not_found' }
@@ -42,8 +43,7 @@ export function kindOf(value: unknown): ConnectionKind | null {
   return value === 'same_boat' || value === 'been_there' ? value : null
 }
 
-const requestPath = (id: string): string =>
-  `/api/connections/${encodeURIComponent(id)}`
+const requestPath = (id: string): string => fill(apiPaths.connection, { id })
 
 /** A request the member is a party to, or null for any other (R-NAV-8). */
 export async function fetchRequest(id: string): Promise<ConnectionView | null> {

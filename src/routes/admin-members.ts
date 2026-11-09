@@ -5,6 +5,7 @@ import type { ErasureService } from '../services/erasure.js'
 import type { MemberRoster } from '../services/member-roster.js'
 import { handle, notFound, replyFound, replyOutcome } from './handle.js'
 import { requirePermission } from './require-permission.js'
+import { apiPaths } from '../api-paths.js'
 
 const memberParams = z.object({ id: z.string().min(1) })
 
@@ -57,11 +58,11 @@ export function adminMemberRoutes(deps: {
   const router = Router()
   const guard = requirePermission(deps.auth, 'member:delete')
 
-  router.get('/api/admin/members', guard, async (_request, response) => {
+  router.get(apiPaths.adminMembers, guard, async (_request, response) => {
     response.json({ members: await deps.roster.list() })
   })
 
-  router.get('/api/admin/members/:id', guard, async (request, response) => {
+  router.get(apiPaths.adminMember, guard, async (request, response) => {
     const params = memberParams.safeParse(request.params)
     const member = params.success
       ? await deps.roster.detail(params.data.id)
@@ -69,8 +70,8 @@ export function adminMemberRoutes(deps: {
     replyFound(response, member, 'member')
   })
 
-  router.delete('/api/admin/members/:id', guard, remove(deps.erasure))
-  router.post('/api/admin/members/:id/restore', guard, restore(deps.erasure))
+  router.delete(apiPaths.adminMember, guard, remove(deps.erasure))
+  router.post(apiPaths.restoreMember, guard, restore(deps.erasure))
 
   return router
 }

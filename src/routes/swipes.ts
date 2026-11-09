@@ -5,6 +5,7 @@ import type { Limits, LiveSettings } from '../config.js'
 import type { SwipeInput, SwipeService } from '../services/swipes.js'
 import { handle, notFound } from './handle.js'
 import { requirePermission } from './require-permission.js'
+import { apiPaths } from '../api-paths.js'
 
 type NoteLimits = Pick<
   Limits,
@@ -36,7 +37,7 @@ export function swipeRoutes(deps: {
   const router = Router()
 
   router.post(
-    '/api/swipe',
+    apiPaths.swipe,
     requirePermission(deps.auth, 'challenge:swipe'),
     handle(
       () => ({ body: swipeBody(deps.settings.limits()) }),

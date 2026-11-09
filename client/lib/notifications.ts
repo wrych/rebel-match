@@ -1,3 +1,4 @@
+import { apiPaths, fill } from '../../src/api-paths'
 import { RECAP_TITLE } from '../../src/recap/title'
 import type { NotificationSetting } from '../../src/services/notification-settings'
 import type { NotificationView } from '../../src/services/notifications'
@@ -14,7 +15,7 @@ export async function fetchNotifications(
     before === undefined ? '' : `?before=${encodeURIComponent(before)}`
   const { notifications } = await getJson<{
     notifications: NotificationView[]
-  }>(`/api/notifications${query}`, 'notifications unavailable')
+  }>(`${apiPaths.notifications}${query}`, 'notifications unavailable')
   return notifications
 }
 
@@ -28,7 +29,7 @@ export async function markNotificationsSeen(
   ids: readonly string[],
 ): Promise<void> {
   if (ids.length === 0) return
-  const response = await send('/api/notifications/seen', 'POST', { ids })
+  const response = await send(apiPaths.notificationsSeen, 'POST', { ids })
   ensureOk(response, 'notifications not marked')
   window.dispatchEvent(new Event(NOTIFICATIONS_SEEN))
 }
@@ -36,7 +37,7 @@ export async function markNotificationsSeen(
 /** How many are new, for the menu; anything but a positive whole number, or
  * a failed read, counts as none (R-NOTE-6). */
 export async function fetchNewNotifications(): Promise<number> {
-  const response = await send('/api/notifications/new')
+  const response = await send(apiPaths.newNotifications)
   if (!response.ok) return 0
   const { count } = (await response.json()) as { count?: unknown }
   return typeof count === 'number' && Number.isInteger(count) && count > 0
@@ -93,7 +94,7 @@ export async function fetchNotificationSettings(): Promise<
   NotificationSetting[]
 > {
   const { settings } = await getJson<{ settings: NotificationSetting[] }>(
-    '/api/me/notification-settings',
+    apiPaths.notificationSettings,
     'settings unavailable',
   )
   return settings
@@ -105,7 +106,7 @@ export async function chooseNotificationCadence(
   cadence: string,
 ): Promise<void> {
   const response = await send(
-    `/api/me/notification-settings/${encodeURIComponent(type)}`,
+    fill(apiPaths.notificationSetting, { type }),
     'PUT',
     { cadence },
   )

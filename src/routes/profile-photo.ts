@@ -5,6 +5,7 @@ import type { LiveSettings } from '../config.js'
 import type { PhotoService, StoredPhoto } from '../services/photo.js'
 import { memberOf, notFound } from './handle.js'
 import { requirePermission, requireSession } from './require-permission.js'
+import { apiPaths } from '../api-paths.js'
 
 /** While hosts have photos off, their addresses are as absent as ones that
  * never existed (R-PROF-6, R-NAV-8). */
@@ -56,7 +57,7 @@ export function sharedPhotoRoutes(deps: {
   const photosOn = whilePhotosOn(deps.settings)
 
   router.get(
-    '/api/photos/:key',
+    apiPaths.sharedPhoto,
     photosOn,
     requireSession(deps.auth),
     async (request, response) => {
@@ -69,7 +70,7 @@ export function sharedPhotoRoutes(deps: {
   )
 
   router.get(
-    '/api/admin/members/:id/photo',
+    apiPaths.memberPhoto,
     photosOn,
     requirePermission(deps.auth, 'member:delete'),
     async (request, response) => {
@@ -101,12 +102,12 @@ export function profilePhotoRoutes(deps: {
     })(request, response, next)
   }
 
-  router.get('/api/profile/photo', ...guards, async (_request, response) => {
+  router.get(apiPaths.ownPhoto, ...guards, async (_request, response) => {
     send(response, await deps.photos.own(memberOf(response).id), ASK_AGAIN)
   })
 
   router.put(
-    '/api/profile/photo',
+    apiPaths.ownPhoto,
     ...guards,
     jpegBody,
     async (request, response) => {
@@ -122,7 +123,7 @@ export function profilePhotoRoutes(deps: {
     },
   )
 
-  router.delete('/api/profile/photo', ...guards, async (_request, response) => {
+  router.delete(apiPaths.ownPhoto, ...guards, async (_request, response) => {
     await deps.photos.remove(memberOf(response).id)
     response.status(204).end()
   })

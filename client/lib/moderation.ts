@@ -1,3 +1,4 @@
+import { apiPaths, fill } from '../../src/api-paths'
 import {
   banStatus,
   dismissStatus,
@@ -45,7 +46,7 @@ export async function fetchMemberChallenges(
   memberId: string,
 ): Promise<ModeratedChallenge[] | null> {
   const found = await findJson<{ challenges: ModeratedChallenge[] }>(
-    `/api/admin/members/${encodeURIComponent(memberId)}/challenges`,
+    fill(apiPaths.memberChallenges, { id: memberId }),
     'challenges unavailable',
   )
   return found?.challenges ?? null
@@ -57,11 +58,9 @@ export async function hideChallenge(
   id: string,
   reason: ModerationReason,
 ): Promise<'done' | 'gone'> {
-  const response = await send(
-    `/api/admin/challenges/${encodeURIComponent(id)}/hide`,
-    'POST',
-    { reason },
-  )
+  const response = await send(fill(apiPaths.hideChallenge, { id }), 'POST', {
+    reason,
+  })
   return outcomeFrom(response, 'challenge not hidden', hideStatus, {
     hidden: 'done',
     not_found: 'gone',
@@ -70,10 +69,7 @@ export async function hideChallenge(
 
 /** Shows a hidden challenge again (R-MOD-8); `gone` when it is not hidden. */
 export async function unhideChallenge(id: string): Promise<'done' | 'gone'> {
-  const response = await send(
-    `/api/admin/challenges/${encodeURIComponent(id)}/unhide`,
-    'POST',
-  )
+  const response = await send(fill(apiPaths.unhideChallenge, { id }), 'POST')
   return outcomeFrom(response, 'challenge not shown', unhideStatus, {
     shown: 'done',
     not_found: 'gone',
@@ -87,7 +83,7 @@ export async function banMember(
   note: string,
 ): Promise<'done' | 'gone' | 'refused'> {
   const response = await send(
-    `/api/admin/members/${encodeURIComponent(memberId)}/ban`,
+    fill(apiPaths.banMember, { id: memberId }),
     'POST',
     { note },
   )
@@ -102,7 +98,7 @@ export async function banMember(
 /** Lifts a ban (R-MOD-9); `gone` when the member is not banned. */
 export async function unbanMember(memberId: string): Promise<'done' | 'gone'> {
   const response = await send(
-    `/api/admin/members/${encodeURIComponent(memberId)}/unban`,
+    fill(apiPaths.unbanMember, { id: memberId }),
     'POST',
   )
   return outcomeFrom(response, 'ban not lifted', unbanStatus, {
@@ -116,7 +112,7 @@ export async function fetchReportedMembers(
   state: 'open' | 'handled',
 ): Promise<ReportedMember[]> {
   const { members } = await getJson<{ members: ReportedMember[] }>(
-    `/api/admin/reports?state=${state}`,
+    `${apiPaths.moderationReports}?state=${state}`,
     'reported members unavailable',
   )
   return members
@@ -128,7 +124,7 @@ export function fetchModerationPage(
   memberId: string,
 ): Promise<ModerationPage | null> {
   return findJson<ModerationPage>(
-    `/api/admin/reports/${encodeURIComponent(memberId)}`,
+    fill(apiPaths.memberReports, { memberId }),
     'moderation page unavailable',
   )
 }
@@ -138,7 +134,7 @@ export function fetchModerationPage(
 export async function dismissReports(
   item: ModeratedItem,
 ): Promise<'done' | 'gone'> {
-  const response = await send('/api/admin/reports/dismiss', 'POST', item)
+  const response = await send(apiPaths.dismissReport, 'POST', item)
   return outcomeFrom(response, 'reports not dismissed', dismissStatus, {
     dismissed: 'done',
     not_found: 'gone',
@@ -148,7 +144,7 @@ export async function dismissReports(
 /** How many members have open reports (R-MOD-5); 0 when it cannot be
  * read, as the menu shows no count then. */
 export async function fetchOpenReported(): Promise<number> {
-  const response = await send('/api/admin/reports/count')
+  const response = await send(apiPaths.reportCount)
   if (!response.ok) return 0
   const { members } = (await response.json()) as { members?: unknown }
   return typeof members === 'number' && Number.isInteger(members) && members > 0
@@ -183,7 +179,7 @@ export async function hideNote(
   reason: ModerationReason,
 ): Promise<'done' | 'gone'> {
   const response = await send(
-    `/api/admin/requests/${encodeURIComponent(requestId)}/hide-note`,
+    fill(apiPaths.hideRequestNote, { id: requestId }),
     'POST',
     { reason },
   )
@@ -196,7 +192,7 @@ export async function hideNote(
 /** Shows a hidden note again (R-MOD-8); `gone` when it is not hidden. */
 export async function unhideNote(requestId: string): Promise<'done' | 'gone'> {
   const response = await send(
-    `/api/admin/requests/${encodeURIComponent(requestId)}/unhide-note`,
+    fill(apiPaths.unhideRequestNote, { id: requestId }),
     'POST',
   )
   return outcomeFrom(response, 'note not shown', unhideStatus, {

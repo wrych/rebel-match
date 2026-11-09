@@ -3,6 +3,7 @@ import { z } from 'zod'
 import type { AuthProvider, SessionCookie } from '../auth/index.js'
 import type { MemberProfiles } from '../services/member-profiles.js'
 import type { SignIn } from '../services/sign-in.js'
+import { apiPaths } from '../api-paths.js'
 
 const verifyBody = z.object({ token: z.string().min(1) })
 
@@ -48,9 +49,9 @@ export function authRoutes(deps: {
 }): Router {
   const router = Router()
 
-  router.post('/auth/verify', verify(deps.signIn))
+  router.post(apiPaths.verify, verify(deps.signIn))
 
-  router.get('/auth/me', async (request, response) => {
+  router.get(apiPaths.me, async (request, response) => {
     const member = await deps.auth.currentMember(request)
     const profile =
       member === null ? null : await deps.profiles.profile(member.id)
@@ -67,7 +68,7 @@ export function authRoutes(deps: {
     })
   })
 
-  router.post('/auth/logout', async (request, response) => {
+  router.post(apiPaths.logout, async (request, response) => {
     setCookie(response, await deps.auth.endSession(request))
     response.status(204).end()
   })

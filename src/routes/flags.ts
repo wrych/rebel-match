@@ -4,6 +4,7 @@ import type { LiveSettings } from '../config.js'
 import { assign } from '../flags.js'
 import { memberOf } from './handle.js'
 import { requireSession } from './require-permission.js'
+import { apiPaths } from '../api-paths.js'
 
 /** `GET /api/flags` (design §3): the caller's variant of every experiment,
  * decided on the server from their id, so nothing is stored and no flag
@@ -14,11 +15,15 @@ export function flagRoutes(deps: {
 }): Router {
   const router = Router()
 
-  router.get('/api/flags', requireSession(deps.auth), (_request, response) => {
-    response.json({
-      flags: assign(memberOf(response).id, deps.settings.flags()),
-    })
-  })
+  router.get(
+    apiPaths.flags,
+    requireSession(deps.auth),
+    (_request, response) => {
+      response.json({
+        flags: assign(memberOf(response).id, deps.settings.flags()),
+      })
+    },
+  )
 
   return router
 }

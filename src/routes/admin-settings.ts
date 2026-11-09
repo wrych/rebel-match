@@ -6,6 +6,7 @@ import type { SettingsService } from '../services/settings.js'
 import { settingsView } from '../settings-view.js'
 import { handle, notFound } from './handle.js'
 import { requirePermission } from './require-permission.js'
+import { apiPaths } from '../api-paths.js'
 
 const keyParams = z.object({ key: z.string().min(1) })
 const changeBody = z.object({ value: z.number().int() })
@@ -70,14 +71,14 @@ export function adminSettingsRoutes(deps: Deps): Router {
   const manage = requirePermission(deps.auth, 'settings:manage')
 
   router.get(
-    '/api/admin/settings',
+    apiPaths.settings,
     requirePermission(deps.auth, 'settings:read'),
     (_request, response) => {
       respond(response)
     },
   )
-  router.put('/api/admin/settings/:key', manage, change(deps, respond))
-  router.delete('/api/admin/settings/:key', manage, reset(deps, respond))
+  router.put(apiPaths.setting, manage, change(deps, respond))
+  router.delete(apiPaths.setting, manage, reset(deps, respond))
 
   return router
 }

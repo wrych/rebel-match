@@ -5,6 +5,7 @@ import type { CockpitService } from '../services/cockpit.js'
 import type { FollowService } from '../services/follows.js'
 import { handle, memberOf } from './handle.js'
 import { requireSession } from './require-permission.js'
+import { apiPaths } from '../api-paths.js'
 
 const trendParams = z.object({ trendId: z.string().min(1) })
 
@@ -20,20 +21,20 @@ export function cockpitRoutes(deps: {
   const router = Router()
   const guard = requireSession(deps.auth)
 
-  router.get('/api/cockpit', guard, async (_request, response) => {
+  router.get(apiPaths.cockpit, guard, async (_request, response) => {
     response.json(await deps.cockpit.cockpit(memberOf(response).id))
   })
-  router.post('/api/matches/seen', guard, async (_request, response) => {
+  router.post(apiPaths.matchesSeen, guard, async (_request, response) => {
     await deps.cockpit.seen(memberOf(response).id)
     response.status(204).end()
   })
-  router.get('/api/follows', guard, async (_request, response) => {
+  router.get(apiPaths.follows, guard, async (_request, response) => {
     response.json({
       trends: await deps.follows.followed(memberOf(response).id),
     })
   })
   router.post(
-    '/api/follows/:trendId',
+    apiPaths.follow,
     guard,
     handle({ params: trendParams }, async ({ params, member }, response) => {
       const outcome = await deps.follows.follow(member.id, params.trendId)
@@ -41,7 +42,7 @@ export function cockpitRoutes(deps: {
     }),
   )
   router.delete(
-    '/api/follows/:trendId',
+    apiPaths.follow,
     guard,
     handle({ params: trendParams }, async ({ params, member }, response) => {
       await deps.follows.unfollow(member.id, params.trendId)

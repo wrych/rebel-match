@@ -1,3 +1,4 @@
+import { apiPaths, fill } from '../../src/api-paths'
 import { withdrawStatus } from '../../src/outcomes'
 import type {
   Challenge,
@@ -27,7 +28,7 @@ export type {
 
 export async function fetchTrends(): Promise<Trend[]> {
   const { trends } = await getJson<{ trends: Trend[] }>(
-    '/api/trends',
+    apiPaths.trends,
     'trends unavailable',
   )
   return trends
@@ -41,7 +42,7 @@ export async function fetchNewestChallenges(
   const query =
     trendId === undefined ? '' : `?trend=${encodeURIComponent(trendId)}`
   const { challenges } = await getJson<{ challenges: NewestChallenge[] }>(
-    `/api/challenges/newest${query}`,
+    `${apiPaths.newestChallenges}${query}`,
     'newest challenges unavailable',
   )
   return challenges
@@ -50,7 +51,7 @@ export async function fetchNewestChallenges(
 /** Saves the challenge and returns it with the trend the matcher picked
  * (R-ASK-4,5). */
 export async function submitChallenge(body: string): Promise<Challenge> {
-  const response = await send('/api/challenges', 'POST', { body })
+  const response = await send(apiPaths.challenges, 'POST', { body })
   return (
     await jsonOf<{ challenge: Challenge }>(response, 'challenge not saved')
   ).challenge
@@ -60,7 +61,7 @@ export async function submitChallenge(body: string): Promise<Challenge> {
  * that id (R-NAV-8). */
 export async function fetchChallenge(id: string): Promise<Challenge | null> {
   const found = await findJson<{ challenge: Challenge }>(
-    `/api/challenges/${encodeURIComponent(id)}`,
+    fill(apiPaths.challenge, { id }),
     'challenge unavailable',
   )
   return found?.challenge ?? null
@@ -70,7 +71,7 @@ export async function fetchChallenge(id: string): Promise<Challenge | null> {
  * or null when there is none for them under that id (R-ASK-8, R-NAV-8). */
 export async function fetchMatches(id: string): Promise<Matches | null> {
   return findJson<Matches>(
-    `/api/challenges/${encodeURIComponent(id)}/matches`,
+    fill(apiPaths.challengeMatches, { id }),
     'matches unavailable',
   )
 }
@@ -80,7 +81,7 @@ export async function fetchTrendDetail(
   trendId: string,
 ): Promise<TrendDetail | null> {
   return findJson<TrendDetail>(
-    `/api/trends/${encodeURIComponent(trendId)}`,
+    fill(apiPaths.trend, { trendId }),
     'trend unavailable',
   )
 }
@@ -136,11 +137,9 @@ export function matchesSentence(
 
 /** Stores the trend the member confirmed, picked or suggested (R-ASK-7). */
 export async function confirmTrend(id: string, trendId: string): Promise<void> {
-  const response = await send(
-    `/api/challenges/${encodeURIComponent(id)}`,
-    'PATCH',
-    { trendId },
-  )
+  const response = await send(fill(apiPaths.challenge, { id }), 'PATCH', {
+    trendId,
+  })
   ensureOk(response, 'trend not saved')
 }
 
@@ -149,10 +148,7 @@ export async function confirmTrend(id: string, trendId: string): Promise<void> {
 export async function withdrawChallenge(
   id: string,
 ): Promise<'withdrawn' | 'gone'> {
-  const response = await send(
-    `/api/challenges/${encodeURIComponent(id)}/withdraw`,
-    'POST',
-  )
+  const response = await send(fill(apiPaths.withdrawChallenge, { id }), 'POST')
   return outcomeFrom(response, 'challenge not withdrawn', withdrawStatus, {
     withdrawn: 'withdrawn',
     not_found: 'gone',

@@ -6,6 +6,7 @@ import type { LiveCodeService } from '../services/live-codes.js'
 import { whileCodesOn } from './profile-codes.js'
 import { handle, memberOf } from './handle.js'
 import { requireSession } from './require-permission.js'
+import { apiPaths } from '../api-paths.js'
 
 const tokenBody = z.object({ token: z.string().min(1).max(100) }).strict()
 
@@ -21,7 +22,7 @@ export function liveCodeRoutes(deps: {
   const router = Router()
   const guards = [whileCodesOn(deps.settings), requireSession(deps.auth)]
 
-  router.post('/api/me/live-codes', ...guards, async (_request, response) => {
+  router.post(apiPaths.liveCodes, ...guards, async (_request, response) => {
     const issued = await deps.liveCodes.issue(memberOf(response).id)
     if (issued.result === 'limit')
       response.status(429).json({ result: 'limit' })
@@ -29,7 +30,7 @@ export function liveCodeRoutes(deps: {
   })
 
   router.post(
-    '/api/live-codes/redeem',
+    apiPaths.redeemLiveCode,
     ...guards,
     handle({ body: tokenBody }, async ({ body, member }, response) => {
       const id = await deps.liveCodes.redeem(member.id, body.token)

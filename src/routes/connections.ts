@@ -8,6 +8,7 @@ import type {
 } from '../services/connections.js'
 import { handle, memberOf, notFound, replyFound } from './handle.js'
 import { requirePermission } from './require-permission.js'
+import { apiPaths } from '../api-paths.js'
 
 type Deps = {
   auth: AuthProvider
@@ -83,26 +84,26 @@ export function connectionRoutes(deps: Deps): Router {
   const guard = requirePermission(deps.auth, 'connection:request')
   const service = deps.connections
 
-  router.post('/api/connections', guard, create(deps))
-  router.get('/api/connections/incoming', guard, async (_q, response) => {
+  router.post(apiPaths.connections, guard, create(deps))
+  router.get(apiPaths.incomingConnections, guard, async (_q, response) => {
     response.json({
       requests: await service.incoming(memberOf(response).id),
     })
   })
-  router.get('/api/connections/connected', guard, async (_q, response) => {
+  router.get(apiPaths.connectedConnections, guard, async (_q, response) => {
     response.json({
       connections: await service.connected(memberOf(response).id),
     })
   })
   router.get(
-    '/api/connections/:id',
+    apiPaths.connection,
     guard,
     partyOnly((memberId, id) => service.get(memberId, id), 'request'),
   )
-  router.post('/api/connections/:id/accept', guard, answer(deps, 'accepted'))
-  router.post('/api/connections/:id/decline', guard, answer(deps, 'declined'))
+  router.post(apiPaths.acceptConnection, guard, answer(deps, 'accepted'))
+  router.post(apiPaths.declineConnection, guard, answer(deps, 'declined'))
   router.get(
-    '/api/connections/:id/contact',
+    apiPaths.connectionContact,
     guard,
     partyOnly((memberId, id) => service.contact(memberId, id), 'contact'),
   )

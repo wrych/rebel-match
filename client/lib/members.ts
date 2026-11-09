@@ -1,3 +1,4 @@
+import { apiPaths, fill } from '../../src/api-paths'
 import { grantStatus, revokeStatus } from '../../src/outcomes'
 import type {
   MemberDetail,
@@ -19,7 +20,7 @@ export type EraseOutcome = 'erased' | 'gone' | 'created-invites' | 'last-admin'
 
 export async function fetchMembers(): Promise<RosterMember[]> {
   const { members } = await getJson<{ members: RosterMember[] }>(
-    '/api/admin/members',
+    apiPaths.adminMembers,
     'members unavailable',
   )
   return members
@@ -28,7 +29,7 @@ export async function fetchMembers(): Promise<RosterMember[]> {
 /** One member's page (R-MEM-2); null when there is no such member. */
 export async function fetchMember(id: string): Promise<MemberDetail | null> {
   const found = await findJson<{ member: MemberDetail }>(
-    `/api/admin/members/${encodeURIComponent(id)}`,
+    fill(apiPaths.adminMember, { id }),
     'member unavailable',
   )
   return found?.member ?? null
@@ -42,11 +43,9 @@ export async function grantRole(
   id: string,
   role: string,
 ): Promise<RoleOutcome> {
-  const response = await send(
-    `/api/admin/members/${encodeURIComponent(id)}/roles`,
-    'POST',
-    { role },
-  )
+  const response = await send(fill(apiPaths.memberRoles, { id }), 'POST', {
+    role,
+  })
   return outcomeFrom(response, 'granting failed', grantStatus, {
     granted: 'done',
     no_member: 'gone',
@@ -58,10 +57,7 @@ export async function revokeRole(
   id: string,
   role: string,
 ): Promise<RoleOutcome> {
-  const response = await send(
-    `/api/admin/members/${encodeURIComponent(id)}/roles/${encodeURIComponent(role)}`,
-    'DELETE',
-  )
+  const response = await send(fill(apiPaths.memberRole, { id, role }), 'DELETE')
   return outcomeFrom(response, 'revoking failed', revokeStatus, {
     revoked: 'done',
     not_held: 'gone',
@@ -90,10 +86,7 @@ export type DeleteOutcome =
  * unless restored (R-NFR-7, ADR 0032). Throws on anything the host cannot act
  * on, so a failure is never shown as done. */
 export async function deleteMember(id: string): Promise<DeleteOutcome> {
-  const response = await send(
-    `/api/admin/members/${encodeURIComponent(id)}`,
-    'DELETE',
-  )
+  const response = await send(fill(apiPaths.adminMember, { id }), 'DELETE')
   if (response.ok) {
     const { eraseAfter } = (await response.json()) as { eraseAfter: string }
     return { result: 'deleted', eraseAfter }
@@ -107,7 +100,7 @@ export async function deleteMember(id: string): Promise<DeleteOutcome> {
  * insists (R-NFR-7). */
 export async function eraseNow(id: string): Promise<EraseOutcome> {
   const response = await send(
-    `/api/admin/members/${encodeURIComponent(id)}?now=true`,
+    `${fill(apiPaths.adminMember, { id })}?now=true`,
     'DELETE',
   )
   if (response.status === 204) return 'erased'
@@ -119,10 +112,7 @@ export async function eraseNow(id: string): Promise<EraseOutcome> {
 /** Undoes a deletion before it is erased; 'gone' when there was none to
  * undo (ADR 0032). */
 export async function restoreMember(id: string): Promise<'restored' | 'gone'> {
-  const response = await send(
-    `/api/admin/members/${encodeURIComponent(id)}/restore`,
-    'POST',
-  )
+  const response = await send(fill(apiPaths.restoreMember, { id }), 'POST')
   return outcomeOf(response, 'restoring failed', {
     204: 'restored' as const,
     404: 'gone' as const,
