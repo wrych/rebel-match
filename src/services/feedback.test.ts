@@ -59,6 +59,7 @@ describe('createFeedback', () => {
       to: 'owner@example.invalid',
       kind: 'feedback',
       subject: 'Feedback on Rebel Match',
+      replyTo: 'ada@example.invalid',
     })
     expect(sent[0]?.text).toContain('The deck is lovely.')
     expect(sent[0]?.text).toContain(
@@ -81,6 +82,7 @@ describe('createFeedback', () => {
       await feedback.send(note, { ip: '10.0.0.1', altcha: 'solved' }),
     ).toEqual({ result: 'sent' })
     expect(sent[0]?.memberId).toBeNull()
+    expect(sent[0]).not.toHaveProperty('replyTo')
     expect(sent[0]?.text).toContain(
       'From a visitor. Name: not given. Email: not given. Screen: not given.',
     )

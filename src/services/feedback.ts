@@ -66,6 +66,7 @@ export function createFeedback(deps: {
         to: deps.to(),
         kind: 'feedback',
         subject: SUBJECT,
+        ...(note.email === undefined ? {} : { replyTo: note.email }),
         ...renderMail({
           heading: 'New feedback',
           preview: note.message,
