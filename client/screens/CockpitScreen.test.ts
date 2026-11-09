@@ -123,6 +123,19 @@ describe('CockpitScreen', () => {
     },
   )
 
+  it('puts Search, with a magnifying glass, beside Your connections (R-FIND-1)', async () => {
+    config.limits.memberSearch = 1
+    serve(cockpit, () => [])
+    const screen = await mountScreen()
+
+    const row = screen.find('#connections').element.parentElement
+    expect(row?.classList.contains('title-row')).toBe(true)
+    const search = screen.find('a[aria-label="Search members"]')
+    expect(row?.contains(search.element)).toBe(true)
+    expect(search.text()).toBe('Search')
+    expect(search.find('.search-icon').exists()).toBe(true)
+  })
+
   it('records the visit before reading, so the badge clears (R-MINE-4)', async () => {
     serve(cockpit, () => [request])
     await mountScreen()

@@ -22,6 +22,7 @@ import {
 import { fetchConfig } from '../lib/api'
 import { arrivals, useLiveList } from '../lib/live-list'
 import { searchOpen } from '../lib/people'
+import SearchIcon from '../components/SearchIcon.vue'
 import { loadMe } from '../lib/session'
 
 const cockpit = ref<Cockpit | null>(null)
@@ -131,12 +132,7 @@ onMounted(() => {
 <template>
   <section class="screen">
     <PullToRefresh :live="live" />
-    <div class="stack">
-      <h1 class="display display-lg">Your matches</h1>
-      <RouterLink v-if="canSearch" to="/people" class="row-link"
-        >Find a member</RouterLink
-      >
-    </div>
+    <h1 class="display display-lg">Your matches</h1>
 
     <template v-if="cockpit">
       <section class="stack" aria-labelledby="waiting">
@@ -192,7 +188,16 @@ onMounted(() => {
       </section>
 
       <section class="stack rule" aria-labelledby="connections">
-        <h2 id="connections" class="display display-md">Your connections</h2>
+        <div class="title-row">
+          <h2 id="connections" class="display display-md">Your connections</h2>
+          <RouterLink
+            v-if="canSearch"
+            to="/people"
+            class="btn btn-small btn-ghost"
+            aria-label="Search members"
+            ><SearchIcon />Search</RouterLink
+          >
+        </div>
         <p v-if="connected.length === 0" class="empty">
           No connections yet. They show here once a request is accepted.
         </p>
