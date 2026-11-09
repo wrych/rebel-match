@@ -265,11 +265,11 @@ function save(field: Field): Promise<void> {
       </FoldCard>
 
       <FoldCard v-show="shown.has('Connecting')" v-bind="fold('Connecting')">
+        <ProfileCodeSetting v-if="limits?.connectCodes === 1" />
         <SocialLinksSetting
           v-if="limits?.socialLinks === 1"
           :links="profile.socialLinks"
         />
-        <ProfileCodeSetting v-if="limits?.connectCodes === 1" />
         <FindableToggle
           :findable="profile.findable"
           :codes-on="limits?.connectCodes === 1"

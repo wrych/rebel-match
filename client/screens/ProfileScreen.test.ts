@@ -429,6 +429,38 @@ describe('ProfileScreen folds and search (R-PROF-8)', () => {
     screen.unmount()
   })
 
+  it('leads Connecting with Your code while codes are on (R-CODE-1)', async () => {
+    const fetchMock = vi.fn((url: string) => {
+      const bodies: Record<string, unknown> = {
+        '/api/config': {
+          ...config,
+          limits: { ...config.limits, connectCodes: 1, socialLinks: 1 },
+        },
+        '/api/me/profile-code': { token: 't', enabled: true },
+      }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () =>
+          Promise.resolve(
+            bodies[url] ?? {
+              ...profile,
+              findable: true,
+              socialLinks: { linkedin: null, instagram: null },
+            },
+          ),
+      })
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    const screen = await mountAttached()
+
+    const connecting = screen.findAll('details.fold')[1]!
+    expect(
+      connecting.findAll('section h2.kicker').map((heading) => heading.text()),
+    ).toEqual(['Your code', 'Social links', 'Search'])
+    screen.unmount()
+  })
+
   it('says so when nothing matches', async () => {
     server()
     const screen = await mountAttached()
