@@ -104,4 +104,4 @@ still holds except where the later ADR says otherwise.
 | [0066](0066-profile-photos-stored-clean-and-shown-to-the-owner.md)        | Store profile photos clean in Postgres, shown to their owner first              | Accepted, amended by 0067             |
 | [0067](0067-show-photos-beside-names-by-a-random-key.md)                  | Show photos beside names, addressed by a random key                             | Accepted                              |
 | [0068](0068-agents-may-rewrite-their-own-open-branch.md)                  | Agents may rewrite their own open branch, with a lease                          | Accepted                              |
-| [0069](0069-pull-requests-show-what-changed-on-screen.md)                 | Pull requests show what changed on screen                                       | Accepted                              |
+| [0069](0069-show-what-changed-on-screen.md)                               | Show what changed on screen, in the chat and the pull request                   | Accepted                              |

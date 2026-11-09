@@ -1,4 +1,4 @@
-# 0069. Pull requests show what changed on screen
+# 0069. Show what changed on screen, in the chat and the pull request
 
 - **Status:** Accepted
 - **Date:** 2026-11-09
@@ -6,9 +6,11 @@
 
 ## Context
 
-The maintainer approves most agent pull requests, often from a phone. A change
-to a screen, a layout, an email or a message is judged by looking at it, and
-the diff does not show that. Today that means checking out the branch or adding
+The maintainer approves most agent work, often from a phone, and most often in
+the chat with the agent, before the pull request is read: "is this what you
+meant?", "which of these two?". A change to a screen, a layout, an email or a
+message is judged by looking at it, and neither the diff nor a summary in words
+shows that. Today that means checking out the branch or adding
 the `preview` label and waiting for a deployment (ADR 0028).
 
 Agents in cloud sessions can run `npm run dev` against seeded data and capture
@@ -18,18 +20,24 @@ Committing images to the branch puts them on `main` with the squash merge.
 
 ## Decision
 
-- **A pull request whose change can be seen shows it**, in screenshots or a
-  short video, whenever the agent can run it: the changed state; before and
+- **A change that can be seen is shown, wherever it is reported**, in
+  screenshots or a short video, whenever the agent can run it: the changed state; before and
   after when something was there before; phone width (390 px) and desktop
   width; light and dark when the theme matters; the empty and error states the
   change touches. A flow is a video or GIF of under 30 seconds. Screenshots are
   taken at device scale factor 2.
 - **Seeded members only.** No real member's name, email, photo or text in any
   image (constitution §5: no PII outside where it belongs).
-- **Never committed.** The agent publishes one private page (a claude.ai
-  Artifact) with the captioned images and video, links it under "How it is
-  tested", and sends the files to the maintainer in the session.
-- **When it cannot capture**, it says why under "How it is tested", and never
+- **In the chat first.** When the agent reports a visible change, asks for
+  approval or offers options, it sends the captures inline with that message,
+  not a link and not "see the PR". That is where the decision is made. It sends
+  them again only when the change has changed.
+- **And in the pull request, never committed.** The agent publishes one
+  private page (a claude.ai Artifact) with the captioned images and video and
+  links it under "How it is tested"; where it cannot publish one, it says there
+  that the captures were sent in the chat.
+- **When it cannot capture**, it says why, in the chat and under "How it is
+  tested", and never
   presents a mock-up as a capture. The `preview` label stays the way to try the
   change on a phone.
 - Images are evidence, not tests; the behavior still ships with its tests.
@@ -42,7 +50,7 @@ Committing images to the branch puts them on `main` with the squash merge.
 
 ## Consequences
 
-- A visible change can be approved from the description.
+- A visible change can be approved from the chat or the description.
 - An Artifact page is private to its owner until shared; the agent says so
   when someone else reviews.
 - This is a rule for every xigo project, decided there as xigOS ADR 0006; this

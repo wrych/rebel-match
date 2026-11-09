@@ -42,11 +42,14 @@ src/                server + client (not yet created; M0 in tasks.md)
 4. **Write the test with the change**, same commit (§2).
 5. **Open a PR** citing the requirement, and the ADR if there is one.
    Squash-merge.
-6. **Show what changed.** A change a member or host can see gets screenshots
-   or a short video in the PR (ADR 0069): before and after, phone and desktop
-   width, seeded members only. Publish them on one private Artifact page, link
-   it under "How it is tested", and send the files in the session. Never commit
-   them. Cannot run it? Say why instead.
+6. **Show what changed.** A change a member or host can see is shown in
+   screenshots or a short video (ADR 0069): seeded members only; before and
+   after when there was a before; phone and desktop width. **In the chat**,
+   send them inline with the message that reports the change, asks for
+   approval or offers options — that is where they matter most. **In the PR**,
+   publish them on one private Artifact page and link it under "How it is
+   tested"; where you cannot publish one, say there that they were sent in the
+   chat. Never commit them. Cannot run it? Say why instead.
 
 Do not batch unrelated fixes. Do not land a refactor and a behavior change
 together. If a change grows past what a reviewer can hold in their head, split

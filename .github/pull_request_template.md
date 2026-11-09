@@ -14,7 +14,8 @@ ADR:
 
 <!-- The tests that came with the change, and anything you checked by hand.
      Something a member or host can see changed? Screenshots or a short video,
-     or a link to the page with them (ADR 0069). -->
+     a link to the page with them, or a note that they went to the chat
+     (ADR 0069). -->
 
 ## Checklist
 
