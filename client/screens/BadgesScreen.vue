@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import BadgeArt from '../components/BadgeArt.vue'
 import EventTicket from '../components/EventTicket.vue'
 import {
@@ -14,6 +15,8 @@ import {
 } from '../lib/badges'
 import { logoUrl } from '../lib/invites'
 
+const route = useRoute()
+const router = useRouter()
 const overview = ref<BadgeOverview | null>(null)
 const problem = ref<string | null>(null)
 
@@ -46,6 +49,15 @@ function summary(row: RowView): string {
   return `${row.title}: level ${String(earnedLevels)} of ${String(row.levels.length)}${crown}`
 }
 
+// While hosts have badges off, this address is as absent as any that does
+// not exist (R-BADGE-15, R-NAV-8).
+async function notFound(): Promise<void> {
+  await router.replace({
+    name: 'not-found',
+    params: { pathMatch: route.path.slice(1).split('/') },
+  })
+}
+
 // What is new stays outlined for this visit; the server counts it seen from
 // now on, so the menu clears (R-BADGE-10). A failed mark only leaves it new
 // for next time.
@@ -54,6 +66,10 @@ onMounted(async () => {
     overview.value = await fetchBadges()
   } catch {
     problem.value = 'Your badges could not be loaded. Try again.'
+    return
+  }
+  if (overview.value === null) {
+    await notFound()
     return
   }
   await markBadgesSeen([

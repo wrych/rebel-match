@@ -4,13 +4,17 @@ import type { EarnedEventBadge } from '../../src/services/event-badge-store'
 
 export type { BadgeOverview, EarnedEventBadge, RowView }
 
+const NOT_FOUND = 404
+
 /** How a badge is drawn: locked, a level (the game's promotions have six),
  * or the crown. */
 export type Tier = 'locked' | number | 'crown'
 
-/** The member's own badges (R-BADGE-7). */
-export async function fetchBadges(): Promise<BadgeOverview> {
+/** The member's own badges (R-BADGE-7), or null while hosts have badges
+ * off and the server answers not found (R-BADGE-15). */
+export async function fetchBadges(): Promise<BadgeOverview | null> {
   const response = await fetch('/api/badges')
+  if (response.status === NOT_FOUND) return null
   if (!response.ok)
     throw new Error(`badges unavailable (${String(response.status)})`)
   return (await response.json()) as BadgeOverview

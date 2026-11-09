@@ -1042,6 +1042,15 @@ const catalogue: Group[] = [
     explanation: 'What members earn for what they do; only they see it.',
     entries: [
       {
+        name: 'Badges',
+        explanation:
+          'On shows members their badges from the menu and tells them of ' +
+          'new ones; off hides them, and badges are still earned, quietly, ' +
+          'to show when it is turned back on.',
+        key: 'limits.badges',
+        switch: true,
+      },
+      {
         name: 'Badge levels are earned at',
         explanation:
           'The counts for the first, second and third level of each row: challenges posted, help offered, same boats, people connected with.',

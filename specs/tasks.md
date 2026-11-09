@@ -459,6 +459,8 @@ in this order.
 - [x] An existing invite's event badge: given, changed or removed from its
       card on S22, earned by those who already joined through it.
       _(R-INV-13, R-BADGE-4)_
+- [x] The hosts’ switch: the menu entry, the screens and their endpoints
+      hidden while off, badges earned quietly meanwhile. _(R-BADGE-15)_
 
 ---
 

@@ -11,7 +11,13 @@ import {
 
 async function admitLocked(
   db: Database,
-  args: { email: string; token: string; now: Date; role: string },
+  args: {
+    email: string
+    token: string
+    now: Date
+    role: string
+    quietBadges: boolean
+  },
 ): Promise<Redemption> {
   const [invite] = await db
     .select()
@@ -46,18 +52,22 @@ async function admitLocked(
     .where(eq(invites.id, invite.id))
   // Its event badge comes with the membership (R-BADGE-6).
   if (invite.eventBadgeId !== null)
-    await earnEventBadge(db, memberId, invite.eventBadgeId)
+    await earnEventBadge(db, memberId, invite.eventBadgeId, args.quietBadges)
   return { result: 'admitted' }
 }
 
 /** Invite redemption over `invites`, `members` and `member_roles`. The invite
  * row is locked, so two scans cannot both take the last seat (R-INV-4). The
  * role is granted by whoever created the invite (R-ROLE-7). A refusal writes
- * nothing, so every outcome commits. */
+ * nothing, so every outcome commits. Its badge is earned quietly while
+ * `quietBadges` holds (R-BADGE-15). */
 export function createInviteRedemption(
   db: Database,
   role: string,
+  quietBadges: () => boolean,
 ): RedeemInvite {
   return (email, token, now) =>
-    db.transaction((tx) => admitLocked(tx, { email, token, now, role }))
+    db.transaction((tx) =>
+      admitLocked(tx, { email, token, now, role, quietBadges: quietBadges() }),
+    )
 }

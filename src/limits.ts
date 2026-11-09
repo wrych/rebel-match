@@ -264,6 +264,14 @@ const limitSpecs = {
   // The largest SVG logo an event badge takes, kept well inside the 64 kB a
   // request body may be once it is JSON (R-BADGE-5).
   badgeLogoMaxBytes: { env: 'BADGE_LOGO_MAX_BYTES', default: 32_768 },
+  // Hosts turn badges off and on; while off they are still earned, quietly
+  // (R-BADGE-15).
+  badges: {
+    env: 'BADGES',
+    default: 0,
+    zeroAllowed: true,
+    changeable: { min: 0, max: 1 },
+  },
   // Hosts open profile photos; off until they do, and photos already added
   // are kept while off (R-PROF-6).
   profilePhotos: {

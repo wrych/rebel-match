@@ -15,6 +15,7 @@ import {
 const config = testConfig({
   SEED_PROFILE: 'dev',
   MAIL_DELIVERY: 'none',
+  BADGES: '1',
 })
 const hour = 3_600_000
 const badgeId = randomUUID()

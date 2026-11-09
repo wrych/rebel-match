@@ -16,7 +16,7 @@ const env = {
   SEED_PROFILE: 'dev',
   NETWORK_MIN_OWN_CONNECTIONS: '0',
 }
-const config = testConfig({ ...env, RECAP: '1' })
+const config = testConfig({ ...env, RECAP: '1', BADGES: '1' })
 const member = 'milan.horvat@example.invalid'
 
 let db: TestDatabase

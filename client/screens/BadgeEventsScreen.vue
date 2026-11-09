@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import EventTicket from '../components/EventTicket.vue'
 import {
   fetchBadges,
@@ -10,13 +11,24 @@ import {
 import { logoUrl } from '../lib/invites'
 import { day } from '../lib/when'
 
+const route = useRoute()
+const router = useRouter()
 const events = ref<EarnedEventBadge[] | null>(null)
 const problem = ref<string | null>(null)
 
-// Shown, they are no longer new (R-BADGE-10).
+// Shown, they are no longer new (R-BADGE-10). While hosts have badges off,
+// this address is as absent as any that does not exist (R-BADGE-15).
 onMounted(async () => {
   try {
-    events.value = (await fetchBadges()).events
+    const overview = await fetchBadges()
+    if (overview === null) {
+      await router.replace({
+        name: 'not-found',
+        params: { pathMatch: route.path.slice(1).split('/') },
+      })
+      return
+    }
+    events.value = overview.events
   } catch {
     problem.value = 'Your event badges could not be loaded. Try again.'
     return
