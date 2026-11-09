@@ -8,7 +8,8 @@ import type {
 } from '../services/onboarding.js'
 import { companySizeKeys, sectorKeys } from '../profile-options.js'
 import { displayName, optionalChoice, optionalText } from './profile-fields.js'
-import { requireSession, type GuardedLocals } from './require-permission.js'
+import { handle, memberOf } from './handle.js'
+import { requireSession } from './require-permission.js'
 
 type TextLimits = Pick<
   Limits,
@@ -42,8 +43,7 @@ export function onboardingRoutes(deps: {
   const body = onboardingBody(deps.config.limits)
 
   router.get('/api/onboarding', guard, async (_request, response) => {
-    const member = (response.locals as GuardedLocals).member
-    const draft = await deps.onboarding.draft(member.id)
+    const draft = await deps.onboarding.draft(memberOf(response).id)
     if (draft === null) {
       response.status(401).json({ error: 'unauthenticated' })
       return
@@ -54,20 +54,18 @@ export function onboardingRoutes(deps: {
     })
   })
 
-  router.post('/api/onboarding', guard, async (request, response) => {
-    const input = body.safeParse(request.body)
-    if (!input.success) {
-      response.status(400).json({ error: 'bad_request' })
-      return
-    }
-    const member = (response.locals as GuardedLocals).member
-    const outcome = await deps.onboarding.complete(member.id, input.data)
-    if (outcome === 'stale_consent') {
-      response.status(409).json({ result: outcome })
-      return
-    }
-    response.status(204).end()
-  })
+  router.post(
+    '/api/onboarding',
+    guard,
+    handle({ body }, async ({ body, member }, response) => {
+      const outcome = await deps.onboarding.complete(member.id, body)
+      if (outcome === 'stale_consent') {
+        response.status(409).json({ result: outcome })
+        return
+      }
+      response.status(204).end()
+    }),
+  )
 
   return router
 }

@@ -3,7 +3,8 @@ import { z } from 'zod'
 import type { AuthProvider } from '../auth/index.js'
 import type { LiveSettings } from '../config.js'
 import type { ProfileCodeService } from '../services/profile-codes.js'
-import { requireSession, type GuardedLocals } from './require-permission.js'
+import { handle, memberOf, notFound, replyFound } from './handle.js'
+import { requireSession } from './require-permission.js'
 
 /** While hosts have codes off, their addresses are as absent as ones that
  * never existed (R-CODE-1, R-NAV-8). */
@@ -15,7 +16,7 @@ export function whileCodesOn(
       next()
       return
     }
-    response.status(404).json({ error: 'not_found' })
+    notFound(response)
   }
 }
 
@@ -33,40 +34,33 @@ export function profileCodeRoutes(deps: {
 }): Router {
   const router = Router()
   const guards = [whileCodesOn(deps.settings), requireSession(deps.auth)]
-  const caller = (locals: unknown): string =>
-    (locals as GuardedLocals).member.id
 
   router.get('/api/me/profile-code', ...guards, async (_request, response) => {
-    response.json(await deps.profileCodes.mine(caller(response.locals)))
+    response.json(await deps.profileCodes.mine(memberOf(response).id))
   })
 
-  router.patch('/api/me/profile-code', ...guards, async (request, response) => {
-    const { enabled } = enabledBody.parse(request.body)
-    response.json(
-      await deps.profileCodes.setEnabled(caller(response.locals), enabled),
-    )
-  })
+  router.patch(
+    '/api/me/profile-code',
+    ...guards,
+    handle({ body: enabledBody }, async ({ body, member }, response) => {
+      response.json(await deps.profileCodes.setEnabled(member.id, body.enabled))
+    }),
+  )
 
   router.post(
     '/api/me/profile-code/reset',
     ...guards,
     async (_request, response) => {
-      response.json(await deps.profileCodes.reset(caller(response.locals)))
+      response.json(await deps.profileCodes.reset(memberOf(response).id))
     },
   )
 
   router.post(
     '/api/profile-codes/open',
     ...guards,
-    async (request, response) => {
-      const { token } = tokenBody.parse(request.body)
-      const opened = await deps.profileCodes.open(
-        caller(response.locals),
-        token,
-      )
-      if (opened === null) response.status(404).json({ error: 'not_found' })
-      else response.json(opened)
-    },
+    handle({ body: tokenBody }, async ({ body, member }, response) => {
+      replyFound(response, await deps.profileCodes.open(member.id, body.token))
+    }),
   )
 
   return router

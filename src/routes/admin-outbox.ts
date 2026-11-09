@@ -3,6 +3,7 @@ import { z } from 'zod'
 import type { AuthProvider } from '../auth/index.js'
 import type { Limits } from '../config.js'
 import type { OutboxFilter, OutboxLog } from '../services/outbox-log.js'
+import { handle } from './handle.js'
 import { requirePermission } from './require-permission.js'
 
 function listQuery(pageSize: number): z.ZodType<OutboxFilter> {
@@ -26,14 +27,9 @@ export function adminOutboxRoutes(deps: {
   router.get(
     '/api/admin/outbox',
     requirePermission(deps.auth, 'outbox:read'),
-    async (request, response) => {
-      const filter = query.safeParse(request.query)
-      if (!filter.success) {
-        response.status(400).json({ error: 'bad_request' })
-        return
-      }
-      response.json({ entries: await deps.outbox.list(filter.data) })
-    },
+    handle({ query }, async ({ query }, response) => {
+      response.json({ entries: await deps.outbox.list(query) })
+    }),
   )
 
   return router

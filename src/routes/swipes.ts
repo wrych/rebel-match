@@ -3,7 +3,8 @@ import { z } from 'zod'
 import type { AuthProvider } from '../auth/index.js'
 import type { Limits, LiveSettings } from '../config.js'
 import type { SwipeInput, SwipeService } from '../services/swipes.js'
-import { requirePermission, type GuardedLocals } from './require-permission.js'
+import { handle, notFound } from './handle.js'
+import { requirePermission } from './require-permission.js'
 
 type NoteLimits = Pick<
   Limits,
@@ -37,20 +38,17 @@ export function swipeRoutes(deps: {
   router.post(
     '/api/swipe',
     requirePermission(deps.auth, 'challenge:swipe'),
-    async (request, response) => {
-      const input = swipeBody(deps.settings.limits()).safeParse(request.body)
-      if (!input.success) {
-        response.status(400).json({ error: 'bad_request' })
-        return
-      }
-      const viewer = (response.locals as GuardedLocals).member
-      const outcome = await deps.swipes.swipe(viewer.id, input.data)
-      if (outcome.result === 'not_found') {
-        response.status(404).json({ error: 'not_found' })
-        return
-      }
-      response.status(201).json(outcome)
-    },
+    handle(
+      () => ({ body: swipeBody(deps.settings.limits()) }),
+      async ({ body, member }, response) => {
+        const outcome = await deps.swipes.swipe(member.id, body)
+        if (outcome.result === 'not_found') {
+          notFound(response)
+          return
+        }
+        response.status(201).json(outcome)
+      },
+    ),
   )
 
   return router

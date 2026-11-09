@@ -3,7 +3,8 @@ import { z } from 'zod'
 import type { AuthProvider } from '../auth/index.js'
 import type { BanService } from '../services/bans.js'
 import type { LiveSettings } from '../config.js'
-import { requirePermission, type GuardedLocals } from './require-permission.js'
+import { handle, replyOutcome } from './handle.js'
+import { requirePermission } from './require-permission.js'
 
 type Deps = {
   auth: AuthProvider
@@ -22,29 +23,28 @@ const banStatus = {
 } as const
 
 function ban(deps: Deps): RequestHandler {
-  return async (request, response) => {
-    const { id } = memberParams.parse(request.params)
-    const { banNoteMaxChars } = deps.settings.limits()
-    const body = banBody(banNoteMaxChars).safeParse(request.body)
-    if (!body.success) {
-      response.status(400).json({ error: 'bad_request' })
-      return
-    }
-    const host = (response.locals as GuardedLocals).member.id
-    const outcome = await deps.bans.ban(id, host, body.data.note)
-    response.status(banStatus[outcome]).json({ result: outcome })
-  }
+  return handle(
+    () => ({
+      params: memberParams,
+      body: banBody(deps.settings.limits().banNoteMaxChars),
+    }),
+    async ({ params, body, member }, response) => {
+      const outcome = await deps.bans.ban(params.id, member.id, body.note)
+      replyOutcome(response, banStatus, outcome)
+    },
+  )
 }
 
 function unban(bans: BanService): RequestHandler {
-  return async (request, response) => {
-    const { id } = memberParams.parse(request.params)
-    const host = (response.locals as GuardedLocals).member.id
-    const outcome = await bans.unban(id, host)
-    response
-      .status(outcome === 'unbanned' ? 204 : 404)
-      .json({ result: outcome })
-  }
+  return handle(
+    { params: memberParams },
+    async ({ params, member }, response) => {
+      const outcome = await bans.unban(params.id, member.id)
+      response
+        .status(outcome === 'unbanned' ? 204 : 404)
+        .json({ result: outcome })
+    },
+  )
 }
 
 /** Banning a member and lifting it (R-MOD-9, design §3), behind

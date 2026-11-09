@@ -5,7 +5,8 @@ import type { Config, LiveSettings } from '../config.js'
 import type { GameService } from '../services/game.js'
 import { gameHints } from '../services/game.js'
 import { createWindowCounter } from '../services/rate-limit.js'
-import { requirePermission, type GuardedLocals } from './require-permission.js'
+import { handle, memberOf, notFound } from './handle.js'
+import { requirePermission } from './require-permission.js'
 
 const RECORD_WINDOW_MINUTES = 1
 
@@ -32,35 +33,26 @@ function whileOn(settings: LiveSettings): RequestHandler {
       next()
       return
     }
-    response.status(404).json({ error: 'not_found' })
+    notFound(response)
   }
 }
-
-const memberOf = (locals: unknown): string =>
-  (locals as GuardedLocals).member.id
 
 function recordDay(deps: Deps): RequestHandler {
   const counter = createWindowCounter({
     windowMinutes: () => RECORD_WINDOW_MINUTES,
   })
-  return async (request, response) => {
-    const body = dayBody.safeParse(request.body)
-    if (!body.success) {
-      response.status(400).json({ error: 'bad_request' })
-      return
-    }
-    const memberId = memberOf(response.locals)
-    if (!counter.take(memberId, deps.config.gameRecordsPerMinute)) {
+  return handle({ body: dayBody }, async ({ body, member }, response) => {
+    if (!counter.take(member.id, deps.config.gameRecordsPerMinute)) {
       response.status(429).json({ error: 'too_many_requests' })
       return
     }
-    const result = await deps.game.recordDay(memberId, body.data)
+    const result = await deps.game.recordDay(member.id, body)
     if (result === 'implausible') {
       response.status(422).json({ error: 'implausible' })
       return
     }
     response.json(result)
-  }
+  })
 }
 
 /** `/api/game*` (design §3, 9toRevolution): the player's state, day records,
@@ -77,33 +69,32 @@ export function gameRoutes(deps: Deps): Router {
     response.status(204).end()
   })
   router.get('/api/game', ...guard, async (_request, response) => {
-    response.json(await deps.game.state(memberOf(response.locals)))
+    response.json(await deps.game.state(memberOf(response).id))
   })
   router.post('/api/game/days', ...guard, recordDay(deps))
   router.get('/api/game/leaderboard', ...guard, async (_request, response) => {
     response.json(
       await deps.game.leaderboard(
-        memberOf(response.locals),
+        memberOf(response).id,
         deps.config.gameLeaderboardSize,
       ),
     )
   })
-  router.put('/api/game/sharing', ...guard, async (request, response) => {
-    const body = sharingBody.safeParse(request.body)
-    if (!body.success) {
-      response.status(400).json({ error: 'bad_request' })
-      return
-    }
-    await deps.game.share(memberOf(response.locals), body.data.shared)
-    response.status(204).end()
-  })
+  router.put(
+    '/api/game/sharing',
+    ...guard,
+    handle({ body: sharingBody }, async ({ body, member }, response) => {
+      await deps.game.share(member.id, body.shared)
+      response.status(204).end()
+    }),
+  )
   router.put('/api/game/hints/:hint', ...guard, async (request, response) => {
     const params = hintParams.safeParse(request.params)
     if (!params.success) {
-      response.status(404).json({ error: 'not_found' })
+      notFound(response)
       return
     }
-    await deps.game.seeHint(memberOf(response.locals), params.data.hint)
+    await deps.game.seeHint(memberOf(response).id, params.data.hint)
     response.status(204).end()
   })
 

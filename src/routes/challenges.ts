@@ -4,11 +4,8 @@ import { z } from 'zod'
 import type { AuthProvider } from '../auth/index.js'
 import type { Limits, LiveSettings } from '../config.js'
 import type { ChallengeService } from '../services/challenges.js'
-import {
-  requirePermission,
-  requireSession,
-  type GuardedLocals,
-} from './require-permission.js'
+import { handle, replyFound, replyOutcome } from './handle.js'
+import { requirePermission, requireSession } from './require-permission.js'
 
 const challengeParams = z.object({ id: z.string().min(1) })
 const confirmBody = z.object({ trendId: z.string().min(1) })
@@ -22,10 +19,6 @@ const confirmStatus = {
   not_found: 404,
   unknown_trend: 400,
 } as const
-
-function memberOf(locals: unknown): string {
-  return (locals as GuardedLocals).member.id
-}
 
 type Deps = {
   auth: AuthProvider
@@ -46,78 +39,64 @@ function createBody(
 }
 
 function create(deps: Deps): RequestHandler {
-  return async (request, response) => {
-    const input = createBody(deps.settings.limits()).safeParse(request.body)
-    if (!input.success) {
-      response.status(400).json({ error: 'bad_request' })
-      return
-    }
-    const challenge = await deps.challenges.create(
-      memberOf(response.locals),
-      input.data.body,
-      randomUUID,
-    )
-    response.status(201).json({ challenge })
-  }
+  return handle(
+    () => ({ body: createBody(deps.settings.limits()) }),
+    async ({ body, member }, response) => {
+      const challenge = await deps.challenges.create(
+        member.id,
+        body.body,
+        randomUUID,
+      )
+      response.status(201).json({ challenge })
+    },
+  )
 }
 
 function confirm(deps: Deps): RequestHandler {
-  return async (request, response) => {
-    const params = challengeParams.parse(request.params)
-    const input = confirmBody.safeParse(request.body)
-    if (!input.success) {
-      response.status(400).json({ error: 'bad_request' })
-      return
-    }
-    const outcome = await deps.challenges.confirmTrend(
-      memberOf(response.locals),
-      params.id,
-      input.data.trendId,
-    )
-    response.status(confirmStatus[outcome]).json({ result: outcome })
-  }
+  return handle(
+    { params: challengeParams, body: confirmBody },
+    async ({ params, body, member }, response) => {
+      const outcome = await deps.challenges.confirmTrend(
+        member.id,
+        params.id,
+        body.trendId,
+      )
+      replyOutcome(response, confirmStatus, outcome)
+    },
+  )
 }
 
 function withdraw(deps: Deps): RequestHandler {
-  return async (request, response) => {
-    const params = challengeParams.parse(request.params)
-    const outcome = await deps.challenges.withdraw(
-      memberOf(response.locals),
-      params.id,
-    )
-    response.status(withdrawStatus[outcome]).json({ result: outcome })
-  }
+  return handle(
+    { params: challengeParams },
+    async ({ params, member }, response) => {
+      const outcome = await deps.challenges.withdraw(member.id, params.id)
+      replyOutcome(response, withdrawStatus, outcome)
+    },
+  )
 }
 
 function newest(deps: Deps): RequestHandler {
-  return async (request, response) => {
-    const query = newestQuery.safeParse(request.query)
-    if (!query.success) {
-      response.status(400).json({ error: 'bad_request' })
-      return
-    }
+  return handle({ query: newestQuery }, async ({ query, member }, response) => {
     const challenges = await deps.challenges.newest(
-      memberOf(response.locals),
-      query.data.trend ?? null,
+      member.id,
+      query.trend ?? null,
     )
     response.json({ challenges })
-  }
+  })
 }
 
 // Answers what `read` finds for the author, and 404 for anything else.
 function ownOnly(
   read: (memberId: string, id: string) => Promise<object | null>,
-  wrap: (found: object) => object,
+  key?: string,
 ): RequestHandler {
-  return async (request, response) => {
-    const params = challengeParams.parse(request.params)
-    const found = await read(memberOf(response.locals), params.id)
-    if (found === null) {
-      response.status(404).json({ error: 'not_found' })
-      return
-    }
-    response.json(wrap(found))
-  }
+  return handle(
+    { params: challengeParams },
+    async ({ params, member }, response) => {
+      replyFound(response, await read(member.id, params.id), key)
+    },
+  )
 }
 
 /** The Ask journey's API (design §3): trends to pick from, others' newest
@@ -134,18 +113,12 @@ export function challengeRoutes(deps: Deps): Router {
   router.get(
     '/api/trends/:trendId',
     requireSession(deps.auth),
-    async (request, response) => {
-      const { trendId } = trendParams.parse(request.params)
-      const detail = await deps.challenges.trend(
-        memberOf(response.locals),
-        trendId,
+    handle({ params: trendParams }, async ({ params, member }, response) => {
+      replyFound(
+        response,
+        await deps.challenges.trend(member.id, params.trendId),
       )
-      if (detail === null) {
-        response.status(404).json({ error: 'not_found' })
-        return
-      }
-      response.json(detail)
-    },
+    }),
   )
   router.get(
     '/api/challenges/newest',
@@ -156,20 +129,14 @@ export function challengeRoutes(deps: Deps): Router {
   router.get(
     '/api/challenges/:id',
     write,
-    ownOnly(
-      (memberId, id) => deps.challenges.get(memberId, id),
-      (challenge) => ({ challenge }),
-    ),
+    ownOnly((memberId, id) => deps.challenges.get(memberId, id), 'challenge'),
   )
   router.patch('/api/challenges/:id', write, confirm(deps))
   router.post('/api/challenges/:id/withdraw', write, withdraw(deps))
   router.get(
     '/api/challenges/:id/matches',
     write,
-    ownOnly(
-      (memberId, id) => deps.challenges.matches(memberId, id),
-      (matches) => matches,
-    ),
+    ownOnly((memberId, id) => deps.challenges.matches(memberId, id)),
   )
 
   return router

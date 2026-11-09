@@ -3,11 +3,8 @@ import { z } from 'zod'
 import type { AuthProvider } from '../auth/index.js'
 import type { LiveSettings } from '../config.js'
 import type { PhotoService, StoredPhoto } from '../services/photo.js'
-import {
-  requirePermission,
-  requireSession,
-  type GuardedLocals,
-} from './require-permission.js'
+import { memberOf, notFound } from './handle.js'
+import { requirePermission, requireSession } from './require-permission.js'
 
 /** While hosts have photos off, their addresses are as absent as ones that
  * never existed (R-PROF-6, R-NAV-8). */
@@ -17,7 +14,7 @@ function whilePhotosOn(settings: Pick<LiveSettings, 'limits'>): RequestHandler {
       next()
       return
     }
-    response.status(404).json({ error: 'not_found' })
+    notFound(response)
   }
 }
 
@@ -31,9 +28,6 @@ const PICTURE_ONLY = {
 const FOR_GOOD = 'private, max-age=31536000, immutable'
 const ASK_AGAIN = 'private, no-cache'
 
-const memberOf = (response: express.Response): string =>
-  (response.locals as GuardedLocals).member.id
-
 const keyParams = z.object({ key: z.string().regex(/^[\w-]{43}$/) })
 const memberParams = z.object({ id: z.string().min(1).max(36) })
 
@@ -43,7 +37,7 @@ function send(
   cache: string,
 ): void {
   if (photo === null) {
-    response.status(404).json({ error: 'not_found' })
+    notFound(response)
     return
   }
   response.set({ ...PICTURE_ONLY, 'Cache-Control': cache }).send(photo.jpeg)
@@ -108,7 +102,7 @@ export function profilePhotoRoutes(deps: {
   }
 
   router.get('/api/profile/photo', ...guards, async (_request, response) => {
-    send(response, await deps.photos.own(memberOf(response)), ASK_AGAIN)
+    send(response, await deps.photos.own(memberOf(response).id), ASK_AGAIN)
   })
 
   router.put(
@@ -118,7 +112,7 @@ export function profilePhotoRoutes(deps: {
     async (request, response) => {
       const upload: unknown = request.body
       const outcome = Buffer.isBuffer(upload)
-        ? await deps.photos.replace(memberOf(response), upload)
+        ? await deps.photos.replace(memberOf(response).id, upload)
         : 'refused'
       if (outcome === 'refused') {
         response.status(400).json({ error: 'bad_photo' })
@@ -129,7 +123,7 @@ export function profilePhotoRoutes(deps: {
   )
 
   router.delete('/api/profile/photo', ...guards, async (_request, response) => {
-    await deps.photos.remove(memberOf(response))
+    await deps.photos.remove(memberOf(response).id)
     response.status(204).end()
   })
 

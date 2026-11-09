@@ -3,11 +3,8 @@ import { z } from 'zod'
 import type { AuthProvider } from '../auth/index.js'
 import type { ActivityService } from '../services/activity.js'
 import { inviteToken } from './invite-token.js'
-import {
-  requirePermission,
-  requireSession,
-  type GuardedLocals,
-} from './require-permission.js'
+import { handle, memberOf, notFound } from './handle.js'
+import { requirePermission, requireSession } from './require-permission.js'
 
 const seenBody = z.object({ challengeId: z.string().min(1) })
 const openedBody = z.object({ invite: inviteToken })
@@ -24,23 +21,14 @@ export function activityRoutes(deps: {
   router.post(
     '/api/deck/seen',
     requirePermission(deps.auth, 'challenge:swipe'),
-    async (request, response) => {
-      const body = seenBody.safeParse(request.body)
-      if (!body.success) {
-        response.status(400).json({ error: 'bad_request' })
-        return
-      }
-      const member = (response.locals as GuardedLocals).member
-      const outcome = await deps.activity.viewed(
-        member.id,
-        body.data.challengeId,
-      )
+    handle({ body: seenBody }, async ({ body, member }, response) => {
+      const outcome = await deps.activity.viewed(member.id, body.challengeId)
       if (outcome === 'not_found') {
-        response.status(404).json({ error: 'not_found' })
+        notFound(response)
         return
       }
       response.status(204).end()
-    },
+    }),
   )
 
   // No session: the visitor has just scanned a code. Every well-formed body
@@ -59,8 +47,7 @@ export function activityRoutes(deps: {
     '/api/me/history',
     requireSession(deps.auth),
     async (_request, response) => {
-      const member = (response.locals as GuardedLocals).member
-      await deps.activity.forgetHistory(member.id)
+      await deps.activity.forgetHistory(memberOf(response).id)
       response.status(204).end()
     },
   )

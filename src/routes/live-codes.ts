@@ -4,7 +4,8 @@ import type { AuthProvider } from '../auth/index.js'
 import type { LiveSettings } from '../config.js'
 import type { LiveCodeService } from '../services/live-codes.js'
 import { whileCodesOn } from './profile-codes.js'
-import { requireSession, type GuardedLocals } from './require-permission.js'
+import { handle, memberOf } from './handle.js'
+import { requireSession } from './require-permission.js'
 
 const tokenBody = z.object({ token: z.string().min(1).max(100) }).strict()
 
@@ -19,11 +20,9 @@ export function liveCodeRoutes(deps: {
 }): Router {
   const router = Router()
   const guards = [whileCodesOn(deps.settings), requireSession(deps.auth)]
-  const caller = (locals: unknown): string =>
-    (locals as GuardedLocals).member.id
 
   router.post('/api/me/live-codes', ...guards, async (_request, response) => {
-    const issued = await deps.liveCodes.issue(caller(response.locals))
+    const issued = await deps.liveCodes.issue(memberOf(response).id)
     if (issued.result === 'limit')
       response.status(429).json({ result: 'limit' })
     else response.status(201).json(issued.code)
@@ -32,12 +31,11 @@ export function liveCodeRoutes(deps: {
   router.post(
     '/api/live-codes/redeem',
     ...guards,
-    async (request, response) => {
-      const { token } = tokenBody.parse(request.body)
-      const id = await deps.liveCodes.redeem(caller(response.locals), token)
+    handle({ body: tokenBody }, async ({ body, member }, response) => {
+      const id = await deps.liveCodes.redeem(member.id, body.token)
       if (id === null) response.status(410).json({ error: 'gone' })
       else response.json({ id })
-    },
+    }),
   )
 
   return router

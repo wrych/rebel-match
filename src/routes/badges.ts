@@ -5,15 +5,13 @@ import { seenRows } from '../badges/rows.js'
 import type { LiveSettings } from '../config.js'
 import type { BadgeService } from '../services/badges.js'
 import { inviteToken } from './invite-token.js'
-import { requireSession, type GuardedLocals } from './require-permission.js'
+import { handle, memberOf, notFound } from './handle.js'
+import { requireSession } from './require-permission.js'
 
 const seenBody = z.object({
   rows: z.array(z.enum(seenRows)).max(seenRows.length),
 })
 const claimBody = z.object({ invite: inviteToken })
-
-const memberOf = (locals: unknown): string =>
-  (locals as GuardedLocals).member.id
 
 // While hosts have badges off, their addresses are as absent as ones that
 // never existed (R-BADGE-15, R-NAV-8).
@@ -23,7 +21,7 @@ function whileOn(settings: Pick<LiveSettings, 'limits'>): RequestHandler {
       next()
       return
     }
-    response.status(404).json({ error: 'not_found' })
+    notFound(response)
   }
 }
 
@@ -40,31 +38,31 @@ export function badgeRoutes(deps: {
   const shown = whileOn(deps.settings)
 
   router.get('/api/badges', shown, guard, async (_request, response) => {
-    response.json(await deps.badges.mine(memberOf(response.locals)))
+    response.json(await deps.badges.mine(memberOf(response).id))
   })
 
   router.get('/api/badges/new', shown, guard, async (_request, response) => {
     response.json({
-      count: await deps.badges.newCount(memberOf(response.locals)),
+      count: await deps.badges.newCount(memberOf(response).id),
     })
   })
 
-  router.post('/api/badges/seen', shown, guard, async (request, response) => {
-    const body = seenBody.safeParse(request.body)
-    if (!body.success) {
-      response.status(400).json({ error: 'bad_request' })
-      return
-    }
-    await deps.badges.seen(memberOf(response.locals), body.data.rows)
-    response.status(204).end()
-  })
+  router.post(
+    '/api/badges/seen',
+    shown,
+    guard,
+    handle({ body: seenBody }, async ({ body, member }, response) => {
+      await deps.badges.seen(member.id, body.rows)
+      response.status(204).end()
+    }),
+  )
 
   // The same answer whatever the invite, so a member learns nothing of one
   // that is not valid (R-BADGE-6, R-INV-5).
   router.post('/api/badges/claim', guard, async (request, response) => {
     const body = claimBody.safeParse(request.body)
     if (body.success)
-      await deps.badges.claim(memberOf(response.locals), body.data.invite)
+      await deps.badges.claim(memberOf(response).id, body.data.invite)
     response.status(204).end()
   })
 

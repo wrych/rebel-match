@@ -8,7 +8,8 @@ import {
   type ModerationReason,
 } from '../services/challenge-moderation.js'
 import type { ReportItem, ReportService } from '../services/reports.js'
-import { requirePermission, type GuardedLocals } from './require-permission.js'
+import { handle, replyFound, replyOutcome } from './handle.js'
+import { requirePermission } from './require-permission.js'
 
 const idParams = z.object({ id: z.string().min(1) })
 const reason = z.enum(
@@ -59,32 +60,20 @@ function target(
   deps: Deps,
   itemOf: (id: string) => ReportItem,
 ): RequestHandler {
-  return async (request, response) => {
-    const { id } = idParams.parse(request.params)
-    const reporter = (response.locals as GuardedLocals).member.id
-    const found = await deps.reports.target(reporter, itemOf(id))
-    if (found === null) {
-      response.status(404).json({ error: 'not_found' })
-      return
-    }
-    response.json({ target: found })
-  }
+  return handle({ params: idParams }, async ({ params, member }, response) => {
+    const found = await deps.reports.target(member.id, itemOf(params.id))
+    replyFound(response, found, 'target')
+  })
 }
 
 function report(deps: Deps): RequestHandler {
-  return async (request, response) => {
-    const { limits } = deps.settings
-    const input = reportBody(limits().reportCommentMaxChars).safeParse(
-      request.body,
-    )
-    if (!input.success) {
-      response.status(400).json({ error: 'bad_request' })
-      return
-    }
-    const reporter = (response.locals as GuardedLocals).member.id
-    const outcome = await deps.reports.report(reporter, input.data, randomUUID)
-    response.status(reportStatus[outcome]).json({ result: outcome })
-  }
+  return handle(
+    () => ({ body: reportBody(deps.settings.limits().reportCommentMaxChars) }),
+    async ({ body, member }, response) => {
+      const outcome = await deps.reports.report(member.id, body, randomUUID)
+      replyOutcome(response, reportStatus, outcome)
+    },
+  )
 }
 
 /** F20's API (design §3): what the report screen shows, and the report
