@@ -3,6 +3,7 @@ import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import HideForm from '../components/HideForm.vue'
 import MemberBan from '../components/MemberBan.vue'
+import { useAction } from '../lib/action'
 import {
   dismissReports,
   fetchModerationPage,
@@ -26,7 +27,7 @@ const page = ref<ModerationPage | null>(null)
 const missing = ref(false)
 const problem = ref<string | null>(null)
 const hiding = ref<string | null>(null)
-const busy = ref(false)
+const { busy, run } = useAction(problem)
 
 const openOf = (item: ModerationItem): number =>
   item.reports.filter((report) => report.open).length
@@ -74,16 +75,12 @@ async function load(): Promise<void> {
 // Each change ends by reading the page again, so it shows what the server
 // now holds, a change another host made meanwhile included.
 async function change(act: () => Promise<'done' | 'gone'>): Promise<void> {
-  busy.value = true
   problem.value = null
-  try {
+  await run(async () => {
     if ((await act()) === 'gone')
       problem.value = 'Someone changed that meanwhile. Here is how it is now.'
     hiding.value = null
-  } catch {
-    problem.value = 'That did not go through. Try again.'
-  }
-  busy.value = false
+  }, 'That did not go through. Try again.')
   await load()
 }
 

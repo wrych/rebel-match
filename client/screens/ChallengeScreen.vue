@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AskSteps from '../components/AskSteps.vue'
+import { useAction } from '../lib/action'
 import { askJourney } from '../lib/steps'
 import {
   confirmTrend,
@@ -19,8 +20,8 @@ const picked = typeof route.query.trend === 'string' ? route.query.trend : null
 const challenge = ref<Challenge | null>(null)
 const trends = ref<Trend[]>([])
 const missing = ref(false)
-const sending = ref(false)
 const problem = ref<string | null>(null)
+const { busy: sending, run } = useAction(problem)
 
 const trend = computed(() =>
   challenge.value === null
@@ -49,17 +50,13 @@ onMounted(async () => {
 })
 
 async function confirm(): Promise<void> {
-  if (trend.value === null) return
-  sending.value = true
+  const chosen = trend.value
+  if (chosen === null) return
   problem.value = null
-  try {
-    await confirmTrend(id, trend.value.id)
+  await run(async () => {
+    await confirmTrend(id, chosen.id)
     await router.push(`/challenges/${encodeURIComponent(id)}/matches?posted=1`)
-  } catch {
-    problem.value = 'That did not save. Try again.'
-  } finally {
-    sending.value = false
-  }
+  }, 'That did not save. Try again.')
 }
 </script>
 

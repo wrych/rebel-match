@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, ref, shallowRef } from 'vue'
+import { useAction } from '../lib/action'
 import type { ClientConfig } from '../lib/api'
 import type { Crop } from '../lib/crop'
 import {
@@ -30,9 +31,10 @@ const props = defineProps<{
 const shown = ref<string | null>(
   props.photoAt === null ? null : ownPhotoUrl(props.photoAt),
 )
-const busy = ref(false)
 const savedShown = ref(false)
 const problem = ref<string | null>(null)
+const action = useAction(problem)
+const busy = action.busy
 const picker = ref<HTMLInputElement | null>(null)
 const framing = shallowRef<ImageBitmap | null>(null)
 let tickTimer: ReturnType<typeof setTimeout> | undefined
@@ -63,17 +65,10 @@ async function save(crop: Crop, picture: ImageBitmap): Promise<void> {
   tick()
 }
 
-async function run(work: () => Promise<void>): Promise<void> {
-  busy.value = true
+function run(work: () => Promise<void>): Promise<void> {
   savedShown.value = false
   problem.value = null
-  try {
-    await work()
-  } catch {
-    problem.value = 'That did not save. Try again.'
-  } finally {
-    busy.value = false
-  }
+  return action.run(work, 'That did not save. Try again.')
 }
 
 async function chosen(event: Event): Promise<void> {

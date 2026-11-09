@@ -1,25 +1,21 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import ConfirmAction from './ConfirmAction.vue'
+import { useAction } from '../lib/action'
 import { deleteHistory } from '../lib/profile'
 
 const confirming = ref(false)
-const busy = ref(false)
 const done = ref(false)
 const problem = ref<string | null>(null)
+const { busy, run } = useAction(problem)
 
 async function forget(): Promise<void> {
-  busy.value = true
   problem.value = null
-  try {
+  await run(async () => {
     await deleteHistory()
     done.value = true
     confirming.value = false
-  } catch {
-    problem.value =
-      'That did not go through. Your history is still here; try again.'
-  }
-  busy.value = false
+  }, 'That did not go through. Your history is still here; try again.')
 }
 </script>
 

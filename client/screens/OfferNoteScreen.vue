@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useAction } from '../lib/action'
 import { fetchConfig } from '../lib/api'
 import { contactPath } from '../lib/connections'
 import { answerCard, authorLine, fetchDeck, type DeckCard } from '../lib/deck'
@@ -13,9 +14,9 @@ const card = ref<DeckCard | null>(null)
 const missing = ref(false)
 const note = ref('')
 const limits = ref<{ min: number; max: number } | null>(null)
-const sending = ref(false)
 const sent = ref<'created' | 'exists' | null>(null)
 const problem = ref<string | null>(null)
+const { busy: sending, run } = useAction(problem)
 
 const first = computed(() => card.value?.author.name.split(' ')[0] ?? '')
 // The server trims before it counts, so the counter does too (R-CFG-2).
@@ -42,9 +43,8 @@ onMounted(async () => {
 
 async function send(): Promise<void> {
   if (!ready.value) return
-  sending.value = true
   problem.value = null
-  try {
+  await run(async () => {
     const result = await answerCard(challengeId, 'been_there', note.value)
     if (result.result === 'joined') {
       countAnswer('beenThere')
@@ -54,11 +54,7 @@ async function send(): Promise<void> {
     if (result.result === 'gone') missing.value = true
     else sent.value = result.request ?? 'created'
     if (sent.value === 'created') countAnswer('beenThere')
-  } catch {
-    problem.value = 'That did not send. Try again.'
-  } finally {
-    sending.value = false
-  }
+  }, 'That did not send. Try again.')
 }
 </script>
 

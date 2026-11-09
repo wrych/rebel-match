@@ -5,6 +5,7 @@
  * member again and shows what the server now holds. */
 import { onMounted, ref } from 'vue'
 import BanForm from './BanForm.vue'
+import { useAction } from '../lib/action'
 import { fetchConfig } from '../lib/api'
 import { banMember, unbanMember } from '../lib/moderation'
 import { loadMe } from '../lib/session'
@@ -19,8 +20,8 @@ const emit = defineEmits<{ changed: [] }>()
 const mayBan = ref(false)
 const maxChars = ref<number | null>(null)
 const banning = ref(false)
-const busy = ref(false)
 const problem = ref<string | null>(null)
+const { busy, run } = useAction(problem)
 
 const words = {
   done: null,
@@ -31,15 +32,11 @@ const words = {
 async function change(
   act: () => Promise<'done' | 'gone' | 'refused'>,
 ): Promise<void> {
-  busy.value = true
   problem.value = null
-  try {
+  await run(async () => {
     problem.value = words[await act()]
     banning.value = false
-  } catch {
-    problem.value = 'That did not go through. Try again.'
-  }
-  busy.value = false
+  }, 'That did not go through. Try again.')
   emit('changed')
 }
 

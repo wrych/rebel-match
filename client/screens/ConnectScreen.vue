@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import RequestSent from '../components/RequestSent.vue'
+import { useAction } from '../lib/action'
 import { fetchConfig } from '../lib/api'
 import { fetchMatches, peerLine, type PeerCard } from '../lib/challenges'
 import {
@@ -22,9 +23,9 @@ const peer = ref<PeerCard | null>(null)
 const missing = ref(false)
 const message = ref('')
 const maxChars = ref<number | null>(null)
-const sending = ref(false)
 const outcome = ref<RequestOutcome['result'] | null>(null)
 const problem = ref<string | null>(null)
+const { busy: sending, run } = useAction(problem)
 
 const firstName = computed(() => peer.value?.name.split(' ')[0] ?? '')
 
@@ -50,9 +51,8 @@ onMounted(async () => {
 
 async function send(): Promise<void> {
   if (kind === null) return
-  sending.value = true
   problem.value = null
-  try {
+  await run(async () => {
     const sent = await requestConnection({
       targetId: memberId,
       challengeId,
@@ -64,11 +64,7 @@ async function send(): Promise<void> {
       return
     }
     outcome.value = sent.result
-  } catch {
-    problem.value = 'That did not send. Try again.'
-  } finally {
-    sending.value = false
-  }
+  }, 'That did not send. Try again.')
 }
 </script>
 
