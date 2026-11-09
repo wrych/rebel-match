@@ -423,7 +423,14 @@ const limitSpecs = {
   // A feedback message, so one cannot fill the outbound log (R-FB-1).
   feedbackMaxChars: { fixed: 4000 },
   // reports.comment (src/db/schema.ts).
-  reportCommentMaxChars: { fixed: 500 },
+  reportCommentMaxChars: {
+    fixed: 500,
+    shown: {
+      name: 'Longest report comment',
+      explanation: 'What a member may add to a report, at most.',
+      unit: CHARACTERS,
+    },
+  },
   // moderation_actions.note, the reason a host gives for a ban (R-MOD-9).
   banNoteMaxChars: {
     fixed: 500,

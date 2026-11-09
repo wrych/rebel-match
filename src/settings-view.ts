@@ -10,7 +10,6 @@ import type { Config } from './config.js'
 import { bossJobs, type BossJob, type GameKey } from './game/tuning.js'
 import { shownLimits, type ShownLimitKey } from './limits.js'
 import {
-  CHARACTERS,
   DAYS,
   HOURS,
   MINUTES,
@@ -482,12 +481,7 @@ const catalogue: Group[] = [
       'limits.reportsPerDay',
       'limits.reportersToFlag',
       'limits.reportRetentionDays',
-      {
-        name: 'Longest report comment',
-        explanation: 'What a member may add to a report, at most.',
-        read: (c) => c.limits.reportCommentMaxChars,
-        unit: CHARACTERS,
-      },
+      'limits.reportCommentMaxChars',
       'limits.banNoteMaxChars',
       'limits.notificationsPageSize',
       'limits.connectionMessageMaxChars',
