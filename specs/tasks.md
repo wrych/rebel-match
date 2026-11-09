@@ -283,6 +283,8 @@ printed dev link (R-DEV-6).
 - [ ] A simpler profile screen: cards folded to their title with a search,
       as the host settings have; the colour mode and Your code move there
       from the menu. _(R-PROF-8, R-PROF-3, R-LOOK-2, R-CODE-1)_
+- [x] The hosts' default colour mode: a browser that never chose starts in
+      it, one that chose keeps its choice. _(R-LOOK-6)_
 
 ## M6 — Hardening & pilot _(by 2026-11-01)_
 

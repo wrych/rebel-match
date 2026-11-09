@@ -755,6 +755,15 @@ const catalogue: Group[] = [
         switch: true,
       },
       {
+        name: 'Happy colour mode by default',
+        explanation:
+          'On starts every browser that has not chosen a colour mode in ' +
+          'happy mode; off starts it calm. A member who chose a mode on ' +
+          'their profile keeps it.',
+        key: 'limits.happyModeDefault',
+        switch: true,
+      },
+      {
         name: 'Largest profile photo',
         explanation:
           'The browser scales a photo down well below this; a larger upload is refused.',

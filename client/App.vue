@@ -2,10 +2,13 @@
 import HeaderMenu from './components/HeaderMenu.vue'
 import RebelMark from './components/RebelMark.vue'
 import TabBar from './components/TabBar.vue'
-import { applyMood, savedMood } from './lib/mood'
+import { fetchConfig } from './lib/api'
+import { startMood } from './lib/mood'
 import { thanks } from './lib/thanks'
 
-applyMood(savedMood())
+void startMood(async () =>
+  (await fetchConfig()).limits.happyModeDefault === 1 ? 'happy' : 'calm',
+)
 </script>
 
 <template>

@@ -78,6 +78,7 @@ describe('the zero rule', () => {
       'RECAP',
       'RECAP_OPENS_AT',
       'BADGES',
+      'HAPPY_MODE_DEFAULT',
       'PROFILE_PHOTOS',
     ]
     for (const variable of Object.keys(limitsEnv).filter(
@@ -86,7 +87,7 @@ describe('the zero rule', () => {
       expect(() => loadConfig({ ...valid, [variable]: '0' })).toThrow(variable)
   })
 
-  it('allows zero for the replay’s switch and own-lines threshold, the search, social links and codes switches, the live code grace, the recap’s switch and opening time, and the photo and badges switches (R-NET-6, R-NET-13, R-FIND-1, R-PROF-5, R-CODE-1, R-CODE-5, R-RECAP-1, R-RECAP-8, R-PROF-6, R-BADGE-15)', () => {
+  it('allows zero for the replay’s switch and own-lines threshold, the search, social links and codes switches, the live code grace, the recap’s switch and opening time, and the badges, default colour mode and photo switches (R-NET-6, R-NET-13, R-FIND-1, R-PROF-5, R-CODE-1, R-CODE-5, R-RECAP-1, R-RECAP-8, R-PROF-6, R-BADGE-15, R-LOOK-6)', () => {
     const zeroAllowed = Object.keys(limitsEnv).filter((variable) => {
       try {
         loadConfig({ ...valid, [variable]: '0' })
@@ -106,6 +107,7 @@ describe('the zero rule', () => {
       'RECAP',
       'RECAP_OPENS_AT',
       'BADGES',
+      'HAPPY_MODE_DEFAULT',
       'PROFILE_PHOTOS',
     ])
   })
