@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { changeableAbuse } from './abuse.js'
+import { changeableAbuse, shownAbuse } from './abuse.js'
 import { defaultConfig, loadConfig, type Config } from './config.js'
 import { experimentKeys } from './experiments.js'
 import { gameBounds } from './game/tuning.js'
-import { changeableLimits } from './limits.js'
+import { changeableLimits, shownLimits } from './limits.js'
 import { settingsView, type SettingsState } from './settings-view.js'
 
 function unchanged(config: Config): SettingsState {
@@ -229,5 +229,22 @@ describe('settingsView catalogue (R-CFG-6)', () => {
     ]
 
     expect([...offered].sort()).toEqual([...changeable].sort())
+  })
+
+  it('shows every setting its spec describes, once and as described', () => {
+    const settings = view(defaultConfig()).flatMap((group) => group.settings)
+    const described = [
+      ...Object.values(shownLimits),
+      ...Object.values(shownAbuse),
+    ]
+
+    for (const spec of described) {
+      const named = settings.filter((setting) => setting.name === spec.name)
+      expect(named).toHaveLength(1)
+      expect(named[0]).toMatchObject({
+        explanation: spec.explanation,
+        fixed: spec.fixed,
+      })
+    }
   })
 })

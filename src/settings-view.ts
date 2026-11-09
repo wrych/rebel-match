@@ -1,11 +1,26 @@
+import { shownAbuse, type ShownAbuseKey } from './abuse.js'
 import {
   boundsOf,
+  isSettingKey,
   valueOf,
   type SettingKey,
   type SettingValues,
 } from './changeable-settings.js'
 import type { Config } from './config.js'
 import { bossJobs, type BossJob, type GameKey } from './game/tuning.js'
+import { shownLimits, type ShownLimitKey } from './limits.js'
+import {
+  CHARACTERS,
+  DAYS,
+  HOURS,
+  MINUTES,
+  PERCENT,
+  prefixed,
+  SECONDS,
+  type Shown,
+  type ShownSpec,
+  type Unit,
+} from './setting-specs.js'
 import type { SettingOverride } from './services/settings.js'
 
 /** How a changeable setting is edited: its current number and bounds. */
@@ -53,44 +68,59 @@ export interface SettingsState {
   overrides: readonly SettingOverride[]
 }
 
-type Unit = readonly [one: string, many: string]
-
-const MINUTES: Unit = ['minute', 'minutes']
-const HOURS: Unit = ['hour', 'hours']
-const DAYS: Unit = ['day', 'days']
-const CHARACTERS: Unit = ['character', 'characters']
-const PERCENT: Unit = ['percent', 'percent']
-const MS_PER_SECOND = 1000
-const BYTES_PER_KB = 1000
-
-interface Described {
-  name: string
-  explanation: string
-  unit?: Unit
-  /** An on/off switch storing 1 or 0, shown as On or Off. */
-  switch?: true
-  /** A moment, in whole minutes since 1970 in UTC, 0 for none. */
-  moment?: true
-}
-
 /** A changeable setting (R-CFG-6), read by its key. */
-interface Changeable extends Described {
+interface Changeable extends Shown {
   key: SettingKey
 }
 
 /** A value hosts only read: set by the deployment, or fixed in code. */
-interface ReadOnly extends Described {
+interface ReadOnly extends Shown {
   /** Fixed in code: no deployment can change it. */
   fixed?: true
   read: (config: Config) => string | number
 }
 
-type Entry = Changeable | ReadOnly
+/** A setting whose spec describes how hosts see it. */
+type SpecRef = `limits.${ShownLimitKey}` | `abuse.${ShownAbuseKey}`
+
+type Entry = SpecRef | Changeable | ReadOnly
 
 interface Group {
   title: string
   explanation: string
   entries: Entry[]
+}
+
+interface Resolved extends Shown {
+  fixed: boolean
+  key?: SettingKey
+  read: (config: Config) => string | number
+}
+
+const shownSpecs: Readonly<Record<SpecRef, ShownSpec>> = {
+  ...prefixed('limits', shownLimits),
+  ...prefixed('abuse', shownAbuse),
+}
+
+function fromSpec(ref: SpecRef): Resolved {
+  const { as, ...shown } = shownSpecs[ref]
+  return {
+    ...shown,
+    ...(isSettingKey(ref) ? { key: ref } : {}),
+    read: (config) =>
+      as === undefined ? valueOf(config, ref) : as(valueOf(config, ref)),
+  }
+}
+
+function resolve(entry: Entry): Resolved {
+  if (typeof entry === 'string') return fromSpec(entry)
+  if ('key' in entry)
+    return {
+      ...entry,
+      fixed: false,
+      read: (config) => valueOf(config, entry.key),
+    }
+  return { ...entry, fixed: entry.fixed === true }
 }
 
 function withUnit(value: string | number, unit: Unit | undefined): string {
@@ -109,7 +139,6 @@ function momentOf(minutes: number): string {
   return `${iso.slice(0, ISO_MINUTE).replace('T', ' ')} UTC`
 }
 
-const SECONDS: Unit = ['second', 'seconds']
 const EMPLOYEES: Unit = ['employee', 'employees']
 
 const jobNames: Readonly<Record<BossJob, string>> = {
@@ -379,7 +408,7 @@ const gameGroups: Group[] = [
   },
 ]
 
-const described = (entry: Entry): { name: string; explanation: string } => ({
+const described = (entry: Resolved): { name: string; explanation: string } => ({
   name: entry.name,
   explanation: entry.explanation,
 })
@@ -393,103 +422,19 @@ const catalogue: Group[] = [
       'Limits that stop scripts from flooding inboxes or the approvals list. ' +
       'Each server counts on its own, and a restart starts the counts afresh.',
     entries: [
-      {
-        name: 'Sign-in emails per address, sent freely',
-        explanation:
-          'Sign-in emails one address can get in the time window below ' +
-          'without any check.',
-        key: 'abuse.linkEmailsBeforeCheck',
-        unit: ['email', 'emails'],
-      },
-      {
-        name: 'Sign-in emails per address, at most',
-        explanation:
-          'Past the free ones, each email up to this many needs the ' +
-          'automatic human check; beyond it nothing is sent.',
-        key: 'abuse.linkEmailsCeiling',
-        unit: ['email', 'emails'],
-      },
-      {
-        name: 'Time window for sign-in emails per address',
-        explanation: 'The period both email limits above count over.',
-        key: 'abuse.linkEmailWindowMinutes',
-        unit: MINUTES,
-      },
-      {
-        name: 'Sign-in requests per network',
-        explanation:
-          'Requests from one network (IP address) before it is asked to ' +
-          'wait. High on purpose: a whole venue shares one Wi-Fi.',
-        key: 'abuse.authRequestsPerIp',
-        unit: ['request', 'requests'],
-      },
-      {
-        name: 'Time window for sign-in requests per network',
-        explanation: 'The period the request limit above counts over.',
-        key: 'abuse.ipWindowMinutes',
-        unit: MINUTES,
-      },
-      {
-        name: 'New applicants per network, before a human check',
-        explanation:
-          'People asking to join from one network before each further one ' +
-          'needs the automatic human check. Members and invite links never ' +
-          'count.',
-        key: 'abuse.applicantsBeforeCheck',
-        unit: ['applicant', 'applicants'],
-      },
-      {
-        name: 'New applicants per network, at most',
-        explanation:
-          'Past this many from one network, nobody more is recorded until ' +
-          'the time window ends.',
-        key: 'abuse.applicantsCeiling',
-        unit: ['applicant', 'applicants'],
-      },
-      {
-        name: 'Time window for new applicants per network',
-        explanation: 'The period both applicant limits above count over.',
-        key: 'abuse.applicantWindowMinutes',
-        unit: MINUTES,
-      },
-      {
-        name: 'Human check difficulty',
-        explanation:
-          'Work per try of the puzzle the browser solves (PBKDF2 ' +
-          'iterations). Higher is slower for people and scripts alike.',
-        key: 'abuse.humanCheckCost',
-        unit: ['iteration', 'iterations'],
-      },
-      {
-        name: 'Time to solve a human check',
-        explanation: 'How long a puzzle can be solved and sent back.',
-        key: 'abuse.humanCheckMinutes',
-        unit: MINUTES,
-      },
-      {
-        name: 'Live codes per member a minute',
-        explanation:
-          'New live codes one member’s screen may ask for in a minute; ' +
-          'past it the screen hides its code until its next turn. The ' +
-          'screen asks about seven times a minute at its fastest.',
-        key: 'abuse.liveCodesPerMinute',
-        unit: ['code', 'codes'],
-      },
-      {
-        name: 'Feedback per member or network, at most',
-        explanation:
-          'Feedback messages one member, or one network when not signed ' +
-          'in, may send before being asked to wait. Visitors also pass the ' +
-          'human check for each one.',
-        key: 'abuse.feedbackCeiling',
-        unit: ['message', 'messages'],
-      },
-      {
-        name: 'Time window for feedback',
-        explanation: 'The period the feedback limit above counts over.',
-        key: 'abuse.feedbackWindowMinutes',
-        unit: MINUTES,
-      },
+      'abuse.linkEmailsBeforeCheck',
+      'abuse.linkEmailsCeiling',
+      'abuse.linkEmailWindowMinutes',
+      'abuse.authRequestsPerIp',
+      'abuse.ipWindowMinutes',
+      'abuse.applicantsBeforeCheck',
+      'abuse.applicantsCeiling',
+      'abuse.applicantWindowMinutes',
+      'abuse.humanCheckCost',
+      'abuse.humanCheckMinutes',
+      'abuse.liveCodesPerMinute',
+      'abuse.feedbackCeiling',
+      'abuse.feedbackWindowMinutes',
       {
         name: 'Trusted proxies in front of the server',
         explanation:
@@ -504,20 +449,8 @@ const catalogue: Group[] = [
     title: 'Signing in',
     explanation: 'How long sign-in links and sessions last.',
     entries: [
-      {
-        name: 'Sign-in link valid for',
-        explanation: 'A sign-in link stops working after this long.',
-        read: (c) => c.limits.magicLinkTtlMinutes,
-        unit: MINUTES,
-      },
-      {
-        name: 'Link in the approval email valid for',
-        explanation:
-          'The link a newly approved member receives stops working after ' +
-          'this long; they can still ask for a new one.',
-        read: (c) => c.limits.approvalLinkTtlHours,
-        unit: HOURS,
-      },
+      'limits.magicLinkTtlMinutes',
+      'limits.approvalLinkTtlHours',
       {
         name: 'Signed out after not using the app for',
         explanation:
@@ -532,116 +465,32 @@ const catalogue: Group[] = [
     title: 'Invite links',
     explanation: 'The starting values when a host creates an invite link.',
     entries: [
-      {
-        name: 'Uses per new invite link',
-        explanation:
-          'Suggested when creating an invite link; can be changed per link.',
-        key: 'limits.inviteDefaultMaxUses',
-        unit: ['use', 'uses'],
-      },
-      {
-        name: 'New invite link valid for',
-        explanation:
-          'Suggested when creating an invite link; can be changed per link.',
-        key: 'limits.inviteDefaultHours',
-        unit: HOURS,
-      },
-      {
-        name: 'Most uses one invite link can allow',
-        explanation: 'The largest number of uses the database can hold.',
-        fixed: true,
-        read: (c) => c.limits.inviteMaxUsesCeiling,
-        unit: ['use', 'uses'],
-      },
+      'limits.inviteDefaultMaxUses',
+      'limits.inviteDefaultHours',
+      'limits.inviteMaxUsesCeiling',
     ],
   },
   {
     title: 'Asking and offering help',
     explanation: 'Rules for what members write and see.',
     entries: [
-      {
-        name: 'Shortest challenge',
-        explanation: 'A challenge needs at least this many characters.',
-        key: 'limits.challengeMinChars',
-        unit: CHARACTERS,
-      },
-      {
-        name: 'Longest challenge',
-        explanation:
-          'A challenge takes at most this many characters, so a peer can read it on one phone screen.',
-        read: (c) => c.limits.challengeMaxChars,
-        unit: CHARACTERS,
-      },
-      {
-        name: 'Shortest “been there” note',
-        explanation:
-          'A member offering help writes at least this many characters.',
-        key: 'limits.beenThereNoteMinChars',
-        unit: CHARACTERS,
-      },
-      {
-        name: 'Challenges shown per batch when offering help',
-        explanation: 'How many challenges load at a time.',
-        read: (c) => c.limits.deckPageSize,
-        unit: ['challenge', 'challenges'],
-      },
-      {
-        name: 'Newest challenges shown for inspiration',
-        explanation:
-          'How many recent challenges the trend and ask screens show.',
-        read: (c) => c.limits.newestChallengesShown,
-        unit: ['challenge', 'challenges'],
-      },
-      {
-        name: 'Reports per member per day',
-        explanation:
-          'How many challenges or notes one member may report a day, so ' +
-          'reporting cannot be turned on someone.',
-        key: 'limits.reportsPerDay',
-        unit: ['report', 'reports'],
-      },
-      {
-        name: 'Reporters who outline a member',
-        explanation:
-          'On the moderation screen, a member reported by at least this ' +
-          'many different members is outlined.',
-        key: 'limits.reportersToFlag',
-        unit: ['member', 'members'],
-      },
-      {
-        name: 'Keep handled reports for',
-        explanation:
-          'Reports name who made them, so handled ones are deleted after ' +
-          'this, or this long after the hide or ban behind them is lifted.',
-        read: (c) => c.limits.reportRetentionDays,
-        unit: DAYS,
-      },
+      'limits.challengeMinChars',
+      'limits.challengeMaxChars',
+      'limits.beenThereNoteMinChars',
+      'limits.deckPageSize',
+      'limits.newestChallengesShown',
+      'limits.reportsPerDay',
+      'limits.reportersToFlag',
+      'limits.reportRetentionDays',
       {
         name: 'Longest report comment',
         explanation: 'What a member may add to a report, at most.',
         read: (c) => c.limits.reportCommentMaxChars,
         unit: CHARACTERS,
       },
-      {
-        name: 'Longest reason for a ban',
-        explanation: 'Fixed by the database.',
-        fixed: true,
-        read: (c) => c.limits.banNoteMaxChars,
-        unit: CHARACTERS,
-      },
-      {
-        name: 'Notifications shown per page',
-        explanation: 'How many notifications the list loads at a time.',
-        read: (c) => c.limits.notificationsPageSize,
-        unit: ['notification', 'notifications'],
-      },
-      {
-        name: 'Longest message with a connection request',
-        explanation: 'Fixed by the database.',
-        fixed: true,
-        read: (c) => c.limits.connectionMessageMaxChars,
-        unit: CHARACTERS,
-      },
+      'limits.banNoteMaxChars',
+      'limits.notificationsPageSize',
+      'limits.connectionMessageMaxChars',
     ],
   },
   {
@@ -649,208 +498,40 @@ const catalogue: Group[] = [
     explanation:
       'While a screen is open and in view, it re-reads its list this often.',
     entries: [
-      {
-        name: 'How often the badges check for news',
-        explanation:
-          'While the app is open, the matches and notifications badges refresh this often.',
-        key: 'limits.matchesPollSeconds',
-        unit: SECONDS,
-      },
-      {
-        name: 'Matches screen',
-        explanation: 'The requests waiting for a member and their connections.',
-        key: 'limits.cockpitPollSeconds',
-        unit: SECONDS,
-      },
-      {
-        name: 'A challenge’s matches',
-        explanation:
-          'The same boat and been there rebels of a member’s challenge.',
-        key: 'limits.challengeMatchesPollSeconds',
-        unit: SECONDS,
-      },
-      {
-        name: 'Notifications',
-        explanation: 'A member’s notifications screen.',
-        key: 'limits.notificationsPollSeconds',
-        unit: SECONDS,
-      },
-      {
-        name: 'Outbound message log',
-        explanation: 'The host tools’ log of every email.',
-        key: 'limits.outboxPollSeconds',
-        unit: SECONDS,
-      },
-      {
-        name: 'Members',
-        explanation: 'The host tools’ members list.',
-        key: 'limits.membersPollSeconds',
-        unit: SECONDS,
-      },
-      {
-        name: 'Applicants',
-        explanation: 'The host tools’ list of applicants.',
-        key: 'limits.applicantsPollSeconds',
-        unit: SECONDS,
-      },
-      {
-        name: 'Invites',
-        explanation: 'The host tools’ invite links.',
-        key: 'limits.invitesPollSeconds',
-        unit: SECONDS,
-      },
-      {
-        name: 'Moderation',
-        explanation: 'The host tools’ reported members.',
-        key: 'limits.moderationPollSeconds',
-        unit: SECONDS,
-      },
-      {
-        name: 'Leaderboard',
-        explanation: 'The 9toRevolution leaderboard.',
-        key: 'limits.leaderboardPollSeconds',
-        unit: SECONDS,
-      },
+      'limits.matchesPollSeconds',
+      'limits.cockpitPollSeconds',
+      'limits.challengeMatchesPollSeconds',
+      'limits.notificationsPollSeconds',
+      'limits.outboxPollSeconds',
+      'limits.membersPollSeconds',
+      'limits.applicantsPollSeconds',
+      'limits.invitesPollSeconds',
+      'limits.moderationPollSeconds',
+      'limits.leaderboardPollSeconds',
     ],
   },
   {
     title: 'Members and profiles',
     explanation: 'Profile fields and member lists.',
     entries: [
-      {
-        name: 'Longest email address',
-        explanation: 'Fixed by the database.',
-        fixed: true,
-        read: (c) => c.limits.emailMaxChars,
-        unit: CHARACTERS,
-      },
-      {
-        name: 'Longest name',
-        explanation: 'Fixed by the database.',
-        fixed: true,
-        read: (c) => c.limits.nameMaxChars,
-        unit: CHARACTERS,
-      },
-      {
-        name: 'Longest job title',
-        explanation: 'Fixed by the database.',
-        fixed: true,
-        read: (c) => c.limits.jobTitleMaxChars,
-        unit: CHARACTERS,
-      },
-      {
-        name: 'Longest organization',
-        explanation: 'Fixed by the database.',
-        fixed: true,
-        read: (c) => c.limits.orgMaxChars,
-        unit: CHARACTERS,
-      },
-      {
-        name: 'Profile photos',
-        explanation:
-          'On lets every member add a photo on their profile, shown beside ' +
-          'their name to other members; off hides photos everywhere, and ' +
-          'photos already added are kept.',
-        key: 'limits.profilePhotos',
-        switch: true,
-      },
-      {
-        name: 'Happy colour mode by default',
-        explanation:
-          'On starts every browser that has not chosen a colour mode in ' +
-          'happy mode; off starts it calm. A member who chose a mode on ' +
-          'their profile keeps it.',
-        key: 'limits.happyModeDefault',
-        switch: true,
-      },
-      {
-        name: 'Largest profile photo',
-        explanation:
-          'The browser scales a photo down well below this; a larger upload is refused.',
-        read: (c) => Math.round(c.limits.photoMaxBytes / BYTES_PER_KB),
-        unit: ['kB', 'kB'],
-      },
-      {
-        name: 'Profile photo size',
-        explanation: 'The side of the square a photo is cropped and scaled to.',
-        fixed: true,
-        read: (c) => c.limits.photoSidePx,
-        unit: ['pixel', 'pixels'],
-      },
-      {
-        name: 'Social links',
-        explanation:
-          'On lets members add their LinkedIn and Instagram to their ' +
-          'profile, shown only to members they are connected with; off ' +
-          'hides them everywhere and keeps what was saved.',
-        key: 'limits.socialLinks',
-        switch: true,
-      },
-      {
-        name: 'Longest social link',
-        explanation: 'Fixed by the database.',
-        fixed: true,
-        read: (c) => c.limits.socialLinkMaxChars,
-        unit: CHARACTERS,
-      },
-      {
-        name: 'Addresses per attendee list upload',
-        explanation: 'The most addresses one upload to the whitelist can add.',
-        read: (c) => c.limits.whitelistBatchMax,
-        unit: ['address', 'addresses'],
-      },
-      {
-        name: '“Saved” tick shown for',
-        explanation: 'How long the tick stays beside a saved profile setting.',
-        fixed: true,
-        read: (c) => c.limits.savedTickMs / MS_PER_SECOND,
-        unit: ['second', 'seconds'],
-      },
-      {
-        name: 'Hold a member card to start selecting for',
-        explanation:
-          'How long a host holds a card in the members list before it is selected.',
-        fixed: true,
-        read: (c) => c.limits.holdToSelectMs / MS_PER_SECOND,
-        unit: ['second', 'seconds'],
-      },
-      {
-        name: 'Swipe a challenge card to browse across',
-        explanation:
-          'How far a finger moves across a card in the deck before the next or previous challenge shows.',
-        fixed: true,
-        read: (c) => c.limits.swipeMinPx,
-        unit: ['pixel', 'pixels'],
-      },
-      {
-        name: 'Pull a list down to refresh it',
-        explanation:
-          'How far a finger pulls a live list down from the top of the page before it refreshes.',
-        fixed: true,
-        read: (c) => c.limits.pullRefreshPx,
-        unit: ['pixel', 'pixels'],
-      },
-      {
-        name: 'Matches shown before “more”',
-        explanation:
-          'How many rebels or case studies each section of a challenge’s matches shows before the rest are a tap away.',
-        fixed: true,
-        read: (c) => c.limits.matchesShownFirst,
-      },
-      {
-        name: 'Matches named before “and others”',
-        explanation:
-          'How many rebels or case studies the sentence over each section of a challenge’s matches names before it counts the rest, where it shows sentences.',
-        fixed: true,
-        read: (c) => c.limits.matchesNamedFirst,
-      },
-      {
-        name: 'Scroll hint on the privacy step moves',
-        explanation:
-          'How far one tap on the arrow scrolls the privacy summary, as a share of the screen height.',
-        fixed: true,
-        read: (c) => `${String(Math.round(c.limits.scrollHintShare * 100))}%`,
-      },
+      'limits.emailMaxChars',
+      'limits.nameMaxChars',
+      'limits.jobTitleMaxChars',
+      'limits.orgMaxChars',
+      'limits.profilePhotos',
+      'limits.happyModeDefault',
+      'limits.photoMaxBytes',
+      'limits.photoSidePx',
+      'limits.socialLinks',
+      'limits.socialLinkMaxChars',
+      'limits.whitelistBatchMax',
+      'limits.savedTickMs',
+      'limits.holdToSelectMs',
+      'limits.swipeMinPx',
+      'limits.pullRefreshPx',
+      'limits.matchesShownFirst',
+      'limits.matchesNamedFirst',
+      'limits.scrollHintShare',
     ],
   },
   {
@@ -889,24 +570,14 @@ const catalogue: Group[] = [
         explanation: 'The port of the mail server.',
         read: (c) => String(c.mail.smtp.port),
       },
-      {
-        name: 'Keep outbound log entries for',
-        explanation: 'Entries hold email addresses, so older ones are deleted.',
-        read: (c) => c.limits.outboxRetentionDays,
-        unit: DAYS,
-      },
+      'limits.outboxRetentionDays',
       {
         name: 'Delete old log entries every',
         explanation: 'How often the server clears entries past that period.',
         read: (c) => c.outboxPurgeIntervalHours,
         unit: HOURS,
       },
-      {
-        name: 'Entries per page in the outbound log',
-        explanation: 'How many log entries the host tools show at once.',
-        read: (c) => c.limits.outboxPageSize,
-        unit: ['entry', 'entries'],
-      },
+      'limits.outboxPageSize',
       {
         name: 'Send notification emails every',
         explanation: 'How often the server mails the notifications due.',
@@ -951,27 +622,14 @@ const catalogue: Group[] = [
         read: (c) => c.notificationWorker.batch,
         unit: ['email', 'emails'],
       },
-      {
-        name: 'Keep notifications for',
-        explanation:
-          'Notifications name other members, so older ones are deleted with the old log entries.',
-        read: (c) => c.limits.notificationRetentionDays,
-        unit: DAYS,
-      },
+      'limits.notificationRetentionDays',
     ],
   },
   {
     title: 'Privacy and analytics',
     explanation: 'The wording members agree to, and usage analytics.',
     entries: [
-      {
-        name: 'Deleted accounts are erased after',
-        explanation:
-          'A deleted account is hidden at once and erased after this long, ' +
-          'so the member or a host can still undo it until then.',
-        read: (c) => c.limits.erasureGraceDays,
-        unit: DAYS,
-      },
+      'limits.erasureGraceDays',
       {
         name: 'Erase due accounts every',
         explanation: 'How often the server erases accounts past that period.',
@@ -1050,15 +708,7 @@ const catalogue: Group[] = [
     title: 'Badges',
     explanation: 'What members earn for what they do; only they see it.',
     entries: [
-      {
-        name: 'Badges',
-        explanation:
-          'On shows members their badges from the menu and tells them of ' +
-          'new ones; off hides them, and badges are still earned, quietly, ' +
-          'to show when it is turned back on.',
-        key: 'limits.badges',
-        switch: true,
-      },
+      'limits.badges',
       {
         name: 'Badge levels are earned at',
         explanation:
@@ -1097,40 +747,10 @@ const catalogue: Group[] = [
       'sector, or by a code one shows the other, and connecting directly, ' +
       'about no challenge.',
     entries: [
-      {
-        name: 'Member search',
-        explanation:
-          'On lets every member search; off hides it, and its addresses ' +
-          'answer as not found. Members who turned off being findable are ' +
-          'never found.',
-        key: 'limits.memberSearch',
-        switch: true,
-      },
-      {
-        name: 'Connect codes',
-        explanation:
-          'On lets every member show a profile code to share and a live ' +
-          'code to scan, whether or not they are findable; off hides them, ' +
-          'and their addresses answer as not found.',
-        key: 'limits.connectCodes',
-        switch: true,
-      },
-      {
-        name: 'Time each live code is shown',
-        explanation:
-          'A live code is replaced on screen after this long, its ring ' +
-          'emptying as the time runs out.',
-        key: 'limits.liveCodeSeconds',
-        unit: SECONDS,
-      },
-      {
-        name: 'Grace after a live code is replaced',
-        explanation:
-          'How long a replaced live code still works, so a scan begun at ' +
-          'the end succeeds. Never more than the time it is shown.',
-        key: 'limits.liveCodeGraceSeconds',
-        unit: SECONDS,
-      },
+      'limits.memberSearch',
+      'limits.connectCodes',
+      'limits.liveCodeSeconds',
+      'limits.liveCodeGraceSeconds',
     ],
   },
   {
@@ -1138,25 +758,7 @@ const catalogue: Group[] = [
     explanation:
       'A 3D replay of how members joined and connected, ending on the ' +
       'member watching. Nobody in it is named.',
-    entries: [
-      {
-        name: 'The replay',
-        explanation:
-          'On shows it to members from the menu; off hides it, and its ' +
-          'address answers as not found.',
-        key: 'limits.networkReplay',
-        switch: true,
-      },
-      {
-        name: 'Own connections shown from',
-        explanation:
-          'A member with fewer connections sees the replay without their ' +
-          'own lines, so they cannot tell who the dots at the ends are. 0 ' +
-          'shows everyone their lines.',
-        key: 'limits.networkMinOwnConnections',
-        unit: ['connection', 'connections'],
-      },
-    ],
+    entries: ['limits.networkReplay', 'limits.networkMinOwnConnections'],
   },
   {
     title: 'Your rebel record',
@@ -1164,71 +766,29 @@ const catalogue: Group[] = [
       'Each member’s own summit recap as stories, ending on a card to share. ' +
       'Set it to open when the summit ends.',
     entries: [
-      {
-        name: 'The recap',
-        explanation:
-          'On offers it to every member from the menu, whatever the opening ' +
-          'time; off hides it until that time, and its address answers as ' +
-          'not found.',
-        key: 'limits.recap',
-        switch: true,
-      },
-      {
-        name: 'Opens by itself at',
-        explanation:
-          'From this moment the recap is open as if switched on, and every ' +
-          'member is told once that their record is ready. To close it ' +
-          'again, switch it off and clear this.',
-        key: 'limits.recapOpensAt',
-        moment: true,
-      },
-      {
-        name: 'Each story stays for',
-        explanation: 'Before the next one comes; a tap moves on sooner.',
-        key: 'limits.recapStorySeconds',
-        unit: SECONDS,
-      },
-      {
-        name: 'Each network story stays for',
-        explanation:
-          'The two stories that replay the network: the animation takes the ' +
-          'first half, and the second holds where it ends, to be read.',
-        key: 'limits.recapNetworkStorySeconds',
-        unit: SECONDS,
-      },
-      {
-        name: 'Members before comparing',
-        explanation:
-          'Below this many active members the recap compares nobody with ' +
-          'anyone, since a share of a few people can point at someone.',
-        key: 'limits.recapMinMembers',
-        unit: ['member', 'members'],
-      },
-      {
-        name: 'Least share to compare',
-        explanation:
-          'A comparison below this share of members is left out: “ahead of ' +
-          '30%” reads as a put-down.',
-        key: 'limits.recapMinShare',
-        unit: PERCENT,
-      },
+      'limits.recap',
+      'limits.recapOpensAt',
+      'limits.recapStorySeconds',
+      'limits.recapNetworkStorySeconds',
+      'limits.recapMinMembers',
+      'limits.recapMinShare',
     ],
   },
   ...gameGroups,
 ]
 
-function shown(entry: Entry, value: string | number): string {
+function shown(entry: Shown, value: string | number): string {
   if (entry.moment === true && typeof value === 'number') return momentOf(value)
   return entry.switch === true
     ? onOff(value === 1)
     : withUnit(value, entry.unit)
 }
 
-const kindOf = (entry: Entry): SettingEdit['kind'] =>
+const kindOf = (entry: Shown): SettingEdit['kind'] =>
   entry.switch === true ? 'switch' : entry.moment === true ? 'moment' : 'number'
 
 function editOf(
-  entry: Entry,
+  entry: Shown,
   key: SettingKey,
   state: SettingsState,
 ): SettingEdit {
@@ -1242,7 +802,7 @@ function editOf(
 }
 
 function overrideOf(
-  entry: Entry,
+  entry: Shown,
   key: SettingKey,
   state: SettingsState,
 ): SettingChange | undefined {
@@ -1255,29 +815,25 @@ function overrideOf(
   }
 }
 
-function readOf(entry: Entry, config: Config): string | number {
-  return 'key' in entry ? valueOf(config, entry.key) : entry.read(config)
-}
-
 function viewOf(
-  entry: Entry,
+  entry: Resolved,
   config: Config,
   defaults: Config,
   state: SettingsState,
 ): SettingView {
-  const fixed = 'fixed' in entry
-  const value = shown(entry, readOf(entry, config))
+  const { fixed, key } = entry
+  const value = shown(entry, entry.read(config))
   const view: SettingView = {
     ...described(entry),
     value,
-    changed: !fixed && value !== shown(entry, readOf(entry, defaults)),
+    changed: !fixed && value !== shown(entry, entry.read(defaults)),
     fixed,
   }
-  if (!('key' in entry)) return view
-  const override = overrideOf(entry, entry.key, state)
+  if (key === undefined) return view
+  const override = overrideOf(entry, key, state)
   return {
     ...view,
-    edit: editOf(entry, entry.key, state),
+    edit: editOf(entry, key, state),
     ...(override === undefined ? {} : { override }),
   }
 }
@@ -1301,7 +857,7 @@ export function settingsView(
     title: group.title,
     explanation: group.explanation,
     settings: group.entries.map((entry) =>
-      viewOf(entry, live, defaults, state),
+      viewOf(resolve(entry), live, defaults, state),
     ),
   }))
 }
