@@ -1,8 +1,10 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, expectTypeOf, it } from 'vitest'
 import {
   isKnownPath,
   pageTitle,
+  pathTo,
   routeTable,
+  type ScreenName,
   nextOf,
   safeNextPath,
   titleForPath,
@@ -146,5 +148,60 @@ describe('titleForPath (R-NAV-13)', () => {
 
   it('titles a path no screen serves as not found', () => {
     expect(titleForPath('/admin/secrets')).toBe('Rebel Match | Not found')
+  })
+})
+
+describe('pathTo', () => {
+  const untypedPathTo = pathTo as (
+    name: string,
+    params?: Record<string, string>,
+  ) => string
+  const paramsOf = (path: string): Record<string, string> =>
+    Object.fromEntries(
+      [...path.matchAll(/:(\w+)/g)].map(([, name = '']) => [name, `${name}-1`]),
+    )
+
+  it('fills every screen in the table to a path the table knows', () => {
+    for (const route of routeTable) {
+      const path = untypedPathTo(route.name, paramsOf(route.path))
+
+      expect(path, route.name).not.toContain(':')
+      expect(isKnownPath(path), route.name).toBe(true)
+    }
+  })
+
+  it('gives a screen without parameters its path as written', () => {
+    expect(pathTo('admin-applicants')).toBe('/admin/applicants')
+  })
+
+  it('puts each value where its parameter stands', () => {
+    expect(pathTo('connect', { challengeId: 'c-1', memberId: 'm-2' })).toBe(
+      '/challenges/c-1/connect/m-2',
+    )
+  })
+
+  it('encodes each value as one path segment', () => {
+    expect(pathTo('request-contact', { id: 'a/b?c=d e#f' })).toBe(
+      '/matches/requests/a%2Fb%3Fc%3Dd%20e%23f/contact',
+    )
+  })
+
+  it('refuses a name the table lacks', () => {
+    expect(() => untypedPathTo('no-such-screen')).toThrow('no-such-screen')
+  })
+
+  it('refuses to leave a parameter unfilled', () => {
+    expect(() => untypedPathTo('connect', { challengeId: 'c-1' })).toThrow(
+      ':memberId',
+    )
+  })
+
+  it('types the names and the parameters each screen takes', () => {
+    expectTypeOf<'cockpit'>().toExtend<ScreenName>()
+    expectTypeOf<'no-such-screen'>().not.toExtend<ScreenName>()
+    expectTypeOf(pathTo<'connect'>)
+      .parameter(1)
+      .toEqualTypeOf<Record<'challengeId' | 'memberId', string>>()
+    expectTypeOf(pathTo<'cockpit'>).parameters.toEqualTypeOf<['cockpit']>()
   })
 })

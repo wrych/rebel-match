@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { pathTo } from '../../src/routes'
 import { peerLine, type PeerCard } from '../lib/challenges'
 import { photoSrc } from '../lib/photo'
 import type { Arrivals } from '../lib/live-list'
@@ -21,9 +22,11 @@ const emit = defineEmits<{ connect: [] }>()
 // Connecting goes through the double opt-in screen, never a direct email
 // (R-ASK-10, R-CONN-1).
 function connectPath(peer: PeerCard): string {
-  const challenge = encodeURIComponent(props.challengeId)
-  const member = encodeURIComponent(peer.memberId)
-  return `/challenges/${challenge}/connect/${member}?kind=${props.kind}`
+  const path = pathTo('connect', {
+    challengeId: props.challengeId,
+    memberId: peer.memberId,
+  })
+  return `${path}?kind=${props.kind}`
 }
 </script>
 

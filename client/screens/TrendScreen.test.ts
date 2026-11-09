@@ -25,10 +25,12 @@ const detail = {
 
 const newest = [
   {
+    id: 'c-1',
     body: 'Nobody knows who can decide what.',
     trend: { id: '06', short: 'Distributed Decision Making' },
   },
   {
+    id: 'c-2',
     body: 'Every purchase needs three signatures.',
     trend: { id: '06', short: 'Distributed Decision Making' },
   },

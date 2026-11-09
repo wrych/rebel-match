@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { pathTo } from '../../src/routes'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AskSteps from '../components/AskSteps.vue'
@@ -223,7 +224,7 @@ onMounted(async () => {
           <CaseList :cases="matches.cases.slice(0, shown)" />
         </MatchesFold>
         <RouterLink
-          :to="`/trends/${encodeURIComponent(matches.trend.id)}`"
+          :to="pathTo('trend', { trendId: matches.trend.id })"
           class="row-link"
           >More on {{ matches.trend.short }}</RouterLink
         >

@@ -1,5 +1,6 @@
 import type { Mailer } from './mailer.js'
 import { renderNotice } from './notice-mail.js'
+import { pathTo } from '../routes.js'
 
 /** One host's notification of reports about one member. */
 export interface ReportNote {
@@ -37,7 +38,9 @@ export function createReportNotice(deps: {
         action: {
           label: 'Review the reports',
           prompt: 'Hide what was reported, or dismiss the reports, here:',
-          path: `/admin/moderation/${encodeURIComponent(note.reportedId)}`,
+          path: pathTo('admin-moderated-member', {
+            memberId: note.reportedId,
+          }),
         },
       }),
     })

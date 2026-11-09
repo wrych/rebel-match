@@ -3,9 +3,10 @@ import type { MailItem } from './mail-layout.js'
 import type { Mailer } from './mailer.js'
 import { noticeLink } from './notice-link.js'
 import { renderNotice } from './notice-mail.js'
+import { pathTo } from '../routes.js'
 
 /** Where the recap is seen. */
-export const RECAP_PATH = '/recap'
+export const RECAP_PATH = pathTo('recap')
 
 /** What the recap's notice says: that the member's own record is ready, and
  * nothing about anyone (R-RECAP-9). */

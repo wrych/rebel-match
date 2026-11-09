@@ -5,6 +5,7 @@
  */
 
 import type { Permission } from './access.js'
+import { fill, type PathParams } from './api-paths.js'
 import { RECAP_TITLE } from './recap/title.js'
 
 export type Access = 'public' | 'session' | 'onboarded'
@@ -20,7 +21,7 @@ export interface RouteDef {
   permission?: Permission
 }
 
-export const routeTable: readonly RouteDef[] = [
+const screens = [
   { path: '/', name: 'entry', title: 'Sign in', access: 'public' },
   { path: '/login', name: 'login', title: 'Sign in', access: 'public' },
   { path: '/sign-in', name: 'sign-in', title: 'Signing in', access: 'public' },
@@ -284,7 +285,34 @@ export const routeTable: readonly RouteDef[] = [
     access: 'onboarded',
     permission: 'settings:read',
   },
-]
+] as const satisfies readonly RouteDef[]
+
+export const routeTable: readonly RouteDef[] = screens
+
+type Screen = (typeof screens)[number]
+
+/** The name of a screen in the route table. */
+export type ScreenName = Screen['name']
+
+type ParamsOf<N extends ScreenName> = PathParams<
+  Extract<Screen, { name: N }>['path']
+>
+
+type ParamArgs<N extends ScreenName> = [ParamsOf<N>] extends [never]
+  ? []
+  : [params: Record<ParamsOf<N>, string>]
+
+/** The path of the named screen, each parameter URI-encoded (ADR 0017).
+ * Throws for a name the table lacks or a parameter left without a value. */
+export function pathTo<N extends ScreenName>(
+  name: N,
+  ...[params]: ParamArgs<N>
+): string {
+  const route = routeTable.find((candidate) => candidate.name === name)
+  if (route === undefined) throw new Error(`no screen named ${name}`)
+  const values: Record<string, string> = params ?? {}
+  return fill(route.path, values)
+}
 
 const APP_NAME = 'Rebel Match'
 /** What a tab says for a path no screen serves (R-NAV-13). */

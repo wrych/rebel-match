@@ -3,6 +3,7 @@ import { eventRow, rowNames, type RowNames } from '../badges/rows.js'
 import type { BadgeService } from './badges.js'
 import type { ConnectionService } from './connections.js'
 import type { DeckService } from './deck.js'
+import { pathTo } from '../routes.js'
 
 /** What a notification says happened, as the screen words it (R-NOTE-1). */
 export const notificationKinds = [
@@ -137,10 +138,7 @@ export function badgeName(badge: GainedBadge | null): string {
 
 /** Where a gained badge is seen: its row's screen, or the event badges'. */
 export const badgePath = (row: string): string =>
-  row === eventRow ? '/badges/events' : `/badges/${encodeURIComponent(row)}`
-
-const requestPath = (id: string): string =>
-  `/matches/requests/${encodeURIComponent(id)}`
+  row === eventRow ? pathTo('badge-events') : pathTo('badge-row', { row })
 
 function kindOf(row: NotificationRow): NotificationKind {
   if (row.type !== 'new_connection') return row.type
@@ -151,14 +149,14 @@ function kindOf(row: NotificationRow): NotificationKind {
 function pathOf(row: NotificationRow): string {
   if (row.type === 'badge') return badgePath(row.badge?.row ?? '')
   if (row.type === 'trend_challenge')
-    return `/offer?challenge=${encodeURIComponent(row.challengeId ?? '')}`
+    return `${pathTo('offer')}?challenge=${encodeURIComponent(row.challengeId ?? '')}`
   if (row.type === 'report')
-    return `/admin/moderation/${encodeURIComponent(row.aboutMemberId)}`
+    return pathTo('admin-moderated-member', { memberId: row.aboutMemberId })
   if (row.type === 'applicant' || row.connectionId === null)
-    return '/admin/applicants'
+    return pathTo('admin-applicants')
   return row.type === 'connection_request'
-    ? requestPath(row.connectionId)
-    : `${requestPath(row.connectionId)}/contact`
+    ? pathTo('request', { id: row.connectionId })
+    : pathTo('request-contact', { id: row.connectionId })
 }
 
 function viewOf(row: NotificationRow): NotificationView {

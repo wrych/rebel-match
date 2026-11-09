@@ -7,6 +7,7 @@ import type {
   ReportTarget,
 } from '../../src/services/reports'
 import { findJson, outcomeFrom, send } from './request'
+import { pathTo } from '../../src/routes'
 
 export type { ReportItem, ReportOutcome, ReportTarget }
 
@@ -45,6 +46,6 @@ export async function sendReport(
 /** Where a report link leads (design S38). */
 export function reportPath(item: ReportItem): string {
   return 'challengeId' in item
-    ? `/report/challenge/${encodeURIComponent(item.challengeId)}`
-    : `/report/request/${encodeURIComponent(item.requestId)}`
+    ? pathTo('report-challenge', { id: item.challengeId })
+    : pathTo('report-request', { id: item.requestId })
 }

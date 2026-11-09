@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { pathTo } from '../../src/routes'
 import KindChip from '../components/KindChip.vue'
 import { hiddenAs } from '../lib/moderation'
 import { reportPath } from '../lib/reports'
@@ -14,7 +15,7 @@ import {
 const route = useRoute()
 const router = useRouter()
 const id = String(route.params.id)
-const contactPath = `/matches/requests/${encodeURIComponent(id)}/contact`
+const contactPath = pathTo('request-contact', { id })
 
 const request = ref<ConnectionView | null>(null)
 const missing = ref(false)

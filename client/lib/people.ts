@@ -9,16 +9,17 @@ import {
 } from '../../src/search/query'
 import { openProfileCode, tokenOf } from './codes'
 import { findJson } from './request'
+import { pathTo } from '../../src/routes'
 
 export type { MemberCard, SearchAnswer }
 
 /** Where a member's card is shown (S45). */
 export const personPath = (memberId: string): string =>
-  `/people/${encodeURIComponent(memberId)}`
+  pathTo('person', { memberId })
 
 /** Where a direct request to a member is written (S46). */
 export const personConnectPath = (memberId: string): string =>
-  `${personPath(memberId)}/connect`
+  pathTo('person-connect', { memberId })
 
 /** Whether search is offered: hosts have it on and the member may search
  * (R-FIND-1, R-ROLE-4). */

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { pathTo } from '../../src/routes'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import RequestSent from '../components/RequestSent.vue'
@@ -17,7 +18,7 @@ const router = useRouter()
 const challengeId = String(route.params.challengeId)
 const memberId = String(route.params.memberId)
 const kind = kindOf(route.query.kind)
-const matchesPath = `/challenges/${encodeURIComponent(challengeId)}/matches`
+const matchesPath = pathTo('matches', { id: challengeId })
 
 const peer = ref<PeerCard | null>(null)
 const missing = ref(false)

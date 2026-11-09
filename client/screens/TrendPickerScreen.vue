@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { pathTo } from '../../src/routes'
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import AskSteps from '../components/AskSteps.vue'
@@ -6,7 +7,7 @@ import { askJourney } from '../lib/steps'
 import { fetchTrends, type Trend } from '../lib/challenges'
 
 const route = useRoute()
-const id = encodeURIComponent(String(route.params.id))
+const challengePath = pathTo('challenge', { id: String(route.params.id) })
 const current =
   typeof route.query.current === 'string' ? route.query.current : null
 const trends = ref<Trend[]>([])
@@ -32,7 +33,7 @@ onMounted(async () => {
     <ol class="stack trend-list">
       <li v-for="(trend, index) in trends" :key="trend.id">
         <RouterLink
-          :to="`/challenges/${id}?trend=${encodeURIComponent(trend.id)}`"
+          :to="`${challengePath}?trend=${encodeURIComponent(trend.id)}`"
           class="trend-option"
           :class="{ chosen: trend.id === current }"
           :aria-current="trend.id === current ? 'true' : undefined"

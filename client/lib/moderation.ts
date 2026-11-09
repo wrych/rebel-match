@@ -18,6 +18,7 @@ import type {
   ReportedMember,
 } from '../../src/services/moderation'
 import { findJson, getJson, outcomeFrom, send } from './request'
+import { pathTo } from '../../src/routes'
 
 export type {
   ModeratedChallenge,
@@ -160,7 +161,7 @@ export function moderationLabel(count: number): string {
 
 /** Where a reported member's moderation page is (design S40). */
 export const moderationPath = (memberId: string): string =>
-  `/admin/moderation/${encodeURIComponent(memberId)}`
+  pathTo('admin-moderated-member', { memberId })
 
 const reasonLabels: Record<ModerationReason, string> = {
   spam: 'Spam',
