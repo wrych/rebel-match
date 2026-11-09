@@ -94,6 +94,16 @@ async function setBadge(
   })
 }
 
+async function listAll(db: Database): Promise<ListedInvite[]> {
+  const rows = await db
+    .select(listedColumns)
+    .from(invites)
+    .innerJoin(members, byCreator)
+    .leftJoin(eventBadges, byBadge)
+    .orderBy(desc(invites.createdAt), invites.id)
+  return rows.map(listedOf)
+}
+
 async function badgeExists(db: Database, id: string): Promise<boolean> {
   const found = await db
     .select({ id: eventBadges.id })
@@ -114,15 +124,7 @@ async function logoOf(db: Database, badgeId: string): Promise<string | null> {
  * cache, so a revocation holds on the next use (R-INV-3). */
 export function createInviteStore(db: Database): InviteStore {
   return {
-    list: async (): Promise<ListedInvite[]> =>
-      (
-        await db
-          .select(listedColumns)
-          .from(invites)
-          .innerJoin(members, byCreator)
-          .leftJoin(eventBadges, byBadge)
-          .orderBy(desc(invites.createdAt), invites.id)
-      ).map(listedOf),
+    list: () => listAll(db),
     find: async (id) => {
       const [row] = await db
         .select(listedColumns)
