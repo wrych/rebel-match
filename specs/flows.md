@@ -479,7 +479,8 @@ before both sides agree.**
    they are empty. Both stay editable and optional; the message is required.
 3. **Send**: signed out, the human check runs first, by itself (R-FB-2). The
    server emails `FEEDBACK_TO` with the message, the name and email given and
-   the screen, and the form says thank you. No in-app ticketing in the beta.
+   the screen, replying to the email given, and the form says thank you. No
+   in-app ticketing in the beta.
 
 - _Too many from this member or network_ → `429`; the form says to try later.
 - _The check did not finish_ → the form says so and keeps what was written.
