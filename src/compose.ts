@@ -17,7 +17,8 @@ import type { Database } from './db/connect.js'
 import { createAdmissionStore } from './services/admission-store.js'
 import { createAdmission } from './services/admission.js'
 import { createApplicantHandles } from './services/applicant-handle.js'
-import { createHumanCheck } from './services/human-check.js'
+import { createHumanCheck, type HumanCheck } from './services/human-check.js'
+import { createFeedback, type FeedbackService } from './services/feedback.js'
 import { createPacedGate, type PacedGate } from './services/paced-gate.js'
 import { createSettingOverrideStore } from './services/setting-override-store.js'
 import { createSettings } from './services/settings.js'
@@ -345,20 +346,25 @@ function composeMembershipAdmin(
   }
 }
 
+// One check for every form that asks for one, so a solved payload is
+// spent once across them all (ADR 0029).
+function composeHumanCheck(config: Config, settings: LiveSettings): HumanCheck {
+  return createHumanCheck({
+    secret: config.sessionSecret,
+    limits: () => ({
+      cost: settings.abuse().humanCheckCost,
+      lifetimeMinutes: settings.abuse().humanCheckMinutes,
+    }),
+  })
+}
+
 // The pace of sign-in emails per address and of applicants per network
 // (R-NFR-8, ADR 0029), read from the settings on every use (ADR 0031).
 function composeGates(
-  config: Config,
   settings: LiveSettings,
+  humanCheck: HumanCheck,
 ): { applicants: PacedGate; linkEmails: PacedGate } {
   const abuse = (): AbuseLimits => settings.abuse()
-  const humanCheck = createHumanCheck({
-    secret: config.sessionSecret,
-    limits: () => ({
-      cost: abuse().humanCheckCost,
-      lifetimeMinutes: abuse().humanCheckMinutes,
-    }),
-  })
   return {
     applicants: createPacedGate({
       counter: createWindowCounter({
@@ -383,6 +389,50 @@ function composeGates(
   }
 }
 
+// Feedback to the owner, paced per member and per network; a visitor solves
+// the check every time (R-FB-1, R-FB-2).
+function composeFeedback(
+  config: Config,
+  settings: LiveSettings,
+  mailer: Mailer,
+  humanCheck: HumanCheck,
+): FeedbackService {
+  const abuse = (): AbuseLimits => settings.abuse()
+  const gate = (freeUses: () => number): PacedGate =>
+    createPacedGate({
+      counter: createWindowCounter({
+        windowMinutes: () => abuse().feedbackWindowMinutes,
+      }),
+      humanCheck,
+      limits: () => ({
+        freeUses: freeUses(),
+        ceiling: abuse().feedbackCeiling,
+      }),
+    })
+  return createFeedback({
+    mailer,
+    to: () => config.feedbackTo,
+    members: gate(() => abuse().feedbackCeiling),
+    visitors: gate(() => 0),
+  })
+}
+
+// What visitors may do before signing in, sharing one human check: ask to
+// get in, and send feedback.
+function composeDoors(
+  config: Config,
+  settings: LiveSettings,
+  db: Database,
+  auth: AuthProvider,
+  mailer: Mailer,
+): Pick<AppDeps, 'admission' | 'approvals' | 'feedback'> {
+  const humanCheck = composeHumanCheck(config, settings)
+  return {
+    ...composeAdmission(config, settings, db, auth, humanCheck),
+    feedback: composeFeedback(config, settings, mailer, humanCheck),
+  }
+}
+
 // Who gets in: applicants at the door, invites, and the hosts' approvals
 // (F4, F10, F15).
 function composeAdmission(
@@ -390,6 +440,7 @@ function composeAdmission(
   settings: LiveSettings,
   db: Database,
   auth: AuthProvider,
+  humanCheck: HumanCheck,
 ): Pick<AppDeps, 'admission' | 'approvals'> {
   return {
     admission: createAdmission({
@@ -399,7 +450,7 @@ function composeAdmission(
       ),
       auth,
       handles: createApplicantHandles(config.sessionSecret),
-      ...composeGates(config, settings),
+      ...composeGates(settings, humanCheck),
       redeemInvite: createInviteRedemption(db, admittedRole),
     }),
     approvals: createApprovals({
@@ -742,7 +793,7 @@ export function composeApp(
     ...composeProfile(config, db, settings),
     ...composeMembershipAdmin(config, db, auth, track),
     outbox: createOutboxLog(db),
-    ...composeAdmission(config, settings, db, auth),
+    ...composeDoors(config, settings, db, auth, mailer),
     ...composeOnboarding(config, db, track),
     invites: composeInvites(config, db, settings, track),
     activity: createActivity({

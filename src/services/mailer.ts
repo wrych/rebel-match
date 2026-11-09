@@ -11,6 +11,7 @@ export type OutboxKind =
   | 'trend_challenge'
   | 'badge'
   | 'recap'
+  | 'feedback'
 
 export type DeliveryStatus = 'sent' | 'suppressed' | 'failed'
 

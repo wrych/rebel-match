@@ -32,7 +32,7 @@ function signedIn(permissions: string[] | null): ReturnType<typeof vi.fn> {
   return fetchMock
 }
 
-/** Also answers /api/config, naming where feedback goes. */
+/** Also answers /api/config. */
 function withConfig(
   signedInAs: ReturnType<typeof vi.fn>,
   limits: Record<string, number> = {},
@@ -46,7 +46,6 @@ function withConfig(
           json: () =>
             Promise.resolve({
               build: { commit: 'dev', url: null },
-              feedbackTo: 'owner@example.org',
               limits: { matchesPollSeconds: 30, ...limits },
             }),
         })
@@ -208,12 +207,12 @@ describe('HeaderMenu', () => {
     expect(paths(await opened())).toContain('/profile')
   })
 
-  it('offers only the impressum to nobody signed in (R-PROF-4)', async () => {
+  it('offers only the impressum and feedback to nobody signed in (R-PROF-4, R-FB-1)', async () => {
     signedIn(null)
     const menu = await opened()
 
     expect(menu.text()).not.toContain('Sign out')
-    expect(paths(menu)).toEqual(['/impressum'])
+    expect(paths(menu)).toEqual(['/impressum', '/feedback?from=offer'])
   })
 
   it('leads a member to the impressum (R-PROF-4)', async () => {
@@ -318,7 +317,7 @@ describe('HeaderMenu', () => {
       )
       const menu = await opened()
 
-      const line = menu.find('.version')
+      const line = menu.find('.build')
       expect(line.text()).toBe(`Version ${build.commit}`)
       expect(
         line.find('a').exists() ? line.find('a').attributes('href') : null,
@@ -330,7 +329,7 @@ describe('HeaderMenu', () => {
     signedIn([])
     const menu = await opened()
 
-    expect(menu.find('.version').exists()).toBe(false)
+    expect(menu.find('.build').exists()).toBe(false)
   })
 
   it('badges the menu and names the count while notifications are new (R-NOTE-6)', async () => {
@@ -455,22 +454,25 @@ describe('HeaderMenu', () => {
     expect(paths(menu)).not.toContain('/badges')
   })
 
-  it('offers an onboarded member a Feedback mail naming the screen (R-FB-1)', async () => {
-    withConfig(signedIn([]))
-    const menu = await opened()
-    const link = menu.find('a.item-feedback')
-    const url = new URL(link.attributes('href') ?? '')
+  it.each([[[]], [null]])(
+    'offers Feedback beside the version, to %o too, naming the screen (R-FB-1, R-PROF-3)',
+    async (permissions) => {
+      withConfig(signedIn(permissions))
+      const menu = await opened()
+      const link = menu
+        .find('.version')
+        .findAllComponents(RouterLinkStub)
+        .find((each: { text(): string }) => each.text() === 'Feedback')
 
-    expect(link.text()).toBe('Feedback')
-    expect(url.pathname).toBe('owner@example.org')
-    expect(url.searchParams.get('body')).toContain('Screen: offer')
-  })
+      expect(link?.props('to')).toBe('/feedback?from=offer')
+    },
+  )
 
   it('reports the feedback opened, by screen name only, and closes (R-ANA-1, ADR 0026)', async () => {
     const fetchMock = withConfig(signedIn([]))
     const menu = await opened()
 
-    await menu.find('a.item-feedback').trigger('click')
+    await menu.find('.feedback-link').trigger('click')
 
     const [, init] = fetchMock.mock.calls.find(
       ([url]) => url === '/api/events',
@@ -482,9 +484,14 @@ describe('HeaderMenu', () => {
     expect(menu.find('#main-menu').exists()).toBe(false)
   })
 
-  it('offers no Feedback to nobody signed in', async () => {
-    withConfig(signedIn(null))
+  it('reports nothing for a visitor who opens Feedback', async () => {
+    const fetchMock = withConfig(signedIn(null))
+    const menu = await opened()
 
-    expect((await opened()).find('a.item-feedback').exists()).toBe(false)
+    await menu.find('.feedback-link').trigger('click')
+
+    expect(fetchMock.mock.calls.some(([url]) => url === '/api/events')).toBe(
+      false,
+    )
   })
 })

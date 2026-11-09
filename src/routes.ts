@@ -61,6 +61,7 @@ export const routeTable: readonly RouteDef[] = [
     title: 'Impressum',
     access: 'public',
   },
+  { path: '/feedback', name: 'feedback', title: 'Feedback', access: 'public' },
   {
     path: '/9torevolution',
     name: 'game',

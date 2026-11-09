@@ -21,7 +21,6 @@ function serve(
         ok: true,
         status: 200,
         json: async () => ({
-          feedbackTo: 'owner@example.org',
           limits: { matchesPollSeconds: 30 },
         }),
       })
@@ -122,7 +121,6 @@ describe('TabBar', () => {
           json: async () =>
             url === '/api/config'
               ? {
-                  feedbackTo: 'owner@example.org',
                   limits: { matchesPollSeconds: 30 },
                 }
               : { challenges: [], following: [], pendingIncoming: pending },

@@ -74,6 +74,17 @@ const abuseSpecs = {
     default: 20,
     changeable: { min: 7, max: 600 },
   },
+  // Feedback emails a member or a network may send in a window (R-FB-2).
+  feedbackCeiling: {
+    env: 'FEEDBACK_CEILING',
+    default: 10,
+    changeable: { min: 1, max: 1000 },
+  },
+  feedbackWindowMinutes: {
+    env: 'FEEDBACK_WINDOW_MINUTES',
+    default: 60,
+    changeable: { min: 1, max: MINUTES_PER_DAY },
+  },
 } as const satisfies Specs
 
 type AbuseSpecs = typeof abuseSpecs

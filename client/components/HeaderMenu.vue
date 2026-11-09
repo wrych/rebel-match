@@ -5,7 +5,7 @@ import { adminLinksFor } from '../lib/admin-screens'
 import { fetchConfig, type ClientConfig } from '../lib/api'
 import { BADGES_SEEN, badgesLabel, fetchNewBadges } from '../lib/badges'
 import { reportEvent } from '../lib/events'
-import { feedbackMailto } from '../lib/feedback'
+import { feedbackPath } from '../lib/feedback'
 import { networkOpen } from '../lib/network'
 import { searchOpen } from '../lib/people'
 import { recapOpen } from '../lib/recap'
@@ -25,7 +25,6 @@ const route = useRoute()
 const open = ref(false)
 const me = ref<Me | null>(null)
 const version = ref<ClientConfig['build'] | null>(null)
-const feedbackTo = ref<string | null>(null)
 const networkReplay = ref(0)
 const memberSearch = ref(0)
 const recapLimits = ref({ recap: 0, recapOpensAt: 0 })
@@ -86,15 +85,10 @@ const recap = computed(
     me.value?.onboarded === true && recapOpen(recapLimits.value, Date.now()),
 )
 const screen = computed(() => String(route.name ?? 'unknown'))
-const feedback = computed(() =>
-  feedbackTo.value === null || me.value?.onboarded !== true
-    ? null
-    : feedbackMailto(feedbackTo.value, screen.value),
-)
+const feedback = computed(() => feedbackPath(screen.value))
 
 function remember(config: ClientConfig): void {
   version.value = config.build
-  feedbackTo.value = config.feedbackTo
   networkReplay.value = config.limits.networkReplay
   memberSearch.value = config.limits.memberSearch
   recapLimits.value = {
@@ -103,8 +97,10 @@ function remember(config: ClientConfig): void {
   }
 }
 
+// Counted only for a member: nobody else is opted in (ADR 0026).
 function feedbackOpened(): void {
-  reportEvent({ event: 'feedback_opened', props: { screen: screen.value } })
+  if (me.value?.onboarded === true)
+    reportEvent({ event: 'feedback_opened', props: { screen: screen.value } })
   close(false)
 }
 
@@ -229,14 +225,6 @@ onBeforeUnmount(() => {
         >Profile &amp; privacy</RouterLink
       >
 
-      <a
-        v-if="feedback"
-        :href="feedback"
-        class="item item-feedback"
-        @click="feedbackOpened"
-        >Feedback</a
-      >
-
       <RouterLink to="/impressum" class="item" @click="close(false)"
         >Impressum</RouterLink
       >
@@ -262,16 +250,24 @@ onBeforeUnmount(() => {
         <p v-if="problem" class="alert" role="alert">{{ problem }}</p>
       </div>
 
-      <p v-if="version" class="version">
-        Version
-        <a
-          v-if="version.url"
-          :href="version.url"
-          target="_blank"
-          rel="noopener noreferrer"
-          >{{ version.commit }}</a
+      <p class="version">
+        <RouterLink :to="feedback" class="feedback-link" @click="feedbackOpened"
+          >Feedback</RouterLink
         >
-        <template v-else>{{ version.commit }}</template>
+        <template v-if="version">
+          <span aria-hidden="true"> · </span>
+          <span class="build"
+            >Version
+            <a
+              v-if="version.url"
+              :href="version.url"
+              target="_blank"
+              rel="noopener noreferrer"
+              >{{ version.commit }}</a
+            >
+            <template v-else>{{ version.commit }}</template></span
+          >
+        </template>
       </p>
     </div>
   </div>
@@ -368,6 +364,13 @@ onBeforeUnmount(() => {
 
 .version a {
   color: inherit;
+}
+
+.build a {
   font-family: var(--font-mono);
+}
+
+.feedback-link {
+  font-weight: 600;
 }
 </style>
