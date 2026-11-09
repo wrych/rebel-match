@@ -22,6 +22,7 @@ import {
 import { fetchConfig } from '../lib/api'
 import { arrivals, useLiveList } from '../lib/live-list'
 import { searchOpen } from '../lib/people'
+import SearchIcon from '../components/SearchIcon.vue'
 import { loadMe } from '../lib/session'
 
 const cockpit = ref<Cockpit | null>(null)
@@ -31,6 +32,9 @@ const people = computed(() => byMember(connected.value))
 const problem = ref<string | null>(null)
 const answering = ref<string | null>(null)
 const notice = ref<string | null>(null)
+const waitingShown = computed(
+  () => incoming.value.length > 0 || notice.value !== null,
+)
 const failed = ref<string | null>(null)
 const withdrawnNotice = ref<string | null>(null)
 const canSearch = ref(false)
@@ -131,20 +135,14 @@ onMounted(() => {
 <template>
   <section class="screen">
     <PullToRefresh :live="live" />
-    <div class="stack">
-      <h1 class="display display-lg">Your matches</h1>
-      <RouterLink v-if="canSearch" to="/people" class="row-link"
-        >Find a member</RouterLink
-      >
-    </div>
+    <h1 class="display display-lg">Your matches</h1>
 
     <template v-if="cockpit">
-      <section class="stack" aria-labelledby="waiting">
+      <section v-if="waitingShown" class="stack" aria-labelledby="waiting">
         <h2 id="waiting" class="display display-md kicker-accent">
           Waiting for you
         </h2>
-        <p v-if="incoming.length === 0" class="empty">No requests waiting.</p>
-        <p v-else class="small">
+        <p v-if="incoming.length > 0" class="small">
           Accepting shares your email addresses with each other. Open a request
           to read it in full first.
         </p>
@@ -191,8 +189,21 @@ onMounted(() => {
         </div>
       </section>
 
-      <section class="stack rule" aria-labelledby="connections">
-        <h2 id="connections" class="display display-md">Your connections</h2>
+      <section
+        class="stack"
+        :class="{ rule: waitingShown }"
+        aria-labelledby="connections"
+      >
+        <div class="title-row">
+          <h2 id="connections" class="display display-md">Your connections</h2>
+          <RouterLink
+            v-if="canSearch"
+            to="/people"
+            class="btn btn-small btn-ghost"
+            aria-label="Search members"
+            ><SearchIcon />Search</RouterLink
+          >
+        </div>
         <p v-if="connected.length === 0" class="empty">
           No connections yet. They show here once a request is accepted.
         </p>
@@ -217,11 +228,15 @@ onMounted(() => {
       </section>
 
       <section class="stack rule" aria-labelledby="mine">
-        <h2 id="mine" class="display display-md">Your challenges</h2>
-        <template v-if="cockpit.challenges.length === 0">
-          <p class="empty">You have not asked for help yet.</p>
-          <RouterLink to="/ask" class="row-link">Ask for help</RouterLink>
-        </template>
+        <div class="title-row">
+          <h2 id="mine" class="display display-md">Your challenges</h2>
+          <RouterLink to="/ask" class="btn btn-small btn-ghost"
+            >Ask for help</RouterLink
+          >
+        </div>
+        <p v-if="cockpit.challenges.length === 0" class="empty">
+          You have not asked for help yet.
+        </p>
         <p v-if="withdrawnNotice" class="notice notice-solid" role="status">
           {{ withdrawnNotice }}
         </p>

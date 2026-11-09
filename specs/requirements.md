@@ -732,10 +732,14 @@ connect.")_
 
 - **R-MINE-1** — The system SHALL provide a "Matches" screen that shows the
   member's own posted challenge(s) with per-challenge counts (same boat / been
-  there / case studies) and a way to reopen the matches view.
+  there / case studies) and a way to reopen the matches view, with a small
+  **Ask for help** button beside the **Your challenges** heading, as Search
+  sits beside Your connections (R-FIND-1). _(Andy, 2026-11-09.)_
 - **R-MINE-2** — The "Matches" screen SHALL list **incoming connection requests
   waiting for the member** with Accept / Decline actions (this is where R-CONN-3
-  / R-CONN-4 are triggered).
+  / R-CONN-4 are triggered). WHILE none is waiting, the list and its heading
+  SHALL NOT show, unless it holds the word on a request just answered.
+  _(Andy, 2026-11-09, to save room.)_
 - **R-MINE-3** — The system SHALL show which trends the member is following.
 - **R-MINE-4** — The navigation SHALL badge the "Matches" tab with what
   arrived since the member last opened the Matches screen: requests waiting for
@@ -2087,7 +2091,9 @@ connects at once (ADR 0063).
 
 - **R-FIND-1 (Search)** — WHILE hosts have `limits.memberSearch` on, THE
   SYSTEM SHALL offer a member holding `member:search` a search at `/people`
-  (S44), from the tab bar's Matches screen and the menu. Every active,
+  (S44), from the tab bar's Matches screen, as a small **Search** button
+  with a magnifying glass beside the **Your connections** heading, and the
+  menu. _(Placement: Andy, 2026-11-09, to save room.)_ Every active,
   onboarded member SHALL hold it. The query SHALL stay in the URL
   (`/people?q=…`), so a reload or a shared link keeps it (R-NAV-1). While the
   switch is off, `/people`, its cards and its endpoint SHALL answer as not
