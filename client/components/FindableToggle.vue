@@ -63,7 +63,7 @@ async function change(): Promise<void> {
     </p>
     <p v-if="props.codesOn" class="small">
       Turned off, others can still reach you through a connect code you show or
-      share. Your profile code is turned off separately, below.
+      share. Your profile code is turned off separately, above.
     </p>
     <p v-if="problem" class="alert" role="alert">{{ problem }}</p>
   </section>

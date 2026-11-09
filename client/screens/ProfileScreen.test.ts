@@ -71,6 +71,16 @@ async function change(
   await flushPromises()
 }
 
+/** The field around the control `selector` names, with its label and tick. */
+function fieldOf(
+  screen: ReturnType<typeof mount>,
+  selector: string,
+): ReturnType<ReturnType<typeof mount>['find']> {
+  return screen
+    .findAll('.field')
+    .find((field) => field.find(selector).exists())!
+}
+
 afterEach(() => {
   vi.unstubAllGlobals()
   vi.useRealTimers()
@@ -197,7 +207,7 @@ describe('ProfileScreen', () => {
         companySize: '',
       },
     ])
-    const org = screen.findAll('.field')[2]!
+    const org = fieldOf(screen, '#org')
     expect(org.find('[role="status"]').text()).toContain('Saved')
   })
 
@@ -227,7 +237,7 @@ describe('ProfileScreen', () => {
         companySize: '1001+',
       },
     ])
-    const size = screen.findAll('.field')[4]!
+    const size = fieldOf(screen, '#company-size')
     expect(size.find('[role="status"]').text()).toContain('Saved')
   })
 
@@ -257,7 +267,7 @@ describe('ProfileScreen', () => {
     vi.advanceTimersByTime(3000)
     await flushPromises()
 
-    expect(screen.findAll('.field')[2]!.find('[role="status"]').text()).toBe('')
+    expect(fieldOf(screen, '#org').find('[role="status"]').text()).toBe('')
   })
 
   it('saves quick edits in turn, so the second keeps the first (R-PROF-1)', async () => {
@@ -350,5 +360,107 @@ describe('ProfileScreen', () => {
       'Help improve Rebel Match (optional data collection)',
     )
     expect(screen.find('#delete-heading').text()).toBe('Delete your account')
+  })
+})
+
+describe('ProfileScreen folds and search (R-PROF-8)', () => {
+  const titles = (screen: ReturnType<typeof mount>): string[] =>
+    screen
+      .findAll('details.fold')
+      .filter((fold) => fold.isVisible())
+      .map((fold) => fold.find('summary h2').text())
+  const folds = (screen: ReturnType<typeof mount>): boolean[] =>
+    screen
+      .findAll('details.fold')
+      .map((fold) => (fold.element as HTMLDetailsElement).open)
+
+  async function searchFor(
+    screen: ReturnType<typeof mount>,
+    text: string,
+  ): Promise<void> {
+    await screen.find('#profile-search').setValue(text)
+    await flushPromises()
+  }
+
+  async function mountAttached(): Promise<ReturnType<typeof mount>> {
+    const screen = mount(ProfileScreen, {
+      attachTo: document.body,
+      global: { stubs: { RouterLink: RouterLinkStub } },
+    })
+    await flushPromises()
+    return screen
+  }
+
+  it('starts every card folded, in order', async () => {
+    server()
+    const screen = await mountAttached()
+
+    expect(titles(screen)).toEqual([
+      'About you',
+      'Connecting',
+      'Notifications',
+      'Privacy',
+      'Look',
+      'Your data',
+    ])
+    expect(folds(screen).every((open) => !open)).toBe(true)
+    screen.unmount()
+  })
+
+  it('shows only the cards a search finds, opened', async () => {
+    server()
+    const screen = await mountAttached()
+
+    await searchFor(screen, 'ANALYTICS')
+
+    expect(titles(screen)).toEqual(['Privacy'])
+    expect(folds(screen)[3]).toBe(true)
+    screen.unmount()
+  })
+
+  it('offers the colour mode switch in its Look card (R-LOOK-2)', async () => {
+    server()
+    const screen = await mountAttached()
+
+    await searchFor(screen, 'happy')
+
+    expect(titles(screen)).toEqual(['Look'])
+    expect(screen.find('input[role="switch"]').isVisible()).toBe(true)
+    screen.unmount()
+  })
+
+  it('says so when nothing matches', async () => {
+    server()
+    const screen = await mountAttached()
+
+    await searchFor(screen, 'no such setting')
+
+    expect(titles(screen)).toEqual([])
+    expect(screen.text()).toContain('No setting matches.')
+    screen.unmount()
+  })
+
+  it('saves a field inside a folded card', async () => {
+    const fetchMock = server()
+    const screen = await mountAttached()
+
+    await change(screen, '#org', 'Acme')
+
+    expect(saves(fetchMock)).toEqual([expect.objectContaining({ org: 'Acme' })])
+    screen.unmount()
+  })
+
+  it('folds back as the member left it once the search is cleared', async () => {
+    server()
+    const screen = await mountAttached()
+    const about = screen.findAll('details.fold')[0]!
+    ;(about.element as HTMLDetailsElement).open = true
+    await about.trigger('toggle')
+
+    await searchFor(screen, 'delete')
+    await searchFor(screen, '')
+
+    expect(folds(screen)).toEqual([true, false, false, false, false, false])
+    screen.unmount()
   })
 })

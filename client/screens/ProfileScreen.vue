@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import {
   companySizeKeys,
   companySizes,
@@ -8,6 +8,7 @@ import {
   sectors,
 } from '../../src/profile-options'
 import AnalyticsToggle from '../components/AnalyticsToggle.vue'
+import ColourModeSetting from '../components/ColourModeSetting.vue'
 import FindableToggle from '../components/FindableToggle.vue'
 import SocialLinksSetting from '../components/SocialLinksSetting.vue'
 import ProfileCodeSetting from '../components/ProfileCodeSetting.vue'
@@ -17,8 +18,12 @@ import NotificationSettings from '../components/NotificationSettings.vue'
 import DeleteAccount from '../components/DeleteAccount.vue'
 import DeleteHistory from '../components/DeleteHistory.vue'
 import SavedTick from '../components/SavedTick.vue'
+import FoldCard from '../components/FoldCard.vue'
+import SearchField from '../components/SearchField.vue'
 import { fetchConfig, type ClientConfig } from '../lib/api'
+import { useFolds } from '../lib/folds'
 import { fetchProfile, saveProfile, type OwnProfile } from '../lib/profile'
+import { profileFolds, searchProfile } from '../lib/profile-folds'
 import { forgetMe } from '../lib/session'
 import { when } from '../lib/when'
 
@@ -56,6 +61,25 @@ const timers: Partial<Record<Field, ReturnType<typeof setTimeout>>> = {}
 // Saves run one at a time, each built from what the server last accepted,
 // so a quick second edit cannot carry a stale value over the first.
 let queue: Promise<void> = Promise.resolve()
+
+const { search, searching, isOpen, remember } = useFolds()
+const folds = computed(() =>
+  profileFolds({
+    socialLinks: limits.value?.socialLinks === 1,
+    codes: limits.value?.connectCodes === 1,
+  }),
+)
+const shown = computed(() => new Set(searchProfile(folds.value, search.value)))
+type FoldProps = {
+  title: string
+  open: boolean
+  onToggled: (open: boolean) => void
+}
+const fold = (title: string): FoldProps => ({
+  title,
+  open: isOpen(title),
+  onToggled: (open: boolean) => remember(title, open),
+})
 
 onMounted(async () => {
   try {
@@ -115,159 +139,181 @@ function save(field: Field): Promise<void> {
     <p v-if="problem" class="alert" role="alert">{{ problem }}</p>
 
     <template v-if="profile">
-      <div class="stack">
-        <ProfilePhoto
-          v-if="limits?.profilePhotos === 1"
-          :name="saved.name"
-          :photo-at="profile.photoAt"
-          :limits="limits"
-        />
-        <div class="field">
-          <div class="label-row">
-            <label for="name" class="label">Your name</label>
-            <SavedTick :shown="ticks.name" />
-          </div>
-          <input
-            id="name"
-            v-model="form.name"
-            class="input"
-            autocomplete="name"
-            :maxlength="limits?.nameMaxChars"
-            :aria-invalid="errors.name !== null"
-            aria-describedby="name-error"
-            @change="save('name')"
-          />
-          <p v-if="errors.name" id="name-error" class="alert" role="alert">
-            {{ errors.name }}
-          </p>
-        </div>
-        <div class="field">
-          <div class="label-row">
-            <label for="job-title" class="label">Job title (optional)</label>
-            <SavedTick :shown="ticks.jobTitle" />
-          </div>
-          <input
-            id="job-title"
-            v-model="form.jobTitle"
-            class="input"
-            autocomplete="organization-title"
-            :maxlength="limits?.jobTitleMaxChars"
-            @change="save('jobTitle')"
-          />
-          <p v-if="errors.jobTitle" class="alert" role="alert">
-            {{ errors.jobTitle }}
-          </p>
-        </div>
-        <div class="field">
-          <div class="label-row">
-            <label for="org" class="label">Organization (optional)</label>
-            <SavedTick :shown="ticks.org" />
-          </div>
-          <input
-            id="org"
-            v-model="form.org"
-            class="input"
-            autocomplete="organization"
-            :maxlength="limits?.orgMaxChars"
-            @change="save('org')"
-          />
-          <p v-if="errors.org" class="alert" role="alert">{{ errors.org }}</p>
-        </div>
-        <div class="field">
-          <div class="label-row">
-            <label for="sector" class="label">Sector (optional)</label>
-            <SavedTick :shown="ticks.sector" />
-          </div>
-          <select
-            id="sector"
-            v-model="form.sector"
-            class="input"
-            @change="save('sector')"
-          >
-            <option value="">Not given</option>
-            <option
-              v-for="choice in sectors"
-              :key="choice.key"
-              :value="choice.key"
-            >
-              {{ choice.label }}
-            </option>
-          </select>
-          <p v-if="errors.sector" class="alert" role="alert">
-            {{ errors.sector }}
-          </p>
-        </div>
-        <div class="field">
-          <div class="label-row">
-            <label for="company-size" class="label"
-              >Company size (optional)</label
-            >
-            <SavedTick :shown="ticks.companySize" />
-          </div>
-          <select
-            id="company-size"
-            v-model="form.companySize"
-            class="input"
-            @change="save('companySize')"
-          >
-            <option value="">Not given</option>
-            <option
-              v-for="size in companySizes"
-              :key="size.key"
-              :value="size.key"
-            >
-              {{ size.label }}
-            </option>
-          </select>
-          <p v-if="errors.companySize" class="alert" role="alert">
-            {{ errors.companySize }}
-          </p>
-        </div>
-        <p class="small">
-          Signed in as <strong>{{ profile.email }}</strong
-          >. Your name and profile information may be seen by other members.
-        </p>
-      </div>
-
-      <SocialLinksSetting
-        v-if="limits?.socialLinks === 1"
-        :links="profile.socialLinks"
+      <SearchField
+        id="profile-search"
+        v-model="search"
+        label="Search your settings"
       />
+      <p v-if="searching && shown.size === 0" class="empty">
+        No setting matches.
+      </p>
 
-      <NotificationSettings />
+      <FoldCard v-show="shown.has('About you')" v-bind="fold('About you')">
+        <div class="stack">
+          <ProfilePhoto
+            v-if="limits?.profilePhotos === 1"
+            :name="saved.name"
+            :photo-at="profile.photoAt"
+            :limits="limits"
+          />
+          <div class="field">
+            <div class="label-row">
+              <label for="name" class="label">Your name</label>
+              <SavedTick :shown="ticks.name" />
+            </div>
+            <input
+              id="name"
+              v-model="form.name"
+              class="input"
+              autocomplete="name"
+              :maxlength="limits?.nameMaxChars"
+              :aria-invalid="errors.name !== null"
+              aria-describedby="name-error"
+              @change="save('name')"
+            />
+            <p v-if="errors.name" id="name-error" class="alert" role="alert">
+              {{ errors.name }}
+            </p>
+          </div>
+          <div class="field">
+            <div class="label-row">
+              <label for="job-title" class="label">Job title (optional)</label>
+              <SavedTick :shown="ticks.jobTitle" />
+            </div>
+            <input
+              id="job-title"
+              v-model="form.jobTitle"
+              class="input"
+              autocomplete="organization-title"
+              :maxlength="limits?.jobTitleMaxChars"
+              @change="save('jobTitle')"
+            />
+            <p v-if="errors.jobTitle" class="alert" role="alert">
+              {{ errors.jobTitle }}
+            </p>
+          </div>
+          <div class="field">
+            <div class="label-row">
+              <label for="org" class="label">Organization (optional)</label>
+              <SavedTick :shown="ticks.org" />
+            </div>
+            <input
+              id="org"
+              v-model="form.org"
+              class="input"
+              autocomplete="organization"
+              :maxlength="limits?.orgMaxChars"
+              @change="save('org')"
+            />
+            <p v-if="errors.org" class="alert" role="alert">{{ errors.org }}</p>
+          </div>
+          <div class="field">
+            <div class="label-row">
+              <label for="sector" class="label">Sector (optional)</label>
+              <SavedTick :shown="ticks.sector" />
+            </div>
+            <select
+              id="sector"
+              v-model="form.sector"
+              class="input"
+              @change="save('sector')"
+            >
+              <option value="">Not given</option>
+              <option
+                v-for="choice in sectors"
+                :key="choice.key"
+                :value="choice.key"
+              >
+                {{ choice.label }}
+              </option>
+            </select>
+            <p v-if="errors.sector" class="alert" role="alert">
+              {{ errors.sector }}
+            </p>
+          </div>
+          <div class="field">
+            <div class="label-row">
+              <label for="company-size" class="label"
+                >Company size (optional)</label
+              >
+              <SavedTick :shown="ticks.companySize" />
+            </div>
+            <select
+              id="company-size"
+              v-model="form.companySize"
+              class="input"
+              @change="save('companySize')"
+            >
+              <option value="">Not given</option>
+              <option
+                v-for="size in companySizes"
+                :key="size.key"
+                :value="size.key"
+              >
+                {{ size.label }}
+              </option>
+            </select>
+            <p v-if="errors.companySize" class="alert" role="alert">
+              {{ errors.companySize }}
+            </p>
+          </div>
+          <p class="small">
+            Signed in as <strong>{{ profile.email }}</strong
+            >. Your name and profile information may be seen by other members.
+          </p>
+        </div>
+      </FoldCard>
 
-      <FindableToggle
-        :findable="profile.findable"
-        :codes-on="limits?.connectCodes === 1"
-      />
-
-      <ProfileCodeSetting v-if="limits?.connectCodes === 1" />
-
-      <AnalyticsToggle :opted-in="profile.analyticsOptIn" />
-
-      <section class="stack-tight rule" aria-labelledby="consent-heading">
-        <h2 id="consent-heading" class="kicker">The terms you accepted</h2>
-        <p v-if="profile.consentAt" class="small">
-          Version {{ profile.consentVersion }}, accepted
-          <time :datetime="profile.consentAt">{{
-            when(profile.consentAt)
-          }}</time>
-        </p>
-        <ConsentWords
-          v-if="profile.consentVersion"
-          :version="profile.consentVersion"
+      <FoldCard v-show="shown.has('Connecting')" v-bind="fold('Connecting')">
+        <SocialLinksSetting
+          v-if="limits?.socialLinks === 1"
+          :links="profile.socialLinks"
         />
-        <RouterLink to="/privacy" class="row-link">
-          <span class="row-link-label">Privacy notice</span>
-        </RouterLink>
-        <RouterLink to="/terms" class="row-link">
-          <span class="row-link-label">Terms of use</span>
-        </RouterLink>
-      </section>
+        <ProfileCodeSetting v-if="limits?.connectCodes === 1" />
+        <FindableToggle
+          :findable="profile.findable"
+          :codes-on="limits?.connectCodes === 1"
+        />
+      </FoldCard>
 
-      <DeleteHistory />
+      <FoldCard
+        v-show="shown.has('Notifications')"
+        v-bind="fold('Notifications')"
+      >
+        <NotificationSettings />
+      </FoldCard>
 
-      <DeleteAccount :grace-days="limits?.erasureGraceDays ?? null" />
+      <FoldCard v-show="shown.has('Privacy')" v-bind="fold('Privacy')">
+        <AnalyticsToggle :opted-in="profile.analyticsOptIn" />
+        <section class="stack-tight rule" aria-labelledby="consent-heading">
+          <h2 id="consent-heading" class="kicker">The terms you accepted</h2>
+          <p v-if="profile.consentAt" class="small">
+            Version {{ profile.consentVersion }}, accepted
+            <time :datetime="profile.consentAt">{{
+              when(profile.consentAt)
+            }}</time>
+          </p>
+          <ConsentWords
+            v-if="profile.consentVersion"
+            :version="profile.consentVersion"
+          />
+          <RouterLink to="/privacy" class="row-link">
+            <span class="row-link-label">Privacy notice</span>
+          </RouterLink>
+          <RouterLink to="/terms" class="row-link">
+            <span class="row-link-label">Terms of use</span>
+          </RouterLink>
+        </section>
+      </FoldCard>
+
+      <FoldCard v-show="shown.has('Look')" v-bind="fold('Look')">
+        <ColourModeSetting :tick-ms="limits?.savedTickMs ?? 0" />
+      </FoldCard>
+
+      <FoldCard v-show="shown.has('Your data')" v-bind="fold('Your data')">
+        <DeleteHistory />
+        <DeleteAccount :grace-days="limits?.erasureGraceDays ?? null" />
+      </FoldCard>
     </template>
   </section>
 </template>

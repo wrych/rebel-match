@@ -1,5 +1,6 @@
 import type { SettingView, SettingsGroup } from '../../src/settings-view'
 
+import { holds, searchTerm } from './folds'
 import { failure, getJson, jsonOf, send } from './request'
 
 export type { SettingView, SettingsGroup }
@@ -56,19 +57,6 @@ export async function resetSetting(
 /** How many of a group's values differ from their default (R-CFG-5). */
 export function changedCount(group: SettingsGroup): number {
   return group.settings.filter((setting) => setting.changed).length
-}
-
-const holds = (text: string, needle: string): boolean =>
-  text.toLowerCase().includes(needle)
-
-const SEARCH_MIN_CHARS = 3
-
-/** What a search looks for, in lower case; null until it holds three
- * characters, so one typed letter does not match nearly everything
- * (R-CFG-5). */
-export function searchTerm(search: string): string | null {
-  const needle = search.trim().toLowerCase()
-  return needle.length < SEARCH_MIN_CHARS ? null : needle
 }
 
 /** The groups as a search shows them: every value of a group whose title

@@ -27,19 +27,6 @@ describe('App shell', () => {
     expect(link.find('svg.rebel-mark').exists()).toBe(true)
   })
 
-  it('switches happy mode on and off from the menu (R-LOOK-2, R-PROF-3)', async () => {
-    const app = mountApp()
-    const menu = app.findComponent({ name: 'HeaderMenu' })
-
-    menu.vm.$emit('toggleMood')
-    await app.vm.$nextTick()
-    expect(document.documentElement.dataset['mood']).toBe('happy')
-    expect(menu.props('mood')).toBe('happy')
-    menu.vm.$emit('toggleMood')
-    await app.vm.$nextTick()
-    expect(document.documentElement.dataset['mood']).toBe('calm')
-  })
-
   it('opens in the mode this browser chose last', () => {
     localStorage.setItem('rm_mood', 'happy')
 
