@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
 import NetworkGraph from '../components/NetworkGraph.vue'
 import NetworkLegend from '../components/NetworkLegend.vue'
 import {
@@ -10,9 +9,9 @@ import {
 } from '../lib/network'
 import { ownPhoto } from '../lib/photo'
 import { loadMe } from '../lib/session'
+import { useNotFound } from '../lib/not-found'
 
-const route = useRoute()
-const router = useRouter()
+const notFound = useNotFound()
 const timeline = ref<NetworkTimeline | null>(null)
 const problem = ref<string | null>(null)
 const name = ref<string | null>(null)
@@ -27,11 +26,7 @@ onMounted(async () => {
   photo.value = own
   try {
     timeline.value = await fetchNetwork()
-    if (timeline.value === null)
-      await router.replace({
-        name: 'not-found',
-        params: { pathMatch: route.path.slice(1).split('/') },
-      })
+    if (timeline.value === null) await notFound()
   } catch {
     problem.value = 'The network could not be loaded.'
   }

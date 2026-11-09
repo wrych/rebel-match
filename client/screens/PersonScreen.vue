@@ -1,14 +1,15 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import PersonCard from '../components/PersonCard.vue'
 import { fetchConfig } from '../lib/api'
 import { profileConnectPath } from '../lib/codes'
 import { contactPath } from '../lib/connections'
 import { personConnectPath, reachedFrom, type Reached } from '../lib/people'
+import { useNotFound } from '../lib/not-found'
 
 const route = useRoute()
-const router = useRouter()
+const notFound = useNotFound()
 const reached = ref<Reached | null>(null)
 const problem = ref<string | null>(null)
 const photosOn = ref(false)
@@ -29,11 +30,7 @@ onMounted(async () => {
     .catch(() => undefined)
   try {
     reached.value = await reachedFrom(route)
-    if (reached.value === null)
-      await router.replace({
-        name: 'not-found',
-        params: { pathMatch: route.path.slice(1).split('/') },
-      })
+    if (reached.value === null) await notFound()
   } catch {
     problem.value = 'This could not be loaded. Reload to try again.'
   }

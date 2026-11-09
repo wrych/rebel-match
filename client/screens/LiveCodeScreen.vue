@@ -5,19 +5,14 @@ import { fetchConfig } from '../lib/api'
 import { codesOpen, redeemLiveCode, tokenOf } from '../lib/codes'
 import { contactPath } from '../lib/connections'
 import { loadMe } from '../lib/session'
+import { useNotFound } from '../lib/not-found'
 
 const route = useRoute()
 const router = useRouter()
+const notFound = useNotFound()
 const state = ref<
   'connecting' | 'signed-out' | 'onboarding' | 'expired' | 'failed'
 >('connecting')
-
-async function notFound(): Promise<void> {
-  await router.replace({
-    name: 'not-found',
-    params: { pathMatch: route.path.slice(1).split('/') },
-  })
-}
 
 async function use(token: string | null): Promise<void> {
   if (token === null) {

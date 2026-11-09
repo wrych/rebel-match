@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import BadgeArt from '../components/BadgeArt.vue'
 import {
   bestOf,
@@ -11,9 +11,10 @@ import {
   type RowView,
 } from '../lib/badges'
 import { day } from '../lib/when'
+import { useNotFound } from '../lib/not-found'
 
 const route = useRoute()
-const router = useRouter()
+const notFound = useNotFound()
 const row = ref<RowView | null>(null)
 const problem = ref<string | null>(null)
 
@@ -54,10 +55,7 @@ onMounted(async () => {
     return
   }
   if (row.value === null) {
-    await router.replace({
-      name: 'not-found',
-      params: { pathMatch: route.path.slice(1).split('/') },
-    })
+    await notFound()
     return
   }
   if (hasNew(row.value))

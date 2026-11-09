@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
 import EventTicket from '../components/EventTicket.vue'
 import {
   fetchBadges,
@@ -10,9 +9,9 @@ import {
 } from '../lib/badges'
 import { logoUrl } from '../lib/invites'
 import { day } from '../lib/when'
+import { useNotFound } from '../lib/not-found'
 
-const route = useRoute()
-const router = useRouter()
+const notFound = useNotFound()
 const events = ref<EarnedEventBadge[] | null>(null)
 const problem = ref<string | null>(null)
 
@@ -22,10 +21,7 @@ onMounted(async () => {
   try {
     const overview = await fetchBadges()
     if (overview === null) {
-      await router.replace({
-        name: 'not-found',
-        params: { pathMatch: route.path.slice(1).split('/') },
-      })
+      await notFound()
       return
     }
     events.value = overview.events
