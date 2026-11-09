@@ -1,4 +1,5 @@
 import { trackNothing, type Track } from './analytics.js'
+import type { PersonCard } from './person-card.js'
 
 /** A card in the swipe deck: the challenge, its trend, and who wrote it
  * (R-OFF-2). Never how to reach them (R-CONN-6). */
@@ -6,16 +7,7 @@ export interface DeckCard {
   challengeId: string
   body: string
   trend: { id: string; short: string }
-  author: {
-    name: string
-    jobTitle: string | null
-    org: string | null
-    /** Labels, as a card shows them, not the stored keys. */
-    sector: string | null
-    companySize: string | null
-    /** Their photo's key, or null without one (R-PROF-7). */
-    photo: string | null
-  }
+  author: Omit<PersonCard, 'memberId'>
 }
 
 export interface DeckStore {

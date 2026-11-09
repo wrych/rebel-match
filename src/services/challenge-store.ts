@@ -18,7 +18,7 @@ import type {
   StoredTrend,
 } from './challenges.js'
 import type { RankablePeer } from './match-ranker.js'
-import { companySizeLabel, sectorLabel, photoKey } from './profile-labels.js'
+import { cardColumns } from './profile-labels.js'
 
 /** The trend a challenge sits in: the confirmed one, else the matcher's. */
 export const challengeTrend = sql<
@@ -40,17 +40,6 @@ export function notReportedBy(viewerId: string): SQL {
 }
 
 // Peers are active, onboarded members: a name is what makes a card a person.
-// No email column is ever selected for a card (R-CONN-6).
-const peerColumns = {
-  memberId: members.id,
-  name: members.name,
-  jobTitle: members.jobTitle,
-  org: members.org,
-  sector: sectorLabel,
-  companySize: companySizeLabel,
-  photo: photoKey,
-}
-
 const peerFilter = (viewerId: string): SQL | undefined =>
   and(isReachableMember(), ne(members.id, viewerId))
 
@@ -81,7 +70,7 @@ async function peersOf(
 ): Promise<{ sameBoat: RankablePeer[]; beenThere: RankablePeer[] }> {
   const same = await db
     .select({
-      ...peerColumns,
+      ...cardColumns,
       note: challenges.body,
       challengeId: challenges.id,
       since: challenges.createdAt,
@@ -98,7 +87,7 @@ async function peersOf(
     )
   const been = await db
     .select({
-      ...peerColumns,
+      ...cardColumns,
       note: memberExpertise.note,
       challengeId: sql<string | null>`null`,
       since: memberExpertise.createdAt,

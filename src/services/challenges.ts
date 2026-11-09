@@ -1,6 +1,7 @@
 import { trackNothing, type Track } from './analytics.js'
 import type { MatchRanker, RankablePeer } from './match-ranker.js'
 import { detectTrend, type TrendKeywords } from './matcher.js'
+import type { PersonCard } from './person-card.js'
 
 /** A trend as screens show it (R-ASK-6). */
 export interface Trend {
@@ -24,16 +25,7 @@ export interface Challenge {
 
 /** A peer on the matches screen: who they are and what they bring, never how
  * to reach them (R-ASK-8, R-CONN-6). */
-export interface PeerCard {
-  memberId: string
-  name: string
-  jobTitle: string | null
-  org: string | null
-  /** Labels, as a card shows them, not the stored keys. */
-  sector: string | null
-  companySize: string | null
-  /** Their photo's key, or null without one (R-PROF-7). */
-  photo: string | null
+export interface PeerCard extends PersonCard {
   note: string
   /** The peer's own challenge, for a same-boat card, so it can be reported
    * (R-MOD-1); null for an offer of experience. */

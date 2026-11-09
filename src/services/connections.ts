@@ -1,5 +1,6 @@
 import type { ModerationReason } from './challenge-moderation.js'
 import { trackNothing, type Track } from './analytics.js'
+import type { PersonCard } from './person-card.js'
 import { canReach } from './reach.js'
 import type { SocialLinks } from '../social-links.js'
 
@@ -7,15 +8,7 @@ export type ConnectionKind = 'same_boat' | 'been_there' | 'direct'
 export type ConnectionStatus = 'pending' | 'accepted' | 'declined'
 
 /** Who a member is on a request card: never how to reach them (R-CONN-1). */
-export interface MemberCard {
-  memberId: string
-  name: string
-  jobTitle: string | null
-  org: string | null
-  /** Labels, as a card shows them, not the stored keys. */
-  sector: string | null
-  companySize: string | null
-}
+export type MemberCard = Omit<PersonCard, 'photo'>
 
 export interface ConnectionRecord {
   id: string

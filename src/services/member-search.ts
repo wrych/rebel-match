@@ -6,19 +6,12 @@ import {
   type SearchField,
 } from '../search/query.js'
 import { trackNothing, type Track } from './analytics.js'
+import type { PersonCard } from './person-card.js'
 import { canReach } from './reach.js'
 
 /** A member as search shows them: what the deck's card shows, never an email
  * (R-FIND-3, R-CONN-6). Sector and company size are labels. */
-export interface MemberCard {
-  memberId: string
-  name: string
-  jobTitle: string | null
-  org: string | null
-  sector: string | null
-  companySize: string | null
-  /** Their photo's key, or null without one (R-PROF-7). */
-  photo: string | null
+export interface MemberCard extends PersonCard {
   /** The viewer's accepted request with this member to open the contact
    * by, or null while they are not connected (R-CONN-8). */
   connectionId: string | null
