@@ -1,6 +1,6 @@
 # 0068. Agents may rewrite their own open branch, with a lease
 
-- **Status:** Accepted, by the maintainer merging wrych/rebel-match#345
+- **Status:** Accepted
 - **Date:** 2026-11-08
 - **Deciders:** Andy Moesch
 
