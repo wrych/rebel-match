@@ -400,12 +400,28 @@ capability, not a secret** — and every requirement below exists because of tha
   member's outcome SHALL be reported, and one refused (the last admin, say)
   SHALL NOT stop the rest.
 - **R-PROF-3** — The header SHALL carry a **menu** in place of the "CR" mark,
-  offering: the colour mode switch (R-LOOK-2), the member's notifications
+  offering: the member's notifications
   (R-NOTE-5, R-NOTE-6), the member's badges (R-BADGE-7), the profile screen,
   feedback (R-FB-1), the host tools
   the member's permissions allow (R-ROLE-4), the impressum (R-PROF-4), and
-  sign out, with the running version at its foot (R-NFR-11). The menu holds links and one switch only, so it is
+  sign out, with the running version at its foot (R-NFR-11). The menu holds links only, so it is
   navigation, not a screen (R-NAV-1); every item it leads to has its own URL.
+  The colour mode switch (R-LOOK-2) and **Your code** (R-CODE-1) live on the
+  profile screen instead. _(Andy, 2026-11-09, from member feedback that the
+  app felt complicated.)_
+- **R-PROF-8 (Folded and searchable)** — The profile screen SHALL group its
+  settings into cards that fold to their title, drawn and opened as the host
+  settings' groups are (R-CFG-5, R-LOOK-4): **About you** (photo, name and
+  the fields of R-PROF-1), **Connecting** (social links, the profile code and
+  Your code, findable in search), **Notifications**, **Privacy** (the
+  analytics opt-in and the accepted terms), **Look** (the colour mode) and
+  **Your data** (deleting history or the account). A card SHALL appear only
+  when something in it is offered. Every card SHALL start folded. Above them a
+  search SHALL show, from three characters on and ignoring case, only the
+  cards whose title or settings' words hold it, opened, and say when none do;
+  clearing it SHALL fold the screen back as the member left it. Folding SHALL
+  hide nothing from a save: a setting saves on change as R-PROF-1 says.
+  _(Andy, 2026-11-09.)_
 - **R-PROF-4 (Impressum)** — The menu SHALL offer an **Impressum** to everyone,
   signed in or not, that shows the people who made the app one card at a time,
   each with their portrait, name and what they are responsible for, browsed as
@@ -1140,9 +1156,11 @@ _(Decided by the maintainer after trying the redesign: ADR 0023.)_
   labels, cream paper, near-black ink and an ember accent. Fonts SHALL be served
   by the app itself, never from a third-party font host, so no visitor's address
   reaches one.
-- **R-LOOK-2 (Happy mode)** — The header menu (R-PROF-3) SHALL offer a switch
-  between the calm default and happy mode, announced as a switch to assistive
-  technology. _(It replaces the prototype's "CR" button.)_ The choice SHALL be
+- **R-LOOK-2 (Happy mode)** — The profile screen's **Look** card (R-PROF-8)
+  SHALL offer a switch between the calm default and happy mode, announced as a
+  switch to assistive technology, with the tick of R-PROF-1; visitors not
+  signed in see the calm default or the mode their browser last chose. _(Moved
+  from the header menu: Andy, 2026-11-09.)_ _(It replaces the prototype's "CR" button.)_ The choice SHALL be
   remembered per browser and SHALL change colours and decoration only, never
   content, behaviour or anything recorded, with one exception: happy mode
   reveals the 9toRevolution door and lets the game run (R-GAME-1, ADR 0045). IF
@@ -2110,7 +2128,8 @@ connects at once (ADR 0063).
 
 - **R-CODE-1 (The code screen)** — WHILE hosts have `limits.connectCodes` on,
   THE SYSTEM SHALL offer every active, onboarded member **Your code** at
-  `/me/code` (S47), from the menu and from S44, with two tabs, opening on
+  `/me/code` (S47), from the profile screen's **Connecting** card (R-PROF-8)
+  and from S44, with two tabs, opening on
   **Connect now** (R-CODE-5), then **Share my profile** (R-CODE-2).
   _(Andy, 2026-11-06, from testing.)_ While the switch is
   off, the screen, the code routes and their endpoints SHALL answer as not

@@ -277,6 +277,9 @@ printed dev link (R-DEV-6).
       member page; the viewer's own point in the replay; the presentation's
       cast. _(R-PROF-7, ADR 0067)_
 - [x] Add the photo to the privacy notice's profile list. _(R-ONB-9)_
+- [ ] A simpler profile screen: cards folded to their title with a search,
+      as the host settings have; the colour mode and Your code move there
+      from the menu. _(R-PROF-8, R-PROF-3, R-LOOK-2, R-CODE-1)_
 
 ## M6 — Hardening & pilot _(by 2026-11-01)_
 
