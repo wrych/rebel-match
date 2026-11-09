@@ -64,4 +64,9 @@ function toggled(event: Event): void {
 .fold[open] > summary {
   margin-bottom: 0.4rem;
 }
+
+.fold > summary + :deep(.rule) {
+  border-top: none;
+  padding-top: 0;
+}
 </style>
