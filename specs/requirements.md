@@ -412,8 +412,9 @@ capability, not a secret** — and every requirement below exists because of tha
 - **R-PROF-8 (Folded and searchable)** — The profile screen SHALL group its
   settings into cards that fold to their title, drawn and opened as the host
   settings' groups are (R-CFG-5, R-LOOK-4): **About you** (photo, name and
-  the fields of R-PROF-1), **Connecting** (social links, the profile code and
-  Your code, findable in search), **Notifications**, **Privacy** (the
+  the fields of R-PROF-1), **Connecting** (first, while codes are on, the
+  buttons to Your code's two tabs, marked as the tabs are (R-CODE-1), then
+  the profile code's controls, social links and findable in search), **Notifications**, **Privacy** (the
   analytics opt-in and the accepted terms), **Look** (the colour mode) and
   **Your data** (deleting history or the account). A card SHALL appear only
   when something in it is offered. Every card SHALL start folded. Above them a
@@ -2142,7 +2143,8 @@ connects at once (ADR 0063).
 - **R-CODE-1 (The code screen)** — WHILE hosts have `limits.connectCodes` on,
   THE SYSTEM SHALL offer every active, onboarded member **Your code** at
   `/me/code` (S47), from the profile screen's **Connecting** card (R-PROF-8)
-  and from S44, with two tabs, opening on
+  and from S44, with two tabs, each marked with a QR symbol, the live one
+  with a spinning ring in its corner as its code wears (R-CODE-5), opening on
   **Connect now** (R-CODE-5), then **Share my profile** (R-CODE-2).
   _(Andy, 2026-11-06, from testing.)_ While the switch is
   off, the screen, the code routes and their endpoints SHALL answer as not
