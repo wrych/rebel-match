@@ -776,7 +776,9 @@ connect.")_
   opened from by its route name, never its address. For a signed-in member
   the name and email SHALL be filled in from their profile, still editable;
   anyone else fills them in. A message SHALL be required, the name and the
-  email optional, so a reply can be asked for or not. _(Andy, 2026-11-09.)_
+  email optional, so a reply can be asked for or not. WHEN an email is given,
+  the feedback email SHALL carry it as its Reply-To, so the owner answers by
+  replying. _(Andy, 2026-11-09.)_
 - **R-FB-2** — Feedback SHALL be paced: at most `abuse.feedbackCeiling` per
   `abuse.feedbackWindowMinutes`, counted per member when signed in and per
   network otherwise, then `429`. A visitor not signed in SHALL pass the

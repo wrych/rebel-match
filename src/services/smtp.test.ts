@@ -26,6 +26,12 @@ describe('mailOptions (R-MSG-8)', () => {
   it('attaches nothing to a plain-text email', () => {
     expect(mailOptions(mail)).toEqual(mail)
   })
+
+  it('tells nodemailer where a reply goes (R-FB-1)', () => {
+    expect(
+      mailOptions({ ...mail, replyTo: 'grace@example.invalid' }).replyTo,
+    ).toBe('grace@example.invalid')
+  })
 })
 
 describe('transportOptions (R-NFR-1)', () => {

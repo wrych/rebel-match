@@ -91,6 +91,27 @@ describe('createMailer', () => {
     })
   })
 
+  it('hands on where a reply goes, only when one is given (R-FB-1)', async () => {
+    const sent: Parameters<MailTransport['send']>[0][] = []
+    const mailer = createMailer({
+      store: memoryOutbox(),
+      transport: {
+        send: (mail) => {
+          sent.push(mail)
+          return Promise.resolve()
+        },
+      },
+      from: sender,
+      keepCredentials: false,
+    })
+
+    await mailer.send({ ...message, replyTo: 'grace@example.invalid' })
+    await mailer.send(message)
+
+    expect(sent[0]?.replyTo).toBe('grace@example.invalid')
+    expect(sent[1]).not.toHaveProperty('replyTo')
+  })
+
   it('sends the HTML part and stores only the text (R-MSG-8, R-MSG-4)', async () => {
     const store = memoryOutbox()
     const sent: Parameters<MailTransport['send']>[0][] = []
