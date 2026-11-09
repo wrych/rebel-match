@@ -8,14 +8,18 @@ import type { FlagSettings } from './experiments.js'
 import { gameDefaults, type GameSettings } from './game/tuning.js'
 import { abuseEnv, abuseLimitsFrom, type AbuseLimits } from './abuse.js'
 import { limitsEnv, limitsFrom, type Limits } from './limits.js'
+import {
+  gameDayAllowanceFrom,
+  notificationRoundsFrom,
+  serverEnv,
+  serverFrom,
+  smtpPortFrom,
+  type GameDayAllowance,
+  type NotificationWorkerRounds,
+  type ServerSettings,
+} from './server-settings.js'
 
 export type { AbuseLimits, Limits }
-
-// Node clamps a timer delay above 2^31-1 ms (about 24.8 days) to 1 ms, so a
-// longer purge interval would run the purge continuously.
-const MAX_TIMER_HOURS = Math.floor(0x7fffffff / 3_600_000)
-const MAX_TIMER_SECONDS = Math.floor(0x7fffffff / 1000)
-const MAX_TIMER_MINUTES = Math.floor(MAX_TIMER_SECONDS / 60)
 
 /** Each counted row of badges has three levels (R-BADGE-1). */
 const BADGE_LEVELS = 3
@@ -135,7 +139,6 @@ const envSchema = z
     NODE_ENV: z
       .enum(['development', 'test', 'production'])
       .default('development'),
-    PORT: z.coerce.number().int().positive().default(3000),
     PUBLIC_URL: z.url().default('http://localhost:5173'),
     // The built client (`npm run build` puts it in dist/client). Set, the
     // server serves the screens itself, as a deployment does; unset, Vite
@@ -164,7 +167,6 @@ const envSchema = z
       .transform((url) => (url === '' ? undefined : url)),
     LOCAL_DATA_DIR: z.string().min(1).default(DEFAULT_LOCAL_DATA_DIR),
     SESSION_SECRET: z.string().min(32),
-    SESSION_TTL_DAYS: z.coerce.number().int().positive().default(30),
 
     MAIL_DELIVERY: z.enum(['smtp', 'none']).default('none'),
     MAIL_FROM: z.email().default('hello@rebel-match.invalid'),
@@ -179,7 +181,6 @@ const envSchema = z
     // production must name a real inbox.
     FEEDBACK_TO: z.email().default(FEEDBACK_NOWHERE),
     SMTP_HOST: z.string().min(1).optional(),
-    SMTP_PORT: z.coerce.number().int().positive().default(587),
     SMTP_USER: z.string().optional(),
     SMTP_PASSWORD: z.string().optional(),
 
@@ -210,27 +211,8 @@ const envSchema = z
     MIXPANEL_API_HOST: z.string().min(1).default('api-eu.mixpanel.com'),
 
     ...limitsEnv,
+    ...serverEnv,
 
-    OUTBOX_PURGE_INTERVAL_HOURS: z.coerce
-      .number()
-      .int()
-      .positive()
-      .max(MAX_TIMER_HOURS)
-      .default(1),
-    // How often the server erases the deleted accounts that are due (ADR 0032).
-    ERASURE_SWEEP_INTERVAL_HOURS: z.coerce
-      .number()
-      .int()
-      .positive()
-      .max(MAX_TIMER_HOURS)
-      .default(1),
-    // How often expired sessions and sign-in tokens are deleted (ADR 0034).
-    TOKEN_PURGE_INTERVAL_HOURS: z.coerce
-      .number()
-      .int()
-      .positive()
-      .max(MAX_TIMER_HOURS)
-      .default(1),
     // Who runs the scheduled work: the server's own timers, or a tick a
     // scheduler sends, signed by TICK_INVOKER for TICK_AUDIENCE (ADR 0049).
     SCHEDULED_WORK: z.enum(['timers', 'tick']).default('timers'),
@@ -238,12 +220,6 @@ const envSchema = z
     TICK_AUDIENCE: z.url().optional(),
 
     ...abuseEnv,
-    // Proxy hops in front of the server whose X-Forwarded-For is believed;
-    // 0 uses the socket address, Cloud Run needs 1.
-    TRUST_PROXY: z.coerce.number().int().nonnegative().default(0),
-    // How often a server re-reads the values hosts changed in the app
-    // (ADR 0031); the server that saved a change applies it at once.
-    SETTINGS_REFRESH_SECONDS: z.coerce.number().int().positive().default(60),
     // The counts the badges' three levels are earned at, rising (R-BADGE-1).
     BADGE_LEVEL_COUNTS: z
       .string()
@@ -255,45 +231,6 @@ const envSchema = z
           .length(BADGE_LEVELS)
           .refine(rising, 'each badge level needs a higher count'),
       ),
-    // How often every crown is checked against counts that fell with nobody
-    // acting (R-BADGE-3).
-    BADGE_CROWN_CHECK_MINUTES: z.coerce
-      .number()
-      .int()
-      .positive()
-      .max(MAX_TIMER_MINUTES)
-      .default(15),
-    // Game days one member may record per minute, and how long a day's
-    // record may run: this many day lengths plus these seconds (R-GAME-20).
-    GAME_RECORDS_PER_MINUTE: z.coerce.number().int().positive().default(10),
-    // The top of the leaderboard players see (R-GAME-13).
-    GAME_LEADERBOARD_SIZE: z.coerce.number().int().positive().default(100),
-    GAME_DAY_ALLOWANCE_FACTOR: z.coerce.number().int().positive().default(2),
-    GAME_DAY_ALLOWANCE_SECONDS: z.coerce
-      .number()
-      .int()
-      .nonnegative()
-      .default(60),
-    // The notification worker's round, and how often a refused mail is tried
-    // before it counts as failed (R-NOTE-7, R-NOTE-10).
-    NOTIFICATION_WORKER_SECONDS: z.coerce
-      .number()
-      .int()
-      .positive()
-      .max(MAX_TIMER_SECONDS)
-      .default(60),
-    NOTIFICATION_MAX_ATTEMPTS: z.coerce.number().int().positive().default(5),
-    // A refused mail waits this long before its first retry, twice as long
-    // before each next; a claimed notification is held this long for the
-    // server that claimed it, longer than any send takes; and one round
-    // claims at most a batch (R-NOTE-10).
-    NOTIFICATION_FIRST_RETRY_SECONDS: z.coerce
-      .number()
-      .int()
-      .positive()
-      .default(60),
-    NOTIFICATION_HOLD_SECONDS: z.coerce.number().int().positive().default(300),
-    NOTIFICATION_BATCH: z.coerce.number().int().positive().default(100),
     // When the daily notification mail goes out, a local time in one time
     // zone: members' own zones are not known (R-NOTE-7).
     NOTIFICATION_DAILY_AT: z
@@ -391,20 +328,14 @@ export interface ClientConfig {
 export type ScheduledWork =
   { mode: 'timers' } | { mode: 'tick'; invoker: string; audience: string }
 
-export interface Config {
+export interface Config extends ServerSettings {
   env: Env['NODE_ENV']
   isProduction: boolean
-  port: number
   publicUrl: string
   /** Where the built client is served from; absent when Vite serves it. */
   clientDir?: string
   database: DatabaseTarget
   sessionSecret: string
-  sessionTtlDays: number
-  outboxPurgeIntervalHours: number
-  erasureSweepIntervalHours: number
-  tokenPurgeIntervalHours: number
-  settingsRefreshSeconds: number
   /** Who runs the scheduled work, and whose tick is believed (ADR 0049). */
   scheduledWork: ScheduledWork
   /** The notification worker's round and retries (R-NOTE-7, R-NOTE-10). */
@@ -435,37 +366,20 @@ export interface Config {
   flags: FlagSettings
   /** The counts each badge level is earned at, rising (R-BADGE-1). */
   badgeLevelCounts: readonly number[]
-  /** How often every crown is checked (R-BADGE-3). */
-  badgeCrownCheckMinutes: number
-  /** Game days one member may record per minute (R-GAME-20). */
-  gameRecordsPerMinute: number
-  /** How many bests the leaderboard shows above the caller's (R-GAME-13). */
-  gameLeaderboardSize: number
-  /** How long a day's record may run: day lengths plus seconds (R-GAME-20). */
-  gameDayAllowance: { factor: number; extraSeconds: number }
-  trustProxy: number
+  gameDayAllowance: GameDayAllowance
   rolePermissions: typeof rolePermissions
   /** The commit the build was made from, if it was made from one (R-NFR-11). */
   build: { commit?: string; commitUrlBase: string }
 }
 
-export interface NotificationWorkerSettings {
-  intervalSeconds: number
-  maxAttempts: number
-  firstRetrySeconds: number
-  holdSeconds: number
-  batch: number
+export interface NotificationWorkerSettings extends NotificationWorkerRounds {
   dailyAt: string
   timeZone: string
 }
 
 function notificationWorkerFrom(env: Env): NotificationWorkerSettings {
   return {
-    intervalSeconds: env.NOTIFICATION_WORKER_SECONDS,
-    maxAttempts: env.NOTIFICATION_MAX_ATTEMPTS,
-    firstRetrySeconds: env.NOTIFICATION_FIRST_RETRY_SECONDS,
-    holdSeconds: env.NOTIFICATION_HOLD_SECONDS,
-    batch: env.NOTIFICATION_BATCH,
+    ...notificationRoundsFrom(env),
     dailyAt: env.NOTIFICATION_DAILY_AT,
     timeZone: env.NOTIFICATION_TIME_ZONE,
   }
@@ -477,7 +391,7 @@ function mailFrom(env: Env): Config['mail'] {
     from: { name: env.MAIL_FROM_NAME, address: env.MAIL_FROM },
     smtp: {
       ...(env.SMTP_HOST === undefined ? {} : { host: env.SMTP_HOST }),
-      port: env.SMTP_PORT,
+      port: smtpPortFrom(env),
       ...(env.SMTP_USER === undefined ? {} : { user: env.SMTP_USER }),
       ...(env.SMTP_PASSWORD === undefined
         ? {}
@@ -515,7 +429,7 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): Config {
   return {
     env: env.NODE_ENV,
     isProduction: env.NODE_ENV === 'production',
-    port: env.PORT,
+    ...serverFrom(env),
     publicUrl: env.PUBLIC_URL,
     ...(env.CLIENT_DIR === undefined ? {} : { clientDir: env.CLIENT_DIR }),
     database:
@@ -523,11 +437,6 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): Config {
         ? { kind: 'pglite', dataDir: join(env.LOCAL_DATA_DIR, 'pglite') }
         : { kind: 'postgres', url: env.DATABASE_URL },
     sessionSecret: env.SESSION_SECRET,
-    sessionTtlDays: env.SESSION_TTL_DAYS,
-    outboxPurgeIntervalHours: env.OUTBOX_PURGE_INTERVAL_HOURS,
-    erasureSweepIntervalHours: env.ERASURE_SWEEP_INTERVAL_HOURS,
-    tokenPurgeIntervalHours: env.TOKEN_PURGE_INTERVAL_HOURS,
-    settingsRefreshSeconds: env.SETTINGS_REFRESH_SECONDS,
     scheduledWork: scheduledWorkFrom(env),
     notificationWorker: notificationWorkerFrom(env),
     mail: mailFrom(env),
@@ -545,14 +454,7 @@ export function loadConfig(source: NodeJS.ProcessEnv = process.env): Config {
     game: gameDefaults,
     flags: { matches_layout: EVEN_SPLIT_PERCENT },
     badgeLevelCounts: env.BADGE_LEVEL_COUNTS,
-    badgeCrownCheckMinutes: env.BADGE_CROWN_CHECK_MINUTES,
-    gameRecordsPerMinute: env.GAME_RECORDS_PER_MINUTE,
-    gameLeaderboardSize: env.GAME_LEADERBOARD_SIZE,
-    gameDayAllowance: {
-      factor: env.GAME_DAY_ALLOWANCE_FACTOR,
-      extraSeconds: env.GAME_DAY_ALLOWANCE_SECONDS,
-    },
-    trustProxy: env.TRUST_PROXY,
+    gameDayAllowance: gameDayAllowanceFrom(env),
     rolePermissions,
     build: {
       ...(env.GIT_COMMIT === undefined ? {} : { commit: env.GIT_COMMIT }),

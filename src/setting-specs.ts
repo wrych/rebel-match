@@ -36,6 +36,8 @@ interface Tunable {
   default: number
   /** Zero is allowed; otherwise the value must be positive. */
   zeroAllowed?: true
+  /** The highest value a deployment may set. */
+  max?: number
   /** Changeable in the app, within these bounds (R-CFG-6, ADR 0031). */
   changeable?: Bounds
   shown?: Shown
@@ -87,13 +89,14 @@ const entriesOf = (specs: Specs): [string, Tunable | Fixed][] =>
 
 function envNumber(spec: Tunable): EnvNumber {
   const whole = z.coerce.number().int()
-  return (spec.zeroAllowed ? whole.nonnegative() : whole.positive()).default(
+  const signed = spec.zeroAllowed ? whole.nonnegative() : whole.positive()
+  return (spec.max === undefined ? signed : signed.max(spec.max)).default(
     spec.default,
   )
 }
 
 /** The environment schema entries for a group: each tunable setting a whole
- * number with its default (R-CFG-1). */
+ * number, at most its maximum, with its default (R-CFG-1). */
 export function envOf<S extends Specs>(specs: S): EnvOf<S> {
   return Object.fromEntries(
     entriesOf(specs).flatMap(([, spec]) =>

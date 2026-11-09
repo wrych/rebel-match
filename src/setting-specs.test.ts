@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest'
+import { z } from 'zod'
 import { abuseEnv, changeableAbuse } from './abuse.js'
 import { boundsOf, isSettingKey } from './changeable-settings.js'
 import { loadConfig, type Config } from './config.js'
 import { changeableLimits, limitsEnv } from './limits.js'
+import { envOf } from './setting-specs.js'
 
 const valid = {
   DATABASE_URL: 'postgres://user:pw@localhost:5432/rebel_match',
@@ -139,5 +141,17 @@ describe('fixed and unchangeable limits', () => {
   it('does not let hosts change a limit the registry does not mark changeable', () => {
     expect(isSettingKey('limits.challengeMaxChars')).toBe(false)
     expect(isSettingKey('limits.deckPageSize')).toBe(false)
+  })
+})
+
+describe('a maximum', () => {
+  const CAP = 9
+  const schema = z.object(
+    envOf({ capped: { env: 'CAPPED', default: 1, max: CAP } }),
+  )
+
+  it('accepts a value up to the maximum and refuses one past it (R-CFG-1)', () => {
+    expect(schema.parse({ CAPPED: String(CAP) }).CAPPED).toBe(CAP)
+    expect(() => schema.parse({ CAPPED: String(CAP + 1) })).toThrow('CAPPED')
   })
 })

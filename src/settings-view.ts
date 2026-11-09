@@ -1,4 +1,4 @@
-import { shownAbuse, type ShownAbuseKey } from './abuse.js'
+import { shownAbuse } from './abuse.js'
 import {
   boundsOf,
   isSettingKey,
@@ -8,11 +8,14 @@ import {
 } from './changeable-settings.js'
 import type { Config } from './config.js'
 import { bossJobs, type BossJob, type GameKey } from './game/tuning.js'
-import { shownLimits, type ShownLimitKey } from './limits.js'
+import { shownLimits } from './limits.js'
 import {
-  DAYS,
-  HOURS,
-  MINUTES,
+  shownGameDayAllowance,
+  shownNotificationWorker,
+  shownServer,
+  shownSmtp,
+} from './server-settings.js'
+import {
   PERCENT,
   prefixed,
   SECONDS,
@@ -79,8 +82,46 @@ interface ReadOnly extends Shown {
   read: (config: Config) => string | number
 }
 
+interface FromSpec extends ShownSpec {
+  read: (config: Config) => number
+}
+
+function readSpecs<G extends string, K extends string>(
+  group: G,
+  shown: Readonly<Record<K, ShownSpec>>,
+  values: (config: Config) => Readonly<Record<K, number>>,
+): Record<`${G}.${K}`, FromSpec> {
+  const keys = Object.keys(shown) as K[]
+  return prefixed(
+    group,
+    Object.fromEntries(
+      keys.map((key) => [
+        key,
+        { ...shown[key], read: (config: Config) => values(config)[key] },
+      ]),
+    ) as Record<K, FromSpec>,
+  )
+}
+
+const shownSpecs = {
+  ...readSpecs('limits', shownLimits, (c) => c.limits),
+  ...readSpecs('abuse', shownAbuse, (c) => c.abuse),
+  ...readSpecs('server', shownServer, (c) => c),
+  ...readSpecs(
+    'notificationWorker',
+    shownNotificationWorker,
+    (c) => c.notificationWorker,
+  ),
+  ...readSpecs(
+    'gameDayAllowance',
+    shownGameDayAllowance,
+    (c) => c.gameDayAllowance,
+  ),
+  ...readSpecs('smtp', shownSmtp, (c) => c.mail.smtp),
+}
+
 /** A setting whose spec describes how hosts see it. */
-type SpecRef = `limits.${ShownLimitKey}` | `abuse.${ShownAbuseKey}`
+type SpecRef = keyof typeof shownSpecs
 
 type Entry = SpecRef | Changeable | ReadOnly
 
@@ -96,18 +137,12 @@ interface Resolved extends Shown {
   read: (config: Config) => string | number
 }
 
-const shownSpecs: Readonly<Record<SpecRef, ShownSpec>> = {
-  ...prefixed('limits', shownLimits),
-  ...prefixed('abuse', shownAbuse),
-}
-
 function fromSpec(ref: SpecRef): Resolved {
-  const { as, ...shown } = shownSpecs[ref]
+  const { as, read, ...shown } = shownSpecs[ref]
   return {
     ...shown,
     ...(isSettingKey(ref) ? { key: ref } : {}),
-    read: (config) =>
-      as === undefined ? valueOf(config, ref) : as(valueOf(config, ref)),
+    read: (config) => (as === undefined ? read(config) : as(read(config))),
   }
 }
 
@@ -258,36 +293,10 @@ const gameGroups: Group[] = [
         'How long the boss talks before everyone goes back to work.',
         SECONDS,
       ),
-      {
-        name: 'Game days one member may record per minute',
-        explanation:
-          'More than this from one member is refused, to slow a script ' +
-          'sending scores.',
-        read: (c) => c.gameRecordsPerMinute,
-        unit: ['day', 'days'],
-      },
-      {
-        name: 'Places on the leaderboard',
-        explanation:
-          'How many players the leaderboard lists; a player below them sees ' +
-          'their own place too.',
-        read: (c) => c.gameLeaderboardSize,
-        unit: ['place', 'places'],
-      },
-      {
-        name: 'A game day’s record may run up to',
-        explanation:
-          'Day lengths, plus the seconds below, before a record is refused ' +
-          'as one no day can take. A paused day’s clock stands still.',
-        read: (c) => c.gameDayAllowance.factor,
-        unit: ['day length', 'day lengths'],
-      },
-      {
-        name: 'Plus',
-        explanation: 'Added to the day lengths above.',
-        read: (c) => c.gameDayAllowance.extraSeconds,
-        unit: SECONDS,
-      },
+      'server.gameRecordsPerMinute',
+      'server.gameLeaderboardSize',
+      'gameDayAllowance.factor',
+      'gameDayAllowance.extraSeconds',
       gameEntry(
         'meetingSeconds',
         'A meeting lasts',
@@ -434,14 +443,7 @@ const catalogue: Group[] = [
       'abuse.liveCodesPerMinute',
       'abuse.feedbackCeiling',
       'abuse.feedbackWindowMinutes',
-      {
-        name: 'Trusted proxies in front of the server',
-        explanation:
-          'How many proxies are trusted to report the visitor’s address: 1 ' +
-          'on Cloud Run, 0 when visitors reach the server directly. If it is ' +
-          'wrong, every visitor can look like the same network.',
-        read: (c) => c.trustProxy,
-      },
+      'server.trustProxy',
     ],
   },
   {
@@ -450,14 +452,7 @@ const catalogue: Group[] = [
     entries: [
       'limits.magicLinkTtlMinutes',
       'limits.approvalLinkTtlHours',
-      {
-        name: 'Signed out after not using the app for',
-        explanation:
-          'Every use restarts the period, so an active member stays signed ' +
-          'in.',
-        read: (c) => c.sessionTtlDays,
-        unit: DAYS,
-      },
+      'server.sessionTtlDays',
     ],
   },
   {
@@ -559,46 +554,14 @@ const catalogue: Group[] = [
         explanation: 'The SMTP server emails go through, when delivery is on.',
         read: (c) => c.mail.smtp.host ?? 'Not set',
       },
-      {
-        name: 'Mail server port',
-        explanation: 'The port of the mail server.',
-        read: (c) => String(c.mail.smtp.port),
-      },
+      'smtp.port',
       'limits.outboxRetentionDays',
-      {
-        name: 'Delete old log entries every',
-        explanation: 'How often the server clears entries past that period.',
-        read: (c) => c.outboxPurgeIntervalHours,
-        unit: HOURS,
-      },
+      'server.outboxPurgeIntervalHours',
       'limits.outboxPageSize',
-      {
-        name: 'Send notification emails every',
-        explanation: 'How often the server mails the notifications due.',
-        read: (c) => c.notificationWorker.intervalSeconds,
-        unit: ['second', 'seconds'],
-      },
-      {
-        name: 'Tries before a notification email counts as failed',
-        explanation:
-          'A refused email is tried again, waiting longer each time, this many times in all.',
-        read: (c) => c.notificationWorker.maxAttempts,
-        unit: ['try', 'tries'],
-      },
-      {
-        name: 'First retry of a refused notification email after',
-        explanation:
-          'Each retry after it waits twice as long as the one before.',
-        read: (c) => c.notificationWorker.firstRetrySeconds,
-        unit: ['second', 'seconds'],
-      },
-      {
-        name: 'A server holds the notifications it is mailing for',
-        explanation:
-          'Another server leaves them alone this long, so none is mailed twice.',
-        read: (c) => c.notificationWorker.holdSeconds,
-        unit: ['second', 'seconds'],
-      },
+      'notificationWorker.intervalSeconds',
+      'notificationWorker.maxAttempts',
+      'notificationWorker.firstRetrySeconds',
+      'notificationWorker.holdSeconds',
       {
         name: 'Daily notification emails go out at',
         explanation:
@@ -610,12 +573,7 @@ const catalogue: Group[] = [
         explanation: 'Members’ own time zones are not known.',
         read: (c) => c.notificationWorker.timeZone,
       },
-      {
-        name: 'Notification emails per round, at most',
-        explanation: 'The rest wait for the next round.',
-        read: (c) => c.notificationWorker.batch,
-        unit: ['email', 'emails'],
-      },
+      'notificationWorker.batch',
       'limits.notificationRetentionDays',
     ],
   },
@@ -624,20 +582,8 @@ const catalogue: Group[] = [
     explanation: 'The wording members agree to, and usage analytics.',
     entries: [
       'limits.erasureGraceDays',
-      {
-        name: 'Erase due accounts every',
-        explanation: 'How often the server erases accounts past that period.',
-        read: (c) => c.erasureSweepIntervalHours,
-        unit: HOURS,
-      },
-      {
-        name: 'Delete expired sign-ins every',
-        explanation:
-          'How often the server deletes sessions and sign-in links past ' +
-          'their lifetime.',
-        read: (c) => c.tokenPurgeIntervalHours,
-        unit: HOURS,
-      },
+      'server.erasureSweepIntervalHours',
+      'server.tokenPurgeIntervalHours',
       {
         name: 'Consent wording in force',
         explanation:
@@ -709,13 +655,7 @@ const catalogue: Group[] = [
           'The counts for the first, second and third level of each row: challenges posted, help offered, same boats, people connected with.',
         read: (c) => c.badgeLevelCounts.join(', '),
       },
-      {
-        name: 'Crowns are checked every',
-        explanation:
-          'Each crown also moves on its own, when a count falls because a challenge or an account was deleted.',
-        read: (c) => c.badgeCrownCheckMinutes,
-        unit: MINUTES,
-      },
+      'server.badgeCrownCheckMinutes',
     ],
   },
   {
