@@ -287,14 +287,11 @@ function recountAfter(
   return (memberId, rows) => badges.recount(memberId, rows).catch(onError)
 }
 
-/** Challenges, counting the author's posted ones when a trend is confirmed,
- * which is when a challenge is posted (R-BADGE-1, R-ASK-9). */
-export function countingChallenges(
+// A challenge is posted when its trend is confirmed (R-ASK-9).
+function countingChallenges(
   challenges: ChallengeService,
-  badges: Pick<BadgeService, 'recount'>,
-  onError: (error: unknown) => void,
+  recount: Recount,
 ): ChallengeService {
-  const recount = recountAfter(badges, onError)
   return {
     ...challenges,
     confirmTrend: async (memberId, id, trendId) => {
@@ -305,14 +302,10 @@ export function countingChallenges(
   }
 }
 
-/** Connections, counting a same-boat request for its requester and an
- * accepted connection for both members (R-BADGE-1). */
-export function countingConnections(
+function countingConnections(
   connections: ConnectionService,
-  badges: Pick<BadgeService, 'recount'>,
-  onError: (error: unknown) => void,
+  recount: Recount,
 ): ConnectionService {
-  const recount = recountAfter(badges, onError)
   return {
     ...connections,
     request: async (requesterId, input) => {
@@ -337,14 +330,8 @@ export function countingConnections(
   }
 }
 
-/** The deck, counting a "been there" offer for the member who sent it; an
- * ask from the matches screen is not one (R-BADGE-1). */
-export function countingSwipes(
-  swipes: SwipeService,
-  badges: Pick<BadgeService, 'recount'>,
-  onError: (error: unknown) => void,
-): SwipeService {
-  const recount = recountAfter(badges, onError)
+// An ask from the matches screen is not a "been there" offer.
+function countingSwipes(swipes: SwipeService, recount: Recount): SwipeService {
   return {
     swipe: async (memberId, input) => {
       const outcome = await swipes.swipe(memberId, input)
@@ -355,15 +342,9 @@ export function countingSwipes(
   }
 }
 
-/** The game, counting the player's promotions whenever their progress may
- * have moved: their first visit, which makes them a Team Lead, and every
- * day recorded (R-BADGE-1, R-GAME-16). */
-export function countingGame(
-  game: GameService,
-  badges: Pick<BadgeService, 'recount'>,
-  onError: (error: unknown) => void,
-): GameService {
-  const recount = recountAfter(badges, onError)
+// A player's progress may move on their first visit, which makes them a Team
+// Lead, and on every day recorded (R-GAME-16).
+function countingGame(game: GameService, recount: Recount): GameService {
   return {
     ...game,
     state: async (memberId) => {
@@ -376,5 +357,30 @@ export function countingGame(
       if (result !== 'implausible') await recount(memberId, ['game'])
       return result
     },
+  }
+}
+
+/** Decorators that count toward the badges where each counted act is
+ * recorded: a posted challenge, a same-boat request, a connection for both
+ * members, a "been there" offer, and the game's promotions (R-BADGE-1). */
+export interface Counting {
+  challenges(service: ChallengeService): ChallengeService
+  connections(service: ConnectionService): ConnectionService
+  swipes(service: SwipeService): SwipeService
+  game(service: GameService): GameService
+}
+
+/** The counting decorators, each recounting through `badges` and reporting a
+ * failed count to `onError` without failing the act (R-BADGE-1). */
+export function counting(
+  badges: Pick<BadgeService, 'recount'>,
+  onError: (error: unknown) => void,
+): Counting {
+  const recount = recountAfter(badges, onError)
+  return {
+    challenges: (service) => countingChallenges(service, recount),
+    connections: (service) => countingConnections(service, recount),
+    swipes: (service) => countingSwipes(service, recount),
+    game: (service) => countingGame(service, recount),
   }
 }

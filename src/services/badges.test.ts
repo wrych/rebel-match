@@ -1,10 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import type { BadgeRow } from '../badges/rows.js'
 import {
-  countingChallenges,
-  countingConnections,
-  countingGame,
-  countingSwipes,
+  counting,
   createBadges,
   type BadgeService,
   type BadgeStore,
@@ -606,10 +603,8 @@ describe('counting where acts are recorded (R-BADGE-1)', () => {
 
   it('counts a challenge for its author when its trend is confirmed', async () => {
     const counted = recorder()
-    const service = countingChallenges(
+    const service = counting(counted.badges, () => undefined).challenges(
       challenges('saved'),
-      counted.badges,
-      () => undefined,
     )
 
     expect(await service.confirmTrend('ana', 'c1', '03')).toBe('saved')
@@ -618,10 +613,8 @@ describe('counting where acts are recorded (R-BADGE-1)', () => {
 
   it('counts nothing for a confirmation refused', async () => {
     const counted = recorder()
-    const service = countingChallenges(
+    const service = counting(counted.badges, () => undefined).challenges(
       challenges('not_found'),
-      counted.badges,
-      () => undefined,
     )
 
     await service.confirmTrend('ana', 'c1', '03')
@@ -646,10 +639,8 @@ describe('counting where acts are recorded (R-BADGE-1)', () => {
 
   it('counts a same-boat request for the member who sent it', async () => {
     const counted = recorder()
-    const service = countingConnections(
+    const service = counting(counted.badges, () => undefined).connections(
       connections({ result: 'created', id: 'r1' }),
-      counted.badges,
-      () => undefined,
     )
 
     await service.request('ana', { targetId: 'ben', kind: 'same_boat' })
@@ -660,10 +651,8 @@ describe('counting where acts are recorded (R-BADGE-1)', () => {
 
   it('counts a connection joined at once for both members (R-CONN-8)', async () => {
     const counted = recorder()
-    const service = countingConnections(
+    const service = counting(counted.badges, () => undefined).connections(
       connections({ result: 'joined', id: 'r1' }),
-      counted.badges,
-      () => undefined,
     )
 
     await service.request('ana', { targetId: 'ben', kind: 'been_there' })
@@ -676,10 +665,8 @@ describe('counting where acts are recorded (R-BADGE-1)', () => {
 
   it('counts nothing for a request refused', async () => {
     const counted = recorder()
-    const service = countingConnections(
+    const service = counting(counted.badges, () => undefined).connections(
       connections({ result: 'not_found' }),
-      counted.badges,
-      () => undefined,
     )
 
     await service.request('ana', { targetId: 'ben', kind: 'same_boat' })
@@ -689,10 +676,8 @@ describe('counting where acts are recorded (R-BADGE-1)', () => {
 
   it('counts an accepted connection for both members, a declined one not at all', async () => {
     const counted = recorder()
-    const service = countingConnections(
+    const service = counting(counted.badges, () => undefined).connections(
       connections({ result: 'created', id: 'r1' }, 'ana'),
-      counted.badges,
-      () => undefined,
     )
 
     await service.respond('ben', 'r1', 'declined')
@@ -710,10 +695,8 @@ describe('counting where acts are recorded (R-BADGE-1)', () => {
 
   it('counts a "been there" from the deck as help offered', async () => {
     const counted = recorder()
-    const service = countingSwipes(
+    const service = counting(counted.badges, () => undefined).swipes(
       swipes({ result: 'recorded' }),
-      counted.badges,
-      () => undefined,
     )
 
     await service.swipe('ana', {
@@ -728,10 +711,8 @@ describe('counting where acts are recorded (R-BADGE-1)', () => {
 
   it('counts nothing for a card that was not there', async () => {
     const counted = recorder()
-    const service = countingSwipes(
+    const service = counting(counted.badges, () => undefined).swipes(
       swipes({ result: 'not_found' }),
-      counted.badges,
-      () => undefined,
     )
 
     await service.swipe('ana', { challengeId: 'c1', action: 'been_there' })
@@ -742,20 +723,16 @@ describe('counting where acts are recorded (R-BADGE-1)', () => {
   it("counts promotions on a player's visit and each plausible day", async () => {
     const counted = recorder()
     let result: 'implausible' | 'recorded' = 'recorded'
-    const game = countingGame(
-      {
-        state: () => Promise.resolve({} as never),
-        recordDay: () =>
-          Promise.resolve(
-            result === 'implausible' ? 'implausible' : ({} as never),
-          ),
-        share: unused,
-        seeHint: unused,
-        leaderboard: unused,
-      },
-      counted.badges,
-      () => undefined,
-    )
+    const game = counting(counted.badges, () => undefined).game({
+      state: () => Promise.resolve({} as never),
+      recordDay: () =>
+        Promise.resolve(
+          result === 'implausible' ? 'implausible' : ({} as never),
+        ),
+      share: unused,
+      seeHint: unused,
+      leaderboard: unused,
+    })
 
     await game.state('ana')
     await game.recordDay('ana', { level: 1, outcome: 'won', playSeconds: 60 })
@@ -772,11 +749,9 @@ describe('counting where acts are recorded (R-BADGE-1)', () => {
     const counted = recorder()
     counted.fail()
     const errors: unknown[] = []
-    const service = countingSwipes(
-      swipes({ result: 'recorded' }),
-      counted.badges,
-      (error) => errors.push(error),
-    )
+    const service = counting(counted.badges, (error) =>
+      errors.push(error),
+    ).swipes(swipes({ result: 'recorded' }))
 
     const outcome = await service.swipe('ana', {
       challengeId: 'c1',
@@ -785,5 +760,19 @@ describe('counting where acts are recorded (R-BADGE-1)', () => {
 
     expect(outcome).toEqual({ result: 'recorded' })
     expect(errors).toHaveLength(1)
+  })
+
+  it('reports a failed count from each decorator to the one reporter', async () => {
+    const counted = recorder()
+    counted.fail()
+    const errors: unknown[] = []
+    const count = counting(counted.badges, (error) => errors.push(error))
+
+    await count.challenges(challenges('saved')).confirmTrend('ana', 'c1', '03')
+    await count
+      .swipes(swipes({ result: 'recorded' }))
+      .swipe('ana', { challengeId: 'c1', action: 'been_there' })
+
+    expect(errors).toHaveLength(2)
   })
 })
