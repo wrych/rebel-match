@@ -1691,15 +1691,18 @@ invite link (R-INV-1).
   kept with the account and erased with it (R-NFR-7); they are not activity
   history (R-STAT-4).
 - **R-BADGE-15 (Hosts' switch)** — Hosts SHALL turn badges on and off with
-  `limits.badges` (a switch in the host tools, R-CFG-6, on by default).
+  `limits.badges` (a switch in the host tools, R-CFG-6, off by default).
   WHILE it is off the menu SHALL NOT offer **Badges**, `/badges` and the
   screens under it, and their endpoints, SHALL answer as not found (R-NAV-8),
   and no badge SHALL be notified. Counting SHALL go on: levels, crowns and
   event badges earned while off SHALL be recorded quietly, as at launch
   (R-BADGE-11), none of them new, so turning badges back on shows every
-  member what they hold. Badges already earned SHALL be kept. Hosts SHALL
+  member what they hold. Badges already earned SHALL be kept. Badge
+  notifications sent before the switch went off SHALL stay in the
+  notifications list (R-NOTE-5): it is a log of what was sent. Hosts SHALL
   still give invites event badges (R-BADGE-4).
-  _(Andy, 2026-11-09: "put the badges system behind a switch".)_
+  _(Andy, 2026-11-09: "put the badges system behind a switch", off by
+  default, counting on while off, notifications kept as a log.)_
 
 ---
 

@@ -112,7 +112,7 @@ thresholds have sane defaults in the file and may be overridden by env.
 | `limits.socialLinkMaxChars`           | `200`                         | R-PROF-5                  |
 | `limits.profilePhotos` (switch)       | `0`                           | R-PROF-6                  |
 | `limits.photoMaxBytes`                | `200000`                      | R-PROF-6                  |
-| `limits.badges` (switch)              | `1`                           | R-BADGE-15                |
+| `limits.badges` (switch)              | `0`                           | R-BADGE-15                |
 | `limits.liveCodeSeconds`              | `30` (10–120)                 | R-CODE-5, R-CODE-8        |
 | `limits.liveCodeGraceSeconds`         | `10` (0–30, ≤ the above)      | R-CODE-5, R-CODE-8        |
 | `limits.liveCodeKeepMinutes`          | `60`                          | R-CODE-6                  |
