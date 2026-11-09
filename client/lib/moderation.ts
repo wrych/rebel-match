@@ -1,3 +1,10 @@
+import {
+  banStatus,
+  dismissStatus,
+  hideStatus,
+  unbanStatus,
+  unhideStatus,
+} from '../../src/outcomes'
 import type {
   ModeratedChallenge,
   ModerationReason,
@@ -9,7 +16,7 @@ import type {
   ModerationPage,
   ReportedMember,
 } from '../../src/services/moderation'
-import { findJson, getJson, outcomeOf, send } from './request'
+import { findJson, getJson, outcomeFrom, send } from './request'
 
 export type {
   ModeratedChallenge,
@@ -55,9 +62,9 @@ export async function hideChallenge(
     'POST',
     { reason },
   )
-  return outcomeOf<'done' | 'gone'>(response, 'challenge not hidden', {
-    204: 'done',
-    404: 'gone',
+  return outcomeFrom(response, 'challenge not hidden', hideStatus, {
+    hidden: 'done',
+    not_found: 'gone',
   })
 }
 
@@ -67,9 +74,9 @@ export async function unhideChallenge(id: string): Promise<'done' | 'gone'> {
     `/api/admin/challenges/${encodeURIComponent(id)}/unhide`,
     'POST',
   )
-  return outcomeOf<'done' | 'gone'>(response, 'challenge not shown', {
-    204: 'done',
-    404: 'gone',
+  return outcomeFrom(response, 'challenge not shown', unhideStatus, {
+    shown: 'done',
+    not_found: 'gone',
   })
 }
 
@@ -84,10 +91,11 @@ export async function banMember(
     'POST',
     { note },
   )
-  return outcomeOf<'done' | 'gone' | 'refused'>(response, 'member not banned', {
-    204: 'done',
-    404: 'gone',
-    409: 'refused',
+  return outcomeFrom(response, 'member not banned', banStatus, {
+    banned: 'done',
+    not_found: 'gone',
+    self: 'refused',
+    last_admin: 'refused',
   })
 }
 
@@ -97,9 +105,9 @@ export async function unbanMember(memberId: string): Promise<'done' | 'gone'> {
     `/api/admin/members/${encodeURIComponent(memberId)}/unban`,
     'POST',
   )
-  return outcomeOf<'done' | 'gone'>(response, 'ban not lifted', {
-    204: 'done',
-    404: 'gone',
+  return outcomeFrom(response, 'ban not lifted', unbanStatus, {
+    unbanned: 'done',
+    not_found: 'gone',
   })
 }
 
@@ -131,9 +139,9 @@ export async function dismissReports(
   item: ModeratedItem,
 ): Promise<'done' | 'gone'> {
   const response = await send('/api/admin/reports/dismiss', 'POST', item)
-  return outcomeOf<'done' | 'gone'>(response, 'reports not dismissed', {
-    204: 'done',
-    404: 'gone',
+  return outcomeFrom(response, 'reports not dismissed', dismissStatus, {
+    dismissed: 'done',
+    not_found: 'gone',
   })
 }
 
@@ -179,9 +187,9 @@ export async function hideNote(
     'POST',
     { reason },
   )
-  return outcomeOf<'done' | 'gone'>(response, 'note not hidden', {
-    204: 'done',
-    404: 'gone',
+  return outcomeFrom(response, 'note not hidden', hideStatus, {
+    hidden: 'done',
+    not_found: 'gone',
   })
 }
 
@@ -191,8 +199,8 @@ export async function unhideNote(requestId: string): Promise<'done' | 'gone'> {
     `/api/admin/requests/${encodeURIComponent(requestId)}/unhide-note`,
     'POST',
   )
-  return outcomeOf<'done' | 'gone'>(response, 'note not shown', {
-    204: 'done',
-    404: 'gone',
+  return outcomeFrom(response, 'note not shown', unhideStatus, {
+    shown: 'done',
+    not_found: 'gone',
   })
 }

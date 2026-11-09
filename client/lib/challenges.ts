@@ -1,3 +1,4 @@
+import { withdrawStatus } from '../../src/outcomes'
 import type {
   Challenge,
   Matches,
@@ -6,7 +7,14 @@ import type {
   Trend,
   TrendDetail,
 } from '../../src/services/challenges'
-import { ensureOk, findJson, getJson, jsonOf, outcomeOf, send } from './request'
+import {
+  ensureOk,
+  findJson,
+  getJson,
+  jsonOf,
+  outcomeFrom,
+  send,
+} from './request'
 
 export type {
   Challenge,
@@ -145,9 +153,9 @@ export async function withdrawChallenge(
     `/api/challenges/${encodeURIComponent(id)}/withdraw`,
     'POST',
   )
-  return outcomeOf<'withdrawn' | 'gone'>(response, 'challenge not withdrawn', {
-    204: 'withdrawn',
-    404: 'gone',
+  return outcomeFrom(response, 'challenge not withdrawn', withdrawStatus, {
+    withdrawn: 'withdrawn',
+    not_found: 'gone',
   })
 }
 

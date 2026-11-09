@@ -8,6 +8,7 @@ import {
   type ModerationReason,
 } from '../services/challenge-moderation.js'
 import type { ReportItem, ReportService } from '../services/reports.js'
+import { reportStatus } from '../outcomes.js'
 import { handle, replyFound, replyOutcome } from './handle.js'
 import { requirePermission } from './require-permission.js'
 
@@ -15,13 +16,6 @@ const idParams = z.object({ id: z.string().min(1) })
 const reason = z.enum(
   moderationReasons as [ModerationReason, ...ModerationReason[]],
 )
-
-const reportStatus = {
-  reported: 204,
-  not_found: 404,
-  already_reported: 409,
-  too_many: 429,
-} as const
 
 type Deps = {
   auth: AuthProvider

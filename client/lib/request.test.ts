@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { findJson, getJson, outcomeOf, send } from './request'
+import { findJson, getJson, outcomeFrom, outcomeOf, send } from './request'
 
 function answer(status: number, body: unknown = {}): ReturnType<typeof vi.fn> {
   const fetchMock = vi.fn().mockResolvedValue({
@@ -102,5 +102,51 @@ describe('outcomeOf', () => {
     expect(() =>
       outcomeOf(response(500), 'not saved', { 404: 'gone', ok: 'done' }),
     ).toThrow('not saved (500)')
+  })
+})
+
+describe('outcomeFrom', () => {
+  const statuses = { saved: 204, absent: 404, taken: 409, late: 409 } as const
+  const distinct = { saved: 204, absent: 404 } as const
+
+  it('reads a status as the outcome the table answers it with', () => {
+    expect(outcomeFrom(response(404), 'x', distinct)).toBe('absent')
+  })
+
+  it('gives the outcome the name the client calls it', () => {
+    expect(
+      outcomeFrom(response(204), 'x', statuses, {
+        saved: 'done',
+        absent: 'gone',
+      }),
+    ).toBe('done')
+  })
+
+  it('reads outcomes sharing a status under their one name', () => {
+    expect(
+      outcomeFrom(response(409), 'x', statuses, {
+        taken: 'refused',
+        late: 'refused',
+      }),
+    ).toBe('refused')
+  })
+
+  it('throws for an outcome left unnamed, or a status not in the table', () => {
+    expect(() =>
+      outcomeFrom(response(409), 'not saved', statuses, { saved: 'done' }),
+    ).toThrow('not saved (409)')
+    expect(() => outcomeFrom(response(500), 'not saved', distinct)).toThrow(
+      'not saved (500)',
+    )
+  })
+
+  it('refuses a table it would read one status of two ways', () => {
+    expect(() => outcomeFrom(response(204), 'x', statuses)).toThrow('409')
+    expect(() =>
+      outcomeFrom(response(204), 'x', statuses, {
+        taken: 'refused',
+        late: 'expired',
+      }),
+    ).toThrow('409')
   })
 })

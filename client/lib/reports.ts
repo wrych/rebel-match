@@ -1,10 +1,11 @@
+import { reportStatus } from '../../src/outcomes'
 import type { ModerationReason } from '../../src/services/challenge-moderation'
 import type {
   ReportItem,
   ReportOutcome,
   ReportTarget,
 } from '../../src/services/reports'
-import { findJson, outcomeOf, send } from './request'
+import { findJson, outcomeFrom, send } from './request'
 
 export type { ReportItem, ReportOutcome, ReportTarget }
 
@@ -37,12 +38,7 @@ export async function sendReport(
     reason,
     comment,
   })
-  return outcomeOf<ReportOutcome>(response, 'report not sent', {
-    204: 'reported',
-    404: 'not_found',
-    409: 'already_reported',
-    429: 'too_many',
-  })
+  return outcomeFrom(response, 'report not sent', reportStatus)
 }
 
 /** Where a report link leads (design S38). */

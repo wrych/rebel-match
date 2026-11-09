@@ -1,4 +1,5 @@
-import { getJson, outcomeOf, send } from './request'
+import { approveStatus, rejectStatus } from '../../src/outcomes'
+import { getJson, outcomeFrom, send } from './request'
 
 /** A pending request as `GET /api/admin/applicants` sends it (R-AUTH-11). */
 export interface Applicant {
@@ -32,9 +33,14 @@ export async function decide(
     `/api/admin/applicants/${encodeURIComponent(id)}/${decision}`,
     'POST',
   )
-  return outcomeOf<DecisionOutcome>(response, 'decision failed', {
-    204: 'done',
-    404: 'not-pending',
-    502: 'link-failed',
-  })
+  return decision === 'approve'
+    ? outcomeFrom(response, 'decision failed', approveStatus, {
+        approved: 'done',
+        not_pending: 'not-pending',
+        link_failed: 'link-failed',
+      })
+    : outcomeFrom(response, 'decision failed', rejectStatus, {
+        rejected: 'done',
+        not_pending: 'not-pending',
+      })
 }

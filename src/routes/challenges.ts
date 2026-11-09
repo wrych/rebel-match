@@ -4,6 +4,7 @@ import { z } from 'zod'
 import type { AuthProvider } from '../auth/index.js'
 import type { Limits, LiveSettings } from '../config.js'
 import type { ChallengeService } from '../services/challenges.js'
+import { withdrawStatus } from '../outcomes.js'
 import { handle, replyFound, replyOutcome } from './handle.js'
 import { requirePermission, requireSession } from './require-permission.js'
 
@@ -11,8 +12,6 @@ const challengeParams = z.object({ id: z.string().min(1) })
 const confirmBody = z.object({ trendId: z.string().min(1) })
 const trendParams = z.object({ trendId: z.string().min(1) })
 const newestQuery = z.object({ trend: z.string().min(1).optional() })
-
-const withdrawStatus = { withdrawn: 204, not_found: 404 } as const
 
 const confirmStatus = {
   saved: 204,

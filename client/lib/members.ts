@@ -1,8 +1,16 @@
+import { grantStatus, revokeStatus } from '../../src/outcomes'
 import type {
   MemberDetail,
   RosterMember,
 } from '../../src/services/member-roster'
-import { failure, findJson, getJson, outcomeOf, send } from './request'
+import {
+  failure,
+  findJson,
+  getJson,
+  outcomeFrom,
+  outcomeOf,
+  send,
+} from './request'
 
 export type { MemberDetail, RosterMember }
 
@@ -39,9 +47,9 @@ export async function grantRole(
     'POST',
     { role },
   )
-  return outcomeOf<RoleOutcome>(response, 'granting failed', {
-    204: 'done',
-    404: 'gone',
+  return outcomeFrom(response, 'granting failed', grantStatus, {
+    granted: 'done',
+    no_member: 'gone',
   })
 }
 
@@ -54,10 +62,10 @@ export async function revokeRole(
     `/api/admin/members/${encodeURIComponent(id)}/roles/${encodeURIComponent(role)}`,
     'DELETE',
   )
-  return outcomeOf<RoleOutcome>(response, 'revoking failed', {
-    204: 'done',
-    404: 'gone',
-    409: 'last-holder',
+  return outcomeFrom(response, 'revoking failed', revokeStatus, {
+    revoked: 'done',
+    not_held: 'gone',
+    last_holder: 'last-holder',
   })
 }
 

@@ -7,6 +7,7 @@ import {
 } from '../services/challenge-moderation.js'
 import type { ModerationService } from '../services/moderation.js'
 import type { NotificationService } from '../services/notifications.js'
+import { dismissStatus, hideStatus, unhideStatus } from '../outcomes.js'
 import { handle, notFound, replyOutcome } from './handle.js'
 import { requirePermission } from './require-permission.js'
 
@@ -20,8 +21,6 @@ const hideBody = z.object({
     moderationReasons as [ModerationReason, ...ModerationReason[]],
   ),
 })
-const hideStatus = { hidden: 204, not_found: 404 } as const
-const unhideStatus = { shown: 204, not_found: 404 } as const
 
 const dismissBody = z.union([
   z.object({ challengeId: z.string().min(1) }).strict(),
@@ -32,9 +31,7 @@ const dismissBody = z.union([
 function dismiss(moderation: ModerationService): RequestHandler {
   return handle({ body: dismissBody }, async ({ body, member }, response) => {
     const outcome = await moderation.dismiss(body, member.id)
-    response
-      .status(outcome === 'dismissed' ? 204 : 404)
-      .json({ result: outcome })
+    replyOutcome(response, dismissStatus, outcome)
   })
 }
 
