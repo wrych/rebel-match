@@ -62,11 +62,9 @@ import { createSwipes } from './services/swipes.js'
 import { createBadgeStore } from './services/badge-store.js'
 import { createEventBadgeStore } from './services/event-badge-store.js'
 import {
-  countingChallenges,
-  countingConnections,
-  countingGame,
-  countingSwipes,
+  counting,
   createBadges,
+  type Counting,
   type BadgeService,
 } from './services/badges.js'
 import {
@@ -201,32 +199,25 @@ function directRules(
   }
 }
 
-interface Counting {
-  service: BadgeService
-  onError: (error: unknown) => void
-}
-
 // Asking and connecting, each counting toward the badges where a counted act
 // is recorded (R-BADGE-1).
 function composeCounted(
   config: Config,
   db: Database,
   track: Track,
-  badges: Counting,
+  count: Counting,
   settings: LiveSettings,
 ): Pick<AppDeps, 'challenges' | 'connections'> {
   return {
-    challenges: countingChallenges(
+    challenges: count.challenges(
       createChallenges({
         store: createChallengeStore(db),
         rank: newestFirst,
         newestShown: config.limits.newestChallengesShown,
         track,
       }),
-      badges.service,
-      badges.onError,
     ),
-    connections: countingConnections(
+    connections: count.connections(
       createConnections({
         store: createConnectionStore(db),
         newId: randomUUID,
@@ -234,8 +225,6 @@ function composeCounted(
         direct: () => directRules(settings, createProfileCodeStore(db)),
         socialLinksOn: () => settings.limits().socialLinks === 1,
       }),
-      badges.service,
-      badges.onError,
     ),
   }
 }
@@ -246,7 +235,7 @@ function composeJourneys(
   db: Database,
   track: Track,
   settings: LiveSettings,
-  badges: Counting,
+  count: Counting,
 ): Pick<
   AppDeps,
   | 'challenges'
@@ -259,7 +248,7 @@ function composeJourneys(
   | 'notificationSettings'
 > {
   const notes = composeNotifications(db, settings)
-  const counted = composeCounted(config, db, track, badges, settings)
+  const counted = composeCounted(config, db, track, count, settings)
   const { challenges, connections } = counted
   const follows = createFollows({
     store: createFollowStore(db),
@@ -270,10 +259,8 @@ function composeJourneys(
     challenges,
     deck: markingDeckOpened(composeDeck(config, db, track), notes),
     connections: markingOpened(connections, notes),
-    swipes: countingSwipes(
+    swipes: count.swipes(
       createSwipes({ store: createSwipeStore(db), connections, track }),
-      badges.service,
-      badges.onError,
     ),
     follows,
     cockpit: createCockpit({
@@ -588,9 +575,9 @@ function composeGame(
   db: Database,
   settings: LiveSettings,
   track: Track,
-  badges: Counting,
+  count: Counting,
 ): AppDeps['game'] {
-  return countingGame(
+  return count.game(
     createGame({
       store: createGameStore(db),
       settings: () => settings.game(),
@@ -598,8 +585,6 @@ function composeGame(
       newId: randomUUID,
       track,
     }),
-    badges.service,
-    badges.onError,
   )
 }
 
@@ -786,10 +771,7 @@ export function composeApp(
     store: createSettingOverrideStore(db),
   })
   const badges = composeBadges(config, db, settings, track)
-  const counting = {
-    service: badges,
-    onError: hooks.onBadgeError ?? ignoreError,
-  }
+  const count = counting(badges, hooks.onBadgeError ?? ignoreError)
   const networks = composeNetwork(config, db, settings)
 
   const deps: Omit<AppDeps, 'scheduled'> = {
@@ -812,10 +794,10 @@ export function composeApp(
       store: createActivityStore(db),
       newId: randomUUID,
     }),
-    ...composeJourneys(config, db, track, settings, counting),
+    ...composeJourneys(config, db, track, settings, count),
     ...composeReports(db, track, settings),
     badges: markingBadgesOpened(badges, composeNotifications(db, settings)),
-    game: composeGame(config, db, settings, track, counting),
+    game: composeGame(config, db, settings, track, count),
     ...networks,
     recap: composeRecap(db, settings, badges, networks.network),
     memberSearch: composeMemberSearch(db, settings, track),
