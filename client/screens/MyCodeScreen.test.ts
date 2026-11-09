@@ -80,6 +80,15 @@ afterEach(() => {
 })
 
 describe('MyCodeScreen (S47, R-CODE-1, R-CODE-2)', () => {
+  it('draws its tabs as a row of buttons, not as the bottom bar (R-LOOK-4)', async () => {
+    server({ token: 'tok-1', enabled: true })
+    const screen = await mountScreen()
+
+    const tablist = screen.find('[role="tablist"]')
+    expect(tablist.classes()).toContain('screen-tabs')
+    expect(tablist.classes()).not.toContain('tabs')
+  })
+
   it('shows the profile code as a QR of its link, with the member’s name and no controls (R-CODE-4)', async () => {
     route.query = { tab: 'profile' }
     server({ token: 'tok-1', enabled: true })

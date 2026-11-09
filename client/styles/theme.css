@@ -308,6 +308,14 @@ a {
   padding-top: 1rem;
 }
 
+/* Tabs within a screen, as buttons side by side, unlike the bottom bar's. */
+.screen-tabs {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 0.5rem;
+}
+
 /* The bottom bar on member screens, as the prototype's (R-MINE-4). */
 .tabs {
   position: sticky;
