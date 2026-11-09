@@ -2169,8 +2169,10 @@ connects at once (ADR 0063).
   app's browser: it is stored with the magic link and gone with it (R-AUTH-5),
   and never logged. R-NAV-6 SHALL accept a fragment on `/p` and `/p/connect`
   and drop it on every other path.
-- **R-CODE-4 (Turning it off, resetting it)** — The profile screen and S47
-  SHALL offer **Profile code: on / off** and **Reset code**. Off SHALL make
+- **R-CODE-4 (Turning it off, resetting it)** — The profile screen SHALL
+  offer **Profile code: on / off** and **Reset code**; S47 SHALL NOT repeat
+  them, and while the code is off SHALL say so with a link to the profile
+  screen. _(Andy, 2026-11-09, from testing: S47 is reached from there.)_ Off SHALL make
   the code not found until turned on again, the same code; Reset SHALL replace
   it at once, so a code printed or posted stops working (R-CODE-3). While
   `limits.connectCodes` is off the profile screen SHALL NOT show them, and
