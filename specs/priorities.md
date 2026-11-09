@@ -43,7 +43,7 @@ step by step so we certainly have something that works.")_
 | S2  | Follow a trend / "follow this topic"                                                  | Low effort; drives return visits.                                                            |
 | S3  | Usage analytics (Mixpanel, free tier, EU residency)                                   | See how the summit crowd uses it; privacy-scoped (no PII).                                   |
 | S4  | Email notification on an incoming connection request                                  | At the summit everyone is in the room, so in-app may suffice — but valuable right after.     |
-| S5  | Feedback affordance (mailto)                                                          | Cheap; useful signal during the pilot.                                                       |
+| S5  | Feedback form, emailed to the owner                                                   | Cheap; useful signal during the pilot.                                                       |
 | S6  | Use the ~15 real collected challenges as seed                                         | Makes the summit demo authentic.                                                             |
 | S7  | Notifications kept in the app, mailed at a cadence per type                           | One member can get many requests in a summit hour; grouping keeps inboxes usable (ADR 0037). |
 | S8  | 9toRevolution, the office game behind the impressum in happy mode, with a leaderboard | An easter egg for the summit, behind a switch hosts flip (R-GAME-1..20, ADR 0045). Was W1.   |

@@ -142,6 +142,8 @@ thresholds have sane defaults in the file and may be overridden by env.
 | `abuse.humanCheckCost`                | `1000`                        | R-NFR-8                   |
 | `abuse.humanCheckMinutes`             | `5`                           | R-NFR-8                   |
 | `abuse.liveCodesPerMinute`            | `20`                          | R-CODE-5                  |
+| `abuse.feedbackCeiling`               | `10`                          | R-FB-2                    |
+| `abuse.feedbackWindowMinutes`         | `60`                          | R-FB-2                    |
 | `trustProxy` (`TRUST_PROXY`)          | `0`; `1` on Cloud Run         | R-NFR-8                   |
 | `settingsRefreshSeconds`              | `60`                          | R-CFG-6                   |
 | `seed.profile`                        | `dev` \| `prod`               | R-SEED-4                  |
@@ -324,11 +326,12 @@ so nothing shows, and the rainbow in happy mode (R-LOOK-3). The favicon cannot
 read tokens, so happy mode swaps it for `favicon-happy.svg`.
 
 The header's right-hand button opens the **menu** (R-PROF-3): "Profile &
-privacy" (`/profile`), Feedback (R-FB-1), the host tools
+privacy" (`/profile`), the host tools
 the member's permissions allow (paths and permissions from the route table, ADR
-0017), the Impressum (`/impressum`, R-PROF-4), and sign out. It is a small panel under the header, closed by Escape, by a click
+0017), the Impressum (`/impressum`, R-PROF-4), and sign out, with Feedback
+(`/feedback`, R-FB-1) beside the version at its foot. It is a small panel under the header, closed by Escape, by a click
 outside it or by choosing an item, with focus returned to the button. Signed
-out, the menu offers the Impressum. The colour mode switch is on the profile
+out, the menu offers the Impressum and Feedback. The colour mode switch is on the profile
 screen (R-LOOK-2), which folds into cards and searches them with the host
 settings' component and search (R-PROF-8). The welcome screen keeps the two
 doors and "Your matches"; host tools and sign out move into the menu.
@@ -1196,7 +1199,7 @@ CREATE TABLE outbox (
   to_email    VARCHAR(320) NOT NULL,
   kind        ENUM('magic_link','approval','connection_request',
                    'admin_notice','connection_accepted','connection_added',
-                   'trend_challenge','notification_digest')
+                   'trend_challenge','notification_digest','feedback')
                            NOT NULL,
   subject     VARCHAR(255) NOT NULL,
   body_text   TEXT         NOT NULL,             -- credential redacted outside dev
@@ -1570,6 +1573,7 @@ and answers `204`, or `500` when some of it failed; any other caller gets
 | DELETE | `/api/me/history`       | —                                                          | Delete the member's own deck views, nothing else (R-STAT-4). Answers `204`.                                                                                                                                                                                                                                                                                                                                            |
 | DELETE | `/api/profile`          | —                                                          | Delete the member's own account as `DELETE /api/admin/members/:id` does: deactivate now, erase after the grace period; then end the session (R-PROF-2, ADR 0032). Refused with 409 `last_admin` or `created_invites`, as there. Answers `{eraseAfter}`.                                                                                                                                                                |
 | POST   | `/api/events`           | `{event, props}`                                           | The UI events of §7 (`journey_chosen`, `feedback_opened`, `game_opened`, `experiment_exposed`, `matches_section_opened`, `match_connect_tapped`, `contact_reached_out`, `notifications_list_opened`, `notification_opened`, `screen_viewed`) with their listed properties only; anything else → `400`. Forwarded to Mixpanel only for a member opted in; always `204` otherwise, so the client cannot tell (ADR 0026). |
+| POST   | `/api/feedback`         | `{message, name?, email?, screen?, altcha?}`               | Public. Emails `FEEDBACK_TO` (R-FB-1), recorded as kind `feedback`; `204` when sent. A visitor without a solved check gets `200 {state: 'human-check', challenge}`; past `abuse.feedbackCeiling` per member or network, `429` (R-FB-2).                                                                                                                                                                                |
 | GET    | `/api/flags`            | —                                                          | `{flags: {<experiment>: <variant>}}`: the caller's variant of each experiment in code, assigned from their id (R-EXP-1, ADR 0051). Any session.                                                                                                                                                                                                                                                                        |
 
 The profile form — on the check-your-email screen and as the profile step — is
@@ -1850,11 +1854,11 @@ sets it again after every navigation, as _Rebel Match | Screen_.
 | S45 | **A member's card** — the member card as the deck shows it, no email, with **Connect**, or _Connected_ and **Open contact** (S16) when already connected; reached from a result or a profile code (R-FIND-6, R-CODE-3)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | `/people/:memberId`, `/p#t=…`                         |
 | S46 | **Connect directly** — the member's card, an optional note, **Send request**; S13 follows; S16 at once when already connected (R-FIND-6, R-FIND-7)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | `/people/:memberId/connect`, `/p/connect#t=…`         |
 | S47 | **Your code** — two tabs, opening on the second. _Connect now_: the live code's QR and the member's name, a small ring in its corner emptying as its time on screen runs out, replaced in place, and who just connected. _Share my profile_: the profile code's QR and the member's name, **Share** (the code as an image, through the share sheet) with **Copy link** beside it, **Profile code: on / off**, **Reset code** (R-CODE-1..6)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | `/me/code`                                            |
+| S48 | **Feedback** — a message, a name and an email (filled in from the profile when signed in, editable), **Send**, then _Thank you_; the human check runs by itself for a visitor; public, reached from the menu's foot and the not-found screen (R-FB-1, R-FB-2)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | `/feedback?from=<screen>`                             |
 | —   | **A live code opened** — connecting, then on to S16; or _Sign in to use live connect codes_; or _This code has expired — ask for a fresh one_ (R-CODE-6, R-CODE-7)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | `/c#t=…`                                              |
 
-Remaining overlays, deliberately: the "really decline this request?" confirm, the
-"link sent" / "copied" toasts, and the feedback action (a `mailto:`, not a
-screen). Everything else above is linkable — which is exactly what makes the
+Remaining overlays, deliberately: the "really decline this request?" confirm, and
+the "link sent" / "copied" toasts. Everything else above is linkable — which is exactly what makes the
 notification emails in R-NAV-9 useful.
 
 **Removed vs prototype:** standings (badges came back as S35, ADR 0053),
@@ -2293,6 +2297,11 @@ Alternatives considered (kept only as fallbacks):
     accepted once; `abuse.humanCheckCost` (1000) sets the PBKDF2 work per
     try. The widget loads only when a check is asked for, with its
     interaction signature off.
+  - feedback on `POST /api/feedback`, `abuse.feedbackCeiling` (10) per
+    `abuse.feedbackWindowMinutes` (60), per member when signed in and per IP
+    otherwise: over it, `429`. A visitor's every message needs a solved
+    ALTCHA payload, answered `{state: 'human-check', challenge}` until then
+    (R-FB-2);
   - per member, `abuse.liveCodesPerMinute` (20) live codes a minute on
     `POST /api/me/live-codes`: over it, `429`, and S47 hides the code it
     shows and asks again at its next turn (R-CODE-5). S47 asks once on opening and once every
