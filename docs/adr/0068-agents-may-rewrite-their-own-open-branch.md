@@ -1,6 +1,6 @@
 # 0068. Agents may rewrite their own open branch, with a lease
 
-- **Status:** Proposed
+- **Status:** Accepted, by the maintainer merging wrych/rebel-match#345
 - **Date:** 2026-11-08
 - **Deciders:** Andy Moesch
 
@@ -32,12 +32,17 @@ nothing about its own.
 - **Never** `main`, a merged branch, a branch someone else pushed to, or a
   plain `--force`. The files come out the same unless the rewrite is the fix;
   the agent says in the pull request what it rewrote and why.
-- **The harness allows exactly that command.** The maintainer adds
-  `Bash(git push --force-with-lease:*)` to the `permissions.allow` list in
-  `.claude/settings.json`, so agents push that way without asking; plain
-  `--force` still asks. An agent does not grant itself this: the harness
-  refuses an agent's edit to its own permissions. `main` keeps force pushes
-  disabled in its branch protection, which is what holds the rule for `main`.
+- **The harness lets that form through without asking.** The maintainer adds
+  `Bash(git push --force-with-lease=:*)` to the `permissions.allow` list in
+  `.claude/settings.json`; a bare `--force-with-lease` and plain `--force`
+  still ask. An agent does not grant itself this: the harness refuses an
+  agent's edit to its own permissions.
+- **The allow rule is a convenience, not a guard.** It matches by prefix, so
+  it cannot require the commit, check whose branch is named, or refuse a
+  `+` refspec or an added `--force` after it. Those rest on this rule, which
+  an agent breaking it breaks openly, in a command the transcript shows.
+  `main` keeps force pushes disabled in its branch protection, which is what
+  holds the rule for `main`.
 
 ## Alternatives considered
 
@@ -53,8 +58,8 @@ nothing about its own.
 - An agent can repair its own branch the way a person would, without a stop.
 - A reviewer's checkout of the branch goes stale after a rewrite; the pull
   request comment says so.
-- The allow rule cannot tell whose branch it is: this rule and the lease
-  carry that. A harness that can tell should narrow it.
+- The allow rule cannot tell whose branch it is or check the lease's commit:
+  this rule carries that. A harness that can tell should narrow it.
 - This is a rule for every xigo project. It belongs in xigOS (xigOS ADR
   0002); this copy stands until Rebel Match moves onto xigOS.
 
