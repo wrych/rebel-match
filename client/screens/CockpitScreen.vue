@@ -222,11 +222,15 @@ onMounted(() => {
       </section>
 
       <section class="stack rule" aria-labelledby="mine">
-        <h2 id="mine" class="display display-md">Your challenges</h2>
-        <template v-if="cockpit.challenges.length === 0">
-          <p class="empty">You have not asked for help yet.</p>
-          <RouterLink to="/ask" class="row-link">Ask for help</RouterLink>
-        </template>
+        <div class="title-row">
+          <h2 id="mine" class="display display-md">Your challenges</h2>
+          <RouterLink to="/ask" class="btn btn-small btn-ghost"
+            >Ask for help</RouterLink
+          >
+        </div>
+        <p v-if="cockpit.challenges.length === 0" class="empty">
+          You have not asked for help yet.
+        </p>
         <p v-if="withdrawnNotice" class="notice notice-solid" role="status">
           {{ withdrawnNotice }}
         </p>

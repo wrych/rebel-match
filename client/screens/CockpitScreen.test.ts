@@ -123,6 +123,19 @@ describe('CockpitScreen', () => {
     },
   )
 
+  it('puts Ask for help beside Your challenges, with or without one (R-MINE-1)', async () => {
+    serve(cockpit, () => [])
+    const screen = await mountScreen()
+
+    const row = screen.find('#mine').element.parentElement
+    expect(row?.classList.contains('title-row')).toBe(true)
+    const ask = screen
+      .findAllComponents(RouterLinkStub)
+      .find((link) => link.props('to') === '/ask')
+    expect(ask?.text()).toBe('Ask for help')
+    expect(row?.contains(ask?.element ?? null)).toBe(true)
+  })
+
   it('puts Search, with a magnifying glass, beside Your connections (R-FIND-1)', async () => {
     config.limits.memberSearch = 1
     serve(cockpit, () => [])
