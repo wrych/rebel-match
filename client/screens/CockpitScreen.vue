@@ -32,6 +32,9 @@ const people = computed(() => byMember(connected.value))
 const problem = ref<string | null>(null)
 const answering = ref<string | null>(null)
 const notice = ref<string | null>(null)
+const waitingShown = computed(
+  () => incoming.value.length > 0 || notice.value !== null,
+)
 const failed = ref<string | null>(null)
 const withdrawnNotice = ref<string | null>(null)
 const canSearch = ref(false)
@@ -135,12 +138,11 @@ onMounted(() => {
     <h1 class="display display-lg">Your matches</h1>
 
     <template v-if="cockpit">
-      <section class="stack" aria-labelledby="waiting">
+      <section v-if="waitingShown" class="stack" aria-labelledby="waiting">
         <h2 id="waiting" class="display display-md kicker-accent">
           Waiting for you
         </h2>
-        <p v-if="incoming.length === 0" class="empty">No requests waiting.</p>
-        <p v-else class="small">
+        <p v-if="incoming.length > 0" class="small">
           Accepting shares your email addresses with each other. Open a request
           to read it in full first.
         </p>
@@ -187,7 +189,11 @@ onMounted(() => {
         </div>
       </section>
 
-      <section class="stack rule" aria-labelledby="connections">
+      <section
+        class="stack"
+        :class="{ rule: waitingShown }"
+        aria-labelledby="connections"
+      >
         <div class="title-row">
           <h2 id="connections" class="display display-md">Your connections</h2>
           <RouterLink

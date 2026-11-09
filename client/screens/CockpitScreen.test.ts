@@ -123,6 +123,33 @@ describe('CockpitScreen', () => {
     },
   )
 
+  it('hides Waiting for you while no request waits (R-MINE-2)', async () => {
+    serve(cockpit, () => [])
+    const screen = await mountScreen()
+
+    expect(screen.find('#waiting').exists()).toBe(false)
+    expect(screen.text()).not.toContain('Waiting for you')
+    expect(
+      screen
+        .find('#connections')
+        .element.closest('section')
+        ?.classList.contains('rule'),
+    ).toBe(false)
+  })
+
+  it('shows Waiting for you with the requests that wait (R-MINE-2)', async () => {
+    serve(cockpit, () => [request])
+    const screen = await mountScreen()
+
+    expect(screen.find('#waiting').text()).toBe('Waiting for you')
+    expect(
+      screen
+        .find('#connections')
+        .element.closest('section')
+        ?.classList.contains('rule'),
+    ).toBe(true)
+  })
+
   it('puts Ask for help beside Your challenges, with or without one (R-MINE-1)', async () => {
     serve(cockpit, () => [])
     const screen = await mountScreen()
@@ -207,7 +234,7 @@ describe('CockpitScreen', () => {
     expect(screen.get('[role="status"]').text()).toBe(
       'You are connected with Bea There.',
     )
-    expect(screen.text()).toContain('No requests waiting.')
+    expect(screen.find('#waiting').exists()).toBe(true)
     expect(paths(screen)).toContain('/matches/requests/r1/contact')
   })
 
@@ -320,7 +347,7 @@ describe('CockpitScreen', () => {
     let waiting: ConnectionView[] = []
     serve(cockpit, () => waiting)
     const screen = await mountScreen()
-    expect(screen.text()).toContain('No requests waiting.')
+    expect(screen.find('#waiting').exists()).toBe(false)
 
     waiting = [request]
     await vi.advanceTimersByTimeAsync(8000)
@@ -478,7 +505,6 @@ describe('CockpitScreen', () => {
     const screen = await mountScreen()
 
     expect(screen.findAll('.empty').map((each) => each.text())).toEqual([
-      'No requests waiting.',
       'No connections yet. They show here once a request is accepted.',
       'You have not asked for help yet.',
       'You follow no trends yet.',
