@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { ref } from 'vue'
 import { describeApplicant, keptHandle } from '../lib/admission'
-import { fetchConfig, type ClientConfig } from '../lib/api'
+import { useConfig } from '../lib/config'
 
 const handle = keptHandle()
 // In the URL so a reload keeps it, and never the token itself (R-INV-5).
@@ -11,15 +11,8 @@ const name = ref('')
 const org = ref('')
 const saving = ref(false)
 const outcome = ref<'saved' | 'gone' | 'failed' | null>(null)
-const limits = ref<ClientConfig['limits'] | null>(null)
-
-onMounted(async () => {
-  try {
-    limits.value = (await fetchConfig()).limits
-  } catch {
-    // Without the limits the server still refuses an overlong field.
-  }
-})
+// Without the limits the server still refuses an overlong field.
+const limits = useConfig((config) => config.limits, null)
 
 async function save(): Promise<void> {
   if (handle === null) return

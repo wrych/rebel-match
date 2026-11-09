@@ -11,7 +11,7 @@ import {
   socialNetworks,
   type SocialNetwork,
 } from '../../src/social-links'
-import { fetchConfig } from '../lib/api'
+import { useConfig } from '../lib/config'
 import { fetchContact, overInOrder, type Contact } from '../lib/connections'
 import { reportEvent } from '../lib/events'
 
@@ -33,7 +33,8 @@ const socialLinks = computed(() =>
     return [{ network, url, name, handle: handleOf(network, url) }]
   }),
 )
-const tickMs = ref<number | null>(null)
+// Without it the copy tick stays until the next copy.
+const tickMs = useConfig((config) => config.limits.savedTickMs, null)
 const copyNote = ref<string | null>(null)
 
 // The closest the app sees to the two getting in touch (R-ANA-1).
@@ -52,11 +53,6 @@ onMounted(async () => {
     missing.value = contact.value === null
   } catch {
     problem.value = 'The contact could not be loaded. Reload to try again.'
-  }
-  try {
-    tickMs.value = (await fetchConfig()).limits.savedTickMs
-  } catch {
-    // Without it the copy tick stays until the next copy.
   }
 })
 </script>

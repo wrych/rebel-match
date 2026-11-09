@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { chooseAnalytics } from '../lib/analytics-consent'
-import { fetchConfig } from '../lib/api'
+import { useConfig } from '../lib/config'
 import { forgetMe } from '../lib/session'
 import AnalyticsWords from './AnalyticsWords.vue'
 import SavedTick from './SavedTick.vue'
@@ -9,22 +9,21 @@ import SavedTick from './SavedTick.vue'
 const props = defineProps<{ optedIn: boolean }>()
 
 const checked = ref(props.optedIn)
-const version = ref<string | null>(null)
-const tickMs = ref(0)
 let tickTimer: ReturnType<typeof setTimeout> | undefined
 const saving = ref(false)
 const savedShown = ref(false)
 const problem = ref<string | null>(null)
-
-onMounted(async () => {
-  try {
-    const config = await fetchConfig()
-    version.value = config.analyticsVersion
-    tickMs.value = config.limits.savedTickMs
-  } catch {
-    problem.value = 'This setting could not be loaded. Reload to try again.'
-  }
-})
+const loaded = useConfig(
+  (config) => ({
+    version: config.analyticsVersion,
+    tickMs: config.limits.savedTickMs,
+  }),
+  null,
+  problem,
+  'This setting could not be loaded. Reload to try again.',
+)
+const version = computed(() => loaded.value?.version ?? null)
+const tickMs = computed(() => loaded.value?.tickMs ?? 0)
 
 async function change(): Promise<void> {
   if (version.value === null) return

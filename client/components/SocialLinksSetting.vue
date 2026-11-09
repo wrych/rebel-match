@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { onMounted, reactive, ref } from 'vue'
+import { computed, reactive } from 'vue'
 import {
   readSocialLink,
   socialNetworks,
   type SocialLinks,
   type SocialNetwork,
 } from '../../src/social-links'
-import { fetchConfig } from '../lib/api'
+import { useConfig } from '../lib/config'
 import { saveSocialLinks } from '../lib/profile'
 import SavedTick from './SavedTick.vue'
 
@@ -42,20 +42,17 @@ const errors = reactive<Record<SocialNetwork, string | null>>({
   linkedin: null,
   instagram: null,
 })
-const maxChars = ref<number | undefined>(undefined)
-const tickMs = ref(0)
+const limits = useConfig(
+  ({ limits }) => ({
+    maxChars: limits.socialLinkMaxChars,
+    tickMs: limits.savedTickMs,
+  }),
+  null,
+)
+const maxChars = computed(() => limits.value?.maxChars)
+const tickMs = computed(() => limits.value?.tickMs ?? 0)
 const timers: Partial<Record<SocialNetwork, ReturnType<typeof setTimeout>>> = {}
 let queue: Promise<void> = Promise.resolve()
-
-onMounted(async () => {
-  try {
-    const { limits } = await fetchConfig()
-    maxChars.value = limits.socialLinkMaxChars
-    tickMs.value = limits.savedTickMs
-  } catch {
-    tickMs.value = 0
-  }
-})
 
 function tick(network: SocialNetwork): void {
   ticks[network] = true

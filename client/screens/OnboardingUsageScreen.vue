@@ -1,33 +1,30 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AnalyticsWords from '../components/AnalyticsWords.vue'
 import AskSteps from '../components/AskSteps.vue'
 import DoneNotice from '../components/DoneNotice.vue'
 import { useAction } from '../lib/action'
 import { chooseAnalytics } from '../lib/analytics-consent'
-import { fetchConfig } from '../lib/api'
+import { useConfig } from '../lib/config'
 import { afterOnboarding } from '../lib/onboarding'
 import { forgetMe } from '../lib/session'
 import { onboardingJourney } from '../lib/steps'
 
 const route = useRoute()
 const router = useRouter()
-const version = ref<string | null>(null)
 const problem = ref<string | null>(null)
+const version = useConfig(
+  (config) => config.analyticsVersion,
+  null,
+  problem,
+  'This step could not be loaded. Reload to try again.',
+)
 const { busy: sending, run } = useAction(problem)
 
 const next = computed(() => {
   const given = route.query['next']
   return typeof given === 'string' ? given : null
-})
-
-onMounted(async () => {
-  try {
-    version.value = (await fetchConfig()).analyticsVersion
-  } catch {
-    problem.value = 'This step could not be loaded. Reload to try again.'
-  }
 })
 
 async function answer(share: boolean): Promise<void> {

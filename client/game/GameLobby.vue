@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { DAYS_PER_JOB, jobOf } from '../../src/game/levels'
 import SavedTick from '../components/SavedTick.vue'
-import { fetchConfig } from '../lib/api'
+import { useConfig } from '../lib/config'
 import { jobName, shareName, type GameState } from '../lib/game'
 import { allHints, hintWords } from './hints'
 
@@ -33,7 +33,7 @@ watch(chosen, (level) => {
 const saving = ref(false)
 const savedShown = ref(false)
 const problem = ref<string | null>(null)
-const tickMs = ref<number | null>(null)
+const tickMs = useConfig((config) => config.limits.savedTickMs, null)
 let tickTimer: ReturnType<typeof setTimeout> | undefined
 
 function describe(level: number): string {
@@ -74,14 +74,6 @@ async function toggleSharing(event: Event): Promise<void> {
   emit('shared', wanted)
   tick()
 }
-
-onMounted(async () => {
-  try {
-    tickMs.value = (await fetchConfig()).limits.savedTickMs
-  } catch {
-    tickMs.value = null
-  }
-})
 </script>
 
 <template>

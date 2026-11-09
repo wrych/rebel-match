@@ -16,7 +16,7 @@ import { noticeFor } from '../lib/offer'
 import { countAnswer } from '../lib/offer-session'
 import CardDeck from '../components/CardDeck.vue'
 import MemberPhoto from '../components/MemberPhoto.vue'
-import { fetchConfig } from '../lib/api'
+import { useConfig } from '../lib/config'
 import { photoSrc } from '../lib/photo'
 
 const router = useRouter()
@@ -115,20 +115,11 @@ async function offerExperience(): Promise<void> {
   await router.push(`/offer/${id}/note`)
 }
 
-const photosOn = ref(false)
-
-async function loadPhotosOn(): Promise<void> {
-  try {
-    photosOn.value = (await fetchConfig()).limits.profilePhotos === 1
-  } catch {
-    photosOn.value = false
-  }
-}
+const photosOn = useConfig((config) => config.limits.profilePhotos === 1, false)
 
 onMounted(() => {
   void load()
   void loadFollowed()
-  void loadPhotosOn()
 })
 </script>
 

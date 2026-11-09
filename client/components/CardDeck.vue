@@ -7,7 +7,7 @@ import {
   ref,
   shallowRef,
 } from 'vue'
-import { fetchConfig } from '../lib/api'
+import { useConfig } from '../lib/config'
 import {
   cardMotion,
   cardPose,
@@ -28,7 +28,8 @@ type Point = { x: number; y: number }
 
 const REST: CardPose = { x: 0, rotateDeg: 0 }
 
-const swipeMinPx = ref<number | null>(null)
+// Without the threshold the card takes no swipes; the arrows still browse.
+const swipeMinPx = useConfig((config) => config.limits.swipeMinPx, null)
 const card = ref<HTMLElement | null>(null)
 const pose = shallowRef<CardPose>(REST)
 const moveMs = ref(0)
@@ -42,15 +43,6 @@ const cardStyle = computed(() => ({
       : `translateX(${pose.value.x}px) rotate(${pose.value.rotateDeg}deg)`,
   transition: moveMs.value > 0 ? `transform ${moveMs.value}ms ease-out` : '',
 }))
-
-// Without the threshold the card takes no swipes; the arrows still browse.
-async function loadSwipeMinPx(): Promise<void> {
-  try {
-    swipeMinPx.value = (await fetchConfig()).limits.swipeMinPx
-  } catch {
-    swipeMinPx.value = null
-  }
-}
 
 // An unknown preference counts as reduced: no motion is the safe side.
 function still(): boolean {
@@ -149,7 +141,6 @@ function onTouchCancel(): void {
 
 onMounted(() => {
   window.addEventListener('keydown', onKey)
-  void loadSwipeMinPx()
 })
 onUnmounted(() => {
   window.removeEventListener('keydown', onKey)

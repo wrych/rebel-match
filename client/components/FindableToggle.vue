@@ -1,25 +1,17 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { fetchConfig } from '../lib/api'
+import { ref } from 'vue'
+import { useConfig } from '../lib/config'
 import { saveFindable } from '../lib/profile'
 import SavedTick from './SavedTick.vue'
 
 const props = defineProps<{ findable: boolean; codesOn?: boolean }>()
 
 const checked = ref(props.findable)
-const tickMs = ref(0)
+const tickMs = useConfig((config) => config.limits.savedTickMs, 0)
 let tickTimer: ReturnType<typeof setTimeout> | undefined
 const saving = ref(false)
 const savedShown = ref(false)
 const problem = ref<string | null>(null)
-
-onMounted(async () => {
-  try {
-    tickMs.value = (await fetchConfig()).limits.savedTickMs
-  } catch {
-    tickMs.value = 0
-  }
-})
 
 async function change(): Promise<void> {
   const wanted = checked.value
