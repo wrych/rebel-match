@@ -1127,7 +1127,8 @@ What differs by environment is only whether mail **leaves the machine**.
   experiment's share (R-EXP-3, ADR 0051), and the 9toRevolution switch and
   tuning (R-GAME-17, ADR 0045), and the member search and connect code
   switches and live code timings (R-CODE-8), the profile photo switch
-  (R-PROF-6), and the badges switch (R-BADGE-15). Each change SHALL be
+  (R-PROF-6), the badges switch (R-BADGE-15), and the default colour mode
+  (R-LOOK-6). Each change SHALL be
   checked against bounds and the order of paired limits (the minimum challenge
   length never above the maximum), take effect without a restart on every server
   within a minute, and show who made it and when. The host SHALL be able to go
@@ -1177,13 +1178,21 @@ _(Decided by the maintainer after trying the redesign: ADR 0023.)_
 - **R-LOOK-2 (Happy mode)** — The profile screen's **Look** card (R-PROF-8)
   SHALL offer a switch between the calm default and happy mode, announced as a
   switch to assistive technology, with the tick of R-PROF-1; visitors not
-  signed in see the calm default or the mode their browser last chose. _(Moved
+  signed in see the default mode or the mode their browser last chose. _(Moved
   from the header menu: Andy, 2026-11-09.)_ _(It replaces the prototype's "CR" button.)_ The choice SHALL be
   remembered per browser and SHALL change colours and decoration only, never
   content, behaviour or anything recorded, with one exception: happy mode
   reveals the 9toRevolution door and lets the game run (R-GAME-1, ADR 0045). IF
-  the browser refuses storage THEN the app SHALL still switch, and start calm
-  next time.
+  the browser refuses storage THEN the app SHALL still switch, and start in the
+  default mode next time.
+- **R-LOOK-6 (Hosts choose the default mode)** — Hosts SHALL choose the
+  default mode with `limits.happyModeDefault` (a switch in the host tools,
+  R-CFG-6, off by default): off, a browser that has not chosen a mode starts
+  calm; on, it starts in happy mode. A browser that chose a mode SHALL keep it
+  whatever the switch says, and following the default SHALL NOT count as a
+  choice, so a later change of the switch reaches every browser that never
+  chose. _(Andy, 2026-11-09: a member asked for happy mode by default; hosts
+  decide it in the settings.)_
 - **R-LOOK-3 (Modes are tokens)** — Colour modes SHALL be sets of colour tokens
   over one set of components, so a further mode (a dark mode, priorities C7) is a
   new token set rather than new screens. Every mode SHALL keep text readable

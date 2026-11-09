@@ -113,6 +113,7 @@ thresholds have sane defaults in the file and may be overridden by env.
 | `limits.profilePhotos` (switch)       | `0`                           | R-PROF-6                  |
 | `limits.photoMaxBytes`                | `200000`                      | R-PROF-6                  |
 | `limits.badges` (switch)              | `0`                           | R-BADGE-15                |
+| `limits.happyModeDefault` (switch)    | `0`                           | R-LOOK-6                  |
 | `limits.liveCodeSeconds`              | `30` (10–120)                 | R-CODE-5, R-CODE-8        |
 | `limits.liveCodeGraceSeconds`         | `10` (0–30, ≤ the above)      | R-CODE-5, R-CODE-8        |
 | `limits.liveCodeKeepMinutes`          | `60`                          | R-CODE-6                  |
@@ -302,9 +303,11 @@ The look lives in `client/styles/theme.css` (R-LOOK-1): colour, type and spacing
 tokens on `:root`, and the components (buttons, fields, cards, chips, notices) as
 classes that read only those tokens. A colour mode is one more token block,
 `:root[data-mood='…']`, switched by setting `data-mood` on the page; the client
-remembers the choice per browser (`client/lib/mood.ts`, R-LOOK-2). Calm is the
-default and happy the one alternative for the beta; a dark mode is another block
-of the same shape (R-LOOK-3). Fonts are self-hosted through `@fontsource`.
+remembers the choice per browser (`client/lib/mood.ts`, R-LOOK-2). Calm and
+happy are the two modes for the beta; a dark mode is another block of the same
+shape (R-LOOK-3). A browser with no choice of its own starts calm and turns
+happy once `GET /api/config` says `limits.happyModeDefault` is on; nothing is
+stored until the member uses the switch (R-LOOK-6). Fonts are self-hosted through `@fontsource`.
 
 The **step header** is one component (R-LOOK-4, ADR 0040): `AskSteps` loses its
 fixed labels and takes them, with the name it announces, from the screen. The

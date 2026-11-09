@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { applyMood, currentMood, savedMood } from './mood'
+import { applyMood, currentMood, savedMood, startMood } from './mood'
 
 afterEach(() => {
   localStorage.clear()
@@ -9,8 +9,8 @@ afterEach(() => {
 })
 
 describe('mood', () => {
-  it('starts calm', () => {
-    expect(savedMood()).toBe('calm')
+  it('holds no choice until the member makes one', () => {
+    expect(savedMood()).toBeNull()
   })
 
   it('shows and remembers happy mode', () => {
@@ -46,6 +46,52 @@ describe('mood', () => {
     applyMood('happy')
 
     expect(document.documentElement.dataset['mood']).toBe('happy')
-    expect(savedMood()).toBe('calm')
+    expect(savedMood()).toBeNull()
+  })
+})
+
+describe('startMood (R-LOOK-6)', () => {
+  it('starts in the hosts’ default without storing it as a choice', async () => {
+    await startMood(() => Promise.resolve('happy'))
+
+    expect(document.documentElement.dataset['mood']).toBe('happy')
+    expect(savedMood()).toBeNull()
+  })
+
+  it('keeps the mode this browser chose, whatever the hosts’ default', async () => {
+    localStorage.setItem('rm_mood', 'calm')
+    const hostsDefault = vi.fn(() => Promise.resolve<'happy'>('happy'))
+
+    await startMood(hostsDefault)
+
+    expect(document.documentElement.dataset['mood']).toBe('calm')
+    expect(hostsDefault).not.toHaveBeenCalled()
+  })
+
+  it('shows calm while the default is on its way, and when it cannot come', async () => {
+    let arrive: (mood: 'happy') => void = () => undefined
+    const started = startMood(
+      () => new Promise((resolve) => (arrive = resolve)),
+    )
+    expect(currentMood.value).toBe('calm')
+    arrive('happy')
+    await started
+    expect(currentMood.value).toBe('happy')
+
+    await startMood(() => Promise.reject(new Error('offline')))
+    expect(currentMood.value).toBe('calm')
+  })
+
+  it('lets a choice made meanwhile win over the default arriving later', async () => {
+    let arrive: (mood: 'happy') => void = () => undefined
+    const started = startMood(
+      () => new Promise((resolve) => (arrive = resolve)),
+    )
+
+    applyMood('calm')
+    arrive('happy')
+    await started
+
+    expect(currentMood.value).toBe('calm')
   })
 })

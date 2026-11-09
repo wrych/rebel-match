@@ -272,6 +272,14 @@ const limitSpecs = {
     zeroAllowed: true,
     changeable: { min: 0, max: 1 },
   },
+  // Hosts choose the colour mode a browser starts in until it picks one:
+  // calm while off, happy while on (R-LOOK-6).
+  happyModeDefault: {
+    env: 'HAPPY_MODE_DEFAULT',
+    default: 0,
+    zeroAllowed: true,
+    changeable: { min: 0, max: 1 },
+  },
   // Hosts open profile photos; off until they do, and photos already added
   // are kept while off (R-PROF-6).
   profilePhotos: {
