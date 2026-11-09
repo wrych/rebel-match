@@ -17,11 +17,18 @@ import {
   type ChangeableLimitKey,
   type Limits,
 } from './limits.js'
-import type { Bounds } from './setting-specs.js'
+import { prefixed, type Bounds } from './setting-specs.js'
 
 /** A setting hosts may change in the app (R-CFG-6, ADR 0031). */
 export type SettingKey =
   | `limits.${ChangeableLimitKey}`
+  | `abuse.${keyof AbuseLimits}`
+  | `game.${GameKey}`
+  | `flags.${ExperimentKey}`
+
+/** Any value the changeable settings' groups hold, changeable or not. */
+export type SettingPath =
+  | `limits.${keyof Limits}`
   | `abuse.${keyof AbuseLimits}`
   | `game.${GameKey}`
   | `flags.${ExperimentKey}`
@@ -39,14 +46,6 @@ export interface SettingValues {
 
 // An experiment's share of members, from nobody to everyone (R-EXP-3).
 const PERCENT_BOUNDS: Bounds = { min: 0, max: 100 }
-
-const prefixed = <G extends string, K extends string>(
-  group: G,
-  of: Readonly<Record<K, Bounds>>,
-): Record<`${G}.${K}`, Bounds> =>
-  Object.fromEntries(
-    Object.entries(of).map(([key, value]) => [`${group}.${key}`, value]),
-  ) as Record<`${G}.${K}`, Bounds>
 
 // What a host can set: wide enough for a crowded room, narrow enough that no
 // value locks everyone out, hangs a phone on the human check, or overflows the
@@ -86,7 +85,7 @@ type Located =
   | ['game', GameKey]
   | ['flags', ExperimentKey]
 
-function split(key: OrderedKey): Located {
+function split(key: SettingPath): Located {
   const dot = key.indexOf('.')
   const group = key.slice(0, dot)
   const name = key.slice(dot + 1)
@@ -98,7 +97,7 @@ function split(key: OrderedKey): Located {
 }
 
 /** The current value of `key`. */
-export function valueOf(values: SettingValues, key: OrderedKey): number {
+export function valueOf(values: SettingValues, key: SettingPath): number {
   const [group, name] = split(key)
   if (group === 'game') return values.game[name]
   if (group === 'flags') return values.flags[name]
