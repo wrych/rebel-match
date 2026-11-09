@@ -16,6 +16,7 @@ import {
 
 const config = testConfig({
   SEED_PROFILE: 'dev',
+  BADGES: '1',
 })
 
 let db: TestDatabase

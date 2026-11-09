@@ -41,13 +41,14 @@ function levelStatus(level: RowView['levels'][number]): string {
   return `${String(Math.min(row.value?.count ?? 0, level.needs))} of ${String(level.needs)}`
 }
 
-// An unknown row is as absent as any other address that does not exist; a
-// known one, once shown, is no longer new (R-NAV-8, R-BADGE-10).
+// An unknown row, or any while hosts have badges off, is as absent as any
+// other address that does not exist; a known one, once shown, is no longer
+// new (R-NAV-8, R-BADGE-10, R-BADGE-15).
 onMounted(async () => {
   try {
     const overview = await fetchBadges()
     row.value =
-      overview.rows.find((each) => each.row === route.params['row']) ?? null
+      overview?.rows.find((each) => each.row === route.params['row']) ?? null
   } catch {
     problem.value = 'These badges could not be loaded. Try again.'
     return

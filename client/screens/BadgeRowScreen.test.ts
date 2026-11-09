@@ -163,6 +163,19 @@ describe('BadgeRowScreen (S36, R-BADGE-8)', () => {
     expect(screen.text()).not.toContain('crown goes to')
   })
 
+  it('answers as not found while hosts have badges off (R-BADGE-15)', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve({ ok: false, status: 404 })),
+    )
+    await mountScreen()
+
+    expect(replace).toHaveBeenCalledWith({
+      name: 'not-found',
+      params: { pathMatch: ['badges', 'speak'] },
+    })
+  })
+
   it('answers an unknown row as not found (R-NAV-8)', async () => {
     params = { row: 'gossip' }
     serve([speak()])

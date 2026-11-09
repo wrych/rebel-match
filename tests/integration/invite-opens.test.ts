@@ -63,7 +63,9 @@ describe('invite opens over Postgres (R-STAT-6, ADR 0038)', () => {
   })
 
   it('counts the opens on the invite, the one way they are read (R-STAT-6)', async () => {
-    const found = await createInviteStore(db.drizzle).find(invite.id)
+    const found = await createInviteStore(db.drizzle, () => false).find(
+      invite.id,
+    )
 
     expect(found?.opens).toBe(2)
   })

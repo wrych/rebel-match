@@ -5,6 +5,12 @@ import EventTicket from '../components/EventTicket.vue'
 import type { BadgeOverview, EarnedEventBadge, RowView } from '../lib/badges'
 import BadgesScreen from './BadgesScreen.vue'
 
+const replace = vi.fn()
+vi.mock('vue-router', () => ({
+  useRoute: () => ({ path: '/badges' }),
+  useRouter: () => ({ replace }),
+}))
+
 const eventBadge = (id: string, isNew: boolean): EarnedEventBadge => ({
   id,
   name: `Badge ${id}`,
@@ -77,9 +83,23 @@ async function mountScreen(): Promise<ReturnType<typeof mount>> {
 
 afterEach(() => {
   vi.unstubAllGlobals()
+  replace.mockReset()
 })
 
 describe('BadgesScreen (S35, R-BADGE-7)', () => {
+  it('answers as not found while hosts have badges off (R-BADGE-15)', async () => {
+    const fetchMock = vi.fn(() => Promise.resolve({ ok: false, status: 404 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const screen = await mountScreen()
+
+    expect(replace).toHaveBeenCalledWith({
+      name: 'not-found',
+      params: { pathMatch: ['badges'] },
+    })
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(screen.text()).not.toContain('could not be loaded')
+  })
+
   it('shows how many are earned and one tile per row, leading to its screen', async () => {
     serve(overview)
     const screen = await mountScreen()

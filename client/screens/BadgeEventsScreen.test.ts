@@ -5,6 +5,12 @@ import EventTicket from '../components/EventTicket.vue'
 import type { EarnedEventBadge } from '../lib/badges'
 import BadgeEventsScreen from './BadgeEventsScreen.vue'
 
+const replace = vi.fn()
+vi.mock('vue-router', () => ({
+  useRoute: () => ({ path: '/badges/events' }),
+  useRouter: () => ({ replace }),
+}))
+
 const badge = (
   id: string,
   over: Partial<EarnedEventBadge> = {},
@@ -50,9 +56,23 @@ const seenPosts = (fetchMock: ReturnType<typeof vi.fn>): unknown[] =>
 
 afterEach(() => {
   vi.unstubAllGlobals()
+  replace.mockReset()
 })
 
 describe('BadgeEventsScreen (S37, R-BADGE-8)', () => {
+  it('answers as not found while hosts have badges off (R-BADGE-15)', async () => {
+    const fetchMock = vi.fn(() => Promise.resolve({ ok: false, status: 404 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const screen = await mountScreen()
+
+    expect(replace).toHaveBeenCalledWith({
+      name: 'not-found',
+      params: { pathMatch: ['badges', 'events'] },
+    })
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(screen.text()).not.toContain('could not be loaded')
+  })
+
   it('lists each event badge with its ticket, name and the day it was earned', async () => {
     serve([badge('a', { hasLogo: true }), badge('b')])
     const screen = await mountScreen()

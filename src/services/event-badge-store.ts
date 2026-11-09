@@ -19,25 +19,32 @@ export interface EventBadgeStore {
   /** Earns the badge of the invite with this token when it is in its window
    * and not revoked, whatever its uses; anything else changes nothing
    * (R-BADGE-6, R-INV-5). True when the badge is newly the member's. */
-  claim(memberId: string, token: string, now: Date): Promise<boolean>
+  claim(
+    memberId: string,
+    token: string,
+    now: Date,
+    seen: boolean,
+  ): Promise<boolean>
   mine(memberId: string): Promise<EarnedEventBadge[]>
   newCount(memberId: string): Promise<number>
   markSeen(memberId: string): Promise<void>
 }
 
-/** Records an event badge as the member's, once, with its notification in
- * the caller's transaction (R-BADGE-6, R-NOTE-10). True when it is new. */
+/** Records an event badge as the member's, once; one not seen is news,
+ * notified in the caller's transaction (R-BADGE-6, R-BADGE-15, R-NOTE-10).
+ * True when it is new. */
 export async function earnEventBadge(
   db: Database,
   memberId: string,
   eventBadgeId: string,
+  seen: boolean,
 ): Promise<boolean> {
   const added = await db
     .insert(memberEventBadges)
-    .values({ memberId, eventBadgeId })
+    .values({ memberId, eventBadgeId, seenAt: seen ? new Date() : null })
     .onConflictDoNothing()
     .returning({ id: memberEventBadges.eventBadgeId })
-  if (added.length === 1)
+  if (added.length === 1 && !seen)
     await insertBadgeNotification(db, {
       recipientId: memberId,
       row: eventRow,
@@ -54,6 +61,7 @@ async function claim(
   memberId: string,
   token: string,
   now: Date,
+  seen: boolean,
 ): Promise<boolean> {
   return db.transaction(async (tx) => {
     const [invite] = await tx
@@ -69,7 +77,7 @@ async function claim(
       )
     return invite === undefined || invite.badgeId === null
       ? false
-      : earnEventBadge(tx, memberId, invite.badgeId)
+      : earnEventBadge(tx, memberId, invite.badgeId, seen)
   })
 }
 
@@ -107,7 +115,8 @@ const unseenOf = (memberId: string): ReturnType<typeof and> =>
 /** Event badges earned, over `member_event_badges` (design §2). */
 export function createEventBadgeStore(db: Database): EventBadgeStore {
   return {
-    claim: (memberId, token, now) => claim(db, memberId, token, now),
+    claim: (memberId, token, now, seen) =>
+      claim(db, memberId, token, now, seen),
     mine: (memberId) => mine(db, memberId),
     newCount: async (memberId) => {
       const [unseen] = await db

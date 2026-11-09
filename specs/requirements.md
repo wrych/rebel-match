@@ -1108,8 +1108,8 @@ What differs by environment is only whether mail **leaves the machine**.
   the badges and each live list refresh (R-MINE-4, R-NAV-12, ADR 0050), each
   experiment's share (R-EXP-3, ADR 0051), and the 9toRevolution switch and
   tuning (R-GAME-17, ADR 0045), and the member search and connect code
-  switches and live code timings (R-CODE-8), and the profile photo switch
-  (R-PROF-6). Each change SHALL be
+  switches and live code timings (R-CODE-8), the profile photo switch
+  (R-PROF-6), and the badges switch (R-BADGE-15). Each change SHALL be
   checked against bounds and the order of paired limits (the minimum challenge
   length never above the maximum), take effect without a restart on every server
   within a minute, and show who made it and when. The host SHALL be able to go
@@ -1708,6 +1708,19 @@ invite link (R-INV-1).
 - **R-BADGE-14 (Erased with the account)** — A member's earned badges SHALL be
   kept with the account and erased with it (R-NFR-7); they are not activity
   history (R-STAT-4).
+- **R-BADGE-15 (Hosts' switch)** — Hosts SHALL turn badges on and off with
+  `limits.badges` (a switch in the host tools, R-CFG-6, off by default).
+  WHILE it is off the menu SHALL NOT offer **Badges**, `/badges` and the
+  screens under it, and their endpoints, SHALL answer as not found (R-NAV-8),
+  and no badge SHALL be notified. Counting SHALL go on: levels, crowns and
+  event badges earned while off SHALL be recorded quietly, as at launch
+  (R-BADGE-11), none of them new, so turning badges back on shows every
+  member what they hold. Badges already earned SHALL be kept. Badge
+  notifications sent before the switch went off SHALL stay in the
+  notifications list (R-NOTE-5): it is a log of what was sent. Hosts SHALL
+  still give invites event badges (R-BADGE-4).
+  _(Andy, 2026-11-09: "put the badges system behind a switch", off by
+  default, counting on while off, notifications kept as a log.)_
 
 ---
 

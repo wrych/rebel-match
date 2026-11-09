@@ -420,8 +420,7 @@ describe('HeaderMenu', () => {
   it('leads an onboarded member to their badges, naming how many are new (R-BADGE-10)', async () => {
     let count = 2
     const me = signedIn([]) as unknown as (url: string) => Promise<unknown>
-    vi.stubGlobal(
-      'fetch',
+    withConfig(
       vi.fn((url: string) =>
         url === '/api/badges/new'
           ? Promise.resolve({
@@ -431,6 +430,7 @@ describe('HeaderMenu', () => {
             })
           : me(url),
       ),
+      { badges: 1 },
     )
     const menu = await opened()
     const badges = (): string | undefined =>
@@ -446,6 +446,14 @@ describe('HeaderMenu', () => {
 
     expect(badges()).toBe('Badges')
     expect(menu.find('.menu-badge').exists()).toBe(false)
+  })
+
+  it('offers no badges, nor asks how many are new, while hosts have them off (R-BADGE-15)', async () => {
+    const fetchMock = withConfig(signedIn([]), { badges: 0 })
+    const menu = await opened()
+
+    expect(paths(menu)).not.toContain('/badges')
+    expect(fetchMock).not.toHaveBeenCalledWith('/api/badges/new')
   })
 
   it('offers no badges to nobody signed in', async () => {

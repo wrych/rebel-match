@@ -138,20 +138,24 @@ function rowView(
   }
 }
 
-// Where each row's levels sit, and which rows are shown now: the game's
-// promotions only while the game is on (R-BADGE-9).
+// Where each row's levels sit, which rows are shown now (the game's
+// promotions only while the game is on, R-BADGE-9), and whether what is
+// earned now is earned quietly, as while hosts have badges off (R-BADGE-15).
 interface Rules {
   countsOf(row: BadgeRow): readonly number[]
   shown(): BadgeRow[]
+  quiet(): boolean
 }
 
 function rulesOf(deps: {
   levelCounts: () => readonly number[]
   gameOn: () => boolean
+  badgesOn: () => boolean
 }): Rules {
   return {
     countsOf: (row) => (row === 'game' ? promotionLevels : deps.levelCounts()),
     shown: () => badgeRows.filter((row) => row !== 'game' || deps.gameOn()),
+    quiet: () => !deps.badgesOn(),
   }
 }
 
@@ -170,7 +174,7 @@ async function checkCrown(
     rules.countsOf(row)[0] ?? 1,
   )
   if (current === undefined) await store.setCrown(row, next, true)
-  else if (next !== holder) await store.setCrown(row, next, false)
+  else if (next !== holder) await store.setCrown(row, next, rules.quiet())
 }
 
 async function awardAtLaunch(store: BadgeStore, rules: Rules): Promise<void> {
@@ -201,6 +205,7 @@ interface BadgeDeps {
   events: EventBadgeStore
   levelCounts: () => readonly number[]
   gameOn: () => boolean
+  badgesOn: () => boolean
   track: Track
 }
 
@@ -216,7 +221,7 @@ async function recount(
     const reached = levelsReached(count, rules.countsOf(row))
     const added =
       reached.length > 0
-        ? await deps.store.award(memberId, row, reached, false)
+        ? await deps.store.award(memberId, row, reached, rules.quiet())
         : []
     for (const level of added)
       void deps.track(memberId, { name: 'badge_earned', row, level })
@@ -226,10 +231,11 @@ async function recount(
 
 async function claim(
   deps: BadgeDeps,
+  rules: Rules,
   memberId: string,
   token: string,
 ): Promise<void> {
-  if (await deps.events.claim(memberId, token, new Date()))
+  if (await deps.events.claim(memberId, token, new Date(), rules.quiet()))
     void deps.track(memberId, { name: 'badge_earned', row: eventRow })
 }
 
@@ -263,7 +269,7 @@ export function createBadges(deps: BadgeDeps): BadgeService {
     newCount: async (memberId) =>
       (await store.newCount(memberId)) + (await deps.events.newCount(memberId)),
     seen: (memberId, rows) => seen(deps, memberId, rows),
-    claim: (memberId, token) => claim(deps, memberId, token),
+    claim: (memberId, token) => claim(deps, rules, memberId, token),
     checkCrowns: async () => {
       for (const row of rules.shown()) await checkCrown(store, rules, row)
     },
