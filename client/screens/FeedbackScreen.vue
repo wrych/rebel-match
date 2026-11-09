@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { fetchConfig } from '../lib/api'
+import { useConfig } from '../lib/config'
 import { screenFrom, sendFeedback, type FeedbackReply } from '../lib/feedback'
 import { solveHumanCheck } from '../lib/human-check'
 import { fetchProfile } from '../lib/profile'
@@ -11,7 +11,7 @@ const route = useRoute()
 const message = ref('')
 const name = ref('')
 const email = ref('')
-const maxChars = ref<number | null>(null)
+const maxChars = useConfig((config) => config.limits.feedbackMaxChars, null)
 const sending = ref(false)
 const sent = ref(false)
 const checking = ref(false)
@@ -36,11 +36,8 @@ async function prefill(): Promise<void> {
   fillIn(await fetchProfile().catch(() => ({ name: me.name })))
 }
 
-onMounted(async () => {
+onMounted(() => {
   void prefill()
-  maxChars.value = await fetchConfig()
-    .then((config) => config.limits.feedbackMaxChars)
-    .catch(() => null)
 })
 
 function draft(): Parameters<typeof sendFeedback>[0] {

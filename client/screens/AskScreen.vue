@@ -6,7 +6,7 @@ import AskSteps from '../components/AskSteps.vue'
 import { useAction } from '../lib/action'
 import { askJourney } from '../lib/steps'
 import NewestChallenges from '../components/NewestChallenges.vue'
-import { fetchConfig } from '../lib/api'
+import { useConfig } from '../lib/config'
 import {
   fetchNewestChallenges,
   submitChallenge,
@@ -15,8 +15,16 @@ import {
 
 const router = useRouter()
 const draft = ref('')
-const limits = ref<{ min: number; max: number } | null>(null)
 const problem = ref<string | null>(null)
+const limits = useConfig(
+  (config) => ({
+    min: config.limits.challengeMinChars,
+    max: config.limits.challengeMaxChars,
+  }),
+  null,
+  problem,
+  'The form could not be loaded. Reload to try again.',
+)
 const { busy: sending, run } = useAction(problem)
 const lastSubmitted = ref<NewestChallenge[]>([])
 
@@ -40,17 +48,8 @@ async function loadLastSubmitted(): Promise<void> {
   }
 }
 
-onMounted(async () => {
+onMounted(() => {
   void loadLastSubmitted()
-  try {
-    const config = await fetchConfig()
-    limits.value = {
-      min: config.limits.challengeMinChars,
-      max: config.limits.challengeMaxChars,
-    }
-  } catch {
-    problem.value = 'The form could not be loaded. Reload to try again.'
-  }
 })
 
 async function submit(): Promise<void> {

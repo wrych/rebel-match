@@ -13,7 +13,7 @@ import PeerCards from '../components/PeerCards.vue'
 import PullToRefresh from '../components/PullToRefresh.vue'
 import WithdrawChallenge from '../components/WithdrawChallenge.vue'
 import type { Variant } from '../../src/experiments'
-import { fetchConfig } from '../lib/api'
+import { useConfig } from '../lib/config'
 import {
   fetchChallenge,
   fetchMatches,
@@ -33,8 +33,17 @@ const challenge = ref<Challenge | null>(null)
 const matches = ref<Matches | null>(null)
 const missing = ref(false)
 const problem = ref<string | null>(null)
-const namedFirst = ref<number | null>(null)
-const shownFirst = ref<number | null>(null)
+// Without the limits nothing is folded: every match shows, as before.
+const folds = useConfig(
+  ({ limits }) => ({
+    namedFirst: limits.matchesNamedFirst,
+    shownFirst: limits.matchesShownFirst,
+    photosOn: limits.profilePhotos === 1,
+  }),
+  null,
+)
+const namedFirst = computed(() => folds.value?.namedFirst ?? null)
+const shownFirst = computed(() => folds.value?.shownFirst ?? null)
 const layout = ref<Variant<'matches_layout'>>('cards')
 const nobodyYet = computed(
   () =>
@@ -62,22 +71,9 @@ async function newer(): Promise<void> {
   if (matched !== null) show(matched)
 }
 
-const photosOn = ref(false)
+const photosOn = computed(() => folds.value?.photosOn ?? false)
 
 const live = useLiveList(newer, 'challengeMatchesPollSeconds')
-
-// Without the limits nothing is folded: every match shows, as before.
-async function loadLimits(): Promise<void> {
-  try {
-    const { limits } = await fetchConfig()
-    namedFirst.value = limits.matchesNamedFirst
-    shownFirst.value = limits.matchesShownFirst
-    photosOn.value = limits.profilePhotos === 1
-  } catch {
-    namedFirst.value = null
-    shownFirst.value = null
-  }
-}
 
 function opened(section: 'same_boat' | 'been_there' | 'cases'): void {
   reportEvent({ event: 'matches_section_opened', props: { section } })
@@ -91,7 +87,6 @@ onMounted(async () => {
   // Dropped from the URL at once, so going back, reloading or bookmarking
   // never announces the post a second time.
   if (posted) void router.replace({ query: {} })
-  void loadLimits()
   try {
     // Read once, so the layout stays what the screen opened with (R-ASK-16).
     const [found, matched, assigned] = await Promise.all([

@@ -2,17 +2,17 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import PersonCard from '../components/PersonCard.vue'
-import { fetchConfig } from '../lib/api'
 import { profileConnectPath } from '../lib/codes'
 import { contactPath } from '../lib/connections'
 import { personConnectPath, reachedFrom, type Reached } from '../lib/people'
 import { useNotFound } from '../lib/not-found'
+import { useConfig } from '../lib/config'
 
 const route = useRoute()
 const notFound = useNotFound()
 const reached = ref<Reached | null>(null)
 const problem = ref<string | null>(null)
-const photosOn = ref(false)
+const photosOn = useConfig((config) => config.limits.profilePhotos === 1, false)
 
 const connectPath = computed(() => {
   if (reached.value === null) return ''
@@ -23,11 +23,6 @@ const connectPath = computed(() => {
 })
 
 onMounted(async () => {
-  void fetchConfig()
-    .then((config) => {
-      photosOn.value = config.limits.profilePhotos === 1
-    })
-    .catch(() => undefined)
   try {
     reached.value = await reachedFrom(route)
     if (reached.value === null) await notFound()

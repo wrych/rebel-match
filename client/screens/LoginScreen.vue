@@ -8,11 +8,11 @@ import {
   type LinkRequest,
 } from '../lib/admission'
 import RebelMark from '../components/RebelMark.vue'
-import { fetchConfig } from '../lib/api'
 import { prefersReducedMotion, takeIntro } from '../lib/intro'
 import { countInviteOpen } from '../lib/invite-open'
 import { solveHumanCheck } from '../lib/human-check'
 import { accountNotice, linkNotice } from '../lib/link-notice'
+import { useConfig } from '../lib/config'
 
 const router = useRouter()
 const email = ref('')
@@ -23,21 +23,21 @@ const checking = ref(false)
 const checkHost = ref<HTMLElement | null>(null)
 const deadLink = linkNotice(window.location.search)
 const accountGone = accountNotice(window.location.search)
-const consentVersion = ref<string | null>(null)
 const problem = ref<string | null>(null)
+const consentVersion = useConfig(
+  (config) => config.consentVersion,
+  null,
+  problem,
+  'The server is not reachable yet.',
+)
 const introPlays = takeIntro(prefersReducedMotion())
 const introShowing = ref(introPlays)
 
 let stopCounting = (): void => undefined
 
-onMounted(async () => {
+onMounted(() => {
   const invite = new URLSearchParams(window.location.search).get('invite')
   if (invite !== null && invite !== '') stopCounting = countInviteOpen(invite)
-  try {
-    consentVersion.value = (await fetchConfig()).consentVersion
-  } catch {
-    problem.value = 'The server is not reachable yet.'
-  }
 })
 
 onUnmounted(() => {
