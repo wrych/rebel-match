@@ -8,12 +8,9 @@ import {
   type Applicant,
   type Decision,
 } from '../lib/applicants'
-import { arrivals, useLiveList } from '../lib/live-list'
+import { useLiveResource } from '../lib/live-list'
 import { when } from '../lib/when'
 
-const applicants = ref<Applicant[]>([])
-const loaded = ref(false)
-const problem = ref<string | null>(null)
 const notice = ref<string | null>(null)
 const busy = ref<string | null>(null)
 
@@ -22,22 +19,20 @@ const doneNotice: Record<Decision, (email: string) => string> = {
   reject: (email) => `Rejected ${email}.`,
 }
 
-const arrived = arrivals<Applicant>((applicant) => applicant.id)
-
-// Once shown, the list stays as it is when a refresh fails (R-NAV-12).
-async function load(): Promise<void> {
-  try {
-    const found = await fetchApplicants()
-    arrived.see(found)
-    applicants.value = found
-    problem.value = null
-  } catch {
-    if (!loaded.value) problem.value = 'The applicants could not be loaded.'
-  }
-  loaded.value = true
-}
-
-const live = useLiveList(load, 'applicantsPollSeconds')
+const {
+  data: applicants,
+  problem,
+  loaded,
+  arrived,
+  live,
+} = useLiveResource(fetchApplicants, 'applicantsPollSeconds', {
+  initial: [],
+  failure: 'The applicants could not be loaded.',
+  arrivals: {
+    of: (found) => found,
+    id: (applicant: Applicant) => applicant.id,
+  },
+})
 
 function noticeFor(
   outcome: Awaited<ReturnType<typeof decide>>,

@@ -1,4 +1,4 @@
-import { onMounted, onUnmounted, reactive } from 'vue'
+import { onMounted, onUnmounted, reactive, ref, type Ref } from 'vue'
 import { fetchConfig, type ClientConfig } from './api'
 import { browserPage, poll, type Page } from './poll'
 
@@ -136,4 +136,64 @@ export function useLiveList(
   })
 
   return live
+}
+
+/** What a live screen reads, and how to tell its arrivals apart. */
+export interface LiveResourceOptions<T, I, E> {
+  initial: E
+  failure: string
+  arrivals: { of: (found: T) => readonly I[]; id: (item: I) => string }
+}
+
+/** A live screen's read: what it shows, the first failure's text, whether a
+ * read has ended, its arrivals, and `restart` for a new list. */
+export interface LiveResource<T, I, E> {
+  readonly data: Ref<T | E>
+  readonly problem: Readonly<Ref<string | null>>
+  readonly loaded: Readonly<Ref<boolean>>
+  readonly arrived: Pick<Arrivals<I>, 'isNew' | 'clear'>
+  readonly live: LiveList
+  restart(): Promise<void>
+}
+
+/** Keeps what `fetch` reads live (`useLiveList`). A read that fails before
+ * any has ended shows `failure`; a later one keeps what is shown and the
+ * message as it was. Reads only when refreshed or polled (R-NAV-12). */
+export function useLiveResource<T, I, E>(
+  fetch: () => Promise<T>,
+  interval: PollLimit,
+  options: LiveResourceOptions<T, I, E>,
+  page: Page = browserPage,
+): LiveResource<T, I, E> {
+  const data = ref(options.initial) as Ref<T | E>
+  const problem = ref<string | null>(null)
+  const loaded = ref(false)
+  const arrived = arrivals(options.arrivals.id)
+
+  async function load(): Promise<void> {
+    try {
+      const found = await fetch()
+      arrived.see(options.arrivals.of(found))
+      data.value = found
+      problem.value = null
+    } catch {
+      if (!loaded.value) problem.value = options.failure
+    }
+    loaded.value = true
+  }
+
+  const live = useLiveList(load, interval, page)
+  return {
+    data,
+    problem,
+    loaded,
+    arrived,
+    live,
+    restart() {
+      arrived.forget()
+      loaded.value = false
+      data.value = options.initial
+      return live.refresh()
+    },
+  }
 }

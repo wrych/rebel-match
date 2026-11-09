@@ -19,10 +19,19 @@ import {
   type BadgeChoice,
   type Invite,
 } from '../lib/invites'
-import { arrivals, useLiveList } from '../lib/live-list'
+import { useLiveResource } from '../lib/live-list'
 import { when } from '../lib/when'
 
-const invites = ref<Invite[]>([])
+const {
+  data: invites,
+  problem,
+  arrived,
+  live,
+} = useLiveResource(fetchInvites, 'invitesPollSeconds', {
+  initial: [],
+  failure: 'The invites could not be loaded.',
+  arrivals: { of: (found) => found, id: (invite: Invite) => invite.id },
+})
 const limits = ref<ClientConfig['limits'] | null>(null)
 const blank = (): InviteDraft => ({
   label: '',
@@ -37,7 +46,6 @@ const raising = ref<string | null>(null)
 const badging = ref<string | null>(null)
 const badgeChoice = ref<BadgeChoice>({ kind: 'none' })
 const newCap = ref('')
-const problem = ref<string | null>(null)
 const notice = ref<string | null>(null)
 const { busy, run } = useAction(notice)
 
@@ -55,24 +63,6 @@ const refusedBecause = {
     'The logo was not taken: it must be an SVG with something drawn in it, and not too big.',
   'bad-badge': 'That badge is gone. Choose another, or make a new one.',
 } as const
-
-const arrived = arrivals<Invite>((invite) => invite.id)
-let loaded = false
-
-// Once shown, the list stays as it is when a refresh fails (R-NAV-12).
-async function load(): Promise<void> {
-  try {
-    const found = await fetchInvites()
-    arrived.see(found)
-    invites.value = found
-    problem.value = null
-  } catch {
-    if (!loaded) problem.value = 'The invites could not be loaded.'
-  }
-  loaded = true
-}
-
-const live = useLiveList(load, 'invitesPollSeconds')
 
 async function create(): Promise<void> {
   await run(async () => {
