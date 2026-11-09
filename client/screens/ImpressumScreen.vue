@@ -109,8 +109,9 @@ onUnmounted(stop)
       <h2 class="kicker kicker-ink">Tell us what you think</h2>
       <p class="small">
         Rebel Match is a beta, and your feedback shapes what comes next. Tell us
-        what works, what doesn’t and what you miss: use Feedback in the menu
-        once you are signed in, or write to any of us.
+        what works, what doesn’t and what you miss in the
+        <RouterLink to="/feedback?from=impressum">feedback form</RouterLink>, or
+        write to any of us.
       </p>
     </div>
 

@@ -402,9 +402,9 @@ capability, not a secret** — and every requirement below exists because of tha
 - **R-PROF-3** — The header SHALL carry a **menu** in place of the "CR" mark,
   offering: the member's notifications
   (R-NOTE-5, R-NOTE-6), the member's badges (R-BADGE-7), the profile screen,
-  feedback (R-FB-1), the host tools
-  the member's permissions allow (R-ROLE-4), the impressum (R-PROF-4), and
-  sign out, with the running version at its foot (R-NFR-11). The menu holds links only, so it is
+  the host tools the member's permissions allow (R-ROLE-4), the impressum
+  (R-PROF-4), and sign out, with feedback (R-FB-1) beside the running version
+  at its foot (R-NFR-11), offered signed in or not. The menu holds links only, so it is
   navigation, not a screen (R-NAV-1); every item it leads to has its own URL.
   The colour mode switch (R-LOOK-2) and **Your code** (R-CODE-1) live on the
   profile screen instead. _(Andy, 2026-11-09, from member feedback that the
@@ -769,9 +769,20 @@ connect.")_
 
 ## 8. Feedback
 
-- **R-FB-1** — The system SHALL provide a feedback affordance that lets a member
-  send feedback (pre-filled with the current screen/context) to the product
-  owner, from the header menu (R-PROF-3). A `mailto:` is acceptable for beta.
+- **R-FB-1** — The system SHALL provide a **feedback form** at its own URL
+  (`/feedback`, R-NAV-1), public, that sends what is written to the product
+  owner (`FEEDBACK_TO`) by email. It SHALL be reachable from the header menu
+  (R-PROF-3) and from the not-found screen, and SHALL carry the screen it was
+  opened from by its route name, never its address. For a signed-in member
+  the name and email SHALL be filled in from their profile, still editable;
+  anyone else fills them in. A message SHALL be required, the name and the
+  email optional, so a reply can be asked for or not. _(Andy, 2026-11-09.)_
+- **R-FB-2** — Feedback SHALL be paced: at most `abuse.feedbackCeiling` per
+  `abuse.feedbackWindowMinutes`, counted per member when signed in and per
+  network otherwise, then `429`. A visitor not signed in SHALL pass the
+  automatic human check (R-NFR-8, ADR 0029) for each message; a member does
+  not. Every feedback email SHALL be recorded in the outbound log (R-MSG-1),
+  erased with the member who sent it (R-MSG-6).
 
 ---
 

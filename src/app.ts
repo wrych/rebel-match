@@ -38,6 +38,7 @@ import { authRoutes, renewSessions } from './routes/auth.js'
 import { onboardingRoutes } from './routes/onboarding.js'
 import { analyticsConsentRoutes } from './routes/analytics-consent.js'
 import { eventRoutes } from './routes/events.js'
+import { feedbackRoutes } from './routes/feedback.js'
 import { flagRoutes } from './routes/flags.js'
 import { profileRoutes } from './routes/profile.js'
 import {
@@ -89,6 +90,7 @@ import { notificationRoutes } from './routes/notifications.js'
 import { freshSettings, tickRoutes } from './routes/tick.js'
 import type { Tick } from './services/tick.js'
 import type { InvokerCheck } from './services/tick-invoker.js'
+import type { FeedbackService } from './services/feedback.js'
 
 export interface AppDeps {
   config: Config
@@ -131,6 +133,7 @@ export interface AppDeps {
   reports: ReportService
   moderation: ModerationService
   bans: BanService
+  feedback: FeedbackService
   /** Mails notifications and purges old ones; run by the server's timers,
    * not by requests (R-NOTE-7, R-NOTE-11). */
   notificationMail: {
@@ -220,7 +223,7 @@ export function createApp(deps: AppDeps): Express {
   app.use('/api', guardApi(deps))
   app.use(onboardingRoutes(deps))
   app.use(analyticsConsentRoutes(deps))
-  app.use(eventRoutes(deps), flagRoutes(deps))
+  app.use(eventRoutes(deps), flagRoutes(deps), feedbackRoutes(deps))
   app.use(profileRoutes(deps), profilePhotoRoutes(deps), challengeRoutes(deps))
   app.use(deckRoutes(deps), activityRoutes(deps))
   app.use(connectionRoutes(deps))

@@ -233,6 +233,7 @@ export const outboxKind = pgEnum('outbox_kind', [
   'trend_challenge',
   'badge',
   'recap',
+  'feedback',
 ])
 
 export const outboxStatus = pgEnum('outbox_status', [

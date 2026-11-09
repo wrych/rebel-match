@@ -1,4 +1,8 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { feedbackPath } from '../lib/feedback'
+
+const feedback = feedbackPath('not-found')
+</script>
 
 <template>
   <section class="screen screen-hero">
@@ -10,6 +14,12 @@
         cannot see.
       </p>
     </div>
-    <RouterLink to="/" class="btn btn-dark">Start again</RouterLink>
+    <div class="stack">
+      <RouterLink to="/" class="btn btn-dark">Start again</RouterLink>
+      <p class="small">
+        Did a link in the app bring you here?
+        <RouterLink :to="feedback">Tell us in the feedback form</RouterLink>.
+      </p>
+    </div>
   </section>
 </template>

@@ -212,6 +212,7 @@ function deps(
       ban: () => Promise.resolve('not_found'),
       unban: () => Promise.resolve('not_found'),
     },
+    feedback: { send: () => Promise.resolve({ result: 'sent' }) },
     notificationMail: {
       deliverDue: () => Promise.resolve(),
       purgeBefore: () => Promise.resolve(0),

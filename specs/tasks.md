@@ -259,6 +259,9 @@ printed dev link (R-DEV-6).
       `/matches/requests/:id` with no challenge text or contact detail.
       _(S4, R-CONN-2, R-NAV-9)_
 - [x] Feedback mailto. _(S5, R-FB-1)_ To `FEEDBACK_TO`, required in production.
+- [ ] Feedback form at `/feedback` (S48), from the menu's foot beside the
+      version and from the not-found screen, prefilled for a member, emailed to
+      `FEEDBACK_TO`, paced and human-checked for visitors. _(R-FB-1, R-FB-2)_
 - [x] Admin GDPR delete: member plus challenges, requests, swipes, follows, role
       grants and outbound log entries, in one transaction. _(R-NFR-7, R-MSG-6)_
 - [x] Member cards in the host tools, and a member's page with roles and

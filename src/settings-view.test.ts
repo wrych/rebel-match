@@ -52,6 +52,8 @@ describe('settingsView (R-CFG-5)', () => {
         'abuse.authRequestsPerIp',
         'abuse.applicantsBeforeCheck',
         'abuse.applicantsCeiling',
+        'abuse.feedbackCeiling',
+        'abuse.feedbackWindowMinutes',
       ]),
     )
     expect(spam?.settings.map((s) => s.name)).toContain(
@@ -207,7 +209,7 @@ describe('settingsView (R-CFG-5)', () => {
 
     expect(new Set(keys).size).toBe(keys.length)
     expect(keys).toHaveLength(
-      42 + Object.keys(gameBounds).length + experimentKeys.length,
+      44 + Object.keys(gameBounds).length + experimentKeys.length,
     )
   })
 })

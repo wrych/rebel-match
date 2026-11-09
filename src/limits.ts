@@ -133,6 +133,8 @@ const limitSpecs = {
   inviteMaxUsesCeiling: { fixed: 0xffffffff },
   // connection_requests.message (src/db/schema.ts).
   connectionMessageMaxChars: { fixed: 600 },
+  // A feedback message, so one cannot fill the outbound log (R-FB-1).
+  feedbackMaxChars: { fixed: 4000 },
   // reports.comment (src/db/schema.ts).
   reportCommentMaxChars: { fixed: 500 },
   // moderation_actions.note, the reason a host gives for a ban (R-MOD-9).
