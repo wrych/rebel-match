@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import PullToRefresh from '../components/PullToRefresh.vue'
 import RefreshButton from '../components/RefreshButton.vue'
 import { fetchConfig } from '../lib/api'
-import { arrivals, useLiveList } from '../lib/live-list'
+import { useLiveResource } from '../lib/live-list'
 import {
   fetchReportedMembers,
   moderationPath,
@@ -18,12 +18,27 @@ const router = useRouter()
 const tab = computed<'open' | 'handled'>(() =>
   route.query['state'] === 'handled' ? 'handled' : 'open',
 )
-const members = ref<ReportedMember[]>([])
-const loaded = ref(false)
-const problem = ref<string | null>(null)
 const toFlag = ref<number | null>(null)
 
-const arrived = arrivals<ReportedMember>((member) => member.memberId)
+const {
+  data: members,
+  problem,
+  loaded,
+  arrived,
+  live,
+  restart,
+} = useLiveResource(
+  () => fetchReportedMembers(tab.value),
+  'moderationPollSeconds',
+  {
+    initial: [],
+    failure: 'The reports could not be loaded.',
+    arrivals: {
+      of: (found) => found,
+      id: (member: ReportedMember) => member.memberId,
+    },
+  },
+)
 
 const flagged = (member: ReportedMember): boolean =>
   tab.value === 'open' &&
@@ -44,32 +59,12 @@ function itemsLine(member: ReportedMember): string {
     .join(' · ')
 }
 
-// Once shown, the list stays as it is when a refresh fails (R-NAV-12).
-async function load(): Promise<void> {
-  try {
-    const found = await fetchReportedMembers(tab.value)
-    arrived.see(found)
-    members.value = found
-    problem.value = null
-  } catch {
-    if (!loaded.value) problem.value = 'The reports could not be loaded.'
-  }
-  loaded.value = true
-}
-
-const live = useLiveList(load, 'moderationPollSeconds')
-
 function show(state: 'open' | 'handled'): void {
   void router.replace({ query: state === 'open' ? {} : { state } })
 }
 
 // A changed tab is a new list: nothing on it is new (R-NAV-12).
-watch(tab, async () => {
-  arrived.forget()
-  loaded.value = false
-  members.value = []
-  await live.refresh()
-})
+watch(tab, restart)
 
 onMounted(async () => {
   toFlag.value = await fetchConfig()

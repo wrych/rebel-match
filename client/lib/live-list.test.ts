@@ -5,7 +5,9 @@ import { defineComponent, h } from 'vue'
 import {
   arrivals,
   useLiveList,
+  useLiveResource,
   type LiveList,
+  type LiveResource,
   type PollLimit,
 } from './live-list'
 import type { Page } from './poll'
@@ -71,21 +73,28 @@ function respondWithLimits(limits: Record<string, number>): void {
   )
 }
 
-function host(
-  load: () => Promise<void>,
-  interval: PollLimit = 'outboxPollSeconds',
-): { live: LiveList; unmount: () => void } {
-  let live: LiveList | undefined
+function inScreen<R>(use: () => R): { used: R; unmount: () => void } {
+  let used: R | undefined
   const wrapper = mount(
     defineComponent({
       setup() {
-        live = useLiveList(load, interval, visiblePage())
+        used = use()
         return () => h('div')
       },
     }),
   )
-  if (live === undefined) throw new Error('not set up')
-  return { live, unmount: () => wrapper.unmount() }
+  if (used === undefined) throw new Error('not set up')
+  return { used, unmount: () => wrapper.unmount() }
+}
+
+function host(
+  load: () => Promise<void>,
+  interval: PollLimit = 'outboxPollSeconds',
+): { live: LiveList; unmount: () => void } {
+  const { used, unmount } = inScreen(() =>
+    useLiveList(load, interval, visiblePage()),
+  )
+  return { live: used, unmount }
 }
 
 describe('useLiveList (R-NAV-12)', () => {
@@ -183,5 +192,133 @@ describe('useLiveList (R-NAV-12)', () => {
     await live.refresh()
     expect(load).toHaveBeenCalledOnce()
     expect(live.pullPx).toBeNull()
+  })
+})
+
+const FAILURE = 'The list could not be loaded.'
+
+type Item = { id: string }
+
+function hostResource(
+  fetch: () => Promise<Item[]>,
+): LiveResource<Item[], Item, never[]> {
+  return inScreen(() =>
+    useLiveResource(
+      fetch,
+      'outboxPollSeconds',
+      {
+        initial: [],
+        failure: FAILURE,
+        arrivals: { of: (found) => found, id: idOf },
+      },
+      visiblePage(),
+    ),
+  ).used
+}
+
+describe('useLiveResource (R-NAV-12)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    respondWithLimits({ outboxPollSeconds: 8 })
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
+  })
+
+  it('shows nothing and is not loaded before the first read', () => {
+    const resource = hostResource(vi.fn().mockResolvedValue([{ id: 'a' }]))
+
+    expect(resource.data.value).toEqual([])
+    expect(resource.loaded.value).toBe(false)
+    expect(resource.problem.value).toBeNull()
+  })
+
+  it('shows what a read brings', async () => {
+    const resource = hostResource(vi.fn().mockResolvedValue([{ id: 'a' }]))
+
+    await resource.live.refresh()
+
+    expect(resource.data.value).toEqual([{ id: 'a' }])
+    expect(resource.loaded.value).toBe(true)
+  })
+
+  it('says so when the first read fails', async () => {
+    const resource = hostResource(vi.fn().mockRejectedValue(new Error('down')))
+
+    await resource.live.refresh()
+
+    expect(resource.problem.value).toBe(FAILURE)
+    expect(resource.loaded.value).toBe(true)
+  })
+
+  it('keeps what is shown, and says nothing, when a later read fails', async () => {
+    const resource = hostResource(
+      vi
+        .fn()
+        .mockResolvedValueOnce([{ id: 'a' }])
+        .mockRejectedValue(new Error('down')),
+    )
+    await resource.live.refresh()
+
+    await vi.advanceTimersByTimeAsync(8000)
+
+    expect(resource.data.value).toEqual([{ id: 'a' }])
+    expect(resource.problem.value).toBeNull()
+  })
+
+  it('clears the failure once a read succeeds', async () => {
+    const resource = hostResource(
+      vi
+        .fn()
+        .mockRejectedValueOnce(new Error('down'))
+        .mockResolvedValue([{ id: 'a' }]),
+    )
+    await resource.live.refresh()
+
+    await resource.live.refresh()
+
+    expect(resource.problem.value).toBeNull()
+    expect(resource.data.value).toEqual([{ id: 'a' }])
+  })
+
+  it('marks what a polled read brings until it is tapped', async () => {
+    const resource = hostResource(
+      vi
+        .fn()
+        .mockResolvedValueOnce([{ id: 'a' }])
+        .mockResolvedValue([{ id: 'b' }, { id: 'a' }]),
+    )
+    await resource.live.refresh()
+
+    await vi.advanceTimersByTimeAsync(8000)
+
+    expect(resource.arrived.isNew({ id: 'a' })).toBe(false)
+    expect(resource.arrived.isNew({ id: 'b' })).toBe(true)
+    resource.arrived.clear({ id: 'b' })
+    expect(resource.arrived.isNew({ id: 'b' })).toBe(false)
+  })
+
+  it('starts a new list on restart: empty, not loaded, nothing new', async () => {
+    let finish: (items: Item[]) => void = () => undefined
+    const resource = hostResource(
+      vi
+        .fn()
+        .mockResolvedValueOnce([{ id: 'a' }])
+        .mockImplementation(
+          () => new Promise<Item[]>((resolve) => (finish = resolve)),
+        ),
+    )
+    await resource.live.refresh()
+
+    const restarted = resource.restart()
+    expect(resource.data.value).toEqual([])
+    expect(resource.loaded.value).toBe(false)
+    finish([{ id: 'b' }])
+    await restarted
+
+    expect(resource.arrived.isNew({ id: 'b' })).toBe(false)
+    expect(resource.loaded.value).toBe(true)
   })
 })

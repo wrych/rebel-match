@@ -21,16 +21,44 @@ import {
   type ConnectionView,
 } from '../lib/connections'
 import { fetchConfig } from '../lib/api'
-import { arrivals, useLiveList } from '../lib/live-list'
+import { useLiveResource } from '../lib/live-list'
 import { searchOpen } from '../lib/people'
 import SearchIcon from '../components/SearchIcon.vue'
 import { loadMe } from '../lib/session'
 
-const cockpit = ref<Cockpit | null>(null)
-const incoming = ref<ConnectionView[]>([])
-const connected = ref<ConnectionView[]>([])
+// Marked before reading, so what arrives in between still badges the tab; a
+// failed mark only leaves the badge up (R-MINE-4).
+async function fetchLists(): Promise<{
+  mine: Cockpit
+  waiting: ConnectionView[]
+  people: ConnectionView[]
+}> {
+  await markMatchesSeen().catch(() => undefined)
+  const [mine, waiting, people] = await Promise.all([
+    fetchCockpit(),
+    fetchIncoming(),
+    fetchConnected(),
+  ])
+  return { mine, waiting, people }
+}
+
+const {
+  data: lists,
+  problem,
+  arrived,
+  live,
+} = useLiveResource(fetchLists, 'cockpitPollSeconds', {
+  initial: null,
+  failure: 'Your matches could not be loaded. Reload to try again.',
+  arrivals: {
+    of: (found) => found.waiting,
+    id: (request: ConnectionView) => request.id,
+  },
+})
+const cockpit = computed(() => lists.value?.mine ?? null)
+const incoming = computed(() => lists.value?.waiting ?? [])
+const connected = computed(() => lists.value?.people ?? [])
 const people = computed(() => byMember(connected.value))
-const problem = ref<string | null>(null)
 const answering = ref<string | null>(null)
 const notice = ref<string | null>(null)
 const waitingShown = computed(
@@ -42,32 +70,6 @@ const canSearch = ref(false)
 
 const requestPath = (id: string): string => pathTo('request', { id })
 const matchesPath = (id: string): string => pathTo('matches', { id })
-
-const arrived = arrivals<ConnectionView>((request) => request.id)
-
-// Marked before reading, so what arrives in between still badges the tab; a
-// failed mark only leaves the badge up (R-MINE-4).
-async function load(): Promise<void> {
-  await markMatchesSeen().catch(() => undefined)
-  try {
-    const [mine, waiting, people] = await Promise.all([
-      fetchCockpit(),
-      fetchIncoming(),
-      fetchConnected(),
-    ])
-    arrived.see(waiting)
-    cockpit.value = mine
-    incoming.value = waiting
-    connected.value = people
-    problem.value = null
-  } catch {
-    // A failed refresh keeps what is on screen; the next one tries again.
-    if (cockpit.value === null)
-      problem.value = 'Your matches could not be loaded. Reload to try again.'
-  }
-}
-
-const live = useLiveList(load, 'cockpitPollSeconds')
 
 // The badge's count is read out with the name, as the tab bar's is.
 function connectionLabel(person: ConnectedMember): string | undefined {
@@ -103,7 +105,11 @@ async function answer(
   failed.value = null
   try {
     const outcome = await answerRequest(request.id, verdict)
-    incoming.value = incoming.value.filter((each) => each.id !== request.id)
+    if (lists.value !== null)
+      lists.value = {
+        ...lists.value,
+        waiting: lists.value.waiting.filter((each) => each.id !== request.id),
+      }
     notice.value = afterAnswer(request, verdict, outcome)
     void live.refresh()
   } catch {
