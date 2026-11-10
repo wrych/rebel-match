@@ -257,6 +257,15 @@ describe('PeopleScreen (S44)', () => {
     },
   )
 
+  it('keeps Your code beside the title, named for a screen reader (R-CODE-1)', async () => {
+    server(undefined, 1, 1)
+    const screen = await mountScreen()
+    const link = screen.find('.title-row h1 + a')
+
+    expect(link.attributes('aria-label')).toBe('Your code')
+    expect(link.find('svg').attributes('aria-hidden')).toBe('true')
+  })
+
   it('is not found while hosts have search off (R-FIND-1)', async () => {
     server(undefined, 0)
     await mountScreen()

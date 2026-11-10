@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import CodeIcon from '../components/CodeIcon.vue'
 import PersonCard from '../components/PersonCard.vue'
 import { fetchConfig } from '../lib/api'
 import { codesOpen } from '../lib/codes'
@@ -116,10 +117,17 @@ onMounted(async () => {
   <section class="screen">
     <div class="stack">
       <p class="kicker kicker-accent">Connect directly</p>
-      <h1 class="display display-lg">Find a member</h1>
-      <RouterLink v-if="codesOn" to="/me/code" class="row-link"
-        >Or show your code</RouterLink
-      >
+      <div class="title-row">
+        <h1 class="display display-lg">Find a member</h1>
+        <RouterLink
+          v-if="codesOn"
+          to="/me/code"
+          class="btn btn-ghost code-link"
+          aria-label="Your code"
+          title="Your code"
+          ><CodeIcon
+        /></RouterLink>
+      </div>
     </div>
 
     <form class="stack" role="search" @submit.prevent="search">
@@ -211,6 +219,12 @@ onMounted(async () => {
 </template>
 
 <style scoped>
+.code-link {
+  flex: none;
+  width: 3.4rem;
+  padding: 0;
+}
+
 .search-row {
   display: flex;
   gap: 0.4rem;
