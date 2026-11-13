@@ -46,7 +46,7 @@ Conventions:
                    ├──►  F26 Connect codes  ──►  F7, or connected at once
                    └──►  F12 Feedback
 
-   Happy mode, onboarded: F18 9toRevolution (impressum → game → leaderboard)
+   Happy mode, onboarded: F18 9toRevolution (About & legal → game → leaderboard)
 
    Any member: F20 Report a challenge or a note
 
@@ -740,10 +740,10 @@ Notifications, S22 Admin invites (ADR 0053).
 ## F18 — 9toRevolution, the office game
 
 **Actor:** an onboarded member in happy mode, while hosts have the game on.
-**Screens:** S32 Impressum, S33 9toRevolution, S34 9toRevolution leaderboard
+**Screens:** S32 About & legal, S33 9toRevolution, S34 9toRevolution leaderboard
 (ADR 0045, ADR 0046).
 
-1. In happy mode the member browses the impressum to its end, the community
+1. In happy mode the member browses About & legal to its end, the community
    card, which carries a small turn-the-phone sign. They turn the phone to
    landscape → **S33** `/9torevolution`, and the day starts (R-GAME-1). On a
    screen without touch, the card's **Be a rebel** button does the same.
@@ -783,7 +783,7 @@ Notifications, S22 Admin invites (ADR 0053).
   highest reached; the best and its time stay as they are.
 - _Leave the day from the lobby_ → it is recorded as abandoned (R-GAME-14).
 - _Switched to calm mode, or the tab hidden_ → the game pauses; in calm mode it
-  says the rebels only come out in happy mode, with a link to the impressum
+  says the rebels only come out in happy mode, with a link to About & legal
   (R-GAME-1, R-GAME-12).
 - _The game is switched off by a host_ → the door is gone and every game URL
   is not found; a game already running is refused its next record and says

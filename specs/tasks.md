@@ -269,7 +269,7 @@ printed dev link (R-DEV-6).
 - [x] Select several members by holding a card; give or take a role, or delete
       them. _(R-MEM-3)_
 - [x] Delete your own account from the profile screen. _(R-PROF-2, C4)_
-- [x] Impressum at `/impressum`, from the menu: the app's makers as a deck of
+- [x] About & legal at `/about`, from the menu: the app's makers as a deck of
       cards. _(S32, R-PROF-4)_
 - [x] Erasure waits 30 days: deactivate now, undo by emailed link or host,
       sweep after the grace period. _(R-NFR-7, ADR 0032)_
@@ -404,7 +404,7 @@ up the summit. One pull request per item, in this order.
       `PUT /api/game/sharing`, `PUT /api/game/hints/:hint`; pseudonyms;
       erasure and history deletion. _(R-GAME-14..16, R-GAME-20, R-NFR-7, R-STAT-4)_
 - [x] Leaderboard endpoint and screen S34. _(R-GAME-13, R-GAME-15)_
-- [x] Impressum card in happy mode, `/9torevolution` route as a lazy chunk,
+- [x] About & legal card in happy mode, `/9torevolution` route as a lazy chunk,
       the calm-mode screen, and the office's lobby with sharing. _(R-GAME-1,
       R-GAME-15)_
 - [x] Game core, boss mode: floors, day clock, temptation, files, losing,
