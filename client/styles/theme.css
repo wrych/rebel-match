@@ -567,6 +567,12 @@ textarea.input {
   border-color: var(--disabled);
 }
 
+/* A button that connects carries the mark at its left edge (R-LOOK-7). */
+.btn:has(> .connect-mark) {
+  position: relative;
+  padding-inline: 4.5em;
+}
+
 .btn-small {
   min-height: 2.75rem;
   padding: 0.65rem 1rem;
