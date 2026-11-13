@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { pathTo } from '../../src/routes'
+import ConnectMark from '../components/ConnectMark.vue'
 import KindChip from '../components/KindChip.vue'
 import { computed, onMounted, ref } from 'vue'
 import ChallengeCard from '../components/ChallengeCard.vue'
@@ -188,7 +189,7 @@ onMounted(() => {
               :aria-label="`Accept ${request.other.name}`"
               @click="answer(request, 'accept')"
             >
-              Accept
+              <ConnectMark />Accept
             </button>
           </div>
         </div>

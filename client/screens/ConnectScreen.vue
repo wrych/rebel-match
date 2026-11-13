@@ -2,6 +2,7 @@
 import { pathTo } from '../../src/routes'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import ConnectMark from '../components/ConnectMark.vue'
 import RequestSent from '../components/RequestSent.vue'
 import { useAction } from '../lib/action'
 import { fetchConfig } from '../lib/api'
@@ -126,7 +127,7 @@ async function send(): Promise<void> {
           class="btn btn-primary"
           :disabled="sending || maxChars === null"
         >
-          Send request
+          <ConnectMark />Send request
         </button>
       </form>
       <RouterLink :to="matchesPath" class="btn btn-ghost">Cancel</RouterLink>

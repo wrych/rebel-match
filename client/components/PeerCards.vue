@@ -5,6 +5,7 @@ import { photoSrc } from '../lib/photo'
 import type { Arrivals } from '../lib/live-list'
 import { reportPath } from '../lib/reports'
 import MemberPhoto from './MemberPhoto.vue'
+import ConnectMark from './ConnectMark.vue'
 
 const props = defineProps<{
   peers: PeerCard[]
@@ -62,7 +63,7 @@ function connectPath(peer: PeerCard): string {
           kind === 'same_boat' ? 'btn-primary' : 'btn-dark',
         ]"
         @click="emit('connect')"
-        >{{ action }}</RouterLink
+        ><ConnectMark />{{ action }}</RouterLink
       >
       <RouterLink
         v-if="peer.challengeId"

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import ConnectMark from '../components/ConnectMark.vue'
 import KindChip from '../components/KindChip.vue'
 import PersonCard from '../components/PersonCard.vue'
 import RequestSent from '../components/RequestSent.vue'
@@ -125,7 +126,7 @@ async function send(): Promise<void> {
           class="btn btn-primary"
           :disabled="sending || maxChars === null || outcome === 'limit'"
         >
-          Send request
+          <ConnectMark />Send request
         </button>
       </form>
       <RouterLink :to="cancelPath" class="btn btn-ghost">Cancel</RouterLink>
