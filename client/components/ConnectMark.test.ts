@@ -104,6 +104,17 @@ describe('ConnectMark (R-LOOK-7)', () => {
     expect(playing(button)).toBe(false)
   })
 
+  it('comes to rest when its button is disabled mid-play', async () => {
+    stubMotion(false)
+    const button = connectButton()
+
+    await fire(button, 'pointerenter')
+    button.element.setAttribute('disabled', '')
+    await endRound(button)
+
+    expect(playing(button)).toBe(false)
+  })
+
   it('never plays for a member who prefers reduced motion', async () => {
     stubMotion(true)
     const button = connectButton()
