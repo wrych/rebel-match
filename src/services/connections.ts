@@ -384,7 +384,7 @@ async function respondTo(
   return 'done'
 }
 
-const NO_LINKS: SocialLinks = { linkedin: null, instagram: null }
+const NO_LINKS: SocialLinks = { linkedin: null }
 
 async function readContact(
   deps: { store: ConnectionStore; track: Track; linksOn: () => boolean },

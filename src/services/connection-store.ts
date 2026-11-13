@@ -167,7 +167,6 @@ async function contactFor(
       name: members.name,
       email: members.email,
       linkedin: members.linkedinUrl,
-      instagram: members.instagramUrl,
     })
     .from(r)
     .innerJoin(members, activeOtherParty(viewerId))
@@ -176,7 +175,7 @@ async function contactFor(
   return {
     name: row.name ?? '',
     email: row.email,
-    socialLinks: { linkedin: row.linkedin, instagram: row.instagram },
+    socialLinks: { linkedin: row.linkedin },
   }
 }
 

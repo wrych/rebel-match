@@ -23,7 +23,6 @@ function server(status = 204): ReturnType<typeof vi.fn> {
 
 const saved = {
   linkedin: 'https://www.linkedin.com/in/ada',
-  instagram: null,
 }
 
 async function mounted(): Promise<ReturnType<typeof mount>> {
@@ -64,30 +63,24 @@ describe('SocialLinksSetting (R-PROF-5)', () => {
     expect(
       (setting.find('#social-linkedin').element as HTMLInputElement).value,
     ).toBe(saved.linkedin)
-    expect(
-      (setting.find('#social-instagram').element as HTMLInputElement).value,
-    ).toBe('')
   })
 
-  it('saves both links on change, the typed one as its address, and ticks it', async () => {
+  it('saves the link on change as its address, and ticks it', async () => {
     const fetchMock = server()
     const setting = await mounted()
 
-    await type(setting, '#social-instagram', '@ada')
+    await type(setting, '#social-linkedin', 'linkedin.com/in/ada-l/')
 
     expect(puts(fetchMock)).toEqual([
       [
         '/api/me/social-links',
-        {
-          linkedin: saved.linkedin,
-          instagram: 'https://www.instagram.com/ada',
-        },
+        { linkedin: 'https://www.linkedin.com/in/ada-l' },
       ],
     ])
     expect(
-      (setting.find('#social-instagram').element as HTMLInputElement).value,
-    ).toBe('https://www.instagram.com/ada')
-    expect(setting.findAll('.field')[1]!.text()).toContain('Saved')
+      (setting.find('#social-linkedin').element as HTMLInputElement).value,
+    ).toBe('https://www.linkedin.com/in/ada-l')
+    expect(setting.findAll('.field')[0]!.text()).toContain('Saved')
   })
 
   it('refuses an address on another site, says why, and saves nothing', async () => {

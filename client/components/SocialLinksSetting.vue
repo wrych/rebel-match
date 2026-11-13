@@ -14,33 +14,26 @@ const props = defineProps<{ links: SocialLinks }>()
 
 const labels: Readonly<Record<SocialNetwork, string>> = {
   linkedin: 'LinkedIn (optional)',
-  instagram: 'Instagram (optional)',
 }
 const placeholders: Readonly<Record<SocialNetwork, string>> = {
   linkedin: 'https://www.linkedin.com/in/…',
-  instagram: '@yourhandle',
 }
 const refusals: Readonly<Record<SocialNetwork, string>> = {
   linkedin:
     'That is not a LinkedIn profile (linkedin.com/in/…), so it was not saved.',
-  instagram:
-    'That is not an Instagram profile or @handle, so it was not saved.',
 }
 
 const typed = (): Record<SocialNetwork, string> => ({
   linkedin: props.links.linkedin ?? '',
-  instagram: props.links.instagram ?? '',
 })
 const form = reactive(typed())
 // What the server last accepted: a save sends it with the one link changed.
 const saved = reactive(typed())
 const ticks = reactive<Record<SocialNetwork, boolean>>({
   linkedin: false,
-  instagram: false,
 })
 const errors = reactive<Record<SocialNetwork, string | null>>({
   linkedin: null,
-  instagram: null,
 })
 const limits = useConfig(
   ({ limits }) => ({
@@ -76,7 +69,6 @@ async function store(network: SocialNetwork, value: string): Promise<void> {
 function save(network: SocialNetwork): Promise<void> {
   errors[network] = null
   const reading = readSocialLink(
-    network,
     form[network],
     maxChars.value ?? Number.POSITIVE_INFINITY,
   )

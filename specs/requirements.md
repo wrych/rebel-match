@@ -435,19 +435,19 @@ capability, not a secret** — and every requirement below exists because of tha
   member who completed onboarding and while the game is on, the community's
   card is the door to 9toRevolution (R-GAME-1).
 - **R-PROF-5 (Social links)** — WHILE hosts have `limits.socialLinks` on, the
-  profile screen SHALL let a member add a link to their **LinkedIn** and their
-  **Instagram** profile, each optional and saved on change as R-PROF-1 says. A
-  link SHALL be accepted only as a member's profile on that network's own site
-  — LinkedIn's `/in/…`, an Instagram handle, or an `@handle` — and saved as
-  its canonical `https` address; a post, a page or anything else SHALL NOT
-  save and SHALL say why. The contact screen SHALL show each as its network's
-  logo and the handle (`/in/…`, `@…`). Social links are contact details: they SHALL be shown only on the
+  profile screen SHALL let a member add a link to their **LinkedIn** profile,
+  optional and saved on change as R-PROF-1 says. A link SHALL be accepted only
+  as a member's profile on LinkedIn's own site — `/in/…` — and saved as its
+  canonical `https` address; a post, a page or anything else SHALL NOT save
+  and SHALL say why. The contact screen SHALL show it as LinkedIn's logo and
+  the handle (`/in/…`). Social links are contact details: they SHALL be shown only on the
   contact screen of an accepted connection, to its other party (S16, R-CONN-6,
   ADR 0004), and never on a member card, in search, the deck, the host tools,
   a notification or an analytics event (R-ANA-3). They go with the account
   (R-NFR-7). While the switch is off, neither screen SHALL show them and their
   endpoint SHALL answer as not found (R-NAV-8); links already saved are kept.
-  _(Andy, 2026-11-07: visible to connections only, behind a switch.)_
+  _(Andy, 2026-11-07: visible to connections only, behind a switch.
+  2026-11-13: LinkedIn only; Instagram removed, with the links saved for it.)_
 - **R-PROF-6 (Profile photo)** — WHILE hosts have `limits.profilePhotos` on
   (a switch in the host tools, R-CFG-6, off by default) an onboarded member
   MAY add a **profile photo** on the profile screen, change it, or remove it, each saved at once

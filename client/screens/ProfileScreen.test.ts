@@ -153,7 +153,7 @@ describe('ProfileScreen', () => {
     async (socialLinks, offered) => {
       const withLinks = {
         ...profile,
-        socialLinks: { linkedin: null, instagram: null },
+        socialLinks: { linkedin: null },
       }
       vi.stubGlobal(
         'fetch',
@@ -445,7 +445,7 @@ describe('ProfileScreen folds and search (R-PROF-8)', () => {
             bodies[url] ?? {
               ...profile,
               findable: true,
-              socialLinks: { linkedin: null, instagram: null },
+              socialLinks: { linkedin: null },
             },
           ),
       })

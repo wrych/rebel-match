@@ -49,7 +49,6 @@ describe('RequestContactScreen', () => {
       mailto: 'mailto:sam@example.invalid',
       socialLinks: {
         linkedin: 'https://www.linkedin.com/in/sam',
-        instagram: null,
       },
       over: [],
     }
@@ -60,7 +59,6 @@ describe('RequestContactScreen', () => {
     expect(link.text()).toBe('/in/sam')
     expect(link.attributes('aria-label')).toBe('Sam Boat on LinkedIn')
     expect(link.attributes('rel')).toBe('noopener noreferrer')
-    expect(screen.text()).not.toContain('Instagram')
   })
 
   it('copies the email to the clipboard (R-CONN-3)', async () => {

@@ -20,7 +20,7 @@ const ABOUT_YOU: ProfileFold = {
     'Email',
   ],
 }
-const SOCIAL_WORDS = ['Social links', 'LinkedIn', 'Instagram']
+const SOCIAL_WORDS = ['Social links', 'LinkedIn']
 const CODE_WORDS = [
   'Your code',
   'Profile code',

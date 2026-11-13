@@ -12,7 +12,7 @@ async function saveLinks(
 ): Promise<void> {
   await db
     .update(members)
-    .set({ linkedinUrl: links.linkedin, instagramUrl: links.instagram })
+    .set({ linkedinUrl: links.linkedin })
     .where(eq(members.id, memberId))
 }
 
@@ -43,10 +43,7 @@ export function createProfileStore(
         analyticsOptIn: isOptedIn(row, analyticsVersion),
         findable: row.findable,
         photoAt: photoAt?.toISOString() ?? null,
-        socialLinks: {
-          linkedin: row.linkedinUrl,
-          instagram: row.instagramUrl,
-        },
+        socialLinks: { linkedin: row.linkedinUrl },
       }
     },
     update: async (memberId, edit) => {

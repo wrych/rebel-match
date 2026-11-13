@@ -1,11 +1,3 @@
-<script setup lang="ts">
-import type { SocialNetwork } from '../../src/social-links'
-
-/** A network's mark, drawn in the text colour, beside a social link
- * (R-PROF-5). */
-defineProps<{ network: SocialNetwork }>()
-</script>
-
 <template>
   <svg
     class="logo"
@@ -15,20 +7,13 @@ defineProps<{ network: SocialNetwork }>()
     aria-hidden="true"
     focusable="false"
   >
-    <template v-if="network === 'linkedin'">
-      <rect class="fill" x="2" y="2" width="20" height="20" rx="3" />
-      <g class="cut">
-        <rect x="6" y="10" width="2.6" height="8" />
-        <circle cx="7.3" cy="6.9" r="1.5" />
-        <path
-          d="M10.6 10h2.5v1.2c.5-.9 1.6-1.4 2.8-1.4 2.2 0 3.1 1.4 3.1 3.6V18h-2.6v-4.1c0-1.1-.4-1.8-1.4-1.8s-1.8.8-1.8 1.9V18h-2.6z"
-        />
-      </g>
-    </template>
-    <g v-else class="line">
-      <rect x="3" y="3" width="18" height="18" rx="5" />
-      <circle cx="12" cy="12" r="4.2" />
-      <circle class="dot" cx="17.3" cy="6.7" r="1" />
+    <rect class="fill" x="2" y="2" width="20" height="20" rx="3" />
+    <g class="cut">
+      <rect x="6" y="10" width="2.6" height="8" />
+      <circle cx="7.3" cy="6.9" r="1.5" />
+      <path
+        d="M10.6 10h2.5v1.2c.5-.9 1.6-1.4 2.8-1.4 2.2 0 3.1 1.4 3.1 3.6V18h-2.6v-4.1c0-1.1-.4-1.8-1.4-1.8s-1.8.8-1.8 1.9V18h-2.6z"
+      />
     </g>
   </svg>
 </template>
@@ -44,16 +29,5 @@ defineProps<{ network: SocialNetwork }>()
 
 .cut {
   fill: var(--field);
-}
-
-.line {
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 2;
-}
-
-.line .dot {
-  fill: currentColor;
-  stroke: none;
 }
 </style>

@@ -31,10 +31,9 @@ async function clear(): Promise<void> {
     'DELETE FROM connection_requests WHERE requester_id IN (?) OR target_id IN (?)',
     [Object.values(ids), Object.values(ids)],
   )
-  await db.query(
-    'UPDATE members SET linkedin_url = NULL, instagram_url = NULL WHERE id IN (?)',
-    [Object.values(ids)],
-  )
+  await db.query('UPDATE members SET linkedin_url = NULL WHERE id IN (?)', [
+    Object.values(ids),
+  ])
 }
 
 beforeAll(async () => {
@@ -60,7 +59,7 @@ describe('social links over Postgres (R-PROF-5)', () => {
     const saved = await request(app)
       .put('/api/me/social-links')
       .set('Cookie', as('tobias'))
-      .send({ linkedin: 'linkedin.com/in/tobias', instagram: '@tobias' })
+      .send({ linkedin: 'linkedin.com/in/tobias' })
     const own = await request(app)
       .get('/api/profile')
       .set('Cookie', as('tobias'))
@@ -69,7 +68,6 @@ describe('social links over Postgres (R-PROF-5)', () => {
     expect(own.body).toMatchObject({
       socialLinks: {
         linkedin: 'https://www.linkedin.com/in/tobias',
-        instagram: 'https://www.instagram.com/tobias',
       },
     })
   })
@@ -101,7 +99,6 @@ describe('social links over Postgres (R-PROF-5)', () => {
       contact: {
         socialLinks: {
           linkedin: 'https://www.linkedin.com/in/tobias',
-          instagram: 'https://www.instagram.com/tobias',
         },
       },
     })

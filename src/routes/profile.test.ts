@@ -33,7 +33,7 @@ const own: OwnProfile = {
   analyticsOptIn: false,
   findable: true,
   photoAt: null,
-  socialLinks: { linkedin: 'https://www.linkedin.com/in/ada', instagram: null },
+  socialLinks: { linkedin: 'https://www.linkedin.com/in/ada' },
 }
 
 function setup(
@@ -255,40 +255,41 @@ describe('PUT /api/me/findable (R-FIND-5)', () => {
 })
 
 describe('PUT /api/me/social-links (R-PROF-5)', () => {
-  it('saves both links as addresses, a blank or left-out one cleared', async () => {
+  it('saves the link as its address', async () => {
     const { app, links } = setup()
 
     const response = await request(app)
       .put('/api/me/social-links')
       .set('Cookie', await cookie())
-      .send({ linkedin: ' linkedin.com/in/ada?trk=x ', instagram: '' })
+      .send({ linkedin: ' linkedin.com/in/ada?trk=x ' })
 
     expect(response.status).toBe(204)
     expect(links).toEqual([
-      [
-        'm-ada',
-        { linkedin: 'https://www.linkedin.com/in/ada', instagram: null },
-      ],
+      ['m-ada', { linkedin: 'https://www.linkedin.com/in/ada' }],
     ])
   })
 
-  it('reads an Instagram handle as its address', async () => {
+  it('clears a blank or left-out link', async () => {
     const { app, links } = setup()
 
     await request(app)
       .put('/api/me/social-links')
       .set('Cookie', await cookie())
-      .send({ instagram: '@ada' })
+      .send({ linkedin: '  ' })
+    await request(app)
+      .put('/api/me/social-links')
+      .set('Cookie', await cookie())
+      .send({})
 
-    expect(links[0]?.[1]).toEqual({
-      linkedin: null,
-      instagram: 'https://www.instagram.com/ada',
-    })
+    expect(links).toEqual([
+      ['m-ada', { linkedin: null }],
+      ['m-ada', { linkedin: null }],
+    ])
   })
 
   it.each([
     ['a link on another site', { linkedin: 'https://example.org/in/ada' }],
-    ['a script address', { instagram: 'javascript:alert(1)' }],
+    ['a script address', { linkedin: 'javascript:alert(1)' }],
     ['a link that is not text', { linkedin: 42 }],
   ])('refuses %s with 400 and saves nothing', async (_case, body) => {
     const { app, links } = setup()

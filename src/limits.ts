@@ -322,7 +322,7 @@ const limitSpecs = {
       unit: CHARACTERS,
     },
   },
-  // members.linkedin_url and instagram_url (src/db/schema.ts, R-PROF-5).
+  // members.linkedin_url (src/db/schema.ts, R-PROF-5).
   socialLinkMaxChars: {
     fixed: 200,
     shown: {
@@ -524,9 +524,9 @@ const limitSpecs = {
     shown: {
       name: 'Social links',
       explanation:
-        'On lets members add their LinkedIn and Instagram to their ' +
-        'profile, shown only to members they are connected with; off ' +
-        'hides them everywhere and keeps what was saved.',
+        'On lets members add their LinkedIn to their profile, shown ' +
+        'only to members they are connected with; off hides it ' +
+        'everywhere and keeps what was saved.',
       switch: true,
     },
   },
