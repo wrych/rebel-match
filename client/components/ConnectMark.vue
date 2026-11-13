@@ -27,7 +27,7 @@ function start(): void {
 
 // A round ends with the Rs apart again, so stopping there never snaps.
 function roundEnded(): void {
-  if (!hovered && !pressed) playing.value = false
+  if (disabled() || (!hovered && !pressed)) playing.value = false
 }
 
 const listeners: [string, (event: Event) => void][] = [
