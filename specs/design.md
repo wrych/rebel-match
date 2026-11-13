@@ -329,6 +329,14 @@ five horizontal bands, multiplied in, whose colours are tokens: white in calm,
 so nothing shows, and the rainbow in happy mode (R-LOOK-3). The favicon cannot
 read tokens, so happy mode swaps it for `favicon-happy.svg`.
 
+On a button that connects two members the mark is `ConnectMark` (R-LOOK-7): a
+small `RebelMark` before the words, its corners rounded like the header's. It
+listens to the button it sits in, not to itself, so hovering or pressing
+anywhere on the button plays it; it repeats the intro's keyframes over
+`--mark-press` rather than `--mark-intro`, and on each round's end it stops if
+the button is no longer hovered or pressed, so it always comes to rest with the
+Rs apart rather than snapping back mid-wink.
+
 The header's right-hand button opens the **menu** (R-PROF-3): "Profile &
 privacy" (`/profile`), the host tools
 the member's permissions allow (paths and permissions from the route table, ADR
