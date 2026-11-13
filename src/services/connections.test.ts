@@ -153,7 +153,6 @@ function fakeStore(): ConnectionStore & {
         email: emails[other] ?? '',
         socialLinks: {
           linkedin: `https://www.linkedin.com/in/${other}`,
-          instagram: null,
         },
       })
     },
@@ -437,7 +436,6 @@ describe('the double opt-in (ADR 0004)', () => {
 
     expect((await service.contact('m-ada', 'r-1'))?.socialLinks).toEqual({
       linkedin: 'https://www.linkedin.com/in/m-bob',
-      instagram: null,
     })
   })
 
@@ -448,7 +446,6 @@ describe('the double opt-in (ADR 0004)', () => {
 
     expect((await service.contact('m-ada', 'r-1'))?.socialLinks).toEqual({
       linkedin: null,
-      instagram: null,
     })
   })
 

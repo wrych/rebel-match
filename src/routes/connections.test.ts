@@ -57,7 +57,7 @@ function setup(): { app: Express; requests: NewConnection[] } {
           ? {
               name: 'Bob',
               email: 'bob@example.invalid',
-              socialLinks: { linkedin: null, instagram: null },
+              socialLinks: { linkedin: null },
               mailto: 'mailto:x',
               over: [],
             }
@@ -187,7 +187,7 @@ describe('connection routes', () => {
       contact: {
         name: 'Bob',
         email: 'bob@example.invalid',
-        socialLinks: { linkedin: null, instagram: null },
+        socialLinks: { linkedin: null },
         mailto: 'mailto:x',
         over: [],
       },

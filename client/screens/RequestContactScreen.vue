@@ -23,14 +23,13 @@ const problem = ref<string | null>(null)
 const over = computed(() => overInOrder(contact.value?.over ?? []))
 const networkNames: Readonly<Record<SocialNetwork, string>> = {
   linkedin: 'LinkedIn',
-  instagram: 'Instagram',
 }
 const socialLinks = computed(() =>
   socialNetworks.flatMap((network) => {
     const url = contact.value?.socialLinks?.[network] ?? null
     if (url === null) return []
     const name = `${contact.value?.name ?? ''} on ${networkNames[network]}`
-    return [{ network, url, name, handle: handleOf(network, url) }]
+    return [{ network, url, name, handle: handleOf(url) }]
   }),
 )
 // Without it the copy tick stays until the next copy.
@@ -100,7 +99,7 @@ onMounted(async () => {
                 target="_blank"
                 rel="noopener noreferrer"
                 :aria-label="link.name"
-                ><SocialLogo :network="link.network" />{{ link.handle }}</a
+                ><SocialLogo />{{ link.handle }}</a
               >
             </li>
           </ul>

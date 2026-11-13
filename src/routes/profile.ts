@@ -35,15 +35,14 @@ const findableBody = z.object({ findable: z.boolean() })
 
 const linksBody = z.object({
   linkedin: z.string().optional(),
-  instagram: z.string().optional(),
 })
 
 function socialLinksOf(body: unknown, maxChars: number): SocialLinks | null {
   const typed = linksBody.safeParse(body)
   if (!typed.success) return null
-  const links: SocialLinks = { linkedin: null, instagram: null }
+  const links: SocialLinks = { linkedin: null }
   for (const network of socialNetworks) {
-    const reading = readSocialLink(network, typed.data[network] ?? '', maxChars)
+    const reading = readSocialLink(typed.data[network] ?? '', maxChars)
     if (reading.result === 'invalid') return null
     links[network] = reading.result === 'link' ? reading.url : null
   }
