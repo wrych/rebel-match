@@ -101,6 +101,7 @@ describe('applyMigrations on Postgres (ADR 0024)', () => {
       '0036_member_photos.sql',
       '0037_photo_keys.sql',
       '0038_feedback_outbox.sql',
+      '0039_drop_instagram_url.sql',
     ])
     expect(await applyMigrations(connection, MIGRATIONS)).toEqual([])
     expect(await tableExists('connection_requests')).toBe(true)
