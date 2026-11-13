@@ -535,7 +535,7 @@ Built after the spec and ADR merge. One pull request per item, in this order.
       R-FIND-8)_
 - [ ] On a phone: scan a live code at the end of its ring, and a profile code
       signed out, through sign-in and back. _(R-CODE-5, R-NAV-5)_
-- [ ] Social links: LinkedIn and Instagram on the profile behind
+- [ ] Social links: LinkedIn on the profile behind
       `limits.socialLinks`, shown on S16 only. _(R-PROF-5)_
 
 ---
