@@ -330,7 +330,9 @@ so nothing shows, and the rainbow in happy mode (R-LOOK-3). The favicon cannot
 read tokens, so happy mode swaps it for `favicon-happy.svg`.
 
 On a button that connects two members the mark is `ConnectMark` (R-LOOK-7): a
-small `RebelMark` before the words, its corners rounded like the header's. It
+`RebelMark` drawn `bare`: the figure becomes a mask over the button's text
+colour, so the black square and the bands drop away and the overlap stays a
+hole, cropped to the Rs and pinned to the button's left edge. It
 listens to the button it sits in, not to itself, so hovering or pressing
 anywhere on the button plays it; it repeats the intro's keyframes over
 `--mark-press` rather than `--mark-intro`, and on each round's end it stops if
