@@ -25,6 +25,14 @@ describe('RebelMark (R-LOOK-5)', () => {
     ).toHaveLength(2)
   })
 
+  it('draws a bare mark in the text colour, with no square or bands', () => {
+    const svg = mount(RebelMark, { props: { bare: true } })
+
+    expect(svg.find('mask > rect[fill="#000"]').exists()).toBe(true)
+    expect(svg.find(':scope > rect[fill="currentColor"]').exists()).toBe(true)
+    expect(svg.find('.rebel-mark-bands').exists()).toBe(false)
+  })
+
   it('gives each playing mark on a page its own masks', () => {
     const page = defineComponent({
       components: { RebelMark },

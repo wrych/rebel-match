@@ -20,6 +20,8 @@ export const MARK_PLACE = { x: 44.6, y: 142, scale: 1.61 }
 export const MARK_APART = -4
 /** How far each R moves in to make the figure. */
 export const MARK_OVERLAP = 64
+/** The box around the Rs alone, standing apart: the view of a bare mark. */
+export const MARK_BARE_VIEW = '36 138 408 214'
 /** The happy colour bands: where the first starts, and each one's height. */
 export const MARK_BAND_TOP = 142
 export const MARK_BAND_HEIGHT = 41.25

@@ -2,6 +2,7 @@
 import { useId } from 'vue'
 import {
   MARK_APART,
+  MARK_BARE_VIEW,
   MARK_BAND_OVERLAP,
   MARK_BAND_HEIGHT,
   MARK_BAND_TOP,
@@ -14,8 +15,9 @@ import {
 } from '../lib/mark'
 
 /** `play` runs the intro once; with `repeat` it runs round after round over
- * `--mark-press` until `play` is taken away (R-LOOK-5, R-LOOK-7). */
-defineProps<{ play?: boolean; repeat?: boolean }>()
+ * `--mark-press` until `play` is taken away. `bare` draws the Rs alone in the
+ * text colour, cropped to them, with no square behind (R-LOOK-5, R-LOOK-7). */
+defineProps<{ play?: boolean; repeat?: boolean; bare?: boolean }>()
 
 const R = MARK_R
 const COUNTER = MARK_COUNTER
@@ -35,7 +37,7 @@ const id = useId()
   <svg
     class="rebel-mark"
     :class="{ 'rebel-mark-play': play, 'rebel-mark-repeat': play && repeat }"
-    viewBox="0 0 480 480"
+    :viewBox="bare ? MARK_BARE_VIEW : '0 0 480 480'"
     aria-hidden="true"
     focusable="false"
   >
@@ -67,25 +69,37 @@ const id = useId()
         </g>
       </mask>
     </defs>
-    <rect width="480" height="480" fill="#000" />
-    <g class="rebel-mark-rs" fill="#fff">
-      <g class="rebel-mark-left">
-        <path fill-rule="evenodd" :d="R" :transform="PLACED" />
+    <component
+      :is="bare ? 'mask' : 'g'"
+      :id="bare ? `${id}-figure` : undefined"
+    >
+      <rect width="480" height="480" fill="#000" />
+      <g class="rebel-mark-rs" fill="#fff">
+        <g class="rebel-mark-left">
+          <path fill-rule="evenodd" :d="R" :transform="PLACED" />
+        </g>
+        <g class="rebel-mark-right">
+          <path fill-rule="evenodd" :d="R" :transform="MIRRORED" />
+        </g>
       </g>
-      <g class="rebel-mark-right">
-        <path fill-rule="evenodd" :d="R" :transform="MIRRORED" />
-      </g>
-    </g>
-    <template v-if="play">
-      <g :mask="`url(#${id}-wink)`">
-        <path class="rebel-mark-lid" d="M240 140H302V230Q271 242 240 230Z" />
-      </g>
-      <g :mask="`url(#${id}-squint)`">
-        <path class="rebel-mark-lid" d="M185 140H245V193Q215 197 185 193Z" />
-      </g>
-      <path class="rebel-mark-shut" d="M250 222Q271 232 292 222" />
-    </template>
-    <g class="rebel-mark-bands">
+      <template v-if="play">
+        <g :mask="`url(#${id}-wink)`">
+          <path class="rebel-mark-lid" d="M240 140H302V230Q271 242 240 230Z" />
+        </g>
+        <g :mask="`url(#${id}-squint)`">
+          <path class="rebel-mark-lid" d="M185 140H245V193Q215 197 185 193Z" />
+        </g>
+        <path class="rebel-mark-shut" d="M250 222Q271 232 292 222" />
+      </template>
+    </component>
+    <rect
+      v-if="bare"
+      width="480"
+      height="480"
+      fill="currentColor"
+      :mask="`url(#${id}-figure)`"
+    />
+    <g v-else class="rebel-mark-bands">
       <rect
         v-for="band in BANDS"
         :key="band"

@@ -78,22 +78,21 @@ onBeforeUnmount(() => {
 
 <template>
   <span ref="root" class="connect-mark" @animationiteration="roundEnded">
-    <RebelMark :play="playing" repeat />
+    <RebelMark :play="playing" repeat bare />
   </span>
 </template>
 
 <style scoped>
 .connect-mark {
-  flex: none;
-  width: 2em;
-  height: 2em;
-  margin: -0.25em 0 -0.25em -0.4em;
-  overflow: hidden;
-  border-radius: var(--mark-radius);
+  position: absolute;
+  top: 50%;
+  left: 1.6em;
+  width: 2.3em;
+  transform: translateY(-50%);
 }
 
 .connect-mark :deep(.rebel-mark) {
   width: 100%;
-  height: 100%;
+  height: auto;
 }
 </style>
