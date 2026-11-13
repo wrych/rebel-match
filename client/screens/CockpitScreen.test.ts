@@ -148,6 +148,13 @@ describe('CockpitScreen', () => {
         .element.closest('section')
         ?.classList.contains('rule'),
     ).toBe(true)
+    const marked = (label: string): boolean | undefined =>
+      screen
+        .find(`[aria-label="${label} Bea There"]`)
+        .find('.connect-mark')
+        .exists()
+    expect(marked('Accept')).toBe(true)
+    expect(marked('Decline')).toBe(false)
   })
 
   it('puts Ask for help beside Your challenges, with or without one (R-MINE-1)', async () => {

@@ -68,6 +68,13 @@ describe('PersonScreen (S45)', () => {
     expect(
       screen.findAllComponents(RouterLinkStub).map((link) => link.props('to')),
     ).toContain('/people/m-ben/connect')
+    expect(
+      screen
+        .findAllComponents(RouterLinkStub)
+        .find((link) => link.props('to') === '/people/m-ben/connect')
+        ?.find('.connect-mark')
+        .exists(),
+    ).toBe(true)
   })
 
   it('is not found for a member search would not find (R-NAV-8)', async () => {
