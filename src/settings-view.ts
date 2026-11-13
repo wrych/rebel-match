@@ -252,7 +252,7 @@ const gameGroups: Group[] = [
   {
     title: '9toRevolution',
     explanation:
-      'The office game behind the impressum, in happy mode. A change applies ' +
+      'The office game behind About & legal, in happy mode. A change applies ' +
       'from the next day a player starts.',
     entries: [
       {

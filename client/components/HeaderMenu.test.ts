@@ -207,18 +207,22 @@ describe('HeaderMenu', () => {
     expect(paths(await opened())).toContain('/profile')
   })
 
-  it('offers only the impressum and feedback to nobody signed in (R-PROF-4, R-FB-1)', async () => {
+  it('offers only About & legal and feedback to nobody signed in (R-PROF-4, R-FB-1)', async () => {
     signedIn(null)
     const menu = await opened()
 
     expect(menu.text()).not.toContain('Sign out')
-    expect(paths(menu)).toEqual(['/impressum', '/feedback?from=offer'])
+    expect(paths(menu)).toEqual(['/about', '/feedback?from=offer'])
   })
 
-  it('leads a member to the impressum (R-PROF-4)', async () => {
+  it('leads a member to About & legal (R-PROF-4)', async () => {
     signedIn([])
 
-    expect(paths(await opened())).toContain('/impressum')
+    const item = (await opened())
+      .findAllComponents(RouterLinkStub)
+      .find((link) => link.props('to') === '/about')
+
+    expect(item?.text()).toBe('About & legal')
   })
 
   it('signs out on the server, then goes to the login screen', async () => {

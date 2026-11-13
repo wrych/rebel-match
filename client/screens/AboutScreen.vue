@@ -39,7 +39,7 @@ onUnmounted(stop)
 <template>
   <section class="screen">
     <div class="stack">
-      <p class="kicker kicker-accent">Impressum</p>
+      <p class="kicker kicker-accent">About &amp; legal</p>
       <h1 class="display display-lg">Made by rebels</h1>
       <p class="lede">
         Rebel Match connects rebels through shared challenges. It is a free,
@@ -110,7 +110,7 @@ onUnmounted(stop)
       <p class="small">
         Rebel Match is a beta, and your feedback shapes what comes next. Tell us
         what works, what doesn’t and what you miss in the
-        <RouterLink to="/feedback?from=impressum">feedback form</RouterLink>, or
+        <RouterLink to="/feedback?from=about">feedback form</RouterLink>, or
         write to any of us.
       </p>
     </div>

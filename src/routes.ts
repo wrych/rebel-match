@@ -57,9 +57,9 @@ const screens = [
   },
   { path: '/terms', name: 'terms', title: 'Terms of use', access: 'public' },
   {
-    path: '/impressum',
-    name: 'impressum',
-    title: 'Impressum',
+    path: '/about',
+    name: 'about',
+    title: 'About & legal',
     access: 'public',
   },
   { path: '/feedback', name: 'feedback', title: 'Feedback', access: 'public' },
@@ -314,6 +314,22 @@ export function pathTo<N extends ScreenName>(
   return fill(route.path, values)
 }
 
+/** The address a screen had before it was renamed, with the one it has now,
+ * so a link shared under the old one still opens it (R-PROF-4). */
+export const movedPaths: ReadonlyMap<string, string> = new Map([
+  ['/impressum', pathTo('about')],
+])
+
+/** Where a path that has moved leads now, its query string kept; undefined
+ * for a path that has not moved. */
+export function movedTo(path: string): string | undefined {
+  const [beforeFragment = ''] = path.split('#')
+  const [pathname = '', ...query] = beforeFragment.split('?')
+  const moved = movedPaths.get(pathname)
+  if (moved === undefined) return undefined
+  return query.length === 0 ? moved : `${moved}?${query.join('?')}`
+}
+
 const APP_NAME = 'Rebel Match'
 /** What a tab says for a path no screen serves (R-NAV-13). */
 export const NOT_FOUND_TITLE = 'Not found'
@@ -371,18 +387,22 @@ export function nextOf(fullPath: string): string {
   return `${beforeFragment}#${fragment.join('#')}`
 }
 
+const leavesTheApp = (next: string): boolean =>
+  !next.startsWith('/') ||
+  next.startsWith('//') ||
+  next.includes('\\') ||
+  next.includes('://')
+
 /**
  * Narrows a `next` parameter to somewhere safe to send a member (R-NAV-6).
  * Returns `/` for anything absolute, protocol-relative, backslash-escaped,
  * a live code, or not in the table — this value arrives from an email, so
- * it is never trusted.
+ * it is never trusted. A path that has moved is followed first.
  */
-export function safeNextPath(next: string | undefined): string {
-  if (next === undefined || next === '') return '/'
-  if (!next.startsWith('/')) return '/'
-  if (next.startsWith('//')) return '/'
-  if (next.includes('\\')) return '/'
-  if (next.includes('://')) return '/'
+export function safeNextPath(asked: string | undefined): string {
+  if (asked === undefined) return '/'
+  const next = movedTo(asked) ?? asked
+  if (leavesTheApp(next)) return '/'
 
   if (!isKnownPath(next) || isLiveCodePath(next)) return '/'
   return nextOf(next)

@@ -2,7 +2,7 @@ import andyMoesch from '../assets/makers/andy-moesch.jpg'
 import ivoPejakovic from '../assets/makers/ivo-pejakovic.jpg'
 import pascalDulex from '../assets/makers/pascal-dulex.jpg'
 
-/** A person who made the app, as the impressum shows them (R-PROF-4). */
+/** A person who made the app, as About & legal shows them (R-PROF-4). */
 export interface Maker {
   name: string
   responsibilities: readonly string[]

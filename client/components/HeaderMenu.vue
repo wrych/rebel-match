@@ -232,8 +232,8 @@ onBeforeUnmount(() => {
         >Profile &amp; privacy</RouterLink
       >
 
-      <RouterLink to="/impressum" class="item" @click="close(false)"
-        >Impressum</RouterLink
+      <RouterLink to="/about" class="item" @click="close(false)"
+        >About &amp; legal</RouterLink
       >
 
       <nav v-if="hostTools.length > 0" aria-label="Host tools" class="group">
