@@ -1211,6 +1211,14 @@ _(Decided by the maintainer after trying the redesign: ADR 0023.)_
   SHALL show it as the page's icon. In happy mode (R-LOOK-2) the mark's white
   SHALL be bands of colour, top to bottom pink, yellow, green, blue and purple,
   wherever it shows, the page's icon included.
+- **R-LOOK-7 (The mark connects)** — A button that asks a member to connect or
+  accepts their request (**Connect**, **Ask**, **Send request**, **Accept**)
+  SHALL carry the mark at rest before its words. While the button is hovered or
+  pressed, the mark SHALL play its meeting: the Rs slide together, wink and part,
+  over and over, and when the hover or press ends it SHALL finish the round it is
+  in and stop at rest. A disabled button's mark SHALL stay at rest, and WHEN the
+  member prefers reduced motion the mark SHALL never play. Buttons that only
+  lead to a contact already shared, decline or cancel SHALL NOT carry it.
 
 ---
 

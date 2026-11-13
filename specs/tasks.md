@@ -285,6 +285,8 @@ printed dev link (R-DEV-6).
       from the menu. _(R-PROF-8, R-PROF-3, R-LOOK-2, R-CODE-1)_
 - [x] The hosts' default colour mode: a browser that never chose starts in
       it, one that chose keeps its choice. _(R-LOOK-6)_
+- [ ] The mark on the buttons that connect, playing while hovered or
+      pressed. _(R-LOOK-7)_
 
 ## M6 — Hardening & pilot _(by 2026-11-01)_
 
