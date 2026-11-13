@@ -71,6 +71,7 @@
   /* The header's height, which whatever else sticks to the top sits below. */
   --header-height: calc(34px + 1.75rem);
   --mark-intro: 2.2s;
+  --mark-press: 1.6s;
   --mark-clear-at: 1.85s;
   --mark-radius: 18%;
 }

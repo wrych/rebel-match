@@ -1,5 +1,10 @@
 // @vitest-environment jsdom
-import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
+import {
+  type DOMWrapper,
+  flushPromises,
+  mount,
+  RouterLinkStub,
+} from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ConnectionView } from '../lib/connections'
 import RequestScreen from './RequestScreen.vue'
@@ -170,6 +175,16 @@ describe('RequestScreen', () => {
 
     expect(screen.text()).toContain('Shall we compare notes?')
     expect(screen.text()).toContain('A host hid your note as spam')
+  })
+
+  it('marks Accept, not Decline, with the mark (R-LOOK-7)', async () => {
+    server([incoming])
+    const screen = await mountScreen()
+    const button = (label: string): DOMWrapper<HTMLButtonElement> | undefined =>
+      screen.findAll('button').find((b) => b.text() === label)
+
+    expect(button('Accept')?.find('.connect-mark').exists()).toBe(true)
+    expect(button('Decline')?.find('.connect-mark').exists()).toBe(false)
   })
 
   it('accepts, then shows the contact (R-CONN-3)', async () => {

@@ -13,7 +13,9 @@ import {
   MARK_SIZE,
 } from '../lib/mark'
 
-defineProps<{ play?: boolean }>()
+/** `play` runs the intro once; with `repeat` it runs round after round over
+ * `--mark-press` until `play` is taken away (R-LOOK-5, R-LOOK-7). */
+defineProps<{ play?: boolean; repeat?: boolean }>()
 
 const R = MARK_R
 const COUNTER = MARK_COUNTER
@@ -32,7 +34,7 @@ const id = useId()
 <template>
   <svg
     class="rebel-mark"
-    :class="{ 'rebel-mark-play': play }"
+    :class="{ 'rebel-mark-play': play, 'rebel-mark-repeat': play && repeat }"
     viewBox="0 0 480 480"
     aria-hidden="true"
     focusable="false"
@@ -100,6 +102,8 @@ const id = useId()
 <style scoped>
 .rebel-mark {
   --rebel-mark-ease: cubic-bezier(0.65, 0, 0.35, 1);
+  --rebel-mark-length: var(--mark-intro);
+  --rebel-mark-rounds: 1;
   --rebel-mark-lid-open: -50px;
   display: block;
 }
@@ -146,19 +150,28 @@ const id = useId()
 }
 
 .rebel-mark-play .rebel-mark-left {
-  animation: rebel-mark-left var(--mark-intro) both;
+  animation: rebel-mark-left var(--rebel-mark-length) var(--rebel-mark-rounds)
+    both;
 }
 
 .rebel-mark-play .rebel-mark-right {
-  animation: rebel-mark-right var(--mark-intro) both;
+  animation: rebel-mark-right var(--rebel-mark-length) var(--rebel-mark-rounds)
+    both;
 }
 
 .rebel-mark-play .rebel-mark-lid {
-  animation: rebel-mark-wink var(--mark-intro) both;
+  animation: rebel-mark-wink var(--rebel-mark-length) var(--rebel-mark-rounds)
+    both;
 }
 
 .rebel-mark-play .rebel-mark-shut {
-  animation: rebel-mark-shut var(--mark-intro) both;
+  animation: rebel-mark-shut var(--rebel-mark-length) var(--rebel-mark-rounds)
+    both;
+}
+
+.rebel-mark-repeat {
+  --rebel-mark-length: var(--mark-press);
+  --rebel-mark-rounds: infinite;
 }
 
 /* Over the intro: rest, slide in, rest, wink, and slide out as the black clears. */

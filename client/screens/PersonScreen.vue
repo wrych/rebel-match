@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
+import ConnectMark from '../components/ConnectMark.vue'
 import PersonCard from '../components/PersonCard.vue'
 import { profileConnectPath } from '../lib/codes'
 import { contactPath } from '../lib/connections'
@@ -49,7 +50,7 @@ onMounted(async () => {
         >
       </template>
       <RouterLink v-else :to="connectPath" class="btn btn-primary"
-        >Connect</RouterLink
+        ><ConnectMark />Connect</RouterLink
       >
       <RouterLink
         v-if="reached.profileCode === null"
