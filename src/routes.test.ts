@@ -6,6 +6,7 @@ import {
   routeTable,
   type ScreenName,
   nextOf,
+  movedTo,
   safeNextPath,
   titleForPath,
 } from './routes.js'
@@ -59,6 +60,15 @@ describe('safeNextPath', () => {
   it('keeps a profile code through sign-in, and no other fragment', () => {
     expect(safeNextPath('/p#t=abc')).toBe('/p#t=abc')
     expect(safeNextPath('/matches#t=abc')).toBe('/matches')
+  })
+
+  it('sends a name every object carries home, as any unknown path', () => {
+    expect(safeNextPath('constructor')).toBe('/')
+    expect(safeNextPath('__proto__')).toBe('/')
+  })
+
+  it('follows a path that has moved (R-PROF-4)', () => {
+    expect(safeNextPath('/impressum')).toBe('/about')
   })
 
   it('passes a known in-app path through', () => {
@@ -130,10 +140,26 @@ describe('routeTable', () => {
   })
 })
 
+describe('movedTo (R-PROF-4)', () => {
+  it('leads the old /impressum address to /about, keeping the query', () => {
+    expect(movedTo('/impressum')).toBe('/about')
+    expect(movedTo('/impressum?utm=mail')).toBe('/about?utm=mail')
+  })
+
+  it('leaves a path that has not moved alone', () => {
+    expect(movedTo('/about')).toBeUndefined()
+    expect(movedTo('/impressum/more')).toBeUndefined()
+  })
+})
+
 describe('titleForPath (R-NAV-13)', () => {
   it('gives every route a title of its own words', () => {
     for (const route of routeTable)
       expect(route.title.trim(), route.name).not.toBe('')
+  })
+
+  it('titles the makers screen About & legal (R-PROF-4)', () => {
+    expect(titleForPath('/about')).toBe('Rebel Match | About & legal')
   })
 
   it('names the app first, then the screen', () => {

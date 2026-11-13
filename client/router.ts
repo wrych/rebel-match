@@ -5,7 +5,12 @@ import {
   type RouteLocationNormalized,
   type RouteRecordRaw,
 } from 'vue-router'
-import { NOT_FOUND_TITLE, routeTable, type Access } from '../src/routes'
+import {
+  NOT_FOUND_TITLE,
+  movedPaths,
+  routeTable,
+  type Access,
+} from '../src/routes'
 import { decide } from './guards'
 import { claimEventBadge } from './lib/badges'
 import { reportEvent } from './lib/events'
@@ -17,6 +22,7 @@ import { showScreen } from './lib/tab-title'
 import { afterNavigation } from './lib/thanks'
 import { loadMe, type Me } from './lib/session'
 import AccessRequestedScreen from './screens/AccessRequestedScreen.vue'
+import AboutScreen from './screens/AboutScreen.vue'
 import ApplicantsScreen from './screens/ApplicantsScreen.vue'
 import AskScreen from './screens/AskScreen.vue'
 import BadgeEventsScreen from './screens/BadgeEventsScreen.vue'
@@ -26,7 +32,6 @@ import ChallengeScreen from './screens/ChallengeScreen.vue'
 import CockpitScreen from './screens/CockpitScreen.vue'
 import ConnectScreen from './screens/ConnectScreen.vue'
 import FeedbackScreen from './screens/FeedbackScreen.vue'
-import ImpressumScreen from './screens/ImpressumScreen.vue'
 import InvitesScreen from './screens/InvitesScreen.vue'
 import LoginScreen from './screens/LoginScreen.vue'
 import MatchesScreen from './screens/MatchesScreen.vue'
@@ -101,7 +106,11 @@ export const router = createRouter({
     screen('onboarding-usage', OnboardingUsageScreen),
     screen('privacy', PrivacyScreen),
     screen('terms', TermsScreen),
-    screen('impressum', ImpressumScreen),
+    screen('about', AboutScreen),
+    ...[...movedPaths].map(([path, redirect]) => ({
+      path,
+      redirect,
+    })),
     screen('feedback', FeedbackScreen),
     screen('game', () => import('./screens/GameScreen.vue')),
     screen('game-leaderboard', () => import('./screens/LeaderboardScreen.vue')),

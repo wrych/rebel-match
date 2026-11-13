@@ -3,7 +3,7 @@ import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { makers } from '../lib/makers'
 import { applyMood } from '../lib/mood'
-import ImpressumScreen from './ImpressumScreen.vue'
+import AboutScreen from './AboutScreen.vue'
 
 const SWIPE_MIN_PX = 50
 const push = vi.fn()
@@ -44,7 +44,7 @@ async function mountScreen(
       ),
     ),
   )
-  const screen = mount(ImpressumScreen, {
+  const screen = mount(AboutScreen, {
     attachTo: document.body,
     global: { stubs: { RouterLink: RouterLinkStub } },
   })
@@ -75,7 +75,13 @@ afterEach(async () => {
   document.body.innerHTML = ''
 })
 
-describe('ImpressumScreen', () => {
+describe('AboutScreen', () => {
+  it('is named About & legal (R-PROF-4)', async () => {
+    const screen = await mountScreen()
+
+    expect(screen.find('.kicker').text()).toBe('About & legal')
+  })
+
   it('shows the first maker with what they are responsible for (R-PROF-4)', async () => {
     const screen = await mountScreen()
 
@@ -228,7 +234,7 @@ describe('ImpressumScreen', () => {
       ),
     )
     stubMedia()
-    const screen = mount(ImpressumScreen, {
+    const screen = mount(AboutScreen, {
       attachTo: document.body,
       global: { stubs: { RouterLink: RouterLinkStub } },
     })

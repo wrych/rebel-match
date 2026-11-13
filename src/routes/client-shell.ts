@@ -2,10 +2,11 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import express, { Router } from 'express'
 import { IMMUTABLE_ASSET_MAX_AGE_MS } from '../config.js'
-import { isKnownPath, titleForPath } from '../routes.js'
+import { isKnownPath, movedTo, titleForPath } from '../routes.js'
 
 /** Paths the server answers itself; the shell never stands in for them. */
 const SERVER_PATH = /^\/(api|auth)(\/|$)/
+const MOVED_PERMANENTLY = 301
 const TITLE = /<title>[^<]*<\/title>/
 
 // The title is ours, from the route table, never from the request (R-NAV-13).
@@ -14,7 +15,8 @@ function shellTitled(shell: string, path: string): string {
 }
 
 /** Serves the built client in `dir` (ADR 0017): its files, and the shell for
- * any other GET — `200` for a path in the route table, `404` otherwise.
+ * any other GET — `200` for a path in the route table, a permanent redirect
+ * for one that has moved, `404` otherwise.
  * Throws when `dir` has no shell, so a broken deployment fails at boot. */
 export function clientShellRoutes(dir: string): Router {
   const shellPath = join(dir, 'index.html')
@@ -46,6 +48,11 @@ export function clientShellRoutes(dir: string): Router {
   router.get(/.*/, (request, response, next) => {
     if (SERVER_PATH.test(request.path)) {
       next()
+      return
+    }
+    const moved = movedTo(request.url)
+    if (moved !== undefined) {
+      response.redirect(MOVED_PERMANENTLY, moved)
       return
     }
     response

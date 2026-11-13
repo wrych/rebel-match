@@ -57,6 +57,15 @@ describe('router titles (R-NAV-13)', () => {
     expect(document.title).toBe('Rebel Match | Terms of use')
   })
 
+  it('leads the old /impressum address to About & legal (R-PROF-4)', async () => {
+    signedOut()
+
+    await router.push('/impressum')
+
+    expect(router.currentRoute.value.path).toBe('/about')
+    expect(document.title).toBe('Rebel Match | About & legal')
+  })
+
   it('names an address no screen serves as not found', async () => {
     signedOut()
 

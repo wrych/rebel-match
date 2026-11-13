@@ -402,7 +402,7 @@ capability, not a secret** — and every requirement below exists because of tha
 - **R-PROF-3** — The header SHALL carry a **menu** in place of the "CR" mark,
   offering: the member's notifications
   (R-NOTE-5, R-NOTE-6), the member's badges (R-BADGE-7), the profile screen,
-  the host tools the member's permissions allow (R-ROLE-4), the impressum
+  the host tools the member's permissions allow (R-ROLE-4), About & legal
   (R-PROF-4), and sign out, with feedback (R-FB-1) beside the running version
   at its foot (R-NFR-11), offered signed in or not. The menu holds links only, so it is
   navigation, not a screen (R-NAV-1); every item it leads to has its own URL.
@@ -423,15 +423,16 @@ capability, not a secret** — and every requirement below exists because of tha
   clearing it SHALL fold the screen back as the member left it. Folding SHALL
   hide nothing from a save: a setting saves on change as R-PROF-1 says.
   _(Andy, 2026-11-09.)_
-- **R-PROF-4 (Impressum)** — The menu SHALL offer an **Impressum** to everyone,
-  signed in or not, that shows the people who made the app one card at a time,
-  each with their portrait, name and what they are responsible for, browsed as
-  the swipe deck is (R-OFF-1, R-LOOK-4), and closes with a card for the
-  community; each maker's card carries their email address. Around the deck it
+- **R-PROF-4 (About & legal)** — The menu SHALL offer **About & legal** to
+  everyone, signed in or not, a screen that shows the people who made the app
+  one card at a time, each with their portrait, name and what they are
+  responsible for, browsed as the swipe deck is (R-OFF-1, R-LOOK-4), and
+  closes with a card for the community; each maker's card carries their email address. Around the deck it
   SHALL say what the app is and who supports it, invite feedback (R-FB-1), ask
   members to share responsibly, and link to the privacy notice (R-ONB-9) and
   the terms of use (R-ONB-13) rather than repeat them. It is public and has
-  its own URL (R-NAV-1). In happy mode, for a
+  its own URL (R-NAV-1), `/about`; `/impressum`, its address while it was
+  called the Impressum, SHALL lead there. In happy mode, for a
   member who completed onboarding and while the game is on, the community's
   card is the door to 9toRevolution (R-GAME-1).
 - **R-PROF-5 (Social links)** — WHILE hosts have `limits.socialLinks` on, the
@@ -876,7 +877,7 @@ at a screen instead of at the front door.
   | `/onboarding/usage`                  | onboarding: optional usage data (R-ANA-4)      |
   | `/privacy`                           | full privacy notice (R-ONB-9)                  |
   | `/terms`                             | terms of use (R-ONB-13)                        |
-  | `/impressum`                         | the people who made the app (R-PROF-4)         |
+  | `/about`                             | the people who made the app (R-PROF-4)         |
   | `/9torevolution`                     | the 9toRevolution game (R-GAME-1)              |
   | `/9torevolution/leaderboard`         | the 9toRevolution leaderboard (R-GAME-13)      |
   | `/network`                           | the network replay (R-NET-1)                   |
@@ -1409,7 +1410,7 @@ notifications: they go out at once, whatever is chosen here (R-NFR-3).
 ## 8i. 9toRevolution, the office game
 
 An easter egg for members who play with the colours: a top-down office game
-behind the impressum's last card, in the spirit of the browser's offline
+behind the last card of About & legal, in the spirit of the browser's offline
 dinosaur game. The player starts as the boss of a grey office, crushing the
 spirit of every employee who turns colourful, is promoted through five jobs,
 and as CEO may turn rebel, after which the game runs in reverse. Its results
@@ -1425,12 +1426,12 @@ the office's people; the **player** is the character the member steers.
 
 - **R-GAME-1 (The door)** — WHILE the game is switched on (R-GAME-17), the
   colour mode is happy and the visitor is a member who completed onboarding,
-  turning the phone to landscape while the impressum (R-PROF-4) shows its
+  turning the phone to landscape while About & legal (R-PROF-4) shows its
   community card SHALL open `/9torevolution` and start the game; that card
   SHALL carry a small turn-the-phone sign, and on a screen without touch a
   **Be a rebel** button that does the same (ADR 0046). WHEN the mode is calm
   THE SYSTEM SHALL show neither the sign nor the game: `/9torevolution` shows "The rebels
-  only come out in happy mode" with a link to the impressum, and a running game
+  only come out in happy mode" with a link to About & legal, and a running game
   pauses there (R-GAME-12). WHILE the game is off, `/9torevolution`,
   `/9torevolution/leaderboard` and every game endpoint SHALL answer as not found
   (R-NAV-8). A visitor not signed in, or not yet onboarded, SHALL follow the

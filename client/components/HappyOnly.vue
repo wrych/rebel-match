@@ -10,8 +10,8 @@ import { currentMood } from '../lib/mood'
       <h1 class="display display-lg">Nobody here</h1>
       <p class="lede">The rebels only come out in happy mode.</p>
     </div>
-    <RouterLink to="/impressum" class="btn btn-dark"
-      >Back to the impressum</RouterLink
+    <RouterLink to="/about" class="btn btn-dark"
+      >Back to About &amp; legal</RouterLink
     >
   </section>
 </template>

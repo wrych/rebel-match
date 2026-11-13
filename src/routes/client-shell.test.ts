@@ -49,6 +49,13 @@ describe('clientShellRoutes (ADR 0017)', () => {
     expect(response.text).toBe(titled('Not found'))
   })
 
+  it('redirects a path that has moved for good, query kept (R-PROF-4)', async () => {
+    const response = await request(app).get('/impressum?from=mail')
+
+    expect(response.status).toBe(301)
+    expect(response.headers['location']).toBe('/about?from=mail')
+  })
+
   it('names the screen in the shell it sends (R-NAV-13)', async () => {
     const response = await request(app).get('/challenges/7/matches?posted=1')
 
