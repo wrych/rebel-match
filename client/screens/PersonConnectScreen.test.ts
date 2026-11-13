@@ -86,6 +86,9 @@ describe('PersonConnectScreen (S46)', () => {
     expect(screen.find('h1').text()).toBe('Connect with Ben')
     expect(screen.text()).toContain('Direct')
     expect(screen.text()).toContain('Nothing is shared until Ben accepts')
+    expect(
+      screen.find('button[type="submit"]').find('.connect-mark').exists(),
+    ).toBe(true)
     expect(screen.find('textarea').attributes('maxlength')).toBe('600')
   })
 
