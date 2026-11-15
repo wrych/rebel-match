@@ -6,6 +6,11 @@ import type { ConnectionView } from '../lib/connections'
 import { forgetMe } from '../lib/session'
 import CockpitScreen from './CockpitScreen.vue'
 
+vi.mock('../lib/config', async (original) => ({
+  ...(await original<typeof import('../lib/config')>()),
+  sharedConfig: async () => ({ limits: { connectMark: 1 } }),
+}))
+
 const cockpit: Cockpit = {
   challenges: [
     {
@@ -148,6 +153,13 @@ describe('CockpitScreen', () => {
         .element.closest('section')
         ?.classList.contains('rule'),
     ).toBe(true)
+    const marked = (label: string): boolean | undefined =>
+      screen
+        .find(`[aria-label="${label} Bea There"]`)
+        .find('.connect-mark')
+        .exists()
+    expect(marked('Accept')).toBe(true)
+    expect(marked('Decline')).toBe(false)
   })
 
   it('puts Ask for help beside Your challenges, with or without one (R-MINE-1)', async () => {

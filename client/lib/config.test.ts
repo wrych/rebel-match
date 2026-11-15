@@ -3,7 +3,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, ref, type Ref } from 'vue'
 import type { ClientConfig } from './api'
-import { useConfig } from './config'
+import { sharedConfig, useConfig } from './config'
 
 const FAILURE = 'This could not be loaded. Reload to try again.'
 
@@ -100,5 +100,27 @@ describe('useConfig (R-CFG-2)', () => {
     await flushPromises()
 
     expect(shown.text()).toBe('null')
+  })
+})
+
+describe('sharedConfig (R-LOOK-7)', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('asks once for every caller while a read is in flight', async () => {
+    serveLimits({ connectMark: 1 })
+    const reads = await Promise.all([sharedConfig(), sharedConfig()])
+
+    expect(fetch).toHaveBeenCalledTimes(1)
+    expect(reads.map((config) => config.limits.connectMark)).toEqual([1, 1])
+  })
+
+  it('reads afresh once the last read has settled', async () => {
+    serveLimits({ connectMark: 0 })
+    await sharedConfig()
+    await sharedConfig()
+
+    expect(fetch).toHaveBeenCalledTimes(2)
   })
 })

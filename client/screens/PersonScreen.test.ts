@@ -3,6 +3,11 @@ import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import PersonScreen from './PersonScreen.vue'
 
+vi.mock('../lib/config', async (original) => ({
+  ...(await original<typeof import('../lib/config')>()),
+  sharedConfig: async () => ({ limits: { connectMark: 1 } }),
+}))
+
 const route = {
   path: '/people/m-ben',
   params: { memberId: 'm-ben' } as Record<string, string>,
@@ -68,6 +73,13 @@ describe('PersonScreen (S45)', () => {
     expect(
       screen.findAllComponents(RouterLinkStub).map((link) => link.props('to')),
     ).toContain('/people/m-ben/connect')
+    expect(
+      screen
+        .findAllComponents(RouterLinkStub)
+        .find((link) => link.props('to') === '/people/m-ben/connect')
+        ?.find('.connect-mark')
+        .exists(),
+    ).toBe(true)
   })
 
   it('is not found for a member search would not find (R-NAV-8)', async () => {

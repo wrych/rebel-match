@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { pathTo } from '../../src/routes'
+import ConnectMark from '../components/ConnectMark.vue'
 import KindChip from '../components/KindChip.vue'
 import { hiddenAs } from '../lib/moderation'
 import { reportPath } from '../lib/reports'
@@ -165,7 +166,7 @@ async function answer(verdict: 'accept' | 'decline'): Promise<void> {
             :disabled="sending"
             @click="answer('accept')"
           >
-            Accept
+            <ConnectMark />Accept
           </button>
         </div>
       </template>

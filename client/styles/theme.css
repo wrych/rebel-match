@@ -71,6 +71,7 @@
   /* The header's height, which whatever else sticks to the top sits below. */
   --header-height: calc(34px + 1.75rem);
   --mark-intro: 2.2s;
+  --mark-press: 1.6s;
   --mark-clear-at: 1.85s;
   --mark-radius: 18%;
 }
@@ -564,6 +565,12 @@ textarea.input {
 .btn-ghost:disabled {
   color: var(--muted);
   border-color: var(--disabled);
+}
+
+/* A button that connects carries the mark at its left edge (R-LOOK-7). */
+.btn:has(> .connect-mark) {
+  position: relative;
+  padding-inline: 4.5em;
 }
 
 .btn-small {

@@ -3,6 +3,11 @@ import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import PersonConnectScreen from './PersonConnectScreen.vue'
 
+vi.mock('../lib/config', async (original) => ({
+  ...(await original<typeof import('../lib/config')>()),
+  sharedConfig: async () => ({ limits: { connectMark: 1 } }),
+}))
+
 const route = {
   params: { memberId: 'm-ben' } as Record<string, string>,
   hash: '',
@@ -86,6 +91,9 @@ describe('PersonConnectScreen (S46)', () => {
     expect(screen.find('h1').text()).toBe('Connect with Ben')
     expect(screen.text()).toContain('Direct')
     expect(screen.text()).toContain('Nothing is shared until Ben accepts')
+    expect(
+      screen.find('button[type="submit"]').find('.connect-mark').exists(),
+    ).toBe(true)
     expect(screen.find('textarea').attributes('maxlength')).toBe('600')
   })
 

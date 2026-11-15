@@ -705,6 +705,21 @@ const limitSpecs = {
       switch: true,
     },
   },
+  // R-LOOK-7.
+  connectMark: {
+    env: 'CONNECT_MARK',
+    default: 1,
+    zeroAllowed: true,
+    changeable: { min: 0, max: 1 },
+    shown: {
+      name: 'Mark on connect buttons',
+      explanation:
+        'On puts the Rebel Match mark on the buttons that ask for or ' +
+        'accept a connection, playing while they are hovered or pressed; ' +
+        'off leaves those buttons with their words only.',
+      switch: true,
+    },
+  },
   // R-PROF-6.
   profilePhotos: {
     env: 'PROFILE_PHOTOS',
