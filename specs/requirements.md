@@ -1222,6 +1222,10 @@ _(Decided by the maintainer after trying the redesign: ADR 0023.)_
   in and stop at rest. A disabled button's mark SHALL stay at rest, and WHEN the
   member prefers reduced motion the mark SHALL never play. Buttons that only
   lead to a contact already shared, decline or cancel SHALL NOT carry it.
+  Hosts SHALL turn the mark on these buttons on and off with
+  `limits.connectMark` (a switch in the host tools, R-CFG-6, on by default);
+  off, the buttons carry no mark and their words sit as before. _(Andy,
+  2026-11-15: a switch for it.)_
 
 ---
 

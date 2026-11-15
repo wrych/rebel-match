@@ -114,6 +114,7 @@ thresholds have sane defaults in the file and may be overridden by env.
 | `limits.photoMaxBytes`                | `200000`                      | R-PROF-6                  |
 | `limits.badges` (switch)              | `0`                           | R-BADGE-15                |
 | `limits.happyModeDefault` (switch)    | `0`                           | R-LOOK-6                  |
+| `limits.connectMark` (switch)         | `1`                           | R-LOOK-7                  |
 | `limits.liveCodeSeconds`              | `30` (10–120)                 | R-CODE-5, R-CODE-8        |
 | `limits.liveCodeGraceSeconds`         | `10` (0–30, ≤ the above)      | R-CODE-5, R-CODE-8        |
 | `limits.liveCodeKeepMinutes`          | `60`                          | R-CODE-6                  |
@@ -337,7 +338,9 @@ listens to the button it sits in, not to itself, so hovering or pressing
 anywhere on the button plays it; it repeats the intro's keyframes over
 `--mark-press` rather than `--mark-intro`, and on each round's end it stops if
 the button is no longer hovered or pressed, so it always comes to rest with the
-Rs apart rather than snapping back mid-wink.
+Rs apart rather than snapping back mid-wink. It reads `limits.connectMark` from
+`GET /api/config` and draws nothing until the switch is read as on; the marks
+mounted together share one read, so a list of peers asks once.
 
 The header's right-hand button opens the **menu** (R-PROF-3): "Profile &
 privacy" (`/profile`), the host tools
