@@ -509,6 +509,7 @@ const catalogue: Group[] = [
       'limits.orgMaxChars',
       'limits.profilePhotos',
       'limits.happyModeDefault',
+      'limits.connectMark',
       'limits.photoMaxBytes',
       'limits.photoSidePx',
       'limits.socialLinks',

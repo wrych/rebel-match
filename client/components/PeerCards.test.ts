@@ -1,7 +1,12 @@
 // @vitest-environment jsdom
-import { mount, RouterLinkStub } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { flushPromises, mount, RouterLinkStub } from '@vue/test-utils'
+import { describe, expect, it, vi } from 'vitest'
 import PeerCards from './PeerCards.vue'
+
+vi.mock('../lib/config', async (original) => ({
+  ...(await original<typeof import('../lib/config')>()),
+  sharedConfig: async () => ({ limits: { connectMark: 1 } }),
+}))
 
 const peer = {
   memberId: 'm-ben',
@@ -21,11 +26,12 @@ describe('PeerCards', () => {
     ['been_there', 'Ask'],
   ] as const)(
     'marks the %s action with the mark, not Report (R-LOOK-7)',
-    (kind, action) => {
+    async (kind, action) => {
       const cards = mount(PeerCards, {
         props: { peers: [peer], challengeId: 'c-1', kind, action, nobody: '' },
         global: { stubs: { RouterLink: RouterLinkStub } },
       })
+      await flushPromises()
       const link = (label: string): boolean | undefined =>
         cards
           .findAll('a')

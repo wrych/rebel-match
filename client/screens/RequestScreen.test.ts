@@ -9,6 +9,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ConnectionView } from '../lib/connections'
 import RequestScreen from './RequestScreen.vue'
 
+vi.mock('../lib/config', async (original) => ({
+  ...(await original<typeof import('../lib/config')>()),
+  sharedConfig: async () => ({ limits: { connectMark: 1 } }),
+}))
+
 const push = vi.fn()
 vi.mock('vue-router', () => ({
   useRoute: () => ({ params: { id: 'r1' } }),

@@ -6,6 +6,11 @@ import type { ConnectionView } from '../lib/connections'
 import { forgetMe } from '../lib/session'
 import CockpitScreen from './CockpitScreen.vue'
 
+vi.mock('../lib/config', async (original) => ({
+  ...(await original<typeof import('../lib/config')>()),
+  sharedConfig: async () => ({ limits: { connectMark: 1 } }),
+}))
+
 const cockpit: Cockpit = {
   challenges: [
     {

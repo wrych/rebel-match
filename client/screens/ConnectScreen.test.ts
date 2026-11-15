@@ -4,6 +4,11 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Matches } from '../lib/challenges'
 import ConnectScreen from './ConnectScreen.vue'
 
+vi.mock('../lib/config', async (original) => ({
+  ...(await original<typeof import('../lib/config')>()),
+  sharedConfig: async () => ({ limits: { connectMark: 1 } }),
+}))
+
 const route = {
   params: { challengeId: 'c1', memberId: 'm2' },
   query: { kind: 'same_boat' } as Record<string, string>,
