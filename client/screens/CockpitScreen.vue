@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import CellFlag from '../components/CellFlag.vue'
+import PersonLine from '../components/PersonLine.vue'
+import { cellLabel } from '../../src/profile-options'
 import { pathTo } from '../../src/routes'
 import ConnectMark from '../components/ConnectMark.vue'
 import KindChip from '../components/KindChip.vue'
@@ -73,12 +74,14 @@ const canSearch = ref(false)
 const requestPath = (id: string): string => pathTo('request', { id })
 const matchesPath = (id: string): string => pathTo('matches', { id })
 
-// The badge's count is read out with the name, as the tab bar's is.
+// The badge's count is read out with the name, as the tab bar's is, and the
+// cell its flag shows, since this label replaces the row's contents.
 function connectionLabel(person: ConnectedMember): string | undefined {
   if (person.unseen === 0) return undefined
   return [
     person.other.name,
     `${String(person.unseen)} new`,
+    cellLabel(person.other.rebelCell),
     peerLine(person.other),
   ]
     .filter((part) => part !== '')
@@ -166,11 +169,7 @@ onMounted(() => {
         >
           <RouterLink :to="requestPath(request.id)" class="request-row">
             <span class="card-head">
-              <span class="card-title"
-                ><CellFlag :cell="request.other.rebelCell" />{{
-                  request.other.name
-                }}</span
-              >
+              <span class="card-title">{{ request.other.name }}</span>
               <KindChip :kind="request.kind" />
             </span>
             <span v-if="request.message" class="small request-note">{{
@@ -227,18 +226,16 @@ onMounted(() => {
           :aria-label="connectionLabel(person)"
         >
           <span class="card-head">
-            <span class="card-title"
-              ><CellFlag :cell="person.other.rebelCell" />{{
-                person.other.name
-              }}</span
-            >
+            <span class="card-title">{{ person.other.name }}</span>
             <span v-if="person.unseen > 0" class="badge" aria-hidden="true">{{
               person.unseen
             }}</span>
           </span>
-          <span v-if="peerLine(person.other)" class="mono peer-meta">{{
-            peerLine(person.other)
-          }}</span>
+          <PersonLine
+            class="peer-meta"
+            :cell="person.other.rebelCell"
+            :line="peerLine(person.other)"
+          />
         </RouterLink>
       </section>
 

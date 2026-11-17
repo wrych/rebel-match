@@ -20,7 +20,7 @@ const ada = {
   org: '',
   sector: '',
   companySize: '',
-  rebelCell: '',
+  rebelCell: 'poland',
 }
 const stored = {
   name: null as string | null,
@@ -129,7 +129,7 @@ describe('OnboardingPrivacyScreen', () => {
     )
   })
 
-  it('stores profile and consent in one request, then asks about usage data (R-ONB-8, R-ONB-11)', async () => {
+  it('stores profile, rebel cell and consent in one request, then asks about usage data (R-ONB-8, R-ONB-11, R-PROF-9)', async () => {
     const fetchMock = server()
     route.query = { next: '/matches' }
     const screen = await mountScreen()

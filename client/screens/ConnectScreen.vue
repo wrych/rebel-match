@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import CellFlag from '../components/CellFlag.vue'
+import PersonLine from '../components/PersonLine.vue'
 import { pathTo } from '../../src/routes'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -99,12 +99,12 @@ async function send(): Promise<void> {
 
       <div class="card peer">
         <div class="stack-tight">
-          <span class="card-title"
-            ><CellFlag :cell="peer.rebelCell" />{{ peer.name }}</span
-          >
-          <span v-if="peerLine(peer)" class="mono peer-meta">{{
-            peerLine(peer)
-          }}</span>
+          <span class="card-title">{{ peer.name }}</span>
+          <PersonLine
+            class="peer-meta"
+            :cell="peer.rebelCell"
+            :line="peerLine(peer)"
+          />
         </div>
         <p class="small peer-note">{{ peer.note }}</p>
       </div>

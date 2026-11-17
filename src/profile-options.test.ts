@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   cellChoice,
+  cellLabel,
   cellOf,
   companySizeKeys,
   companySizes,
@@ -34,6 +35,8 @@ describe('rebel cells', () => {
   })
 
   it('name no cell for none or a key off the list', () => {
+    expect(cellLabel('japan')).toBe('Rebel cell: Japan')
+    expect(cellLabel('zurich')).toBe('')
     expect(cellOf(null)).toBeNull()
     expect(cellOf('zurich')).toBeNull()
   })

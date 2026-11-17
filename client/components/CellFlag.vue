@@ -1,15 +1,13 @@
 <script setup lang="ts">
-/** The flag of a member's rebel cell, set before their name on a card and
- * naming the cell on hover and to assistive technology; nothing without a
+/** The flag of a member's rebel cell, opening the line under their name on
+ * a card and naming the cell on hover and to assistive technology; nothing without a
  * cell (R-PROF-9). */
 import { computed } from 'vue'
-import { cellOf } from '../../src/profile-options'
+import { cellLabel, cellOf } from '../../src/profile-options'
 
 const props = defineProps<{ cell: string | null }>()
 const found = computed(() => cellOf(props.cell))
-const named = computed(() =>
-  found.value === null ? '' : `Rebel cell: ${found.value.label}`,
-)
+const named = computed(() => cellLabel(props.cell))
 </script>
 
 <template>

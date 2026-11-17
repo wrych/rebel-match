@@ -1,10 +1,10 @@
 <script setup lang="ts">
 /** A member as search and connect codes show them: their photo while
- * photos are on, their rebel cell's flag and name, then job title, organization, sector and company
+ * photos are on, name, then their rebel cell's flag, job title, organization, sector and company
  * size, as the deck's cards do; never an email; marked when the viewer is
  * already connected with them; a link when `to` is given (R-FIND-3,
  * R-CONN-6, R-CONN-8, R-PROF-7, R-PROF-9). */
-import CellFlag from './CellFlag.vue'
+import PersonLine from './PersonLine.vue'
 import { peerLine } from '../lib/challenges'
 import type { MemberCard } from '../lib/people'
 import { photoSrc } from '../lib/photo'
@@ -31,16 +31,16 @@ defineProps<{
       />
       <span class="stack-tight">
         <span class="card-head">
-          <span class="card-title"
-            ><CellFlag :cell="card.rebelCell" />{{ card.name }}</span
-          >
+          <span class="card-title">{{ card.name }}</span>
           <span v-if="card.connectionId" class="chip chip-accent"
             >Connected</span
           >
         </span>
-        <span v-if="peerLine(card)" class="mono peer-meta">{{
-          peerLine(card)
-        }}</span>
+        <PersonLine
+          class="peer-meta"
+          :cell="card.rebelCell"
+          :line="peerLine(card)"
+        />
       </span>
     </span>
     <slot />

@@ -22,7 +22,7 @@ const peer = {
 }
 
 describe('PeerCards', () => {
-  it('sets the flag of their rebel cell before the name (R-PROF-9)', async () => {
+  it('opens the line under the name with their rebel cell flag (R-PROF-9)', async () => {
     const cards = mount(PeerCards, {
       props: {
         peers: [{ ...peer, rebelCell: 'switzerland' }],
@@ -35,7 +35,8 @@ describe('PeerCards', () => {
     })
     await flushPromises()
 
-    expect(cards.find('.card-title').text()).toBe('🇨🇭Ben Rebel')
+    expect(cards.find('.card-title').text()).toBe('Ben Rebel')
+    expect(cards.find('.peer-meta').text()).toBe('🇨🇭Buurtzorg')
     expect(cards.find('[role="img"]').attributes('aria-label')).toBe(
       'Rebel cell: Switzerland',
     )

@@ -90,6 +90,12 @@ export function cellOf(key: string | null): (typeof rebelCells)[number] | null {
   return rebelCells.find((cell) => cell.key === key) ?? null
 }
 
+/** How a cell is named to assistive technology, or blank without one. */
+export function cellLabel(key: string | null): string {
+  const cell = cellOf(key)
+  return cell === null ? '' : `Rebel cell: ${cell.label}`
+}
+
 /** A stored value as a form's pick: blank when it is not on the list, so the
  * form never sends back a value it cannot show. */
 export function pickedOrBlank(

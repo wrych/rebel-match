@@ -335,7 +335,12 @@ describe('CockpitScreen', () => {
       () => [],
       () => [
         { ...accepted, id: 'r10', other: pal },
-        { ...accepted, id: 'r9', unseen: true },
+        {
+          ...accepted,
+          id: 'r9',
+          unseen: true,
+          other: { ...request.other, rebelCell: 'japan' },
+        },
         { ...accepted, id: 'r8', unseen: true },
         { ...accepted, id: 'r7' },
       ],
@@ -351,7 +356,9 @@ describe('CockpitScreen', () => {
     ])
     expect(rows.map((row) => row.classes('card-new'))).toEqual([true, false])
     expect(rows[0]?.find('.badge').text()).toBe('2')
-    expect(rows[0]?.attributes('aria-label')).toBe('Bea There, 2 new')
+    expect(rows[0]?.attributes('aria-label')).toBe(
+      'Bea There, 2 new, Rebel cell: Japan',
+    )
     expect(rows[1]?.find('.badge').exists()).toBe(false)
   })
 

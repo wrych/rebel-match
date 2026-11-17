@@ -66,19 +66,20 @@ describe('onboarding over Postgres (F2)', () => {
     expect(response.body).toEqual({ error: 'onboarding_required' })
   })
 
-  it('records name, profile and consent, and then reads as onboarded (R-ONB-1,3)', async () => {
+  it('records name, profile and consent, and then reads as onboarded (R-ONB-1,3, R-PROF-9)', async () => {
     await request(app)
       .post('/api/onboarding')
       .set('Cookie', cookie)
       .send({
         name: 'Ada Rebel',
         jobTitle: 'Coach',
+        rebelCell: 'lithuania',
         consentVersion: config.consentVersion,
       })
       .expect(204)
 
     const rows = await db.query(
-      'SELECT name, job_title, org, consent_version, consent_at ' +
+      'SELECT name, job_title, org, rebel_cell, consent_version, consent_at ' +
         'FROM members WHERE id = ?',
       [newcomer.id],
     )
@@ -86,6 +87,7 @@ describe('onboarding over Postgres (F2)', () => {
       name: 'Ada Rebel',
       job_title: 'Coach',
       org: null,
+      rebel_cell: 'lithuania',
       consent_version: config.consentVersion,
     })
     expect(Date.parse(String(rows[0]?.['consent_at']))).not.toBeNaN()
