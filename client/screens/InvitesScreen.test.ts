@@ -4,6 +4,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { EventBadge } from '../lib/invites'
 import InvitesScreen from './InvitesScreen.vue'
 
+const drawn = vi.hoisted(() => ({
+  render: vi.fn(() => Promise.resolve(new File([], 'card.png'))),
+  save: vi.fn(),
+}))
+vi.mock('../lib/invite-card', () => ({ renderInviteCard: drawn.render }))
+vi.mock('../lib/share-sheet', () => ({ saveImage: drawn.save }))
+
 const invite = {
   id: 'i-1',
   label: 'Main stage',
@@ -553,5 +560,54 @@ describe("an existing invite's badge (R-INV-13)", () => {
       'That badge is gone',
     )
     expect(screen.find('article form').exists()).toBe(true)
+  })
+})
+
+describe("an invite's QR to download (R-INV-9)", () => {
+  const button = (
+    screen: ReturnType<typeof mount>,
+    format: string,
+  ): ReturnType<ReturnType<typeof mount>['find']> =>
+    screen.find(
+      `button[aria-label="Download the QR of Main stage for ${format}"]`,
+    )
+
+  it('saves the card for slides or social media', async () => {
+    listed = [invite]
+    server()
+    drawn.render.mockClear()
+    drawn.save.mockClear()
+    const screen = await mountScreen()
+
+    await button(screen, 'slides').trigger('click')
+    await flushPromises()
+    await button(screen, 'social media').trigger('click')
+    await flushPromises()
+
+    expect(drawn.render.mock.calls.map((call) => call.slice(0, 2))).toEqual([
+      [invite, 'slides'],
+      [invite, 'social'],
+    ])
+    expect(drawn.save).toHaveBeenCalledTimes(2)
+  })
+
+  it('offers none for a link that no longer admits', async () => {
+    listed = [{ ...invite, state: 'expired' }]
+    server()
+    const screen = await mountScreen()
+
+    expect(button(screen, 'slides').exists()).toBe(false)
+  })
+
+  it('says so when the card cannot be drawn', async () => {
+    listed = [invite]
+    server()
+    drawn.render.mockRejectedValueOnce(new Error('no canvas'))
+    const screen = await mountScreen()
+
+    await button(screen, 'slides').trigger('click')
+    await flushPromises()
+
+    expect(screen.text()).toContain('The QR of “Main stage” could not be drawn')
   })
 })

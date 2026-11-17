@@ -8,6 +8,7 @@ const palette: CardPalette = {
   ink: '#111010',
   muted: '#6b6659',
   accent: '#d4471f',
+  onAccent: '#fff',
   display: 'Anton',
   body: 'Archivo',
   mono: 'JetBrains Mono',

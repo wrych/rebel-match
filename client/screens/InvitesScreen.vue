@@ -19,7 +19,9 @@ import {
   type BadgeChoice,
   type Invite,
 } from '../lib/invites'
+import { renderInviteCard, type InviteCardFormat } from '../lib/invite-card'
 import { useLiveResource } from '../lib/live-list'
+import { saveImage } from '../lib/share-sheet'
 import { when } from '../lib/when'
 
 const {
@@ -131,6 +133,30 @@ async function raise(invite: Invite): Promise<void> {
     raising.value = null
     await live.refresh()
   }, `The cap of “${invite.label}” was not raised. Try again.`)
+}
+
+const formats: { format: InviteCardFormat; label: string }[] = [
+  { format: 'slides', label: 'Slides' },
+  { format: 'social', label: 'Social media' },
+]
+const downloading = ref<string | null>(null)
+
+// Only a link that admits now or will is worth putting on a screen.
+const showable = (invite: Invite): boolean =>
+  invite.state === 'active' || invite.state === 'scheduled'
+
+async function download(
+  invite: Invite,
+  format: InviteCardFormat,
+): Promise<void> {
+  downloading.value = invite.id
+  try {
+    saveImage(await renderInviteCard(invite, format, window.location.origin))
+  } catch {
+    notice.value = `The QR of “${invite.label}” could not be drawn. Copy its join URL instead.`
+  } finally {
+    downloading.value = null
+  }
 }
 
 async function revoke(invite: Invite): Promise<void> {
@@ -290,6 +316,20 @@ onMounted(async () => {
             "
           />
         </div>
+        <div v-if="showable(invite)" class="download-row">
+          <span class="label">Download QR for</span>
+          <button
+            v-for="option in formats"
+            :key="option.format"
+            type="button"
+            class="btn btn-ghost btn-small"
+            :disabled="downloading === invite.id"
+            :aria-label="`Download the QR of ${invite.label} for ${option.label.toLowerCase()}`"
+            @click="download(invite, option.format)"
+          >
+            {{ option.label }}
+          </button>
+        </div>
       </div>
       <form
         v-if="raising === invite.id"
@@ -438,6 +478,17 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+}
+
+.download-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-top: 0.4rem;
+}
+
+.download-row .label {
+  grid-column: 1 / -1;
 }
 
 .join-url {
