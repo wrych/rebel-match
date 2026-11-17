@@ -491,11 +491,11 @@ capability, not a secret** — and every requirement below exists because of tha
   screen (R-PROF-1), picked from a drop-down of the fixed list in design §2,
   never typed, each shown with its flag; **Global** is for everyone without a
   cell of their own country. It is optional, and leaving it out clears it.
-  The cell's flag SHALL be shown before the member's name wherever a member
-  card shows the name — the match cards of a challenge (R-ASK-8), the deck's
-  card for its author (R-OFF-2), search results and a person's page
-  (R-FIND-3, R-CODE-3) and the people a member is connected with — naming the
-  cell to assistive technology and on hover. (Andy, 2026-11-17.)
+  The cell's flag SHALL open the small line under the member's name (job
+  title, organization, …) wherever a member card shows it — the match cards
+  of a challenge (R-ASK-8), the deck's card for its author (R-OFF-2), search
+  results and a person's page (R-FIND-3, R-CODE-3) and the people a member is
+  connected with — naming the cell to assistive technology and on hover. (Andy, 2026-11-17.)
 
 ---
 

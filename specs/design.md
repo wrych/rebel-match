@@ -875,8 +875,8 @@ CREATE TABLE company_sizes (key VARCHAR(20) PRIMARY KEY, label VARCHAR(40) NOT N
 **Rebel cells** (R-PROF-9) are picked the same way, from a third list shared
 with the client and copied into `rebel_cells`. The flag is drawn from that
 list, not stored: a card carries the member's cell key, and the client shows
-its flag before the name, with the label for assistive technology and on
-hover.
+its flag first on the small line under the name, with the label for
+assistive technology and on hover.
 
 ```sql
 CREATE TABLE rebel_cells (key VARCHAR(20) PRIMARY KEY, label VARCHAR(40) NOT NULL);
@@ -901,7 +901,7 @@ CREATE TABLE rebel_cells (key VARCHAR(20) PRIMARY KEY, label VARCHAR(40) NOT NUL
 | `switzerland`   | 🇨🇭   | Switzerland   |
 
 Berlin has no flag of its own among emoji and takes its bear; the drop-down
-says Global is for everyone without a cell of their own country.
+marks Global "(no country cell)".
 
 The migration that introduces the tables fills them, turns a stored label into
 its key, and clears any sector or company size not on the lists before the

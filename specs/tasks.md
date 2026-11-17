@@ -540,7 +540,8 @@ Built after the spec and ADR merge. One pull request per item, in this order.
 - [ ] Social links: LinkedIn on the profile behind
       `limits.socialLinks`, shown on S16 only. _(R-PROF-5)_
 - [x] Rebel cell picked from a drop-down with flags at onboarding and on the
-      profile screen, its flag shown before the name on member cards.
+      profile screen, its flag first on the line under the name on member
+      cards.
       _(R-PROF-9)_
 
 ---
