@@ -40,6 +40,13 @@ describe('the query as chips (R-FIND-4)', () => {
     ])
   })
 
+  it('shows a rebel cell by its flag and label (R-PROF-9)', () => {
+    expect(chipsOf('cell:japan rebel-cell:mars')).toEqual([
+      { index: 0, label: 'Rebel cell: 🇯🇵 Japan' },
+      { index: 1, label: 'Rebel cell: mars' },
+    ])
+  })
+
   it('removes the one part a chip stands for, the rest as typed', () => {
     expect(withoutPart('ada title:coach company:"x y"', 1)).toBe(
       'ada company:"x y"',

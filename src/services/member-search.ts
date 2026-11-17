@@ -78,6 +78,7 @@ function termsOf(parsed: ParsedQuery): SearchTerms {
     company: words(parsed.company),
     title: words(parsed.title),
     sector: words(parsed.sector),
+    cell: words(parsed.cell),
   }
 }
 

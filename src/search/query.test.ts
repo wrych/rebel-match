@@ -14,6 +14,7 @@ const none: ParsedQuery = {
   company: [],
   title: [],
   sector: [],
+  cell: [],
   free: [],
 }
 
@@ -33,8 +34,20 @@ describe('parseQuery (R-FIND-2)', () => {
       company: ['acme', 'rebels'],
       title: ['cto'],
       sector: ['health'],
+      cell: [],
       free: [],
     })
+  })
+
+  it('reads rebel-cell: and cell: as the rebel cell (R-PROF-9)', () => {
+    expect(parseQuery('rebel-cell:latin-america cell:Japan')).toEqual({
+      ...none,
+      cell: ['latin-america', 'japan'],
+    })
+  })
+
+  it('still reads a hyphenated unknown operator as a plain word', () => {
+    expect(parseQuery('re-org:now')).toEqual({ ...none, free: ['re-org:now'] })
   })
 
   it('takes operators in any case', () => {
@@ -118,6 +131,12 @@ describe('tokenize and printQuery (R-FIND-4)', () => {
     expect(
       printQuery([{ field: 'title', value: 'head of', quoted: false }]),
     ).toBe('title:"head of"')
+  })
+
+  it('writes a rebel cell added by a chip as rebel-cell: (R-PROF-9)', () => {
+    expect(printQuery([{ field: 'cell', value: 'japan', quoted: false }])).toBe(
+      'rebel-cell:japan',
+    )
   })
 
   it('keeps the value as typed, case and accents included', () => {

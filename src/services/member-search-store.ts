@@ -10,7 +10,12 @@ import {
 } from 'drizzle-orm'
 import type { Database } from '../db/connect.js'
 import { isReachableMember } from '../db/member-predicates.js'
-import { connectionRequests as r, members, sectors } from '../db/schema.js'
+import {
+  connectionRequests as r,
+  members,
+  rebelCells,
+  sectors,
+} from '../db/schema.js'
 import { ACCENTS } from '../search/query.js'
 import type {
   MemberCard,
@@ -30,11 +35,14 @@ function folded(field: SQLWrapper): SQL<string> {
 
 const sectorText = sql`(SELECT ${sectors.label} || ' ' || ${sectors.key} FROM ${sectors} WHERE ${sectors.key} = ${members.sector})`
 
+const cellText = sql`(SELECT ${rebelCells.label} || ' ' || ${rebelCells.key} FROM ${rebelCells} WHERE ${rebelCells.key} = ${members.rebelCell})`
+
 const fieldText: Readonly<Record<keyof SearchTerms, SQL<string>>> = {
   name: folded(members.name),
   company: folded(members.org),
   title: folded(members.jobTitle),
   sector: folded(sectorText),
+  cell: folded(cellText),
 }
 
 function likeEscaped(term: string): string {
@@ -107,7 +115,7 @@ export function createMemberSearchStore(db: Database): MemberSearchStore {
         )
         .orderBy(
           ...wholeWords(terms, ['name']),
-          ...wholeWords(terms, ['company', 'title', 'sector']),
+          ...wholeWords(terms, ['company', 'title', 'sector', 'cell']),
           asc(members.name),
           asc(members.id),
         )

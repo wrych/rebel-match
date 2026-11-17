@@ -116,6 +116,19 @@ describe('member search on Postgres (R-FIND-2, R-FIND-3)', () => {
     )
   })
 
+  it('finds members by their rebel cell, its label or key (R-PROF-9)', async () => {
+    await db.query(
+      "UPDATE members SET rebel_cell = 'latin-america' WHERE id = 'qs-quox'",
+    )
+
+    expect((await search('rebel-cell:latin quox')).names).toEqual(['Ada Quox'])
+    expect((await search('cell:latin-america quox')).names).toEqual([
+      'Ada Quox',
+    ])
+    expect((await search('rebel-cell:japan quox')).names).toEqual([])
+    await db.query("UPDATE members SET rebel_cell = NULL WHERE id = 'qs-quox'")
+  })
+
   it('reads % and _ as themselves, never as wildcards', async () => {
     expect((await search('company:100%')).names).toEqual(['Ada Quox'])
     expect((await search('company:1%')).names).toEqual([])

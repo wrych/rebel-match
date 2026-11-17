@@ -1,6 +1,6 @@
 import { apiPaths, fill } from '../../src/api-paths'
 import type { MemberCard, SearchAnswer } from '../../src/services/member-search'
-import { sectors } from '../../src/profile-options'
+import { cellOf, sectors } from '../../src/profile-options'
 import {
   printQuery,
   tokenize,
@@ -62,9 +62,14 @@ const fieldLabels: Readonly<Record<SearchField, string>> = {
   company: 'Company',
   title: 'Title',
   sector: 'Sector',
+  cell: 'Rebel cell',
 }
 
 function valueLabel(token: QueryToken): string {
+  if (token.field === 'cell') {
+    const cell = cellOf(token.value)
+    return cell === null ? token.value : `${cell.flag} ${cell.label}`
+  }
   if (token.field !== 'sector') return token.value
   return sectors.find((each) => each.key === token.value)?.label ?? token.value
 }
