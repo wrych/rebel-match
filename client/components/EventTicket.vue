@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { TICKET } from '../lib/ticket'
+
 withDefaults(
   defineProps<{
     ticketLine: string
@@ -17,46 +19,49 @@ withDefaults(
     class="ticket"
     :width="size"
     :height="size"
-    viewBox="0 0 100 100"
+    :viewBox="`0 0 ${TICKET.grid} ${TICKET.grid}`"
     aria-hidden="true"
   >
-    <g transform="rotate(-7 50 50)">
+    <g
+      :transform="`rotate(${TICKET.tilt} ${TICKET.grid / 2} ${TICKET.grid / 2})`"
+    >
       <path
         class="stub"
-        d="M12 24 H88 a6 6 0 0 1 6 6 V42 a8 8 0 0 0 0 16 V70 a6 6 0 0 1 -6 6 H12 a6 6 0 0 1 -6 -6 V58 a8 8 0 0 0 0 -16 V30 a6 6 0 0 1 6 -6 Z"
-        stroke-width="3"
+        :d="TICKET.stub"
+        :stroke-width="TICKET.strokes.stub"
         stroke-linejoin="round"
       />
-      <rect
+      <path
         class="panel"
-        x="12"
-        y="34"
-        width="30"
-        height="32"
-        rx="6"
-        stroke-width="1.5"
+        :d="TICKET.panel"
+        :stroke-width="TICKET.strokes.panel"
       />
       <image
         v-if="logo"
         :href="logo"
-        x="15"
-        y="37"
-        width="24"
-        height="26"
+        v-bind="TICKET.logo"
         preserveAspectRatio="xMidYMid meet"
       />
       <path
         v-else
         class="flag"
-        d="M21 61 V40 M21 40 H32 L29.5 44.5 L32 49 H21"
+        :d="TICKET.flag"
         fill="none"
-        stroke-width="2.2"
+        :stroke-width="TICKET.strokes.flag"
         stroke-linecap="round"
         stroke-linejoin="round"
       />
-      <path class="perforation" d="M48 29 V71" stroke-dasharray="3 3" />
-      <text class="small-line" x="71" y="47">{{ ticketLine }}</text>
-      <text class="big-line" x="71" y="68">{{ bigLine }}</text>
+      <path
+        class="perforation"
+        :d="TICKET.perforation"
+        :stroke-dasharray="`${TICKET.dash} ${TICKET.dash}`"
+      />
+      <text class="small-line" :x="TICKET.smallLine.x" :y="TICKET.smallLine.y">
+        {{ ticketLine }}
+      </text>
+      <text class="big-line" :x="TICKET.bigLine.x" :y="TICKET.bigLine.y">
+        {{ bigLine }}
+      </text>
     </g>
   </svg>
 </template>

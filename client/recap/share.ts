@@ -4,7 +4,7 @@ import {
   paintCard,
   type Card,
   type CardPalette,
-  type Pen,
+  type CardSize,
 } from './card'
 import type { Halo } from './halo'
 
@@ -20,6 +20,7 @@ export function paletteOfPage(element: Element): CardPalette {
     ink: read('--ink', '#111010'),
     muted: read('--muted', '#6b6659'),
     accent: read('--accent', '#d4471f'),
+    onAccent: read('--on-accent', '#fff'),
     display: read('--font-display', 'Anton, sans-serif'),
     body: read('--font-body', 'Archivo, sans-serif'),
     mono: read('--font-mono', 'monospace'),
@@ -44,11 +45,14 @@ export async function cardPalette(): Promise<CardPalette> {
   return palette
 }
 
-/** A canvas the card's size, and its pen. */
-export function cardCanvas(): { canvas: HTMLCanvasElement; pen: Pen } {
+/** A canvas of the card's size, or of `size`, and its pen. */
+export function cardCanvas(size: CardSize = CARD_SIZE): {
+  canvas: HTMLCanvasElement
+  pen: CanvasRenderingContext2D
+} {
   const canvas = document.createElement('canvas')
-  canvas.width = CARD_SIZE.width
-  canvas.height = CARD_SIZE.height
+  canvas.width = size.width
+  canvas.height = size.height
   const pen = canvas.getContext('2d')
   if (pen === null) throw new Error('card unavailable')
   return { canvas, pen }

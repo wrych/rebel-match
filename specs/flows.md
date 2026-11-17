@@ -621,7 +621,8 @@ they wait for a human (**F4**).
    expired, revoked, or exhausted (R-INV-9).
 2. **Create** → `POST /api/admin/invites` with a label, a validity window, and a
    use cap. The response carries the join URL once, so the host can render the
-   QR for a badge, a slide, or a poster (R-INV-9, R-INV-10).
+   QR for a badge, a slide, or a poster, or download the QR drawn as a
+   slide or a social media post (R-INV-9, R-INV-10).
 3. **Revoke** → `POST /api/admin/invites/:id/revoke`. Effective on the next use,
    with no cache in the way (R-INV-3). The printed code keeps existing; it
    simply stops admitting anyone.

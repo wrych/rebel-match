@@ -329,7 +329,11 @@ capability, not a secret** — and every requirement below exists because of tha
   screen** of its own that lists every invite with its label, window, uses against
   cap, opens (R-STAT-6), and state (active / scheduled / expired / revoked / exhausted), and allows
   creating and revoking. Each invite SHALL show its join URL so the host can
-  render or re-render the QR code; it MAY render the QR itself.
+  render or re-render the QR code; it MAY render the QR itself. An active or
+  scheduled invite SHALL offer its QR as an image to download, in the profile
+  code card's look (R-CODE-2) with the ticket of the badge it gives
+  (R-INV-13): **for slides**, 1920 by 1080, or **for social media**, the
+  card's portrait 1080 by 1350. _(Andy, 2026-11-17.)_
 - **R-INV-10 (Labelled)** — Every invite SHALL carry a human label (for example
   "Summit 2026 — main stage"), because a host with three posters needs to know
   which token to revoke.
