@@ -11,19 +11,7 @@ const named = computed(() => cellLabel(props.cell))
 </script>
 
 <template>
-  <span
-    v-if="found"
-    class="cell-flag"
-    role="img"
-    :aria-label="named"
-    :title="named"
-    >{{ found.flag }}</span
-  >
+  <span v-if="found" role="img" :aria-label="named" :title="named">{{
+    found.flag
+  }}</span>
 </template>
-
-<style scoped>
-.cell-flag {
-  margin-inline-end: 0.35em;
-  font-style: normal;
-}
-</style>

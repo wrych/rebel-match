@@ -9,7 +9,7 @@ describe('PersonLine', () => {
       props: { cell: 'japan', line: 'Coach · Rebels' },
     })
 
-    expect(line.text()).toBe('🇯🇵Coach · Rebels')
+    expect(line.text()).toBe('🇯🇵 · Coach · Rebels')
     expect(line.find('[role="img"]').attributes('aria-label')).toBe(
       'Rebel cell: Japan',
     )

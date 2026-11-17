@@ -36,7 +36,7 @@ describe('PeerCards', () => {
     await flushPromises()
 
     expect(cards.find('.card-title').text()).toBe('Ben Rebel')
-    expect(cards.find('.peer-meta').text()).toBe('🇨🇭Buurtzorg')
+    expect(cards.find('.peer-meta').text()).toBe('🇨🇭 · Buurtzorg')
     expect(cards.find('[role="img"]').attributes('aria-label')).toBe(
       'Rebel cell: Switzerland',
     )
