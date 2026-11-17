@@ -15,12 +15,32 @@ const peer = {
   org: 'Buurtzorg',
   sector: null,
   companySize: null,
+  rebelCell: null,
   photo: null,
   note: 'Been there.',
   challengeId: 'c-ben',
 }
 
 describe('PeerCards', () => {
+  it('sets the flag of their rebel cell before the name (R-PROF-9)', async () => {
+    const cards = mount(PeerCards, {
+      props: {
+        peers: [{ ...peer, rebelCell: 'switzerland' }],
+        challengeId: 'c-1',
+        kind: 'same_boat',
+        action: 'Connect',
+        nobody: '',
+      },
+      global: { stubs: { RouterLink: RouterLinkStub } },
+    })
+    await flushPromises()
+
+    expect(cards.find('.card-title').text()).toBe('🇨🇭Ben Rebel')
+    expect(cards.find('[role="img"]').attributes('aria-label')).toBe(
+      'Rebel cell: Switzerland',
+    )
+  })
+
   it.each([
     ['same_boat', 'Connect'],
     ['been_there', 'Ask'],

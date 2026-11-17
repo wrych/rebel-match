@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import CellFlag from '../components/CellFlag.vue'
 import { pathTo } from '../../src/routes'
 import ConnectMark from '../components/ConnectMark.vue'
 import KindChip from '../components/KindChip.vue'
@@ -165,7 +166,11 @@ onMounted(() => {
         >
           <RouterLink :to="requestPath(request.id)" class="request-row">
             <span class="card-head">
-              <span class="card-title">{{ request.other.name }}</span>
+              <span class="card-title"
+                ><CellFlag :cell="request.other.rebelCell" />{{
+                  request.other.name
+                }}</span
+              >
               <KindChip :kind="request.kind" />
             </span>
             <span v-if="request.message" class="small request-note">{{
@@ -222,7 +227,11 @@ onMounted(() => {
           :aria-label="connectionLabel(person)"
         >
           <span class="card-head">
-            <span class="card-title">{{ person.other.name }}</span>
+            <span class="card-title"
+              ><CellFlag :cell="person.other.rebelCell" />{{
+                person.other.name
+              }}</span
+            >
             <span v-if="person.unseen > 0" class="badge" aria-hidden="true">{{
               person.unseen
             }}</span>

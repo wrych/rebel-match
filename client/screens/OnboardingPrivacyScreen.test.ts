@@ -20,6 +20,7 @@ const ada = {
   org: '',
   sector: '',
   companySize: '',
+  rebelCell: '',
 }
 const stored = {
   name: null as string | null,
@@ -166,6 +167,7 @@ describe('OnboardingPrivacyScreen', () => {
         org: '',
         sector: '',
         companySize: '',
+        rebelCell: '',
         consentVersion: latestConsentVersion,
       },
     ])

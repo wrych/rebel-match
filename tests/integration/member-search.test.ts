@@ -122,7 +122,10 @@ describe('member search on Postgres (R-FIND-2, R-FIND-3)', () => {
     expect((await search('company:o_her')).names).toEqual([])
   })
 
-  it('opens a card search would find, and only that (R-FIND-6)', async () => {
+  it('opens a card search would find, and only that (R-FIND-6, R-PROF-9)', async () => {
+    await db.query(
+      "UPDATE members SET rebel_cell = 'japan' WHERE id = 'qs-zoe'",
+    )
     const found = await request(app)
       .get('/api/members/qs-zoe/card')
       .set('Cookie', cookie)
@@ -138,6 +141,7 @@ describe('member search on Postgres (R-FIND-2, R-FIND-3)', () => {
         org: 'Quox & Partners',
         sector: null,
         companySize: null,
+        rebelCell: 'japan',
         photo: null,
         connectionId: null,
       },

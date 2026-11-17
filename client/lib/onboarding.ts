@@ -9,6 +9,7 @@ export interface TypedProfile {
   org: string
   sector: string
   companySize: string
+  rebelCell: string
 }
 
 /** The profile step pre-filled by `GET /api/onboarding`, with the consent
@@ -19,6 +20,7 @@ export interface OnboardingDraft {
   org: string | null
   sector: string | null
   companySize: string | null
+  rebelCell: string | null
   consentVersion: string
 }
 
@@ -48,6 +50,7 @@ function asTyped(value: unknown): TypedProfile | null {
     org: text('org'),
     sector: text('sector'),
     companySize: text('companySize'),
+    rebelCell: text('rebelCell'),
   }
 }
 

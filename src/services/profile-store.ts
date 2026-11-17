@@ -37,6 +37,7 @@ export function createProfileStore(
         org: row.org,
         sector: row.sector,
         companySize: row.companySize,
+        rebelCell: row.rebelCell,
         email: row.email,
         consentVersion: row.consentVersion,
         consentAt: row.consentAt?.toISOString() ?? null,
@@ -55,6 +56,7 @@ export function createProfileStore(
           org: edit.org ?? null,
           sector: edit.sector ?? null,
           companySize: edit.companySize ?? null,
+          rebelCell: edit.rebelCell ?? null,
         })
         .where(eq(members.id, memberId))
     },

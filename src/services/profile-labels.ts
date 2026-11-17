@@ -27,5 +27,6 @@ export const cardColumns = {
   org: members.org,
   sector: sectorLabel,
   companySize: companySizeLabel,
+  rebelCell: members.rebelCell,
   photo: photoKey,
 } satisfies Record<keyof PersonCard, unknown>

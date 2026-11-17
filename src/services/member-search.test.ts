@@ -16,6 +16,7 @@ const card = (memberId: string): MemberCard => ({
   org: null,
   sector: null,
   companySize: null,
+  rebelCell: null,
   photo: null,
   connectionId: null,
 })

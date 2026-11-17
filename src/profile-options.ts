@@ -46,6 +46,50 @@ export const companySizeKeys = companySizes.map((size) => size.key) as [
   ...CompanySize[],
 ]
 
+/** The Corporate Rebels cells a member may belong to, stored by key and
+ * shown by flag and label (R-PROF-9, design §2); seeds copy key and label
+ * into `rebel_cells`. */
+export const rebelCells = [
+  { key: 'belgium', flag: '🇧🇪', label: 'Belgium' },
+  { key: 'berlin', flag: '🐻', label: 'Berlin' },
+  { key: 'france', flag: '🇫🇷', label: 'France' },
+  { key: 'germany', flag: '🇩🇪', label: 'Germany' },
+  {
+    key: 'global',
+    flag: '🌐',
+    label: 'Global',
+    note: 'no country cell',
+  },
+  { key: 'italy', flag: '🇮🇹', label: 'Italy' },
+  { key: 'japan', flag: '🇯🇵', label: 'Japan' },
+  { key: 'latin-america', flag: '🌎', label: 'Latin America' },
+  { key: 'lithuania', flag: '🇱🇹', label: 'Lithuania' },
+  { key: 'netherlands', flag: '🇳🇱', label: 'Netherlands' },
+  { key: 'north-america', flag: '🇺🇸🇨🇦', label: 'North America' },
+  { key: 'poland', flag: '🇵🇱', label: 'Poland' },
+  { key: 'spain', flag: '🇪🇸', label: 'Spain' },
+  { key: 'sweden', flag: '🇸🇪', label: 'Sweden' },
+  { key: 'switzerland', flag: '🇨🇭', label: 'Switzerland' },
+] as const
+
+export type RebelCell = (typeof rebelCells)[number]['key']
+
+export const rebelCellKeys = rebelCells.map((cell) => cell.key) as [
+  RebelCell,
+  ...RebelCell[],
+]
+
+/** A cell as the drop-down offers it: its flag, label and any note. */
+export function cellChoice(cell: (typeof rebelCells)[number]): string {
+  const note = 'note' in cell ? ` (${cell.note})` : ''
+  return `${cell.flag} ${cell.label}${note}`
+}
+
+/** The cell a stored key names, or null for none or one off the list. */
+export function cellOf(key: string | null): (typeof rebelCells)[number] | null {
+  return rebelCells.find((cell) => cell.key === key) ?? null
+}
+
 /** A stored value as a form's pick: blank when it is not on the list, so the
  * form never sends back a value it cannot show. */
 export function pickedOrBlank(

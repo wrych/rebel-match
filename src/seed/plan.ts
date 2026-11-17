@@ -1,12 +1,13 @@
 import { isDevelopmentDeployment, type Config } from '../config.js'
 import { devFixtures } from './dev/index.js'
-import { companySizes, sectors } from '../profile-options.js'
+import { companySizes, rebelCells, sectors } from '../profile-options.js'
 import { caseStudies } from './shared/cases.js'
 import { roles } from './shared/roles.js'
 import { trends } from './shared/trends.js'
 import type { SeedPlan } from './types.js'
 
-/** What a profile seeds. Both get the roles, sector and company size lists,
+/** What a profile seeds. Both get the roles, sector, company size and rebel
+ * cell lists,
  * trends and case studies; dev
  * adds the fictional roster with its challenges and offers, production its
  * private files once that loader lands (design §6.4). Refuses dev fixtures
@@ -19,7 +20,14 @@ export function planSeed(config: {
   mail: Pick<Config['mail'], 'delivery'>
 }): SeedPlan {
   const admins = config.seedAdmins ?? []
-  const shared = { roles, sectors, companySizes, trends, cases: caseStudies }
+  const shared = {
+    roles,
+    sectors,
+    companySizes,
+    rebelCells,
+    trends,
+    cases: caseStudies,
+  }
   if (config.seedProfile === 'prod') {
     if (isDevelopmentDeployment(config)) {
       throw new Error(

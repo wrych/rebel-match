@@ -11,6 +11,7 @@ const card: DeckCard = {
     org: 'Björk',
     sector: null,
     companySize: null,
+    rebelCell: null,
     photo: null,
   },
 }
@@ -112,6 +113,7 @@ describe('authorLine', () => {
           ...card.author,
           sector: 'Software & technology',
           companySize: '251–1,000 employees',
+          rebelCell: null,
           photo: null,
         },
       }),

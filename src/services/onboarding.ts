@@ -1,4 +1,4 @@
-import type { CompanySize, Sector } from '../profile-options.js'
+import type { CompanySize, RebelCell, Sector } from '../profile-options.js'
 
 /** The profile step as the member first sees it: their profile so far, with
  * what they gave at the door filling the gaps (F2, R-AUTH-12). */
@@ -8,6 +8,7 @@ export interface OnboardingDraft {
   org: string | null
   sector: string | null
   companySize: string | null
+  rebelCell: string | null
 }
 
 /** What the privacy step submits: the profile and the consent version read.
@@ -18,6 +19,7 @@ export interface OnboardingInput {
   org?: string | undefined
   sector?: Sector | undefined
   companySize?: CompanySize | undefined
+  rebelCell?: RebelCell | undefined
   consentVersion: string
 }
 

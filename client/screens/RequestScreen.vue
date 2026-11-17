@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import CellFlag from '../components/CellFlag.vue'
 import { pathTo } from '../../src/routes'
 import ConnectMark from '../components/ConnectMark.vue'
 import KindChip from '../components/KindChip.vue'
@@ -100,7 +101,11 @@ async function answer(verdict: 'accept' | 'decline'): Promise<void> {
 
       <div class="card">
         <div class="stack-tight">
-          <span class="card-title">{{ request.other.name }}</span>
+          <span class="card-title"
+            ><CellFlag :cell="request.other.rebelCell" />{{
+              request.other.name
+            }}</span
+          >
           <span v-if="peerLine(request.other)" class="mono peer-meta">{{
             peerLine(request.other)
           }}</span>

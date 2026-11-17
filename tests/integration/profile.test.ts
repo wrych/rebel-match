@@ -17,9 +17,10 @@ beforeAll(async () => {
   db = await openTestDatabase()
   await db.query(
     'INSERT INTO members (id, email, name, job_title, org, sector, ' +
-      'company_size, status, consent_version, consent_at, analytics_id) ' +
+      'company_size, rebel_cell, status, consent_version, consent_at, ' +
+      'analytics_id) ' +
       "VALUES (?, ?, 'Ada', 'Coach', 'Old Org', 'healthcare', '51-250', " +
-      "'active', ?, now(), ?)",
+      "'berlin', 'active', ?, now(), ?)",
     [member.id, member.email, config.consentVersion, randomUUID()],
   )
   const deps = composeApp(config, db.drizzle)
@@ -44,6 +45,7 @@ describe('the profile over Postgres (R-PROF-1,2)', () => {
       org: 'Old Org',
       sector: 'healthcare',
       companySize: '51-250',
+      rebelCell: 'berlin',
       email: member.email,
       consentVersion: config.consentVersion,
       analyticsOptIn: false,
@@ -62,11 +64,12 @@ describe('the profile over Postgres (R-PROF-1,2)', () => {
         org: 'New Org',
         sector: 'retail',
         companySize: '',
+        rebelCell: 'switzerland',
       })
       .expect(204)
 
     const [row] = await db.query(
-      'SELECT name, job_title, org, sector, company_size, email ' +
+      'SELECT name, job_title, org, sector, company_size, rebel_cell, email ' +
         'FROM members WHERE id = ?',
       [member.id],
     )
@@ -76,6 +79,7 @@ describe('the profile over Postgres (R-PROF-1,2)', () => {
       org: 'New Org',
       sector: 'retail',
       company_size: null,
+      rebel_cell: 'switzerland',
       email: member.email,
     })
   })

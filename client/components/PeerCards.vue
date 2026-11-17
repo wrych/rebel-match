@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import CellFlag from './CellFlag.vue'
 import { pathTo } from '../../src/routes'
 import { peerLine, type PeerCard } from '../lib/challenges'
 import { photoSrc } from '../lib/photo'
@@ -48,7 +49,9 @@ function connectPath(peer: PeerCard): string {
           :src="photoSrc(peer.photo)"
         />
         <div class="stack-tight">
-          <span class="card-title">{{ peer.name }}</span>
+          <span class="card-title"
+            ><CellFlag :cell="peer.rebelCell" />{{ peer.name }}</span
+          >
           <span v-if="peerLine(peer)" class="mono peer-meta">{{
             peerLine(peer)
           }}</span>

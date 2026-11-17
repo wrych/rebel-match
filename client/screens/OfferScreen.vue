@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import CellFlag from '../components/CellFlag.vue'
 import { pathTo } from '../../src/routes'
 import { reportPath } from '../lib/reports'
 import { computed, onMounted, ref, watch } from 'vue'
@@ -145,7 +146,11 @@ onMounted(() => {
             :src="photoSrc(card.author.photo)"
           />
           <div class="deck-author-lines">
-            <span class="card-title">{{ card.author.name }}</span>
+            <span class="card-title"
+              ><CellFlag :cell="card.author.rebelCell" />{{
+                card.author.name
+              }}</span
+            >
             <span v-if="authorLine(card)" class="mono">{{
               authorLine(card)
             }}</span>

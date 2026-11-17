@@ -13,6 +13,7 @@ export const people: SeedMember[] = [
     org: 'Rebel Match',
     sector: 'software-technology',
     companySize: '1-10',
+    rebelCell: 'switzerland',
     roles: ['member', 'admin'],
   },
   {
@@ -22,6 +23,7 @@ export const people: SeedMember[] = [
     org: 'Kade Collectief',
     sector: 'agency-consulting',
     companySize: '51-250',
+    rebelCell: 'netherlands',
     roles: ['member'],
   },
   {
@@ -31,6 +33,7 @@ export const people: SeedMember[] = [
     org: 'Novaflex',
     sector: 'manufacturing',
     companySize: '251-1000',
+    rebelCell: 'germany',
     roles: ['member'],
   },
   {
@@ -40,6 +43,7 @@ export const people: SeedMember[] = [
     org: 'Meridian Care',
     sector: 'healthcare',
     companySize: '1001+',
+    rebelCell: 'berlin',
     roles: ['member'],
   },
   {
@@ -49,6 +53,7 @@ export const people: SeedMember[] = [
     org: 'Werkhaus',
     sector: 'industrial-services',
     companySize: '1001+',
+    rebelCell: 'global',
     roles: ['member'],
   },
   {
@@ -58,6 +63,7 @@ export const people: SeedMember[] = [
     org: 'Kestrel Digital',
     sector: 'software-technology',
     companySize: '251-1000',
+    rebelCell: 'latin-america',
     roles: ['member'],
   },
   {
@@ -67,6 +73,7 @@ export const people: SeedMember[] = [
     org: 'Nordlys',
     sector: 'energy-utilities',
     companySize: '251-1000',
+    rebelCell: 'north-america',
     roles: ['member'],
   },
   {
@@ -76,6 +83,7 @@ export const people: SeedMember[] = [
     org: 'Baumann Bau',
     sector: 'construction',
     companySize: '251-1000',
+    rebelCell: 'belgium',
     roles: ['member'],
   },
   {
@@ -85,6 +93,7 @@ export const people: SeedMember[] = [
     org: 'Helder Groep',
     sector: 'logistics',
     companySize: '251-1000',
+    rebelCell: 'spain',
     roles: ['member'],
   },
   {
@@ -94,6 +103,7 @@ export const people: SeedMember[] = [
     org: 'Cartographe',
     sector: 'agency-consulting',
     companySize: '51-250',
+    rebelCell: 'japan',
     roles: ['member'],
   },
   {
@@ -103,6 +113,7 @@ export const people: SeedMember[] = [
     org: 'Vaartlicht',
     sector: 'healthcare',
     companySize: '1001+',
+    rebelCell: 'france',
     roles: ['member'],
   },
   {
@@ -112,6 +123,7 @@ export const people: SeedMember[] = [
     org: 'Sova Systems',
     sector: 'software-technology',
     companySize: '51-250',
+    rebelCell: 'italy',
     roles: ['member'],
   },
   {
@@ -121,6 +133,7 @@ export const people: SeedMember[] = [
     org: 'Terrafino',
     sector: 'food-agriculture',
     companySize: '251-1000',
+    rebelCell: 'sweden',
     roles: ['member'],
   },
   {
@@ -130,6 +143,7 @@ export const people: SeedMember[] = [
     org: 'Björk Industri',
     sector: 'manufacturing',
     companySize: '251-1000',
+    rebelCell: 'poland',
     roles: ['member'],
   },
   {
@@ -139,6 +153,7 @@ export const people: SeedMember[] = [
     org: 'Arcadia Labs',
     sector: 'software-technology',
     companySize: '251-1000',
+    rebelCell: 'lithuania',
     roles: ['member'],
   },
   {
@@ -148,6 +163,7 @@ export const people: SeedMember[] = [
     org: 'Lindquist',
     sector: 'retail',
     companySize: '1001+',
+    rebelCell: 'global',
     roles: ['member'],
   },
   {
@@ -157,6 +173,7 @@ export const people: SeedMember[] = [
     org: 'Puerto Verde',
     sector: 'logistics',
     companySize: '251-1000',
+    rebelCell: 'netherlands',
     roles: ['member'],
   },
 ]

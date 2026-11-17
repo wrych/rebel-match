@@ -4,7 +4,11 @@ import type { AuthProvider } from '../auth/index.js'
 import type { Limits, LiveSettings } from '../config.js'
 import type { ErasureService } from '../services/erasure.js'
 import type { ProfileEdit, ProfileStore } from '../services/profile.js'
-import { companySizeKeys, sectorKeys } from '../profile-options.js'
+import {
+  companySizeKeys,
+  rebelCellKeys,
+  sectorKeys,
+} from '../profile-options.js'
 import {
   readSocialLink,
   socialNetworks,
@@ -28,6 +32,7 @@ function editBody(limits: TextLimits): z.ZodType<ProfileEdit> {
     org: optionalText(limits.orgMaxChars),
     sector: optionalChoice(sectorKeys),
     companySize: optionalChoice(companySizeKeys),
+    rebelCell: optionalChoice(rebelCellKeys),
   })
 }
 

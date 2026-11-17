@@ -77,12 +77,33 @@ describe('OnboardingProfileScreen', () => {
       org: '',
       sector: '',
       companySize: '',
+      rebelCell: '',
     })
     const screen = await mountScreen()
 
     expect(value(screen, '#name')).toBe('Ada')
     expect(value(screen, '#job-title')).toBe('Coach')
     expect(value(screen, '#org')).toBe('')
+  })
+
+  it('offers the rebel cells with their flags and keeps the pick (R-PROF-9)', async () => {
+    server()
+    const screen = await mountScreen()
+    const cell = screen.find('#rebel-cell')
+
+    expect(cell.findAll('option').map((option) => option.text())).toEqual(
+      expect.arrayContaining([
+        'Not given',
+        '🌎 Latin America',
+        '🌐 Global (no country cell)',
+      ]),
+    )
+    await screen.find('#name').setValue('Ada')
+    await cell.setValue('latin-america')
+    await screen.find('form').trigger('submit')
+    await flushPromises()
+
+    expect(typedProfile()).toMatchObject({ rebelCell: 'latin-america' })
   })
 
   it('says nothing is sent yet and links the privacy notice (R-ONB-7)', async () => {

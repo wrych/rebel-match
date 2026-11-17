@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import {
+  cellChoice,
   companySizeKeys,
   companySizes,
   pickedOrBlank,
+  rebelCellKeys,
+  rebelCells,
   sectorKeys,
   sectors,
 } from '../../src/profile-options'
@@ -27,7 +30,14 @@ import { profileFolds, searchProfile } from '../lib/profile-folds'
 import { forgetMe } from '../lib/session'
 import { when } from '../lib/when'
 
-const fields = ['name', 'jobTitle', 'org', 'sector', 'companySize'] as const
+const fields = [
+  'name',
+  'jobTitle',
+  'org',
+  'sector',
+  'companySize',
+  'rebelCell',
+] as const
 type Field = (typeof fields)[number]
 
 const profile = ref<OwnProfile | null>(null)
@@ -39,6 +49,7 @@ const blank = (): Record<Field, string> => ({
   org: '',
   sector: '',
   companySize: '',
+  rebelCell: '',
 })
 const form = reactive(blank())
 // What the server last accepted: a save sends it with the one field changed.
@@ -49,6 +60,7 @@ const ticks = reactive<Record<Field, boolean>>({
   org: false,
   sector: false,
   companySize: false,
+  rebelCell: false,
 })
 const errors = reactive<Record<Field, string | null>>({
   name: null,
@@ -56,6 +68,7 @@ const errors = reactive<Record<Field, string | null>>({
   org: null,
   sector: null,
   companySize: null,
+  rebelCell: null,
 })
 const timers: Partial<Record<Field, ReturnType<typeof setTimeout>>> = {}
 // Saves run one at a time, each built from what the server last accepted,
@@ -89,6 +102,7 @@ onMounted(async () => {
     for (const field of fields) form[field] = own[field] ?? ''
     form.sector = pickedOrBlank(own.sector, sectorKeys)
     form.companySize = pickedOrBlank(own.companySize, companySizeKeys)
+    form.rebelCell = pickedOrBlank(own.rebelCell, rebelCellKeys)
     Object.assign(saved, form)
   } catch {
     problem.value = 'Your profile could not be loaded. Reload to try again.'
@@ -255,6 +269,32 @@ function save(field: Field): Promise<void> {
             </select>
             <p v-if="errors.companySize" class="alert" role="alert">
               {{ errors.companySize }}
+            </p>
+          </div>
+          <div class="field">
+            <div class="label-row">
+              <label for="rebel-cell" class="label"
+                >Rebel cell (optional)</label
+              >
+              <SavedTick :shown="ticks.rebelCell" />
+            </div>
+            <select
+              id="rebel-cell"
+              v-model="form.rebelCell"
+              class="input"
+              @change="save('rebelCell')"
+            >
+              <option value="">Not given</option>
+              <option
+                v-for="cell in rebelCells"
+                :key="cell.key"
+                :value="cell.key"
+              >
+                {{ cellChoice(cell) }}
+              </option>
+            </select>
+            <p v-if="errors.rebelCell" class="alert" role="alert">
+              {{ errors.rebelCell }}
             </p>
           </div>
           <p class="small">

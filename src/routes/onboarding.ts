@@ -6,7 +6,11 @@ import type {
   OnboardingInput,
   OnboardingService,
 } from '../services/onboarding.js'
-import { companySizeKeys, sectorKeys } from '../profile-options.js'
+import {
+  companySizeKeys,
+  rebelCellKeys,
+  sectorKeys,
+} from '../profile-options.js'
 import { displayName, optionalChoice, optionalText } from './profile-fields.js'
 import { handle, memberOf } from './handle.js'
 import { requireSession } from './require-permission.js'
@@ -24,6 +28,7 @@ function onboardingBody(limits: TextLimits): z.ZodType<OnboardingInput> {
     org: optionalText(limits.orgMaxChars),
     sector: optionalChoice(sectorKeys),
     companySize: optionalChoice(companySizeKeys),
+    rebelCell: optionalChoice(rebelCellKeys),
     consentVersion: z.string().min(1),
   })
 }

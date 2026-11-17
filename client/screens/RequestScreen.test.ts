@@ -36,6 +36,7 @@ const incoming: ConnectionView = {
     org: 'Acme',
     sector: null,
     companySize: null,
+    rebelCell: null,
   },
   challenge: {
     id: 'c1',
