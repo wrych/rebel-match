@@ -376,12 +376,13 @@ capability, not a secret** — and every requirement below exists because of tha
   roles (R-ROLE-9) or invite links they created remain.
 - **R-MEM-1 (Member cards)** — The host tools' members list SHALL show each
   member as a card with the same lines the app shows a person by elsewhere —
-  the name, then job title · organization · sector, leaving out what they did
-  not give — and below them the email, roles and status. Search by email or
+  the name, then the rebel cell's flag (R-PROF-9) and job title ·
+  organization · sector, leaving out what they did not give — and below them
+  the email, roles and status. Search by email or
   name stays.
 - **R-MEM-2 (A member's page)** — Tapping a card SHALL open that member's own
   page in the host tools, at its own URL, showing everything held about them:
-  photo, name, job title, organization, sector, email, status, roles, when and through
+  photo, name, job title, organization, sector, rebel cell, email, status, roles, when and through
   which invite they joined, the consent version they accepted and when, the
   analytics opt-in, and how many challenges and connection requests they have.
   It SHALL leave out the member's 9toRevolution results, which no host sees
@@ -2135,9 +2136,10 @@ connects at once (ADR 0063).
 - **R-FIND-2 (Query language)** — The query SHALL be read as follows, by one
   pure parser shared by client and server (R-CFG-2):
   - a plain word matches the start of any word of the **name**;
-  - `name:`, `company:` (also `org:`), `title:` and `sector:` match the start
-    of any word of the display name, organization, job title, and the
-    sector's label or key;
+  - `name:`, `company:` (also `org:`), `title:`, `sector:` and `rebel-cell:`
+    (also `cell:`) match the start of any word of the display name,
+    organization, job title, the sector's label or key, and the rebel cell's
+    label or key (R-PROF-9);
   - `*` at the end of a word is allowed and means the same: a prefix;
   - quotes make a phrase: `company:"corporate rebels"`;
   - every term SHALL match (AND); there is no OR and no negation;
