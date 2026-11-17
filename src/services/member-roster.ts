@@ -9,6 +9,8 @@ export interface RosterMember {
   /** Labels, as the app shows them, not the stored keys. */
   sector: string | null
   companySize: string | null
+  /** The rebel cell's key, its flag drawn by the client (R-PROF-9). */
+  rebelCell: string | null
   status: 'applicant' | 'active' | 'rejected' | 'deleted' | 'banned'
   roles: string[]
   joinedAt: string

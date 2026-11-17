@@ -24,6 +24,7 @@ const listed = {
   org: members.org,
   sector: sectorLabel,
   companySize: companySizeLabel,
+  rebelCell: members.rebelCell,
   status: members.status,
   createdAt: members.createdAt,
   eraseAfter: members.eraseAfter,
@@ -39,6 +40,7 @@ interface ListedRow {
   org: string | null
   sector: string | null
   companySize: string | null
+  rebelCell: string | null
   status: RosterMember['status']
   createdAt: Date
   eraseAfter: Date | null
@@ -57,6 +59,7 @@ function oneMemberPerId(rows: ListedRow[]): RosterMember[] {
       org: row.org,
       sector: row.sector,
       companySize: row.companySize,
+      rebelCell: row.rebelCell,
       status: row.status,
       roles: [],
       joinedAt: row.createdAt.toISOString(),

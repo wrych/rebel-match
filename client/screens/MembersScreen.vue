@@ -7,6 +7,7 @@ import PullToRefresh from '../components/PullToRefresh.vue'
 import RefreshButton from '../components/RefreshButton.vue'
 import { rolePermissions } from '../../src/access'
 import { peerLine } from '../lib/challenges'
+import PersonLine from '../components/PersonLine.vue'
 import { longPress } from '../lib/long-press'
 import {
   deleteMember,
@@ -344,9 +345,11 @@ async function erase(): Promise<void> {
           <span class="card-head">
             <span class="stack-tight">
               <span class="card-title">{{ who(member) }}</span>
-              <span v-if="peerLine(member)" class="mono line">{{
-                peerLine(member)
-              }}</span>
+              <PersonLine
+                class="line"
+                :cell="member.rebelCell"
+                :line="peerLine(member)"
+              />
             </span>
             <span
               v-if="member.status === 'deleted' && member.eraseAfter"

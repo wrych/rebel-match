@@ -7,6 +7,8 @@ import MemberBan from '../components/MemberBan.vue'
 import MemberChallenges from '../components/MemberChallenges.vue'
 import { useAction } from '../lib/action'
 import { peerLine } from '../lib/challenges'
+import PersonLine from '../components/PersonLine.vue'
+import { cellChoice, cellOf } from '../../src/profile-options'
 import {
   deleteMember,
   eraseNow,
@@ -27,6 +29,11 @@ const route = useRoute()
 const id = String(route.params.id)
 const member = ref<MemberDetail | null>(null)
 const missing = ref(false)
+
+function cellName(key: string | null): string {
+  const cell = cellOf(key)
+  return cell === null ? '—' : cellChoice(cell)
+}
 const problem = ref<string | null>(null)
 const notice = ref<string | null>(null)
 const canGrant = ref(false)
@@ -144,7 +151,11 @@ async function erase(): Promise<void> {
       <div class="stack">
         <p class="kicker kicker-accent">Host tools · Member</p>
         <h1 class="display display-lg">{{ member.name ?? member.email }}</h1>
-        <p v-if="peerLine(member)" class="mono line">{{ peerLine(member) }}</p>
+        <PersonLine
+          class="line"
+          :cell="member.rebelCell"
+          :line="peerLine(member)"
+        />
       </div>
 
       <p v-if="notice" class="notice notice-solid" role="status">
@@ -170,6 +181,8 @@ async function erase(): Promise<void> {
           <dd>{{ member.sector ?? '—' }}</dd>
           <dt>Company size</dt>
           <dd>{{ member.companySize ?? '—' }}</dd>
+          <dt>Rebel cell</dt>
+          <dd>{{ cellName(member.rebelCell) }}</dd>
           <dt>Email</dt>
           <dd>{{ member.email }}</dd>
         </dl>
