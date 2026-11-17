@@ -1,4 +1,4 @@
-import type { CompanySize, Sector } from '../profile-options.js'
+import type { CompanySize, RebelCell, Sector } from '../profile-options.js'
 import type { SocialLinks } from '../social-links.js'
 
 /** The member's own profile and privacy as `/profile` shows them (S24,
@@ -9,6 +9,7 @@ export interface OwnProfile {
   org: string | null
   sector: string | null
   companySize: string | null
+  rebelCell: string | null
   email: string
   consentVersion: string | null
   consentAt: string | null
@@ -27,6 +28,7 @@ export interface ProfileEdit {
   org?: string | undefined
   sector?: Sector | undefined
   companySize?: CompanySize | undefined
+  rebelCell?: RebelCell | undefined
 }
 
 export interface ProfileStore {

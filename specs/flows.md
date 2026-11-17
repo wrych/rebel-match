@@ -127,8 +127,9 @@ usage data. S30 Privacy notice is one tap from each of the first two.
    reading Profile, Privacy, Usage (R-ONB-6, R-LOOK-4).
 2. On **S3** the member enters their **display name** (required), pre-filled
    with whatever they put in the draft while waiting for the link (**F1**). Job
-   title, organization, sector and company size are optional and only feed the
-   match cards; sector and company size are picked from a list (R-ONB-2). Each
+   title, organization, sector, company size and rebel cell are optional and
+   only feed the match cards; sector, company size and rebel cell are picked
+   from a list (R-ONB-2, R-PROF-9). Each
    field saves to the draft on change, with a tick, under the line "We keep
    what you enter here to set up your account. Privacy notice · Terms of use"
    (R-ONB-7, R-ONB-15). _Continue_ opens **S28**.

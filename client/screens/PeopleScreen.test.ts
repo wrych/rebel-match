@@ -232,11 +232,24 @@ describe('PeopleScreen (S44)', () => {
   it('adds a picked sector and searches', async () => {
     server()
     const screen = await mountScreen('ben')
-    await screen.find('select').setValue('retail')
+    await screen.find('select[aria-label="Add a sector"]').setValue('retail')
     await flushPromises()
 
     expect(replace).toHaveBeenCalledWith({
       query: { q: 'ben sector:retail' },
+    })
+  })
+
+  it('adds a picked rebel cell and searches (R-PROF-9)', async () => {
+    server()
+    const screen = await mountScreen('ben')
+    await screen
+      .find('select[aria-label="Add a rebel cell"]')
+      .setValue('north-america')
+    await flushPromises()
+
+    expect(replace).toHaveBeenCalledWith({
+      query: { q: 'ben rebel-cell:north-america' },
     })
   })
 

@@ -60,6 +60,7 @@ export function createDeckStore(db: Database): DeckStore {
           org: row.org,
           sector: row.sector,
           companySize: row.companySize,
+          rebelCell: row.rebelCell,
           photo: row.photo,
         },
       }))

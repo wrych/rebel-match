@@ -1,4 +1,8 @@
-import type { CompanySize, Sector } from '../../profile-options.js'
+import {
+  rebelCellKeys,
+  type CompanySize,
+  type Sector,
+} from '../../profile-options.js'
 import type { SeedMember } from '../types.js'
 
 // Fictional names, crossed so no pairing is anyone in particular.
@@ -131,6 +135,7 @@ export function crowd(count: number): SeedMember[] {
       org: pick(orgs, index, 7),
       sector: pick(sectors, index, 5),
       companySize: pick(sizes, index, 3),
+      ...(index % 4 === 3 ? {} : { rebelCell: pick(rebelCellKeys, index, 2) }),
       roles: ['member'],
     }
   })

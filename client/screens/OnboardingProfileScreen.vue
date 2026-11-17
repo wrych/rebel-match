@@ -2,9 +2,12 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
+  cellChoice,
   companySizeKeys,
   companySizes,
   pickedOrBlank,
+  rebelCellKeys,
+  rebelCells,
   sectorKeys,
   sectors,
 } from '../../src/profile-options'
@@ -28,6 +31,7 @@ const form = reactive<TypedProfile>({
   org: '',
   sector: '',
   companySize: '',
+  rebelCell: '',
 })
 const limits = ref<ClientConfig['limits'] | null>(null)
 const problem = ref<string | null>(null)
@@ -48,6 +52,7 @@ async function startingProfile(): Promise<TypedProfile> {
     org: draft.org ?? '',
     sector: draft.sector ?? '',
     companySize: draft.companySize ?? '',
+    rebelCell: draft.rebelCell ?? '',
   }
 }
 
@@ -60,6 +65,7 @@ onMounted(async () => {
     Object.assign(form, profile, {
       sector: pickedOrBlank(profile.sector, sectorKeys),
       companySize: pickedOrBlank(profile.companySize, companySizeKeys),
+      rebelCell: pickedOrBlank(profile.rebelCell, rebelCellKeys),
     })
     limits.value = config.limits
   } catch {
@@ -139,6 +145,15 @@ async function proceed(): Promise<void> {
             :value="size.key"
           >
             {{ size.label }}
+          </option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="rebel-cell">Rebel cell (optional)</label>
+        <select id="rebel-cell" v-model="form.rebelCell" class="input">
+          <option value="">Not given</option>
+          <option v-for="cell in rebelCells" :key="cell.key" :value="cell.key">
+            {{ cellChoice(cell) }}
           </option>
         </select>
       </div>

@@ -16,6 +16,7 @@ const card = (memberId: string): MemberCard => ({
   org: null,
   sector: null,
   companySize: null,
+  rebelCell: null,
   photo: null,
   connectionId: null,
 })
@@ -54,13 +55,17 @@ describe('member search (R-FIND-2, R-FIND-3)', () => {
   it('searches plain words as the name, each field by its operator', async () => {
     const { service, asked } = setup({})
 
-    await service.search('me', 'Zoë org:"Corporate Rebels" title:coach*')
+    await service.search(
+      'me',
+      'Zoë org:"Corporate Rebels" title:coach* rebel-cell:latin-america',
+    )
 
     expect(asked[0]?.terms).toEqual({
       name: ['zoe'],
       company: ['corporate rebels'],
       title: ['coach'],
       sector: [],
+      cell: ['latin america'],
     })
   })
 

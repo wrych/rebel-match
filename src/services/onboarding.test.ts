@@ -12,6 +12,7 @@ const draft = {
   org: null,
   sector: null,
   companySize: null,
+  rebelCell: null,
 }
 
 function setup(

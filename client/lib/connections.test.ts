@@ -178,6 +178,7 @@ function accepted(
       org: null,
       sector: null,
       companySize: null,
+      rebelCell: null,
     },
     challenge: null,
     unseen,

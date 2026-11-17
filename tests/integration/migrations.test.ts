@@ -69,6 +69,7 @@ describe('migrations', () => {
       'outbox',
       'outbox_quotes',
       'profile_codes',
+      'rebel_cells',
       'recap_announcement',
       'reports',
       'roles',

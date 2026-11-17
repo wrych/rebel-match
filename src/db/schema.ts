@@ -59,6 +59,11 @@ export const companySizes = pgTable('company_sizes', {
   label: varchar('label', { length: 40 }).notNull(),
 })
 
+export const rebelCells = pgTable('rebel_cells', {
+  key: varchar('key', { length: 20 }).primaryKey(),
+  label: varchar('label', { length: 40 }).notNull(),
+})
+
 export const memberStatus = pgEnum('member_status', [
   'applicant',
   'active',
@@ -85,6 +90,10 @@ export const members = pgTable(
     }),
     companySize: varchar('company_size', { length: 20 }).references(
       () => companySizes.key,
+      { onDelete: 'set null' },
+    ),
+    rebelCell: varchar('rebel_cell', { length: 20 }).references(
+      () => rebelCells.key,
       { onDelete: 'set null' },
     ),
     // Contact details, read only by the contact screen (R-PROF-5).

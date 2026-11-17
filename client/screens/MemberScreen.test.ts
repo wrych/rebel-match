@@ -19,6 +19,7 @@ const mia = {
   org: 'Buurtzorg',
   sector: null,
   companySize: null,
+  rebelCell: 'sweden',
   status: 'active',
   roles: ['member'],
   joinedAt: '2026-10-01T09:00:00.000Z',
@@ -84,14 +85,15 @@ afterEach(() => {
 })
 
 describe('MemberScreen (R-MEM-2)', () => {
-  it('shows everything held about the member', async () => {
+  it('shows everything held about the member, rebel cell included (R-PROF-9)', async () => {
     permissions.mockReturnValue(['member:delete'])
     server()
     const screen = await shown()
 
     const text = screen.text()
     expect(screen.find('h1').text()).toBe('Mia Rebel')
-    expect(text).toContain('Coach · Buurtzorg')
+    expect(text).toContain('🇸🇪 · Coach · Buurtzorg')
+    expect(text).toContain('Rebel cell🇸🇪 Sweden')
     expect(text).toContain('mia@example.invalid')
     expect(text).toContain('Summit 2026 — main stage')
     expect(text).toContain('Version 2026-11-01')

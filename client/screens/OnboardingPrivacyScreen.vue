@@ -47,6 +47,7 @@ function storedProfile(draft: OnboardingDraft): TypedProfile | null {
     org: draft.org ?? '',
     sector: draft.sector ?? '',
     companySize: draft.companySize ?? '',
+    rebelCell: draft.rebelCell ?? '',
   }
 }
 

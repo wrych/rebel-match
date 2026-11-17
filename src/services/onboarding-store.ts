@@ -62,6 +62,7 @@ export function createOnboardingStore(db: Database): OnboardingStore {
         org: row.org ?? (fromTheDoor ? row.requestedOrg : null),
         sector: row.sector,
         companySize: row.companySize,
+        rebelCell: row.rebelCell,
       }
     },
     save: async (memberId, input, acceptedAt) => {
@@ -73,6 +74,7 @@ export function createOnboardingStore(db: Database): OnboardingStore {
           org: input.org ?? null,
           sector: input.sector ?? null,
           companySize: input.companySize ?? null,
+          rebelCell: input.rebelCell ?? null,
           consentVersion: input.consentVersion,
           consentAt: acceptedAt,
           firstOnboardedAt: sql`coalesce(${members.firstOnboardedAt}, ${acceptedAt})`,

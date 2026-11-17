@@ -14,6 +14,7 @@ const ada = {
   org: '',
   sector: 'retail',
   companySize: '',
+  rebelCell: '',
 }
 
 afterEach(() => {
@@ -63,6 +64,7 @@ describe('the typed profile (R-ONB-7)', () => {
       org: '',
       sector: '',
       companySize: '',
+      rebelCell: '',
     })
   })
 

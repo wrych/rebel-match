@@ -13,6 +13,7 @@ const peer = {
   org: 'Buurtzorg',
   sector: null,
   companySize: null,
+  rebelCell: null,
   photo: KEY,
   note: 'Been there.',
   challengeId: null,

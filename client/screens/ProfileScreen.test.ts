@@ -10,6 +10,7 @@ const profile = {
   org: null,
   sector: 'retail',
   companySize: null,
+  rebelCell: null as string | null,
   email: 'ada@example.invalid',
   consentVersion: latestConsentVersion,
   consentAt: '2026-11-08T10:00:00.000Z',
@@ -204,6 +205,7 @@ describe('ProfileScreen', () => {
         org: 'Rebels',
         sector: 'retail',
         companySize: '',
+        rebelCell: '',
       },
     ])
     const org = fieldOf(screen, '#org')
@@ -227,6 +229,7 @@ describe('ProfileScreen', () => {
         org: '',
         sector: 'retail',
         companySize: '1001+',
+        rebelCell: '',
       },
       {
         name: 'Ada',
@@ -234,10 +237,37 @@ describe('ProfileScreen', () => {
         org: '',
         sector: '',
         companySize: '1001+',
+        rebelCell: '',
       },
     ])
     const size = fieldOf(screen, '#company-size')
     expect(size.find('[role="status"]').text()).toContain('Saved')
+  })
+
+  it('saves a rebel cell picked from the drop-down, each with its flag (R-PROF-9)', async () => {
+    const fetchMock = server(204, { ...profile, rebelCell: 'global' })
+    const screen = await mountScreen()
+
+    const cell = screen.find('#rebel-cell')
+    expect((cell.element as HTMLSelectElement).value).toBe('global')
+    expect(cell.findAll('option').map((option) => option.text())).toContain(
+      '🇨🇭 Switzerland',
+    )
+    await change(screen, '#rebel-cell', 'switzerland')
+
+    expect(saves(fetchMock)).toEqual([
+      {
+        name: 'Ada',
+        jobTitle: 'Coach',
+        org: '',
+        sector: 'retail',
+        companySize: '',
+        rebelCell: 'switzerland',
+      },
+    ])
+    expect(
+      fieldOf(screen, '#rebel-cell').find('[role="status"]').text(),
+    ).toContain('Saved')
   })
 
   it('blanks a stored sector that is not on the list, so saves still go through', async () => {
@@ -253,6 +283,7 @@ describe('ProfileScreen', () => {
         org: 'Rebels',
         sector: '',
         companySize: '',
+        rebelCell: '',
       },
     ])
   })
@@ -286,6 +317,7 @@ describe('ProfileScreen', () => {
         org: '',
         sector: 'retail',
         companySize: '',
+        rebelCell: '',
       },
       {
         name: 'Ada Rebel',
@@ -293,6 +325,7 @@ describe('ProfileScreen', () => {
         org: 'Rebels',
         sector: 'retail',
         companySize: '',
+        rebelCell: '',
       },
     ])
   })

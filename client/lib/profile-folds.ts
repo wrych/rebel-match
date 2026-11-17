@@ -16,6 +16,7 @@ const ABOUT_YOU: ProfileFold = {
     'Organization',
     'Sector',
     'Company size',
+    'Rebel cell',
     'Signed in as',
     'Email',
   ],

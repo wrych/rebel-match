@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import PersonLine from './PersonLine.vue'
 import { pathTo } from '../../src/routes'
 import { peerLine, type PeerCard } from '../lib/challenges'
 import { photoSrc } from '../lib/photo'
@@ -49,9 +50,11 @@ function connectPath(peer: PeerCard): string {
         />
         <div class="stack-tight">
           <span class="card-title">{{ peer.name }}</span>
-          <span v-if="peerLine(peer)" class="mono peer-meta">{{
-            peerLine(peer)
-          }}</span>
+          <PersonLine
+            class="peer-meta"
+            :cell="peer.rebelCell"
+            :line="peerLine(peer)"
+          />
         </div>
       </div>
       <p class="small peer-note">{{ peer.note }}</p>

@@ -1,5 +1,5 @@
 import type { RoleKey } from '../access.js'
-import type { CompanySize, Sector } from '../profile-options.js'
+import type { CompanySize, RebelCell, Sector } from '../profile-options.js'
 
 export interface SeedRole {
   key: RoleKey
@@ -16,6 +16,7 @@ export interface SeedMember {
   org: string
   sector: Sector
   companySize: CompanySize
+  rebelCell?: RebelCell
   roles: RoleKey[]
   /** How long before the seed runs they joined; absent, as it runs. */
   joinedHoursAgo?: number
@@ -77,6 +78,7 @@ export interface SeedPlan {
   roles: SeedRole[]
   sectors: readonly SeedOption[]
   companySizes: readonly SeedOption[]
+  rebelCells: readonly SeedOption[]
   trends: SeedTrend[]
   cases: SeedCase[]
   members: SeedMember[]

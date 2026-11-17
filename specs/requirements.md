@@ -177,8 +177,8 @@ Requirements:
   **company size** (optional, used in match cards). Sector and company size are
   each picked from a fixed list, never typed: sector from the list in design §2,
   company size from at most five headcount bands, shown on cards as "_n_
-  employees". "Job title" is profile text and is unrelated to access roles
-  (R-ROLE-8).
+  employees". It MAY also collect the member's **rebel cell** (R-PROF-9).
+  "Job title" is profile text and is unrelated to access roles (R-ROLE-8).
 - **R-ONB-3** — The privacy step of onboarding SHALL present the **data-usage
   consent** as a short summary and SHALL require the member to confirm having
   read it and the terms of use (R-ONB-13), with one button labelled "I have
@@ -357,8 +357,8 @@ capability, not a secret** — and every requirement below exists because of tha
 ### 3.5 Profile, privacy and the menu
 
 - **R-PROF-1** — An onboarded member SHALL be able to edit their **display name**
-  (required), **job title**, **organization**, **sector** and **company size**
-  after onboarding, within the same limits and lists as onboarding (R-ONB-2,
+  (required), **job title**, **organization**, **sector**, **company size**
+  and **rebel cell** after onboarding, within the same limits and lists as onboarding (R-ONB-2,
   R-CFG-2). The email address is how they
   sign in and SHALL NOT be editable here.
   - Every setting on the profile screen SHALL **save on change**, with no save
@@ -380,12 +380,13 @@ capability, not a secret** — and every requirement below exists because of tha
   roles (R-ROLE-9) or invite links they created remain.
 - **R-MEM-1 (Member cards)** — The host tools' members list SHALL show each
   member as a card with the same lines the app shows a person by elsewhere —
-  the name, then job title · organization · sector, leaving out what they did
-  not give — and below them the email, roles and status. Search by email or
+  the name, then the rebel cell's flag (R-PROF-9) and job title ·
+  organization · sector, leaving out what they did not give — and below them
+  the email, roles and status. Search by email or
   name stays.
 - **R-MEM-2 (A member's page)** — Tapping a card SHALL open that member's own
   page in the host tools, at its own URL, showing everything held about them:
-  photo, name, job title, organization, sector, email, status, roles, when and through
+  photo, name, job title, organization, sector, rebel cell, email, status, roles, when and through
   which invite they joined, the consent version they accepted and when, the
   analytics opt-in, and how many challenges and connection requests they have.
   It SHALL leave out the member's 9toRevolution results, which no host sees
@@ -490,6 +491,16 @@ capability, not a secret** — and every requirement below exists because of tha
     the owner is not active, their photo SHALL be not found, as their cards
     are; the host tools' member page SHALL still show it to a host who may
     read members (R-MEM-2).
+- **R-PROF-9 (Rebel cell)** — A member MAY say which Corporate Rebels
+  **rebel cell** they belong to, at onboarding (R-ONB-2) and on the profile
+  screen (R-PROF-1), picked from a drop-down of the fixed list in design §2,
+  never typed, each shown with its flag; **Global** is for everyone without a
+  cell of their own country. It is optional, and leaving it out clears it.
+  The cell's flag SHALL open the small line under the member's name (job
+  title, organization, …) wherever a member card shows it — the match cards
+  of a challenge (R-ASK-8), the deck's card for its author (R-OFF-2), search
+  results and a person's page (R-FIND-3, R-CODE-3) and the people a member is
+  connected with — naming the cell to assistive technology and on hover. (Andy, 2026-11-17.)
 
 ---
 
@@ -2129,9 +2140,10 @@ connects at once (ADR 0063).
 - **R-FIND-2 (Query language)** — The query SHALL be read as follows, by one
   pure parser shared by client and server (R-CFG-2):
   - a plain word matches the start of any word of the **name**;
-  - `name:`, `company:` (also `org:`), `title:` and `sector:` match the start
-    of any word of the display name, organization, job title, and the
-    sector's label or key;
+  - `name:`, `company:` (also `org:`), `title:`, `sector:` and `rebel-cell:`
+    (also `cell:`) match the start of any word of the display name,
+    organization, job title, the sector's label or key, and the rebel cell's
+    label or key (R-PROF-9);
   - `*` at the end of a word is allowed and means the same: a prefix;
   - quotes make a phrase: `company:"corporate rebels"`;
   - every term SHALL match (AND); there is no OR and no negation;

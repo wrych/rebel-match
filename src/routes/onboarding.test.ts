@@ -28,6 +28,7 @@ const draft = {
   org: 'Rebels',
   sector: null,
   companySize: null,
+  rebelCell: null,
 }
 
 function setup(outcome: OnboardingOutcome = 'done'): {
@@ -88,6 +89,7 @@ describe('POST /api/onboarding', () => {
         org: 'Rebels',
         sector: 'healthcare',
         companySize: '51-250',
+        rebelCell: 'switzerland',
         consentVersion: config.consentVersion,
       })
 
@@ -101,13 +103,14 @@ describe('POST /api/onboarding', () => {
           org: 'Rebels',
           sector: 'healthcare',
           companySize: '51-250',
+          rebelCell: 'switzerland',
           consentVersion: config.consentVersion,
         },
       },
     ])
   })
 
-  it('takes a blank sector and company size as left out (R-ONB-2)', async () => {
+  it('takes a blank sector, company size and rebel cell as left out (R-ONB-2, R-PROF-9)', async () => {
     const { app, completed } = setup()
 
     await request(app)
@@ -117,12 +120,14 @@ describe('POST /api/onboarding', () => {
         name: 'Ada',
         sector: '',
         companySize: '',
+        rebelCell: '',
         consentVersion: config.consentVersion,
       })
 
     expect(completed[0]?.input).toMatchObject({
       sector: undefined,
       companySize: undefined,
+      rebelCell: undefined,
     })
   })
 

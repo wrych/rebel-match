@@ -75,6 +75,7 @@ function fakeStore(): ConnectionStore & {
       org: null,
       sector: null,
       companySize: null,
+      rebelCell: null,
     },
     challenge: null,
     unseen: false,

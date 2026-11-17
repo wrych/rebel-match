@@ -10,6 +10,7 @@ import {
   memberExpertise,
   memberRoles,
   members,
+  rebelCells,
   roles,
   sectors,
   trends,
@@ -36,13 +37,13 @@ const excluded = (column: string): ReturnType<typeof sql> =>
 
 async function upsertOptions(
   db: Database,
-  table: typeof sectors | typeof companySizes,
+  table: typeof sectors | typeof companySizes | typeof rebelCells,
   options: readonly SeedOption[],
 ): Promise<void> {
   for (const option of options) {
     await db
       .insert(table)
-      .values(option)
+      .values({ key: option.key, label: option.label })
       .onConflictDoUpdate({
         target: table.key,
         set: { label: excluded('label') },
@@ -77,6 +78,7 @@ async function upsertMember(
       org: member.org,
       sector: member.sector,
       companySize: member.companySize,
+      rebelCell: member.rebelCell ?? null,
       status: 'active',
       consentVersion,
       consentAt: joinedAt,
@@ -92,6 +94,7 @@ async function upsertMember(
         org: excluded('org'),
         sector: excluded('sector'),
         companySize: excluded('company_size'),
+        rebelCell: excluded('rebel_cell'),
         status: 'active',
       },
     })
@@ -279,6 +282,7 @@ async function applyPlan(
   for (const item of plan.cases) await upsertCase(db, item)
   await upsertOptions(db, sectors, plan.sectors)
   await upsertOptions(db, companySizes, plan.companySizes)
+  await upsertOptions(db, rebelCells, plan.rebelCells)
   const now = new Date()
   for (const member of plan.members) {
     await upsertMember(db, member, consentVersion, now)

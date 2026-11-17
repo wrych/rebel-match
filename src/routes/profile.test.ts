@@ -27,6 +27,7 @@ const own: OwnProfile = {
   org: null,
   sector: null,
   companySize: null,
+  rebelCell: null,
   email: 'ada@example.invalid',
   consentVersion: '2026-11-01',
   consentAt: '2026-11-08T10:00:00.000Z',
@@ -132,18 +133,24 @@ describe('PUT /api/profile', () => {
     ])
   })
 
-  it('saves a sector and company size picked from the lists (R-PROF-1)', async () => {
+  it('saves a sector, company size and rebel cell picked from the lists (R-PROF-1, R-PROF-9)', async () => {
     const { app, edits } = setup()
 
     const response = await request(app)
       .put('/api/profile')
       .set('Cookie', await cookie())
-      .send({ name: 'Ada', sector: 'retail', companySize: '1001+' })
+      .send({
+        name: 'Ada',
+        sector: 'retail',
+        companySize: '1001+',
+        rebelCell: 'global',
+      })
 
     expect(response.status).toBe(204)
     expect(edits[0]?.edit).toMatchObject({
       sector: 'retail',
       companySize: '1001+',
+      rebelCell: 'global',
     })
   })
 
@@ -151,6 +158,7 @@ describe('PUT /api/profile', () => {
     ['a blank name', { name: '   ' }],
     ['a sector not on the list', { name: 'Ada', sector: 'Health' }],
     ['a company size not on the list', { name: 'Ada', companySize: '260' }],
+    ['a rebel cell not on the list', { name: 'Ada', rebelCell: 'Zurich' }],
     ['no name', { org: 'Rebels' }],
     [
       'a name over the limit',

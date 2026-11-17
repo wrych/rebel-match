@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import CodeIcon from '../components/CodeIcon.vue'
 import PersonCard from '../components/PersonCard.vue'
@@ -13,7 +13,7 @@ import {
   withoutPart,
   type SearchAnswer,
 } from '../lib/people'
-import { sectors } from '../../src/profile-options'
+import { cellChoice, rebelCells, sectors } from '../../src/profile-options'
 import type { SearchField } from '../../src/search/query'
 import { useNotFound } from '../lib/not-found'
 
@@ -29,7 +29,7 @@ const answer = ref<SearchAnswer | null>(null)
 const searching = ref(false)
 const problem = ref<string | null>(null)
 const box = ref<HTMLInputElement | null>(null)
-const sectorPick = ref('')
+const picks = reactive({ sector: '', cell: '' })
 const codesOn = ref(false)
 
 const chips = computed(() => chipsOf(draft.value))
@@ -84,10 +84,10 @@ async function addOperator(field: SearchField): Promise<void> {
   input.setSelectionRange(input.value.length, input.value.length)
 }
 
-async function addSector(): Promise<void> {
-  if (sectorPick.value === '') return
-  draft.value = withOperator(draft.value, 'sector', sectorPick.value)
-  sectorPick.value = ''
+async function addPicked(field: keyof typeof picks): Promise<void> {
+  if (picks[field] === '') return
+  draft.value = withOperator(draft.value, field, picks[field])
+  picks[field] = ''
   await search()
 }
 
@@ -170,9 +170,9 @@ onMounted(async () => {
         <label class="chip sector-pick">
           + Sector
           <select
-            v-model="sectorPick"
+            v-model="picks.sector"
             aria-label="Add a sector"
-            @change="addSector"
+            @change="addPicked('sector')"
           >
             <option value="" disabled>+ Sector</option>
             <option
@@ -184,6 +184,23 @@ onMounted(async () => {
             </option>
           </select>
         </label>
+        <label class="chip sector-pick">
+          + Rebel cell
+          <select
+            v-model="picks.cell"
+            aria-label="Add a rebel cell"
+            @change="addPicked('cell')"
+          >
+            <option value="" disabled>+ Rebel cell</option>
+            <option
+              v-for="cell in rebelCells"
+              :key="cell.key"
+              :value="cell.key"
+            >
+              {{ cellChoice(cell) }}
+            </option>
+          </select>
+        </label>
       </div>
     </form>
 
@@ -192,9 +209,9 @@ onMounted(async () => {
     <div v-if="showHelp" class="stack-tight small">
       <p>
         Type at least part of a name, or narrow by a field:
-        <code>company:</code>, <code>title:</code> or <code>sector:</code>.
-        Quotes keep words together: <code>company:"corporate rebels"</code>.
-        Every term has to match.
+        <code>company:</code>, <code>title:</code>, <code>sector:</code> or
+        <code>rebel-cell:</code>. Quotes keep words together:
+        <code>company:"corporate rebels"</code>. Every term has to match.
       </p>
     </div>
 

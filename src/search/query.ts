@@ -1,5 +1,11 @@
 /** The fields a query can narrow by, as their operators name them. */
-export const searchFields = ['name', 'company', 'title', 'sector'] as const
+export const searchFields = [
+  'name',
+  'company',
+  'title',
+  'sector',
+  'cell',
+] as const
 
 export type SearchField = (typeof searchFields)[number]
 
@@ -23,9 +29,19 @@ const operators: Readonly<Record<string, SearchField>> = {
   org: 'company',
   title: 'title',
   sector: 'sector',
+  cell: 'cell',
+  'rebel-cell': 'cell',
 }
 
-const OPERATOR = /^([a-z]+):(.*)$/is
+const printedAs: Readonly<Record<SearchField, string>> = {
+  name: 'name',
+  company: 'company',
+  title: 'title',
+  sector: 'sector',
+  cell: 'rebel-cell',
+}
+
+const OPERATOR = /^([a-z][a-z-]*):(.*)$/is
 const SPACE = /\s/
 const QUOTE = '"'
 
@@ -72,7 +88,7 @@ export function tokenize(query: string): QueryToken[] {
 /** One part written back: as it was typed, or as one would type it. */
 export function printToken(token: QueryToken): string {
   if (token.raw !== undefined) return token.raw
-  const prefix = token.field === null ? '' : `${token.field}:`
+  const prefix = token.field === null ? '' : `${printedAs[token.field]}:`
   const needsQuotes = token.quoted || SPACE.test(token.value)
   return needsQuotes
     ? `${prefix}${QUOTE}${token.value}${QUOTE}`
@@ -127,6 +143,7 @@ export function parseQuery(query: string): ParsedQuery {
     company: [],
     title: [],
     sector: [],
+    cell: [],
     free: [],
   }
   for (const token of tokenize(query)) {
